@@ -98,4 +98,6 @@ content_version
 
 ## 8. Границы текущего scaffold
 
-Текущий backend содержит только runnable shell и демонстрационный endpoint. PostgreSQL включён в `compose.yaml`, но постоянная модель намеренно не добавлена до проектирования первого activity-sync вертикального среза.
+Backend содержит runnable shell, демонстрационный home endpoint и первый activity-sync contract spike. Доменная логика уже проверяет положительную дельту, накопительные пороги энергии и idempotency, но repository остаётся in-memory.
+
+PostgreSQL включён в `compose.yaml`; постоянная модель будет добавлена отдельным persistent vertical slice с `activity_ingestion`, `sync_state`, ограничениями уникальности и транзакцией. До этой замены текущая реализация не предназначена для нескольких инстансов и теряет состояние после перезапуска.

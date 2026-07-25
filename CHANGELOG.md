@@ -6,6 +6,13 @@
 
 ### Added
 
+- первый контракт `POST /api/v1/activity/sync`;
+- расчёт положительной дельты authoritative total;
+- накопительное начисление энергии без потери остатка шагов;
+- in-memory idempotency spike и диагностические risk status;
+- единый формат validation/conflict ошибок с trace ID;
+- ADR по семантике синхронизации активности.
+
 - GitHub Actions CI для структуры репозитория, Java backend и Flutter mobile;
 - шаблон pull request с критериями проверки.
 
