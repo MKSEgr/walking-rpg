@@ -34,7 +34,7 @@
 После открытия pull request GitHub Actions выполняет:
 
 - проверку структуры репозитория;
-- `./mvnw verify` на Java 21;
+- `./mvnw verify` на Java 21, включая PostgreSQL integration tests через Testcontainers;
 - `dart format`, `flutter analyze` и `flutter test` на Flutter 3.44.7.
 
 Локальная структурная проверка:
@@ -107,7 +107,7 @@ Windows PowerShell:
 docker compose up -d postgres
 ```
 
-Backend подключается к PostgreSQL по умолчанию и автоматически применяет Flyway-миграции. Accepted activity state и idempotent response сохраняются между перезапусками.
+Backend подключается к PostgreSQL по умолчанию и автоматически применяет Flyway-миграции. Accepted activity state и idempotent response сохраняются между перезапусками. Дневной reward high-watermark общий для пользователя, поэтому разные устройства не создают независимое начисление за один cumulative total.
 
 ## Текущая вертикальная цель
 
