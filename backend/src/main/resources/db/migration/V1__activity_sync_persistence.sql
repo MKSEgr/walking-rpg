@@ -18,16 +18,15 @@ CREATE TABLE app_device (
 
 CREATE TABLE activity_sync_state (
     user_id varchar(128) NOT NULL,
-    device_id varchar(128) NOT NULL,
     local_date date NOT NULL,
     accepted_total bigint NOT NULL CHECK (accepted_total >= 0),
     state_version bigint NOT NULL CHECK (state_version >= 0),
     time_zone varchar(64) NOT NULL,
     updated_at timestamptz NOT NULL,
-    PRIMARY KEY (user_id, device_id, local_date),
-    CONSTRAINT fk_activity_sync_state_device
-        FOREIGN KEY (user_id, device_id)
-        REFERENCES app_device (user_id, device_id)
+    PRIMARY KEY (user_id, local_date),
+    CONSTRAINT fk_activity_sync_state_user
+        FOREIGN KEY (user_id)
+        REFERENCES app_user (user_id)
         ON DELETE CASCADE
 );
 
