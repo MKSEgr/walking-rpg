@@ -2,6 +2,7 @@ package com.walkingrpg.backend.activity.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import com.walkingrpg.backend.activity.domain.ActivityDayKey;
 import com.walkingrpg.backend.activity.domain.ActivityDayState;
@@ -34,8 +35,8 @@ public class ActivitySyncService {
 
     @Transactional
     public ActivitySyncResult synchronize(ActivitySyncCommand command) {
-        Instant serverTime = Instant.now(clock);
-        repository.acquireDeviceLock(command.userId(), command.deviceId());
+        Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
+        repository.acquireUserLock(command.userId());
         repository.registerDevice(command.userId(), command.deviceId(), serverTime);
 
         IdempotencyScope idempotencyScope = IdempotencyScope.from(command);
