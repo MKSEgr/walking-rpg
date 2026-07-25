@@ -27,6 +27,20 @@
 └── compose.yaml
 ```
 
+## Проверки проекта
+
+После открытия pull request GitHub Actions выполняет:
+
+- проверку структуры репозитория;
+- `./mvnw verify` на Java 21;
+- `dart format`, `flutter analyze` и `flutter test` на Flutter 3.44.7.
+
+Локальная структурная проверка:
+
+```bash
+./scripts/verify-project.sh
+```
+
 ## Backend
 
 Требования:
