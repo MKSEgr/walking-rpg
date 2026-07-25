@@ -15,23 +15,44 @@ class IoHomeTransport implements HomeTransport {
   Future<HomeTransportResponse> get({
     required Uri uri,
     required Map<String, String> headers,
+  }) {
+    return _send(method: 'GET', uri: uri, headers: headers);
+  }
+
+  @override
+  Future<HomeTransportResponse> post({
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  }) {
+    return _send(method: 'POST', uri: uri, headers: headers, body: body);
+  }
+
+  Future<HomeTransportResponse> _send({
+    required String method,
+    required Uri uri,
+    required Map<String, String> headers,
+    String? body,
   }) async {
     final HttpClient client = HttpClient()..connectionTimeout = timeout;
 
     try {
       final HttpClientRequest request =
-          await client.getUrl(uri).timeout(timeout);
+          await client.openUrl(method, uri).timeout(timeout);
       headers.forEach(
         (String name, String value) => request.headers.set(name, value),
       );
+      if (body != null) {
+        request.add(utf8.encode(body));
+      }
       final HttpClientResponse response =
           await request.close().timeout(timeout);
-      final String body =
+      final String responseBody =
           await utf8.decoder.bind(response).join().timeout(timeout);
 
       return HomeTransportResponse(
         statusCode: response.statusCode,
-        body: body,
+        body: responseBody,
       );
     } on TimeoutException {
       throw const HomeNetworkException('Превышено время ожидания backend');

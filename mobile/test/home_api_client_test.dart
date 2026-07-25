@@ -28,7 +28,9 @@ void main() {
     expect(transport.requestedUri?.queryParameters['localDate'], '2026-07-25');
     expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
     expect(snapshot.dailySteps, 6842);
-    expect(snapshot.availableEnergy, 68);
+    expect(snapshot.availableEnergy, 38);
+    expect(snapshot.expeditionStatus, 'EVENT_READY');
+    expect(snapshot.unlockedEvent?.eventId, 'signal-source-v1');
   });
 
   test('client exposes backend error message', () async {
@@ -64,9 +66,9 @@ Map<String, dynamic> _homeResponse() {
     'timeZone': 'Europe/Berlin',
     'dailySteps': 6842,
     'dailyGoal': 6000,
-    'availableEnergy': 68,
+    'availableEnergy': 38,
     'activityStateVersion': 1,
-    'economyVersion': 1,
+    'economyVersion': 2,
     'lastActivitySyncAt': '2026-07-25T11:55:00Z',
     'serverTime': '2026-07-25T12:00:00Z',
     'contentVersion': 'starter-v1',
@@ -85,10 +87,20 @@ Map<String, dynamic> _homeResponse() {
       'trait': 'Чуткий разведчик',
     },
     'expedition': <String, dynamic>{
+      'expeditionId': 'starter-expedition-v1',
       'name': 'Сигнал из туманного сектора',
+      'currentNodeId': 'outer-beacon',
       'currentNode': 'Внешний маяк',
-      'progress': 0,
+      'progress': 30,
       'requiredEnergy': 30,
+      'status': 'EVENT_READY',
+      'version': 1,
+      'unlockedEvent': <String, dynamic>{
+        'eventId': 'signal-source-v1',
+        'title': 'Источник сигнала',
+        'summary': 'Маяк отвечает импульсом.',
+        'status': 'READY',
+      },
     },
   };
 }
@@ -108,5 +120,14 @@ class _FakeHomeTransport implements HomeTransport {
     requestedUri = uri;
     requestedHeaders = Map<String, String>.from(headers);
     return response;
+  }
+
+  @override
+  Future<HomeTransportResponse> post({
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  }) {
+    throw UnimplementedError();
   }
 }

@@ -6,43 +6,29 @@
 
 ### Added
 
-- первый контракт `POST /api/v1/activity/sync`;
-- расчёт положительной дельты authoritative total;
-- накопительное начисление энергии без потери остатка шагов;
-- in-memory idempotency spike и диагностические risk status;
-- единый формат validation/conflict ошибок с trace ID;
-- ADR по семантике синхронизации активности;
-- PostgreSQL persistence для пользователя, устройства, дневного sync state и idempotent response;
-- Flyway-миграция первой постоянной модели;
-- SHA-256 fingerprint нормализованного activity payload без сохранения сырых bucket-ов и attestation;
-- PostgreSQL advisory transaction lock для конкурентных sync одного пользователя, включая разные устройства;
-- Testcontainers integration tests для миграций, persistence и конкурентной обработки;
-- ADR по постоянному activity state и транзакционной сериализации;
-- `economy_wallet` и append-only `economy_ledger` для ENERGY;
-- backfill ранее рассчитанной энергии из `processed_activity_sync`;
-- economy snapshot `energyBalanceAfter` и `economyVersion` в activity response;
-- economy-level защита от повторного source credit;
-- транзакционный rollback-тест activity state + wallet + ledger + processed response;
-- ADR по economy wallet/ledger;
-- production `GET /api/v1/home` с реальными activity/economy данными;
-- read-only home projection без создания технического пользователя или кошелька;
-- версионированный starter content `starter-v1` для пилота, питомца и экспедиции;
-- Flutter HTTP client без дополнительной сетевой зависимости;
-- loading/error/retry/demo-fallback состояния главного экрана;
-- backend unit/API/PostgreSQL и mobile mapping/client/widget tests для home slice;
-- ADR по production home read-model;
-- GitHub Actions CI для структуры репозитория, Java backend и Flutter mobile;
-- шаблон pull request с критериями проверки.
+- идемпотентный `POST /api/v1/activity/sync`;
+- PostgreSQL activity state и multi-device advisory lock;
+- ENERGY wallet и append-only ledger;
+- activity credit и exact response snapshot;
+- production `GET /api/v1/home`;
+- Flutter loading/error/retry и production JSON mapping;
+- `POST /api/v1/expeditions/{expeditionId}/advance`;
+- атомарный ENERGY debit с запретом отрицательного баланса;
+- `expedition_progress` и `processed_expedition_advance`;
+- стартовая экспедиция `starter-expedition-v1`;
+- первый узел `outer-beacon` с порогом 30 ENERGY;
+- событие `signal-source-v1` в статусе READY;
+- Flutter client и UI-действие продвижения экспедиции;
+- unit/API/PostgreSQL integration/mobile tests;
+- ADR по activity sync, economy ledger, home read-model и expedition advance;
+- GitHub Actions CI и PR template.
 
 ### Changed
 
-- activity sync repository по умолчанию переведён с in-memory на Spring JDBC;
-- activity sync выполняется в одной транзакции;
-- положительная энергия проводится через ledger в той же транзакции;
-- processed response хранит activity и economy snapshot для точного идемпотентного повтора;
-- Flutter home screen загружает серверное состояние вместо безусловного `HomeSnapshot.demo`;
-- документация веток приведена к фактической основной ветке `master`;
-- roadmap отмечает созданный удалённый репозиторий, CI, persistent activity/economy slices и production home query.
+- home read-model возвращает persistent expedition progress/status/version/event;
+- economy repository поддерживает credit и debit;
+- mobile больше не ограничивается чтением: progress command отправляется на backend;
+- roadmap доведён до первого открытого события.
 
 ## [0.1.0] — 2026-07-25
 

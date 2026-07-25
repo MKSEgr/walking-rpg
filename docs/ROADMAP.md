@@ -24,45 +24,44 @@ Roadmap отражает порядок снижения рисков, а не �
 - [ ] Проверить смену часового пояса
 - [ ] Проверить background delivery
 - [ ] Оценить расход батареи
-- [ ] Принять решение: готовый Flutter-плагин или собственный bridge
+- [ ] Выбрать Flutter plugin или собственный bridge
 
 **Выход:** на реальных устройствах получаем стабильный агрегированный total без двойного учёта.
 
 ## Milestone 2 — Activity sync vertical slice
 
-- [x] Спроектировать контракт `/api/v1/activity/sync`
+- [x] Спроектировать `/api/v1/activity/sync`
 - [x] Добавить технические `app_user` и `app_device`
-- [x] Добавить persistent sync response как первую ingestion-запись
 - [x] Добавить `activity_sync_state`
-- [x] Добавить in-memory idempotency spike
-- [x] Перенести idempotency в PostgreSQL
+- [x] Добавить persistent idempotency
 - [x] Рассчитать положительную дельту
-- [x] Добавить базовые диагностические risk status
-- [x] Добавить unit/API tests для contract spike
-- [x] Добавить PostgreSQL integration tests
-- [x] Сериализовать конкурентные sync через user-level PostgreSQL advisory lock
-- [ ] Зафиксировать retention для processed sync
-- [ ] Вызвать activity sync из mobile
+- [x] Начислить ENERGY через wallet/ledger
+- [x] Сериализовать конкурентные sync
+- [x] Добавить unit/API/PostgreSQL tests
+- [ ] Зафиксировать retention processed sync
+- [ ] Подключить Health API mobile к activity sync
 
 **Выход:** повторная синхронизация не создаёт повторную награду и сохраняет состояние после перезапуска.
 
 ## Milestone 3 — First playable
 
-- [ ] Один сохраняемый пилот
-- [ ] Один сохраняемый питомец
-- [ ] Одна сохраняемая экспедиция
-- [ ] Один узел
-- [x] Энергия из шагов
-- [ ] Одно событие
-- [ ] Одна награда
-- [x] Economy wallet и ledger
-- [x] Транзакционная связь activity sync → economy credit
 - [x] Production `GET /api/v1/home`
-- [x] Flutter читает production home state
-- [x] Starter-template пилота, питомца и экспедиции
-- [ ] Экран результата экспедиции
+- [x] Flutter загружает server state
+- [x] Один пилот
+- [x] Один питомец
+- [x] Одна экспедиция
+- [x] Один узел
+- [x] Энергия из шагов
+- [x] Economy wallet и ledger
+- [x] Атомарный debit ENERGY
+- [x] Persistent expedition progress
+- [x] Первое событие в статусе READY
+- [ ] Выбор исхода события
+- [ ] Одна награда за событие
+- [ ] Persistent pilot/pet progression
+- [ ] Экран результата события
 
-**Выход:** пользователь проходит реальные шаги и завершает одно игровое событие.
+**Выход:** пользователь проходит реальные шаги, тратит энергию и завершает одно игровое событие.
 
 ## Milestone 4 — MVP content loop
 

@@ -8,7 +8,13 @@ public record HomeRuntimeState(
         String timeZone,
         Instant lastActivitySyncAt,
         long availableEnergy,
-        long economyVersion
+        long economyVersion,
+        long expeditionProgress,
+        long expeditionRequiredEnergy,
+        String expeditionStatus,
+        long expeditionVersion,
+        String currentNodeId,
+        String unlockedEventId
 ) {
     public HomeRuntimeState {
         if (dailySteps < 0 || activityStateVersion < 0) {
@@ -16,6 +22,10 @@ public record HomeRuntimeState(
         }
         if (availableEnergy < 0 || economyVersion < 0) {
             throw new IllegalArgumentException("Economy state не может быть отрицательным");
+        }
+        if (expeditionProgress < 0 || expeditionRequiredEnergy < 0
+                || expeditionVersion < 0) {
+            throw new IllegalArgumentException("Expedition state не может быть отрицательным");
         }
     }
 }

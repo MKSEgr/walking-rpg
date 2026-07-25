@@ -10,9 +10,15 @@ class HomeSnapshot {
     required this.lastActivitySyncAt,
     required this.serverTime,
     required this.contentVersion,
+    required this.expeditionId,
     required this.expeditionName,
+    required this.currentNodeId,
+    required this.currentNodeName,
     required this.expeditionProgress,
     required this.requiredEnergy,
+    required this.expeditionStatus,
+    required this.expeditionVersion,
+    required this.unlockedEvent,
     required this.pilotName,
     required this.pilotLevel,
     required this.petName,
@@ -23,6 +29,7 @@ class HomeSnapshot {
     final Map<String, dynamic> pilot = _readMap(json, 'pilot');
     final Map<String, dynamic> pet = _readMap(json, 'pet');
     final Map<String, dynamic> expedition = _readMap(json, 'expedition');
+    final Object? eventJson = expedition['unlockedEvent'];
 
     return HomeSnapshot(
       localDate: _readString(json, 'localDate'),
@@ -35,9 +42,19 @@ class HomeSnapshot {
       lastActivitySyncAt: _readNullableString(json, 'lastActivitySyncAt'),
       serverTime: _readString(json, 'serverTime'),
       contentVersion: _readString(json, 'contentVersion'),
+      expeditionId: _readString(expedition, 'expeditionId'),
       expeditionName: _readString(expedition, 'name'),
+      currentNodeId: _readString(expedition, 'currentNodeId'),
+      currentNodeName: _readString(expedition, 'currentNode'),
       expeditionProgress: _readInt(expedition, 'progress'),
       requiredEnergy: _readInt(expedition, 'requiredEnergy'),
+      expeditionStatus: _readString(expedition, 'status'),
+      expeditionVersion: _readInt(expedition, 'version'),
+      unlockedEvent: eventJson == null
+          ? null
+          : HomeExpeditionEvent.fromJson(
+              _asMap(eventJson, 'unlockedEvent'),
+            ),
       pilotName: _readString(pilot, 'name'),
       pilotLevel: _readInt(pilot, 'level'),
       petName: _readString(pet, 'name'),
@@ -55,13 +72,33 @@ class HomeSnapshot {
   final String? lastActivitySyncAt;
   final String serverTime;
   final String contentVersion;
+  final String expeditionId;
   final String expeditionName;
+  final String currentNodeId;
+  final String currentNodeName;
   final int expeditionProgress;
   final int requiredEnergy;
+  final String expeditionStatus;
+  final int expeditionVersion;
+  final HomeExpeditionEvent? unlockedEvent;
   final String pilotName;
   final int pilotLevel;
   final String petName;
   final int petLevel;
+
+  int get remainingExpeditionEnergy {
+    final int remaining = requiredEnergy - expeditionProgress;
+    return remaining < 0 ? 0 : remaining;
+  }
+
+  int get spendableEnergy {
+    if (expeditionStatus == 'EVENT_READY') {
+      return 0;
+    }
+    return availableEnergy < remainingExpeditionEnergy
+        ? availableEnergy
+        : remainingExpeditionEnergy;
+  }
 
   double get dailyProgress {
     if (dailyGoal <= 0) {
@@ -88,9 +125,15 @@ class HomeSnapshot {
     lastActivitySyncAt: null,
     serverTime: '2026-07-25T12:00:00Z',
     contentVersion: 'starter-v1',
+    expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'outer-beacon',
+    currentNodeName: 'Внешний маяк',
     expeditionProgress: 0,
     requiredEnergy: 30,
+    expeditionStatus: 'IN_PROGRESS',
+    expeditionVersion: 0,
+    unlockedEvent: null,
     pilotName: 'Навигатор',
     pilotLevel: 1,
     petName: 'Искра',
@@ -113,10 +156,7 @@ class HomeSnapshot {
     String field,
   ) {
     final Object? value = json[field];
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    throw FormatException('$field должен быть JSON-объектом');
+    return _asMap(value, field);
   }
 
   static String? _readNullableString(
@@ -140,4 +180,34 @@ class HomeSnapshot {
     }
     throw FormatException('$field должен быть непустой строкой');
   }
+}
+
+class HomeExpeditionEvent {
+  const HomeExpeditionEvent({
+    required this.eventId,
+    required this.title,
+    required this.summary,
+    required this.status,
+  });
+
+  factory HomeExpeditionEvent.fromJson(Map<String, dynamic> json) {
+    return HomeExpeditionEvent(
+      eventId: HomeSnapshot._readString(json, 'eventId'),
+      title: HomeSnapshot._readString(json, 'title'),
+      summary: HomeSnapshot._readString(json, 'summary'),
+      status: HomeSnapshot._readString(json, 'status'),
+    );
+  }
+
+  final String eventId;
+  final String title;
+  final String summary;
+  final String status;
+}
+
+Map<String, dynamic> _asMap(Object? value, String field) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  throw FormatException('$field должен быть JSON-объектом');
 }

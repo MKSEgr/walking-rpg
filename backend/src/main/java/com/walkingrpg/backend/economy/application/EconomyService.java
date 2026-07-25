@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import com.walkingrpg.backend.economy.domain.EconomyCredit;
 import com.walkingrpg.backend.economy.domain.EconomyCurrency;
+import com.walkingrpg.backend.economy.domain.EconomyDebit;
 import com.walkingrpg.backend.economy.domain.WalletSnapshot;
 import com.walkingrpg.backend.economy.infrastructure.EconomyRepository;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,8 @@ public class EconomyService {
 
     static final String ACTIVITY_REASON = "ACTIVITY_STEPS";
     static final String ACTIVITY_SOURCE_TYPE = "ACTIVITY_SYNC";
+    static final String EXPEDITION_REASON = "EXPEDITION_PROGRESS";
+    static final String EXPEDITION_SOURCE_TYPE = "EXPEDITION_ADVANCE";
 
     private final EconomyRepository repository;
 
@@ -42,6 +45,28 @@ public class EconomyService {
                 energyGranted,
                 ACTIVITY_REASON,
                 ACTIVITY_SOURCE_TYPE,
+                sourceKey,
+                occurredAt
+        ));
+    }
+
+    @Transactional
+    public WalletSnapshot debitExpeditionEnergy(
+            String userId,
+            long energyToSpend,
+            String sourceKey,
+            Instant occurredAt
+    ) {
+        if (energyToSpend <= 0) {
+            throw new IllegalArgumentException("energyToSpend должна быть положительной");
+        }
+
+        return repository.applyDebit(new EconomyDebit(
+                userId,
+                EconomyCurrency.ENERGY,
+                energyToSpend,
+                EXPEDITION_REASON,
+                EXPEDITION_SOURCE_TYPE,
                 sourceKey,
                 occurredAt
         ));

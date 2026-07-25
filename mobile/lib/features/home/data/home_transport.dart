@@ -3,6 +3,12 @@ abstract interface class HomeTransport {
     required Uri uri,
     required Map<String, String> headers,
   });
+
+  Future<HomeTransportResponse> post({
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  });
 }
 
 class HomeTransportResponse {

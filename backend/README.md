@@ -1,6 +1,6 @@
 # Walking RPG Backend
 
-Java/Spring Boot backend первоначального проекта.
+Java/Spring Boot backend walking-RPG.
 
 ## Стек
 
@@ -15,23 +15,24 @@ Java/Spring Boot backend первоначального проекта.
 - Actuator
 - Maven Wrapper
 
-Activity sync хранит принятый total, версию состояния и idempotent response в PostgreSQL. Для запросов одного пользователя используется PostgreSQL advisory transaction lock: sync с разных устройств сериализуются не только внутри одного Java-процесса, но и между backend-инстансами.
+## Реализованный вертикальный поток
 
-Положительная `energyGranted` проводится через economy module: wallet row блокируется, баланс обновляется, ledger entry добавляется, а итоговый economy snapshot сохраняется вместе с activity response в одной транзакции.
+```text
+authoritative step total
+→ activity high-watermark
+→ ENERGY credit
+→ production home snapshot
+→ ENERGY debit
+→ expedition progress
+→ first event READY
+```
 
-Production home read-model объединяет дневной activity state и актуальный ENERGY wallet без изменения БД. Пилот, питомец и экспедиция пока приходят из версионированного `starter-v1`; изменяемые игровые экземпляры появятся вместе с продвижением экспедиции.
+Activity sync сериализуется PostgreSQL advisory transaction lock по пользователю. Продвижение экспедиции использует отдельный lock по пользователю и экспедиции, а economy-модуль блокирует wallet row через `FOR UPDATE`.
 
 ## Локальный запуск
 
-Из корня репозитория запустить PostgreSQL:
-
 ```bash
 docker compose up -d postgres
-```
-
-Затем:
-
-```bash
 cd backend
 ./mvnw spring-boot:run
 ```
@@ -44,7 +45,7 @@ cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-Стандартные параметры подключения:
+Стандартные параметры:
 
 ```text
 POSTGRES_HOST=localhost
@@ -54,8 +55,6 @@ POSTGRES_USER=walking_rpg
 POSTGRES_PASSWORD=walking_rpg_local
 ```
 
-Стандартные Spring-переменные `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` и `SPRING_DATASOURCE_PASSWORD` также могут переопределить подключение.
-
 Flyway автоматически применяет миграции из `src/main/resources/db/migration`.
 
 ## Тесты
@@ -64,15 +63,16 @@ Flyway автоматически применяет миграции из `src/
 ./mvnw verify
 ```
 
-Интеграционные тесты используют Testcontainers и требуют доступный Docker daemon. Они поднимают чистый PostgreSQL, применяют Flyway и проверяют:
+Интеграционные тесты поднимают PostgreSQL через Testcontainers и проверяют:
 
-- постоянную idempotency;
-- сериализацию конкурентных запросов;
-- wallet и ledger;
-- отсутствие ledger entry без пересечения энергетического порога;
-- rollback activity/economy состояния при ошибке в конце транзакции;
-- production home projection для текущего и другого локального дня;
-- zero-state неизвестного пользователя без побочных записей.
+- постоянную activity idempotency;
+- конкурентную синхронизацию с разных устройств;
+- ENERGY credit/debit и ledger;
+- точный replay command response;
+- постоянный expedition progress;
+- конкурентное продвижение экспедиции;
+- rollback activity/economy/expedition состояния при поздней ошибке;
+- production home read-model.
 
 ## Endpoint-ы
 
@@ -82,9 +82,17 @@ GET  /api/v1/system/info
 GET  /api/v1/home/demo
 GET  /api/v1/home?localDate=YYYY-MM-DD
 POST /api/v1/activity/sync
+POST /api/v1/expeditions/{expeditionId}/advance
 ```
 
-### Синхронизация активности
+До появления authentication используются временные заголовки:
+
+```text
+X-User-Id
+X-Device-Id  # только activity sync
+```
+
+### Синхронизация шагов
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/activity/sync \
@@ -102,101 +110,67 @@ curl -X POST http://localhost:8080/api/v1/activity/sync \
   }'
 ```
 
-Фрагмент response:
-
-```json
-{
-  "acceptedTotal": 6842,
-  "acceptedDelta": 6842,
-  "energyGranted": 68,
-  "energyBalanceAfter": 68,
-  "economyVersion": 1,
-  "riskStatus": "ACCEPTED",
-  "stateVersion": 1,
-  "serverTime": "2026-07-25T12:00:00Z"
-}
-```
-
-### Production home
+### Продвижение стартовой экспедиции
 
 ```bash
-curl 'http://localhost:8080/api/v1/home?localDate=2026-07-25' \
-  -H 'X-User-Id: demo-user-1'
+curl -X POST \
+  http://localhost:8080/api/v1/expeditions/starter-expedition-v1/advance \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-Id: demo-user-1' \
+  -d '{
+    "energyToSpend": 30,
+    "idempotencyKey": "starter-expedition-v1-advance-1"
+  }'
 ```
+
+При достижении 30 ENERGY response получает:
 
 ```json
 {
-  "localDate": "2026-07-25",
-  "timeZone": "Europe/Berlin",
-  "dailySteps": 6842,
-  "dailyGoal": 6000,
-  "availableEnergy": 68,
-  "activityStateVersion": 1,
-  "economyVersion": 1,
-  "lastActivitySyncAt": "2026-07-25T12:00:00Z",
-  "serverTime": "2026-07-25T12:01:00Z",
-  "contentVersion": "starter-v1",
-  "pilot": {
-    "name": "Навигатор",
-    "level": 1,
-    "currentExperience": 20,
-    "nextLevelExperience": 100,
-    "specialization": "Не выбрана"
-  },
-  "pet": {
-    "name": "Искра",
-    "species": "Люмин",
-    "level": 1,
-    "bond": 10,
-    "trait": "Чуткий разведчик"
-  },
-  "expedition": {
-    "name": "Сигнал из туманного сектора",
-    "currentNode": "Внешний маяк",
-    "progress": 0,
-    "requiredEnergy": 30
+  "expeditionId": "starter-expedition-v1",
+  "energySpent": 30,
+  "energyBalanceAfter": 38,
+  "progressAfter": 30,
+  "requiredEnergy": 30,
+  "status": "EVENT_READY",
+  "unlockedEvent": {
+    "eventId": "signal-source-v1",
+    "title": "Источник сигнала",
+    "status": "READY"
   }
 }
 ```
 
-Семантика:
-
-- `localDate` передаёт клиент, потому что backend не должен угадывать календарный день пользователя;
-- `timeZone` берётся из сохранённого activity state для этого дня и может быть `null`;
-- шаги относятся к запрошенному локальному дню;
-- ENERGY balance является текущим глобальным балансом пользователя и не обнуляется при смене даты;
-- неизвестный user/date возвращает нули вместо 404;
-- `GET` не создаёт `app_user`, wallet или игровой прогресс;
-- `contentVersion=starter-v1` явно показывает, что pilot/pet/expedition пока являются server-owned starter template.
-
 ## Что сохраняется
 
 ```text
-app_user                  — временная техническая identity пользователя
-app_device                — устройство пользователя
-activity_sync_state       — общий high-watermark пользователя по локальному дню
-processed_activity_sync   — fingerprint и неизменяемый activity/economy response
-economy_wallet            — текущий баланс ENERGY и его версия
-economy_ledger            — append-only журнал ненулевых изменений баланса
+app_user                       — временная identity
+app_device                     — устройство пользователя
+activity_sync_state            — дневной accepted total
+processed_activity_sync        — idempotent activity/economy response
+economy_wallet                 — текущий баланс ENERGY и версия
+economy_ledger                 — append-only credit/debit журнал
+expedition_progress            — постоянный progress стартовой экспедиции
+processed_expedition_advance   — idempotent expedition/economy response
 ```
 
-Сырые bucket-ы, attestation и sync cursor в БД пока не сохраняются. Для проверки повторного ключа хранится SHA-256 fingerprint нормализованной бизнес-команды. Attestation в fingerprint не входит: после появления проверки он будет валидироваться отдельно для каждого запроса.
+## Инварианты
 
-`energyBalanceAfter` — snapshot после исходной операции. Повтор старого idempotency key возвращает тот же snapshot, даже если более новые операции уже изменили актуальный баланс. `GET /home` возвращает уже самое новое агрегированное состояние.
+- клиент не задаёт итоговую награду;
+- баланс меняется только через ledger;
+- wallet не может стать отрицательным;
+- один economy source создаёт не более одной ledger-записи;
+- один expedition idempotency key не создаёт два списания;
+- расход ENERGY, expedition progress и processed response фиксируются одной транзакцией;
+- после `EVENT_READY` дальнейшее продвижение запрещено до разрешения события;
+- `GET /home` не создаёт данные.
 
 ## Текущие ограничения
 
 - заголовки пользователя и устройства временные;
-- attestation пока не проверяется;
-- поддерживается только начисление ENERGY, без списания;
-- pilot/pet/expedition в home response пока не являются изменяемыми записями;
-- для `processed_activity_sync` ещё не реализована retention-политика;
-- mobile читает home, но пока не отправляет activity sync;
-- нет offline cache;
-- модель `app_user`/`app_device` техническая и будет заменена или расширена при появлении аутентификации.
-
-Следующая продуктовая задача:
-
-```text
-production home → persistent expedition → debit ENERGY → один игровой узел
-```
+- attestation не проверяется;
+- реализована одна экспедиция и один узел;
+- событие открывается, но пока не имеет вариантов решения;
+- pilot/pet progression не сохраняется;
+- mobile ещё не отправляет реальные шаги из Health API;
+- offline cache отсутствует.

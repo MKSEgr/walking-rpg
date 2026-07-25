@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import com.walkingrpg.backend.economy.domain.EconomyCredit;
 import com.walkingrpg.backend.economy.domain.EconomyCurrency;
+import com.walkingrpg.backend.economy.domain.EconomyDebit;
 import com.walkingrpg.backend.economy.domain.WalletSnapshot;
 
 public interface EconomyRepository {
@@ -15,4 +16,6 @@ public interface EconomyRepository {
     );
 
     WalletSnapshot applyCredit(EconomyCredit credit);
+
+    WalletSnapshot applyDebit(EconomyDebit debit);
 }

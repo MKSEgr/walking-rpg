@@ -6,6 +6,9 @@ import java.util.List;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
+import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.domain.HomeQuery;
@@ -21,6 +24,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @SpringBootTest
@@ -44,6 +48,9 @@ class HomeReadIntegrationTest {
     private ActivitySyncService activitySyncService;
 
     @Autowired
+    private ExpeditionAdvanceService expeditionService;
+
+    @Autowired
     private HomeService homeService;
 
     @Autowired
@@ -51,6 +58,8 @@ class HomeReadIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbcTemplate.update("DELETE FROM processed_expedition_advance");
+        jdbcTemplate.update("DELETE FROM expedition_progress");
         jdbcTemplate.update("DELETE FROM processed_activity_sync");
         jdbcTemplate.update("DELETE FROM economy_ledger");
         jdbcTemplate.update("DELETE FROM activity_sync_state");
@@ -60,38 +69,57 @@ class HomeReadIntegrationTest {
     }
 
     @Test
-    void shouldReturnAcceptedStepsAndCurrentEnergyBalance() {
+    void shouldReturnAcceptedStepsCurrentBalanceAndPersistentExpedition() {
         activitySyncService.synchronize(command(6_842));
+        expeditionService.advance(new ExpeditionAdvanceCommand(
+                "home-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                30,
+                "home-advance-1"
+        ));
 
         HomeSnapshotResponse snapshot = homeService.getSnapshot(
                 new HomeQuery("home-user", ACTIVITY_DATE)
         );
 
         assertEquals(6_842, snapshot.dailySteps());
-        assertEquals(68, snapshot.availableEnergy());
+        assertEquals(38, snapshot.availableEnergy());
         assertEquals(1, snapshot.activityStateVersion());
-        assertEquals(1, snapshot.economyVersion());
+        assertEquals(2, snapshot.economyVersion());
         assertEquals("Europe/Berlin", snapshot.timeZone());
         assertEquals("starter-v1", snapshot.contentVersion());
+        assertEquals(30, snapshot.expedition().progress());
+        assertEquals(1, snapshot.expedition().version());
+        assertEquals("EVENT_READY", snapshot.expedition().status());
+        assertNotNull(snapshot.expedition().unlockedEvent());
         assertEquals(1, rowCount("activity_sync_state"));
         assertEquals(1, rowCount("economy_wallet"));
-        assertEquals(1, rowCount("economy_ledger"));
+        assertEquals(2, rowCount("economy_ledger"));
+        assertEquals(1, rowCount("expedition_progress"));
     }
 
     @Test
-    void shouldKeepWalletButReturnZeroActivityForAnotherLocalDay() {
+    void shouldKeepWalletAndExpeditionButReturnZeroActivityForAnotherLocalDay() {
         activitySyncService.synchronize(command(6_842));
+        expeditionService.advance(new ExpeditionAdvanceCommand(
+                "home-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                20,
+                "home-advance-partial"
+        ));
 
         HomeSnapshotResponse snapshot = homeService.getSnapshot(
                 new HomeQuery("home-user", ACTIVITY_DATE.plusDays(1))
         );
 
         assertEquals(0, snapshot.dailySteps());
-        assertEquals(68, snapshot.availableEnergy());
+        assertEquals(48, snapshot.availableEnergy());
         assertEquals(0, snapshot.activityStateVersion());
-        assertEquals(1, snapshot.economyVersion());
+        assertEquals(2, snapshot.economyVersion());
         assertNull(snapshot.timeZone());
         assertNull(snapshot.lastActivitySyncAt());
+        assertEquals(20, snapshot.expedition().progress());
+        assertEquals("IN_PROGRESS", snapshot.expedition().status());
     }
 
     @Test
@@ -104,9 +132,12 @@ class HomeReadIntegrationTest {
         assertEquals(0, snapshot.availableEnergy());
         assertEquals(0, snapshot.activityStateVersion());
         assertEquals(0, snapshot.economyVersion());
+        assertEquals(0, snapshot.expedition().progress());
+        assertEquals("IN_PROGRESS", snapshot.expedition().status());
         assertEquals(0, rowCount("app_user"));
         assertEquals(0, rowCount("economy_wallet"));
         assertEquals(0, rowCount("activity_sync_state"));
+        assertEquals(0, rowCount("expedition_progress"));
     }
 
     private int rowCount(String table) {

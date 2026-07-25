@@ -1,6 +1,5 @@
 package com.walkingrpg.backend.home.application;
 
-import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
 import com.walkingrpg.backend.home.domain.PilotSnapshot;
 import org.springframework.stereotype.Component;
@@ -27,13 +26,6 @@ public class StarterHomeContent {
             "Чуткий разведчик"
     );
 
-    private final ExpeditionSnapshot expedition = new ExpeditionSnapshot(
-            "Сигнал из туманного сектора",
-            "Внешний маяк",
-            0,
-            30
-    );
-
     public String contentVersion() {
         return CONTENT_VERSION;
     }
@@ -48,9 +40,5 @@ public class StarterHomeContent {
 
     public PetSnapshot pet() {
         return pet;
-    }
-
-    public ExpeditionSnapshot expedition() {
-        return expedition;
     }
 }
