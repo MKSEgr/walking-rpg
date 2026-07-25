@@ -40,7 +40,7 @@ Roadmap отражает порядок снижения рисков, а не �
 - [x] Добавить базовые диагностические risk status
 - [x] Добавить unit/API tests для contract spike
 - [x] Добавить PostgreSQL integration tests
-- [x] Сериализовать конкурентные sync через PostgreSQL advisory lock
+- [x] Сериализовать конкурентные sync через user-level PostgreSQL advisory lock
 - [ ] Зафиксировать retention для processed sync
 - [ ] Подключить mobile к backend
 
