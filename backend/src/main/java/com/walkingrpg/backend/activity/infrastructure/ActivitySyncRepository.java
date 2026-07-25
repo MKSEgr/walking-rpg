@@ -11,7 +11,7 @@ import com.walkingrpg.backend.activity.domain.ProcessedActivitySync;
 
 public interface ActivitySyncRepository {
 
-    void acquireDeviceLock(String userId, String deviceId);
+    void acquireUserLock(String userId);
 
     void registerDevice(String userId, String deviceId, Instant seenAt);
 
