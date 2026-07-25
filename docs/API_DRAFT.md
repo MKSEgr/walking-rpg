@@ -12,45 +12,107 @@
 
 Демонстрационное состояние главного экрана. Не является production-моделью.
 
-## Планируемые endpoint-ы first playable
+### `POST /api/v1/activity/sync`
+
+Первый технический срез синхронизации активности. Контракт и расчёт реализованы, но состояние пока хранится только в памяти процесса. PostgreSQL/Flyway будут добавлены следующим persistent vertical slice.
+
+До появления аутентификации и регистрации устройств используются временные обязательные заголовки:
 
 ```text
-POST /api/v1/activity/sync
-GET  /api/v1/home
-POST /api/v1/expeditions/{expeditionId}/start
-POST /api/v1/expeditions/{expeditionId}/advance
-POST /api/v1/events/{eventId}/resolve
-POST /api/v1/pets/{petId}/upgrade
-GET  /api/v1/content/bootstrap
+X-User-Id: demo-user-1
+X-Device-Id: demo-device-1
 ```
 
-## Черновик activity sync
+После появления security слоя `X-User-Id` заменяется authenticated principal, а `X-Device-Id` — идентификатором зарегистрированного устройства.
 
-### Request
+#### Request
 
 ```json
 {
   "localDate": "2026-07-25",
-  "timeZone": "Europe/Moscow",
+  "timeZone": "Europe/Berlin",
   "authoritativeTotal": 6842,
-  "buckets": [],
+  "buckets": [
+    {
+      "from": "2026-07-25T08:00:00Z",
+      "to": "2026-07-25T09:00:00Z",
+      "steps": 412
+    }
+  ],
   "syncCursor": "opaque-cursor",
   "idempotencyKey": "device-date-sequence",
   "attestation": null
 }
 ```
 
-### Response
+Правила:
+
+- `authoritativeTotal >= 0`;
+- `timeZone` должен быть валидным IANA Zone ID;
+- в bucket `from < to` и `steps >= 0`;
+- максимум 96 bucket-ов на запрос;
+- одинаковый `idempotencyKey` в рамках одного пользователя и устройства должен всегда сопровождаться идентичным payload;
+- сервер принимает только положительное увеличение накопительного total;
+- уменьшение total не создаёт отрицательную награду.
+
+#### Response
 
 ```json
 {
   "acceptedTotal": 6842,
-  "acceptedDelta": 842,
-  "energyGranted": 8,
+  "acceptedDelta": 6842,
+  "energyGranted": 68,
   "riskStatus": "ACCEPTED",
-  "stateVersion": 17,
+  "stateVersion": 1,
   "serverTime": "2026-07-25T12:00:00Z"
 }
+```
+
+`riskStatus` на текущем этапе:
+
+```text
+ACCEPTED          — принят положительный прирост;
+NO_NEW_ACTIVITY   — total не изменился;
+TOTAL_DECREASED   — новый total меньше ранее принятого, состояние не уменьшено.
+```
+
+Энергия рассчитывается по накопительным порогам, а не простым округлением каждой отдельной дельты:
+
+```text
+energyGranted = floor(newAcceptedTotal / 100)
+              - floor(previousAcceptedTotal / 100)
+```
+
+#### Идемпотентный повтор
+
+Повтор идентичной команды с тем же ключом возвращает сохранённый response, включая исходные `stateVersion` и `serverTime`.
+
+Повтор ключа с другим payload:
+
+```http
+409 Conflict
+```
+
+```json
+{
+  "code": "IDEMPOTENCY_CONFLICT",
+  "message": "idempotencyKey уже использован для другого запроса",
+  "details": {
+    "field": "idempotencyKey"
+  },
+  "traceId": "f508bf6a-73e5-4aa2-88f5-6b712a571dd6"
+}
+```
+
+## Планируемые endpoint-ы first playable
+
+```text
+GET  /api/v1/home
+POST /api/v1/expeditions/{expeditionId}/start
+POST /api/v1/expeditions/{expeditionId}/advance
+POST /api/v1/events/{eventId}/resolve
+POST /api/v1/pets/{petId}/upgrade
+GET  /api/v1/content/bootstrap
 ```
 
 ## Общие правила
@@ -63,14 +125,14 @@ GET  /api/v1/content/bootstrap
 - версионирование API начинается с `/api/v1`;
 - destructive изменения требуют новой версии или миграционного периода.
 
-## Черновик ошибки
+## Базовый формат ошибки
 
 ```json
 {
   "code": "VALIDATION_ERROR",
-  "message": "Некорректное значение authoritativeTotal",
+  "message": "Запрос не прошёл валидацию",
   "details": {
-    "field": "authoritativeTotal"
+    "authoritativeTotal": "must be greater than or equal to 0"
   },
   "traceId": "f508bf6a-73e5-4aa2-88f5-6b712a571dd6"
 }

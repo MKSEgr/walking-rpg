@@ -30,14 +30,16 @@ Roadmap отражает порядок снижения рисков, а не �
 
 ## Milestone 2 — Activity sync vertical slice
 
-- [ ] Спроектировать контракт `/api/v1/activity/sync`
+- [x] Спроектировать контракт `/api/v1/activity/sync`
 - [ ] Добавить пользователя и устройство
 - [ ] Добавить `activity_ingestion`
 - [ ] Добавить `sync_state`
-- [ ] Добавить idempotency
-- [ ] Рассчитать положительную дельту
+- [x] Добавить in-memory idempotency spike
+- [ ] Перенести idempotency в PostgreSQL
+- [x] Рассчитать положительную дельту
 - [ ] Добавить базовые risk signals
-- [ ] Добавить unit/integration tests
+- [x] Добавить unit/API tests для contract spike
+- [ ] Добавить PostgreSQL integration tests
 - [ ] Подключить mobile к backend
 
 **Выход:** повторная синхронизация не создаёт повторную награду.

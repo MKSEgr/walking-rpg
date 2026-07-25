@@ -1,6 +1,6 @@
 # Walking RPG Backend
 
-Java/Spring Boot shell для первоначального проекта.
+Java/Spring Boot backend первоначального проекта.
 
 ## Стек
 
@@ -11,7 +11,7 @@ Java/Spring Boot shell для первоначального проекта.
 - Actuator
 - Maven Wrapper
 
-PostgreSQL и Flyway подключаются в первом persistent vertical slice, когда будет согласована модель activity sync. Это сделано намеренно: backend сейчас запускается без обязательной внешней инфраструктуры.
+PostgreSQL и Flyway подключаются в persistent activity-sync vertical slice. Первый контракт и доменная логика активности намеренно работают через in-memory repository: это позволяет проверить инварианты до фиксации схемы данных.
 
 ## Запуск
 
@@ -34,15 +34,40 @@ Windows:
 ## Endpoint-ы
 
 ```text
-GET /actuator/health
-GET /api/v1/system/info
-GET /api/v1/home/demo
+GET  /actuator/health
+GET  /api/v1/system/info
+GET  /api/v1/home/demo
+POST /api/v1/activity/sync
 ```
 
-## Следующая задача
+Пример синхронизации:
 
-Добавить первый реальный vertical slice `activity`:
+```bash
+curl -X POST http://localhost:8080/api/v1/activity/sync \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-Id: demo-user-1' \
+  -H 'X-Device-Id: demo-device-1' \
+  -d '{
+    "localDate": "2026-07-25",
+    "timeZone": "Europe/Berlin",
+    "authoritativeTotal": 6842,
+    "buckets": [],
+    "syncCursor": "cursor-1",
+    "idempotencyKey": "demo-device-1-2026-07-25-1",
+    "attestation": null
+  }'
+```
+
+## Ограничение текущего activity spike
+
+- состояние теряется после перезапуска;
+- реализация рассчитана на один backend-процесс;
+- заголовки пользователя и устройства временные;
+- attestation пока не проверяется;
+- энергия не записывается в ledger.
+
+Следующая задача:
 
 ```text
-contract → migration → repository → delta calculation → ledger → tests → mobile integration
+PostgreSQL + Flyway → activity_ingestion + sync_state → транзакция → persistent idempotency
 ```

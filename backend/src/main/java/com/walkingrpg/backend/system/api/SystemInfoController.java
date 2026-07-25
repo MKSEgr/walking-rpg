@@ -13,11 +13,7 @@ public class SystemInfoController {
 
     private final Clock clock;
 
-    public SystemInfoController() {
-        this(Clock.systemUTC());
-    }
-
-    SystemInfoController(Clock clock) {
+    public SystemInfoController(Clock clock) {
         this.clock = clock;
     }
 
