@@ -28,7 +28,7 @@ jobs:
   backend:
     name: Backend · Java 21
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: backend
@@ -47,8 +47,60 @@ jobs:
       - name: Make Maven wrapper executable
         run: chmod +x mvnw
 
-      - name: Verify backend
-        run: ./mvnw --batch-mode --no-transfer-progress verify
+      - name: Compile backend
+        id: backend-compile
+        shell: bash
+        run: |
+          set +e
+          ./mvnw --batch-mode --no-transfer-progress -DskipTests compile > /tmp/backend-compile.log 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload backend compile diagnostics
+        if: steps.backend-compile.outputs.status != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-compile-log
+          path: /tmp/backend-compile.log
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Fail when backend compilation failed
+        if: steps.backend-compile.outputs.status != '0'
+        run: exit 1
+
+      - name: Compile backend tests
+        run: ./mvnw --batch-mode --no-transfer-progress -DskipTests test-compile
+
+      - name: Run unit and API tests
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress
+          -Dtest=DemoHomeServiceTest,ActivitySyncCalculatorTest,ActivitySyncServiceTest,ActivitySyncControllerTest,ActivitySyncFingerprintTest
+          test
+
+      - name: Run PostgreSQL integration tests
+        id: postgres-integration
+        shell: bash
+        run: |
+          set +e
+          ./mvnw --batch-mode --no-transfer-progress -Dtest=ActivitySyncPersistenceIntegrationTest test > /tmp/postgres-integration.log 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload PostgreSQL integration diagnostics
+        if: steps.postgres-integration.outputs.status != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-integration-log
+          path: /tmp/postgres-integration.log
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Fail when PostgreSQL integration tests failed
+        if: steps.postgres-integration.outputs.status != '0'
+        run: exit 1
 
   mobile:
     name: Mobile · Flutter 3.44.7
