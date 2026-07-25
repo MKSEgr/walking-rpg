@@ -15,7 +15,7 @@
 - PostgreSQL persistence для пользователя, устройства, дневного sync state и idempotent response;
 - Flyway-миграция первой постоянной модели;
 - SHA-256 fingerprint нормализованного activity payload без сохранения сырых bucket-ов и attestation;
-- PostgreSQL advisory transaction lock для конкурентных sync одной пары user/device;
+- PostgreSQL advisory transaction lock для конкурентных sync одного пользователя, включая разные устройства;
 - Testcontainers integration tests для миграций, persistence и конкурентной обработки;
 - ADR по постоянному activity state и транзакционной сериализации;
 - GitHub Actions CI для структуры репозитория, Java backend и Flutter mobile;
