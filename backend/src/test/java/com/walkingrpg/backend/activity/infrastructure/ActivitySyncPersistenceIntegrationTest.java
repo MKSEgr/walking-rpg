@@ -79,7 +79,7 @@ class ActivitySyncPersistenceIntegrationTest {
 
     @Test
     void shouldReplayPersistedResultAfterCreatingANewServiceInstance() {
-        ActivitySyncCommand command = command(6_842, "persisted-key");
+        ActivitySyncCommand command = command("persistent-device", 6_842, "persisted-key");
         ActivitySyncResult first = service.synchronize(command);
 
         ActivitySyncService restartedService = new ActivitySyncService(
@@ -98,7 +98,7 @@ class ActivitySyncPersistenceIntegrationTest {
         assertEquals(1, rowCount("app_user"));
         assertEquals(1, rowCount("app_device"));
 
-        ActivitySyncCommand conflicting = command(7_000, "persisted-key");
+        ActivitySyncCommand conflicting = command("persistent-device", 7_000, "persisted-key");
         assertThrows(
                 ActivitySyncConflictException.class,
                 () -> service.synchronize(conflicting)
@@ -106,16 +106,16 @@ class ActivitySyncPersistenceIntegrationTest {
     }
 
     @Test
-    void shouldSerializeConcurrentRequestsForTheSameDevice() throws Exception {
+    void shouldSerializeConcurrentRequestsAcrossDevicesForSameUser() throws Exception {
         executor = Executors.newFixedThreadPool(2);
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
 
         Future<ActivitySyncResult> first = executor.submit(
-                () -> synchronizedCall(ready, start, command(100, "concurrent-1"))
+                () -> synchronizedCall(ready, start, command("device-a", 100, "concurrent-1"))
         );
         Future<ActivitySyncResult> second = executor.submit(
-                () -> synchronizedCall(ready, start, command(200, "concurrent-2"))
+                () -> synchronizedCall(ready, start, command("device-b", 200, "concurrent-2"))
         );
 
         ready.await(10, TimeUnit.SECONDS);
@@ -133,6 +133,8 @@ class ActivitySyncPersistenceIntegrationTest {
                 )
         );
         assertEquals(2, rowCount("processed_activity_sync"));
+        assertEquals(1, rowCount("activity_sync_state"));
+        assertEquals(2, rowCount("app_device"));
     }
 
     private ActivitySyncResult synchronizedCall(
@@ -149,10 +151,14 @@ class ActivitySyncPersistenceIntegrationTest {
         return jdbcTemplate.queryForObject("SELECT count(*) FROM " + table, Integer.class);
     }
 
-    private ActivitySyncCommand command(long authoritativeTotal, String idempotencyKey) {
+    private ActivitySyncCommand command(
+            String deviceId,
+            long authoritativeTotal,
+            String idempotencyKey
+    ) {
         return new ActivitySyncCommand(
                 "persistent-user",
-                "persistent-device",
+                deviceId,
                 LocalDate.of(2026, 7, 25),
                 ZoneId.of("Europe/Berlin"),
                 authoritativeTotal,
