@@ -40,7 +40,26 @@ class ActivitySyncFingerprintTest {
         );
     }
 
+    @Test
+    void shouldIgnoreAttestationRotation() {
+        ActivitySyncCommand first = command(1_000, List.of(), "attestation-a");
+        ActivitySyncCommand retried = command(1_000, List.of(), "attestation-b");
+
+        assertEquals(
+                ActivitySyncFingerprint.sha256(first),
+                ActivitySyncFingerprint.sha256(retried)
+        );
+    }
+
     private ActivitySyncCommand command(long total, List<ActivityBucket> buckets) {
+        return command(total, buckets, null);
+    }
+
+    private ActivitySyncCommand command(
+            long total,
+            List<ActivityBucket> buckets,
+            String attestation
+    ) {
         return new ActivitySyncCommand(
                 "user-1",
                 "device-1",
@@ -50,7 +69,7 @@ class ActivitySyncFingerprintTest {
                 buckets,
                 "cursor-1",
                 "sync-1",
-                null
+                attestation
         );
     }
 }
