@@ -12,6 +12,7 @@
 - модульный монолит;
 - REST/JSON;
 - PostgreSQL;
+- Flyway;
 - серверная экономика;
 - офлайн-способный mobile;
 - конфигурация баланса с возможностью вынесения в remote config;
@@ -42,49 +43,75 @@ sequenceDiagram
     participant H as Health API
     participant M as Mobile
     participant B as Backend
-    participant D as Database
+    participant D as PostgreSQL
 
     H->>M: агрегированное число шагов
     M->>B: activity sync + idempotency key
-    B->>D: проверить ранее принятый total/cursor
-    B->>B: рассчитать допустимую дельту и risk signals
-    B->>D: сохранить ingestion + ledger + progression
+    B->>D: advisory transaction lock user
+    B->>D: найти сохранённый idempotent response
+    B->>D: прочитать accepted total локального дня
+    B->>B: рассчитать допустимую дельту и risk status
+    B->>D: сохранить state + immutable sync response
     B-->>M: принято, энергия, версия состояния
 ```
+
+Операция `POST /api/v1/activity/sync` выполняется в одной транзакции. PostgreSQL advisory transaction lock сериализует запросы пользователя, в том числе с разных устройств, поэтому два backend-инстанса не могут одновременно рассчитать состояние на устаревшем total.
 
 ## 5. Инварианты
 
 1. Один `idempotencyKey` не создаёт две награды.
-2. Баланс изменяется только через ledger-запись.
-3. Клиент не задаёт итоговую награду.
-4. Дата активности хранится вместе с часовым поясом и UTC-временем.
-5. Понижение системного total не приводит к автоматическому отрицательному балансу.
-6. Любое серверное состояние имеет версию для защиты от повторной записи старых данных.
-7. Формулы баланса тестируются отдельно от web-слоя.
+2. Один ключ с другим payload возвращает конфликт.
+3. Баланс изменяется только через ledger-запись — ledger появится в first playable.
+4. Клиент не задаёт итоговую награду.
+5. Дата активности хранится вместе с часовым поясом в команде, а состояние индексируется по пользователю и локальному дню.
+6. Несколько устройств не создают отдельные reward high-watermark; cumulative total между устройствами не суммируется.
+7. Понижение системного total не приводит к автоматическому отрицательному балансу.
+8. Любое серверное состояние имеет версию для защиты от повторной записи старых данных.
+9. Формулы баланса тестируются отдельно от web-слоя.
+10. Повторный sync возвращает ранее сохранённый response, включая исходный `serverTime`.
 
-## 6. Первая схема данных
+## 6. Текущая схема данных
 
-Сущности появятся по мере вертикального среза, ориентировочный набор:
+Первая Flyway-миграция создаёт только сущности, необходимые работающему activity-sync срезу:
 
 ```text
 app_user
-device
+app_device
+activity_sync_state
+processed_activity_sync
+```
+
+`app_user` и `app_device` пока являются технической identity, полученной из временных HTTP-заголовков. `activity_sync_state` содержит общий монотонный accepted total и версию по паре user/localDate. `processed_activity_sync` хранит SHA-256 fingerprint бизнес-команды и полный response, необходимый для идемпотентного повтора.
+
+Ориентировочный дальнейший набор:
+
+```text
 consent
-activity_ingestion
-activity_daily
-sync_state
+activity_ingestion_detail
+economy_ledger
 pilot_instance
 pet_instance
 expedition
 expedition_node_progress
-economy_ledger
 reward_claim
 content_version
 ```
 
 Не создаём все таблицы заранее. Каждая миграция появляется вместе с работающей пользовательской функцией.
 
-## 7. Наблюдаемость
+## 7. Конкурентность и транзакции
+
+- web-запрос открывает Spring transaction;
+- backend получает transaction-scoped advisory lock по user;
+- затем проверяет idempotency в scope user/device/key;
+- читает и изменяет общее дневное состояние пользователя;
+- сохраняет response того же запроса;
+- commit одновременно публикует state и idempotent response;
+- rollback не оставляет частично обработанный ключ.
+
+Такой подход подходит для нескольких экземпляров модульного монолита без Redis-lock. Более сложная распределённая координация не вводится до появления измеренной необходимости.
+
+## 8. Наблюдаемость
 
 До закрытой беты должны быть:
 
@@ -96,8 +123,8 @@ content_version
 - crash reporting mobile;
 - журнал экономических операций.
 
-## 8. Границы текущего scaffold
+## 9. Границы текущей реализации
 
-Backend содержит runnable shell, демонстрационный home endpoint и первый activity-sync contract spike. Доменная логика уже проверяет положительную дельту, накопительные пороги энергии и idempotency, но repository остаётся in-memory.
+Backend содержит runnable shell, activity-sync HTTP-контракт, доменный расчёт и PostgreSQL persistence. Flyway и Testcontainers проверяют схему на чистой БД; accepted state и idempotent response переживают создание нового экземпляра сервиса.
 
-PostgreSQL включён в `compose.yaml`; постоянная модель будет добавлена отдельным persistent vertical slice с `activity_ingestion`, `sync_state`, ограничениями уникальности и транзакцией. До этой замены текущая реализация не предназначена для нескольких инстансов и теряет состояние после перезапуска.
+Пока не реализованы проверка attestation, постоянная аутентификация, подробное ingestion-хранилище, retention, economy ledger и продвижение экспедиции. Текущая энергия в response является результатом расчёта, но ещё не зачисляется в кошелёк игрока.
