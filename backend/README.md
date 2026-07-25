@@ -15,7 +15,7 @@ Java/Spring Boot backend первоначального проекта.
 - Actuator
 - Maven Wrapper
 
-Activity sync хранит принятый total, версию состояния и idempotent response в PostgreSQL. Для запросов одной пары user/device используется PostgreSQL advisory transaction lock: конкурирующие sync сериализуются не только внутри одного Java-процесса, но и между backend-инстансами.
+Activity sync хранит принятый total, версию состояния и idempotent response в PostgreSQL. Для запросов одного пользователя используется PostgreSQL advisory transaction lock: sync с разных устройств сериализуются не только внутри одного Java-процесса, но и между backend-инстансами.
 
 ## Локальный запуск
 
@@ -43,10 +43,14 @@ cd backend
 Стандартные параметры подключения:
 
 ```text
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/walking_rpg
-SPRING_DATASOURCE_USERNAME=walking_rpg
-SPRING_DATASOURCE_PASSWORD=walking_rpg_local
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=walking_rpg
+POSTGRES_USER=walking_rpg
+POSTGRES_PASSWORD=walking_rpg_local
 ```
+
+Стандартные Spring-переменные `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` и `SPRING_DATASOURCE_PASSWORD` также могут переопределить подключение.
 
 Flyway автоматически применяет миграции из `src/main/resources/db/migration`.
 
@@ -90,11 +94,11 @@ curl -X POST http://localhost:8080/api/v1/activity/sync \
 ```text
 app_user                  — временная техническая identity пользователя
 app_device                — устройство пользователя
-activity_sync_state       — последний принятый total и версия по локальному дню
+activity_sync_state       — общий high-watermark пользователя по локальному дню
 processed_activity_sync   — fingerprint запроса и неизменяемый idempotent response
 ```
 
-Сырые bucket-ы, attestation и sync cursor в БД пока не сохраняются. Для проверки повторного ключа хранится SHA-256 fingerprint нормализованной команды.
+Сырые bucket-ы, attestation и sync cursor в БД пока не сохраняются. Для проверки повторного ключа хранится SHA-256 fingerprint нормализованной бизнес-команды. Attestation в fingerprint не входит: после появления проверки он будет валидироваться отдельно для каждого запроса.
 
 ## Текущие ограничения
 
