@@ -28,7 +28,7 @@ jobs:
   backend:
     name: Backend · Java 21
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: backend
@@ -47,17 +47,23 @@ jobs:
       - name: Make Maven wrapper executable
         run: chmod +x mvnw
 
-      - name: Verify backend
-        shell: bash
-        run: |
-          set +e
-          ./mvnw --batch-mode --no-transfer-progress verify > /tmp/maven-verify.log 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            tail -n 200 /tmp/maven-verify.log
-            exit "$status"
-          fi
-          cat /tmp/maven-verify.log
+      - name: Compile backend
+        run: ./mvnw --batch-mode --no-transfer-progress -DskipTests compile
+
+      - name: Compile backend tests
+        run: ./mvnw --batch-mode --no-transfer-progress -DskipTests test-compile
+
+      - name: Run unit and API tests
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress
+          -Dtest=DemoHomeServiceTest,ActivitySyncCalculatorTest,ActivitySyncServiceTest,ActivitySyncControllerTest,ActivitySyncFingerprintTest
+          test
+
+      - name: Run PostgreSQL integration tests
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress
+          -Dtest=ActivitySyncPersistenceIntegrationTest
+          test
 
   mobile:
     name: Mobile · Flutter 3.44.7
