@@ -2,6 +2,7 @@ package com.walkingrpg.backend.activity.api;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncCommandFactory;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
+import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.activity.domain.ActivitySyncResult;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,14 +35,17 @@ public class ActivitySyncController {
             @RequestHeader(DEVICE_HEADER) String deviceId,
             @Valid @RequestBody ActivitySyncRequest request
     ) {
-        ActivitySyncResult result = activitySyncService.synchronize(
+        ActivitySyncOutcome outcome = activitySyncService.synchronize(
                 commandFactory.create(userId, deviceId, request)
         );
+        ActivitySyncResult result = outcome.activity();
 
         return new ActivitySyncResponse(
                 result.acceptedTotal(),
                 result.acceptedDelta(),
                 result.energyGranted(),
+                outcome.energyBalanceAfter(),
+                outcome.economyVersion(),
                 result.riskStatus(),
                 result.stateVersion(),
                 result.serverTime()

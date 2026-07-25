@@ -17,6 +17,8 @@ Java/Spring Boot backend первоначального проекта.
 
 Activity sync хранит принятый total, версию состояния и idempotent response в PostgreSQL. Для запросов одного пользователя используется PostgreSQL advisory transaction lock: sync с разных устройств сериализуются не только внутри одного Java-процесса, но и между backend-инстансами.
 
+Положительная `energyGranted` проводится через economy module: wallet row блокируется, баланс обновляется, ledger entry добавляется, а итоговый economy snapshot сохраняется вместе с activity response в одной транзакции.
+
 ## Локальный запуск
 
 Из корня репозитория запустить PostgreSQL:
@@ -60,7 +62,13 @@ Flyway автоматически применяет миграции из `src/
 ./mvnw verify
 ```
 
-Интеграционные тесты используют Testcontainers и требуют доступный Docker daemon. Они поднимают чистый PostgreSQL, применяют Flyway и проверяют постоянную idempotency и сериализацию конкурентных запросов.
+Интеграционные тесты используют Testcontainers и требуют доступный Docker daemon. Они поднимают чистый PostgreSQL, применяют Flyway и проверяют:
+
+- постоянную idempotency;
+- сериализацию конкурентных запросов;
+- wallet и ledger;
+- отсутствие ledger entry без пересечения энергетического порога;
+- rollback activity/economy состояния при ошибке в конце транзакции.
 
 ## Endpoint-ы
 
@@ -89,22 +97,42 @@ curl -X POST http://localhost:8080/api/v1/activity/sync \
   }'
 ```
 
+Фрагмент response:
+
+```json
+{
+  "acceptedTotal": 6842,
+  "acceptedDelta": 6842,
+  "energyGranted": 68,
+  "energyBalanceAfter": 68,
+  "economyVersion": 1,
+  "riskStatus": "ACCEPTED",
+  "stateVersion": 1,
+  "serverTime": "2026-07-25T12:00:00Z"
+}
+```
+
 ## Что сохраняется
 
 ```text
 app_user                  — временная техническая identity пользователя
 app_device                — устройство пользователя
 activity_sync_state       — общий high-watermark пользователя по локальному дню
-processed_activity_sync   — fingerprint запроса и неизменяемый idempotent response
+processed_activity_sync   — fingerprint и неизменяемый activity/economy response
+economy_wallet            — текущий баланс ENERGY и его версия
+economy_ledger            — append-only журнал ненулевых изменений баланса
 ```
 
 Сырые bucket-ы, attestation и sync cursor в БД пока не сохраняются. Для проверки повторного ключа хранится SHA-256 fingerprint нормализованной бизнес-команды. Attestation в fingerprint не входит: после появления проверки он будет валидироваться отдельно для каждого запроса.
+
+`energyBalanceAfter` — snapshot после исходной операции. Повтор старого idempotency key возвращает тот же snapshot, даже если более новые операции уже изменили актуальный баланс.
 
 ## Текущие ограничения
 
 - заголовки пользователя и устройства временные;
 - attestation пока не проверяется;
-- энергия не записывается в экономический ledger;
+- поддерживается только начисление ENERGY, без списания;
+- отдельный production wallet/home query endpoint ещё не добавлен;
 - для `processed_activity_sync` ещё не реализована retention-политика;
 - mobile пока не вызывает endpoint;
 - модель `app_user`/`app_device` техническая и будет заменена или расширена при появлении аутентификации.
@@ -112,5 +140,5 @@ processed_activity_sync   — fingerprint запроса и неизменяем
 Следующая продуктовая задача:
 
 ```text
-persistent activity sync → economy ledger → энергия экспедиции → один игровой узел
+activity sync → economy ledger → production home state → трата энергии → один узел экспедиции
 ```

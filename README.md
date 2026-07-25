@@ -10,6 +10,7 @@
 - Java/Spring Boot backend;
 - Flutter mobile shell с демонстрационным главным экраном;
 - activity-sync контракт с PostgreSQL persistence и idempotency;
+- economy wallet и append-only ENERGY ledger;
 - черновая архитектура и API;
 - roadmap и стартовый backlog;
 - ADR с ключевыми решениями;
@@ -34,7 +35,7 @@
 После открытия pull request GitHub Actions выполняет:
 
 - проверку структуры репозитория;
-- `./mvnw verify` на Java 21, включая PostgreSQL integration tests через Testcontainers;
+- compile, unit/API и PostgreSQL Testcontainers tests на Java 21;
 - `dart format`, `flutter analyze` и `flutter test` на Flutter 3.44.7.
 
 Локальная структурная проверка:
@@ -107,16 +108,17 @@ Windows PowerShell:
 docker compose up -d postgres
 ```
 
-Backend подключается к PostgreSQL по умолчанию и автоматически применяет Flyway-миграции. Accepted activity state и idempotent response сохраняются между перезапусками. Дневной reward high-watermark общий для пользователя, поэтому разные устройства не создают независимое начисление за один cumulative total.
+Backend подключается к PostgreSQL по умолчанию и автоматически применяет Flyway-миграции. Accepted activity state, idempotent response, ENERGY wallet и ledger сохраняются между перезапусками. Дневной reward high-watermark общий для пользователя, поэтому разные устройства не создают независимое начисление за один cumulative total.
 
 ## Текущая вертикальная цель
 
 ```text
 реальные шаги
 → идемпотентная синхронизация
-→ PostgreSQL state
-→ economy ledger
-→ энергия экспедиции
+→ PostgreSQL activity state
+→ economy wallet и ledger
+→ production home state
+→ трата энергии
 → один игровой узел
 → одно событие
 ```

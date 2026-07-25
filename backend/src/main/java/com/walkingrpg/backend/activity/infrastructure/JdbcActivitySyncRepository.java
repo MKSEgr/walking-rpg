@@ -10,6 +10,7 @@ import java.util.Optional;
 import com.walkingrpg.backend.activity.domain.ActivityDayKey;
 import com.walkingrpg.backend.activity.domain.ActivityDayState;
 import com.walkingrpg.backend.activity.domain.ActivityRiskStatus;
+import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.activity.domain.ActivitySyncResult;
 import com.walkingrpg.backend.activity.domain.IdempotencyScope;
 import com.walkingrpg.backend.activity.domain.ProcessedActivitySync;
@@ -107,6 +108,8 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                        accepted_total,
                        accepted_delta,
                        energy_granted,
+                       energy_balance_after,
+                       economy_version,
                        risk_status,
                        state_version,
                        server_time
@@ -116,13 +119,17 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                   AND idempotency_key = ?
                 """, (resultSet, rowNumber) -> new ProcessedActivitySync(
                 resultSet.getString("request_fingerprint"),
-                new ActivitySyncResult(
-                        resultSet.getLong("accepted_total"),
-                        resultSet.getLong("accepted_delta"),
-                        resultSet.getLong("energy_granted"),
-                        ActivityRiskStatus.valueOf(resultSet.getString("risk_status")),
-                        resultSet.getLong("state_version"),
-                        resultSet.getTimestamp("server_time").toInstant()
+                new ActivitySyncOutcome(
+                        new ActivitySyncResult(
+                                resultSet.getLong("accepted_total"),
+                                resultSet.getLong("accepted_delta"),
+                                resultSet.getLong("energy_granted"),
+                                ActivityRiskStatus.valueOf(resultSet.getString("risk_status")),
+                                resultSet.getLong("state_version"),
+                                resultSet.getTimestamp("server_time").toInstant()
+                        ),
+                        resultSet.getLong("energy_balance_after"),
+                        resultSet.getLong("economy_version")
                 )
         ), scope.userId(), scope.deviceId(), scope.idempotencyKey());
         return processed.stream().findFirst();
@@ -133,7 +140,8 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
             IdempotencyScope scope,
             ProcessedActivitySync processedSync
     ) {
-        ActivitySyncResult result = processedSync.result();
+        ActivitySyncOutcome outcome = processedSync.outcome();
+        ActivitySyncResult result = outcome.activity();
         jdbcTemplate.update("""
                 INSERT INTO processed_activity_sync (
                     user_id,
@@ -143,12 +151,14 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                     accepted_total,
                     accepted_delta,
                     energy_granted,
+                    energy_balance_after,
+                    economy_version,
                     risk_status,
                     state_version,
                     server_time,
                     created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
                 """,
                 scope.userId(),
                 scope.deviceId(),
@@ -157,6 +167,8 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                 result.acceptedTotal(),
                 result.acceptedDelta(),
                 result.energyGranted(),
+                outcome.energyBalanceAfter(),
+                outcome.economyVersion(),
                 result.riskStatus().name(),
                 result.stateVersion(),
                 Timestamp.from(result.serverTime())

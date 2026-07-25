@@ -8,6 +8,8 @@ import com.walkingrpg.backend.activity.application.ActivitySyncCommandFactory;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCalculator;
 import com.walkingrpg.backend.activity.infrastructure.InMemoryActivitySyncRepository;
+import com.walkingrpg.backend.economy.application.EconomyService;
+import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,7 @@ class ActivitySyncControllerTest {
         ActivitySyncService service = new ActivitySyncService(
                 new InMemoryActivitySyncRepository(),
                 new ActivitySyncCalculator(),
+                new EconomyService(new InMemoryEconomyRepository()),
                 Clock.fixed(Instant.parse("2026-07-25T12:00:00Z"), ZoneOffset.UTC)
         );
         ActivitySyncController controller = new ActivitySyncController(
@@ -40,7 +43,7 @@ class ActivitySyncControllerTest {
     }
 
     @Test
-    void shouldSynchronizeAuthoritativeTotal() throws Exception {
+    void shouldSynchronizeAuthoritativeTotalAndReturnWalletSnapshot() throws Exception {
         mockMvc.perform(post("/api/v1/activity/sync")
                         .header(ActivitySyncController.USER_HEADER, "user-1")
                         .header(ActivitySyncController.DEVICE_HEADER, "device-1")
@@ -60,6 +63,8 @@ class ActivitySyncControllerTest {
                 .andExpect(jsonPath("$.acceptedTotal").value(6842))
                 .andExpect(jsonPath("$.acceptedDelta").value(6842))
                 .andExpect(jsonPath("$.energyGranted").value(68))
+                .andExpect(jsonPath("$.energyBalanceAfter").value(68))
+                .andExpect(jsonPath("$.economyVersion").value(1))
                 .andExpect(jsonPath("$.riskStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.stateVersion").value(1))
                 .andExpect(jsonPath("$.serverTime").value("2026-07-25T12:00:00Z"));
