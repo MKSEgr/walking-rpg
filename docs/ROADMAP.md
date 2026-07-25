@@ -42,23 +42,25 @@ Roadmap отражает порядок снижения рисков, а не �
 - [x] Добавить PostgreSQL integration tests
 - [x] Сериализовать конкурентные sync через user-level PostgreSQL advisory lock
 - [ ] Зафиксировать retention для processed sync
-- [ ] Подключить mobile к backend
+- [ ] Вызвать activity sync из mobile
 
 **Выход:** повторная синхронизация не создаёт повторную награду и сохраняет состояние после перезапуска.
 
 ## Milestone 3 — First playable
 
-- [ ] Один пилот
-- [ ] Один питомец
-- [ ] Одна экспедиция
+- [ ] Один сохраняемый пилот
+- [ ] Один сохраняемый питомец
+- [ ] Одна сохраняемая экспедиция
 - [ ] Один узел
 - [x] Энергия из шагов
 - [ ] Одно событие
 - [ ] Одна награда
 - [x] Economy wallet и ledger
 - [x] Транзакционная связь activity sync → economy credit
-- [ ] Production `GET /api/v1/home`
-- [ ] Экран результата
+- [x] Production `GET /api/v1/home`
+- [x] Flutter читает production home state
+- [x] Starter-template пилота, питомца и экспедиции
+- [ ] Экран результата экспедиции
 
 **Выход:** пользователь проходит реальные шаги и завершает одно игровое событие.
 

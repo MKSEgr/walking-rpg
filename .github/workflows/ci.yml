@@ -76,7 +76,7 @@ jobs:
       - name: Run unit and API tests
         run: >-
           ./mvnw --batch-mode --no-transfer-progress
-          -Dtest=DemoHomeServiceTest,ActivitySyncCalculatorTest,ActivitySyncServiceTest,ActivitySyncControllerTest,ActivitySyncFingerprintTest,EconomyServiceTest
+          -Dtest=DemoHomeServiceTest,HomeQueryFactoryTest,HomeServiceTest,HomeControllerTest,ActivitySyncCalculatorTest,ActivitySyncServiceTest,ActivitySyncControllerTest,ActivitySyncFingerprintTest,EconomyServiceTest
           test
 
       - name: Run PostgreSQL integration tests
@@ -84,7 +84,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          ./mvnw --batch-mode --no-transfer-progress -Dtest=ActivitySyncPersistenceIntegrationTest test > /tmp/postgres-integration.log 2>&1
+          ./mvnw --batch-mode --no-transfer-progress -Dtest=ActivitySyncPersistenceIntegrationTest,HomeReadIntegrationTest test > /tmp/postgres-integration.log 2>&1
           status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0

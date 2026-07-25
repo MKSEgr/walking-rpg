@@ -24,7 +24,7 @@
 - часовой пояс сохраняется;
 - операция диагностируется по trace ID.
 
-**Статус backend:** реализовано, кроме retention и подключения mobile.
+**Статус backend:** реализовано, кроме retention. Mobile пока не вызывает activity sync.
 
 ### US-003. Получить энергию
 
@@ -37,7 +37,7 @@
 - mobile получает новое состояние;
 - unit test покрывает граничные значения.
 
-**Статус backend:** формула, wallet, ledger, идемпотентный balance snapshot и PostgreSQL integration tests реализованы. Остаётся mobile HTTP integration.
+**Статус:** backend формула, wallet, ledger и production home query реализованы. Flutter получает и отображает актуальный ENERGY balance. Следующий шаг — отправка реальных шагов из mobile.
 
 ### US-004. Продвинуть экспедицию
 

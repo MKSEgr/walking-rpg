@@ -1,8 +1,15 @@
 class HomeSnapshot {
   const HomeSnapshot({
+    required this.localDate,
+    required this.timeZone,
     required this.dailySteps,
     required this.dailyGoal,
     required this.availableEnergy,
+    required this.activityStateVersion,
+    required this.economyVersion,
+    required this.lastActivitySyncAt,
+    required this.serverTime,
+    required this.contentVersion,
     required this.expeditionName,
     required this.expeditionProgress,
     required this.requiredEnergy,
@@ -12,9 +19,42 @@ class HomeSnapshot {
     required this.petLevel,
   });
 
+  factory HomeSnapshot.fromJson(Map<String, dynamic> json) {
+    final Map<String, dynamic> pilot = _readMap(json, 'pilot');
+    final Map<String, dynamic> pet = _readMap(json, 'pet');
+    final Map<String, dynamic> expedition = _readMap(json, 'expedition');
+
+    return HomeSnapshot(
+      localDate: _readString(json, 'localDate'),
+      timeZone: _readNullableString(json, 'timeZone'),
+      dailySteps: _readInt(json, 'dailySteps'),
+      dailyGoal: _readInt(json, 'dailyGoal'),
+      availableEnergy: _readInt(json, 'availableEnergy'),
+      activityStateVersion: _readInt(json, 'activityStateVersion'),
+      economyVersion: _readInt(json, 'economyVersion'),
+      lastActivitySyncAt: _readNullableString(json, 'lastActivitySyncAt'),
+      serverTime: _readString(json, 'serverTime'),
+      contentVersion: _readString(json, 'contentVersion'),
+      expeditionName: _readString(expedition, 'name'),
+      expeditionProgress: _readInt(expedition, 'progress'),
+      requiredEnergy: _readInt(expedition, 'requiredEnergy'),
+      pilotName: _readString(pilot, 'name'),
+      pilotLevel: _readInt(pilot, 'level'),
+      petName: _readString(pet, 'name'),
+      petLevel: _readInt(pet, 'level'),
+    );
+  }
+
+  final String localDate;
+  final String? timeZone;
   final int dailySteps;
   final int dailyGoal;
   final int availableEnergy;
+  final int activityStateVersion;
+  final int economyVersion;
+  final String? lastActivitySyncAt;
+  final String serverTime;
+  final String contentVersion;
   final String expeditionName;
   final int expeditionProgress;
   final int requiredEnergy;
@@ -37,10 +77,17 @@ class HomeSnapshot {
     return (expeditionProgress / requiredEnergy).clamp(0.0, 1.0).toDouble();
   }
 
-  static const demo = HomeSnapshot(
+  static const HomeSnapshot demo = HomeSnapshot(
+    localDate: '2026-07-25',
+    timeZone: 'UTC',
     dailySteps: 0,
     dailyGoal: 6000,
     availableEnergy: 0,
+    activityStateVersion: 0,
+    economyVersion: 0,
+    lastActivitySyncAt: null,
+    serverTime: '2026-07-25T12:00:00Z',
+    contentVersion: 'starter-v1',
     expeditionName: 'Сигнал из туманного сектора',
     expeditionProgress: 0,
     requiredEnergy: 30,
@@ -49,4 +96,48 @@ class HomeSnapshot {
     petName: 'Искра',
     petLevel: 1,
   );
+
+  static int _readInt(Map<String, dynamic> json, String field) {
+    final Object? value = json[field];
+    if (value is int) {
+      return value;
+    }
+    if (value is num && value == value.roundToDouble()) {
+      return value.toInt();
+    }
+    throw FormatException('$field должен быть целым числом');
+  }
+
+  static Map<String, dynamic> _readMap(
+    Map<String, dynamic> json,
+    String field,
+  ) {
+    final Object? value = json[field];
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    throw FormatException('$field должен быть JSON-объектом');
+  }
+
+  static String? _readNullableString(
+    Map<String, dynamic> json,
+    String field,
+  ) {
+    final Object? value = json[field];
+    if (value == null) {
+      return null;
+    }
+    if (value is String) {
+      return value;
+    }
+    throw FormatException('$field должен быть строкой или null');
+  }
+
+  static String _readString(Map<String, dynamic> json, String field) {
+    final Object? value = json[field];
+    if (value is String && value.isNotEmpty) {
+      return value;
+    }
+    throw FormatException('$field должен быть непустой строкой');
+  }
 }

@@ -24,6 +24,13 @@
 - economy-level защита от повторного source credit;
 - транзакционный rollback-тест activity state + wallet + ledger + processed response;
 - ADR по economy wallet/ledger;
+- production `GET /api/v1/home` с реальными activity/economy данными;
+- read-only home projection без создания технического пользователя или кошелька;
+- версионированный starter content `starter-v1` для пилота, питомца и экспедиции;
+- Flutter HTTP client без дополнительной сетевой зависимости;
+- loading/error/retry/demo-fallback состояния главного экрана;
+- backend unit/API/PostgreSQL и mobile mapping/client/widget tests для home slice;
+- ADR по production home read-model;
 - GitHub Actions CI для структуры репозитория, Java backend и Flutter mobile;
 - шаблон pull request с критериями проверки.
 
@@ -33,8 +40,9 @@
 - activity sync выполняется в одной транзакции;
 - положительная энергия проводится через ledger в той же транзакции;
 - processed response хранит activity и economy snapshot для точного идемпотентного повтора;
+- Flutter home screen загружает серверное состояние вместо безусловного `HomeSnapshot.demo`;
 - документация веток приведена к фактической основной ветке `master`;
-- roadmap отмечает созданный удалённый репозиторий, CI, persistent activity slice и первый economy slice.
+- roadmap отмечает созданный удалённый репозиторий, CI, persistent activity/economy slices и production home query.
 
 ## [0.1.0] — 2026-07-25
 

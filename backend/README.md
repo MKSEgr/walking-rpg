@@ -19,6 +19,8 @@ Activity sync хранит принятый total, версию состояни
 
 Положительная `energyGranted` проводится через economy module: wallet row блокируется, баланс обновляется, ledger entry добавляется, а итоговый economy snapshot сохраняется вместе с activity response в одной транзакции.
 
+Production home read-model объединяет дневной activity state и актуальный ENERGY wallet без изменения БД. Пилот, питомец и экспедиция пока приходят из версионированного `starter-v1`; изменяемые игровые экземпляры появятся вместе с продвижением экспедиции.
+
 ## Локальный запуск
 
 Из корня репозитория запустить PostgreSQL:
@@ -68,7 +70,9 @@ Flyway автоматически применяет миграции из `src/
 - сериализацию конкурентных запросов;
 - wallet и ledger;
 - отсутствие ledger entry без пересечения энергетического порога;
-- rollback activity/economy состояния при ошибке в конце транзакции.
+- rollback activity/economy состояния при ошибке в конце транзакции;
+- production home projection для текущего и другого локального дня;
+- zero-state неизвестного пользователя без побочных записей.
 
 ## Endpoint-ы
 
@@ -76,10 +80,11 @@ Flyway автоматически применяет миграции из `src/
 GET  /actuator/health
 GET  /api/v1/system/info
 GET  /api/v1/home/demo
+GET  /api/v1/home?localDate=YYYY-MM-DD
 POST /api/v1/activity/sync
 ```
 
-Пример синхронизации:
+### Синхронизация активности
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/activity/sync \
@@ -112,6 +117,58 @@ curl -X POST http://localhost:8080/api/v1/activity/sync \
 }
 ```
 
+### Production home
+
+```bash
+curl 'http://localhost:8080/api/v1/home?localDate=2026-07-25' \
+  -H 'X-User-Id: demo-user-1'
+```
+
+```json
+{
+  "localDate": "2026-07-25",
+  "timeZone": "Europe/Berlin",
+  "dailySteps": 6842,
+  "dailyGoal": 6000,
+  "availableEnergy": 68,
+  "activityStateVersion": 1,
+  "economyVersion": 1,
+  "lastActivitySyncAt": "2026-07-25T12:00:00Z",
+  "serverTime": "2026-07-25T12:01:00Z",
+  "contentVersion": "starter-v1",
+  "pilot": {
+    "name": "Навигатор",
+    "level": 1,
+    "currentExperience": 20,
+    "nextLevelExperience": 100,
+    "specialization": "Не выбрана"
+  },
+  "pet": {
+    "name": "Искра",
+    "species": "Люмин",
+    "level": 1,
+    "bond": 10,
+    "trait": "Чуткий разведчик"
+  },
+  "expedition": {
+    "name": "Сигнал из туманного сектора",
+    "currentNode": "Внешний маяк",
+    "progress": 0,
+    "requiredEnergy": 30
+  }
+}
+```
+
+Семантика:
+
+- `localDate` передаёт клиент, потому что backend не должен угадывать календарный день пользователя;
+- `timeZone` берётся из сохранённого activity state для этого дня и может быть `null`;
+- шаги относятся к запрошенному локальному дню;
+- ENERGY balance является текущим глобальным балансом пользователя и не обнуляется при смене даты;
+- неизвестный user/date возвращает нули вместо 404;
+- `GET` не создаёт `app_user`, wallet или игровой прогресс;
+- `contentVersion=starter-v1` явно показывает, что pilot/pet/expedition пока являются server-owned starter template.
+
 ## Что сохраняется
 
 ```text
@@ -125,20 +182,21 @@ economy_ledger            — append-only журнал ненулевых изм
 
 Сырые bucket-ы, attestation и sync cursor в БД пока не сохраняются. Для проверки повторного ключа хранится SHA-256 fingerprint нормализованной бизнес-команды. Attestation в fingerprint не входит: после появления проверки он будет валидироваться отдельно для каждого запроса.
 
-`energyBalanceAfter` — snapshot после исходной операции. Повтор старого idempotency key возвращает тот же snapshot, даже если более новые операции уже изменили актуальный баланс.
+`energyBalanceAfter` — snapshot после исходной операции. Повтор старого idempotency key возвращает тот же snapshot, даже если более новые операции уже изменили актуальный баланс. `GET /home` возвращает уже самое новое агрегированное состояние.
 
 ## Текущие ограничения
 
 - заголовки пользователя и устройства временные;
 - attestation пока не проверяется;
 - поддерживается только начисление ENERGY, без списания;
-- отдельный production wallet/home query endpoint ещё не добавлен;
+- pilot/pet/expedition в home response пока не являются изменяемыми записями;
 - для `processed_activity_sync` ещё не реализована retention-политика;
-- mobile пока не вызывает endpoint;
+- mobile читает home, но пока не отправляет activity sync;
+- нет offline cache;
 - модель `app_user`/`app_device` техническая и будет заменена или расширена при появлении аутентификации.
 
 Следующая продуктовая задача:
 
 ```text
-activity sync → economy ledger → production home state → трата энергии → один узел экспедиции
+production home → persistent expedition → debit ENERGY → один игровой узел
 ```
