@@ -7,11 +7,13 @@ import com.walkingrpg.backend.activity.domain.ActivityDayKey;
 import com.walkingrpg.backend.activity.domain.ActivityDayState;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCalculator;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
+import com.walkingrpg.backend.activity.domain.ActivitySyncFingerprint;
 import com.walkingrpg.backend.activity.domain.ActivitySyncResult;
 import com.walkingrpg.backend.activity.domain.IdempotencyScope;
 import com.walkingrpg.backend.activity.domain.ProcessedActivitySync;
 import com.walkingrpg.backend.activity.infrastructure.ActivitySyncRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ActivitySyncService {
@@ -30,13 +32,19 @@ public class ActivitySyncService {
         this.clock = clock;
     }
 
-    public synchronized ActivitySyncResult synchronize(ActivitySyncCommand command) {
+    @Transactional
+    public ActivitySyncResult synchronize(ActivitySyncCommand command) {
+        Instant serverTime = Instant.now(clock);
+        repository.acquireDeviceLock(command.userId(), command.deviceId());
+        repository.registerDevice(command.userId(), command.deviceId(), serverTime);
+
         IdempotencyScope idempotencyScope = IdempotencyScope.from(command);
+        String requestFingerprint = ActivitySyncFingerprint.sha256(command);
         ProcessedActivitySync processed = repository.findProcessed(idempotencyScope)
                 .orElse(null);
 
         if (processed != null) {
-            if (!processed.command().equals(command)) {
+            if (!processed.requestFingerprint().equals(requestFingerprint)) {
                 throw new ActivitySyncConflictException(
                         "idempotencyKey уже использован для другого запроса"
                 );
@@ -47,18 +55,18 @@ public class ActivitySyncService {
         ActivityDayKey dayKey = ActivityDayKey.from(command);
         ActivityDayState currentState = repository.findState(dayKey)
                 .orElse(ActivityDayState.initial());
-        Instant serverTime = Instant.now(clock);
         ActivitySyncResult result = calculator.calculate(currentState, command, serverTime);
 
         if (result.acceptedTotal() > currentState.acceptedTotal()) {
             repository.saveState(
                     dayKey,
-                    new ActivityDayState(result.acceptedTotal(), result.stateVersion())
+                    new ActivityDayState(result.acceptedTotal(), result.stateVersion()),
+                    command.timeZone()
             );
         }
         repository.saveProcessed(
                 idempotencyScope,
-                new ProcessedActivitySync(command, result)
+                new ProcessedActivitySync(requestFingerprint, result)
         );
 
         return result;
