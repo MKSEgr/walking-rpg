@@ -9,8 +9,9 @@ Roadmap отражает порядок снижения рисков, а не �
 - [x] Создать Flutter mobile shell
 - [x] Добавить архитектуру и ADR
 - [x] Добавить локальный PostgreSQL
-- [ ] Создать удалённый Git-репозиторий
-- [ ] Настроить branch protection и CI
+- [x] Создать удалённый Git-репозиторий
+- [ ] Настроить branch protection
+- [x] Добавить CI для структуры, Java backend и Flutter mobile
 
 ## Milestone 1 — Health API spike
 
