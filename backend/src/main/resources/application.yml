@@ -2,9 +2,9 @@ spring:
   application:
     name: walking-rpg-backend
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/walking_rpg}
-    username: ${SPRING_DATASOURCE_USERNAME:walking_rpg}
-    password: ${SPRING_DATASOURCE_PASSWORD:walking_rpg_local}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:walking_rpg}
+    username: ${POSTGRES_USER:walking_rpg}
+    password: ${POSTGRES_PASSWORD:walking_rpg_local}
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
   flyway:
