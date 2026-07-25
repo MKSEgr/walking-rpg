@@ -28,7 +28,6 @@ public final class ActivitySyncFingerprint {
 
         append(canonical, "syncCursor", command.syncCursor());
         append(canonical, "idempotencyKey", command.idempotencyKey());
-        append(canonical, "attestation", command.attestation());
 
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
