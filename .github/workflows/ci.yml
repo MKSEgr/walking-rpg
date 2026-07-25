@@ -48,7 +48,27 @@ jobs:
         run: chmod +x mvnw
 
       - name: Compile backend
-        run: ./mvnw --batch-mode --no-transfer-progress -DskipTests compile
+        id: backend-compile
+        shell: bash
+        run: |
+          set +e
+          ./mvnw --batch-mode --no-transfer-progress -DskipTests compile > /tmp/backend-compile.log 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload backend compile diagnostics
+        if: steps.backend-compile.outputs.status != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-compile-log
+          path: /tmp/backend-compile.log
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Fail when backend compilation failed
+        if: steps.backend-compile.outputs.status != '0'
+        run: exit 1
 
       - name: Compile backend tests
         run: ./mvnw --batch-mode --no-transfer-progress -DskipTests test-compile
