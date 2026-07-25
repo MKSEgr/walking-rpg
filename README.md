@@ -7,12 +7,14 @@
 ## Что уже находится в репозитории
 
 - зафиксированная продуктовая концепция;
-- Java/Spring Boot backend shell;
+- Java/Spring Boot backend;
 - Flutter mobile shell с демонстрационным главным экраном;
+- activity-sync контракт с PostgreSQL persistence и idempotency;
 - черновая архитектура и API;
 - roadmap и стартовый backlog;
 - ADR с ключевыми решениями;
-- локальный PostgreSQL в Docker Compose для следующего этапа.
+- локальный PostgreSQL в Docker Compose;
+- GitHub Actions для структуры, backend и mobile.
 
 ## Структура
 
@@ -46,11 +48,13 @@
 Требования:
 
 - JDK 21;
+- Docker для PostgreSQL и интеграционных тестов;
 - доступ в интернет при первом запуске Maven Wrapper.
 
-Запуск:
+Запуск из корня репозитория:
 
 ```bash
+docker compose up -d postgres
 cd backend
 ./mvnw spring-boot:run
 ```
@@ -58,6 +62,7 @@ cd backend
 Windows:
 
 ```powershell
+docker compose up -d postgres
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
@@ -65,10 +70,13 @@ cd backend
 Проверка:
 
 ```text
-GET http://localhost:8080/actuator/health
-GET http://localhost:8080/api/v1/system/info
-GET http://localhost:8080/api/v1/home/demo
+GET  http://localhost:8080/actuator/health
+GET  http://localhost:8080/api/v1/system/info
+GET  http://localhost:8080/api/v1/home/demo
+POST http://localhost:8080/api/v1/activity/sync
 ```
+
+Подробности: [backend/README.md](backend/README.md).
 
 ## Mobile
 
@@ -95,18 +103,22 @@ Windows PowerShell:
 
 ## Локальная БД
 
-PostgreSQL пока не подключён к стартовому endpoint-у, но инфраструктура подготовлена для следующего вертикального среза:
-
 ```bash
 docker compose up -d postgres
 ```
 
-## Первая цель
+Backend подключается к PostgreSQL по умолчанию и автоматически применяет Flyway-миграции. Accepted activity state и idempotent response сохраняются между перезапусками.
 
-Реализовать путь:
+## Текущая вертикальная цель
 
 ```text
-реальные шаги → идемпотентная синхронизация → энергия → продвижение одной экспедиции → одно событие
+реальные шаги
+→ идемпотентная синхронизация
+→ PostgreSQL state
+→ economy ledger
+→ энергия экспедиции
+→ один игровой узел
+→ одно событие
 ```
 
 Подробности: [docs/ROADMAP.md](docs/ROADMAP.md).
