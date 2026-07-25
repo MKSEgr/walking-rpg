@@ -48,7 +48,16 @@ jobs:
         run: chmod +x mvnw
 
       - name: Verify backend
-        run: ./mvnw --batch-mode --no-transfer-progress verify
+        shell: bash
+        run: |
+          set +e
+          ./mvnw --batch-mode --no-transfer-progress verify > /tmp/maven-verify.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            tail -n 200 /tmp/maven-verify.log
+            exit "$status"
+          fi
+          cat /tmp/maven-verify.log
 
   mobile:
     name: Mobile · Flutter 3.44.7
