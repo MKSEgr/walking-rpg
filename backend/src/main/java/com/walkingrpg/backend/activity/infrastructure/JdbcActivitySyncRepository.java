@@ -20,7 +20,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class JdbcActivitySyncRepository implements ActivitySyncRepository {
 
-    private static final String DEVICE_LOCK_SQL = """
+    private static final String USER_LOCK_SQL = """
             SELECT pg_advisory_xact_lock(hashtextextended(?, 0))
             """;
 
@@ -31,10 +31,10 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
     }
 
     @Override
-    public void acquireDeviceLock(String userId, String deviceId) {
-        String lockKey = userId.length() + ":" + userId + deviceId.length() + ":" + deviceId;
+    public void acquireUserLock(String userId) {
+        String lockKey = userId.length() + ":" + userId;
         jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(DEVICE_LOCK_SQL)) {
+            try (PreparedStatement statement = connection.prepareStatement(USER_LOCK_SQL)) {
                 statement.setString(1, lockKey);
                 statement.execute();
             }
@@ -66,12 +66,11 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                 SELECT accepted_total, state_version
                 FROM activity_sync_state
                 WHERE user_id = ?
-                  AND device_id = ?
                   AND local_date = ?
                 """, (resultSet, rowNumber) -> new ActivityDayState(
                 resultSet.getLong("accepted_total"),
                 resultSet.getLong("state_version")
-        ), key.userId(), key.deviceId(), key.localDate());
+        ), key.userId(), key.localDate());
         return states.stream().findFirst();
     }
 
@@ -80,22 +79,20 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
         jdbcTemplate.update("""
                 INSERT INTO activity_sync_state (
                     user_id,
-                    device_id,
                     local_date,
                     accepted_total,
                     state_version,
                     time_zone,
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, now())
-                ON CONFLICT (user_id, device_id, local_date) DO UPDATE
+                VALUES (?, ?, ?, ?, ?, now())
+                ON CONFLICT (user_id, local_date) DO UPDATE
                 SET accepted_total = EXCLUDED.accepted_total,
                     state_version = EXCLUDED.state_version,
                     time_zone = EXCLUDED.time_zone,
                     updated_at = now()
                 """,
                 key.userId(),
-                key.deviceId(),
                 key.localDate(),
                 state.acceptedTotal(),
                 state.stateVersion(),
