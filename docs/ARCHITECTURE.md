@@ -47,7 +47,7 @@ sequenceDiagram
 
     H->>M: агрегированное число шагов
     M->>B: activity sync + idempotency key
-    B->>D: advisory transaction lock user/device
+    B->>D: advisory transaction lock user
     B->>D: найти сохранённый idempotent response
     B->>D: прочитать accepted total локального дня
     B->>B: рассчитать допустимую дельту и risk status
@@ -55,7 +55,7 @@ sequenceDiagram
     B-->>M: принято, энергия, версия состояния
 ```
 
-Операция `POST /api/v1/activity/sync` выполняется в одной транзакции. PostgreSQL advisory transaction lock сериализует запросы по паре `userId + deviceId`, поэтому два backend-инстанса не могут одновременно рассчитать состояние одного устройства на устаревшем total.
+Операция `POST /api/v1/activity/sync` выполняется в одной транзакции. PostgreSQL advisory transaction lock сериализует запросы пользователя, в том числе с разных устройств, поэтому два backend-инстанса не могут одновременно рассчитать состояние на устаревшем total.
 
 ## 5. Инварианты
 
@@ -63,11 +63,12 @@ sequenceDiagram
 2. Один ключ с другим payload возвращает конфликт.
 3. Баланс изменяется только через ledger-запись — ledger появится в first playable.
 4. Клиент не задаёт итоговую награду.
-5. Дата активности хранится вместе с часовым поясом в команде, а состояние индексируется по локальному дню.
-6. Понижение системного total не приводит к автоматическому отрицательному балансу.
-7. Любое серверное состояние имеет версию для защиты от повторной записи старых данных.
-8. Формулы баланса тестируются отдельно от web-слоя.
-9. Повторный sync возвращает ранее сохранённый response, включая исходный `serverTime`.
+5. Дата активности хранится вместе с часовым поясом в команде, а состояние индексируется по пользователю и локальному дню.
+6. Несколько устройств не создают отдельные reward high-watermark; cumulative total между устройствами не суммируется.
+7. Понижение системного total не приводит к автоматическому отрицательному балансу.
+8. Любое серверное состояние имеет версию для защиты от повторной записи старых данных.
+9. Формулы баланса тестируются отдельно от web-слоя.
+10. Повторный sync возвращает ранее сохранённый response, включая исходный `serverTime`.
 
 ## 6. Текущая схема данных
 
@@ -80,7 +81,7 @@ activity_sync_state
 processed_activity_sync
 ```
 
-`app_user` и `app_device` пока являются технической identity, полученной из временных HTTP-заголовков. `activity_sync_state` содержит монотонный accepted total и версию по паре user/device/localDate. `processed_activity_sync` хранит SHA-256 fingerprint команды и полный response, необходимый для идемпотентного повтора.
+`app_user` и `app_device` пока являются технической identity, полученной из временных HTTP-заголовков. `activity_sync_state` содержит общий монотонный accepted total и версию по паре user/localDate. `processed_activity_sync` хранит SHA-256 fingerprint бизнес-команды и полный response, необходимый для идемпотентного повтора.
 
 Ориентировочный дальнейший набор:
 
@@ -101,9 +102,9 @@ content_version
 ## 7. Конкурентность и транзакции
 
 - web-запрос открывает Spring transaction;
-- backend получает transaction-scoped advisory lock по user/device;
-- затем проверяет idempotency;
-- читает и изменяет дневное состояние;
+- backend получает transaction-scoped advisory lock по user;
+- затем проверяет idempotency в scope user/device/key;
+- читает и изменяет общее дневное состояние пользователя;
 - сохраняет response того же запроса;
 - commit одновременно публикует state и idempotent response;
 - rollback не оставляет частично обработанный ключ.
