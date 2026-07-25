@@ -8,9 +8,11 @@
 
 - зафиксированная продуктовая концепция;
 - Java/Spring Boot backend;
-- Flutter mobile shell с демонстрационным главным экраном;
+- Flutter mobile-клиент главного экрана;
 - activity-sync контракт с PostgreSQL persistence и idempotency;
 - economy wallet и append-only ENERGY ledger;
+- production home read-model с реальными шагами и балансом;
+- server-owned starter content пилота, питомца и экспедиции;
 - черновая архитектура и API;
 - roadmap и стартовый backlog;
 - ADR с ключевыми решениями;
@@ -74,7 +76,14 @@ cd backend
 GET  http://localhost:8080/actuator/health
 GET  http://localhost:8080/api/v1/system/info
 GET  http://localhost:8080/api/v1/home/demo
+GET  http://localhost:8080/api/v1/home?localDate=2026-07-25
 POST http://localhost:8080/api/v1/activity/sync
+```
+
+Для production home временно нужен заголовок:
+
+```text
+X-User-Id: demo-user-1
 ```
 
 Подробности: [backend/README.md](backend/README.md).
@@ -87,16 +96,31 @@ POST http://localhost:8080/api/v1/activity/sync
 cd mobile
 flutter create --platforms=android,ios --org com.walkingrpg --project-name walking_rpg_mobile .
 flutter pub get
-flutter run
 ```
 
-Или используйте скрипт:
+Android Emulator обращается к backend хоста через `10.0.2.2` — это default проекта:
+
+```bash
+flutter run \
+  --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
+  --dart-define=DEMO_USER_ID=demo-user-1
+```
+
+Для iOS Simulator обычно используется loopback хоста:
+
+```bash
+flutter run \
+  --dart-define=API_BASE_URL=http://127.0.0.1:8080 \
+  --dart-define=DEMO_USER_ID=demo-user-1
+```
+
+Для физического устройства укажите доступный устройству LAN-адрес компьютера. Пока backend недоступен, экран показывает явную ошибку, retry и отдельный переход в демонстрационное состояние — сетевые ошибки не маскируются молча.
+
+Bootstrap-скрипты host-проектов:
 
 ```bash
 ./scripts/bootstrap-mobile.sh
 ```
-
-Windows PowerShell:
 
 ```powershell
 .\scripts\bootstrap-mobile.ps1
@@ -110,6 +134,8 @@ docker compose up -d postgres
 
 Backend подключается к PostgreSQL по умолчанию и автоматически применяет Flyway-миграции. Accepted activity state, idempotent response, ENERGY wallet и ledger сохраняются между перезапусками. Дневной reward high-watermark общий для пользователя, поэтому разные устройства не создают независимое начисление за один cumulative total.
 
+`GET /api/v1/home` является read-only: неизвестный пользователь получает zero-state и starter content, но запрос не создаёт строки в БД.
+
 ## Текущая вертикальная цель
 
 ```text
@@ -117,8 +143,9 @@ Backend подключается к PostgreSQL по умолчанию и авт
 → идемпотентная синхронизация
 → PostgreSQL activity state
 → economy wallet и ledger
-→ production home state
-→ трата энергии
+→ production home state в Flutter
+→ сохраняемая экспедиция
+→ списание энергии
 → один игровой узел
 → одно событие
 ```

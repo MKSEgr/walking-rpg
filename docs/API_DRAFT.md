@@ -2,7 +2,7 @@
 
 Документ содержит направление, а не финальный OpenAPI-контракт.
 
-## Текущие scaffold endpoint-ы
+## Текущие endpoint-ы
 
 ### `GET /api/v1/system/info`
 
@@ -10,7 +10,81 @@
 
 ### `GET /api/v1/home/demo`
 
-Демонстрационное состояние главного экрана. Не является production-моделью.
+Демонстрационное состояние главного экрана без чтения PostgreSQL. Сохраняется для разработки UI и ручной диагностики, но не является production state.
+
+### `GET /api/v1/home`
+
+Production read-model главного экрана.
+
+До появления аутентификации используется временный обязательный заголовок:
+
+```text
+X-User-Id: demo-user-1
+```
+
+Query parameters:
+
+```text
+localDate=YYYY-MM-DD — обязательный локальный календарный день пользователя
+```
+
+Пример:
+
+```http
+GET /api/v1/home?localDate=2026-07-25
+X-User-Id: demo-user-1
+```
+
+Response:
+
+```json
+{
+  "localDate": "2026-07-25",
+  "timeZone": "Europe/Berlin",
+  "dailySteps": 6842,
+  "dailyGoal": 6000,
+  "availableEnergy": 68,
+  "activityStateVersion": 1,
+  "economyVersion": 1,
+  "lastActivitySyncAt": "2026-07-25T11:55:00Z",
+  "serverTime": "2026-07-25T12:00:00Z",
+  "contentVersion": "starter-v1",
+  "pilot": {
+    "name": "Навигатор",
+    "level": 1,
+    "currentExperience": 20,
+    "nextLevelExperience": 100,
+    "specialization": "Не выбрана"
+  },
+  "pet": {
+    "name": "Искра",
+    "species": "Люмин",
+    "level": 1,
+    "bond": 10,
+    "trait": "Чуткий разведчик"
+  },
+  "expedition": {
+    "name": "Сигнал из туманного сектора",
+    "currentNode": "Внешний маяк",
+    "progress": 0,
+    "requiredEnergy": 30
+  }
+}
+```
+
+Правила:
+
+- `dailySteps` и `activityStateVersion` читаются для пары `userId + localDate`;
+- `availableEnergy` и `economyVersion` являются текущим состоянием ENERGY wallet и не обнуляются при смене даты;
+- `timeZone` и `lastActivitySyncAt` могут быть `null`, если за выбранный день activity sync отсутствует;
+- неизвестный пользователь или дата возвращают zero-state вместо 404;
+- endpoint не создаёт записи и не изменяет версии;
+- `contentVersion=starter-v1` означает, что pilot/pet/expedition пока являются общей начальной конфигурацией, а не изменяемыми экземплярами пользователя.
+
+Ошибки:
+
+- отсутствующий/пустой `X-User-Id` — `400 VALIDATION_ERROR`;
+- отсутствующий/некорректный `localDate` — `400 VALIDATION_ERROR`.
 
 ### `POST /api/v1/activity/sync`
 
@@ -80,7 +154,7 @@ X-Device-Id: demo-device-1
 - `energyBalanceAfter` — баланс ENERGY сразу после этой операции;
 - `economyVersion` — версия кошелька после этой операции. Версия увеличивается только при появлении ledger entry.
 
-`riskStatus` на текущем этапе:
+`riskStatus`:
 
 ```text
 ACCEPTED          — принят положительный прирост;
@@ -88,7 +162,7 @@ NO_NEW_ACTIVITY   — total не изменился;
 TOTAL_DECREASED   — новый total меньше ранее принятого, состояние не уменьшено.
 ```
 
-Энергия рассчитывается по накопительным порогам, а не простым округлением каждой отдельной дельты:
+Энергия рассчитывается по накопительным порогам:
 
 ```text
 energyGranted = floor(newAcceptedTotal / 100)
@@ -97,7 +171,7 @@ energyGranted = floor(newAcceptedTotal / 100)
 
 #### Идемпотентный повтор
 
-Повтор идентичной бизнес-команды с тем же ключом возвращает сохранённый response, включая исходные `stateVersion`, `serverTime`, `energyBalanceAfter` и `economyVersion`. Поэтому `energyBalanceAfter` является snapshot-ом баланса после исходной операции, а не принудительным чтением самого нового баланса на момент повтора.
+Повтор идентичной бизнес-команды с тем же ключом возвращает сохранённый response, включая исходные `stateVersion`, `serverTime`, `energyBalanceAfter` и `economyVersion`. `GET /home` при этом возвращает уже актуальный текущий wallet, то есть command snapshot и query state имеют разные осознанные семантики.
 
 Повтор ключа с другим payload:
 
@@ -119,7 +193,6 @@ energyGranted = floor(newAcceptedTotal / 100)
 ## Планируемые endpoint-ы first playable
 
 ```text
-GET  /api/v1/home
 POST /api/v1/expeditions/{expeditionId}/start
 POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
@@ -132,6 +205,7 @@ GET  /api/v1/content/bootstrap
 - JSON поля — camelCase;
 - даты/время — ISO-8601;
 - все команды изменения поддерживают idempotency;
+- query endpoint-ы не должны молча создавать состояние;
 - клиент не передаёт итоговую награду;
 - баланс меняется только через ledger;
 - ошибки имеют стабильный `code`, человекочитаемый `message`, `details` и `traceId`;
@@ -145,7 +219,7 @@ GET  /api/v1/content/bootstrap
   "code": "VALIDATION_ERROR",
   "message": "Запрос не прошёл валидацию",
   "details": {
-    "authoritativeTotal": "must be greater than or equal to 0"
+    "localDate": "Дата должна быть указана в формате YYYY-MM-DD"
   },
   "traceId": "f508bf6a-73e5-4aa2-88f5-6b712a571dd6"
 }

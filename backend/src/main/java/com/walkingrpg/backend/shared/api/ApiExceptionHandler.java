@@ -6,11 +6,13 @@ import java.util.UUID;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncConflictException;
 import com.walkingrpg.backend.activity.application.ActivitySyncValidationException;
+import com.walkingrpg.backend.home.application.HomeQueryValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -35,12 +37,14 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiErrorResponse> handleActivityValidation(
             ActivitySyncValidationException exception
     ) {
-        return error(
-                HttpStatus.BAD_REQUEST,
-                "VALIDATION_ERROR",
-                exception.getMessage(),
-                Map.of("field", exception.field())
-        );
+        return fieldValidation(exception.getMessage(), exception.field());
+    }
+
+    @ExceptionHandler(HomeQueryValidationException.class)
+    ResponseEntity<ApiErrorResponse> handleHomeValidation(
+            HomeQueryValidationException exception
+    ) {
+        return fieldValidation(exception.getMessage(), exception.field());
     }
 
     @ExceptionHandler(ActivitySyncConflictException.class)
@@ -67,6 +71,18 @@ public class ApiExceptionHandler {
         );
     }
 
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    ResponseEntity<ApiErrorResponse> handleMissingParameter(
+            MissingServletRequestParameterException exception
+    ) {
+        return error(
+                HttpStatus.BAD_REQUEST,
+                "VALIDATION_ERROR",
+                "Отсутствует обязательный параметр запроса",
+                Map.of("field", exception.getParameterName())
+        );
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiErrorResponse> handleUnreadableBody(
             HttpMessageNotReadableException exception
@@ -76,6 +92,18 @@ public class ApiExceptionHandler {
                 "VALIDATION_ERROR",
                 "Тело запроса содержит некорректные данные",
                 Map.of()
+        );
+    }
+
+    private ResponseEntity<ApiErrorResponse> fieldValidation(
+            String message,
+            String field
+    ) {
+        return error(
+                HttpStatus.BAD_REQUEST,
+                "VALIDATION_ERROR",
+                message,
+                Map.of("field", field)
         );
     }
 
