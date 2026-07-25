@@ -20,7 +20,7 @@
 
 ## 3. Модули backend
 
-Планируемые функциональные области:
+Функциональные области:
 
 ```text
 identity       — профиль, устройства, согласия
@@ -36,59 +36,67 @@ shared         — только действительно общие прими
 
 Пакеты группируются по функциональности. Не создаётся единый глобальный слой `controller/service/repository` на весь проект.
 
-## 4. Поток активности
+## 4. Поток активности и энергии
 
 ```mermaid
 sequenceDiagram
     participant H as Health API
     participant M as Mobile
-    participant B as Backend
+    participant A as Activity module
+    participant E as Economy module
     participant D as PostgreSQL
 
     H->>M: агрегированное число шагов
-    M->>B: activity sync + idempotency key
-    B->>D: advisory transaction lock user
-    B->>D: найти сохранённый idempotent response
-    B->>D: прочитать accepted total локального дня
-    B->>B: рассчитать допустимую дельту и risk status
-    B->>D: сохранить state + immutable sync response
-    B-->>M: принято, энергия, версия состояния
+    M->>A: activity sync + idempotency key
+    A->>D: advisory transaction lock user
+    A->>D: найти сохранённый idempotent response
+    A->>D: прочитать accepted total локального дня
+    A->>A: рассчитать допустимую дельту и energyGranted
+    A->>E: credit ENERGY по source ACTIVITY_SYNC
+    E->>D: lock/create wallet, append ledger, update balance
+    A->>D: сохранить activity state + полный response snapshot
+    A-->>M: принято, начисление, balanceAfter, версии
 ```
 
-Операция `POST /api/v1/activity/sync` выполняется в одной транзакции. PostgreSQL advisory transaction lock сериализует запросы пользователя, в том числе с разных устройств, поэтому два backend-инстанса не могут одновременно рассчитать состояние на устаревшем total.
+Операция `POST /api/v1/activity/sync` выполняется в одной транзакции. PostgreSQL advisory transaction lock сериализует activity-запросы пользователя, в том числе с разных устройств. Economy module дополнительно блокирует строку кошелька `FOR UPDATE`, чтобы будущие источники начислений и списаний не могли изменить один баланс одновременно.
 
 ## 5. Инварианты
 
 1. Один `idempotencyKey` не создаёт две награды.
 2. Один ключ с другим payload возвращает конфликт.
-3. Баланс изменяется только через ledger-запись — ledger появится в first playable.
+3. Баланс изменяется только через `economy_ledger`; `economy_wallet` является транзакционной проекцией текущего баланса.
 4. Клиент не задаёт итоговую награду.
 5. Дата активности хранится вместе с часовым поясом в команде, а состояние индексируется по пользователю и локальному дню.
 6. Несколько устройств не создают отдельные reward high-watermark; cumulative total между устройствами не суммируется.
 7. Понижение системного total не приводит к автоматическому отрицательному балансу.
 8. Любое серверное состояние имеет версию для защиты от повторной записи старых данных.
 9. Формулы баланса тестируются отдельно от web-слоя.
-10. Повторный sync возвращает ранее сохранённый response, включая исходный `serverTime`.
+10. Повторный sync возвращает ранее сохранённый response, включая исходные activity/economy версии и `serverTime`.
+11. Activity state, wallet credit, ledger entry и processed response публикуются одним commit транзакции либо не публикуются вообще.
+12. Один economy source не может создать две ledger-записи: действует уникальность `user + currency + sourceType + sourceKey`.
 
 ## 6. Текущая схема данных
 
-Первая Flyway-миграция создаёт только сущности, необходимые работающему activity-sync срезу:
+Flyway-миграции создают сущности работающего activity/economy среза:
 
 ```text
 app_user
 app_device
 activity_sync_state
 processed_activity_sync
+economy_wallet
+economy_ledger
 ```
 
-`app_user` и `app_device` пока являются технической identity, полученной из временных HTTP-заголовков. `activity_sync_state` содержит общий монотонный accepted total и версию по паре user/localDate. `processed_activity_sync` хранит SHA-256 fingerprint бизнес-команды и полный response, необходимый для идемпотентного повтора.
+`app_user` и `app_device` пока являются технической identity, полученной из временных HTTP-заголовков. `activity_sync_state` содержит общий монотонный accepted total и версию по паре user/localDate. `processed_activity_sync` хранит SHA-256 fingerprint бизнес-команды и полный response snapshot, необходимый для идемпотентного повтора.
+
+`economy_wallet` хранит текущий баланс и его версию по паре user/currency. `economy_ledger` является append-only журналом операций; первая валюта — `ENERGY`, первая причина — `ACTIVITY_STEPS`, первый source type — `ACTIVITY_SYNC`.
 
 Ориентировочный дальнейший набор:
 
 ```text
 consent
 activity_ingestion_detail
-economy_ledger
 pilot_instance
 pet_instance
 expedition
@@ -102,16 +110,27 @@ content_version
 ## 7. Конкурентность и транзакции
 
 - web-запрос открывает Spring transaction;
-- backend получает transaction-scoped advisory lock по user;
+- activity module получает transaction-scoped advisory lock по user;
 - затем проверяет idempotency в scope user/device/key;
-- читает и изменяет общее дневное состояние пользователя;
-- сохраняет response того же запроса;
-- commit одновременно публикует state и idempotent response;
-- rollback не оставляет частично обработанный ключ.
+- читает общий дневной activity state;
+- economy module создаёт/блокирует wallet row;
+- при положительном начислении проверяет уникальный ledger source, обновляет wallet и добавляет ledger entry;
+- activity module сохраняет state и полный processed response;
+- commit одновременно публикует activity и economy состояния;
+- rollback не оставляет частично обработанный ключ, баланс или ledger entry.
 
 Такой подход подходит для нескольких экземпляров модульного монолита без Redis-lock. Более сложная распределённая координация не вводится до появления измеренной необходимости.
 
-## 8. Наблюдаемость
+## 8. Идемпотентный economy snapshot
+
+`energyBalanceAfter` в response — баланс сразу после исходной операции. Повтор старого `idempotencyKey` возвращает тот же snapshot даже в случае, если более новые операции уже увеличили текущий баланс. Актуальное агрегированное состояние позже будет возвращаться production endpoint-ом `GET /api/v1/home`.
+
+Это разделяет две задачи:
+
+- command response остаётся строго идемпотентным;
+- query endpoint возвращает самое новое серверное состояние.
+
+## 9. Наблюдаемость
 
 До закрытой беты должны быть:
 
@@ -121,10 +140,11 @@ content_version
 - метрики ошибок синхронизации;
 - метрики повторных запросов;
 - crash reporting mobile;
-- журнал экономических операций.
+- метрики economy credit/debit;
+- контроль расхождения wallet projection и ledger sum.
 
-## 9. Границы текущей реализации
+## 10. Границы текущей реализации
 
-Backend содержит runnable shell, activity-sync HTTP-контракт, доменный расчёт и PostgreSQL persistence. Flyway и Testcontainers проверяют схему на чистой БД; accepted state и idempotent response переживают создание нового экземпляра сервиса.
+Backend содержит runnable shell, activity-sync HTTP-контракт, PostgreSQL persistence и первый economy ledger. Flyway и Testcontainers проверяют схему на чистой БД; accepted state, wallet, ledger и idempotent response переживают перезапуск.
 
-Пока не реализованы проверка attestation, постоянная аутентификация, подробное ingestion-хранилище, retention, economy ledger и продвижение экспедиции. Текущая энергия в response является результатом расчёта, но ещё не зачисляется в кошелёк игрока.
+Пока не реализованы проверка attestation, постоянная аутентификация, подробное ingestion-хранилище, retention processed sync, трата энергии, production home state, mobile integration и продвижение экспедиции.

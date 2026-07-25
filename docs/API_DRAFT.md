@@ -14,7 +14,7 @@
 
 ### `POST /api/v1/activity/sync`
 
-Первый технический срез синхронизации активности. Контракт, расчёт и PostgreSQL persistence реализованы. Accepted state и idempotent response сохраняются одной транзакцией; конкурирующие запросы пользователя сериализуются user-level advisory lock.
+Первый технический срез синхронизации активности. Контракт, расчёт, PostgreSQL persistence и начисление энергии через economy ledger реализованы. Accepted state, wallet credit, ledger entry и idempotent response сохраняются одной транзакцией; конкурирующие запросы пользователя сериализуются user-level advisory lock.
 
 До появления аутентификации и регистрации устройств используются временные обязательные заголовки:
 
@@ -55,7 +55,9 @@ X-Device-Id: demo-device-1
 - attestation может быть перевыпущен при повторе, не входит в business fingerprint и в будущем проверяется отдельно для каждого запроса;
 - reward high-watermark хранится на пользователя и локальный день, а не отдельно на каждое устройство;
 - cumulative total разных устройств не суммируется; сервер принимает только рост общего user-level total;
-- уменьшение total не создаёт отрицательную награду.
+- уменьшение total не создаёт отрицательную награду;
+- положительная `energyGranted` зачисляется только через economy ledger;
+- zero/decreased sync не создаёт ledger entry.
 
 #### Response
 
@@ -64,11 +66,19 @@ X-Device-Id: demo-device-1
   "acceptedTotal": 6842,
   "acceptedDelta": 6842,
   "energyGranted": 68,
+  "energyBalanceAfter": 68,
+  "economyVersion": 1,
   "riskStatus": "ACCEPTED",
   "stateVersion": 1,
   "serverTime": "2026-07-25T12:00:00Z"
 }
 ```
+
+Поля экономики:
+
+- `energyGranted` — сколько энергии начислено именно этой операцией;
+- `energyBalanceAfter` — баланс ENERGY сразу после этой операции;
+- `economyVersion` — версия кошелька после этой операции. Версия увеличивается только при появлении ledger entry.
 
 `riskStatus` на текущем этапе:
 
@@ -87,7 +97,7 @@ energyGranted = floor(newAcceptedTotal / 100)
 
 #### Идемпотентный повтор
 
-Повтор идентичной бизнес-команды с тем же ключом возвращает сохранённый response, включая исходные `stateVersion` и `serverTime`.
+Повтор идентичной бизнес-команды с тем же ключом возвращает сохранённый response, включая исходные `stateVersion`, `serverTime`, `energyBalanceAfter` и `economyVersion`. Поэтому `energyBalanceAfter` является snapshot-ом баланса после исходной операции, а не принудительным чтением самого нового баланса на момент повтора.
 
 Повтор ключа с другим payload:
 
@@ -123,6 +133,7 @@ GET  /api/v1/content/bootstrap
 - даты/время — ISO-8601;
 - все команды изменения поддерживают idempotency;
 - клиент не передаёт итоговую награду;
+- баланс меняется только через ledger;
 - ошибки имеют стабильный `code`, человекочитаемый `message`, `details` и `traceId`;
 - версионирование API начинается с `/api/v1`;
 - destructive изменения требуют новой версии или миграционного периода.

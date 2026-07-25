@@ -8,6 +8,8 @@ public record ActivitySyncResponse(
         long acceptedTotal,
         long acceptedDelta,
         long energyGranted,
+        long energyBalanceAfter,
+        long economyVersion,
         ActivityRiskStatus riskStatus,
         long stateVersion,
         Instant serverTime

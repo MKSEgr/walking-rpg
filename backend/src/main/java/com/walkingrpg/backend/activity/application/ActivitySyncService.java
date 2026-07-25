@@ -9,10 +9,13 @@ import com.walkingrpg.backend.activity.domain.ActivityDayState;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCalculator;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
 import com.walkingrpg.backend.activity.domain.ActivitySyncFingerprint;
+import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.activity.domain.ActivitySyncResult;
 import com.walkingrpg.backend.activity.domain.IdempotencyScope;
 import com.walkingrpg.backend.activity.domain.ProcessedActivitySync;
 import com.walkingrpg.backend.activity.infrastructure.ActivitySyncRepository;
+import com.walkingrpg.backend.economy.application.EconomyService;
+import com.walkingrpg.backend.economy.domain.WalletSnapshot;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,20 +24,23 @@ public class ActivitySyncService {
 
     private final ActivitySyncRepository repository;
     private final ActivitySyncCalculator calculator;
+    private final EconomyService economyService;
     private final Clock clock;
 
     public ActivitySyncService(
             ActivitySyncRepository repository,
             ActivitySyncCalculator calculator,
+            EconomyService economyService,
             Clock clock
     ) {
         this.repository = repository;
         this.calculator = calculator;
+        this.economyService = economyService;
         this.clock = clock;
     }
 
     @Transactional
-    public ActivitySyncResult synchronize(ActivitySyncCommand command) {
+    public ActivitySyncOutcome synchronize(ActivitySyncCommand command) {
         Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
         repository.acquireUserLock(command.userId());
         repository.registerDevice(command.userId(), command.deviceId(), serverTime);
@@ -50,13 +56,24 @@ public class ActivitySyncService {
                         "idempotencyKey уже использован для другого запроса"
                 );
             }
-            return processed.result();
+            return processed.outcome();
         }
 
         ActivityDayKey dayKey = ActivityDayKey.from(command);
         ActivityDayState currentState = repository.findState(dayKey)
                 .orElse(ActivityDayState.initial());
         ActivitySyncResult result = calculator.calculate(currentState, command, serverTime);
+        WalletSnapshot wallet = economyService.creditActivityEnergy(
+                command.userId(),
+                result.energyGranted(),
+                ledgerSourceKey(idempotencyScope),
+                serverTime
+        );
+        ActivitySyncOutcome outcome = new ActivitySyncOutcome(
+                result,
+                wallet.balance(),
+                wallet.version()
+        );
 
         if (result.acceptedTotal() > currentState.acceptedTotal()) {
             repository.saveState(
@@ -67,9 +84,17 @@ public class ActivitySyncService {
         }
         repository.saveProcessed(
                 idempotencyScope,
-                new ProcessedActivitySync(requestFingerprint, result)
+                new ProcessedActivitySync(requestFingerprint, outcome)
         );
 
-        return result;
+        return outcome;
+    }
+
+    private String ledgerSourceKey(IdempotencyScope scope) {
+        return scope.deviceId().length()
+                + ":"
+                + scope.deviceId()
+                + ":"
+                + scope.idempotencyKey();
     }
 }
