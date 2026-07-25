@@ -18,7 +18,7 @@ public class InMemoryActivitySyncRepository implements ActivitySyncRepository {
             new ConcurrentHashMap<>();
 
     @Override
-    public void acquireDeviceLock(String userId, String deviceId) {
+    public void acquireUserLock(String userId) {
         // Unit and standalone API tests execute in one process and do not need a database lock.
     }
 
