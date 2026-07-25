@@ -38,8 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ActivitySyncPersistenceIntegrationTest {
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:17-alpine");
+    static final PostgreSQLContainer POSTGRES =
+            new PostgreSQLContainer("postgres:17-alpine");
 
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {
