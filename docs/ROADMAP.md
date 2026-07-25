@@ -31,18 +31,20 @@ Roadmap отражает порядок снижения рисков, а не �
 ## Milestone 2 — Activity sync vertical slice
 
 - [x] Спроектировать контракт `/api/v1/activity/sync`
-- [ ] Добавить пользователя и устройство
-- [ ] Добавить `activity_ingestion`
-- [ ] Добавить `sync_state`
+- [x] Добавить технические `app_user` и `app_device`
+- [x] Добавить persistent sync response как первую ingestion-запись
+- [x] Добавить `activity_sync_state`
 - [x] Добавить in-memory idempotency spike
-- [ ] Перенести idempotency в PostgreSQL
+- [x] Перенести idempotency в PostgreSQL
 - [x] Рассчитать положительную дельту
-- [ ] Добавить базовые risk signals
+- [x] Добавить базовые диагностические risk status
 - [x] Добавить unit/API tests для contract spike
-- [ ] Добавить PostgreSQL integration tests
+- [x] Добавить PostgreSQL integration tests
+- [x] Сериализовать конкурентные sync через PostgreSQL advisory lock
+- [ ] Зафиксировать retention для processed sync
 - [ ] Подключить mobile к backend
 
-**Выход:** повторная синхронизация не создаёт повторную награду.
+**Выход:** повторная синхронизация не создаёт повторную награду и сохраняет состояние после перезапуска.
 
 ## Milestone 3 — First playable
 
