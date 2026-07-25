@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+set -eu
+
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+printf '%s\n' "Checking required project files..."
+for file in \
+  "$ROOT_DIR/PROJECT_VISION.md" \
+  "$ROOT_DIR/backend/pom.xml" \
+  "$ROOT_DIR/mobile/pubspec.yaml" \
+  "$ROOT_DIR/docs/ARCHITECTURE.md"; do
+  if [ ! -f "$file" ]; then
+    echo "Missing: $file" >&2
+    exit 1
+  fi
+done
+
+printf '%s\n' "Project structure is complete."
+
+if command -v java >/dev/null 2>&1; then
+  java -version
+else
+  echo "Java is not installed; backend build skipped."
+fi
+
+if command -v flutter >/dev/null 2>&1; then
+  (cd "$ROOT_DIR/mobile" && flutter pub get && flutter analyze && flutter test)
+else
+  echo "Flutter is not installed; mobile checks skipped."
+fi

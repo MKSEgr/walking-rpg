@@ -1,0 +1,55 @@
+#!/usr/bin/env sh
+set -eu
+
+BASE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PROPS="$BASE_DIR/.mvn/wrapper/maven-wrapper.properties"
+
+if [ ! -f "$PROPS" ]; then
+  echo "Missing $PROPS" >&2
+  exit 1
+fi
+
+DISTRIBUTION_URL=$(sed -n 's/^distributionUrl=//p' "$PROPS" | tail -n 1)
+if [ -z "$DISTRIBUTION_URL" ]; then
+  echo "distributionUrl is not configured" >&2
+  exit 1
+fi
+
+MAVEN_VERSION=$(printf '%s' "$DISTRIBUTION_URL" | sed -n 's#.*apache-maven/\([^/]*\)/.*#\1#p')
+if [ -n "${MAVEN_USER_HOME:-}" ]; then
+  CACHE_ROOT="$MAVEN_USER_HOME/wrapper/dists"
+else
+  CACHE_ROOT="${HOME:-$BASE_DIR/.m2}/.m2/wrapper/dists"
+fi
+INSTALL_DIR="$CACHE_ROOT/apache-maven-$MAVEN_VERSION"
+MAVEN_BIN="$INSTALL_DIR/bin/mvn"
+
+if [ ! -x "$MAVEN_BIN" ]; then
+  mkdir -p "$CACHE_ROOT"
+  TMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t walking-rpg-maven)
+  ARCHIVE="$TMP_DIR/maven.zip"
+
+  echo "Downloading Maven $MAVEN_VERSION..." >&2
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$DISTRIBUTION_URL" -o "$ARCHIVE"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q "$DISTRIBUTION_URL" -O "$ARCHIVE"
+  else
+    echo "curl or wget is required for the first wrapper run" >&2
+    rm -rf "$TMP_DIR"
+    exit 1
+  fi
+
+  if ! command -v unzip >/dev/null 2>&1; then
+    echo "unzip is required for the first wrapper run" >&2
+    rm -rf "$TMP_DIR"
+    exit 1
+  fi
+
+  unzip -q "$ARCHIVE" -d "$TMP_DIR"
+  rm -rf "$INSTALL_DIR"
+  mv "$TMP_DIR/apache-maven-$MAVEN_VERSION" "$INSTALL_DIR"
+  rm -rf "$TMP_DIR"
+fi
+
+exec "$MAVEN_BIN" "$@"

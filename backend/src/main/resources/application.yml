@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: walking-rpg-backend
+
+server:
+  port: ${BACKEND_PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+info:
+  app:
+    name: walking-rpg-backend
+    version: 0.1.0-SNAPSHOT
