@@ -99,8 +99,8 @@ void main() {
           },
     );
 
-    final MobileCommandReplayReport report =
-        await restartedRuntime.replayPending();
+    final MobileCommandReplayReport report = await restartedRuntime
+        .replayPending();
 
     expect(report.succeeded, 1);
     expect(replayedEventId, 'echo-vault-v1');

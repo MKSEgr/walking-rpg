@@ -280,9 +280,7 @@ class _HomeBody extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         Text(
-          completed
-              ? 'Экспедиция завершена'
-              : 'Экспедиция ждёт твоих шагов',
+          completed ? 'Экспедиция завершена' : 'Экспедиция ждёт твоих шагов',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),

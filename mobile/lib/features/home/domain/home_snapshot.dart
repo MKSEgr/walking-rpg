@@ -281,9 +281,7 @@ class HomeExpeditionEvent {
       outcomeSummary: HomeSnapshot._readNullableString(json, 'outcomeSummary'),
       materialReward: materialJson == null
           ? null
-          : HomeMaterialReward.fromJson(
-              _asMap(materialJson, 'materialReward'),
-            ),
+          : HomeMaterialReward.fromJson(_asMap(materialJson, 'materialReward')),
     );
   }
 
