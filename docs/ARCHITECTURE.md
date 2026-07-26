@@ -22,6 +22,7 @@
 ```text
 identity       — технические пользователи и устройства
 activity       — приём cumulative activity и high-watermark
+goal           — личная дневная цель из accepted activity history
 economy        — wallet, ledger, credit/debit
 expedition     — progress, узлы, события и команды прохождения
 progression    — pilot XP, pet bond, уровни
@@ -122,13 +123,14 @@ sequenceDiagram
 11. Activity, expedition и event command responses сохраняются backend-ом как immutable snapshots.
 12. Каждая server-команда публикует связанные изменения одним transaction commit либо полностью откатывается.
 13. Один economy source создаёт не более одной ledger-записи.
-14. `GET /home` read-only и не создаёт zero-state в БД.
-15. Health adapter не протекает в mobile domain или backend contract.
-16. Mobile сохраняет полный payload и idempotency key до первой сетевой попытки.
-17. Mobile удаляет команду только после успешного response и domain decoding.
-18. Process restart не меняет payload или idempotency key pending-команды.
-19. Outbox не является источником game state; после успеха mobile перечитывает `GET /home`.
-20. Команда одного technical owner не replay-ится под другим owner.
+14. `GET /home` read-only и не создаёт zero-state или goal snapshot в БД.
+15. Личная цель вычисляется только из accepted totals предыдущих локальных дней; текущий день исключён.
+16. Health adapter не протекает в mobile domain или backend contract.
+17. Mobile сохраняет полный payload и idempotency key до первой сетевой попытки.
+18. Mobile удаляет команду только после успешного response и domain decoding.
+19. Process restart не меняет payload или idempotency key pending-команды.
+20. Outbox не является источником game state; после успеха mobile перечитывает `GET /home`.
+21. Команда одного technical owner не replay-ится под другим owner.
 
 ## 8. Текущая backend-схема данных
 
@@ -209,7 +211,20 @@ MobileCommandRuntime
 
 Подробности: [ADR 0012](adr/0012-foreground-durable-mobile-command-outbox.md).
 
-## 12. Контент
+## 12. Личная дневная цель
+
+```text
+activity_sync_state за [localDate - 7 days, localDate)
+→ положительные accepted totals
+→ median × 1.05
+→ округление до 250 (half-up)
+→ clamp 2000..12000
+→ GET /home.dailyGoal
+```
+
+При менее чем трёх валидных днях backend возвращает стартовую цель `6000`. Отсутствующие дни не считаются нулевыми, потому что отсутствие строки не отличает день без ходьбы от дня без sync. Goal является read-only проекцией и не создаёт snapshot rows. Подробности: [ADR 0013](adr/0013-personalized-daily-step-goal.md).
+
+## 13. Контент
 
 `starter-v1` пока server-owned code content:
 
@@ -223,7 +238,7 @@ choices:      analyze-signal / trust-spark
 
 Имена, тексты и reward definitions отделены от mutable state. Перед второй главой content definition будет вынесен в версионируемое хранилище или CMS.
 
-## 13. Наблюдаемость до beta
+## 14. Наблюдаемость до beta
 
 - структурированные логи;
 - trace/correlation ID;
@@ -236,6 +251,6 @@ choices:      analyze-signal / trust-spark
 - pending/failed mobile command metrics;
 - mobile crash reporting.
 
-## 14. Границы текущей реализации
+## 15. Границы текущей реализации
 
 Не реализованы authentication, account switching, attestation, retention processed/failed commands, background Health delivery, background command worker, reachability-triggered retry, offline read cache, source metadata, полноценный risk score, несколько экспедиций, предметы, навыки и CMS.

@@ -3,6 +3,7 @@ package com.walkingrpg.backend.home.api;
 import java.time.Instant;
 import java.time.LocalDate;
 
+import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
 import com.walkingrpg.backend.home.domain.PilotSnapshot;
@@ -12,6 +13,7 @@ public record HomeSnapshotResponse(
         String timeZone,
         long dailySteps,
         long dailyGoal,
+        DailyGoalPolicySnapshot dailyGoalPolicy,
         long availableEnergy,
         long activityStateVersion,
         long economyVersion,

@@ -9,6 +9,8 @@
 - idempotent `POST /api/v1/activity/sync` и PostgreSQL activity high-watermark;
 - ENERGY wallet и append-only credit/debit ledger;
 - production `GET /api/v1/home`;
+- персональная дневная цель `adaptive-median-v1` по accepted activity history;
+- прозрачный `dailyGoalPolicy` в home response и Flutter UI;
 - persistent starter expedition и `POST /api/v1/expeditions/{expeditionId}/advance`;
 - первое событие `signal-source-v1` с двумя server-owned choices;
 - `POST /api/v1/events/{eventId}/resolve`;
@@ -34,7 +36,7 @@
 ### Changed
 
 - first playable loop завершён до состояния `COMPLETED` и persistent rewards;
-- home read-model возвращает pilot XP, pet bond, event choices и resolved outcome;
+- home read-model возвращает pilot XP, pet bond, event choices, resolved outcome и server-owned личную цель;
 - Android/iOS mobile по умолчанию использует platform health source;
 - demo activity source включается только явным feature flag;
 - mobile после каждой команды перечитывает server state без optimistic update;

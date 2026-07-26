@@ -8,6 +8,11 @@ void main() {
     expect(snapshot.dailySteps, 0);
     expect(snapshot.availableEnergy, 0);
     expect(snapshot.dailyProgress, 0);
+    expect(snapshot.dailyGoalPolicy.source, 'DEFAULT');
+    expect(
+      snapshot.dailyGoalPolicy.explanation,
+      'Стартовая личная цель: собрано 0 из 3 активных дней',
+    );
     expect(snapshot.expeditionProgressValue, 0);
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent, isNull);
@@ -20,6 +25,10 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(_readyHomeResponse());
 
     expect(snapshot.dailySteps, 6842);
+    expect(snapshot.dailyGoal, 3250);
+    expect(snapshot.dailyGoalPolicy.source, 'ADAPTIVE');
+    expect(snapshot.dailyGoalPolicy.baselineSteps, 3000);
+    expect(snapshot.dailyGoalPolicy.sampleDays, 3);
     expect(snapshot.availableEnergy, 38);
     expect(snapshot.activityStateVersion, 1);
     expect(snapshot.economyVersion, 2);
@@ -33,6 +42,23 @@ void main() {
     expect(snapshot.unlockedEvent?.choices.first.choiceId, 'analyze-signal');
     expect(snapshot.pilotCurrentExperience, 20);
     expect(snapshot.petBond, 10);
+  });
+
+  test('daily goal must match the server policy envelope', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['dailyGoal'] = 3200;
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('response without policy remains backward compatible', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response.remove('dailyGoalPolicy');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.dailyGoalPolicy.source, 'LEGACY');
+    expect(snapshot.dailyGoalPolicy.explanation, 'Личная цель');
   });
 
   test('resolved event maps selected outcome and persistent rewards', () {
@@ -94,7 +120,20 @@ Map<String, dynamic> _readyHomeResponse() {
     'localDate': '2026-07-26',
     'timeZone': 'Europe/Berlin',
     'dailySteps': 6842,
-    'dailyGoal': 6000,
+    'dailyGoal': 3250,
+    'dailyGoalPolicy': <String, dynamic>{
+      'policyVersion': 'adaptive-median-v1',
+      'source': 'ADAPTIVE',
+      'baselineSteps': 3000,
+      'sampleDays': 3,
+      'lookbackDays': 7,
+      'minimumSampleDays': 3,
+      'defaultGoal': 6000,
+      'growthPercent': 5,
+      'roundingStep': 250,
+      'minimumGoal': 2000,
+      'maximumGoal': 12000,
+    },
     'availableEnergy': 38,
     'activityStateVersion': 1,
     'economyVersion': 2,

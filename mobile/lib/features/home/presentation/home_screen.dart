@@ -265,6 +265,8 @@ class _HomeBody extends StatelessWidget {
     final String lastSync = snapshot.lastActivitySyncAt == null
         ? 'Шаги ещё не синхронизированы'
         : 'Последняя синхронизация: ${snapshot.lastActivitySyncAt}';
+    final String activitySubtitle =
+        '${snapshot.dailyGoalPolicy.explanation}\n$lastSync';
     final HomeExpeditionEvent? event = snapshot.unlockedEvent;
     final bool eventReady = event?.status == 'READY';
     final bool completed = snapshot.expeditionStatus == 'COMPLETED';
@@ -287,7 +289,7 @@ class _HomeBody extends StatelessWidget {
         const SizedBox(height: 20),
         ProgressCard(
           title: 'Сегодня: ${snapshot.dailySteps} / ${snapshot.dailyGoal}',
-          subtitle: lastSync,
+          subtitle: activitySubtitle,
           progress: snapshot.dailyProgress,
           icon: Icons.directions_walk,
         ),

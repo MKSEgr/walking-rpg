@@ -12,6 +12,7 @@
 суммарные шаги текущего дня
 → идемпотентная синхронизация активности
 → ENERGY wallet + append-only ledger
+→ home с личной дневной целью из предыдущих активных дней
 → продвижение экспедиции
 → выбор в первом событии
 → постоянные XP пилота и bond питомца
@@ -24,6 +25,7 @@
 - Flutter mobile;
 - PostgreSQL + Flyway;
 - Apple HealthKit и Google Health Connect как foreground-источники шагов;
+- server-owned персональная дневная цель по истории accepted activity;
 - development-only источник шагов для воспроизводимых локальных проверок;
 - server-authoritative ENERGY economy;
 - production `GET /api/v1/home`;
@@ -47,7 +49,7 @@ Android → Health Connect
 localDate + IANA timeZone + authoritativeTotal
 ```
 
-Клиент не рассчитывает энергию и не изменяет баланс оптимистично. После успешного `POST /api/v1/activity/sync` приложение заново читает `GET /api/v1/home`.
+Клиент не рассчитывает энергию и не изменяет баланс оптимистично. После успешного `POST /api/v1/activity/sync` приложение заново читает `GET /api/v1/home`. Backend также возвращает личную дневную цель: медиана положительных accepted total за предыдущие семь локальных дней, увеличенная на 5%, округлённая до 250 и ограниченная диапазоном 2 000–12 000. Пока собрано меньше трёх активных дней, используется стартовая цель 6 000.
 
 Текущая интеграция работает только по явному действию пользователя в foreground. Код, unit/widget tests, Android debug APK и iOS Simulator build проверены CI. Проверка чтения реальных данных на физических телефонах и часах остаётся отдельным этапом. Подробности: [docs/HEALTH_API_SPIKE.md](docs/HEALTH_API_SPIKE.md).
 
@@ -169,6 +171,7 @@ Pull request CI выполняет:
 Project structure
 Backend compile + unit/API tests
 Flyway V1–V4 + PostgreSQL Testcontainers tests
+Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build
 iOS Simulator debug build

@@ -32,6 +32,8 @@ void main() {
       );
       expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
       expect(snapshot.dailySteps, 6842);
+      expect(snapshot.dailyGoal, 3250);
+      expect(snapshot.dailyGoalPolicy.source, 'ADAPTIVE');
       expect(snapshot.availableEnergy, 38);
       expect(snapshot.expeditionStatus, 'EVENT_READY');
       expect(snapshot.unlockedEvent?.eventId, 'signal-source-v1');
@@ -68,7 +70,20 @@ Map<String, dynamic> _homeResponse() {
     'localDate': '2026-07-25',
     'timeZone': 'Europe/Berlin',
     'dailySteps': 6842,
-    'dailyGoal': 6000,
+    'dailyGoal': 3250,
+    'dailyGoalPolicy': <String, dynamic>{
+      'policyVersion': 'adaptive-median-v1',
+      'source': 'ADAPTIVE',
+      'baselineSteps': 3000,
+      'sampleDays': 3,
+      'lookbackDays': 7,
+      'minimumSampleDays': 3,
+      'defaultGoal': 6000,
+      'growthPercent': 5,
+      'roundingStep': 250,
+      'minimumGoal': 2000,
+      'maximumGoal': 12000,
+    },
     'availableEnergy': 38,
     'activityStateVersion': 1,
     'economyVersion': 2,

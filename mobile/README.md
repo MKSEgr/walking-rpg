@@ -50,6 +50,17 @@ syncCursor
 
 При повторе того же чтения после сетевой ошибки или process restart используется сохранённый idempotency key. Изменившееся чтение создаёт новую команду и выполняется после более ранней activity-команды.
 
+
+## Персональная дневная цель
+
+Mobile не вычисляет цель локально. `GET /api/v1/home` возвращает `dailyGoal` и `dailyGoalPolicy`. Карточка активности показывает:
+
+- при cold start — сколько активных дней ещё собрано до перехода к адаптивной цели;
+- при adaptive policy — baseline-медиану, количество активных дней и процент роста;
+- при rolling deploy со старым backend — нейтральную подпись без попытки восстановить формулу на клиенте.
+
+Текущая политика backend: медиана положительных accepted total за предыдущие 7 локальных дней, `+5%`, округление до 250, диапазон 2 000–12 000; при истории менее 3 дней — цель 6 000.
+
 ## Durable command outbox
 
 Одинаковый persist-before-send поток используется для:
@@ -212,7 +223,8 @@ Unit/widget tests покрывают:
 - FIFO и независимость ACTIVITY/GAMEPLAY lanes;
 - temporary/backup/corruption recovery файлового store;
 - startup replay → reload authoritative home;
-- `sync → reload authoritative home`.
+- `sync → reload authoritative home`;
+- parsing/validation `dailyGoalPolicy` и отображение default/adaptive explanation.
 
 ## Что ещё необходимо проверить на устройствах
 

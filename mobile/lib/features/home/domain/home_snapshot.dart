@@ -1,3 +1,5 @@
+import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
+
 class HomeSnapshot {
   const HomeSnapshot({
     required this.localDate,
@@ -26,9 +28,18 @@ class HomeSnapshot {
     this.pilotCurrentExperience = 0,
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
+    this.dailyGoalPolicy = const DailyGoalPolicy.legacy(),
   });
 
   factory HomeSnapshot.fromJson(Map<String, dynamic> json) {
+    final int dailyGoal = _readInt(json, 'dailyGoal');
+    final Object? dailyGoalPolicyJson = json['dailyGoalPolicy'];
+    final DailyGoalPolicy dailyGoalPolicy = dailyGoalPolicyJson == null
+        ? const DailyGoalPolicy.legacy()
+        : DailyGoalPolicy.fromJson(
+            _asMap(dailyGoalPolicyJson, 'dailyGoalPolicy'),
+          );
+    dailyGoalPolicy.validateGoal(dailyGoal);
     final Map<String, dynamic> pilot = _readMap(json, 'pilot');
     final Map<String, dynamic> pet = _readMap(json, 'pet');
     final Map<String, dynamic> expedition = _readMap(json, 'expedition');
@@ -38,7 +49,8 @@ class HomeSnapshot {
       localDate: _readString(json, 'localDate'),
       timeZone: _readNullableString(json, 'timeZone'),
       dailySteps: _readInt(json, 'dailySteps'),
-      dailyGoal: _readInt(json, 'dailyGoal'),
+      dailyGoal: dailyGoal,
+      dailyGoalPolicy: dailyGoalPolicy,
       availableEnergy: _readInt(json, 'availableEnergy'),
       activityStateVersion: _readInt(json, 'activityStateVersion'),
       economyVersion: _readInt(json, 'economyVersion'),
@@ -70,6 +82,7 @@ class HomeSnapshot {
   final String? timeZone;
   final int dailySteps;
   final int dailyGoal;
+  final DailyGoalPolicy dailyGoalPolicy;
   final int availableEnergy;
   final int activityStateVersion;
   final int economyVersion;
@@ -126,6 +139,19 @@ class HomeSnapshot {
     timeZone: 'UTC',
     dailySteps: 0,
     dailyGoal: 6000,
+    dailyGoalPolicy: DailyGoalPolicy(
+      policyVersion: 'adaptive-median-v1',
+      source: 'DEFAULT',
+      baselineSteps: null,
+      sampleDays: 0,
+      lookbackDays: 7,
+      minimumSampleDays: 3,
+      defaultGoal: 6000,
+      growthPercent: 5,
+      roundingStep: 250,
+      minimumGoal: 2000,
+      maximumGoal: 12000,
+    ),
     availableEnergy: 0,
     activityStateVersion: 0,
     economyVersion: 0,
