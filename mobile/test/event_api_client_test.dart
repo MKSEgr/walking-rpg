@@ -25,7 +25,8 @@ void main() {
       idempotencyKey: 'resolve-1',
     );
 
-    expect(transport.requestedUri?.path, '/api/v1/events/signal-source-v1/resolve');
+    expect(transport.requestedUri?.path,
+        '/api/v1/events/signal-source-v1/resolve');
     expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
     expect(transport.decodedBody?['choiceId'], 'analyze-signal');
     expect(transport.decodedBody?['idempotencyKey'], 'resolve-1');
