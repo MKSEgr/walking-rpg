@@ -123,8 +123,29 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Generate formatting diagnostics
+        id: mobile-format
+        shell: bash
+        run: |
+          dart format lib test
+          set +e
+          git diff --exit-code > /tmp/mobile-format.patch
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload mobile formatting patch
+        if: steps.mobile-format.outputs.status != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-format-diff
+          path: /tmp/mobile-format.patch
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Fail when mobile formatting changed files
+        if: steps.mobile-format.outputs.status != '0'
+        run: exit 1
 
       - name: Analyze
         run: flutter analyze --fatal-infos
