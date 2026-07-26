@@ -21,11 +21,14 @@
 - IANA device timezone provider;
 - development-only step source;
 - retry coordinator, сохраняющий idempotency key для одного reading после ошибки;
+- foreground durable mobile command outbox для activity, expedition и event-команд;
+- versioned atomic file store с temporary/backup recovery и corruption detection;
+- startup replay с прежним payload/idempotency key и authoritative home reload;
 - versioned Android/iOS host projects;
 - Android Health Connect и iOS HealthKit native configuration;
 - Android debug APK и iOS Simulator build jobs;
 - unit/API/PostgreSQL integration/mobile/platform tests;
-- ADR по activity, economy, home, expedition, event resolution и platform Health boundary;
+- ADR по activity, economy, home, expedition, event resolution, platform Health boundary и durable mobile outbox;
 - GitHub Actions CI и PR template.
 
 ### Changed
@@ -37,7 +40,8 @@
 - mobile после каждой команды перечитывает server state без optimistic update;
 - host-проекты больше не генерируются bootstrap-скриптами;
 - CI дополнительно компилирует нативные Android/iOS приложения;
-- roadmap разделяет готовую Health implementation и ещё не пройденную physical-device validation.
+- roadmap разделяет готовую Health implementation и ещё не пройденную physical-device validation;
+- mobile-команды разделены на независимые ACTIVITY/GAMEPLAY lanes с FIFO внутри каждой lane.
 
 ## [0.1.0] — 2026-07-25
 

@@ -9,6 +9,7 @@ Flutter-клиент walking-RPG. Android- и iOS-host проекты зафик
 - `health` 13.3.1;
 - `permission_handler` 12.0.3;
 - `flutter_timezone` 5.1.0;
+- `path_provider` 2.1.6 для application-support command store;
 - нативные Android/iOS host-проекты;
 - dependency-light REST transport на `dart:io`.
 
@@ -42,10 +43,35 @@ syncCursor
 3. Запрашивается read-only доступ к `STEPS`.
 4. Читается суммарное количество шагов от локальной полуночи до текущего времени.
 5. Определяется IANA timezone устройства.
-6. `ActivitySyncCoordinator` отправляет чтение в `POST /api/v1/activity/sync`.
-7. После успеха приложение полностью перечитывает `GET /api/v1/home`.
+6. `ActivitySyncCoordinator` передаёт чтение в durable command outbox.
+7. Outbox сохраняет payload и idempotency key до первой сетевой попытки.
+8. Команда отправляется в `POST /api/v1/activity/sync`.
+9. После успеха приложение полностью перечитывает `GET /api/v1/home`.
 
-При повторе того же чтения после сетевой ошибки coordinator повторно использует тот же idempotency key в пределах жизни процесса. Изменившееся чтение получает новый key.
+При повторе того же чтения после сетевой ошибки или process restart используется сохранённый idempotency key. Изменившееся чтение создаёт новую команду и выполняется после более ранней activity-команды.
+
+## Durable command outbox
+
+Одинаковый persist-before-send поток используется для:
+
+```text
+POST /api/v1/activity/sync
+POST /api/v1/expeditions/{expeditionId}/advance
+POST /api/v1/events/{eventId}/resolve
+```
+
+Versioned JSON store находится в application-support directory. Запись использует target, `.tmp` и `.bak`; при прерывании замены выбирается последняя валидная копия. Повреждённый store не перезаписывается молча.
+
+Команды разделены на две lane:
+
+```text
+ACTIVITY — синхронизация шагов
+GAMEPLAY — продвижение экспедиции и решение события
+```
+
+Внутри lane действует FIFO. Временная ошибка GAMEPLAY не блокирует ACTIVITY и наоборот. Network/transport error, `408`, `429`, `5xx` и неоднозначный response остаются pending. Подтверждённые остальные `4xx` переходят в failed и не блокируют очередь.
+
+На старте приложения pending-команды текущего технического пользователя replay-ятся один раз в foreground. После успешного replay приложение перечитывает authoritative home. Автоматического background worker-а и offline read cache пока нет.
 
 ## Минимальные платформенные настройки
 
@@ -129,7 +155,8 @@ flutter run \
 - защищённые HealthKit-данные недоступны на заблокированном устройстве;
 - IANA timezone не получена;
 - чтение системного хранилища завершилось ошибкой;
-- backend/network error.
+- backend/network error;
+- повреждённое локальное command store.
 
 Ошибка отображается через SnackBar; существующий home state остаётся доступным.
 
@@ -180,7 +207,11 @@ Unit/widget tests покрывают:
 - permanent denial;
 - Health authorization denial;
 - locked HealthKit protected data;
-- retry idempotency;
+- retry idempotency в рамках процесса и после restart;
+- persist-before-send и exact key replay для activity/expedition/event;
+- FIFO и независимость ACTIVITY/GAMEPLAY lanes;
+- temporary/backup/corruption recovery файлового store;
+- startup replay → reload authoritative home;
 - `sync → reload authoritative home`.
 
 ## Что ещё необходимо проверить на устройствах

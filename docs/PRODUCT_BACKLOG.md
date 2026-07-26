@@ -23,7 +23,7 @@
 
 Как система, я хочу принимать cumulative authoritative total и начислять только новую активность.
 
-**Статус:** реализовано с PostgreSQL, wallet/ledger, multi-device lock, Flutter client и platform source. Остались persistent mobile queue, retention и attestation.
+**Статус:** реализовано с PostgreSQL, wallet/ledger, multi-device lock, Flutter client, platform source и foreground durable outbox. Остались server-side retention и attestation.
 
 ## P0 — first playable loop
 
@@ -56,7 +56,6 @@
 
 ## P1 — после device validation
 
-- persistent mobile command queue;
 - персональная цель;
 - второй узел;
 - несколько типов событий;

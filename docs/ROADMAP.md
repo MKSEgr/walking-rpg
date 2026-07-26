@@ -59,7 +59,7 @@ Roadmap отражает порядок снижения рисков, а не �
 - [x] Подключить Flutter client
 - [x] Подключить platform `StepSource`
 - [ ] Зафиксировать retention processed sync
-- [ ] Добавить persistent mobile command queue
+- [x] Добавить foreground persistent mobile command outbox
 - [ ] Добавить attestation/risk score
 
 **Выход:** повторная синхронизация не создаёт повторную награду и сохраняет состояние после backend restart.
