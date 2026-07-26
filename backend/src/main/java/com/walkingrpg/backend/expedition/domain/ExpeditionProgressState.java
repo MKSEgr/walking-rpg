@@ -19,11 +19,15 @@ public record ExpeditionProgressState(
         if (version < 0) {
             throw new IllegalArgumentException("Версия экспедиции не может быть отрицательной");
         }
-        if (status == ExpeditionProgressStatus.EVENT_READY && unlockedEventId == null) {
-            throw new IllegalArgumentException("EVENT_READY требует unlockedEventId");
-        }
         if (status == ExpeditionProgressStatus.IN_PROGRESS && unlockedEventId != null) {
             throw new IllegalArgumentException("IN_PROGRESS не должен содержать unlockedEventId");
+        }
+        if (status != ExpeditionProgressStatus.IN_PROGRESS && unlockedEventId == null) {
+            throw new IllegalArgumentException(status + " требует unlockedEventId");
+        }
+        if (status != ExpeditionProgressStatus.IN_PROGRESS
+                && progressEnergy != requiredEnergy) {
+            throw new IllegalArgumentException(status + " требует достигнутый узел");
         }
     }
 
@@ -46,6 +50,9 @@ public record ExpeditionProgressState(
             long energy,
             ExpeditionDefinition definition
     ) {
+        if (status != ExpeditionProgressStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Продвижение возможно только из IN_PROGRESS");
+        }
         if (energy <= 0 || energy > remainingEnergy()) {
             throw new IllegalArgumentException("Некорректное количество энергии для продвижения");
         }
@@ -59,6 +66,23 @@ public record ExpeditionProgressState(
                         : ExpeditionProgressStatus.IN_PROGRESS,
                 currentNodeId,
                 reachedNode ? definition.event().eventId() : null,
+                version + 1
+        );
+    }
+
+    public ExpeditionProgressState resolve(String eventId) {
+        if (status != ExpeditionProgressStatus.EVENT_READY) {
+            throw new IllegalStateException("Разрешение возможно только из EVENT_READY");
+        }
+        if (!Objects.equals(unlockedEventId, eventId)) {
+            throw new IllegalArgumentException("Разрешается неоткрытое событие");
+        }
+        return new ExpeditionProgressState(
+                progressEnergy,
+                requiredEnergy,
+                ExpeditionProgressStatus.COMPLETED,
+                currentNodeId,
+                unlockedEventId,
                 version + 1
         );
     }

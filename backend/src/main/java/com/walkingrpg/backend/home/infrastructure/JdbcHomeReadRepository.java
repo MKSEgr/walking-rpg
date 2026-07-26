@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
+import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -12,9 +13,14 @@ import org.springframework.stereotype.Repository;
 public class JdbcHomeReadRepository implements HomeReadRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    private final StarterProgressionContent progressionContent;
 
-    public JdbcHomeReadRepository(JdbcTemplate jdbcTemplate) {
+    public JdbcHomeReadRepository(
+            JdbcTemplate jdbcTemplate,
+            StarterProgressionContent progressionContent
+    ) {
         this.jdbcTemplate = jdbcTemplate;
+        this.progressionContent = progressionContent;
     }
 
     @Override
@@ -35,7 +41,18 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        expedition.status AS expedition_status,
                        COALESCE(expedition.version, 0) AS expedition_version,
                        expedition.current_node_id,
-                       expedition.unlocked_event_id
+                       expedition.unlocked_event_id,
+                       (pilot.user_id IS NOT NULL) AS pilot_progress_present,
+                       COALESCE(pilot.level, 0) AS pilot_level,
+                       COALESCE(pilot.current_experience, 0) AS pilot_current_experience,
+                       COALESCE(pilot.next_level_experience, 0) AS pilot_next_level_experience,
+                       (pet.user_id IS NOT NULL) AS pet_progress_present,
+                       COALESCE(pet.level, 0) AS pet_level,
+                       COALESCE(pet.bond, 0) AS pet_bond,
+                       resolution.choice_id AS resolved_choice_id,
+                       resolution.choice_title AS resolved_choice_title,
+                       resolution.outcome_title,
+                       resolution.outcome_summary
                 FROM (VALUES (1)) AS anchor(value)
                 LEFT JOIN activity_sync_state activity
                   ON activity.user_id = ?
@@ -46,6 +63,16 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 LEFT JOIN expedition_progress expedition
                   ON expedition.user_id = ?
                  AND expedition.expedition_id = ?
+                LEFT JOIN pilot_progress pilot
+                  ON pilot.user_id = ?
+                 AND pilot.pilot_id = ?
+                LEFT JOIN pet_progress pet
+                  ON pet.user_id = ?
+                 AND pet.pet_id = ?
+                LEFT JOIN processed_event_resolution resolution
+                  ON resolution.user_id = ?
+                 AND resolution.expedition_id = ?
+                 AND resolution.event_id = expedition.unlocked_event_id
                 """, (resultSet, rowNumber) -> {
             Timestamp lastSync = resultSet.getTimestamp("last_activity_sync_at");
             Instant lastActivitySyncAt = lastSync == null ? null : lastSync.toInstant();
@@ -62,9 +89,32 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                     resultSet.getString("expedition_status"),
                     resultSet.getLong("expedition_version"),
                     resultSet.getString("current_node_id"),
-                    resultSet.getString("unlocked_event_id")
+                    resultSet.getString("unlocked_event_id"),
+                    resultSet.getBoolean("pilot_progress_present"),
+                    resultSet.getInt("pilot_level"),
+                    resultSet.getInt("pilot_current_experience"),
+                    resultSet.getInt("pilot_next_level_experience"),
+                    resultSet.getBoolean("pet_progress_present"),
+                    resultSet.getInt("pet_level"),
+                    resultSet.getInt("pet_bond"),
+                    resultSet.getString("resolved_choice_id"),
+                    resultSet.getString("resolved_choice_title"),
+                    resultSet.getString("outcome_title"),
+                    resultSet.getString("outcome_summary")
             );
-        }, userId, localDate, userId, userId, expeditionId);
+        },
+                userId,
+                localDate,
+                userId,
+                userId,
+                expeditionId,
+                userId,
+                progressionContent.pilot().pilotId(),
+                userId,
+                progressionContent.pet().petId(),
+                userId,
+                expeditionId
+        );
 
         if (state == null) {
             throw new IllegalStateException("Home read-model query не вернул строку");
