@@ -81,7 +81,18 @@ void main() {
     expect(sentKey, 'fixed-key');
     expect(loads, 2);
     expect(find.text('Источник сигнала'), findsOneWidget);
-    expect(find.text('Выберите решение события'), findsOneWidget);
+
+    final Finder eventStateButton = find.widgetWithText(
+      FilledButton,
+      'Выберите решение события',
+    );
+    await tester.scrollUntilVisible(
+      eventStateButton,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(eventStateButton, findsOneWidget);
   });
 
   testWidgets('home screen resolves choice and reloads persistent rewards', (
@@ -115,22 +126,32 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final Finder choice = find.text('Проанализировать сигнал');
+    final Finder choiceButton = find.widgetWithText(
+      FilledButton,
+      'Проанализировать сигнал',
+    );
     await tester.scrollUntilVisible(
-      choice,
+      choiceButton,
       200,
       scrollable: find.byType(Scrollable),
     );
-    await tester.drag(find.byType(ListView), const Offset(0, -100));
     await tester.pumpAndSettle();
-    await tester.tap(choice);
+    await tester.tap(choiceButton);
     await tester.pumpAndSettle();
 
     expect(sentEventId, 'signal-source-v1');
     expect(sentChoiceId, 'analyze-signal');
     expect(sentKey, 'event-key');
     expect(loads, 2);
-    expect(find.text('Событие разрешено'), findsOneWidget);
+
+    final Finder resolvedLabel = find.text('Событие разрешено');
+    await tester.scrollUntilVisible(
+      resolvedLabel,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(resolvedLabel, findsOneWidget);
     expect(find.text('Карта импульсов'), findsOneWidget);
 
     await tester.scrollUntilVisible(
