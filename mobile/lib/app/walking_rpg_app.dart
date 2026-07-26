@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
+import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
 
 class WalkingRpgApp extends StatelessWidget {
   const WalkingRpgApp({super.key});
@@ -13,7 +13,7 @@ class WalkingRpgApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: const Color(0xFF496D61),
       ),
-      home: const HomeScreen(),
+      home: const ActivitySyncShell(),
     );
   }
 }

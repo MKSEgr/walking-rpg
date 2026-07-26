@@ -1,50 +1,50 @@
-# Первоначальная архитектура
+# Архитектура Walking RPG
 
 ## 1. Контекст
 
-Проект разрабатывается командой из двух участников. Главный приоритет — получать проверяемые вертикальные срезы без инфраструктуры, которую пока некому обслуживать.
+Проект разрабатывается командой из двух участников. Главный приоритет — проверяемые вертикальные срезы без инфраструктуры, которую пока некому обслуживать.
 
-## 2. Решение
+## 2. Базовые решения
 
 - монорепозиторий;
 - Flutter mobile;
-- Java/Spring Boot backend;
+- Java 21 / Spring Boot backend;
 - модульный монолит;
 - REST/JSON;
 - PostgreSQL + Flyway;
-- серверная экономика;
-- офлайн-способный mobile в последующих итерациях;
+- server-authoritative economy и progression;
 - Redis, очередь и отдельные сервисы только по измеренной необходимости.
 
 ## 3. Модули backend
 
 ```text
-identity       — профиль, устройства, согласия
-activity       — приём и нормализация активности
-economy        — wallet, ledger, credit/debit
-expedition     — progress, узлы, события и команды прохождения
+identity       — технические пользователь и устройство
+activity       — authoritative total, high-watermark, risk status
+economy        — wallet, append-only ledger, credit/debit
+expedition     — progress, event choice и completion
+progression    — pilot XP/level и pet bond/level
 home           — агрегированный read-model главного экрана
-progression    — пилот, питомец, уровни и навыки, позднее
-content        — главы и конфигурация, позднее
-social         — отряды и недельные цели, позднее
-risk           — антифрод-сигналы, позднее
+content        — server-owned definitions; CMS позднее
+social         — отряды и недельные цели; позднее
+risk           — расширенный антифрод; позднее
 shared         — только общие примитивы
 ```
 
 Пакеты группируются по функциональности, а не в один глобальный `controller/service/repository`.
 
-## 4. Сквозной поток
+## 4. Сквозной поток first playable
 
 ```mermaid
 sequenceDiagram
-    participant H as Health API
+    participant S as StepSource
     participant M as Flutter
     participant A as Activity
     participant E as Economy
     participant X as Expedition
+    participant P as Progression
     participant D as PostgreSQL
 
-    H->>M: aggregated step total
+    S->>M: cumulative authoritative total
     M->>A: POST activity/sync
     A->>D: advisory lock user
     A->>A: calculate accepted delta
@@ -55,34 +55,43 @@ sequenceDiagram
 
     M->>X: POST expedition/advance
     X->>D: advisory lock user+expedition
-    X->>D: check idempotency and progress
     X->>E: debit ENERGY
     E->>D: wallet lock + ledger debit
     X->>D: save progress + response
-    X-->>M: progress / EVENT_READY
+    X-->>M: EVENT_READY
+
+    M->>X: POST event/resolve choice
+    X->>D: advisory lock user+expedition
+    X->>P: apply pilot XP + pet bond
+    P->>D: upsert progression
+    X->>D: mark COMPLETED + save response
+    X-->>M: resolved outcome + rewards
 
     M->>D: GET home through backend read-model
 ```
 
 ## 5. Инварианты
 
-1. Один activity idempotency key не создаёт две награды.
-2. Один expedition idempotency key не создаёт два списания.
-3. Один key с другим payload возвращает конфликт.
-4. Баланс изменяется только через `economy_ledger`.
-5. `economy_wallet` — транзакционная проекция текущего баланса.
-6. Wallet не может стать отрицательным.
-7. Клиент не задаёт итоговую награду или новый баланс.
-8. Несколько устройств используют один activity high-watermark пользователя.
-9. Понижение системного total не создаёт отрицательную награду.
-10. Activity command response и expedition command response сохраняются как immutable snapshot.
-11. Activity state + credit + response публикуются одним transaction commit.
-12. Debit + expedition progress + response публикуются одним transaction commit.
-13. Один economy source создаёт не более одной ledger-записи.
-14. `GET /home` является read-only и не создаёт zero-state в БД.
-15. После `EVENT_READY` progress не меняется до отдельной команды resolution.
+1. Один activity key не создаёт две награды.
+2. Один expedition key не создаёт два списания.
+3. Один event key не создаёт две progression reward.
+4. Один key с другим payload возвращает конфликт.
+5. Баланс изменяется только через `economy_ledger`.
+6. `economy_wallet` — транзакционная проекция текущего баланса.
+7. Wallet не может стать отрицательным.
+8. Клиент не задаёт reward, balance, progress или progression.
+9. Несколько устройств используют один activity high-watermark пользователя.
+10. Понижение системного total не создаёт отрицательную награду.
+11. Processed command хранит immutable response snapshot.
+12. Activity state + credit + response публикуются одним transaction commit.
+13. Debit + expedition progress + response публикуются одним transaction commit.
+14. Event completion + pilot/pet progression + response публикуются одним transaction commit.
+15. Один economy source создаёт не более одной ledger-записи.
+16. `GET /home` read-only и не создаёт zero-state.
+17. После `EVENT_READY` advance запрещён до resolution.
+18. После `COMPLETED` event нельзя разрешить повторно новым key.
 
-## 6. Текущая схема данных
+## 6. Схема данных
 
 ```text
 app_user
@@ -93,9 +102,12 @@ economy_wallet
 economy_ledger
 expedition_progress
 processed_expedition_advance
+pilot_progress
+pet_progress
+processed_event_resolution
 ```
 
-`processed_*` таблицы содержат fingerprint и исходный response snapshot. Это позволяет повторить команду спустя перезапуск без повторного изменения состояния и без подмены ответа более новым балансом.
+`processed_*` таблицы содержат fingerprint и исходный response snapshot. Это обеспечивает exact replay после перезапуска и не подменяет старый command response новым read-model состоянием.
 
 ## 7. Конкурентность
 
@@ -106,45 +118,66 @@ processed_expedition_advance
 - wallet row lock внутри economy;
 - commit activity state, credit и response.
 
-### Expedition
+### Expedition advance
 
 - transaction-scoped advisory lock по user + expedition;
-- проверка idempotency до debit;
+- idempotency до debit;
 - wallet row `FOR UPDATE`;
-- проверка достаточности баланса;
 - commit debit, ledger, progress и response.
+
+### Event resolution
+
+- тот же lock по user + expedition;
+- проверка `EVENT_READY` и открытого eventId;
+- progression upsert внутри транзакции;
+- commit `COMPLETED`, rewards и response.
 
 Такой подход работает на нескольких экземплярах модульного монолита без Redis-lock.
 
-## 8. Контент и состояние
+## 8. Контент и mutable state
 
-`starter-v1` пока является server-owned code content:
+`starter-v1` пока хранится в коде:
 
 ```text
 expeditionId: starter-expedition-v1
 nodeId:       outer-beacon
 threshold:    30 ENERGY
 eventId:      signal-source-v1
+choices:      analyze-signal | trust-spark
+pilotId:      navigator-v1
+petId:        spark-v1
 ```
 
-Контент и mutable state разделены:
+Контент и состояние разделены:
 
-- имена, тексты и пороги находятся в content definition;
-- progress/status/version находятся в PostgreSQL;
-- command response сохраняет текстовый snapshot для точного replay.
+- имена, тексты, пороги и reward definitions находятся в content definition;
+- activity/economy/expedition/progression state находится в PostgreSQL;
+- processed response сохраняет текстовый snapshot для exact replay.
 
-Перед появлением второй главы content definition будет вынесен в версионируемое хранилище или CMS.
+Перед появлением нескольких глав content definition выносится в версионируемое хранилище или CMS.
 
-## 9. Mobile
+## 9. Mobile boundaries
 
 Flutter:
 
 - читает production home snapshot;
-- показывает loading/error/retry;
-- отправляет idempotent expedition advance;
-- после успеха перечитывает home state;
-- не выполняет optimistic изменение баланса;
-- показывает событие только после серверного `EVENT_READY`.
+- отправляет idempotent activity, advance и resolution commands;
+- после успеха перечитывает home;
+- не выполняет optimistic изменение server state;
+- разделяет `StepSource` и `ActivityApiClient`.
+
+```text
+StepSource
+  platform-specific чтение cumulative total
+
+ActivityApiClient
+  стабильный backend contract
+
+ActivitySyncCoordinator
+  повтор одного reading с тем же key после ошибки
+```
+
+Development source включается только явным feature flag и не считается health-интеграцией.
 
 ## 10. Наблюдаемость до beta
 
@@ -154,9 +187,10 @@ Flutter:
 - activity duplicate metrics;
 - economy credit/debit metrics;
 - wallet-versus-ledger reconciliation;
-- expedition conflict metrics;
+- expedition/event conflict metrics;
+- progression reward metrics;
 - mobile crash reporting.
 
 ## 11. Границы
 
-Пока не реализованы authentication, attestation, retention processed commands, Health API bridge, event resolution, event rewards, persistent pilot/pet progression, offline cache и несколько экспедиций.
+Пока не реализованы authentication, attestation, retention processed commands, Apple Health/Health Connect, permissions, background delivery, offline command queue, несколько экспедиций, inventory и CMS.
