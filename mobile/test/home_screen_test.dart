@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -28,6 +29,8 @@ void main() {
       scrollable: find.byType(Scrollable),
     );
 
+    expect(find.text('XP 20 / 100'), findsOneWidget);
+    expect(find.text('Связь 10'), findsOneWidget);
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
   });
 
@@ -79,12 +82,85 @@ void main() {
     expect(loads, 2);
     expect(find.text('Источник сигнала'), findsOneWidget);
 
+    final Finder eventStateButton = find.widgetWithText(
+      FilledButton,
+      'Выберите решение события',
+    );
     await tester.scrollUntilVisible(
-      find.text('Событие готово'),
+      eventStateButton,
       200,
       scrollable: find.byType(Scrollable),
     );
-    expect(find.text('Событие готово'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(eventStateButton, findsOneWidget);
+  });
+
+  testWidgets('home screen resolves choice and reloads persistent rewards', (
+    WidgetTester tester,
+  ) async {
+    int loads = 0;
+    String? sentEventId;
+    String? sentChoiceId;
+    String? sentKey;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async {
+            loads += 1;
+            return loads == 1 ? _eventReady() : _resolvedEvent();
+          },
+          idempotencyKeyFactory: () => 'event-key',
+          eventResolver: ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async {
+            sentEventId = eventId;
+            sentChoiceId = choiceId;
+            sentKey = idempotencyKey;
+            return _eventResolutionResult();
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder choiceButton = find.widgetWithText(
+      FilledButton,
+      'Проанализировать сигнал',
+    );
+    await tester.scrollUntilVisible(
+      choiceButton,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(choiceButton);
+    await tester.pumpAndSettle();
+
+    expect(sentEventId, 'signal-source-v1');
+    expect(sentChoiceId, 'analyze-signal');
+    expect(sentKey, 'event-key');
+    expect(loads, 2);
+
+    final Finder resolvedLabel = find.text('Событие разрешено');
+    await tester.scrollUntilVisible(
+      resolvedLabel,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(resolvedLabel, findsOneWidget);
+    expect(find.text('Карта импульсов'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('XP 60 / 100'),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text('XP 60 / 100'), findsOneWidget);
+    expect(find.text('Связь 15'), findsOneWidget);
   });
 
   testWidgets('home screen can retry after backend error', (
@@ -121,15 +197,15 @@ void main() {
 
 HomeSnapshot _readyToAdvance() {
   return const HomeSnapshot(
-    localDate: '2026-07-25',
+    localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
     dailySteps: 6842,
     dailyGoal: 6000,
     availableEnergy: 68,
     activityStateVersion: 1,
     economyVersion: 1,
-    lastActivitySyncAt: '2026-07-25T11:55:00Z',
-    serverTime: '2026-07-25T12:00:00Z',
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
     contentVersion: 'starter-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
@@ -142,22 +218,25 @@ HomeSnapshot _readyToAdvance() {
     unlockedEvent: null,
     pilotName: 'Навигатор',
     pilotLevel: 1,
+    pilotCurrentExperience: 20,
+    pilotNextLevelExperience: 100,
     petName: 'Искра',
     petLevel: 1,
+    petBond: 10,
   );
 }
 
 HomeSnapshot _eventReady() {
   return const HomeSnapshot(
-    localDate: '2026-07-25',
+    localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
     dailySteps: 6842,
     dailyGoal: 6000,
     availableEnergy: 38,
     activityStateVersion: 1,
     economyVersion: 2,
-    lastActivitySyncAt: '2026-07-25T11:55:00Z',
-    serverTime: '2026-07-25T12:00:00Z',
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
     contentVersion: 'starter-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
@@ -172,11 +251,70 @@ HomeSnapshot _eventReady() {
       title: 'Источник сигнала',
       summary: 'Маяк отвечает импульсом.',
       status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'analyze-signal',
+          title: 'Проанализировать сигнал',
+          description: 'Пилот сопоставит частоты маяка.',
+          pilotExperienceReward: 40,
+          petBondReward: 5,
+        ),
+        HomeEventChoice(
+          choiceId: 'trust-spark',
+          title: 'Довериться Искре',
+          description: 'Питомец найдёт путь по свету.',
+          pilotExperienceReward: 20,
+          petBondReward: 15,
+        ),
+      ],
     ),
     pilotName: 'Навигатор',
     pilotLevel: 1,
+    pilotCurrentExperience: 20,
+    pilotNextLevelExperience: 100,
     petName: 'Искра',
     petLevel: 1,
+    petBond: 10,
+  );
+}
+
+HomeSnapshot _resolvedEvent() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 6842,
+    dailyGoal: 6000,
+    availableEnergy: 38,
+    activityStateVersion: 1,
+    economyVersion: 2,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'starter-v1',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'outer-beacon',
+    currentNodeName: 'Внешний маяк',
+    expeditionProgress: 30,
+    requiredEnergy: 30,
+    expeditionStatus: 'COMPLETED',
+    expeditionVersion: 2,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'signal-source-v1',
+      title: 'Источник сигнала',
+      summary: 'Маяк отвечает импульсом.',
+      status: 'RESOLVED',
+      selectedChoiceId: 'analyze-signal',
+      selectedChoiceTitle: 'Проанализировать сигнал',
+      outcomeTitle: 'Карта импульсов',
+      outcomeSummary: 'Навигатор выделил безопасный ритм доступа.',
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 1,
+    pilotCurrentExperience: 60,
+    pilotNextLevelExperience: 100,
+    petName: 'Искра',
+    petLevel: 1,
+    petBond: 15,
   );
 }
 
@@ -200,6 +338,40 @@ ExpeditionAdvanceResult _advanceResult() {
       summary: 'Маяк отвечает импульсом.',
       status: 'READY',
     ),
-    serverTime: '2026-07-25T12:00:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+  );
+}
+
+EventResolutionResult _eventResolutionResult() {
+  return const EventResolutionResult(
+    contentVersion: 'starter-v1',
+    expeditionId: 'starter-expedition-v1',
+    expeditionStatus: 'COMPLETED',
+    expeditionVersion: 2,
+    eventId: 'signal-source-v1',
+    eventTitle: 'Источник сигнала',
+    status: 'RESOLVED',
+    choiceId: 'analyze-signal',
+    choiceTitle: 'Проанализировать сигнал',
+    outcomeTitle: 'Карта импульсов',
+    outcomeSummary: 'Навигатор выделил безопасный ритм доступа.',
+    pilot: EventPilotReward(
+      pilotId: 'navigator-v1',
+      name: 'Навигатор',
+      level: 1,
+      experienceGained: 40,
+      currentExperience: 60,
+      nextLevelExperience: 100,
+      version: 1,
+    ),
+    pet: EventPetReward(
+      petId: 'spark-v1',
+      name: 'Искра',
+      level: 1,
+      bondGained: 5,
+      bond: 15,
+      version: 1,
+    ),
+    serverTime: '2026-07-26T06:00:00Z',
   );
 }

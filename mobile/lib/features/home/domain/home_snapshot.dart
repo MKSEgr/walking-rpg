@@ -23,6 +23,9 @@ class HomeSnapshot {
     required this.pilotLevel,
     required this.petName,
     required this.petLevel,
+    this.pilotCurrentExperience = 0,
+    this.pilotNextLevelExperience = 0,
+    this.petBond = 0,
   });
 
   factory HomeSnapshot.fromJson(Map<String, dynamic> json) {
@@ -57,8 +60,11 @@ class HomeSnapshot {
             ),
       pilotName: _readString(pilot, 'name'),
       pilotLevel: _readInt(pilot, 'level'),
+      pilotCurrentExperience: _readInt(pilot, 'currentExperience'),
+      pilotNextLevelExperience: _readInt(pilot, 'nextLevelExperience'),
       petName: _readString(pet, 'name'),
       petLevel: _readInt(pet, 'level'),
+      petBond: _readInt(pet, 'bond'),
     );
   }
 
@@ -83,8 +89,11 @@ class HomeSnapshot {
   final HomeExpeditionEvent? unlockedEvent;
   final String pilotName;
   final int pilotLevel;
+  final int pilotCurrentExperience;
+  final int pilotNextLevelExperience;
   final String petName;
   final int petLevel;
+  final int petBond;
 
   int get remainingExpeditionEnergy {
     final int remaining = requiredEnergy - expeditionProgress;
@@ -92,7 +101,7 @@ class HomeSnapshot {
   }
 
   int get spendableEnergy {
-    if (expeditionStatus == 'EVENT_READY') {
+    if (expeditionStatus != 'IN_PROGRESS') {
       return 0;
     }
     return availableEnergy < remainingExpeditionEnergy
@@ -115,7 +124,7 @@ class HomeSnapshot {
   }
 
   static const HomeSnapshot demo = HomeSnapshot(
-    localDate: '2026-07-25',
+    localDate: '2026-07-26',
     timeZone: 'UTC',
     dailySteps: 0,
     dailyGoal: 6000,
@@ -123,7 +132,7 @@ class HomeSnapshot {
     activityStateVersion: 0,
     economyVersion: 0,
     lastActivitySyncAt: null,
-    serverTime: '2026-07-25T12:00:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
     contentVersion: 'starter-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
@@ -136,8 +145,11 @@ class HomeSnapshot {
     unlockedEvent: null,
     pilotName: 'Навигатор',
     pilotLevel: 1,
+    pilotCurrentExperience: 20,
+    pilotNextLevelExperience: 100,
     petName: 'Искра',
     petLevel: 1,
+    petBond: 10,
   );
 
   static int _readInt(Map<String, dynamic> json, String field) {
@@ -188,14 +200,49 @@ class HomeExpeditionEvent {
     required this.title,
     required this.summary,
     required this.status,
+    this.choices = const <HomeEventChoice>[],
+    this.selectedChoiceId,
+    this.selectedChoiceTitle,
+    this.outcomeTitle,
+    this.outcomeSummary,
   });
 
   factory HomeExpeditionEvent.fromJson(Map<String, dynamic> json) {
+    final Object? rawChoices = json['choices'];
+    final List<HomeEventChoice> choices;
+    if (rawChoices == null) {
+      choices = const <HomeEventChoice>[];
+    } else if (rawChoices is List<dynamic>) {
+      choices = rawChoices
+          .map(
+            (Object? value) => HomeEventChoice.fromJson(
+              _asMap(value, 'choices[]'),
+            ),
+          )
+          .toList(growable: false);
+    } else {
+      throw const FormatException('choices должен быть JSON-массивом');
+    }
+
     return HomeExpeditionEvent(
       eventId: HomeSnapshot._readString(json, 'eventId'),
       title: HomeSnapshot._readString(json, 'title'),
       summary: HomeSnapshot._readString(json, 'summary'),
       status: HomeSnapshot._readString(json, 'status'),
+      choices: choices,
+      selectedChoiceId: HomeSnapshot._readNullableString(
+        json,
+        'selectedChoiceId',
+      ),
+      selectedChoiceTitle: HomeSnapshot._readNullableString(
+        json,
+        'selectedChoiceTitle',
+      ),
+      outcomeTitle: HomeSnapshot._readNullableString(json, 'outcomeTitle'),
+      outcomeSummary: HomeSnapshot._readNullableString(
+        json,
+        'outcomeSummary',
+      ),
     );
   }
 
@@ -203,6 +250,42 @@ class HomeExpeditionEvent {
   final String title;
   final String summary;
   final String status;
+  final List<HomeEventChoice> choices;
+  final String? selectedChoiceId;
+  final String? selectedChoiceTitle;
+  final String? outcomeTitle;
+  final String? outcomeSummary;
+
+  bool get isResolved => status == 'RESOLVED';
+}
+
+class HomeEventChoice {
+  const HomeEventChoice({
+    required this.choiceId,
+    required this.title,
+    required this.description,
+    required this.pilotExperienceReward,
+    required this.petBondReward,
+  });
+
+  factory HomeEventChoice.fromJson(Map<String, dynamic> json) {
+    return HomeEventChoice(
+      choiceId: HomeSnapshot._readString(json, 'choiceId'),
+      title: HomeSnapshot._readString(json, 'title'),
+      description: HomeSnapshot._readString(json, 'description'),
+      pilotExperienceReward: HomeSnapshot._readInt(
+        json,
+        'pilotExperienceReward',
+      ),
+      petBondReward: HomeSnapshot._readInt(json, 'petBondReward'),
+    );
+  }
+
+  final String choiceId;
+  final String title;
+  final String description;
+  final int pilotExperienceReward;
+  final int petBondReward;
 }
 
 Map<String, dynamic> _asMap(Object? value, String field) {

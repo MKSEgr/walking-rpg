@@ -7,6 +7,10 @@ import java.util.UUID;
 import com.walkingrpg.backend.activity.application.ActivitySyncConflictException;
 import com.walkingrpg.backend.activity.application.ActivitySyncValidationException;
 import com.walkingrpg.backend.economy.domain.InsufficientEnergyException;
+import com.walkingrpg.backend.expedition.application.EventNotFoundException;
+import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
+import com.walkingrpg.backend.expedition.application.EventResolutionValidationException;
+import com.walkingrpg.backend.expedition.application.EventStateConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionNotFoundException;
 import com.walkingrpg.backend.expedition.application.ExpeditionStateConflictException;
@@ -59,6 +63,13 @@ public class ApiExceptionHandler {
         return fieldValidation(exception.getMessage(), exception.field());
     }
 
+    @ExceptionHandler(EventResolutionValidationException.class)
+    ResponseEntity<ApiErrorResponse> handleEventValidation(
+            EventResolutionValidationException exception
+    ) {
+        return fieldValidation(exception.getMessage(), exception.field());
+    }
+
     @ExceptionHandler(ActivitySyncConflictException.class)
     ResponseEntity<ApiErrorResponse> handleActivityConflict(
             ActivitySyncConflictException exception
@@ -69,6 +80,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ExpeditionIdempotencyConflictException.class)
     ResponseEntity<ApiErrorResponse> handleExpeditionIdempotencyConflict(
             ExpeditionIdempotencyConflictException exception
+    ) {
+        return idempotencyConflict(exception.getMessage());
+    }
+
+    @ExceptionHandler(EventResolutionIdempotencyConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleEventIdempotencyConflict(
+            EventResolutionIdempotencyConflictException exception
     ) {
         return idempotencyConflict(exception.getMessage());
     }
@@ -85,6 +103,18 @@ public class ApiExceptionHandler {
         );
     }
 
+    @ExceptionHandler(EventNotFoundException.class)
+    ResponseEntity<ApiErrorResponse> handleEventNotFound(
+            EventNotFoundException exception
+    ) {
+        return error(
+                HttpStatus.NOT_FOUND,
+                "NOT_FOUND",
+                exception.getMessage(),
+                Map.of("eventId", exception.eventId())
+        );
+    }
+
     @ExceptionHandler(ExpeditionStateConflictException.class)
     ResponseEntity<ApiErrorResponse> handleExpeditionStateConflict(
             ExpeditionStateConflictException exception
@@ -97,6 +127,18 @@ public class ApiExceptionHandler {
                         "status", exception.status().name(),
                         "remainingEnergy", exception.remainingEnergy()
                 )
+        );
+    }
+
+    @ExceptionHandler(EventStateConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleEventStateConflict(
+            EventStateConflictException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "EVENT_STATE_CONFLICT",
+                exception.getMessage(),
+                Map.of("status", exception.status())
         );
     }
 

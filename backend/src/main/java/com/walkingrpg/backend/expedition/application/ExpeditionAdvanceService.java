@@ -109,9 +109,9 @@ public class ExpeditionAdvanceService {
                     "energyToSpend"
             );
         }
-        if (state.status() == ExpeditionProgressStatus.EVENT_READY) {
+        if (state.status() != ExpeditionProgressStatus.IN_PROGRESS) {
             throw new ExpeditionStateConflictException(
-                    "Первый узел уже достигнут, сначала требуется обработать событие",
+                    "Продвижение недоступно в статусе " + state.status(),
                     state.status(),
                     0
             );
