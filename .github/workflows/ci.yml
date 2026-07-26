@@ -76,7 +76,7 @@ jobs:
       - name: Run unit and API tests
         run: >-
           ./mvnw --batch-mode --no-transfer-progress
-          -Dtest=DemoHomeServiceTest,HomeQueryFactoryTest,HomeServiceTest,HomeControllerTest,ActivitySyncCalculatorTest,ActivitySyncServiceTest,ActivitySyncControllerTest,ActivitySyncFingerprintTest,EconomyServiceTest,ExpeditionAdvanceFingerprintTest,ExpeditionAdvanceServiceTest,ExpeditionAdvanceControllerTest,ProgressionServiceTest,EventResolutionFingerprintTest,EventResolutionServiceTest,EventResolutionControllerTest
+          -Dtest=DemoHomeServiceTest,HomeQueryFactoryTest,HomeServiceTest,HomeControllerTest,AdaptiveDailyGoalCalculatorTest,DailyGoalServiceTest,ActivitySyncCalculatorTest,ActivitySyncServiceTest,ActivitySyncControllerTest,ActivitySyncFingerprintTest,EconomyServiceTest,ExpeditionAdvanceFingerprintTest,ExpeditionAdvanceServiceTest,ExpeditionAdvanceControllerTest,ProgressionServiceTest,EventResolutionFingerprintTest,EventResolutionServiceTest,EventResolutionControllerTest
           test
 
       - name: Run PostgreSQL integration tests

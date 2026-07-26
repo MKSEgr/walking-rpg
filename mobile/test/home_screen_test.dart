@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
+import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 
@@ -18,6 +19,12 @@ void main() {
     expect(find.text('Сегодня: 0 / 6000'), findsOneWidget);
     expect(find.text('Навигатор'), findsOneWidget);
     expect(find.text('Искра'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'Стартовая личная цель: собрано 0 из 3 активных дней',
+      ),
+      findsOneWidget,
+    );
 
     await tester.scrollUntilVisible(
       find.text('Доступная энергия: 0 · версия 0'),
@@ -59,6 +66,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Личная цель: медиана 3000 шагов за 3 дня +5%'),
+      findsOneWidget,
+    );
 
     final Finder advanceButton = find.widgetWithText(
       FilledButton,
@@ -193,12 +205,27 @@ void main() {
   });
 }
 
+const DailyGoalPolicy _adaptiveGoalPolicy = DailyGoalPolicy(
+  policyVersion: 'adaptive-median-v1',
+  source: 'ADAPTIVE',
+  baselineSteps: 3000,
+  sampleDays: 3,
+  lookbackDays: 7,
+  minimumSampleDays: 3,
+  defaultGoal: 6000,
+  growthPercent: 5,
+  roundingStep: 250,
+  minimumGoal: 2000,
+  maximumGoal: 12000,
+);
+
 HomeSnapshot _readyToAdvance() {
   return const HomeSnapshot(
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
     dailySteps: 6842,
-    dailyGoal: 6000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
     availableEnergy: 68,
     activityStateVersion: 1,
     economyVersion: 1,
@@ -229,7 +256,8 @@ HomeSnapshot _eventReady() {
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
     dailySteps: 6842,
-    dailyGoal: 6000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
     availableEnergy: 38,
     activityStateVersion: 1,
     economyVersion: 2,
@@ -281,7 +309,8 @@ HomeSnapshot _resolvedEvent() {
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
     dailySteps: 6842,
-    dailyGoal: 6000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
     availableEnergy: 38,
     activityStateVersion: 1,
     economyVersion: 2,

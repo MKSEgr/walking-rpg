@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.home.infrastructure;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -83,6 +84,8 @@ class HomeReadIntegrationTest {
         );
 
         assertEquals(6_842, snapshot.dailySteps());
+        assertEquals(6_000, snapshot.dailyGoal());
+        assertEquals("DEFAULT", snapshot.dailyGoalPolicy().source().name());
         assertEquals(38, snapshot.availableEnergy());
         assertEquals(1, snapshot.activityStateVersion());
         assertEquals(2, snapshot.economyVersion());
@@ -113,6 +116,8 @@ class HomeReadIntegrationTest {
         );
 
         assertEquals(0, snapshot.dailySteps());
+        assertEquals(6_000, snapshot.dailyGoal());
+        assertEquals("DEFAULT", snapshot.dailyGoalPolicy().source().name());
         assertEquals(48, snapshot.availableEnergy());
         assertEquals(0, snapshot.activityStateVersion());
         assertEquals(2, snapshot.economyVersion());
@@ -129,6 +134,8 @@ class HomeReadIntegrationTest {
         );
 
         assertEquals(0, snapshot.dailySteps());
+        assertEquals(6_000, snapshot.dailyGoal());
+        assertEquals("DEFAULT", snapshot.dailyGoalPolicy().source().name());
         assertEquals(0, snapshot.availableEnergy());
         assertEquals(0, snapshot.activityStateVersion());
         assertEquals(0, snapshot.economyVersion());
@@ -140,20 +147,71 @@ class HomeReadIntegrationTest {
         assertEquals(0, rowCount("expedition_progress"));
     }
 
+    @Test
+    void shouldCalculateAdaptiveGoalFromPreviousSevenLocalDaysOnly() {
+        activitySyncService.synchronize(command(
+                ACTIVITY_DATE.minusDays(8),
+                12_000,
+                "goal-outside-window"
+        ));
+        activitySyncService.synchronize(command(
+                ACTIVITY_DATE.minusDays(3),
+                2_000,
+                "goal-history-1"
+        ));
+        activitySyncService.synchronize(command(
+                ACTIVITY_DATE.minusDays(2),
+                3_000,
+                "goal-history-2"
+        ));
+        activitySyncService.synchronize(command(
+                ACTIVITY_DATE.minusDays(1),
+                4_000,
+                "goal-history-3"
+        ));
+        activitySyncService.synchronize(command(
+                ACTIVITY_DATE,
+                11_000,
+                "goal-current-day"
+        ));
+
+        HomeSnapshotResponse snapshot = homeService.getSnapshot(
+                new HomeQuery("home-user", ACTIVITY_DATE)
+        );
+
+        assertEquals(11_000, snapshot.dailySteps());
+        assertEquals(3_250, snapshot.dailyGoal());
+        assertEquals("ADAPTIVE", snapshot.dailyGoalPolicy().source().name());
+        assertEquals(BigDecimal.valueOf(3_000), snapshot.dailyGoalPolicy().baselineSteps());
+        assertEquals(3, snapshot.dailyGoalPolicy().sampleDays());
+        assertEquals(6_000, snapshot.dailyGoalPolicy().defaultGoal());
+        assertEquals(7, snapshot.dailyGoalPolicy().lookbackDays());
+        assertEquals(5, snapshot.dailyGoalPolicy().growthPercent());
+        assertEquals(250, snapshot.dailyGoalPolicy().roundingStep());
+    }
+
     private int rowCount(String table) {
         return jdbcTemplate.queryForObject("SELECT count(*) FROM " + table, Integer.class);
     }
 
     private ActivitySyncCommand command(long authoritativeTotal) {
+        return command(ACTIVITY_DATE, authoritativeTotal, "home-sync-1");
+    }
+
+    private ActivitySyncCommand command(
+            LocalDate localDate,
+            long authoritativeTotal,
+            String idempotencyKey
+    ) {
         return new ActivitySyncCommand(
                 "home-user",
                 "home-device",
-                ACTIVITY_DATE,
+                localDate,
                 ZoneId.of("Europe/Berlin"),
                 authoritativeTotal,
                 List.of(),
-                "cursor-home",
-                "home-sync-1",
+                "cursor-" + localDate,
+                idempotencyKey,
                 null
         );
     }

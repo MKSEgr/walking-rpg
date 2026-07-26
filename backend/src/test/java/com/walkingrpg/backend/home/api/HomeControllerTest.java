@@ -3,8 +3,12 @@ package com.walkingrpg.backend.home.api;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
+import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
+import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.application.HomeQueryFactory;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.application.StarterHomeContent;
@@ -41,9 +45,25 @@ class HomeControllerTest {
                         "outer-beacon",
                         "signal-source-v1"
                 );
+        DailyGoalPolicyProperties goalProperties = new DailyGoalPolicyProperties(
+                "adaptive-median-v1",
+                7,
+                3,
+                6_000,
+                2_000,
+                12_000,
+                5,
+                250
+        );
         HomeService service = new HomeService(
                 repository,
                 new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) ->
+                                List.of(2_000L, 3_000L, 4_000L),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
                 new StarterExpeditionContent(),
                 Clock.fixed(Instant.parse("2026-07-25T12:00:00Z"), ZoneOffset.UTC)
         );
@@ -65,7 +85,13 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.localDate").value("2026-07-25"))
                 .andExpect(jsonPath("$.timeZone").value("Europe/Berlin"))
                 .andExpect(jsonPath("$.dailySteps").value(6842))
-                .andExpect(jsonPath("$.dailyGoal").value(6000))
+                .andExpect(jsonPath("$.dailyGoal").value(3250))
+                .andExpect(jsonPath("$.dailyGoalPolicy.policyVersion")
+                        .value("adaptive-median-v1"))
+                .andExpect(jsonPath("$.dailyGoalPolicy.source").value("ADAPTIVE"))
+                .andExpect(jsonPath("$.dailyGoalPolicy.baselineSteps").value(3000))
+                .andExpect(jsonPath("$.dailyGoalPolicy.sampleDays").value(3))
+                .andExpect(jsonPath("$.dailyGoalPolicy.defaultGoal").value(6000))
                 .andExpect(jsonPath("$.availableEnergy").value(38))
                 .andExpect(jsonPath("$.activityStateVersion").value(1))
                 .andExpect(jsonPath("$.economyVersion").value(2))

@@ -20,6 +20,7 @@ Java/Spring Boot backend walking-RPG.
 ```text
 authoritative step total
 → activity high-watermark
+→ personalized daily goal projection
 → ENERGY credit
 → production home snapshot
 → ENERGY debit
@@ -75,7 +76,35 @@ PostgreSQL Testcontainers tests проверяют:
 - event choice и persistent pilot/pet progression;
 - повторное/конфликтное resolution;
 - rollback activity/economy/expedition/progression при поздней ошибке;
-- production home read-model до и после события.
+- production home read-model до и после события;
+- default/adaptive daily goal, окно предыдущих дней и исключение текущего дня.
+
+## Персональная дневная цель
+
+`GET /api/v1/home` больше не возвращает один глобальный порог. Backend вычисляет цель из предыдущей accepted activity history:
+
+```text
+previous 7 local days
+→ positive accepted_total values
+→ median × 1.05
+→ round to 250
+→ clamp 2000..12000
+```
+
+Если собрано меньше трёх валидных дней, используется `6000`. Текущий день не участвует в собственной цели. Расчёт read-only: отдельные goal rows не создаются. Response содержит `dailyGoal` и `dailyGoalPolicy`, чтобы mobile мог объяснить пользователю источник цели.
+
+Параметры переопределяются переменными окружения:
+
+```text
+DAILY_GOAL_POLICY_VERSION
+DAILY_GOAL_LOOKBACK_DAYS
+DAILY_GOAL_MINIMUM_SAMPLE_DAYS
+DAILY_GOAL_DEFAULT
+DAILY_GOAL_MINIMUM
+DAILY_GOAL_MAXIMUM
+DAILY_GOAL_GROWTH_PERCENT
+DAILY_GOAL_ROUNDING_STEP
+```
 
 ## Endpoint-ы
 
@@ -177,7 +206,8 @@ processed_event_resolution     — idempotent event/progression response
 - key с другим payload возвращает `IDEMPOTENCY_CONFLICT`;
 - event разрешается только из `EVENT_READY`;
 - progression и expedition completion фиксируются одной транзакцией;
-- `GET /home` не создаёт данные.
+- `GET /home` не создаёт данные или goal snapshots;
+- текущий локальный день не участвует в собственной daily goal.
 
 ## Текущие ограничения
 
@@ -186,5 +216,5 @@ processed_event_resolution     — idempotent event/progression response
 - одна экспедиция, один узел и одно событие;
 - content definition хранится в коде;
 - нет inventory/reward journal для предметов;
-- mobile ещё не читает Apple Health/Health Connect;
+- HealthKit/Health Connect требуют проверки на физических устройствах;
 - offline cache отсутствует.

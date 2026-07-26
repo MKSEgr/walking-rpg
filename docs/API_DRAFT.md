@@ -35,7 +35,20 @@ X-User-Id: demo-user-1
   "localDate": "2026-07-26",
   "timeZone": "Europe/Berlin",
   "dailySteps": 6842,
-  "dailyGoal": 6000,
+  "dailyGoal": 3250,
+  "dailyGoalPolicy": {
+    "policyVersion": "adaptive-median-v1",
+    "source": "ADAPTIVE",
+    "baselineSteps": 3000,
+    "sampleDays": 3,
+    "lookbackDays": 7,
+    "minimumSampleDays": 3,
+    "defaultGoal": 6000,
+    "growthPercent": 5,
+    "roundingStep": 250,
+    "minimumGoal": 2000,
+    "maximumGoal": 12000
+  },
   "availableEnergy": 38,
   "activityStateVersion": 1,
   "economyVersion": 2,
@@ -82,6 +95,10 @@ X-User-Id: demo-user-1
 Семантика:
 
 - activity относится к `user + localDate`;
+- `dailyGoal` рассчитывается backend-ом по медиане положительных accepted total за предыдущие семь локальных дней;
+- при менее чем трёх валидных днях возвращается стартовая цель `6000`;
+- текущий день не участвует в собственной цели;
+- `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
 - ENERGY, expedition и progression глобальны для пользователя;
 - неизвестный пользователь получает zero-state и starter content;
 - `GET` не выполняет `INSERT` или `UPDATE`.

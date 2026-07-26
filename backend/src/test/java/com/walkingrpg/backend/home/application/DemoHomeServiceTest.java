@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
+import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +21,16 @@ class DemoHomeServiceTest {
     private final DemoHomeService service = new DemoHomeService(
             new StarterHomeContent(),
             new StarterExpeditionContent(),
+            new AdaptiveDailyGoalCalculator(new DailyGoalPolicyProperties(
+                    "adaptive-median-v1",
+                    7,
+                    3,
+                    6_000,
+                    2_000,
+                    12_000,
+                    5,
+                    250
+            )),
             Clock.fixed(NOW, ZoneOffset.UTC)
     );
 
@@ -30,6 +42,8 @@ class DemoHomeServiceTest {
         assertEquals("UTC", snapshot.timeZone());
         assertEquals(0, snapshot.dailySteps());
         assertEquals(6_000, snapshot.dailyGoal());
+        assertEquals("DEFAULT", snapshot.dailyGoalPolicy().source().name());
+        assertEquals(0, snapshot.dailyGoalPolicy().sampleDays());
         assertEquals(0, snapshot.availableEnergy());
         assertEquals(0, snapshot.activityStateVersion());
         assertEquals(0, snapshot.economyVersion());

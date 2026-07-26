@@ -9,7 +9,10 @@ import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.domain.ExpeditionDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventChoiceDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
+import com.walkingrpg.backend.goal.application.DailyGoalService;
+import com.walkingrpg.backend.goal.domain.DailyGoal;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
+import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
@@ -26,17 +29,20 @@ public class HomeService {
 
     private final HomeReadRepository repository;
     private final StarterHomeContent starterContent;
+    private final DailyGoalService dailyGoalService;
     private final StarterExpeditionContent expeditionContent;
     private final Clock clock;
 
     public HomeService(
             HomeReadRepository repository,
             StarterHomeContent starterContent,
+            DailyGoalService dailyGoalService,
             StarterExpeditionContent expeditionContent,
             Clock clock
     ) {
         this.repository = repository;
         this.starterContent = starterContent;
+        this.dailyGoalService = dailyGoalService;
         this.expeditionContent = expeditionContent;
         this.clock = clock;
     }
@@ -44,6 +50,10 @@ public class HomeService {
     @Transactional(readOnly = true)
     public HomeSnapshotResponse getSnapshot(HomeQuery query) {
         ExpeditionDefinition definition = expeditionContent.definition();
+        DailyGoal dailyGoal = dailyGoalService.calculate(
+                query.userId(),
+                query.localDate()
+        );
         HomeRuntimeState state = repository.findState(
                 query.userId(),
                 query.localDate(),
@@ -54,7 +64,8 @@ public class HomeService {
                 query.localDate(),
                 state.timeZone(),
                 state.dailySteps(),
-                starterContent.dailyGoal(),
+                dailyGoal.steps(),
+                DailyGoalPolicySnapshot.from(dailyGoal),
                 state.availableEnergy(),
                 state.activityStateVersion(),
                 state.economyVersion(),

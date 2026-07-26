@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 public class StarterHomeContent {
 
     static final String CONTENT_VERSION = "starter-v1";
-    static final long DAILY_GOAL = 6_000;
-
     private final StarterProgressionContent progressionContent;
 
     public StarterHomeContent() {
@@ -27,10 +25,6 @@ public class StarterHomeContent {
 
     public String contentVersion() {
         return CONTENT_VERSION;
-    }
-
-    public long dailyGoal() {
-        return DAILY_GOAL;
     }
 
     public PilotSnapshot pilot() {
