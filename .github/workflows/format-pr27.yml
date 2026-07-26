@@ -1,0 +1,54 @@
+name: Format PR 27 mobile sources
+
+on:
+  push:
+    branches:
+      - batch/second-node-inventory
+
+permissions:
+  contents: write
+
+concurrency:
+  group: format-pr27-mobile
+  cancel-in-progress: false
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: batch/second-node-inventory
+          fetch-depth: 0
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.7"
+          channel: stable
+          cache: true
+
+      - name: Format mobile sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          dart format mobile/lib mobile/test
+          rm -f .github/workflows/format-pr27.yml
+          git diff --check
+
+      - name: Commit formatting changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          if git diff --cached --quiet; then
+            echo "No formatting changes were required"
+            exit 0
+          fi
+          git commit -m "style: format mobile sources"
+          git push origin HEAD:batch/second-node-inventory
