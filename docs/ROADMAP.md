@@ -1,6 +1,6 @@
 # Roadmap
 
-Roadmap отражает порядок снижения рисков, а не обещание конкретных календарных дат.
+Roadmap отражает порядок снижения рисков, а не обещание календарных дат.
 
 ## Milestone 0 — Repository baseline
 
@@ -11,22 +11,22 @@ Roadmap отражает порядок снижения рисков, а не �
 - [x] Добавить локальный PostgreSQL
 - [x] Создать удалённый Git-репозиторий
 - [ ] Настроить branch protection
-- [x] Добавить CI для структуры, Java backend и Flutter mobile
+- [x] Добавить CI для структуры, backend и mobile
 
 ## Milestone 1 — Health API spike
 
 - [ ] Зафиксировать минимальные версии iOS/Android
+- [ ] Выбрать Flutter plugin или собственный bridge
 - [ ] Прочитать шаги из Apple Health
 - [ ] Прочитать шаги из Health Connect
 - [ ] Проверить телефон + часы
-- [ ] Проверить ручной ввод
+- [ ] Проверить ручной ввод и source metadata
 - [ ] Проверить удаление записи
 - [ ] Проверить смену часового пояса
 - [ ] Проверить background delivery
 - [ ] Оценить расход батареи
-- [ ] Выбрать Flutter plugin или собственный bridge
 
-**Выход:** на реальных устройствах получаем стабильный агрегированный total без двойного учёта.
+**Выход:** на реальных устройствах получаем стабильный cumulative total без двойного учёта.
 
 ## Milestone 2 — Activity sync vertical slice
 
@@ -38,10 +38,13 @@ Roadmap отражает порядок снижения рисков, а не �
 - [x] Начислить ENERGY через wallet/ledger
 - [x] Сериализовать конкурентные sync
 - [x] Добавить unit/API/PostgreSQL tests
+- [x] Добавить Flutter `ActivityApiClient`
+- [x] Добавить pluggable `StepSource` boundary
+- [x] Проверить mobile → backend через явно включаемый development source
 - [ ] Зафиксировать retention processed sync
-- [ ] Подключить Health API mobile к activity sync
+- [ ] Подключить реальный Health API source
 
-**Выход:** повторная синхронизация не создаёт повторную награду и сохраняет состояние после перезапуска.
+**Выход:** mobile отправляет authoritative reading в стабильный backend contract; замена development source на platform source не требует изменения API-клиента.
 
 ## Milestone 3 — First playable
 
@@ -51,17 +54,17 @@ Roadmap отражает порядок снижения рисков, а не �
 - [x] Один питомец
 - [x] Одна экспедиция
 - [x] Один узел
-- [x] Энергия из шагов
+- [x] ENERGY из шагов
 - [x] Economy wallet и ledger
 - [x] Атомарный debit ENERGY
 - [x] Persistent expedition progress
-- [x] Первое событие в статусе READY
-- [ ] Выбор исхода события
-- [ ] Одна награда за событие
-- [ ] Persistent pilot/pet progression
-- [ ] Экран результата события
+- [x] Первое событие READY
+- [x] Два варианта решения события
+- [x] Одна постоянная награда за событие
+- [x] Persistent pilot/pet progression
+- [x] Экран результата события
 
-**Выход:** пользователь проходит реальные шаги, тратит энергию и завершает одно игровое событие.
+**Выход:** пользователь получает шаги, тратит ENERGY, выбирает исход и завершает одно событие. Полный цикл проверен с development step source; real Health API остаётся отдельным hardware/platform риском.
 
 ## Milestone 4 — MVP content loop
 
