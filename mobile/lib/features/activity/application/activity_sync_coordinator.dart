@@ -20,9 +20,11 @@ class ActivitySyncCoordinator {
     ActivityIdempotencyKeyFactory? idempotencyKeyFactory,
   }) : _idempotencyKeyFactory = idempotencyKeyFactory ?? _defaultIdempotencyKey;
 
-  factory ActivitySyncCoordinator.fromEnvironment() {
+  factory ActivitySyncCoordinator.fromEnvironment({
+    ActivitySyncSender? sender,
+  }) {
     final ActivitySyncCoordinator? coordinator =
-        ActivitySyncCoordinator.fromEnvironmentIfSupported();
+        ActivitySyncCoordinator.fromEnvironmentIfSupported(sender: sender);
     if (coordinator == null) {
       throw UnsupportedError(
         'Синхронизация системных шагов доступна только на Android и iOS',
@@ -31,7 +33,9 @@ class ActivitySyncCoordinator {
     return coordinator;
   }
 
-  static ActivitySyncCoordinator? fromEnvironmentIfSupported() {
+  static ActivitySyncCoordinator? fromEnvironmentIfSupported({
+    ActivitySyncSender? sender,
+  }) {
     final StepSource? source;
     if (AppEnvironment.enableDemoActivitySync) {
       source = DevelopmentStepSource.fromEnvironment();
@@ -42,8 +46,9 @@ class ActivitySyncCoordinator {
       return null;
     }
 
-    final ActivityApiClient client = ActivityApiClient.fromEnvironment();
-    return ActivitySyncCoordinator(stepSource: source, sender: client.sync);
+    final ActivitySyncSender resolvedSender =
+        sender ?? ActivityApiClient.fromEnvironment().sync;
+    return ActivitySyncCoordinator(stepSource: source, sender: resolvedSender);
   }
 
   final StepSource stepSource;

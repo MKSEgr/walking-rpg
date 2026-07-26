@@ -15,6 +15,40 @@ class StepReading {
     }
   }
 
+  factory StepReading.fromJson(Map<String, Object?> json) {
+    final Object? authoritativeTotal = json['authoritativeTotal'];
+    final Object? localDate = json['localDate'];
+    final Object? timeZone = json['timeZone'];
+    final Object? syncCursor = json['syncCursor'];
+    if (authoritativeTotal is! int) {
+      throw const FormatException(
+        'authoritativeTotal должен быть целым числом',
+      );
+    }
+    if (localDate is! String || localDate.trim().isEmpty) {
+      throw const FormatException('localDate должен быть непустой строкой');
+    }
+    if (timeZone is! String || timeZone.trim().isEmpty) {
+      throw const FormatException('timeZone должен быть непустой строкой');
+    }
+    if (syncCursor != null && syncCursor is! String) {
+      throw const FormatException('syncCursor должен быть строкой или null');
+    }
+
+    final DateTime parsedDate;
+    try {
+      parsedDate = DateTime.parse(localDate);
+    } on FormatException {
+      throw const FormatException('localDate содержит некорректную дату');
+    }
+    return StepReading(
+      authoritativeTotal: authoritativeTotal,
+      localDate: parsedDate,
+      timeZone: timeZone,
+      syncCursor: syncCursor as String?,
+    );
+  }
+
   final int authoritativeTotal;
   final DateTime localDate;
   final String timeZone;
@@ -25,6 +59,15 @@ class StepReading {
     final String month = localDate.month.toString().padLeft(2, '0');
     final String day = localDate.day.toString().padLeft(2, '0');
     return '$year-$month-$day';
+  }
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'authoritativeTotal': authoritativeTotal,
+      'localDate': localDateIso,
+      'timeZone': timeZone,
+      'syncCursor': syncCursor,
+    };
   }
 
   @override

@@ -29,6 +29,7 @@
 - production `GET /api/v1/home`;
 - стартовая экспедиция, первый узел и событие с двумя решениями;
 - постоянный progression пилота и питомца;
+- foreground durable outbox для activity, expedition и event-команд;
 - GitHub Actions для backend, Flutter, Android APK и iOS Simulator build.
 
 ## Платформенные шаги
@@ -49,6 +50,12 @@ localDate + IANA timeZone + authoritativeTotal
 Клиент не рассчитывает энергию и не изменяет баланс оптимистично. После успешного `POST /api/v1/activity/sync` приложение заново читает `GET /api/v1/home`.
 
 Текущая интеграция работает только по явному действию пользователя в foreground. Код, unit/widget tests, Android debug APK и iOS Simulator build проверены CI. Проверка чтения реальных данных на физических телефонах и часах остаётся отдельным этапом. Подробности: [docs/HEALTH_API_SPIKE.md](docs/HEALTH_API_SPIKE.md).
+
+## Надёжная отправка команд
+
+Перед первой сетевой попыткой mobile сохраняет полный payload и idempotency key для activity sync, продвижения экспедиции и решения события. После потери ответа или завершения процесса следующий запуск повторяет ту же команду с тем же key. Успешно восстановленные команды всегда завершаются повторным чтением `GET /api/v1/home`; локальная очередь не считается источником игрового состояния.
+
+Очередь разделена на независимые `ACTIVITY` и `GAMEPLAY` lane. Внутри lane команды обрабатываются FIFO. Network error, `408`, `429`, `5xx` и неоднозначный response остаются pending; подтверждённые остальные `4xx` становятся terminal failed и не блокируют следующие команды. Подробности: [ADR 0012](docs/adr/0012-foreground-durable-mobile-command-outbox.md).
 
 ## Структура
 
@@ -180,7 +187,7 @@ iOS Simulator debug build
 
 - проверка на физических iPhone/Android и связках телефон + часы;
 - background delivery;
-- offline command queue;
+- background command delivery и offline read cache;
 - attestation;
 - полноценный anti-fraud по источникам;
 - store privacy forms и production privacy-policy flow;
