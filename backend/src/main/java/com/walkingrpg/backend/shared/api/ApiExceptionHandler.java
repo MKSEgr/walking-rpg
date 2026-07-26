@@ -6,6 +6,11 @@ import java.util.UUID;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncConflictException;
 import com.walkingrpg.backend.activity.application.ActivitySyncValidationException;
+import com.walkingrpg.backend.economy.domain.InsufficientEnergyException;
+import com.walkingrpg.backend.expedition.application.ExpeditionIdempotencyConflictException;
+import com.walkingrpg.backend.expedition.application.ExpeditionNotFoundException;
+import com.walkingrpg.backend.expedition.application.ExpeditionStateConflictException;
+import com.walkingrpg.backend.expedition.application.ExpeditionValidationException;
 import com.walkingrpg.backend.home.application.HomeQueryValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,15 +52,66 @@ public class ApiExceptionHandler {
         return fieldValidation(exception.getMessage(), exception.field());
     }
 
+    @ExceptionHandler(ExpeditionValidationException.class)
+    ResponseEntity<ApiErrorResponse> handleExpeditionValidation(
+            ExpeditionValidationException exception
+    ) {
+        return fieldValidation(exception.getMessage(), exception.field());
+    }
+
     @ExceptionHandler(ActivitySyncConflictException.class)
     ResponseEntity<ApiErrorResponse> handleActivityConflict(
             ActivitySyncConflictException exception
     ) {
+        return idempotencyConflict(exception.getMessage());
+    }
+
+    @ExceptionHandler(ExpeditionIdempotencyConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleExpeditionIdempotencyConflict(
+            ExpeditionIdempotencyConflictException exception
+    ) {
+        return idempotencyConflict(exception.getMessage());
+    }
+
+    @ExceptionHandler(ExpeditionNotFoundException.class)
+    ResponseEntity<ApiErrorResponse> handleExpeditionNotFound(
+            ExpeditionNotFoundException exception
+    ) {
+        return error(
+                HttpStatus.NOT_FOUND,
+                "NOT_FOUND",
+                exception.getMessage(),
+                Map.of("expeditionId", exception.expeditionId())
+        );
+    }
+
+    @ExceptionHandler(ExpeditionStateConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleExpeditionStateConflict(
+            ExpeditionStateConflictException exception
+    ) {
         return error(
                 HttpStatus.CONFLICT,
-                "IDEMPOTENCY_CONFLICT",
+                "EXPEDITION_STATE_CONFLICT",
                 exception.getMessage(),
-                Map.of("field", "idempotencyKey")
+                Map.of(
+                        "status", exception.status().name(),
+                        "remainingEnergy", exception.remainingEnergy()
+                )
+        );
+    }
+
+    @ExceptionHandler(InsufficientEnergyException.class)
+    ResponseEntity<ApiErrorResponse> handleInsufficientEnergy(
+            InsufficientEnergyException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "INSUFFICIENT_ENERGY",
+                exception.getMessage(),
+                Map.of(
+                        "availableEnergy", exception.availableEnergy(),
+                        "requiredEnergy", exception.requiredEnergy()
+                )
         );
     }
 
@@ -92,6 +148,15 @@ public class ApiExceptionHandler {
                 "VALIDATION_ERROR",
                 "Тело запроса содержит некорректные данные",
                 Map.of()
+        );
+    }
+
+    private ResponseEntity<ApiErrorResponse> idempotencyConflict(String message) {
+        return error(
+                HttpStatus.CONFLICT,
+                "IDEMPOTENCY_CONFLICT",
+                message,
+                Map.of("field", "idempotencyKey")
         );
     }
 

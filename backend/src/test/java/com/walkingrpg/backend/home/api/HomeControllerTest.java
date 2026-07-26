@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.home.application.HomeQueryFactory;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.application.StarterHomeContent;
@@ -25,17 +26,25 @@ class HomeControllerTest {
 
     @BeforeEach
     void setUp() {
-        HomeReadRepository repository = (userId, localDate) -> new HomeRuntimeState(
-                6_842,
-                1,
-                "Europe/Berlin",
-                Instant.parse("2026-07-25T11:55:00Z"),
-                68,
-                1
-        );
+        HomeReadRepository repository = (userId, localDate, expeditionId) ->
+                new HomeRuntimeState(
+                        6_842,
+                        1,
+                        "Europe/Berlin",
+                        Instant.parse("2026-07-25T11:55:00Z"),
+                        38,
+                        2,
+                        30,
+                        30,
+                        "EVENT_READY",
+                        1,
+                        "outer-beacon",
+                        "signal-source-v1"
+                );
         HomeService service = new HomeService(
                 repository,
                 new StarterHomeContent(),
+                new StarterExpeditionContent(),
                 Clock.fixed(Instant.parse("2026-07-25T12:00:00Z"), ZoneOffset.UTC)
         );
         HomeController controller = new HomeController(
@@ -57,13 +66,18 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.timeZone").value("Europe/Berlin"))
                 .andExpect(jsonPath("$.dailySteps").value(6842))
                 .andExpect(jsonPath("$.dailyGoal").value(6000))
-                .andExpect(jsonPath("$.availableEnergy").value(68))
+                .andExpect(jsonPath("$.availableEnergy").value(38))
                 .andExpect(jsonPath("$.activityStateVersion").value(1))
-                .andExpect(jsonPath("$.economyVersion").value(1))
+                .andExpect(jsonPath("$.economyVersion").value(2))
                 .andExpect(jsonPath("$.contentVersion").value("starter-v1"))
                 .andExpect(jsonPath("$.pilot.name").value("Навигатор"))
                 .andExpect(jsonPath("$.pet.name").value("Искра"))
-                .andExpect(jsonPath("$.expedition.requiredEnergy").value(30));
+                .andExpect(jsonPath("$.expedition.expeditionId")
+                        .value("starter-expedition-v1"))
+                .andExpect(jsonPath("$.expedition.progress").value(30))
+                .andExpect(jsonPath("$.expedition.status").value("EVENT_READY"))
+                .andExpect(jsonPath("$.expedition.unlockedEvent.eventId")
+                        .value("signal-source-v1"));
     }
 
     @Test

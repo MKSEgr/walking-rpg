@@ -6,5 +6,9 @@ import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 
 public interface HomeReadRepository {
 
-    HomeRuntimeState findState(String userId, LocalDate localDate);
+    HomeRuntimeState findState(
+            String userId,
+            LocalDate localDate,
+            String expeditionId
+    );
 }

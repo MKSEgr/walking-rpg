@@ -3,6 +3,7 @@ package com.walkingrpg.backend.economy.application;
 import java.time.Instant;
 
 import com.walkingrpg.backend.economy.domain.EconomyLedgerConflictException;
+import com.walkingrpg.backend.economy.domain.InsufficientEnergyException;
 import com.walkingrpg.backend.economy.domain.WalletSnapshot;
 import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
 import org.junit.jupiter.api.Test;
@@ -19,58 +20,65 @@ class EconomyServiceTest {
     );
 
     @Test
-    void shouldCreditEnergyAndReplaySameLedgerSource() {
-        WalletSnapshot first = service.creditActivityEnergy(
+    void shouldCreditDebitAndReplayLedgerSources() {
+        WalletSnapshot credited = service.creditActivityEnergy(
                 "user-1",
-                2,
+                5,
                 "8:device-1:sync-1",
                 NOW
         );
-        WalletSnapshot replayed = service.creditActivityEnergy(
+        WalletSnapshot debited = service.debitExpeditionEnergy(
                 "user-1",
-                2,
-                "8:device-1:sync-1",
+                3,
+                "21:starter-expedition-v1:advance-1",
                 NOW.plusSeconds(10)
         );
-        WalletSnapshot second = service.creditActivityEnergy(
+        WalletSnapshot replayed = service.debitExpeditionEnergy(
                 "user-1",
-                1,
-                "8:device-1:sync-2",
+                3,
+                "21:starter-expedition-v1:advance-1",
                 NOW.plusSeconds(20)
         );
 
-        assertEquals(new WalletSnapshot(2, 1), first);
-        assertEquals(first, replayed);
-        assertEquals(new WalletSnapshot(3, 2), second);
+        assertEquals(new WalletSnapshot(5, 1), credited);
+        assertEquals(new WalletSnapshot(2, 2), debited);
+        assertEquals(debited, replayed);
     }
 
     @Test
-    void shouldNotCreateLedgerVersionForZeroCredit() {
-        WalletSnapshot snapshot = service.creditActivityEnergy(
+    void shouldRejectDebitAboveBalanceWithoutChangingWallet() {
+        service.creditActivityEnergy("user-1", 2, "credit-1", NOW);
+
+        assertThrows(
+                InsufficientEnergyException.class,
+                () -> service.debitExpeditionEnergy(
+                        "user-1",
+                        3,
+                        "advance-1",
+                        NOW.plusSeconds(10)
+                )
+        );
+
+        WalletSnapshot current = service.creditActivityEnergy(
                 "user-1",
                 0,
-                "8:device-1:no-threshold",
-                NOW
+                "observe",
+                NOW.plusSeconds(20)
         );
-
-        assertEquals(new WalletSnapshot(0, 0), snapshot);
+        assertEquals(new WalletSnapshot(2, 1), current);
     }
 
     @Test
-    void shouldRejectReusedLedgerSourceForDifferentAmount() {
-        service.creditActivityEnergy(
-                "user-1",
-                2,
-                "8:device-1:sync-1",
-                NOW
-        );
+    void shouldRejectReusedSourceForDifferentDebit() {
+        service.creditActivityEnergy("user-1", 10, "credit-1", NOW);
+        service.debitExpeditionEnergy("user-1", 3, "advance-1", NOW);
 
         assertThrows(
                 EconomyLedgerConflictException.class,
-                () -> service.creditActivityEnergy(
+                () -> service.debitExpeditionEnergy(
                         "user-1",
-                        3,
-                        "8:device-1:sync-1",
+                        4,
+                        "advance-1",
                         NOW.plusSeconds(10)
                 )
         );

@@ -7,7 +7,9 @@ import java.util.Optional;
 
 import com.walkingrpg.backend.economy.domain.EconomyCredit;
 import com.walkingrpg.backend.economy.domain.EconomyCurrency;
+import com.walkingrpg.backend.economy.domain.EconomyDebit;
 import com.walkingrpg.backend.economy.domain.EconomyLedgerConflictException;
+import com.walkingrpg.backend.economy.domain.InsufficientEnergyException;
 import com.walkingrpg.backend.economy.domain.WalletSnapshot;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -28,27 +30,111 @@ public class JdbcEconomyRepository implements EconomyRepository {
             Instant observedAt
     ) {
         ensureWallet(userId, currency, observedAt);
-        return lockWallet(userId, currency);
+        return lockWallet(userId, currency)
+                .orElseThrow(() -> new IllegalStateException("Кошелёк не был создан"));
     }
 
     @Override
     public WalletSnapshot applyCredit(EconomyCredit credit) {
-        currentBalance(credit.userId(), credit.currency(), credit.occurredAt());
+        return applyChange(
+                credit.userId(),
+                credit.currency(),
+                credit.amount(),
+                credit.reasonCode(),
+                credit.sourceType(),
+                credit.sourceKey(),
+                credit.occurredAt(),
+                true
+        );
+    }
 
-        ExistingCredit existing = findExistingCredit(credit).orElse(null);
-        if (existing != null) {
-            if (existing.amount() != credit.amount()
-                    || !existing.reasonCode().equals(credit.reasonCode())) {
-                throw new EconomyLedgerConflictException(
-                        "Источник ledger уже использован для другого начисления"
-                );
-            }
-            return existing.walletSnapshot();
+    @Override
+    public WalletSnapshot applyDebit(EconomyDebit debit) {
+        return applyChange(
+                debit.userId(),
+                debit.currency(),
+                -debit.amount(),
+                debit.reasonCode(),
+                debit.sourceType(),
+                debit.sourceKey(),
+                debit.occurredAt(),
+                false
+        );
+    }
+
+    private WalletSnapshot applyChange(
+            String userId,
+            EconomyCurrency currency,
+            long signedAmount,
+            String reasonCode,
+            String sourceType,
+            String sourceKey,
+            Instant occurredAt,
+            boolean createWallet
+    ) {
+        ExistingChange beforeLock = findExistingChange(
+                userId,
+                currency,
+                sourceType,
+                sourceKey
+        ).orElse(null);
+        if (beforeLock != null) {
+            return validateExisting(beforeLock, signedAmount, reasonCode);
         }
 
-        WalletSnapshot updated = addToWallet(credit);
-        appendLedger(credit, updated);
+        if (createWallet) {
+            ensureWallet(userId, currency, occurredAt);
+        }
+        WalletSnapshot current = lockWallet(userId, currency).orElse(null);
+        if (current == null) {
+            throw new InsufficientEnergyException(0, Math.abs(signedAmount));
+        }
+
+        ExistingChange afterLock = findExistingChange(
+                userId,
+                currency,
+                sourceType,
+                sourceKey
+        ).orElse(null);
+        if (afterLock != null) {
+            return validateExisting(afterLock, signedAmount, reasonCode);
+        }
+
+        if (signedAmount < 0 && current.balance() < -signedAmount) {
+            throw new InsufficientEnergyException(current.balance(), -signedAmount);
+        }
+
+        WalletSnapshot updated = addToWallet(
+                userId,
+                currency,
+                signedAmount,
+                occurredAt
+        );
+        appendLedger(
+                userId,
+                currency,
+                signedAmount,
+                reasonCode,
+                sourceType,
+                sourceKey,
+                occurredAt,
+                updated
+        );
         return updated;
+    }
+
+    private WalletSnapshot validateExisting(
+            ExistingChange existing,
+            long signedAmount,
+            String reasonCode
+    ) {
+        if (existing.signedAmount() != signedAmount
+                || !existing.reasonCode().equals(reasonCode)) {
+            throw new EconomyLedgerConflictException(
+                    "Источник ledger уже использован для другой операции"
+            );
+        }
+        return existing.walletSnapshot();
     }
 
     private void ensureWallet(
@@ -71,7 +157,10 @@ public class JdbcEconomyRepository implements EconomyRepository {
                 """, userId, currency.name(), timestamp, timestamp);
     }
 
-    private WalletSnapshot lockWallet(String userId, EconomyCurrency currency) {
+    private Optional<WalletSnapshot> lockWallet(
+            String userId,
+            EconomyCurrency currency
+    ) {
         List<WalletSnapshot> wallets = jdbcTemplate.query("""
                 SELECT balance, version
                 FROM economy_wallet
@@ -82,14 +171,16 @@ public class JdbcEconomyRepository implements EconomyRepository {
                 resultSet.getLong("balance"),
                 resultSet.getLong("version")
         ), userId, currency.name());
-
-        return wallets.stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Кошелёк не был создан"));
+        return wallets.stream().findFirst();
     }
 
-    private Optional<ExistingCredit> findExistingCredit(EconomyCredit credit) {
-        List<ExistingCredit> credits = jdbcTemplate.query("""
+    private Optional<ExistingChange> findExistingChange(
+            String userId,
+            EconomyCurrency currency,
+            String sourceType,
+            String sourceKey
+    ) {
+        List<ExistingChange> changes = jdbcTemplate.query("""
                 SELECT amount,
                        reason_code,
                        balance_after,
@@ -99,23 +190,23 @@ public class JdbcEconomyRepository implements EconomyRepository {
                   AND currency_code = ?
                   AND source_type = ?
                   AND source_key = ?
-                """, (resultSet, rowNumber) -> new ExistingCredit(
+                """, (resultSet, rowNumber) -> new ExistingChange(
                 resultSet.getLong("amount"),
                 resultSet.getString("reason_code"),
                 new WalletSnapshot(
                         resultSet.getLong("balance_after"),
                         resultSet.getLong("wallet_version")
                 )
-        ),
-                credit.userId(),
-                credit.currency().name(),
-                credit.sourceType(),
-                credit.sourceKey()
-        );
-        return credits.stream().findFirst();
+        ), userId, currency.name(), sourceType, sourceKey);
+        return changes.stream().findFirst();
     }
 
-    private WalletSnapshot addToWallet(EconomyCredit credit) {
+    private WalletSnapshot addToWallet(
+            String userId,
+            EconomyCurrency currency,
+            long signedAmount,
+            Instant occurredAt
+    ) {
         List<WalletSnapshot> wallets = jdbcTemplate.query("""
                 UPDATE economy_wallet
                 SET balance = balance + ?,
@@ -123,23 +214,34 @@ public class JdbcEconomyRepository implements EconomyRepository {
                     updated_at = ?
                 WHERE user_id = ?
                   AND currency_code = ?
+                  AND balance + ? >= 0
                 RETURNING balance, version
                 """, (resultSet, rowNumber) -> new WalletSnapshot(
                 resultSet.getLong("balance"),
                 resultSet.getLong("version")
         ),
-                credit.amount(),
-                Timestamp.from(credit.occurredAt()),
-                credit.userId(),
-                credit.currency().name()
+                signedAmount,
+                Timestamp.from(occurredAt),
+                userId,
+                currency.name(),
+                signedAmount
         );
 
         return wallets.stream()
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Не удалось обновить кошелёк"));
+                .orElseThrow(() -> new InsufficientEnergyException(0, Math.abs(signedAmount)));
     }
 
-    private void appendLedger(EconomyCredit credit, WalletSnapshot updated) {
+    private void appendLedger(
+            String userId,
+            EconomyCurrency currency,
+            long signedAmount,
+            String reasonCode,
+            String sourceType,
+            String sourceKey,
+            Instant occurredAt,
+            WalletSnapshot updated
+    ) {
         jdbcTemplate.update("""
                 INSERT INTO economy_ledger (
                     ledger_entry_id,
@@ -155,20 +257,20 @@ public class JdbcEconomyRepository implements EconomyRepository {
                 )
                 VALUES (gen_random_uuid(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                credit.userId(),
-                credit.currency().name(),
-                credit.amount(),
+                userId,
+                currency.name(),
+                signedAmount,
                 updated.balance(),
                 updated.version(),
-                credit.reasonCode(),
-                credit.sourceType(),
-                credit.sourceKey(),
-                Timestamp.from(credit.occurredAt())
+                reasonCode,
+                sourceType,
+                sourceKey,
+                Timestamp.from(occurredAt)
         );
     }
 
-    private record ExistingCredit(
-            long amount,
+    private record ExistingChange(
+            long signedAmount,
             String reasonCode,
             WalletSnapshot walletSnapshot
     ) {

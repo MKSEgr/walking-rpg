@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +18,7 @@ class DemoHomeServiceTest {
 
     private final DemoHomeService service = new DemoHomeService(
             new StarterHomeContent(),
+            new StarterExpeditionContent(),
             Clock.fixed(NOW, ZoneOffset.UTC)
     );
 
@@ -37,6 +39,9 @@ class DemoHomeServiceTest {
         assertNotNull(snapshot.pilot());
         assertNotNull(snapshot.pet());
         assertNotNull(snapshot.expedition());
+        assertEquals("starter-expedition-v1", snapshot.expedition().expeditionId());
         assertEquals(30, snapshot.expedition().requiredEnergy());
+        assertEquals("IN_PROGRESS", snapshot.expedition().status());
+        assertNull(snapshot.expedition().unlockedEvent());
     }
 }

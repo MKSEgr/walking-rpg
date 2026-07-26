@@ -1,6 +1,6 @@
 # API draft
 
-Документ содержит направление, а не финальный OpenAPI-контракт.
+Документ содержит направление и работающие MVP-контракты, но пока не заменяет полноценную OpenAPI-спецификацию.
 
 ## Текущие endpoint-ы
 
@@ -10,32 +10,19 @@
 
 ### `GET /api/v1/home/demo`
 
-Демонстрационное состояние главного экрана без чтения PostgreSQL. Сохраняется для разработки UI и ручной диагностики, но не является production state.
+Явное демонстрационное состояние. Production mobile не использует его как silent fallback.
 
-### `GET /api/v1/home`
+### `GET /api/v1/home?localDate=YYYY-MM-DD`
 
-Production read-model главного экрана.
+Возвращает актуальный read-model главного экрана.
 
-До появления аутентификации используется временный обязательный заголовок:
+Заголовок:
 
 ```text
 X-User-Id: demo-user-1
-```
-
-Query parameters:
-
-```text
-localDate=YYYY-MM-DD — обязательный локальный календарный день пользователя
 ```
 
 Пример:
-
-```http
-GET /api/v1/home?localDate=2026-07-25
-X-User-Id: demo-user-1
-```
-
-Response:
 
 ```json
 {
@@ -43,97 +30,73 @@ Response:
   "timeZone": "Europe/Berlin",
   "dailySteps": 6842,
   "dailyGoal": 6000,
-  "availableEnergy": 68,
+  "availableEnergy": 38,
   "activityStateVersion": 1,
-  "economyVersion": 1,
+  "economyVersion": 2,
   "lastActivitySyncAt": "2026-07-25T11:55:00Z",
   "serverTime": "2026-07-25T12:00:00Z",
   "contentVersion": "starter-v1",
   "pilot": {
     "name": "Навигатор",
-    "level": 1,
-    "currentExperience": 20,
-    "nextLevelExperience": 100,
-    "specialization": "Не выбрана"
+    "level": 1
   },
   "pet": {
     "name": "Искра",
-    "species": "Люмин",
-    "level": 1,
-    "bond": 10,
-    "trait": "Чуткий разведчик"
+    "level": 1
   },
   "expedition": {
+    "expeditionId": "starter-expedition-v1",
     "name": "Сигнал из туманного сектора",
+    "currentNodeId": "outer-beacon",
     "currentNode": "Внешний маяк",
-    "progress": 0,
-    "requiredEnergy": 30
+    "progress": 30,
+    "requiredEnergy": 30,
+    "status": "EVENT_READY",
+    "version": 1,
+    "unlockedEvent": {
+      "eventId": "signal-source-v1",
+      "title": "Источник сигнала",
+      "summary": "Маяк отвечает повторяющимся импульсом. Нужно решить, как войти внутрь.",
+      "status": "READY"
+    }
   }
 }
 ```
 
-Правила:
+Семантика:
 
-- `dailySteps` и `activityStateVersion` читаются для пары `userId + localDate`;
-- `availableEnergy` и `economyVersion` являются текущим состоянием ENERGY wallet и не обнуляются при смене даты;
-- `timeZone` и `lastActivitySyncAt` могут быть `null`, если за выбранный день activity sync отсутствует;
-- неизвестный пользователь или дата возвращают zero-state вместо 404;
-- endpoint не создаёт записи и не изменяет версии;
-- `contentVersion=starter-v1` означает, что pilot/pet/expedition пока являются общей начальной конфигурацией, а не изменяемыми экземплярами пользователя.
-
-Ошибки:
-
-- отсутствующий/пустой `X-User-Id` — `400 VALIDATION_ERROR`;
-- отсутствующий/некорректный `localDate` — `400 VALIDATION_ERROR`.
+- activity относится к `user + localDate`;
+- ENERGY wallet глобален для пользователя;
+- expedition progress также глобален для пользователя;
+- неизвестный пользователь получает zero-state и starter content;
+- `GET` не выполняет `INSERT` или `UPDATE`.
 
 ### `POST /api/v1/activity/sync`
 
-Первый технический срез синхронизации активности. Контракт, расчёт, PostgreSQL persistence и начисление энергии через economy ledger реализованы. Accepted state, wallet credit, ledger entry и idempotent response сохраняются одной транзакцией; конкурирующие запросы пользователя сериализуются user-level advisory lock.
+Принимает накопительный authoritative total, сохраняет дневной high-watermark и начисляет ENERGY через ledger.
 
-До появления аутентификации и регистрации устройств используются временные обязательные заголовки:
+Временные заголовки:
 
 ```text
 X-User-Id: demo-user-1
 X-Device-Id: demo-device-1
 ```
 
-После появления security слоя `X-User-Id` заменяется authenticated principal, а `X-Device-Id` — идентификатором зарегистрированного устройства.
-
-#### Request
+Request:
 
 ```json
 {
   "localDate": "2026-07-25",
   "timeZone": "Europe/Berlin",
   "authoritativeTotal": 6842,
-  "buckets": [
-    {
-      "from": "2026-07-25T08:00:00Z",
-      "to": "2026-07-25T09:00:00Z",
-      "steps": 412
-    }
-  ],
+  "buckets": [],
   "syncCursor": "opaque-cursor",
   "idempotencyKey": "device-date-sequence",
   "attestation": null
 }
 ```
 
-Правила:
-
-- `authoritativeTotal >= 0`;
-- `timeZone` должен быть валидным IANA Zone ID;
-- в bucket `from < to` и `steps >= 0`;
-- максимум 96 bucket-ов на запрос;
-- одинаковый `idempotencyKey` в рамках одного пользователя и устройства должен сопровождаться идентичным business payload;
-- attestation может быть перевыпущен при повторе, не входит в business fingerprint и в будущем проверяется отдельно для каждого запроса;
-- reward high-watermark хранится на пользователя и локальный день, а не отдельно на каждое устройство;
-- cumulative total разных устройств не суммируется; сервер принимает только рост общего user-level total;
-- уменьшение total не создаёт отрицательную награду;
-- положительная `energyGranted` зачисляется только через economy ledger;
-- zero/decreased sync не создаёт ledger entry.
-
-#### Response
+Response:
 
 ```json
 {
@@ -148,20 +111,6 @@ X-Device-Id: demo-device-1
 }
 ```
 
-Поля экономики:
-
-- `energyGranted` — сколько энергии начислено именно этой операцией;
-- `energyBalanceAfter` — баланс ENERGY сразу после этой операции;
-- `economyVersion` — версия кошелька после этой операции. Версия увеличивается только при появлении ledger entry.
-
-`riskStatus`:
-
-```text
-ACCEPTED          — принят положительный прирост;
-NO_NEW_ACTIVITY   — total не изменился;
-TOTAL_DECREASED   — новый total меньше ранее принятого, состояние не уменьшено.
-```
-
 Энергия рассчитывается по накопительным порогам:
 
 ```text
@@ -169,58 +118,92 @@ energyGranted = floor(newAcceptedTotal / 100)
               - floor(previousAcceptedTotal / 100)
 ```
 
-#### Идемпотентный повтор
+### `POST /api/v1/expeditions/{expeditionId}/advance`
 
-Повтор идентичной бизнес-команды с тем же ключом возвращает сохранённый response, включая исходные `stateVersion`, `serverTime`, `energyBalanceAfter` и `economyVersion`. `GET /home` при этом возвращает уже актуальный текущий wallet, то есть command snapshot и query state имеют разные осознанные семантики.
+Тратит ENERGY на постоянный progress экспедиции.
 
-Повтор ключа с другим payload:
+Заголовок:
 
-```http
-409 Conflict
+```text
+X-User-Id: demo-user-1
 ```
+
+Request:
 
 ```json
 {
-  "code": "IDEMPOTENCY_CONFLICT",
-  "message": "idempotencyKey уже использован для другого запроса",
-  "details": {
-    "field": "idempotencyKey"
+  "energyToSpend": 30,
+  "idempotencyKey": "starter-expedition-v1-advance-1"
+}
+```
+
+Response:
+
+```json
+{
+  "contentVersion": "starter-v1",
+  "expeditionId": "starter-expedition-v1",
+  "expeditionName": "Сигнал из туманного сектора",
+  "energySpent": 30,
+  "energyBalanceAfter": 38,
+  "economyVersion": 2,
+  "progressAfter": 30,
+  "requiredEnergy": 30,
+  "expeditionVersion": 1,
+  "status": "EVENT_READY",
+  "currentNodeId": "outer-beacon",
+  "currentNodeName": "Внешний маяк",
+  "unlockedEvent": {
+    "eventId": "signal-source-v1",
+    "title": "Источник сигнала",
+    "summary": "Маяк отвечает повторяющимся импульсом. Нужно решить, как войти внутрь.",
+    "status": "READY"
   },
-  "traceId": "f508bf6a-73e5-4aa2-88f5-6b712a571dd6"
+  "serverTime": "2026-07-25T12:00:00Z"
+}
+```
+
+Правила:
+
+- `energyToSpend > 0`;
+- `energyToSpend` не может превышать остаток до узла;
+- wallet не может стать отрицательным;
+- partial advance разрешён;
+- progress ограничен первым порогом 30 ENERGY;
+- после `EVENT_READY` новый advance возвращает `409 EXPEDITION_STATE_CONFLICT`;
+- одинаковый key и payload возвращает исходный response;
+- тот же key с другим amount возвращает `409 IDEMPOTENCY_CONFLICT`;
+- debit, ledger, progress и processed response сохраняются одной транзакцией.
+
+Недостаточный баланс:
+
+```json
+{
+  "code": "INSUFFICIENT_ENERGY",
+  "message": "Недостаточно энергии для операции",
+  "details": {
+    "availableEnergy": 5,
+    "requiredEnergy": 30
+  },
+  "traceId": "uuid"
 }
 ```
 
 ## Планируемые endpoint-ы first playable
 
 ```text
-POST /api/v1/expeditions/{expeditionId}/start
-POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
-POST /api/v1/pets/{petId}/upgrade
 GET  /api/v1/content/bootstrap
+POST /api/v1/pets/{petId}/upgrade
 ```
 
 ## Общие правила
 
-- JSON поля — camelCase;
+- JSON-поля — camelCase;
 - даты/время — ISO-8601;
-- все команды изменения поддерживают idempotency;
-- query endpoint-ы не должны молча создавать состояние;
+- команды изменения поддерживают idempotency;
 - клиент не передаёт итоговую награду;
 - баланс меняется только через ledger;
-- ошибки имеют стабильный `code`, человекочитаемый `message`, `details` и `traceId`;
-- версионирование API начинается с `/api/v1`;
+- ошибки имеют `code`, `message`, `details`, `traceId`;
+- API начинается с `/api/v1`;
 - destructive изменения требуют новой версии или миграционного периода.
-
-## Базовый формат ошибки
-
-```json
-{
-  "code": "VALIDATION_ERROR",
-  "message": "Запрос не прошёл валидацию",
-  "details": {
-    "localDate": "Дата должна быть указана в формате YYYY-MM-DD"
-  },
-  "traceId": "f508bf6a-73e5-4aa2-88f5-6b712a571dd6"
-}
-```
