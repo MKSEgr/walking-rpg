@@ -12,10 +12,7 @@ abstract interface class HomeTransport {
 }
 
 class HomeTransportResponse {
-  const HomeTransportResponse({
-    required this.statusCode,
-    required this.body,
-  });
+  const HomeTransportResponse({required this.statusCode, required this.body});
 
   final int statusCode;
   final String body;

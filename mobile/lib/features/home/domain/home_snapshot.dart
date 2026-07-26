@@ -55,9 +55,7 @@ class HomeSnapshot {
       expeditionVersion: _readInt(expedition, 'version'),
       unlockedEvent: eventJson == null
           ? null
-          : HomeExpeditionEvent.fromJson(
-              _asMap(eventJson, 'unlockedEvent'),
-            ),
+          : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
       pilotName: _readString(pilot, 'name'),
       pilotLevel: _readInt(pilot, 'level'),
       pilotCurrentExperience: _readInt(pilot, 'currentExperience'),
@@ -171,10 +169,7 @@ class HomeSnapshot {
     return _asMap(value, field);
   }
 
-  static String? _readNullableString(
-    Map<String, dynamic> json,
-    String field,
-  ) {
+  static String? _readNullableString(Map<String, dynamic> json, String field) {
     final Object? value = json[field];
     if (value == null) {
       return null;
@@ -215,9 +210,8 @@ class HomeExpeditionEvent {
     } else if (rawChoices is List<dynamic>) {
       choices = rawChoices
           .map(
-            (Object? value) => HomeEventChoice.fromJson(
-              _asMap(value, 'choices[]'),
-            ),
+            (Object? value) =>
+                HomeEventChoice.fromJson(_asMap(value, 'choices[]')),
           )
           .toList(growable: false);
     } else {
@@ -239,10 +233,7 @@ class HomeExpeditionEvent {
         'selectedChoiceTitle',
       ),
       outcomeTitle: HomeSnapshot._readNullableString(json, 'outcomeTitle'),
-      outcomeSummary: HomeSnapshot._readNullableString(
-        json,
-        'outcomeSummary',
-      ),
+      outcomeSummary: HomeSnapshot._readNullableString(json, 'outcomeSummary'),
     );
   }
 

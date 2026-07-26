@@ -7,8 +7,8 @@ class DevelopmentStepSource implements StepSource {
     required this.authoritativeTotal,
     required String timeZone,
     DateTime Function()? now,
-  })  : timeZone = _requireText(timeZone, 'timeZone'),
-        _now = now ?? DateTime.now {
+  }) : timeZone = _requireText(timeZone, 'timeZone'),
+       _now = now ?? DateTime.now {
     if (authoritativeTotal < 0) {
       throw ArgumentError.value(
         authoritativeTotal,

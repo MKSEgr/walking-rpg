@@ -8,6 +8,9 @@ for file in \
   "$ROOT_DIR/PROJECT_VISION.md" \
   "$ROOT_DIR/backend/pom.xml" \
   "$ROOT_DIR/mobile/pubspec.yaml" \
+  "$ROOT_DIR/mobile/android/app/src/main/AndroidManifest.xml" \
+  "$ROOT_DIR/mobile/ios/Runner/Info.plist" \
+  "$ROOT_DIR/mobile/ios/Runner/Runner.entitlements" \
   "$ROOT_DIR/docs/ARCHITECTURE.md"; do
   if [ ! -f "$file" ]; then
     echo "Missing: $file" >&2

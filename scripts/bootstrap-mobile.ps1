@@ -9,11 +9,11 @@ if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
 
 Push-Location $MobileDir
 try {
-    flutter create --platforms=android,ios --org com.walkingrpg --project-name walking_rpg_mobile .
     flutter pub get
-    flutter analyze
+    dart format --output=none --set-exit-if-changed lib test
+    flutter analyze --fatal-infos
     flutter test
-    Write-Host "Mobile project is ready. Run: cd mobile; flutter run"
+    Write-Host "Mobile project is ready. Android and iOS host projects are versioned in the repository."
 }
 finally {
     Pop-Location

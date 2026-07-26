@@ -6,32 +6,37 @@ import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 
 void main() {
-  test('client sends user and local date and maps successful response',
-      () async {
-    final _FakeHomeTransport transport = _FakeHomeTransport(
-      HomeTransportResponse(
-        statusCode: 200,
-        body: jsonEncode(_homeResponse()),
-      ),
-    );
-    final HomeApiClient client = HomeApiClient(
-      baseUri: Uri.parse('http://localhost:8080'),
-      userId: 'user-1',
-      transport: transport,
-    );
+  test(
+    'client sends user and local date and maps successful response',
+    () async {
+      final _FakeHomeTransport transport = _FakeHomeTransport(
+        HomeTransportResponse(
+          statusCode: 200,
+          body: jsonEncode(_homeResponse()),
+        ),
+      );
+      final HomeApiClient client = HomeApiClient(
+        baseUri: Uri.parse('http://localhost:8080'),
+        userId: 'user-1',
+        transport: transport,
+      );
 
-    final HomeSnapshot snapshot = await client.fetchHome(
-      DateTime(2026, 7, 25),
-    );
+      final HomeSnapshot snapshot = await client.fetchHome(
+        DateTime(2026, 7, 25),
+      );
 
-    expect(transport.requestedUri?.path, '/api/v1/home');
-    expect(transport.requestedUri?.queryParameters['localDate'], '2026-07-25');
-    expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
-    expect(snapshot.dailySteps, 6842);
-    expect(snapshot.availableEnergy, 38);
-    expect(snapshot.expeditionStatus, 'EVENT_READY');
-    expect(snapshot.unlockedEvent?.eventId, 'signal-source-v1');
-  });
+      expect(transport.requestedUri?.path, '/api/v1/home');
+      expect(
+        transport.requestedUri?.queryParameters['localDate'],
+        '2026-07-25',
+      );
+      expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
+      expect(snapshot.dailySteps, 6842);
+      expect(snapshot.availableEnergy, 38);
+      expect(snapshot.expeditionStatus, 'EVENT_READY');
+      expect(snapshot.unlockedEvent?.eventId, 'signal-source-v1');
+    },
+  );
 
   test('client exposes backend error message', () async {
     final HomeApiClient client = HomeApiClient(
@@ -40,9 +45,7 @@ void main() {
       transport: _FakeHomeTransport(
         HomeTransportResponse(
           statusCode: 400,
-          body: jsonEncode(<String, dynamic>{
-            'message': 'Некорректная дата',
-          }),
+          body: jsonEncode(<String, dynamic>{'message': 'Некорректная дата'}),
         ),
       ),
     );

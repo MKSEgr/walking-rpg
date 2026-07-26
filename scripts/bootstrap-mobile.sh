@@ -10,9 +10,9 @@ if ! command -v flutter >/dev/null 2>&1; then
 fi
 
 cd "$MOBILE_DIR"
-flutter create --platforms=android,ios --org com.walkingrpg --project-name walking_rpg_mobile .
 flutter pub get
-flutter analyze
+dart format --output=none --set-exit-if-changed lib test
+flutter analyze --fatal-infos
 flutter test
 
-echo "Mobile project is ready. Run: cd mobile && flutter run"
+echo "Mobile project is ready. Android and iOS host projects are versioned in the repository."

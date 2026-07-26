@@ -5,9 +5,7 @@ import 'dart:io';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 
 class IoHomeTransport implements HomeTransport {
-  const IoHomeTransport({
-    this.timeout = const Duration(seconds: 10),
-  });
+  const IoHomeTransport({this.timeout = const Duration(seconds: 10)});
 
   final Duration timeout;
 
@@ -37,18 +35,22 @@ class IoHomeTransport implements HomeTransport {
     final HttpClient client = HttpClient()..connectionTimeout = timeout;
 
     try {
-      final HttpClientRequest request =
-          await client.openUrl(method, uri).timeout(timeout);
+      final HttpClientRequest request = await client
+          .openUrl(method, uri)
+          .timeout(timeout);
       headers.forEach(
         (String name, String value) => request.headers.set(name, value),
       );
       if (body != null) {
         request.add(utf8.encode(body));
       }
-      final HttpClientResponse response =
-          await request.close().timeout(timeout);
-      final String responseBody =
-          await utf8.decoder.bind(response).join().timeout(timeout);
+      final HttpClientResponse response = await request.close().timeout(
+        timeout,
+      );
+      final String responseBody = await utf8.decoder
+          .bind(response)
+          .join()
+          .timeout(timeout);
 
       return HomeTransportResponse(
         statusCode: response.statusCode,

@@ -59,10 +59,7 @@ class ActivityApiClient {
     required StepReading reading,
     required String idempotencyKey,
   }) async {
-    final String normalizedKey = _requireText(
-      idempotencyKey,
-      'idempotencyKey',
-    );
+    final String normalizedKey = _requireText(idempotencyKey, 'idempotencyKey');
     final Uri uri = baseUri.resolve('/api/v1/activity/sync');
     final HomeTransportResponse response = await transport.post(
       uri: uri,

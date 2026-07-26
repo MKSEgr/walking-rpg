@@ -7,44 +7,46 @@ import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 
 void main() {
-  test('client sends authoritative reading and maps successful response',
-      () async {
-    final _FakeTransport transport = _FakeTransport(
-      HomeTransportResponse(
-        statusCode: 200,
-        body: jsonEncode(_successResponse()),
-      ),
-    );
-    final ActivityApiClient client = ActivityApiClient(
-      baseUri: Uri.parse('http://localhost:8080'),
-      userId: 'user-1',
-      deviceId: 'device-1',
-      transport: transport,
-    );
+  test(
+    'client sends authoritative reading and maps successful response',
+    () async {
+      final _FakeTransport transport = _FakeTransport(
+        HomeTransportResponse(
+          statusCode: 200,
+          body: jsonEncode(_successResponse()),
+        ),
+      );
+      final ActivityApiClient client = ActivityApiClient(
+        baseUri: Uri.parse('http://localhost:8080'),
+        userId: 'user-1',
+        deviceId: 'device-1',
+        transport: transport,
+      );
 
-    final ActivitySyncResult result = await client.sync(
-      reading: StepReading(
-        authoritativeTotal: 6842,
-        localDate: DateTime(2026, 7, 26),
-        timeZone: 'Europe/Berlin',
-        syncCursor: 'cursor-1',
-      ),
-      idempotencyKey: 'sync-1',
-    );
+      final ActivitySyncResult result = await client.sync(
+        reading: StepReading(
+          authoritativeTotal: 6842,
+          localDate: DateTime(2026, 7, 26),
+          timeZone: 'Europe/Berlin',
+          syncCursor: 'cursor-1',
+        ),
+        idempotencyKey: 'sync-1',
+      );
 
-    expect(transport.requestedUri?.path, '/api/v1/activity/sync');
-    expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
-    expect(transport.requestedHeaders?['X-Device-Id'], 'device-1');
-    expect(transport.decodedBody?['localDate'], '2026-07-26');
-    expect(transport.decodedBody?['timeZone'], 'Europe/Berlin');
-    expect(transport.decodedBody?['authoritativeTotal'], 6842);
-    expect(transport.decodedBody?['syncCursor'], 'cursor-1');
-    expect(transport.decodedBody?['idempotencyKey'], 'sync-1');
-    expect(transport.decodedBody?['buckets'], isEmpty);
-    expect(transport.decodedBody?['attestation'], isNull);
-    expect(result.energyGranted, 68);
-    expect(result.energyBalanceAfter, 68);
-  });
+      expect(transport.requestedUri?.path, '/api/v1/activity/sync');
+      expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
+      expect(transport.requestedHeaders?['X-Device-Id'], 'device-1');
+      expect(transport.decodedBody?['localDate'], '2026-07-26');
+      expect(transport.decodedBody?['timeZone'], 'Europe/Berlin');
+      expect(transport.decodedBody?['authoritativeTotal'], 6842);
+      expect(transport.decodedBody?['syncCursor'], 'cursor-1');
+      expect(transport.decodedBody?['idempotencyKey'], 'sync-1');
+      expect(transport.decodedBody?['buckets'], isEmpty);
+      expect(transport.decodedBody?['attestation'], isNull);
+      expect(result.energyGranted, 68);
+      expect(result.energyBalanceAfter, 68);
+    },
+  );
 
   test('client exposes stable backend error', () async {
     final ActivityApiClient client = ActivityApiClient(

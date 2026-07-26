@@ -63,10 +63,8 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: ActivitySyncShell(
-          homeBuilder: (Key key) => HomeScreen(
-            key: key,
-            loader: () async => HomeSnapshot.demo,
-          ),
+          homeBuilder: (Key key) =>
+              HomeScreen(key: key, loader: () async => HomeSnapshot.demo),
         ),
       ),
     );

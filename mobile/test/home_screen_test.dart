@@ -11,11 +11,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: HomeScreen(
-          loader: () async => HomeSnapshot.demo,
-        ),
-      ),
+      MaterialApp(home: HomeScreen(loader: () async => HomeSnapshot.demo)),
     );
     await tester.pumpAndSettle();
 
@@ -49,15 +45,16 @@ void main() {
             return loads == 1 ? _readyToAdvance() : _eventReady();
           },
           idempotencyKeyFactory: () => 'fixed-key',
-          advancer: ({
-            required String expeditionId,
-            required int energyToSpend,
-            required String idempotencyKey,
-          }) async {
-            sentEnergy = energyToSpend;
-            sentKey = idempotencyKey;
-            return _advanceResult();
-          },
+          advancer:
+              ({
+                required String expeditionId,
+                required int energyToSpend,
+                required String idempotencyKey,
+              }) async {
+                sentEnergy = energyToSpend;
+                sentKey = idempotencyKey;
+                return _advanceResult();
+              },
         ),
       ),
     );
@@ -111,16 +108,17 @@ void main() {
             return loads == 1 ? _eventReady() : _resolvedEvent();
           },
           idempotencyKeyFactory: () => 'event-key',
-          eventResolver: ({
-            required String eventId,
-            required String choiceId,
-            required String idempotencyKey,
-          }) async {
-            sentEventId = eventId;
-            sentChoiceId = choiceId;
-            sentKey = idempotencyKey;
-            return _eventResolutionResult();
-          },
+          eventResolver:
+              ({
+                required String eventId,
+                required String choiceId,
+                required String idempotencyKey,
+              }) async {
+                sentEventId = eventId;
+                sentChoiceId = choiceId;
+                sentKey = idempotencyKey;
+                return _eventResolutionResult();
+              },
         ),
       ),
     );
