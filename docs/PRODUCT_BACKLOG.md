@@ -35,9 +35,9 @@
 
 ### US-004. Продвинуть экспедицию
 
-Как пользователь, я хочу потратить ENERGY и достичь первого узла.
+Как пользователь, я хочу тратить ENERGY и последовательно достигать узлов экспедиции.
 
-**Статус:** реализовано для `starter-expedition-v1` с persistent progress и idempotent debit.
+**Статус:** реализовано для двух узлов `starter-expedition-v1` с persistent progress и idempotent debit.
 
 ### US-005. Разрешить первое событие
 
@@ -52,9 +52,25 @@
 - home показывает resolved outcome;
 - поздняя ошибка откатывает progression и expedition completion.
 
-**Статус:** реализовано для `signal-source-v1` с choices `analyze-signal` и `trust-spark`.
+**Статус:** реализовано для `signal-source-v1` с choices `analyze-signal` и `trust-spark`; после resolution открывается второй узел.
 
-### US-006. Получить персональную дневную цель
+### US-006. Завершить второй узел и получить material reward
+
+Как пользователь, я хочу разрешить второе событие и сохранить найденный материал, чтобы экспедиция давала накопительный предметный результат.
+
+Критерии:
+
+- второй узел открывается после первого события без потери progression;
+- advance использует существующий ENERGY ledger и idempotency;
+- второе событие имеет два server-owned выбора;
+- material reward выдаётся один раз и записывается в inventory ledger;
+- home возвращает inventory stack и immutable reward snapshot;
+- пользователи `starter-v1` мигрируют на второй узел без повторной награды;
+- durable outbox replay-ит second-event command с исходным key.
+
+**Статус:** реализовано для `lumen-gate` / `echo-vault-v1`, items `lumen-shard` и `echo-thread`.
+
+### US-007. Получить персональную дневную цель
 
 Как пользователь, я хочу получать достижимую цель относительно собственной активности, а не общий порог для всех.
 
@@ -71,10 +87,10 @@
 
 ## P1 — после device validation
 
-- второй узел;
-- несколько типов событий;
+- третий и последующие узлы;
+- дополнительные типы событий;
 - полноценный level-up и навыки;
-- материалы и инвентарь;
+- расход материалов, crafting и unique items;
 - onboarding;
 - push;
 - базовая аналитика;

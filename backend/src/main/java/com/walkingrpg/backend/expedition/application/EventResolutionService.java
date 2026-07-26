@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
+import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventPetRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventPilotRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventResolutionCommand;
@@ -18,6 +19,8 @@ import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.ExpeditionRepository;
+import com.walkingrpg.backend.inventory.application.InventoryService;
+import com.walkingrpg.backend.inventory.domain.InventoryRewardResult;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.domain.ProgressionRewardResult;
 import org.springframework.stereotype.Service;
@@ -29,6 +32,7 @@ public class EventResolutionService {
     private final ExpeditionRepository expeditionRepository;
     private final EventResolutionRepository eventRepository;
     private final ProgressionService progressionService;
+    private final InventoryService inventoryService;
     private final StarterExpeditionContent content;
     private final Clock clock;
 
@@ -36,12 +40,14 @@ public class EventResolutionService {
             ExpeditionRepository expeditionRepository,
             EventResolutionRepository eventRepository,
             ProgressionService progressionService,
+            InventoryService inventoryService,
             StarterExpeditionContent content,
             Clock clock
     ) {
         this.expeditionRepository = expeditionRepository;
         this.eventRepository = eventRepository;
         this.progressionService = progressionService;
+        this.inventoryService = inventoryService;
         this.content = content;
         this.clock = clock;
     }
@@ -76,18 +82,27 @@ public class EventResolutionService {
                 command.choiceId()
         );
 
-        ProgressionRewardResult reward = progressionService.rewardEvent(
+        ProgressionRewardResult progression = progressionService.rewardEvent(
                 command.userId(),
                 choice.pilotExperienceReward(),
                 choice.petBondReward(),
                 serverTime
         );
-        ExpeditionProgressState completed = current.resolve(command.eventId());
+        EventMaterialRewardResult material = materialReward(
+                command.userId(),
+                scope,
+                choice,
+                serverTime
+        );
+        ExpeditionProgressState updated = content.nextNodeAfterEvent(command.eventId())
+                .map(nextNode -> current.resolveAndContinue(command.eventId(), nextNode))
+                .orElseGet(() -> current.resolveAndComplete(command.eventId()));
+
         EventResolutionResult result = new EventResolutionResult(
-                definition.contentVersion(),
+                content.contentVersion(),
                 definition.expeditionId(),
-                completed.status(),
-                completed.version(),
+                updated.status(),
+                updated.version(),
                 command.eventId(),
                 definition.event().title(),
                 EventResolutionStatus.RESOLVED,
@@ -96,29 +111,30 @@ public class EventResolutionService {
                 choice.outcomeTitle(),
                 choice.outcomeSummary(),
                 new EventPilotRewardResult(
-                        reward.pilotDefinition().pilotId(),
-                        reward.pilotDefinition().name(),
-                        reward.pilot().level(),
-                        reward.pilotExperienceGained(),
-                        reward.pilot().currentExperience(),
-                        reward.pilot().nextLevelExperience(),
-                        reward.pilot().version()
+                        progression.pilotDefinition().pilotId(),
+                        progression.pilotDefinition().name(),
+                        progression.pilot().level(),
+                        progression.pilotExperienceGained(),
+                        progression.pilot().currentExperience(),
+                        progression.pilot().nextLevelExperience(),
+                        progression.pilot().version()
                 ),
                 new EventPetRewardResult(
-                        reward.petDefinition().petId(),
-                        reward.petDefinition().name(),
-                        reward.pet().level(),
-                        reward.petBondGained(),
-                        reward.pet().bond(),
-                        reward.pet().version()
+                        progression.petDefinition().petId(),
+                        progression.petDefinition().name(),
+                        progression.pet().level(),
+                        progression.petBondGained(),
+                        progression.pet().bond(),
+                        progression.pet().version()
                 ),
+                material,
                 serverTime
         );
 
         expeditionRepository.saveState(
                 command.userId(),
                 definition.expeditionId(),
-                completed,
+                updated,
                 serverTime
         );
         eventRepository.saveProcessed(
@@ -126,6 +142,31 @@ public class EventResolutionService {
                 new ProcessedEventResolution(fingerprint, result)
         );
         return result;
+    }
+
+    private EventMaterialRewardResult materialReward(
+            String userId,
+            EventIdempotencyScope scope,
+            ExpeditionEventChoiceDefinition choice,
+            Instant serverTime
+    ) {
+        if (choice.materialReward() == null) {
+            return null;
+        }
+        InventoryRewardResult reward = inventoryService.rewardEventMaterial(
+                userId,
+                choice.materialReward(),
+                inventorySourceKey(scope),
+                serverTime
+        );
+        return new EventMaterialRewardResult(
+                reward.item().itemId(),
+                reward.item().name(),
+                reward.item().description(),
+                reward.quantityGained(),
+                reward.quantityAfter(),
+                reward.version()
+        );
     }
 
     private void validateOpenEvent(ExpeditionProgressState state, String eventId) {
@@ -143,5 +184,13 @@ public class EventResolutionService {
                     state.status().name()
             );
         }
+    }
+
+    private String inventorySourceKey(EventIdempotencyScope scope) {
+        return scope.eventId().length()
+                + ":"
+                + scope.eventId()
+                + ":"
+                + scope.idempotencyKey();
     }
 }

@@ -53,7 +53,7 @@ public class DemoHomeService {
                 0,
                 null,
                 serverTime,
-                starterContent.contentVersion(),
+                expeditionContent.contentVersion(),
                 starterContent.pilot(),
                 starterContent.pet(),
                 new ExpeditionSnapshot(

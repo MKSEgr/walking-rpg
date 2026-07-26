@@ -85,6 +85,8 @@ class ExpeditionAdvanceIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbcTemplate.update("DELETE FROM inventory_ledger");
+        jdbcTemplate.update("DELETE FROM inventory_stack");
         jdbcTemplate.update("DELETE FROM processed_expedition_advance");
         jdbcTemplate.update("DELETE FROM expedition_progress");
         jdbcTemplate.update("DELETE FROM processed_activity_sync");

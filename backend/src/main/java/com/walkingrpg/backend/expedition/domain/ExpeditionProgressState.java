@@ -53,10 +53,14 @@ public record ExpeditionProgressState(
         if (status != ExpeditionProgressStatus.IN_PROGRESS) {
             throw new IllegalStateException("Продвижение возможно только из IN_PROGRESS");
         }
+        if (!currentNodeId.equals(definition.currentNodeId())
+                || requiredEnergy != definition.requiredEnergy()) {
+            throw new IllegalStateException("Состояние узла не совпадает с content definition");
+        }
         if (energy <= 0 || energy > remainingEnergy()) {
             throw new IllegalArgumentException("Некорректное количество энергии для продвижения");
         }
-        long nextProgress = progressEnergy + energy;
+        long nextProgress = Math.addExact(progressEnergy, energy);
         boolean reachedNode = nextProgress == requiredEnergy;
         return new ExpeditionProgressState(
                 nextProgress,
@@ -70,13 +74,23 @@ public record ExpeditionProgressState(
         );
     }
 
-    public ExpeditionProgressState resolve(String eventId) {
-        if (status != ExpeditionProgressStatus.EVENT_READY) {
-            throw new IllegalStateException("Разрешение возможно только из EVENT_READY");
-        }
-        if (!Objects.equals(unlockedEventId, eventId)) {
-            throw new IllegalArgumentException("Разрешается неоткрытое событие");
-        }
+    public ExpeditionProgressState resolveAndContinue(
+            String eventId,
+            ExpeditionDefinition nextNode
+    ) {
+        validateResolution(eventId);
+        return new ExpeditionProgressState(
+                0,
+                nextNode.requiredEnergy(),
+                ExpeditionProgressStatus.IN_PROGRESS,
+                nextNode.currentNodeId(),
+                null,
+                version + 1
+        );
+    }
+
+    public ExpeditionProgressState resolveAndComplete(String eventId) {
+        validateResolution(eventId);
         return new ExpeditionProgressState(
                 progressEnergy,
                 requiredEnergy,
@@ -85,5 +99,19 @@ public record ExpeditionProgressState(
                 unlockedEventId,
                 version + 1
         );
+    }
+
+    /** Backward-compatible helper for the final node semantics. */
+    public ExpeditionProgressState resolve(String eventId) {
+        return resolveAndComplete(eventId);
+    }
+
+    private void validateResolution(String eventId) {
+        if (status != ExpeditionProgressStatus.EVENT_READY) {
+            throw new IllegalStateException("Разрешение возможно только из EVENT_READY");
+        }
+        if (!Objects.equals(unlockedEventId, eventId)) {
+            throw new IllegalArgumentException("Разрешается неоткрытое событие");
+        }
     }
 }

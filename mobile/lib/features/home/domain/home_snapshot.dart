@@ -29,6 +29,7 @@ class HomeSnapshot {
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
     this.dailyGoalPolicy = const DailyGoalPolicy.legacy(),
+    this.inventory = const <HomeInventoryItem>[],
   });
 
   factory HomeSnapshot.fromJson(Map<String, dynamic> json) {
@@ -75,6 +76,7 @@ class HomeSnapshot {
       petName: _readString(pet, 'name'),
       petLevel: _readInt(pet, 'level'),
       petBond: _readInt(pet, 'bond'),
+      inventory: _readInventory(json['inventory']),
     );
   }
 
@@ -105,6 +107,7 @@ class HomeSnapshot {
   final String petName;
   final int petLevel;
   final int petBond;
+  final List<HomeInventoryItem> inventory;
 
   int get remainingExpeditionEnergy {
     final int remaining = requiredEnergy - expeditionProgress;
@@ -157,7 +160,7 @@ class HomeSnapshot {
     economyVersion: 0,
     lastActivitySyncAt: null,
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v1',
+    contentVersion: 'starter-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'outer-beacon',
@@ -176,6 +179,21 @@ class HomeSnapshot {
     petBond: 10,
   );
 
+  static List<HomeInventoryItem> _readInventory(Object? raw) {
+    if (raw == null) {
+      return const <HomeInventoryItem>[];
+    }
+    if (raw is! List<dynamic>) {
+      throw const FormatException('inventory должен быть JSON-массивом');
+    }
+    return raw
+        .map(
+          (Object? value) =>
+              HomeInventoryItem.fromJson(_asMap(value, 'inventory[]')),
+        )
+        .toList(growable: false);
+  }
+
   static int _readInt(Map<String, dynamic> json, String field) {
     final Object? value = json[field];
     if (value is int) {
@@ -191,8 +209,7 @@ class HomeSnapshot {
     Map<String, dynamic> json,
     String field,
   ) {
-    final Object? value = json[field];
-    return _asMap(value, field);
+    return _asMap(json[field], field);
   }
 
   static String? _readNullableString(Map<String, dynamic> json, String field) {
@@ -226,6 +243,7 @@ class HomeExpeditionEvent {
     this.selectedChoiceTitle,
     this.outcomeTitle,
     this.outcomeSummary,
+    this.materialReward,
   });
 
   factory HomeExpeditionEvent.fromJson(Map<String, dynamic> json) {
@@ -243,6 +261,7 @@ class HomeExpeditionEvent {
     } else {
       throw const FormatException('choices должен быть JSON-массивом');
     }
+    final Object? materialJson = json['materialReward'];
 
     return HomeExpeditionEvent(
       eventId: HomeSnapshot._readString(json, 'eventId'),
@@ -260,6 +279,11 @@ class HomeExpeditionEvent {
       ),
       outcomeTitle: HomeSnapshot._readNullableString(json, 'outcomeTitle'),
       outcomeSummary: HomeSnapshot._readNullableString(json, 'outcomeSummary'),
+      materialReward: materialJson == null
+          ? null
+          : HomeMaterialReward.fromJson(
+              _asMap(materialJson, 'materialReward'),
+            ),
     );
   }
 
@@ -272,6 +296,7 @@ class HomeExpeditionEvent {
   final String? selectedChoiceTitle;
   final String? outcomeTitle;
   final String? outcomeSummary;
+  final HomeMaterialReward? materialReward;
 
   bool get isResolved => status == 'RESOLVED';
 }
@@ -283,9 +308,11 @@ class HomeEventChoice {
     required this.description,
     required this.pilotExperienceReward,
     required this.petBondReward,
+    this.materialReward,
   });
 
   factory HomeEventChoice.fromJson(Map<String, dynamic> json) {
+    final Object? materialJson = json['materialReward'];
     return HomeEventChoice(
       choiceId: HomeSnapshot._readString(json, 'choiceId'),
       title: HomeSnapshot._readString(json, 'title'),
@@ -295,6 +322,11 @@ class HomeEventChoice {
         'pilotExperienceReward',
       ),
       petBondReward: HomeSnapshot._readInt(json, 'petBondReward'),
+      materialReward: materialJson == null
+          ? null
+          : HomeMaterialRewardPreview.fromJson(
+              _asMap(materialJson, 'materialReward'),
+            ),
     );
   }
 
@@ -303,6 +335,82 @@ class HomeEventChoice {
   final String description;
   final int pilotExperienceReward;
   final int petBondReward;
+  final HomeMaterialRewardPreview? materialReward;
+}
+
+class HomeMaterialRewardPreview {
+  const HomeMaterialRewardPreview({
+    required this.itemId,
+    required this.itemName,
+    required this.quantity,
+  });
+
+  factory HomeMaterialRewardPreview.fromJson(Map<String, dynamic> json) {
+    return HomeMaterialRewardPreview(
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      itemName: HomeSnapshot._readString(json, 'itemName'),
+      quantity: HomeSnapshot._readInt(json, 'quantity'),
+    );
+  }
+
+  final String itemId;
+  final String itemName;
+  final int quantity;
+}
+
+class HomeMaterialReward {
+  const HomeMaterialReward({
+    required this.itemId,
+    required this.itemName,
+    required this.description,
+    required this.quantityGained,
+    required this.quantityAfter,
+    required this.version,
+  });
+
+  factory HomeMaterialReward.fromJson(Map<String, dynamic> json) {
+    return HomeMaterialReward(
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      itemName: HomeSnapshot._readString(json, 'itemName'),
+      description: HomeSnapshot._readString(json, 'description'),
+      quantityGained: HomeSnapshot._readInt(json, 'quantityGained'),
+      quantityAfter: HomeSnapshot._readInt(json, 'quantityAfter'),
+      version: HomeSnapshot._readInt(json, 'version'),
+    );
+  }
+
+  final String itemId;
+  final String itemName;
+  final String description;
+  final int quantityGained;
+  final int quantityAfter;
+  final int version;
+}
+
+class HomeInventoryItem {
+  const HomeInventoryItem({
+    required this.itemId,
+    required this.name,
+    required this.description,
+    required this.quantity,
+    required this.version,
+  });
+
+  factory HomeInventoryItem.fromJson(Map<String, dynamic> json) {
+    return HomeInventoryItem(
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      name: HomeSnapshot._readString(json, 'name'),
+      description: HomeSnapshot._readString(json, 'description'),
+      quantity: HomeSnapshot._readInt(json, 'quantity'),
+      version: HomeSnapshot._readInt(json, 'version'),
+    );
+  }
+
+  final String itemId;
+  final String name;
+  final String description;
+  final int quantity;
+  final int version;
 }
 
 Map<String, dynamic> _asMap(Object? value, String field) {

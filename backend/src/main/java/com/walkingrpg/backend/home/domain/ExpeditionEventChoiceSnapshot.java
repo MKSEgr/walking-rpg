@@ -5,6 +5,23 @@ public record ExpeditionEventChoiceSnapshot(
         String title,
         String description,
         int pilotExperienceReward,
-        int petBondReward
+        int petBondReward,
+        MaterialRewardPreviewSnapshot materialReward
 ) {
+    public ExpeditionEventChoiceSnapshot(
+            String choiceId,
+            String title,
+            String description,
+            int pilotExperienceReward,
+            int petBondReward
+    ) {
+        this(
+                choiceId,
+                title,
+                description,
+                pilotExperienceReward,
+                petBondReward,
+                null
+        );
+    }
 }

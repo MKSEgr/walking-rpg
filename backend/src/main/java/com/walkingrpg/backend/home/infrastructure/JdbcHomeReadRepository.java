@@ -3,8 +3,10 @@ package com.walkingrpg.backend.home.infrastructure;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
+import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -52,7 +54,13 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        resolution.choice_id AS resolved_choice_id,
                        resolution.choice_title AS resolved_choice_title,
                        resolution.outcome_title,
-                       resolution.outcome_summary
+                       resolution.outcome_summary,
+                       resolution.material_item_id,
+                       resolution.material_item_name,
+                       resolution.material_item_description,
+                       resolution.material_quantity_gained,
+                       resolution.material_quantity_after,
+                       resolution.material_version
                 FROM (VALUES (1)) AS anchor(value)
                 LEFT JOIN activity_sync_state activity
                   ON activity.user_id = ?
@@ -100,7 +108,14 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                     resultSet.getString("resolved_choice_id"),
                     resultSet.getString("resolved_choice_title"),
                     resultSet.getString("outcome_title"),
-                    resultSet.getString("outcome_summary")
+                    resultSet.getString("outcome_summary"),
+                    resultSet.getString("material_item_id"),
+                    resultSet.getString("material_item_name"),
+                    resultSet.getString("material_item_description"),
+                    resultSet.getObject("material_quantity_gained", Long.class),
+                    resultSet.getObject("material_quantity_after", Long.class),
+                    resultSet.getObject("material_version", Long.class),
+                    List.of()
             );
         },
                 userId,
@@ -119,6 +134,20 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
         if (state == null) {
             throw new IllegalStateException("Home read-model query не вернул строку");
         }
-        return state;
+        return state.withInventory(findInventory(userId));
+    }
+
+    private List<InventoryRuntimeItem> findInventory(String userId) {
+        return jdbcTemplate.query("""
+                SELECT item_id, quantity, version
+                FROM inventory_stack
+                WHERE user_id = ?
+                  AND quantity > 0
+                ORDER BY item_id
+                """, (resultSet, rowNumber) -> new InventoryRuntimeItem(
+                resultSet.getString("item_id"),
+                resultSet.getLong("quantity"),
+                resultSet.getLong("version")
+        ), userId);
     }
 }

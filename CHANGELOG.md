@@ -30,13 +30,18 @@
 - Android Health Connect и iOS HealthKit native configuration;
 - Android debug APK и iOS Simulator build jobs;
 - unit/API/PostgreSQL integration/mobile/platform tests;
-- ADR по activity, economy, home, expedition, event resolution, platform Health boundary и durable mobile outbox;
+- `starter-v2` со вторым узлом `lumen-gate` и событием `echo-vault-v1`;
+- persistent `inventory_stack` и append-only `inventory_ledger`;
+- material rewards `lumen-shard` и `echo-thread` с exact idempotent replay;
+- Flyway V5, переводящий завершённых пользователей `starter-v1` на второй узел без повторной награды;
+- inventory и material reward snapshots в production home/Flutter UI;
+- ADR по activity, economy, home, expedition, event resolution, platform Health boundary, durable mobile outbox и inventory;
 - GitHub Actions CI и PR template.
 
 ### Changed
 
-- first playable loop завершён до состояния `COMPLETED` и persistent rewards;
-- home read-model возвращает pilot XP, pet bond, event choices, resolved outcome и server-owned личную цель;
+- first playable расширен до двух узлов, двух событий и persistent material reward;
+- home read-model возвращает pilot XP, pet bond, event choices, material outcome, inventory и server-owned личную цель;
 - Android/iOS mobile по умолчанию использует platform health source;
 - demo activity source включается только явным feature flag;
 - mobile после каждой команды перечитывает server state без optimistic update;

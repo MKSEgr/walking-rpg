@@ -117,7 +117,7 @@ void main() {
         home: HomeScreen(
           loader: () async {
             loads += 1;
-            return loads == 1 ? _eventReady() : _resolvedEvent();
+            return loads == 1 ? _secondEventReady() : _resolvedEvent();
           },
           idempotencyKeyFactory: () => 'event-key',
           eventResolver:
@@ -138,7 +138,7 @@ void main() {
 
     final Finder choiceButton = find.widgetWithText(
       FilledButton,
-      'Проанализировать сигнал',
+      'Стабилизировать ядро',
     );
     await tester.scrollUntilVisible(
       choiceButton,
@@ -149,8 +149,8 @@ void main() {
     await tester.tap(choiceButton);
     await tester.pumpAndSettle();
 
-    expect(sentEventId, 'signal-source-v1');
-    expect(sentChoiceId, 'analyze-signal');
+    expect(sentEventId, 'echo-vault-v1');
+    expect(sentChoiceId, 'stabilize-core');
     expect(sentKey, 'event-key');
     expect(loads, 2);
 
@@ -162,15 +162,21 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(resolvedLabel, findsOneWidget);
-    expect(find.text('Карта импульсов'), findsOneWidget);
+    expect(find.text('Стабильный резонанс'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('XP 60 / 100'),
+      find.text('XP 90 / 100'),
       200,
       scrollable: find.byType(Scrollable),
     );
-    expect(find.text('XP 60 / 100'), findsOneWidget);
-    expect(find.text('Связь 15'), findsOneWidget);
+    expect(find.text('XP 90 / 100'), findsOneWidget);
+    expect(find.text('Связь 23'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Люминовый осколок × 2'),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text('Люминовый осколок × 2'), findsOneWidget);
   });
 
   testWidgets('home screen can retry after backend error', (
@@ -231,7 +237,7 @@ HomeSnapshot _readyToAdvance() {
     economyVersion: 1,
     lastActivitySyncAt: '2026-07-26T05:55:00Z',
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v1',
+    contentVersion: 'starter-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'outer-beacon',
@@ -263,7 +269,7 @@ HomeSnapshot _eventReady() {
     economyVersion: 2,
     lastActivitySyncAt: '2026-07-26T05:55:00Z',
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v1',
+    contentVersion: 'starter-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'outer-beacon',
@@ -304,36 +310,58 @@ HomeSnapshot _eventReady() {
   );
 }
 
-HomeSnapshot _resolvedEvent() {
+HomeSnapshot _secondEventReady() {
   return const HomeSnapshot(
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
-    dailySteps: 6842,
+    dailySteps: 10000,
     dailyGoal: 3250,
     dailyGoalPolicy: _adaptiveGoalPolicy,
-    availableEnergy: 38,
+    availableEnergy: 25,
     activityStateVersion: 1,
-    economyVersion: 2,
+    economyVersion: 3,
     lastActivitySyncAt: '2026-07-26T05:55:00Z',
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v1',
+    contentVersion: 'starter-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
-    currentNodeId: 'outer-beacon',
-    currentNodeName: 'Внешний маяк',
-    expeditionProgress: 30,
-    requiredEnergy: 30,
-    expeditionStatus: 'COMPLETED',
-    expeditionVersion: 2,
+    currentNodeId: 'lumen-gate',
+    currentNodeName: 'Люминовые ворота',
+    expeditionProgress: 45,
+    requiredEnergy: 45,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 3,
     unlockedEvent: HomeExpeditionEvent(
-      eventId: 'signal-source-v1',
-      title: 'Источник сигнала',
-      summary: 'Маяк отвечает импульсом.',
-      status: 'RESOLVED',
-      selectedChoiceId: 'analyze-signal',
-      selectedChoiceTitle: 'Проанализировать сигнал',
-      outcomeTitle: 'Карта импульсов',
-      outcomeSummary: 'Навигатор выделил безопасный ритм доступа.',
+      eventId: 'echo-vault-v1',
+      title: 'Хранилище эха',
+      summary: 'Ядро нестабильно.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'stabilize-core',
+          title: 'Стабилизировать ядро',
+          description: 'Навигатор зафиксирует резонанс.',
+          pilotExperienceReward: 30,
+          petBondReward: 8,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'lumen-shard',
+            itemName: 'Люминовый осколок',
+            quantity: 2,
+          ),
+        ),
+        HomeEventChoice(
+          choiceId: 'follow-echo',
+          title: 'Последовать за эхом',
+          description: 'Искра найдёт живой след.',
+          pilotExperienceReward: 20,
+          petBondReward: 18,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'echo-thread',
+            itemName: 'Нить эха',
+            quantity: 1,
+          ),
+        ),
+      ],
     ),
     pilotName: 'Навигатор',
     pilotLevel: 1,
@@ -345,9 +373,67 @@ HomeSnapshot _resolvedEvent() {
   );
 }
 
+HomeSnapshot _resolvedEvent() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 10000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 25,
+    activityStateVersion: 1,
+    economyVersion: 3,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'starter-v2',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'lumen-gate',
+    currentNodeName: 'Люминовые ворота',
+    expeditionProgress: 45,
+    requiredEnergy: 45,
+    expeditionStatus: 'COMPLETED',
+    expeditionVersion: 4,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'echo-vault-v1',
+      title: 'Хранилище эха',
+      summary: 'Ядро нестабильно.',
+      status: 'RESOLVED',
+      selectedChoiceId: 'stabilize-core',
+      selectedChoiceTitle: 'Стабилизировать ядро',
+      outcomeTitle: 'Стабильный резонанс',
+      outcomeSummary: 'Ядро перестало разрушаться.',
+      materialReward: HomeMaterialReward(
+        itemId: 'lumen-shard',
+        itemName: 'Люминовый осколок',
+        description: 'Стабильный фрагмент светового ядра.',
+        quantityGained: 2,
+        quantityAfter: 2,
+        version: 1,
+      ),
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 1,
+    pilotCurrentExperience: 90,
+    pilotNextLevelExperience: 100,
+    petName: 'Искра',
+    petLevel: 1,
+    petBond: 23,
+    inventory: <HomeInventoryItem>[
+      HomeInventoryItem(
+        itemId: 'lumen-shard',
+        name: 'Люминовый осколок',
+        description: 'Стабильный фрагмент светового ядра.',
+        quantity: 2,
+        version: 1,
+      ),
+    ],
+  );
+}
+
 ExpeditionAdvanceResult _advanceResult() {
   return const ExpeditionAdvanceResult(
-    contentVersion: 'starter-v1',
+    contentVersion: 'starter-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     energySpent: 30,
@@ -371,32 +457,40 @@ ExpeditionAdvanceResult _advanceResult() {
 
 EventResolutionResult _eventResolutionResult() {
   return const EventResolutionResult(
-    contentVersion: 'starter-v1',
+    contentVersion: 'starter-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionStatus: 'COMPLETED',
-    expeditionVersion: 2,
-    eventId: 'signal-source-v1',
-    eventTitle: 'Источник сигнала',
+    expeditionVersion: 4,
+    eventId: 'echo-vault-v1',
+    eventTitle: 'Хранилище эха',
     status: 'RESOLVED',
-    choiceId: 'analyze-signal',
-    choiceTitle: 'Проанализировать сигнал',
-    outcomeTitle: 'Карта импульсов',
-    outcomeSummary: 'Навигатор выделил безопасный ритм доступа.',
+    choiceId: 'stabilize-core',
+    choiceTitle: 'Стабилизировать ядро',
+    outcomeTitle: 'Стабильный резонанс',
+    outcomeSummary: 'Ядро перестало разрушаться.',
     pilot: EventPilotReward(
       pilotId: 'navigator-v1',
       name: 'Навигатор',
       level: 1,
-      experienceGained: 40,
-      currentExperience: 60,
+      experienceGained: 30,
+      currentExperience: 90,
       nextLevelExperience: 100,
-      version: 1,
+      version: 2,
     ),
     pet: EventPetReward(
       petId: 'spark-v1',
       name: 'Искра',
       level: 1,
-      bondGained: 5,
-      bond: 15,
+      bondGained: 8,
+      bond: 23,
+      version: 2,
+    ),
+    material: EventMaterialReward(
+      itemId: 'lumen-shard',
+      name: 'Люминовый осколок',
+      description: 'Стабильный фрагмент светового ядра.',
+      quantityGained: 2,
+      quantityAfter: 2,
       version: 1,
     ),
     serverTime: '2026-07-26T06:00:00Z',

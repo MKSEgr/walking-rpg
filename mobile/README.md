@@ -84,6 +84,19 @@ GAMEPLAY — продвижение экспедиции и решение со�
 
 На старте приложения pending-команды текущего технического пользователя replay-ятся один раз в foreground. После успешного replay приложение перечитывает authoritative home. Автоматического background worker-а и offline read cache пока нет.
 
+## Два узла и persistent inventory
+
+Главный экран читает `starter-v2` через `GET /api/v1/home` и не хранит локальную копию игрового прогресса. После первого события authoritative reload показывает второй узел `lumen-gate`. После накопления и расхода ещё 45 ENERGY открывается `echo-vault-v1`.
+
+Варианты второго события содержат preview материальной награды. После успешного resolution UI показывает исход события и новый stack, а отдельная карточка **«Инвентарь»** отображает текущие item и quantity. Поддерживаются:
+
+```text
+2 × Люминовый осколок
+1 × Нить эха
+```
+
+Event-команда уже использует generic durable outbox, поэтому второй `eventId` и его `choiceId` сохраняются и replay-ятся без нового типа команды. Optimistic update XP, bond, inventory или статуса экспедиции не выполняется: после ответа всегда перечитывается home.
+
 ## Минимальные платформенные настройки
 
 ### Android
@@ -224,6 +237,9 @@ Unit/widget tests покрывают:
 - temporary/backup/corruption recovery файлового store;
 - startup replay → reload authoritative home;
 - `sync → reload authoritative home`;
+- переход первого события на второй узел;
+- resolution второго события, material preview/result и inventory rendering;
+- restart-safe replay второго события с исходным payload/key;
 - parsing/validation `dailyGoalPolicy` и отображение default/adaptive explanation.
 
 ## Что ещё необходимо проверить на устройствах

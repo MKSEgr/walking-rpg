@@ -16,6 +16,7 @@ import com.walkingrpg.backend.expedition.application.ExpeditionNotFoundException
 import com.walkingrpg.backend.expedition.application.ExpeditionStateConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionValidationException;
 import com.walkingrpg.backend.home.application.HomeQueryValidationException;
+import com.walkingrpg.backend.inventory.domain.InventoryLedgerConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -154,6 +155,18 @@ public class ApiExceptionHandler {
                         "availableEnergy", exception.availableEnergy(),
                         "requiredEnergy", exception.requiredEnergy()
                 )
+        );
+    }
+
+    @ExceptionHandler(InventoryLedgerConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleInventoryLedgerConflict(
+            InventoryLedgerConflictException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "INVENTORY_LEDGER_CONFLICT",
+                exception.getMessage(),
+                Map.of()
         );
     }
 

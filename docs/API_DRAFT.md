@@ -28,13 +28,13 @@
 X-User-Id: demo-user-1
 ```
 
-После завершения первого события response содержит:
+После завершения второго события response содержит:
 
 ```json
 {
   "localDate": "2026-07-26",
   "timeZone": "Europe/Berlin",
-  "dailySteps": 6842,
+  "dailySteps": 10000,
   "dailyGoal": 3250,
   "dailyGoalPolicy": {
     "policyVersion": "adaptive-median-v1",
@@ -49,16 +49,16 @@ X-User-Id: demo-user-1
     "minimumGoal": 2000,
     "maximumGoal": 12000
   },
-  "availableEnergy": 38,
+  "availableEnergy": 25,
   "activityStateVersion": 1,
-  "economyVersion": 2,
+  "economyVersion": 3,
   "lastActivitySyncAt": "2026-07-26T06:55:00Z",
   "serverTime": "2026-07-26T07:00:00Z",
-  "contentVersion": "starter-v1",
+  "contentVersion": "starter-v2",
   "pilot": {
     "name": "Навигатор",
     "level": 1,
-    "currentExperience": 60,
+    "currentExperience": 90,
     "nextLevelExperience": 100,
     "specialization": "Не выбрана"
   },
@@ -66,27 +66,44 @@ X-User-Id: demo-user-1
     "name": "Искра",
     "species": "Люмин",
     "level": 1,
-    "bond": 15,
+    "bond": 23,
     "trait": "Чуткий разведчик"
   },
+  "inventory": [
+    {
+      "itemId": "lumen-shard",
+      "name": "Люминовый осколок",
+      "description": "Стабильный фрагмент светового ядра, пригодный для будущих улучшений.",
+      "quantity": 2,
+      "version": 1
+    }
+  ],
   "expedition": {
     "expeditionId": "starter-expedition-v1",
     "name": "Сигнал из туманного сектора",
-    "currentNodeId": "outer-beacon",
-    "currentNode": "Внешний маяк",
-    "progress": 30,
-    "requiredEnergy": 30,
+    "currentNodeId": "lumen-gate",
+    "currentNode": "Люминовые ворота",
+    "progress": 45,
+    "requiredEnergy": 45,
     "status": "COMPLETED",
-    "version": 2,
+    "version": 4,
     "unlockedEvent": {
-      "eventId": "signal-source-v1",
-      "title": "Источник сигнала",
-      "summary": "Маяк отвечает повторяющимся импульсом.",
+      "eventId": "echo-vault-v1",
+      "title": "Хранилище эха",
+      "summary": "За воротами найден архив маршрутов.",
       "status": "RESOLVED",
-      "selectedChoiceId": "analyze-signal",
-      "selectedChoiceTitle": "Проанализировать сигнал",
-      "outcomeTitle": "Карта импульсов",
-      "outcomeSummary": "Навигатор выделил безопасный ритм доступа."
+      "selectedChoiceId": "stabilize-core",
+      "selectedChoiceTitle": "Стабилизировать ядро",
+      "outcomeTitle": "Стабильный резонанс",
+      "outcomeSummary": "Ядро перестало разрушаться.",
+      "materialReward": {
+        "itemId": "lumen-shard",
+        "itemName": "Люминовый осколок",
+        "description": "Стабильный фрагмент светового ядра, пригодный для будущих улучшений.",
+        "quantityGained": 2,
+        "quantityAfter": 2,
+        "version": 1
+      }
     }
   }
 }
@@ -99,8 +116,9 @@ X-User-Id: demo-user-1
 - при менее чем трёх валидных днях возвращается стартовая цель `6000`;
 - текущий день не участвует в собственной цели;
 - `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
-- ENERGY, expedition и progression глобальны для пользователя;
+- ENERGY, expedition, progression и inventory глобальны для пользователя;
 - неизвестный пользователь получает zero-state и starter content;
+- `inventory[]` содержит актуальный stack; `materialReward` — immutable snapshot последнего разрешённого события;
 - `GET` не выполняет `INSERT` или `UPDATE`.
 
 ## `POST /api/v1/activity/sync`
@@ -179,7 +197,7 @@ Response после достижения узла:
 
 ```json
 {
-  "contentVersion": "starter-v1",
+  "contentVersion": "starter-v2",
   "expeditionId": "starter-expedition-v1",
   "expeditionName": "Сигнал из туманного сектора",
   "energySpent": 30,
@@ -208,11 +226,12 @@ Response после достижения узла:
 - partial advance разрешён;
 - wallet не становится отрицательным;
 - после `EVENT_READY` новый advance возвращает `409 EXPEDITION_STATE_CONFLICT`;
+- после первого event resolution тот же endpoint продвигает второй узел `lumen-gate` с порогом 45;
 - debit, ledger, progress и response сохраняются одной транзакцией.
 
 ## `POST /api/v1/events/{eventId}/resolve`
 
-Разрешает открытое событие одним из server-owned вариантов и атомарно применяет progression reward.
+Разрешает открытое событие одним из server-owned вариантов и атомарно применяет progression/material reward.
 
 ```http
 X-User-Id: demo-user-1
@@ -222,64 +241,80 @@ Request:
 
 ```json
 {
-  "choiceId": "analyze-signal",
-  "idempotencyKey": "signal-source-v1-resolution-1"
+  "choiceId": "stabilize-core",
+  "idempotencyKey": "echo-vault-v1-resolution-1"
 }
 ```
 
-Доступные choice для `signal-source-v1`:
+Starter content v2:
 
 ```text
-analyze-signal  → +40 pilot XP, +5 pet bond
-trust-spark     → +20 pilot XP, +15 pet bond
+signal-source-v1
+  analyze-signal  → +40 pilot XP, +5 pet bond, переход к lumen-gate
+  trust-spark     → +20 pilot XP, +15 pet bond, переход к lumen-gate
+
+echo-vault-v1
+  stabilize-core  → +30 pilot XP, +8 pet bond, +2 lumen-shard, COMPLETED
+  follow-echo     → +20 pilot XP, +18 pet bond, +1 echo-thread, COMPLETED
 ```
 
-Response:
+Response второго события:
 
 ```json
 {
-  "contentVersion": "starter-v1",
+  "contentVersion": "starter-v2",
   "expeditionId": "starter-expedition-v1",
   "expeditionStatus": "COMPLETED",
-  "expeditionVersion": 2,
-  "eventId": "signal-source-v1",
-  "eventTitle": "Источник сигнала",
+  "expeditionVersion": 4,
+  "eventId": "echo-vault-v1",
+  "eventTitle": "Хранилище эха",
   "status": "RESOLVED",
-  "choiceId": "analyze-signal",
-  "choiceTitle": "Проанализировать сигнал",
-  "outcomeTitle": "Карта импульсов",
-  "outcomeSummary": "Навигатор выделил безопасный ритм доступа.",
+  "choiceId": "stabilize-core",
+  "choiceTitle": "Стабилизировать ядро",
+  "outcomeTitle": "Стабильный резонанс",
+  "outcomeSummary": "Ядро перестало разрушаться, а два люминовых осколка сохранили его энергию.",
   "pilot": {
     "pilotId": "navigator-v1",
     "name": "Навигатор",
     "level": 1,
-    "experienceGained": 40,
-    "currentExperience": 60,
+    "experienceGained": 30,
+    "currentExperience": 90,
     "nextLevelExperience": 100,
-    "version": 1
+    "version": 2
   },
   "pet": {
     "petId": "spark-v1",
     "name": "Искра",
     "level": 1,
-    "bondGained": 5,
-    "bond": 15,
+    "bondGained": 8,
+    "bond": 23,
+    "version": 2
+  },
+  "material": {
+    "itemId": "lumen-shard",
+    "name": "Люминовый осколок",
+    "description": "Стабильный фрагмент светового ядра, пригодный для будущих улучшений.",
+    "quantityGained": 2,
+    "quantityAfter": 2,
     "version": 1
   },
   "serverTime": "2026-07-26T07:00:00Z"
 }
 ```
 
+Для первого события `material = null`, а `expeditionStatus = IN_PROGRESS`, потому что команда открывает второй узел.
+
 Правила:
 
 - event должен быть фактически открыт и expedition должна иметь `EVENT_READY`;
-- `choiceId` выбирается из server-owned definition;
-- после успеха expedition становится `COMPLETED`;
+- `choiceId` выбирается из server-owned definition соответствующего `eventId`;
+- первый event resolution переводит progress на второй узел, второй — в `COMPLETED`;
 - тот же key и payload возвращает исходный response без второй награды;
 - тот же key с другим choice возвращает `409 IDEMPOTENCY_CONFLICT`;
 - неизвестный choice возвращает `400 VALIDATION_ERROR`;
-- повторное resolution возвращает `409 EVENT_STATE_CONFLICT`;
-- expedition completion, pilot XP, pet bond и processed response фиксируются одной транзакцией.
+- повторное resolution новым key возвращает `409 EVENT_STATE_CONFLICT`;
+- один inventory source не может выдать другой item или quantity;
+- expedition transition/completion, pilot XP, pet bond, inventory stack/ledger и processed response фиксируются одной транзакцией.
 
 ## Ошибки
 
@@ -303,6 +338,7 @@ IDEMPOTENCY_CONFLICT
 INSUFFICIENT_ENERGY
 EXPEDITION_STATE_CONFLICT
 EVENT_STATE_CONFLICT
+INVENTORY_LEDGER_CONFLICT
 VALIDATION_ERROR
 NOT_FOUND
 ```

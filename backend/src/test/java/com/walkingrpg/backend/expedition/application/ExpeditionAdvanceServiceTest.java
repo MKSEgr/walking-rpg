@@ -54,6 +54,55 @@ class ExpeditionAdvanceServiceTest {
     }
 
     @Test
+    void shouldAdvancePersistedSecondNodeAndUnlockSecondEvent() {
+        InMemoryExpeditionRepository repository = new InMemoryExpeditionRepository();
+        repository.saveState(
+                "second-node-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                new com.walkingrpg.backend.expedition.domain.ExpeditionProgressState(
+                        0,
+                        45,
+                        ExpeditionProgressStatus.IN_PROGRESS,
+                        StarterExpeditionContent.SECOND_NODE_ID,
+                        null,
+                        2
+                ),
+                NOW
+        );
+        EconomyService secondNodeEconomy = new EconomyService(
+                new InMemoryEconomyRepository()
+        );
+        secondNodeEconomy.creditActivityEnergy(
+                "second-node-user",
+                45,
+                "activity-second-node",
+                NOW
+        );
+        ExpeditionAdvanceService secondNodeService = new ExpeditionAdvanceService(
+                repository,
+                secondNodeEconomy,
+                new StarterExpeditionContent(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        ExpeditionAdvanceResult result = secondNodeService.advance(
+                new ExpeditionAdvanceCommand(
+                        "second-node-user",
+                        StarterExpeditionContent.EXPEDITION_ID,
+                        45,
+                        "advance-second-node"
+                )
+        );
+
+        assertEquals(StarterExpeditionContent.SECOND_NODE_ID, result.currentNodeId());
+        assertEquals("Люминовые ворота", result.currentNodeName());
+        assertEquals(45, result.requiredEnergy());
+        assertEquals(ExpeditionProgressStatus.EVENT_READY, result.status());
+        assertEquals(StarterExpeditionContent.SECOND_EVENT_ID,
+                result.unlockedEvent().eventId());
+    }
+
+    @Test
     void shouldReplaySameResultAndRejectChangedPayload() {
         ExpeditionAdvanceCommand original = command(10, "same-key");
         ExpeditionAdvanceResult first = service.advance(original);

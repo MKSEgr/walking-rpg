@@ -17,6 +17,7 @@ public record EventResolutionResult(
         String outcomeSummary,
         EventPilotRewardResult pilot,
         EventPetRewardResult pet,
+        EventMaterialRewardResult material,
         Instant serverTime
 ) {
     public EventResolutionResult {
