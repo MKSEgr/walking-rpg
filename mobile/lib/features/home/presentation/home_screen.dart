@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
+import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
@@ -11,6 +13,11 @@ typedef ExpeditionAdvancer = Future<ExpeditionAdvanceResult> Function({
   required int energyToSpend,
   required String idempotencyKey,
 });
+typedef EventResolver = Future<EventResolutionResult> Function({
+  required String eventId,
+  required String choiceId,
+  required String idempotencyKey,
+});
 typedef IdempotencyKeyFactory = String Function();
 
 class HomeScreen extends StatefulWidget {
@@ -18,11 +25,13 @@ class HomeScreen extends StatefulWidget {
     super.key,
     this.loader,
     this.advancer,
+    this.eventResolver,
     this.idempotencyKeyFactory,
   });
 
   final HomeSnapshotLoader? loader;
   final ExpeditionAdvancer? advancer;
+  final EventResolver? eventResolver;
   final IdempotencyKeyFactory? idempotencyKeyFactory;
 
   @override
@@ -32,6 +41,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late Future<HomeSnapshot> _snapshotFuture;
   bool _isAdvancing = false;
+  bool _isResolving = false;
+
+  bool get _isBusy => _isAdvancing || _isResolving;
 
   @override
   void initState() {
@@ -55,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: <Widget>[
           IconButton(
             tooltip: 'Обновить',
-            onPressed: _isAdvancing ? null : _reload,
+            onPressed: _isBusy ? null : _reload,
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
@@ -93,7 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
             return _HomeBody(
               snapshot: snapshot,
               isAdvancing: _isAdvancing,
+              isResolving: _isResolving,
               onAdvance: () => _advance(snapshot),
+              onResolve: (HomeEventChoice choice) =>
+                  _resolveEvent(snapshot, choice),
               onRefresh: _reload,
             );
           },
@@ -112,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _advance(HomeSnapshot snapshot) async {
     final int energyToSpend = snapshot.spendableEnergy;
-    if (_isAdvancing || energyToSpend <= 0) {
+    if (_isBusy || energyToSpend <= 0) {
       return;
     }
 
@@ -122,8 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final ExpeditionAdvancer advancer =
           widget.advancer ?? ExpeditionApiClient.fromEnvironment().advance;
-      final String idempotencyKey = widget.idempotencyKeyFactory?.call() ??
-          '${snapshot.expeditionId}-${DateTime.now().microsecondsSinceEpoch}';
+      final String idempotencyKey = _nextKey(snapshot.expeditionId);
       final ExpeditionAdvanceResult result = await advancer(
         expeditionId: snapshot.expeditionId,
         energyToSpend: energyToSpend,
@@ -156,6 +170,60 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _resolveEvent(
+    HomeSnapshot snapshot,
+    HomeEventChoice choice,
+  ) async {
+    final HomeExpeditionEvent? event = snapshot.unlockedEvent;
+    if (_isBusy || event == null || event.isResolved) {
+      return;
+    }
+
+    setState(() {
+      _isResolving = true;
+    });
+    try {
+      final EventResolver resolver =
+          widget.eventResolver ?? EventApiClient.fromEnvironment().resolve;
+      final EventResolutionResult result = await resolver(
+        eventId: event.eventId,
+        choiceId: choice.choiceId,
+        idempotencyKey: _nextKey(event.eventId),
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${result.outcomeTitle}: +${result.pilot.experienceGained} XP, '
+            '+${result.pet.bondGained} связь',
+          ),
+        ),
+      );
+      setState(() {
+        _snapshotFuture = _loadSnapshot();
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось разрешить событие: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isResolving = false;
+        });
+      }
+    }
+  }
+
+  String _nextKey(String sourceId) {
+    return widget.idempotencyKeyFactory?.call() ??
+        '$sourceId-${DateTime.now().microsecondsSinceEpoch}';
+  }
+
   void _openDemo() {
     setState(() {
       _snapshotFuture = Future<HomeSnapshot>.value(HomeSnapshot.demo);
@@ -163,6 +231,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _reload() {
+    if (_isBusy) {
+      return;
+    }
     setState(() {
       _snapshotFuture = _loadSnapshot();
     });
@@ -173,13 +244,17 @@ class _HomeBody extends StatelessWidget {
   const _HomeBody({
     required this.snapshot,
     required this.isAdvancing,
+    required this.isResolving,
     required this.onAdvance,
+    required this.onResolve,
     required this.onRefresh,
   });
 
   final HomeSnapshot snapshot;
   final bool isAdvancing;
+  final bool isResolving;
   final VoidCallback onAdvance;
+  final ValueChanged<HomeEventChoice> onResolve;
   final VoidCallback onRefresh;
 
   @override
@@ -187,14 +262,16 @@ class _HomeBody extends StatelessWidget {
     final String lastSync = snapshot.lastActivitySyncAt == null
         ? 'Шаги ещё не синхронизированы'
         : 'Последняя синхронизация: ${snapshot.lastActivitySyncAt}';
-    final bool eventReady = snapshot.unlockedEvent != null;
+    final HomeExpeditionEvent? event = snapshot.unlockedEvent;
+    final bool eventReady = event?.status == 'READY';
+    final bool completed = snapshot.expeditionStatus == 'COMPLETED';
     final int spendableEnergy = snapshot.spendableEnergy;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         Text(
-          'Экспедиция ждёт твоих шагов',
+          completed ? 'Первая экспедиция завершена' : 'Экспедиция ждёт твоих шагов',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),
@@ -217,9 +294,13 @@ class _HomeBody extends StatelessWidget {
           progress: snapshot.expeditionProgressValue,
           icon: Icons.explore_outlined,
         ),
-        if (eventReady) ...<Widget>[
+        if (event != null) ...<Widget>[
           const SizedBox(height: 4),
-          _EventCard(event: snapshot.unlockedEvent!),
+          _EventCard(
+            event: event,
+            isResolving: isResolving,
+            onChoose: onResolve,
+          ),
         ],
         const SizedBox(height: 4),
         Row(
@@ -229,6 +310,8 @@ class _HomeBody extends StatelessWidget {
                 label: 'Пилот',
                 name: snapshot.pilotName,
                 level: snapshot.pilotLevel,
+                detail:
+                    'XP ${snapshot.pilotCurrentExperience} / ${snapshot.pilotNextLevelExperience}',
                 icon: Icons.person_outline,
               ),
             ),
@@ -238,6 +321,7 @@ class _HomeBody extends StatelessWidget {
                 label: 'Питомец',
                 name: snapshot.petName,
                 level: snapshot.petLevel,
+                detail: 'Связь ${snapshot.petBond}',
                 icon: Icons.pets_outlined,
               ),
             ),
@@ -245,7 +329,11 @@ class _HomeBody extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         FilledButton.icon(
-          onPressed: eventReady || spendableEnergy <= 0 || isAdvancing
+          onPressed: eventReady ||
+                  completed ||
+                  spendableEnergy <= 0 ||
+                  isAdvancing ||
+                  isResolving
               ? null
               : onAdvance,
           icon: isAdvancing
@@ -255,16 +343,18 @@ class _HomeBody extends StatelessWidget {
                 )
               : const Icon(Icons.rocket_launch_outlined),
           label: Text(
-            eventReady
-                ? 'Событие готово'
-                : spendableEnergy > 0
-                    ? 'Потратить $spendableEnergy энергии'
-                    : 'Нужно накопить энергию',
+            completed
+                ? 'Экспедиция завершена'
+                : eventReady
+                    ? 'Выберите решение события'
+                    : spendableEnergy > 0
+                        ? 'Потратить $spendableEnergy энергии'
+                        : 'Нужно накопить энергию',
           ),
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: isAdvancing ? null : onRefresh,
+          onPressed: isAdvancing || isResolving ? null : onRefresh,
           icon: const Icon(Icons.sync),
           label: const Text('Обновить состояние'),
         ),
@@ -294,9 +384,15 @@ class _HomeBody extends StatelessWidget {
 }
 
 class _EventCard extends StatelessWidget {
-  const _EventCard({required this.event});
+  const _EventCard({
+    required this.event,
+    required this.isResolving,
+    required this.onChoose,
+  });
 
   final HomeExpeditionEvent event;
+  final bool isResolving;
+  final ValueChanged<HomeEventChoice> onChoose;
 
   @override
   Widget build(BuildContext context) {
@@ -309,13 +405,52 @@ class _EventCard extends StatelessWidget {
             const Icon(Icons.auto_awesome_outlined, size: 32),
             const SizedBox(height: 10),
             Text(
-              'Событие открыто',
+              event.isResolved ? 'Событие разрешено' : 'Событие открыто',
               style: Theme.of(context).textTheme.labelLarge,
             ),
             const SizedBox(height: 4),
             Text(event.title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 6),
             Text(event.summary),
+            if (event.isResolved) ...<Widget>[
+              const SizedBox(height: 12),
+              Text(
+                event.selectedChoiceTitle ?? 'Выбор зафиксирован',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                event.outcomeTitle ?? 'Результат события',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(event.outcomeSummary ?? ''),
+            ] else ...<Widget>[
+              const SizedBox(height: 12),
+              for (final HomeEventChoice choice in event.choices) ...<Widget>[
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonal(
+                    onPressed: isResolving ? null : () => onChoose(choice),
+                    child: Column(
+                      children: <Widget>[
+                        Text(choice.title),
+                        Text(
+                          '+${choice.pilotExperienceReward} XP · '
+                          '+${choice.petBondReward} связь',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(choice.description),
+                const SizedBox(height: 8),
+              ],
+              if (isResolving)
+                const Center(child: CircularProgressIndicator()),
+            ],
           ],
         ),
       ),
@@ -373,12 +508,14 @@ class _CharacterCard extends StatelessWidget {
     required this.label,
     required this.name,
     required this.level,
+    required this.detail,
     required this.icon,
   });
 
   final String label;
   final String name;
   final int level;
+  final String detail;
   final IconData icon;
 
   @override
@@ -396,6 +533,8 @@ class _CharacterCard extends StatelessWidget {
             Text(name, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
             Text('Уровень $level'),
+            const SizedBox(height: 2),
+            Text(detail),
           ],
         ),
       ),
