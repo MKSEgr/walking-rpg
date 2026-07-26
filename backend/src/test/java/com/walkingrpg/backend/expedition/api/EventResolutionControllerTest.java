@@ -11,6 +11,8 @@ import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryEventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryExpeditionRepository;
+import com.walkingrpg.backend.inventory.application.InventoryService;
+import com.walkingrpg.backend.inventory.infrastructure.InMemoryInventoryRepository;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import com.walkingrpg.backend.progression.infrastructure.InMemoryProgressionRepository;
@@ -27,46 +29,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class EventResolutionControllerTest {
 
+    private static final Instant NOW = Instant.parse("2026-07-26T06:00:00Z");
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        InMemoryExpeditionRepository expeditionRepository =
-                new InMemoryExpeditionRepository();
-        expeditionRepository.saveState(
-                "user-1",
-                StarterExpeditionContent.EXPEDITION_ID,
-                new ExpeditionProgressState(
-                        30,
-                        30,
-                        ExpeditionProgressStatus.EVENT_READY,
-                        "outer-beacon",
-                        StarterExpeditionContent.EVENT_ID,
-                        1
-                ),
-                Instant.parse("2026-07-26T06:00:00Z")
-        );
-        EventResolutionService service = new EventResolutionService(
-                expeditionRepository,
-                new InMemoryEventResolutionRepository(),
-                new ProgressionService(
-                        new InMemoryProgressionRepository(),
-                        new StarterProgressionContent()
-                ),
-                new StarterExpeditionContent(),
-                Clock.fixed(Instant.parse("2026-07-26T06:00:00Z"), ZoneOffset.UTC)
-        );
-        EventResolutionController controller = new EventResolutionController(
-                new EventResolutionCommandFactory(),
-                service
-        );
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new ApiExceptionHandler())
-                .build();
+        mockMvc = createMockMvc(new ExpeditionProgressState(
+                30,
+                30,
+                ExpeditionProgressStatus.EVENT_READY,
+                StarterExpeditionContent.FIRST_NODE_ID,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                1
+        ));
     }
 
     @Test
-    void shouldResolveEventAndReturnPersistentRewards() throws Exception {
+    void shouldResolveFirstEventAndReturnSecondNodeTransition() throws Exception {
         mockMvc.perform(post("/api/v1/events/signal-source-v1/resolve")
                         .header(EventResolutionController.USER_HEADER, "user-1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -78,14 +58,44 @@ class EventResolutionControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RESOLVED"))
-                .andExpect(jsonPath("$.expeditionStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.expeditionStatus").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.choiceId").value("analyze-signal"))
                 .andExpect(jsonPath("$.outcomeTitle").value("Карта импульсов"))
                 .andExpect(jsonPath("$.pilot.experienceGained").value(40))
                 .andExpect(jsonPath("$.pilot.currentExperience").value(60))
                 .andExpect(jsonPath("$.pet.bondGained").value(5))
                 .andExpect(jsonPath("$.pet.bond").value(15))
+                .andExpect(jsonPath("$.material").doesNotExist())
                 .andExpect(jsonPath("$.serverTime").value("2026-07-26T06:00:00Z"));
+    }
+
+    @Test
+    void shouldResolveSecondEventAndReturnMaterialReward() throws Exception {
+        MockMvc secondEventMockMvc = createMockMvc(new ExpeditionProgressState(
+                45,
+                45,
+                ExpeditionProgressStatus.EVENT_READY,
+                StarterExpeditionContent.SECOND_NODE_ID,
+                StarterExpeditionContent.SECOND_EVENT_ID,
+                3
+        ));
+
+        secondEventMockMvc.perform(post("/api/v1/events/echo-vault-v1/resolve")
+                        .header(EventResolutionController.USER_HEADER, "user-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "choiceId": "stabilize-core",
+                                  "idempotencyKey": "event-resolution-2"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.expeditionStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.material.itemId").value("lumen-shard"))
+                .andExpect(jsonPath("$.material.name").value("Люминовый осколок"))
+                .andExpect(jsonPath("$.material.quantityGained").value(2))
+                .andExpect(jsonPath("$.material.quantityAfter").value(2))
+                .andExpect(jsonPath("$.material.version").value(1));
     }
 
     @Test
@@ -96,12 +106,41 @@ class EventResolutionControllerTest {
                         .content("""
                                 {
                                   "choiceId": "unknown-choice",
-                                  "idempotencyKey": "event-resolution-2"
+                                  "idempotencyKey": "event-resolution-3"
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.details.field").value("choiceId"))
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
+    }
+
+    private MockMvc createMockMvc(ExpeditionProgressState state) {
+        InMemoryExpeditionRepository expeditionRepository =
+                new InMemoryExpeditionRepository();
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                state,
+                NOW
+        );
+        EventResolutionService service = new EventResolutionService(
+                expeditionRepository,
+                new InMemoryEventResolutionRepository(),
+                new ProgressionService(
+                        new InMemoryProgressionRepository(),
+                        new StarterProgressionContent()
+                ),
+                new InventoryService(new InMemoryInventoryRepository()),
+                new StarterExpeditionContent(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        EventResolutionController controller = new EventResolutionController(
+                new EventResolutionCommandFactory(),
+                service
+        );
+        return MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
     }
 }

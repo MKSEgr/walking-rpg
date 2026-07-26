@@ -24,10 +24,10 @@ authoritative step total
 → ENERGY credit
 → production home snapshot
 → ENERGY debit
-→ expedition progress
-→ event READY
-→ server-owned choice
-→ persistent pilot XP + pet bond
+→ first event READY and resolution
+→ transition to second node
+→ second event READY and resolution
+→ persistent pilot XP + pet bond + material inventory
 → expedition COMPLETED
 ```
 
@@ -73,10 +73,11 @@ PostgreSQL Testcontainers tests проверяют:
 - ENERGY credit/debit и append-only ledger;
 - exact replay command response;
 - expedition progress и конкурентные advance;
-- event choice и persistent pilot/pet progression;
-- повторное/конфликтное resolution;
-- rollback activity/economy/expedition/progression при поздней ошибке;
-- production home read-model до и после события;
+- event choices, переход между узлами и persistent pilot/pet progression;
+- повторное/конфликтное resolution и inventory source protection;
+- rollback activity/economy/expedition/progression/inventory при поздней ошибке;
+- production home read-model до, между и после двух событий;
+- Flyway upgrade `starter-v1 → starter-v2` без повторной material reward;
 - default/adaptive daily goal, окно предыдущих дней и исключение текущего дня.
 
 ## Персональная дневная цель
@@ -143,7 +144,9 @@ curl -X POST http://localhost:8080/api/v1/activity/sync \
   }'
 ```
 
-### Продвижение стартовой экспедиции
+### Два узла стартовой экспедиции
+
+Один и тот же endpoint используется для обоих узлов:
 
 ```bash
 curl -X POST \
@@ -156,9 +159,18 @@ curl -X POST \
   }'
 ```
 
-После достижения 30 ENERGY открывается `signal-source-v1` в статусе `READY`.
+Порядок `starter-v2`:
 
-### Разрешение первого события
+```text
+outer-beacon   — 30 ENERGY → signal-source-v1
+lumen-gate     — 45 ENERGY → echo-vault-v1
+```
+
+После разрешения первого события progress атомарно переключается на второй узел с нулевой энергией. После второго события экспедиция получает `COMPLETED`.
+
+### Разрешение событий и material reward
+
+Первое событие продолжает экспедицию:
 
 ```bash
 curl -X POST \
@@ -171,14 +183,39 @@ curl -X POST \
   }'
 ```
 
-Доступные choice:
+Второе событие завершает экспедицию и выдаёт материал:
 
-```text
-analyze-signal  → +40 pilot XP, +5 pet bond
-trust-spark     → +20 pilot XP, +15 pet bond
+```bash
+curl -X POST \
+  http://localhost:8080/api/v1/events/echo-vault-v1/resolve \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-Id: demo-user-1' \
+  -d '{
+    "choiceId": "stabilize-core",
+    "idempotencyKey": "echo-vault-v1-resolution-1"
+  }'
 ```
 
-После успеха expedition получает `COMPLETED`, а `GET /home` возвращает resolved outcome и постоянный progression.
+Фрагмент response второго события:
+
+```json
+{
+  "contentVersion": "starter-v2",
+  "expeditionStatus": "COMPLETED",
+  "eventId": "echo-vault-v1",
+  "choiceId": "stabilize-core",
+  "material": {
+    "itemId": "lumen-shard",
+    "name": "Люминовый осколок",
+    "description": "Стабильный фрагмент светового ядра, пригодный для будущих улучшений.",
+    "quantityGained": 2,
+    "quantityAfter": 2,
+    "version": 1
+  }
+}
+```
+
+`stabilize-core` выдаёт 2 `lumen-shard`; `follow-echo` — 1 `echo-thread`. Immutable response хранит material snapshot, а текущий stack возвращается через `GET /home`.
 
 ## Что сохраняется
 
@@ -193,7 +230,9 @@ expedition_progress            — progress/status стартовой экспе
 processed_expedition_advance   — idempotent expedition/economy response
 pilot_progress                 — уровень и опыт пилота
 pet_progress                   — уровень и bond питомца
-processed_event_resolution     — idempotent event/progression response
+processed_event_resolution     — idempotent event/progression/material response
+inventory_stack                 — текущий material stack
+inventory_ledger                — append-only material reward journal
 ```
 
 ## Инварианты
@@ -205,7 +244,7 @@ processed_event_resolution     — idempotent event/progression response
 - один command key не создаёт повторное изменение состояния;
 - key с другим payload возвращает `IDEMPOTENCY_CONFLICT`;
 - event разрешается только из `EVENT_READY`;
-- progression и expedition completion фиксируются одной транзакцией;
+- progression, inventory reward и expedition transition/completion фиксируются одной транзакцией;
 - `GET /home` не создаёт данные или goal snapshots;
 - текущий локальный день не участвует в собственной daily goal.
 
@@ -213,8 +252,8 @@ processed_event_resolution     — idempotent event/progression response
 
 - заголовки пользователя и устройства временные;
 - attestation не проверяется;
-- одна экспедиция, один узел и одно событие;
+- одна экспедиция с двумя узлами и двумя событиями;
 - content definition хранится в коде;
-- нет inventory/reward journal для предметов;
+- inventory поддерживает только положительные stackable material rewards; расход и unique items отсутствуют;
 - HealthKit/Health Connect требуют проверки на физических устройствах;
-- offline cache отсутствует.
+- отдельный inventory endpoint и offline read cache отсутствуют.

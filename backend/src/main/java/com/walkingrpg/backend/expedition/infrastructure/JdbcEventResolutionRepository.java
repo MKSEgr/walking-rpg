@@ -1,10 +1,13 @@
 package com.walkingrpg.backend.expedition.infrastructure;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
+import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventPetRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventPilotRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventResolutionResult;
@@ -50,6 +53,12 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                        pet_bond_gained,
                        pet_bond_after,
                        pet_version,
+                       material_item_id,
+                       material_item_name,
+                       material_item_description,
+                       material_quantity_gained,
+                       material_quantity_after,
+                       material_version,
                        server_time
                 FROM processed_event_resolution
                 WHERE user_id = ?
@@ -90,6 +99,7 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                                 resultSet.getInt("pet_bond_after"),
                                 resultSet.getLong("pet_version")
                         ),
+                        readMaterial(resultSet),
                         resultSet.getTimestamp("server_time").toInstant()
                 )
         ), scope.userId(), scope.eventId(), scope.idempotencyKey());
@@ -102,6 +112,7 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
             ProcessedEventResolution processed
     ) {
         EventResolutionResult result = processed.result();
+        EventMaterialRewardResult material = result.material();
         jdbcTemplate.update("""
                 INSERT INTO processed_event_resolution (
                     user_id,
@@ -131,10 +142,21 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                     pet_bond_gained,
                     pet_bond_after,
                     pet_version,
+                    material_item_id,
+                    material_item_name,
+                    material_item_description,
+                    material_quantity_gained,
+                    material_quantity_after,
+                    material_version,
                     server_time,
                     created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
+                VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, now()
+                )
                 """,
                 scope.userId(),
                 result.expeditionId(),
@@ -163,7 +185,29 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                 result.pet().bondGained(),
                 result.pet().bond(),
                 result.pet().version(),
+                material == null ? null : material.itemId(),
+                material == null ? null : material.name(),
+                material == null ? null : material.description(),
+                material == null ? null : material.quantityGained(),
+                material == null ? null : material.quantityAfter(),
+                material == null ? null : material.version(),
                 Timestamp.from(result.serverTime())
+        );
+    }
+
+    private static EventMaterialRewardResult readMaterial(ResultSet resultSet)
+            throws SQLException {
+        String itemId = resultSet.getString("material_item_id");
+        if (itemId == null) {
+            return null;
+        }
+        return new EventMaterialRewardResult(
+                itemId,
+                resultSet.getString("material_item_name"),
+                resultSet.getString("material_item_description"),
+                resultSet.getLong("material_quantity_gained"),
+                resultSet.getLong("material_quantity_after"),
+                resultSet.getLong("material_version")
         );
     }
 }

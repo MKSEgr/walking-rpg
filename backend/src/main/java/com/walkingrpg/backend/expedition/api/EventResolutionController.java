@@ -66,6 +66,16 @@ public class EventResolutionController {
                         result.pet().bond(),
                         result.pet().version()
                 ),
+                result.material() == null
+                        ? null
+                        : new EventMaterialRewardResponse(
+                                result.material().itemId(),
+                                result.material().name(),
+                                result.material().description(),
+                                result.material().quantityGained(),
+                                result.material().quantityAfter(),
+                                result.material().version()
+                        ),
                 result.serverTime()
         );
     }

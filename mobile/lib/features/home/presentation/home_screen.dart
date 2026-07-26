@@ -196,11 +196,15 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) {
         return;
       }
+      final EventMaterialReward? material = result.material;
+      final String materialText = material == null
+          ? ''
+          : ', +${material.quantityGained} ${material.name}';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             '${result.outcomeTitle}: +${result.pilot.experienceGained} XP, '
-            '+${result.pet.bondGained} связь',
+            '+${result.pet.bondGained} связь$materialText',
           ),
         ),
       );
@@ -276,9 +280,7 @@ class _HomeBody extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         Text(
-          completed
-              ? 'Первая экспедиция завершена'
-              : 'Экспедиция ждёт твоих шагов',
+          completed ? 'Экспедиция завершена' : 'Экспедиция ждёт твоих шагов',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),
@@ -334,6 +336,10 @@ class _HomeBody extends StatelessWidget {
             ),
           ],
         ),
+        if (snapshot.inventory.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 12),
+          _InventoryCard(items: snapshot.inventory),
+        ],
         const SizedBox(height: 20),
         FilledButton.icon(
           onPressed:
@@ -433,6 +439,15 @@ class _EventCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(event.outcomeSummary ?? ''),
+              if (event.materialReward != null) ...<Widget>[
+                const SizedBox(height: 10),
+                Text(
+                  '+${event.materialReward!.quantityGained} '
+                  '${event.materialReward!.itemName} '
+                  '· всего ${event.materialReward!.quantityAfter}',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ],
             ] else ...<Widget>[
               const SizedBox(height: 12),
               for (final HomeEventChoice choice in event.choices) ...<Widget>[
@@ -444,8 +459,7 @@ class _EventCard extends StatelessWidget {
                       children: <Widget>[
                         Text(choice.title),
                         Text(
-                          '+${choice.pilotExperienceReward} XP · '
-                          '+${choice.petBondReward} связь',
+                          _rewardText(choice),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -457,6 +471,55 @@ class _EventCard extends StatelessWidget {
                 const SizedBox(height: 8),
               ],
               if (isResolving) const Center(child: CircularProgressIndicator()),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _rewardText(HomeEventChoice choice) {
+    final HomeMaterialRewardPreview? material = choice.materialReward;
+    final String materialText = material == null
+        ? ''
+        : ' · +${material.quantity} ${material.itemName}';
+    return '+${choice.pilotExperienceReward} XP · '
+        '+${choice.petBondReward} связь$materialText';
+  }
+}
+
+class _InventoryCard extends StatelessWidget {
+  const _InventoryCard({required this.items});
+
+  final List<HomeInventoryItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Icon(Icons.inventory_2_outlined),
+                const SizedBox(width: 8),
+                Text(
+                  'Инвентарь',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            for (final HomeInventoryItem item in items) ...<Widget>[
+              Text(
+                '${item.name} × ${item.quantity}',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 2),
+              Text(item.description),
+              const SizedBox(height: 8),
             ],
           ],
         ),

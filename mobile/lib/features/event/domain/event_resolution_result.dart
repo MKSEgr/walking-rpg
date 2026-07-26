@@ -14,9 +14,11 @@ class EventResolutionResult {
     required this.pilot,
     required this.pet,
     required this.serverTime,
+    this.material,
   });
 
   factory EventResolutionResult.fromJson(Map<String, dynamic> json) {
+    final Object? materialJson = json['material'];
     return EventResolutionResult(
       contentVersion: _readString(json, 'contentVersion'),
       expeditionId: _readString(json, 'expeditionId'),
@@ -31,6 +33,9 @@ class EventResolutionResult {
       outcomeSummary: _readString(json, 'outcomeSummary'),
       pilot: EventPilotReward.fromJson(_readMap(json, 'pilot')),
       pet: EventPetReward.fromJson(_readMap(json, 'pet')),
+      material: materialJson == null
+          ? null
+          : EventMaterialReward.fromJson(_asMap(materialJson, 'material')),
       serverTime: _readString(json, 'serverTime'),
     );
   }
@@ -48,6 +53,7 @@ class EventResolutionResult {
   final String outcomeSummary;
   final EventPilotReward pilot;
   final EventPetReward pet;
+  final EventMaterialReward? material;
   final String serverTime;
 }
 
@@ -112,8 +118,40 @@ class EventPetReward {
   final int version;
 }
 
+class EventMaterialReward {
+  const EventMaterialReward({
+    required this.itemId,
+    required this.name,
+    required this.description,
+    required this.quantityGained,
+    required this.quantityAfter,
+    required this.version,
+  });
+
+  factory EventMaterialReward.fromJson(Map<String, dynamic> json) {
+    return EventMaterialReward(
+      itemId: _readString(json, 'itemId'),
+      name: _readString(json, 'name'),
+      description: _readString(json, 'description'),
+      quantityGained: _readInt(json, 'quantityGained'),
+      quantityAfter: _readInt(json, 'quantityAfter'),
+      version: _readInt(json, 'version'),
+    );
+  }
+
+  final String itemId;
+  final String name;
+  final String description;
+  final int quantityGained;
+  final int quantityAfter;
+  final int version;
+}
+
 Map<String, dynamic> _readMap(Map<String, dynamic> json, String field) {
-  final Object? value = json[field];
+  return _asMap(json[field], field);
+}
+
+Map<String, dynamic> _asMap(Object? value, String field) {
   if (value is Map<String, dynamic>) {
     return value;
   }

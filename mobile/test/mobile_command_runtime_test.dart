@@ -60,6 +60,55 @@ void main() {
     expect(store.snapshot, isEmpty);
   });
 
+  test('second event replays the same key and payload after restart', () async {
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+    final MobileCommandRuntime firstRuntime = _runtime(
+      store: store,
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw StateError('response lost'),
+    );
+
+    await expectLater(
+      firstRuntime.resolve(
+        eventId: 'echo-vault-v1',
+        choiceId: 'stabilize-core',
+        idempotencyKey: 'second-event-original',
+      ),
+      throwsStateError,
+    );
+
+    String? replayedEventId;
+    String? replayedChoiceId;
+    String? replayedKey;
+    final MobileCommandRuntime restartedRuntime = _runtime(
+      store: store,
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async {
+            replayedEventId = eventId;
+            replayedChoiceId = choiceId;
+            replayedKey = idempotencyKey;
+            return _eventResult();
+          },
+    );
+
+    final MobileCommandReplayReport report = await restartedRuntime
+        .replayPending();
+
+    expect(report.succeeded, 1);
+    expect(replayedEventId, 'echo-vault-v1');
+    expect(replayedChoiceId, 'stabilize-core');
+    expect(replayedKey, 'second-event-original');
+    expect(store.snapshot, isEmpty);
+  });
+
   test('retryable activity failure does not block gameplay lane', () async {
     final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
       <MobileCommand>[
@@ -290,7 +339,7 @@ ActivitySyncResult _activityResult(int total) {
 
 ExpeditionAdvanceResult _advanceResult() {
   return const ExpeditionAdvanceResult(
-    contentVersion: 'starter-v1',
+    contentVersion: 'starter-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     energySpent: 30,
@@ -309,7 +358,7 @@ ExpeditionAdvanceResult _advanceResult() {
 
 EventResolutionResult _eventResult() {
   return const EventResolutionResult(
-    contentVersion: 'starter-v1',
+    contentVersion: 'starter-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionStatus: 'COMPLETED',
     expeditionVersion: 2,

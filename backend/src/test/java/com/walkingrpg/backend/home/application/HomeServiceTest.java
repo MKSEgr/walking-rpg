@@ -74,7 +74,9 @@ class HomeServiceTest {
         assertEquals(NOW, snapshot.serverTime());
         assertEquals("Навигатор", snapshot.pilot().name());
         assertEquals("Искра", snapshot.pet().name());
+        assertEquals("starter-v2", snapshot.contentVersion());
         assertEquals("starter-expedition-v1", snapshot.expedition().expeditionId());
+        assertEquals(0, snapshot.inventory().size());
         assertEquals(30, snapshot.expedition().progress());
         assertEquals("EVENT_READY", snapshot.expedition().status());
         assertNotNull(snapshot.expedition().unlockedEvent());

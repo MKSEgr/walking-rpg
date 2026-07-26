@@ -12,6 +12,7 @@ import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
 import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.EventResolutionService;
+import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventResolutionCommand;
@@ -19,10 +20,10 @@ import com.walkingrpg.backend.expedition.domain.EventResolutionResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
-import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.domain.HomeQuery;
+import com.walkingrpg.backend.inventory.application.InventoryService;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
@@ -78,6 +80,9 @@ class EventResolutionIntegrationTest {
     private ProgressionService progressionService;
 
     @Autowired
+    private InventoryService inventoryService;
+
+    @Autowired
     private StarterExpeditionContent content;
 
     @Autowired
@@ -91,6 +96,8 @@ class EventResolutionIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbcTemplate.update("DELETE FROM inventory_ledger");
+        jdbcTemplate.update("DELETE FROM inventory_stack");
         jdbcTemplate.update("DELETE FROM processed_event_resolution");
         jdbcTemplate.update("DELETE FROM processed_expedition_advance");
         jdbcTemplate.update("DELETE FROM pilot_progress");
@@ -105,64 +112,109 @@ class EventResolutionIntegrationTest {
     }
 
     @Test
-    void shouldResolveEventPersistRewardsReplayAndExposeHomeOutcome() {
-        prepareReadyEvent("event-user");
-        EventResolutionCommand command = command(
-                "event-user",
-                "analyze-signal",
-                "resolve-persisted-1"
-        );
+    void shouldCompleteTwoNodesPersistMaterialReplayAndExposeHomeInventory() {
+        prepareFirstEvent("event-user");
 
-        EventResolutionResult first = eventResolutionService.resolve(command);
+        EventResolutionResult firstEvent = eventResolutionService.resolve(command(
+                "event-user",
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "resolve-first"
+        ));
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS, firstEvent.expeditionStatus());
+        assertNull(firstEvent.material());
+        assertEquals(StarterExpeditionContent.SECOND_NODE_ID, currentNodeId());
+
+        expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                "event-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                45,
+                "advance-second"
+        ));
+        EventResolutionCommand secondCommand = command(
+                "event-user",
+                StarterExpeditionContent.SECOND_EVENT_ID,
+                "stabilize-core",
+                "resolve-second"
+        );
+        EventResolutionResult secondEvent = eventResolutionService.resolve(secondCommand);
+
         EventResolutionService restarted = new EventResolutionService(
                 expeditionRepository,
                 eventResolutionRepository,
                 progressionService,
+                inventoryService,
                 content,
                 Clock.fixed(NOW.plusSeconds(300), ZoneOffset.UTC)
         );
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
         EventResolutionResult replayed = transaction.execute(
-                status -> restarted.resolve(command)
+                status -> restarted.resolve(secondCommand)
         );
 
-        assertEquals(first, replayed);
-        assertEquals(ExpeditionProgressStatus.COMPLETED, first.expeditionStatus());
-        assertEquals(60, pilotExperience());
-        assertEquals(15, petBond());
-        assertEquals(38, walletBalance());
-        assertEquals(1, rowCount("processed_event_resolution"));
+        assertEquals(secondEvent, replayed);
+        assertEquals(ExpeditionProgressStatus.COMPLETED, secondEvent.expeditionStatus());
+        assertEquals("lumen-shard", secondEvent.material().itemId());
+        assertEquals(2, secondEvent.material().quantityGained());
+        assertEquals(2, secondEvent.material().quantityAfter());
+        assertEquals(90, pilotExperience());
+        assertEquals(23, petBond());
+        assertEquals(25, walletBalance());
+        assertEquals(2, rowCount("processed_event_resolution"));
+        assertEquals(2, rowCount("processed_expedition_advance"));
         assertEquals(1, rowCount("pilot_progress"));
         assertEquals(1, rowCount("pet_progress"));
+        assertEquals(1, rowCount("inventory_stack"));
+        assertEquals(1, rowCount("inventory_ledger"));
+        assertEquals(2L, inventoryQuantity("lumen-shard"));
         assertEquals("COMPLETED", expeditionStatus());
 
         HomeSnapshotResponse home = homeService.getSnapshot(
                 new HomeQuery("event-user", LOCAL_DATE)
         );
-        assertEquals(60, home.pilot().currentExperience());
-        assertEquals(15, home.pet().bond());
+        assertEquals("starter-v2", home.contentVersion());
+        assertEquals(90, home.pilot().currentExperience());
+        assertEquals(23, home.pet().bond());
         assertEquals("COMPLETED", home.expedition().status());
+        assertEquals(StarterExpeditionContent.SECOND_NODE_ID,
+                home.expedition().currentNodeId());
         assertNotNull(home.expedition().unlockedEvent());
         assertEquals("RESOLVED", home.expedition().unlockedEvent().status());
-        assertEquals(
-                "analyze-signal",
-                home.expedition().unlockedEvent().selectedChoiceId()
-        );
-        assertEquals(2, home.expedition().unlockedEvent().choices().size());
+        assertEquals("stabilize-core",
+                home.expedition().unlockedEvent().selectedChoiceId());
+        assertNotNull(home.expedition().unlockedEvent().materialReward());
+        assertEquals(2,
+                home.expedition().unlockedEvent().materialReward().quantityAfter());
+        assertEquals(1, home.inventory().size());
+        assertEquals("lumen-shard", home.inventory().getFirst().itemId());
+        assertEquals(2, home.inventory().getFirst().quantity());
 
         assertThrows(
                 EventResolutionIdempotencyConflictException.class,
                 () -> eventResolutionService.resolve(command(
                         "event-user",
-                        "trust-spark",
-                        "resolve-persisted-1"
+                        StarterExpeditionContent.SECOND_EVENT_ID,
+                        "follow-echo",
+                        "resolve-second"
                 ))
         );
     }
 
     @Test
-    void shouldRollbackExpeditionAndProgressionWhenProcessedSaveFails() {
-        prepareReadyEvent("rollback-event-user");
+    void shouldRollbackSecondEventInventoryProgressionAndExpeditionOnLateFailure() {
+        prepareFirstEvent("rollback-event-user");
+        eventResolutionService.resolve(command(
+                "rollback-event-user",
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "rollback-first"
+        ));
+        expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                "rollback-event-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                45,
+                "rollback-advance-second"
+        ));
         EventResolutionRepository failingRepository = new EventResolutionRepository() {
             @Override
             public Optional<ProcessedEventResolution> findProcessed(
@@ -183,6 +235,7 @@ class EventResolutionIntegrationTest {
                 expeditionRepository,
                 failingRepository,
                 progressionService,
+                inventoryService,
                 content,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
@@ -191,24 +244,31 @@ class EventResolutionIntegrationTest {
         assertThrows(
                 IllegalStateException.class,
                 () -> transaction.executeWithoutResult(status -> failingService.resolve(
-                        command("rollback-event-user", "analyze-signal", "rollback-key")
+                        command(
+                                "rollback-event-user",
+                                StarterExpeditionContent.SECOND_EVENT_ID,
+                                "stabilize-core",
+                                "rollback-second"
+                        )
                 ))
         );
 
         assertEquals("EVENT_READY", expeditionStatus());
-        assertEquals(0, rowCount("processed_event_resolution"));
-        assertEquals(0, rowCount("pilot_progress"));
-        assertEquals(0, rowCount("pet_progress"));
-        assertEquals(38, walletBalance());
+        assertEquals(60, pilotExperience());
+        assertEquals(15, petBond());
+        assertEquals(0, rowCount("inventory_stack"));
+        assertEquals(0, rowCount("inventory_ledger"));
+        assertEquals(1, rowCount("processed_event_resolution"));
+        assertEquals(25, walletBalance());
     }
 
-    private void prepareReadyEvent(String userId) {
+    private void prepareFirstEvent(String userId) {
         activitySyncService.synchronize(new ActivitySyncCommand(
                 userId,
                 "event-device",
                 LOCAL_DATE,
                 ZoneId.of("Europe/Berlin"),
-                6_842,
+                10_000,
                 List.of(),
                 "event-cursor",
                 "activity-" + userId,
@@ -218,21 +278,17 @@ class EventResolutionIntegrationTest {
                 userId,
                 StarterExpeditionContent.EXPEDITION_ID,
                 30,
-                "advance-" + userId
+                "advance-first-" + userId
         ));
     }
 
     private EventResolutionCommand command(
             String userId,
+            String eventId,
             String choiceId,
             String idempotencyKey
     ) {
-        return new EventResolutionCommand(
-                userId,
-                StarterExpeditionContent.EVENT_ID,
-                choiceId,
-                idempotencyKey
-        );
+        return new EventResolutionCommand(userId, eventId, choiceId, idempotencyKey);
     }
 
     private int rowCount(String table) {
@@ -260,9 +316,24 @@ class EventResolutionIntegrationTest {
         );
     }
 
+    private long inventoryQuantity(String itemId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT quantity FROM inventory_stack WHERE item_id = ?",
+                Long.class,
+                itemId
+        );
+    }
+
     private String expeditionStatus() {
         return jdbcTemplate.queryForObject(
                 "SELECT status FROM expedition_progress",
+                String.class
+        );
+    }
+
+    private String currentNodeId() {
+        return jdbcTemplate.queryForObject(
+                "SELECT current_node_id FROM expedition_progress",
                 String.class
         );
     }

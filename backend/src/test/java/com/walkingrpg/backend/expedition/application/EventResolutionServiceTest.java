@@ -10,6 +10,8 @@ import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryEventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryExpeditionRepository;
+import com.walkingrpg.backend.inventory.application.InventoryService;
+import com.walkingrpg.backend.inventory.infrastructure.InMemoryInventoryRepository;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import com.walkingrpg.backend.progression.infrastructure.InMemoryProgressionRepository;
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -25,16 +28,17 @@ class EventResolutionServiceTest {
     private static final Instant NOW = Instant.parse("2026-07-26T06:00:00Z");
 
     private InMemoryExpeditionRepository expeditionRepository;
+    private InMemoryInventoryRepository inventoryRepository;
     private EventResolutionService service;
 
     @BeforeEach
     void setUp() {
-        StarterExpeditionContent content = new StarterExpeditionContent();
         expeditionRepository = new InMemoryExpeditionRepository();
+        inventoryRepository = new InMemoryInventoryRepository();
         expeditionRepository.saveState(
                 "user-1",
                 StarterExpeditionContent.EXPEDITION_ID,
-                readyState(),
+                firstReadyState(),
                 NOW
         );
         service = new EventResolutionService(
@@ -44,87 +48,175 @@ class EventResolutionServiceTest {
                         new InMemoryProgressionRepository(),
                         new StarterProgressionContent()
                 ),
-                content,
+                new InventoryService(inventoryRepository),
+                new StarterExpeditionContent(),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
 
     @Test
-    void shouldResolveAnalyzeChoiceAndReplayExactResult() {
-        EventResolutionCommand command = command("analyze-signal", "resolve-1");
+    void shouldResolveFirstEventAndContinueToSecondNode() {
+        EventResolutionCommand command = command(
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "resolve-1"
+        );
 
         EventResolutionResult first = service.resolve(command);
         EventResolutionResult replayed = service.resolve(command);
+        ExpeditionProgressState state = expeditionRepository.findState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID
+        ).orElseThrow();
 
         assertSame(first, replayed);
-        assertEquals(ExpeditionProgressStatus.COMPLETED, first.expeditionStatus());
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS, first.expeditionStatus());
         assertEquals(2, first.expeditionVersion());
         assertEquals(40, first.pilot().experienceGained());
         assertEquals(60, first.pilot().currentExperience());
         assertEquals(5, first.pet().bondGained());
         assertEquals(15, first.pet().bond());
         assertEquals("Карта импульсов", first.outcomeTitle());
+        assertNull(first.material());
+        assertEquals(StarterExpeditionContent.SECOND_NODE_ID, state.currentNodeId());
+        assertEquals(45, state.requiredEnergy());
+        assertEquals(0, state.progressEnergy());
     }
 
     @Test
-    void shouldUseDifferentRewardForTrustSparkChoice() {
-        EventResolutionResult result = service.resolve(
-                command("trust-spark", "resolve-trust")
+    void shouldResolveSecondEventAndPersistMaterialOnce() {
+        service.resolve(command(
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "first-event"
+        ));
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                secondReadyState(3),
+                NOW
+        );
+        EventResolutionCommand command = command(
+                StarterExpeditionContent.SECOND_EVENT_ID,
+                "stabilize-core",
+                "second-event"
         );
 
+        EventResolutionResult first = service.resolve(command);
+        EventResolutionResult replayed = service.resolve(command);
+
+        assertSame(first, replayed);
+        assertEquals(ExpeditionProgressStatus.COMPLETED, first.expeditionStatus());
+        assertEquals(4, first.expeditionVersion());
+        assertEquals(30, first.pilot().experienceGained());
+        assertEquals(90, first.pilot().currentExperience());
+        assertEquals(8, first.pet().bondGained());
+        assertEquals(23, first.pet().bond());
+        assertEquals("lumen-shard", first.material().itemId());
+        assertEquals(2, first.material().quantityGained());
+        assertEquals(2, first.material().quantityAfter());
+        assertEquals(1, first.material().version());
+        assertEquals(1, inventoryRepository.findAll("user-1").size());
+        assertEquals(2, inventoryRepository.findAll("user-1").getFirst().quantity());
+    }
+
+    @Test
+    void shouldUseDifferentMaterialForFollowEchoChoice() {
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                secondReadyState(3),
+                NOW
+        );
+
+        EventResolutionResult result = service.resolve(command(
+                StarterExpeditionContent.SECOND_EVENT_ID,
+                "follow-echo",
+                "follow-echo-key"
+        ));
+
+        assertEquals("echo-thread", result.material().itemId());
+        assertEquals(1, result.material().quantityGained());
         assertEquals(20, result.pilot().experienceGained());
-        assertEquals(40, result.pilot().currentExperience());
-        assertEquals(15, result.pet().bondGained());
-        assertEquals(25, result.pet().bond());
-        assertEquals("След Люмина", result.outcomeTitle());
+        assertEquals(18, result.pet().bondGained());
     }
 
     @Test
     void shouldRejectReusedKeyWithDifferentChoice() {
-        service.resolve(command("analyze-signal", "same-key"));
+        service.resolve(command(
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "same-key"
+        ));
 
         assertThrows(
                 EventResolutionIdempotencyConflictException.class,
-                () -> service.resolve(command("trust-spark", "same-key"))
+                () -> service.resolve(command(
+                        StarterExpeditionContent.FIRST_EVENT_ID,
+                        "trust-spark",
+                        "same-key"
+                ))
         );
     }
 
     @Test
     void shouldRejectSecondResolutionWithAnotherKey() {
-        service.resolve(command("analyze-signal", "first-key"));
+        service.resolve(command(
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "first-key"
+        ));
 
         EventStateConflictException exception = assertThrows(
                 EventStateConflictException.class,
-                () -> service.resolve(command("analyze-signal", "second-key"))
+                () -> service.resolve(command(
+                        StarterExpeditionContent.FIRST_EVENT_ID,
+                        "analyze-signal",
+                        "second-key"
+                ))
         );
-        assertEquals("COMPLETED", exception.status());
+        assertEquals("IN_PROGRESS", exception.status());
     }
 
     @Test
     void shouldRejectUnknownChoice() {
         assertThrows(
                 EventResolutionValidationException.class,
-                () -> service.resolve(command("unknown-choice", "unknown-key"))
+                () -> service.resolve(command(
+                        StarterExpeditionContent.FIRST_EVENT_ID,
+                        "unknown-choice",
+                        "unknown-key"
+                ))
         );
     }
 
-    private EventResolutionCommand command(String choiceId, String key) {
-        return new EventResolutionCommand(
-                "user-1",
-                StarterExpeditionContent.EVENT_ID,
-                choiceId,
-                key
-        );
+    private EventResolutionCommand command(
+            String eventId,
+            String choiceId,
+            String key
+    ) {
+        return new EventResolutionCommand("user-1", eventId, choiceId, key);
     }
 
-    private ExpeditionProgressState readyState() {
+    private ExpeditionProgressState firstReadyState() {
         return new ExpeditionProgressState(
                 30,
                 30,
                 ExpeditionProgressStatus.EVENT_READY,
-                "outer-beacon",
-                StarterExpeditionContent.EVENT_ID,
+                StarterExpeditionContent.FIRST_NODE_ID,
+                StarterExpeditionContent.FIRST_EVENT_ID,
                 1
+        );
+    }
+
+    private ExpeditionProgressState secondReadyState(long version) {
+        return new ExpeditionProgressState(
+                45,
+                45,
+                ExpeditionProgressStatus.EVENT_READY,
+                StarterExpeditionContent.SECOND_NODE_ID,
+                StarterExpeditionContent.SECOND_EVENT_ID,
+                version
         );
     }
 }

@@ -19,6 +19,7 @@ void main() {
     expect(snapshot.pilotCurrentExperience, 20);
     expect(snapshot.pilotNextLevelExperience, 100);
     expect(snapshot.petBond, 10);
+    expect(snapshot.inventory, isEmpty);
   });
 
   test('production response maps ready event choices and progression', () {
@@ -91,6 +92,56 @@ void main() {
     expect(snapshot.petBond, 15);
   });
 
+  test('second event maps material reward and persistent inventory', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['contentVersion'] = 'starter-v2';
+    response['inventory'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'itemId': 'lumen-shard',
+        'name': 'Люминовый осколок',
+        'description': 'Стабильный фрагмент светового ядра.',
+        'quantity': 2,
+        'version': 1,
+      },
+    ];
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['currentNodeId'] = 'lumen-gate'
+      ..['currentNode'] = 'Люминовые ворота'
+      ..['progress'] = 45
+      ..['requiredEnergy'] = 45
+      ..['status'] = 'COMPLETED'
+      ..['version'] = 4
+      ..['unlockedEvent'] = <String, dynamic>{
+        'eventId': 'echo-vault-v1',
+        'title': 'Хранилище эха',
+        'summary': 'Ядро нестабильно.',
+        'status': 'RESOLVED',
+        'choices': <Map<String, dynamic>>[],
+        'selectedChoiceId': 'stabilize-core',
+        'selectedChoiceTitle': 'Стабилизировать ядро',
+        'outcomeTitle': 'Стабильный резонанс',
+        'outcomeSummary': 'Ядро перестало разрушаться.',
+        'materialReward': <String, dynamic>{
+          'itemId': 'lumen-shard',
+          'itemName': 'Люминовый осколок',
+          'description': 'Стабильный фрагмент светового ядра.',
+          'quantityGained': 2,
+          'quantityAfter': 2,
+          'version': 1,
+        },
+      };
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.currentNodeId, 'lumen-gate');
+    expect(snapshot.unlockedEvent?.materialReward?.quantityAfter, 2);
+    expect(snapshot.inventory, hasLength(1));
+    expect(snapshot.inventory.first.itemId, 'lumen-shard');
+    expect(snapshot.inventory.first.quantity, 2);
+  });
+
   test('partial expedition exposes spendable energy capped by remaining', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     response['availableEnergy'] = 68;
@@ -139,7 +190,7 @@ Map<String, dynamic> _readyHomeResponse() {
     'economyVersion': 2,
     'lastActivitySyncAt': '2026-07-26T05:55:00Z',
     'serverTime': '2026-07-26T06:00:00Z',
-    'contentVersion': 'starter-v1',
+    'contentVersion': 'starter-v2',
     'pilot': <String, dynamic>{
       'name': 'Навигатор',
       'level': 1,
@@ -175,6 +226,7 @@ Map<String, dynamic> _readyHomeResponse() {
             'description': 'Пилот сопоставит частоты маяка.',
             'pilotExperienceReward': 40,
             'petBondReward': 5,
+            'materialReward': null,
           },
           <String, dynamic>{
             'choiceId': 'trust-spark',

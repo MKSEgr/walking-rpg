@@ -17,21 +17,23 @@ void main() {
     );
 
     final EventResolutionResult result = await client.resolve(
-      eventId: 'signal-source-v1',
-      choiceId: 'analyze-signal',
+      eventId: 'echo-vault-v1',
+      choiceId: 'stabilize-core',
       idempotencyKey: 'resolve-1',
     );
 
     expect(
       transport.requestedUri?.path,
-      '/api/v1/events/signal-source-v1/resolve',
+      '/api/v1/events/echo-vault-v1/resolve',
     );
     expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
-    expect(transport.decodedBody?['choiceId'], 'analyze-signal');
+    expect(transport.decodedBody?['choiceId'], 'stabilize-core');
     expect(transport.decodedBody?['idempotencyKey'], 'resolve-1');
     expect(result.status, 'RESOLVED');
-    expect(result.pilot.currentExperience, 60);
-    expect(result.pet.bond, 15);
+    expect(result.pilot.currentExperience, 90);
+    expect(result.pet.bond, 23);
+    expect(result.material?.itemId, 'lumen-shard');
+    expect(result.material?.quantityAfter, 2);
   });
 
   test('client exposes backend event error', () async {
@@ -74,32 +76,40 @@ void main() {
 
 Map<String, dynamic> _response() {
   return <String, dynamic>{
-    'contentVersion': 'starter-v1',
+    'contentVersion': 'starter-v2',
     'expeditionId': 'starter-expedition-v1',
     'expeditionStatus': 'COMPLETED',
-    'expeditionVersion': 2,
-    'eventId': 'signal-source-v1',
-    'eventTitle': 'Источник сигнала',
+    'expeditionVersion': 4,
+    'eventId': 'echo-vault-v1',
+    'eventTitle': 'Хранилище эха',
     'status': 'RESOLVED',
-    'choiceId': 'analyze-signal',
-    'choiceTitle': 'Проанализировать сигнал',
-    'outcomeTitle': 'Карта импульсов',
-    'outcomeSummary': 'Навигатор выделил безопасный ритм доступа.',
+    'choiceId': 'stabilize-core',
+    'choiceTitle': 'Стабилизировать ядро',
+    'outcomeTitle': 'Стабильный резонанс',
+    'outcomeSummary': 'Ядро перестало разрушаться.',
     'pilot': <String, dynamic>{
       'pilotId': 'navigator-v1',
       'name': 'Навигатор',
       'level': 1,
-      'experienceGained': 40,
-      'currentExperience': 60,
+      'experienceGained': 30,
+      'currentExperience': 90,
       'nextLevelExperience': 100,
-      'version': 1,
+      'version': 2,
     },
     'pet': <String, dynamic>{
       'petId': 'spark-v1',
       'name': 'Искра',
       'level': 1,
-      'bondGained': 5,
-      'bond': 15,
+      'bondGained': 8,
+      'bond': 23,
+      'version': 2,
+    },
+    'material': <String, dynamic>{
+      'itemId': 'lumen-shard',
+      'name': 'Люминовый осколок',
+      'description': 'Стабильный фрагмент светового ядра.',
+      'quantityGained': 2,
+      'quantityAfter': 2,
       'version': 1,
     },
     'serverTime': '2026-07-26T06:00:00Z',

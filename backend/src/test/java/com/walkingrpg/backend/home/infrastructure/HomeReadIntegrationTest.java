@@ -59,6 +59,8 @@ class HomeReadIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbcTemplate.update("DELETE FROM inventory_ledger");
+        jdbcTemplate.update("DELETE FROM inventory_stack");
         jdbcTemplate.update("DELETE FROM processed_expedition_advance");
         jdbcTemplate.update("DELETE FROM expedition_progress");
         jdbcTemplate.update("DELETE FROM processed_activity_sync");
@@ -90,7 +92,7 @@ class HomeReadIntegrationTest {
         assertEquals(1, snapshot.activityStateVersion());
         assertEquals(2, snapshot.economyVersion());
         assertEquals("Europe/Berlin", snapshot.timeZone());
-        assertEquals("starter-v1", snapshot.contentVersion());
+        assertEquals("starter-v2", snapshot.contentVersion());
         assertEquals(30, snapshot.expedition().progress());
         assertEquals(1, snapshot.expedition().version());
         assertEquals("EVENT_READY", snapshot.expedition().status());

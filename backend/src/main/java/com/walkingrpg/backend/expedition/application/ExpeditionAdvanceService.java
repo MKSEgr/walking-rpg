@@ -40,7 +40,7 @@ public class ExpeditionAdvanceService {
 
     @Transactional
     public ExpeditionAdvanceResult advance(ExpeditionAdvanceCommand command) {
-        ExpeditionDefinition definition = content.require(command.expeditionId());
+        content.require(command.expeditionId());
         Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
         repository.acquireLock(command.userId(), command.expeditionId());
 
@@ -58,7 +58,8 @@ public class ExpeditionAdvanceService {
         ExpeditionProgressState current = repository.findState(
                 command.userId(),
                 command.expeditionId()
-        ).orElseGet(() -> ExpeditionProgressState.initial(definition));
+        ).orElseGet(() -> ExpeditionProgressState.initial(content.initialDefinition()));
+        ExpeditionDefinition node = content.requireNode(current.currentNodeId());
 
         validateStateAndAmount(current, command.energyToSpend());
 
@@ -70,12 +71,12 @@ public class ExpeditionAdvanceService {
         );
         ExpeditionProgressState updated = current.advance(
                 command.energyToSpend(),
-                definition
+                node
         );
         ExpeditionAdvanceResult result = new ExpeditionAdvanceResult(
-                definition.contentVersion(),
-                definition.expeditionId(),
-                definition.name(),
+                content.contentVersion(),
+                node.expeditionId(),
+                node.name(),
                 command.energyToSpend(),
                 wallet.balance(),
                 wallet.version(),
@@ -84,9 +85,9 @@ public class ExpeditionAdvanceService {
                 updated.version(),
                 updated.status(),
                 updated.currentNodeId(),
-                definition.currentNodeName(),
+                node.currentNodeName(),
                 updated.status() == ExpeditionProgressStatus.EVENT_READY
-                        ? definition.event()
+                        ? node.event()
                         : null,
                 serverTime
         );

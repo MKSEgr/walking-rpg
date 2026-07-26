@@ -75,6 +75,8 @@ class ActivitySyncPersistenceIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbcTemplate.update("DELETE FROM inventory_ledger");
+        jdbcTemplate.update("DELETE FROM inventory_stack");
         jdbcTemplate.update("DELETE FROM processed_activity_sync");
         jdbcTemplate.update("DELETE FROM economy_ledger");
         jdbcTemplate.update("DELETE FROM activity_sync_state");

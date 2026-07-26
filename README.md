@@ -13,9 +13,10 @@
 → идемпотентная синхронизация активности
 → ENERGY wallet + append-only ledger
 → home с личной дневной целью из предыдущих активных дней
-→ продвижение экспедиции
-→ выбор в первом событии
-→ постоянные XP пилота и bond питомца
+→ первый узел и событие
+→ второй узел и второе событие
+→ постоянные XP пилота, bond питомца и материалы
+→ persistent inventory
 → завершённое состояние экспедиции
 ```
 
@@ -29,8 +30,9 @@
 - development-only источник шагов для воспроизводимых локальных проверок;
 - server-authoritative ENERGY economy;
 - production `GET /api/v1/home`;
-- стартовая экспедиция, первый узел и событие с двумя решениями;
+- стартовая экспедиция `starter-v2` с двумя узлами и двумя событиями;
 - постоянный progression пилота и питомца;
+- material inventory с append-only ledger и защитой от повторной выдачи;
 - foreground durable outbox для activity, expedition и event-команд;
 - GitHub Actions для backend, Flutter, Android APK и iOS Simulator build.
 
@@ -58,6 +60,17 @@ localDate + IANA timeZone + authoritativeTotal
 Перед первой сетевой попыткой mobile сохраняет полный payload и idempotency key для activity sync, продвижения экспедиции и решения события. После потери ответа или завершения процесса следующий запуск повторяет ту же команду с тем же key. Успешно восстановленные команды всегда завершаются повторным чтением `GET /api/v1/home`; локальная очередь не считается источником игрового состояния.
 
 Очередь разделена на независимые `ACTIVITY` и `GAMEPLAY` lane. Внутри lane команды обрабатываются FIFO. Network error, `408`, `429`, `5xx` и неоднозначный response остаются pending; подтверждённые остальные `4xx` становятся terminal failed и не блокируют следующие команды. Подробности: [ADR 0012](docs/adr/0012-foreground-durable-mobile-command-outbox.md).
+
+## Starter content v2 и инвентарь
+
+После разрешения первого события экспедиция больше не завершается: backend переводит пользователя на узел `lumen-gate`, для которого требуется ещё 45 ENERGY. Второе событие `echo-vault-v1` выдаёт XP, bond и одну из материальных наград:
+
+```text
+stabilize-core → 2 × Люминовый осколок
+follow-echo    → 1 × Нить эха
+```
+
+Материалы сохраняются в `inventory_stack`, а каждое начисление — в append-only `inventory_ledger`. Повтор события с тем же idempotency key возвращает исходный snapshot и не выдаёт предмет повторно. Существующие пользователи, завершившие `starter-v1`, мигрируют на второй узел без потери XP/bond и без ретроактивной material reward. Подробности: [ADR 0014](docs/adr/0014-second-node-and-persistent-inventory.md).
 
 ## Структура
 
@@ -107,6 +120,7 @@ GET  /api/v1/home?localDate=YYYY-MM-DD
 POST /api/v1/activity/sync
 POST /api/v1/expeditions/starter-expedition-v1/advance
 POST /api/v1/events/signal-source-v1/resolve
+POST /api/v1/events/echo-vault-v1/resolve
 ```
 
 Подробности: [backend/README.md](backend/README.md).
@@ -170,7 +184,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V4 + PostgreSQL Testcontainers tests
+Flyway V1–V5 + PostgreSQL Testcontainers tests
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build
@@ -194,6 +208,7 @@ iOS Simulator debug build
 - attestation;
 - полноценный anti-fraud по источникам;
 - store privacy forms и production privacy-policy flow;
-- второй узел экспедиции, предметы, навыки и эволюция.
+- третий узел и расширенная первая глава;
+- расход предметов, crafting, навыки и эволюция.
 
 Дальнейший порядок работ: [docs/ROADMAP.md](docs/ROADMAP.md).

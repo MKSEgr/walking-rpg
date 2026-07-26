@@ -26,6 +26,7 @@ goal           — личная дневная цель из accepted activity h
 economy        — wallet, ledger, credit/debit
 expedition     — progress, узлы, события и команды прохождения
 progression    — pilot XP, pet bond, уровни
+inventory      — material stack и append-only reward ledger
 home           — агрегированный read-model главного экрана
 content        — server-owned starter content; CMS позднее
 social         — отряды и недельные цели; позднее
@@ -88,25 +89,33 @@ sequenceDiagram
     participant X as Expedition/Event
     participant E as Economy
     participant P as Progression
+    participant I as Inventory
     participant D as PostgreSQL
 
-    M->>O: persist advance payload + key
+    M->>O: persist advance node 1 + key
     O->>X: advance expedition
-    X->>D: advisory lock user+expedition
     X->>E: debit ENERGY
-    E->>D: wallet lock + ledger debit
-    X->>D: progress + immutable response
-    X-->>O: EVENT_READY
-    O->>O: remove successful command
-    M->>O: persist event choice + key
-    O->>X: resolve event choice
+    X->>D: outer-beacon EVENT_READY
+    M->>O: persist signal-source choice + key
+    O->>X: resolve first event
     X->>P: pilot XP + pet bond
-    P->>D: progression state
+    X->>D: transition to lumen-gate IN_PROGRESS
+    M->>O: persist advance node 2 + key
+    O->>X: advance expedition
+    X->>E: debit ENERGY
+    X->>D: echo-vault EVENT_READY
+    M->>O: persist echo-vault choice + key
+    O->>X: resolve second event
+    X->>P: pilot XP + pet bond
+    X->>I: material reward
+    I->>D: lock stack + append inventory ledger
     X->>D: COMPLETED + immutable event response
-    X-->>O: resolved outcome
-    O->>O: remove successful command
+    O->>O: remove each command after decoded success
     M->>X: GET /home
+    X-->>M: current node, outcome and inventory
 ```
+
+`signal-source-v1` продолжает ту же экспедицию на второй узел. `echo-vault-v1` завершает её и выдаёт stackable material. Каждый переход и reward находится внутри транзакции соответствующей server-команды.
 
 ## 7. Ключевые инварианты
 
@@ -131,6 +140,11 @@ sequenceDiagram
 19. Process restart не меняет payload или idempotency key pending-команды.
 20. Outbox не является источником game state; после успеха mobile перечитывает `GET /home`.
 21. Команда одного technical owner не replay-ится под другим owner.
+22. Первый event resolution не помечает экспедицию завершённой: он атомарно создаёт состояние следующего узла.
+23. Material reward изменяет `inventory_stack` только через `inventory_ledger`.
+24. Один `user + inventory sourceType + sourceKey` не может выдать другой item или quantity.
+25. Progression, inventory, expedition transition/completion и processed response публикуются одним commit.
+26. `GET /home.inventory` является актуальной проекцией, а event `materialReward` — immutable snapshot исходной операции.
 
 ## 8. Текущая backend-схема данных
 
@@ -146,9 +160,11 @@ processed_expedition_advance
 pilot_progress
 pet_progress
 processed_event_resolution
+inventory_stack
+inventory_ledger
 ```
 
-`processed_*` таблицы содержат fingerprint и исходный response snapshot. Повтор команды после server restart не меняет состояние второй раз и не подменяет ответ более новым балансом/progression.
+`processed_*` таблицы содержат fingerprint и исходный response snapshot. Повтор команды после server restart не меняет состояние второй раз и не подменяет ответ более новым балансом/progression/inventory. `inventory_stack` хранит текущую проекцию количества, а `inventory_ledger` — append-only факты material reward.
 
 ## 9. Конкурентность backend
 
@@ -163,8 +179,8 @@ processed_event_resolution
 
 - transaction-scoped advisory lock по user + expedition;
 - idempotency до изменения состояния;
-- wallet/progression row locks;
-- commit debit/progress/reward/response.
+- wallet/progression/inventory row locks;
+- commit debit/progress/material reward/transition/response.
 
 Подход работает на нескольких экземплярах модульного монолита без Redis-lock.
 
@@ -226,17 +242,22 @@ activity_sync_state за [localDate - 7 days, localDate)
 
 ## 13. Контент
 
-`starter-v1` пока server-owned code content:
+`starter-v2` пока остаётся server-owned code content:
 
 ```text
 expeditionId: starter-expedition-v1
-nodeId:       outer-beacon
-threshold:    30 ENERGY
-eventId:      signal-source-v1
-choices:      analyze-signal / trust-spark
+
+node 1: outer-beacon, 30 ENERGY
+event:  signal-source-v1
+choices: analyze-signal / trust-spark
+
+node 2: lumen-gate, 45 ENERGY
+event:  echo-vault-v1
+choices: stabilize-core / follow-echo
+items:  lumen-shard / echo-thread
 ```
 
-Имена, тексты и reward definitions отделены от mutable state. Перед второй главой content definition будет вынесен в версионируемое хранилище или CMS.
+Имена, тексты, transitions и reward definitions отделены от mutable state. Stable ID сохраняются при повышении `contentVersion`. Flyway V5 переводит завершённых пользователей `starter-v1` на второй узел и не переписывает immutable response первого события. Перед расширением первой главы definitions будут вынесены в версионируемое хранилище или CMS. Подробности: [ADR 0014](adr/0014-second-node-and-persistent-inventory.md).
 
 ## 14. Наблюдаемость до beta
 
@@ -246,6 +267,8 @@ choices:      analyze-signal / trust-spark
 - activity duplicate и total-decreased metrics;
 - Health source/permission metrics без health values;
 - economy credit/debit metrics;
+- inventory reward/conflict metrics;
+- inventory stack-versus-ledger reconciliation;
 - wallet-versus-ledger reconciliation;
 - expedition/event conflict metrics;
 - pending/failed mobile command metrics;
@@ -253,4 +276,4 @@ choices:      analyze-signal / trust-spark
 
 ## 15. Границы текущей реализации
 
-Не реализованы authentication, account switching, attestation, retention processed/failed commands, background Health delivery, background command worker, reachability-triggered retry, offline read cache, source metadata, полноценный risk score, несколько экспедиций, предметы, навыки и CMS.
+Не реализованы authentication, account switching, attestation, retention processed/failed commands, background Health delivery, background command worker, reachability-triggered retry, offline read cache, source metadata, полноценный risk score, несколько экспедиций, расход/обмен предметов, unique item instances, навыки и CMS.
