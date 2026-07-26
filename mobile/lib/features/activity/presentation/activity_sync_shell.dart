@@ -8,11 +8,7 @@ typedef ActivitySynchronizer = Future<ActivitySyncResult> Function();
 typedef ActivityHomeBuilder = Widget Function(Key key);
 
 class ActivitySyncShell extends StatefulWidget {
-  const ActivitySyncShell({
-    super.key,
-    this.synchronizer,
-    this.homeBuilder,
-  });
+  const ActivitySyncShell({super.key, this.synchronizer, this.homeBuilder});
 
   final ActivitySynchronizer? synchronizer;
   final ActivityHomeBuilder? homeBuilder;
@@ -87,15 +83,19 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       _buttonLabel = 'Синхронизировать шаги';
       return;
     }
-    if (!AppEnvironment.enableDemoActivitySync) {
+
+    final ActivitySyncCoordinator? coordinator =
+        ActivitySyncCoordinator.fromEnvironmentIfSupported();
+    if (coordinator == null) {
       _synchronizer = null;
       _buttonLabel = null;
       return;
     }
-    final ActivitySyncCoordinator coordinator =
-        ActivitySyncCoordinator.fromEnvironment();
+
     _synchronizer = coordinator.synchronize;
-    _buttonLabel = 'Синхронизировать тестовые шаги';
+    _buttonLabel = AppEnvironment.enableDemoActivitySync
+        ? 'Синхронизировать тестовые шаги'
+        : 'Синхронизировать шаги';
   }
 
   Future<void> _sync() async {

@@ -2,7 +2,7 @@
 
 ## 1. Контекст
 
-Проект разрабатывается командой из двух участников. Главный приоритет — проверяемые вертикальные срезы без инфраструктуры, которую пока некому обслуживать.
+Проект разрабатывается командой из двух участников. Главный приоритет — получать проверяемые вертикальные срезы без инфраструктуры, которую пока некому обслуживать.
 
 ## 2. Базовые решения
 
@@ -12,86 +12,110 @@
 - модульный монолит;
 - REST/JSON;
 - PostgreSQL + Flyway;
-- server-authoritative economy и progression;
+- server-authoritative экономика;
+- platform adapters за доменными интерфейсами;
 - Redis, очередь и отдельные сервисы только по измеренной необходимости.
 
-## 3. Модули backend
+## 3. Backend-модули
 
 ```text
-identity       — технические пользователь и устройство
-activity       — authoritative total, high-watermark, risk status
-economy        — wallet, append-only ledger, credit/debit
-expedition     — progress, event choice и completion
-progression    — pilot XP/level и pet bond/level
+identity       — технические пользователи и устройства
+activity       — приём cumulative activity и high-watermark
+economy        — wallet, ledger, credit/debit
+expedition     — progress, узлы, события и команды прохождения
+progression    — pilot XP, pet bond, уровни
 home           — агрегированный read-model главного экрана
-content        — server-owned definitions; CMS позднее
+content        — server-owned starter content; CMS позднее
 social         — отряды и недельные цели; позднее
-risk           — расширенный антифрод; позднее
-shared         — только общие примитивы
+risk           — антифрод-сигналы; позднее
+shared         — только действительно общие примитивы
 ```
 
 Пакеты группируются по функциональности, а не в один глобальный `controller/service/repository`.
 
-## 4. Сквозной поток first playable
+## 4. Mobile-модули
+
+```text
+core/config       — compile-time environment
+activity/domain   — StepSource, StepReading, sync result
+activity/data     — HealthKit/Health Connect adapters и REST client
+activity/application — retry/idempotency coordinator
+activity/presentation — sync action shell
+home              — server-authoritative read-model
+expedition        — ENERGY spend command
+event             — event resolution command
+```
+
+Android- и iOS-host проекты versioned в репозитории.
+
+## 5. Сквозной поток активности
 
 ```mermaid
 sequenceDiagram
-    participant S as StepSource
+    participant H as HealthKit / Health Connect
     participant M as Flutter
-    participant A as Activity
+    participant A as Activity module
+    participant E as Economy module
+    participant D as PostgreSQL
+
+    H->>M: cumulative steps за локальный день
+    M->>M: StepReading + IANA timezone
+    M->>A: POST /activity/sync + idempotency key
+    A->>D: advisory lock user
+    A->>A: accepted delta и energyGranted
+    A->>E: credit ENERGY
+    E->>D: wallet lock + ledger credit
+    A->>D: activity state + immutable response
+    A-->>M: accepted total + reward snapshot
+    M->>A: GET /home
+    A-->>M: актуальный server state
+```
+
+Mobile не отправляет сырые health samples и не вычисляет награду.
+
+## 6. Игровой поток first playable
+
+```mermaid
+sequenceDiagram
+    participant M as Flutter
+    participant X as Expedition/Event
     participant E as Economy
-    participant X as Expedition
     participant P as Progression
     participant D as PostgreSQL
 
-    S->>M: cumulative authoritative total
-    M->>A: POST activity/sync
-    A->>D: advisory lock user
-    A->>A: calculate accepted delta
-    A->>E: credit ENERGY
-    E->>D: wallet lock + ledger credit
-    A->>D: save activity state + response
-    A-->>M: granted energy + balance
-
-    M->>X: POST expedition/advance
+    M->>X: advance expedition
     X->>D: advisory lock user+expedition
     X->>E: debit ENERGY
     E->>D: wallet lock + ledger debit
-    X->>D: save progress + response
+    X->>D: progress + immutable response
     X-->>M: EVENT_READY
-
-    M->>X: POST event/resolve choice
-    X->>D: advisory lock user+expedition
-    X->>P: apply pilot XP + pet bond
-    P->>D: upsert progression
-    X->>D: mark COMPLETED + save response
-    X-->>M: resolved outcome + rewards
-
-    M->>D: GET home through backend read-model
+    M->>X: resolve event choice
+    X->>P: pilot XP + pet bond
+    P->>D: progression state
+    X->>D: COMPLETED + immutable event response
+    X-->>M: resolved outcome
+    M->>X: GET /home
 ```
 
-## 5. Инварианты
+## 7. Ключевые инварианты
 
-1. Один activity key не создаёт две награды.
-2. Один expedition key не создаёт два списания.
-3. Один event key не создаёт две progression reward.
-4. Один key с другим payload возвращает конфликт.
-5. Баланс изменяется только через `economy_ledger`.
-6. `economy_wallet` — транзакционная проекция текущего баланса.
-7. Wallet не может стать отрицательным.
-8. Клиент не задаёт reward, balance, progress или progression.
-9. Несколько устройств используют один activity high-watermark пользователя.
-10. Понижение системного total не создаёт отрицательную награду.
-11. Processed command хранит immutable response snapshot.
-12. Activity state + credit + response публикуются одним transaction commit.
-13. Debit + expedition progress + response публикуются одним transaction commit.
-14. Event completion + pilot/pet progression + response публикуются одним transaction commit.
-15. Один economy source создаёт не более одной ledger-записи.
-16. `GET /home` read-only и не создаёт zero-state.
-17. После `EVENT_READY` advance запрещён до resolution.
-18. После `COMPLETED` event нельзя разрешить повторно новым key.
+1. Клиент не задаёт accepted delta, награду или новый баланс.
+2. Один activity idempotency key не создаёт две награды.
+3. Один expedition key не создаёт два списания.
+4. Один event key не выдаёт награду дважды.
+5. Повтор key с другим business payload возвращает конфликт.
+6. Баланс меняется только через `economy_ledger`.
+7. `economy_wallet` — транзакционная проекция текущего баланса.
+8. Wallet не может стать отрицательным.
+9. Несколько устройств используют один daily activity high-watermark пользователя.
+10. Понижение platform total не создаёт отрицательную награду.
+11. Activity, expedition и event command responses сохраняются как immutable snapshots.
+12. Каждая команда публикует все связанные изменения одним transaction commit либо полностью откатывается.
+13. Один economy source создаёт не более одной ledger-записи.
+14. `GET /home` read-only и не создаёт zero-state в БД.
+15. Health adapter не протекает в mobile domain или backend contract.
 
-## 6. Схема данных
+## 8. Текущая схема данных
 
 ```text
 app_user
@@ -107,90 +131,76 @@ pet_progress
 processed_event_resolution
 ```
 
-`processed_*` таблицы содержат fingerprint и исходный response snapshot. Это обеспечивает exact replay после перезапуска и не подменяет старый command response новым read-model состоянием.
+`processed_*` таблицы содержат fingerprint и исходный response snapshot. Повтор команды после server restart не меняет состояние второй раз и не подменяет ответ более новым балансом/progression.
 
-## 7. Конкурентность
+## 9. Конкурентность
 
 ### Activity
 
 - transaction-scoped advisory lock по user;
 - общий daily high-watermark;
-- wallet row lock внутри economy;
+- wallet row lock;
 - commit activity state, credit и response.
 
-### Expedition advance
+### Expedition/Event
 
 - transaction-scoped advisory lock по user + expedition;
-- idempotency до debit;
-- wallet row `FOR UPDATE`;
-- commit debit, ledger, progress и response.
+- idempotency до изменения состояния;
+- wallet/progression row locks;
+- commit debit/progress/reward/response.
 
-### Event resolution
+Подход работает на нескольких экземплярах модульного монолита без Redis-lock.
 
-- тот же lock по user + expedition;
-- проверка `EVENT_READY` и открытого eventId;
-- progression upsert внутри транзакции;
-- commit `COMPLETED`, rewards и response.
+## 10. Platform Health boundary
 
-Такой подход работает на нескольких экземплярах модульного монолита без Redis-lock.
+```text
+StepSource
+  ├── PlatformHealthStepSource
+  │     ├── HealthGateway
+  │     ├── ActivityRecognitionGateway
+  │     └── DeviceTimeZoneProvider
+  └── DevelopmentStepSource
+```
 
-## 8. Контент и mutable state
+Решения:
 
-`starter-v1` пока хранится в коде:
+- только foreground/manual sync;
+- только `STEPS` READ;
+- local midnight → now;
+- IANA timezone передаётся backend;
+- demo source включается только явным flag;
+- `includeManualEntries=false` — best effort, не security boundary;
+- Android/iOS build проверяются CI;
+- физические устройства проверяются отдельной матрицей.
+
+Подробности: [HEALTH_API_SPIKE.md](HEALTH_API_SPIKE.md) и [ADR 0011](adr/0011-platform-health-step-source.md).
+
+## 11. Контент
+
+`starter-v1` пока server-owned code content:
 
 ```text
 expeditionId: starter-expedition-v1
 nodeId:       outer-beacon
 threshold:    30 ENERGY
 eventId:      signal-source-v1
-choices:      analyze-signal | trust-spark
-pilotId:      navigator-v1
-petId:        spark-v1
+choices:      analyze-signal / trust-spark
 ```
 
-Контент и состояние разделены:
+Имена, тексты и reward definitions отделены от mutable state. Перед второй главой content definition будет вынесен в версионируемое хранилище или CMS.
 
-- имена, тексты, пороги и reward definitions находятся в content definition;
-- activity/economy/expedition/progression state находится в PostgreSQL;
-- processed response сохраняет текстовый snapshot для exact replay.
-
-Перед появлением нескольких глав content definition выносится в версионируемое хранилище или CMS.
-
-## 9. Mobile boundaries
-
-Flutter:
-
-- читает production home snapshot;
-- отправляет idempotent activity, advance и resolution commands;
-- после успеха перечитывает home;
-- не выполняет optimistic изменение server state;
-- разделяет `StepSource` и `ActivityApiClient`.
-
-```text
-StepSource
-  platform-specific чтение cumulative total
-
-ActivityApiClient
-  стабильный backend contract
-
-ActivitySyncCoordinator
-  повтор одного reading с тем же key после ошибки
-```
-
-Development source включается только явным feature flag и не считается health-интеграцией.
-
-## 10. Наблюдаемость до beta
+## 12. Наблюдаемость до beta
 
 - структурированные логи;
 - trace/correlation ID;
 - latency/error metrics;
-- activity duplicate metrics;
+- activity duplicate и total-decreased metrics;
+- Health source/permission metrics без health values;
 - economy credit/debit metrics;
 - wallet-versus-ledger reconciliation;
 - expedition/event conflict metrics;
-- progression reward metrics;
 - mobile crash reporting.
 
-## 11. Границы
+## 13. Границы текущей реализации
 
-Пока не реализованы authentication, attestation, retention processed commands, Apple Health/Health Connect, permissions, background delivery, offline command queue, несколько экспедиций, inventory и CMS.
+Не реализованы authentication, attestation, retention processed commands, persistent mobile command queue, background Health delivery, source metadata, полноценный risk score, несколько экспедиций, предметы, навыки и CMS.

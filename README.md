@@ -9,29 +9,46 @@
 Первый технический игровой цикл уже работает сквозным образом:
 
 ```text
-authoritative step total
-→ idempotent activity sync
-→ ENERGY wallet + ledger
-→ expedition advance
-→ first event choice
-→ persistent pilot XP + pet bond
-→ completed expedition home state
+суммарные шаги текущего дня
+→ идемпотентная синхронизация активности
+→ ENERGY wallet + append-only ledger
+→ продвижение экспедиции
+→ выбор в первом событии
+→ постоянные XP пилота и bond питомца
+→ завершённое состояние экспедиции
 ```
 
-В репозитории находятся:
+В проекте реализованы:
 
 - Java 21 / Spring Boot backend;
 - Flutter mobile;
 - PostgreSQL + Flyway;
-- идемпотентная синхронизация шагов;
+- Apple HealthKit и Google Health Connect как foreground-источники шагов;
+- development-only источник шагов для воспроизводимых локальных проверок;
 - server-authoritative ENERGY economy;
 - production `GET /api/v1/home`;
-- постоянная стартовая экспедиция;
-- два варианта решения события `signal-source-v1`;
-- постоянные XP пилота и bond питомца;
-- development-only источник шагов для проверки mobile → backend;
-- архитектурная документация, roadmap, backlog и ADR;
-- GitHub Actions для структуры, backend и mobile.
+- стартовая экспедиция, первый узел и событие с двумя решениями;
+- постоянный progression пилота и питомца;
+- GitHub Actions для backend, Flutter, Android APK и iOS Simulator build.
+
+## Платформенные шаги
+
+Обычный Android/iOS запуск использует системное хранилище здоровья:
+
+```text
+Android → Health Connect
+ iOS    → Apple HealthKit
+```
+
+Приложение запрашивает только чтение количества шагов. Оно не запрашивает пульс, сон, вес, геолокацию или медицинские записи. Mobile формирует cumulative total за текущий локальный день и отправляет на backend:
+
+```text
+localDate + IANA timeZone + authoritativeTotal
+```
+
+Клиент не рассчитывает энергию и не изменяет баланс оптимистично. После успешного `POST /api/v1/activity/sync` приложение заново читает `GET /api/v1/home`.
+
+Текущая интеграция работает только по явному действию пользователя в foreground. Код, unit/widget tests, Android debug APK и iOS Simulator build проверены CI. Проверка чтения реальных данных на физических телефонах и часах остаётся отдельным этапом. Подробности: [docs/HEALTH_API_SPIKE.md](docs/HEALTH_API_SPIKE.md).
 
 ## Структура
 
@@ -41,34 +58,22 @@ authoritative step total
 ├── CONTRIBUTING.md
 ├── backend/
 ├── mobile/
+│   ├── android/
+│   └── ios/
 ├── docs/
 ├── scripts/
 └── compose.yaml
 ```
 
-## Проверки проекта
+Android- и iOS-host проекты находятся в репозитории и не генерируются при каждом клонировании.
 
-После открытия pull request GitHub Actions выполняет:
-
-- проверку структуры репозитория;
-- compile, unit/API и PostgreSQL Testcontainers tests на Java 21;
-- `dart format`, `flutter analyze` и `flutter test` на Flutter 3.44.7.
-
-Локальная структурная проверка:
-
-```bash
-./scripts/verify-project.sh
-```
-
-## Backend
+## Быстрый запуск backend
 
 Требования:
 
 - JDK 21;
-- Docker для PostgreSQL и интеграционных тестов;
-- доступ в интернет при первом запуске Maven Wrapper.
-
-Запуск:
+- Docker;
+- доступ в интернет при первой загрузке Maven Wrapper и зависимостей.
 
 ```bash
 docker compose up -d postgres
@@ -89,7 +94,6 @@ cd backend
 ```text
 GET  /actuator/health
 GET  /api/v1/system/info
-GET  /api/v1/home/demo
 GET  /api/v1/home?localDate=YYYY-MM-DD
 POST /api/v1/activity/sync
 POST /api/v1/expeditions/starter-expedition-v1/advance
@@ -98,26 +102,43 @@ POST /api/v1/events/signal-source-v1/resolve
 
 Подробности: [backend/README.md](backend/README.md).
 
-## Mobile
+## Быстрый запуск mobile
 
-Host-проекты Android/iOS пока генерируются локально установленной версией Flutter:
+Требования:
+
+- Flutter 3.44.7;
+- Android SDK и/или Xcode;
+- запущенный backend.
+
+Android Emulator:
 
 ```bash
 cd mobile
-flutter create --platforms=android,ios \
-  --org com.walkingrpg \
-  --project-name walking_rpg_mobile .
 flutter pub get
 flutter run \
   --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
-  --dart-define=DEMO_USER_ID=demo-user-1
+  --dart-define=DEMO_USER_ID=demo-user-1 \
+  --dart-define=DEMO_DEVICE_ID=android-emulator-1
 ```
 
-Для iOS Simulator вместо `10.0.2.2` используется `127.0.0.1`.
+iOS Simulator:
 
-### Явная development-синхронизация шагов
+```bash
+cd mobile
+flutter pub get
+flutter run \
+  --dart-define=API_BASE_URL=http://127.0.0.1:8080 \
+  --dart-define=DEMO_USER_ID=demo-user-1 \
+  --dart-define=DEMO_DEVICE_ID=ios-simulator-1
+```
 
-До подключения Apple Health и Health Connect можно проверить настоящий HTTP-путь mobile → backend через development source:
+На физическом устройстве вместо loopback/emulator host указывается LAN-адрес компьютера с backend.
+
+В Android/iOS приложении появляется действие **«Синхронизировать шаги»**. Разрешения запрашиваются в момент этого действия.
+
+### Явный development-режим
+
+Для проверки без HealthKit/Health Connect:
 
 ```bash
 flutter run \
@@ -129,32 +150,40 @@ flutter run \
   --dart-define=ACTIVITY_TIME_ZONE=Europe/Berlin
 ```
 
-Этот режим:
-
-- отображает отдельную кнопку **«Синхронизировать тестовые шаги»**;
-- отправляет authoritative total в production activity endpoint;
-- после успеха перечитывает `GET /home`;
-- не включается без явного feature flag;
-- не является заменой HealthKit/Health Connect.
+Этот источник никогда не включается без явного feature flag.
 
 Подробности: [mobile/README.md](mobile/README.md).
 
-## Локальная БД
+## Проверки
 
-```bash
-docker compose up -d postgres
-```
-
-Flyway создаёт activity state, economy wallet/ledger, expedition progress, event resolution и pilot/pet progression. Все command response сохраняются для точного идемпотентного replay после перезапуска.
-
-## Следующая вертикальная цель
+Pull request CI выполняет:
 
 ```text
-StepSource abstraction
-→ Apple Health / Health Connect spike
-→ permissions and source metadata
-→ real authoritative total
-→ existing activity sync client
+Project structure
+Backend compile + unit/API tests
+Flyway V1–V4 + PostgreSQL Testcontainers tests
+Dart formatting + Flutter analyze + Flutter tests
+Android debug APK build
+iOS Simulator debug build
 ```
 
-Подробности: [docs/ROADMAP.md](docs/ROADMAP.md).
+Локально:
+
+```bash
+./scripts/verify-project.sh
+./scripts/bootstrap-mobile.sh
+```
+
+## Текущие границы
+
+Пока не реализованы:
+
+- проверка на физических iPhone/Android и связках телефон + часы;
+- background delivery;
+- offline command queue;
+- attestation;
+- полноценный anti-fraud по источникам;
+- store privacy forms и production privacy-policy flow;
+- второй узел экспедиции, предметы, навыки и эволюция.
+
+Дальнейший порядок работ: [docs/ROADMAP.md](docs/ROADMAP.md).

@@ -4,8 +4,8 @@ class StepReading {
     required DateTime localDate,
     required String timeZone,
     this.syncCursor,
-  })  : localDate = DateTime(localDate.year, localDate.month, localDate.day),
-        timeZone = _requireText(timeZone, 'timeZone') {
+  }) : localDate = DateTime(localDate.year, localDate.month, localDate.day),
+       timeZone = _requireText(timeZone, 'timeZone') {
     if (authoritativeTotal < 0) {
       throw ArgumentError.value(
         authoritativeTotal,
@@ -38,12 +38,8 @@ class StepReading {
   }
 
   @override
-  int get hashCode => Object.hash(
-        authoritativeTotal,
-        localDate,
-        timeZone,
-        syncCursor,
-      );
+  int get hashCode =>
+      Object.hash(authoritativeTotal, localDate, timeZone, syncCursor);
 
   static String _requireText(String value, String field) {
     final String normalized = value.trim();

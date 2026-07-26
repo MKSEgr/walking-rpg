@@ -5,43 +5,46 @@ import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_source.dart';
 
 void main() {
-  test('coordinator reuses key after failure and rotates it after success',
-      () async {
-    final _MutableStepSource source = _MutableStepSource(
-      StepReading(
-        authoritativeTotal: 6842,
-        localDate: DateTime(2026, 7, 26),
-        timeZone: 'Europe/Berlin',
-        syncCursor: 'cursor-1',
-      ),
-    );
-    final List<String> keys = <String>[];
-    int attempts = 0;
-    int keySequence = 0;
-    final ActivitySyncCoordinator coordinator = ActivitySyncCoordinator(
-      stepSource: source,
-      idempotencyKeyFactory: (StepReading reading) => 'key-${++keySequence}',
-      sender: ({
-        required StepReading reading,
-        required String idempotencyKey,
-      }) async {
-        attempts += 1;
-        keys.add(idempotencyKey);
-        if (attempts == 1) {
-          throw StateError('network failed after send');
-        }
-        return _result(reading.authoritativeTotal);
-      },
-    );
+  test(
+    'coordinator reuses key after failure and rotates it after success',
+    () async {
+      final _MutableStepSource source = _MutableStepSource(
+        StepReading(
+          authoritativeTotal: 6842,
+          localDate: DateTime(2026, 7, 26),
+          timeZone: 'Europe/Berlin',
+          syncCursor: 'cursor-1',
+        ),
+      );
+      final List<String> keys = <String>[];
+      int attempts = 0;
+      int keySequence = 0;
+      final ActivitySyncCoordinator coordinator = ActivitySyncCoordinator(
+        stepSource: source,
+        idempotencyKeyFactory: (StepReading reading) => 'key-${++keySequence}',
+        sender:
+            ({
+              required StepReading reading,
+              required String idempotencyKey,
+            }) async {
+              attempts += 1;
+              keys.add(idempotencyKey);
+              if (attempts == 1) {
+                throw StateError('network failed after send');
+              }
+              return _result(reading.authoritativeTotal);
+            },
+      );
 
-    await expectLater(coordinator.synchronize(), throwsStateError);
-    final ActivitySyncResult replayed = await coordinator.synchronize();
-    final ActivitySyncResult next = await coordinator.synchronize();
+      await expectLater(coordinator.synchronize(), throwsStateError);
+      final ActivitySyncResult replayed = await coordinator.synchronize();
+      final ActivitySyncResult next = await coordinator.synchronize();
 
-    expect(replayed.acceptedTotal, 6842);
-    expect(next.acceptedTotal, 6842);
-    expect(keys, <String>['key-1', 'key-1', 'key-2']);
-  });
+      expect(replayed.acceptedTotal, 6842);
+      expect(next.acceptedTotal, 6842);
+      expect(keys, <String>['key-1', 'key-1', 'key-2']);
+    },
+  );
 
   test('changed reading after failure receives a new key', () async {
     final _MutableStepSource source = _MutableStepSource(
@@ -57,17 +60,18 @@ void main() {
     final ActivitySyncCoordinator coordinator = ActivitySyncCoordinator(
       stepSource: source,
       idempotencyKeyFactory: (StepReading reading) => 'key-${++keySequence}',
-      sender: ({
-        required StepReading reading,
-        required String idempotencyKey,
-      }) async {
-        keys.add(idempotencyKey);
-        if (fail) {
-          fail = false;
-          throw StateError('temporary failure');
-        }
-        return _result(reading.authoritativeTotal);
-      },
+      sender:
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async {
+            keys.add(idempotencyKey);
+            if (fail) {
+              fail = false;
+              throw StateError('temporary failure');
+            }
+            return _result(reading.authoritativeTotal);
+          },
     );
 
     await expectLater(coordinator.synchronize(), throwsStateError);

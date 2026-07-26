@@ -1,6 +1,6 @@
 # Product backlog
 
-## P0 — platform activity source
+## P0 — physical Health validation
 
 ### US-001. Получить реальные шаги
 
@@ -9,19 +9,21 @@
 Критерии:
 
 - разрешение запрашивается в контексте пользы;
-- отказ не ломает приложение;
-- показывается источник и время синхронизации;
-- несколько источников не удваивают total;
-- удаление/корректировка health-записи не создаёт отрицательную награду;
-- Android и iOS используют один `StepSource` domain contract.
+- отказ не ломает home screen;
+- читается cumulative total текущего локального дня;
+- несколько источников не создают клиентское суммирование;
+- удаление/коррекция platform record не создаёт отрицательную награду;
+- Android и iOS используют один `StepSource` domain contract;
+- mobile не отправляет сырые health samples;
+- результат проходит через существующий server-authoritative sync.
 
-**Статус:** backend и mobile HTTP boundary готовы; Apple Health/Health Connect source не реализован.
+**Статус:** код, tests, Android APK и iOS Simulator build готовы. Физические iPhone/Android и телефон + часы не проверены.
 
 ### US-002. Идемпотентно синхронизировать активность
 
 Как система, я хочу принимать cumulative authoritative total и начислять только новую активность.
 
-**Статус:** реализовано с PostgreSQL, wallet/ledger, multi-device lock и Flutter client. Development source проверяет сквозной путь.
+**Статус:** реализовано с PostgreSQL, wallet/ledger, multi-device lock, Flutter client и platform source. Остались persistent mobile queue, retention и attestation.
 
 ## P0 — first playable loop
 
@@ -52,17 +54,19 @@
 
 **Статус:** реализовано для `signal-source-v1` с choices `analyze-signal` и `trust-spark`.
 
-## P1 — после первого события
+## P1 — после device validation
 
-- реальный Health API source;
+- persistent mobile command queue;
 - персональная цель;
-- второй узел и несколько типов событий;
+- второй узел;
+- несколько типов событий;
 - полноценный level-up и навыки;
 - материалы и инвентарь;
 - onboarding;
 - push;
 - базовая аналитика;
-- offline read cache и command queue.
+- offline read cache;
+- background activity research.
 
 ## P2 — после подтверждения одиночного цикла
 

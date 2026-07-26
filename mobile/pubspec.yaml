@@ -1,14 +1,17 @@
 name: walking_rpg_mobile
-description: Initial Flutter shell for the Walking RPG project.
+description: Flutter client for the Walking RPG project.
 publish_to: "none"
 version: 0.1.0+1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ">=3.8.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  flutter_timezone: 5.1.0
+  health: 13.3.1
+  permission_handler: 12.0.3
 
 dev_dependencies:
   flutter_test:
@@ -16,3 +19,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  config:
+    enable-swift-package-manager: false

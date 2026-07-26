@@ -52,11 +52,13 @@ class HomeApiClient {
   final HomeTransport transport;
 
   Future<HomeSnapshot> fetchHome(DateTime localDate) async {
-    final Uri uri = baseUri.resolve('/api/v1/home').replace(
-      queryParameters: <String, String>{
-        'localDate': _formatLocalDate(localDate),
-      },
-    );
+    final Uri uri = baseUri
+        .resolve('/api/v1/home')
+        .replace(
+          queryParameters: <String, String>{
+            'localDate': _formatLocalDate(localDate),
+          },
+        );
     final HomeTransportResponse response = await transport.get(
       uri: uri,
       headers: <String, String>{
@@ -106,10 +108,7 @@ class HomeApiClient {
 }
 
 class HomeApiException implements Exception {
-  const HomeApiException({
-    required this.statusCode,
-    required this.message,
-  });
+  const HomeApiException({required this.statusCode, required this.message});
 
   final int statusCode;
   final String message;

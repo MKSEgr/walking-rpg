@@ -8,16 +8,18 @@ import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/widgets/progress_card.dart';
 
 typedef HomeSnapshotLoader = Future<HomeSnapshot> Function();
-typedef ExpeditionAdvancer = Future<ExpeditionAdvanceResult> Function({
-  required String expeditionId,
-  required int energyToSpend,
-  required String idempotencyKey,
-});
-typedef EventResolver = Future<EventResolutionResult> Function({
-  required String eventId,
-  required String choiceId,
-  required String idempotencyKey,
-});
+typedef ExpeditionAdvancer =
+    Future<ExpeditionAdvanceResult> Function({
+      required String expeditionId,
+      required int energyToSpend,
+      required String idempotencyKey,
+    });
+typedef EventResolver =
+    Future<EventResolutionResult> Function({
+      required String eventId,
+      required String choiceId,
+      required String idempotencyKey,
+    });
 typedef IdempotencyKeyFactory = String Function();
 
 class HomeScreen extends StatefulWidget {
@@ -80,38 +82,39 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: FutureBuilder<HomeSnapshot>(
           future: _snapshotFuture,
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<HomeSnapshot> asyncSnapshot,
-          ) {
-            if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (asyncSnapshot.hasError) {
-              return _HomeError(
-                error: asyncSnapshot.error!,
-                onRetry: _reload,
-                onOpenDemo: _openDemo,
-              );
-            }
-            final HomeSnapshot? snapshot = asyncSnapshot.data;
-            if (snapshot == null) {
-              return _HomeError(
-                error: const FormatException('Backend не вернул состояние'),
-                onRetry: _reload,
-                onOpenDemo: _openDemo,
-              );
-            }
-            return _HomeBody(
-              snapshot: snapshot,
-              isAdvancing: _isAdvancing,
-              isResolving: _isResolving,
-              onAdvance: () => _advance(snapshot),
-              onResolve: (HomeEventChoice choice) =>
-                  _resolveEvent(snapshot, choice),
-              onRefresh: _reload,
-            );
-          },
+          builder:
+              (
+                BuildContext context,
+                AsyncSnapshot<HomeSnapshot> asyncSnapshot,
+              ) {
+                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (asyncSnapshot.hasError) {
+                  return _HomeError(
+                    error: asyncSnapshot.error!,
+                    onRetry: _reload,
+                    onOpenDemo: _openDemo,
+                  );
+                }
+                final HomeSnapshot? snapshot = asyncSnapshot.data;
+                if (snapshot == null) {
+                  return _HomeError(
+                    error: const FormatException('Backend не вернул состояние'),
+                    onRetry: _reload,
+                    onOpenDemo: _openDemo,
+                  );
+                }
+                return _HomeBody(
+                  snapshot: snapshot,
+                  isAdvancing: _isAdvancing,
+                  isResolving: _isResolving,
+                  onAdvance: () => _advance(snapshot),
+                  onResolve: (HomeEventChoice choice) =>
+                      _resolveEvent(snapshot, choice),
+                  onRefresh: _reload,
+                );
+              },
         ),
       ),
     );
@@ -149,9 +152,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final String message = result.unlockedEvent == null
           ? 'Экспедиция продвинулась на ${result.energySpent} энергии'
           : 'Открыто событие: ${result.unlockedEvent!.title}';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       setState(() {
         _snapshotFuture = _loadSnapshot();
       });
@@ -331,7 +334,8 @@ class _HomeBody extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         FilledButton.icon(
-          onPressed: eventReady ||
+          onPressed:
+              eventReady ||
                   completed ||
                   spendableEnergy <= 0 ||
                   isAdvancing ||
@@ -348,10 +352,10 @@ class _HomeBody extends StatelessWidget {
             completed
                 ? 'Экспедиция завершена'
                 : eventReady
-                    ? 'Выберите решение события'
-                    : spendableEnergy > 0
-                        ? 'Потратить $spendableEnergy энергии'
-                        : 'Нужно накопить энергию',
+                ? 'Выберите решение события'
+                : spendableEnergy > 0
+                ? 'Потратить $spendableEnergy энергии'
+                : 'Нужно накопить энергию',
           ),
         ),
         const SizedBox(height: 8),

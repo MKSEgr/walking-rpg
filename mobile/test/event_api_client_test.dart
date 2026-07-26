@@ -8,10 +8,7 @@ import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 void main() {
   test('client sends event choice and maps persistent rewards', () async {
     final _FakeTransport transport = _FakeTransport(
-      HomeTransportResponse(
-        statusCode: 200,
-        body: jsonEncode(_response()),
-      ),
+      HomeTransportResponse(statusCode: 200, body: jsonEncode(_response())),
     );
     final EventApiClient client = EventApiClient(
       baseUri: Uri.parse('http://localhost:8080'),
@@ -25,8 +22,10 @@ void main() {
       idempotencyKey: 'resolve-1',
     );
 
-    expect(transport.requestedUri?.path,
-        '/api/v1/events/signal-source-v1/resolve');
+    expect(
+      transport.requestedUri?.path,
+      '/api/v1/events/signal-source-v1/resolve',
+    );
     expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
     expect(transport.decodedBody?['choiceId'], 'analyze-signal');
     expect(transport.decodedBody?['idempotencyKey'], 'resolve-1');

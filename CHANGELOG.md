@@ -14,19 +14,30 @@
 - `POST /api/v1/events/{eventId}/resolve`;
 - persistent `pilot_progress`, `pet_progress` и exact event response replay;
 - Flutter clients для home, activity, expedition и event commands;
-- pluggable `StepSource` и development-only source для mobile → backend проверки;
+- pluggable `StepSource`;
+- Apple HealthKit foreground step source;
+- Google Health Connect foreground step source;
+- Android Activity Recognition permission flow;
+- IANA device timezone provider;
+- development-only step source;
 - retry coordinator, сохраняющий idempotency key для одного reading после ошибки;
-- unit/API/PostgreSQL integration/mobile widget tests;
-- ADR по activity, economy, home, expedition, event resolution и mobile activity boundary;
+- versioned Android/iOS host projects;
+- Android Health Connect и iOS HealthKit native configuration;
+- Android debug APK и iOS Simulator build jobs;
+- unit/API/PostgreSQL integration/mobile/platform tests;
+- ADR по activity, economy, home, expedition, event resolution и platform Health boundary;
 - GitHub Actions CI и PR template.
 
 ### Changed
 
 - first playable loop завершён до состояния `COMPLETED` и persistent rewards;
 - home read-model возвращает pilot XP, pet bond, event choices и resolved outcome;
+- Android/iOS mobile по умолчанию использует platform health source;
+- demo activity source включается только явным feature flag;
 - mobile после каждой команды перечитывает server state без optimistic update;
-- документация приведена к фактически реализованному состоянию после PR #16;
-- roadmap разделяет стабильный activity HTTP contract и platform Health API risk.
+- host-проекты больше не генерируются bootstrap-скриптами;
+- CI дополнительно компилирует нативные Android/iOS приложения;
+- roadmap разделяет готовую Health implementation и ещё не пройденную physical-device validation.
 
 ## [0.1.0] — 2026-07-25
 
