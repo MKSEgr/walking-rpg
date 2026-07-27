@@ -1,0 +1,43 @@
+name: Export release quality source
+
+on:
+  push:
+    branches:
+      - feat/release-quality-readiness
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/release-quality-readiness
+          fetch-depth: 1
+
+      - name: Pack repository source
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar \
+            --exclude=.git \
+            --exclude=backend/target \
+            --exclude=mobile/.dart_tool \
+            --exclude=mobile/build \
+            --exclude=mobile/ios/Pods \
+            -czf /tmp/walking-rpg-release-quality-source.tar.gz .
+          tar -tzf /tmp/walking-rpg-release-quality-source.tar.gz >/tmp/source-list.txt
+          test -s /tmp/source-list.txt
+
+      - name: Upload source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-quality-source
+          path: /tmp/walking-rpg-release-quality-source.tar.gz
+          if-no-files-found: error
+          retention-days: 1
