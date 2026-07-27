@@ -51,6 +51,29 @@ public class EconomyService {
     }
 
     @Transactional
+    public WalletSnapshot debitEnergy(
+            String userId,
+            long energyToSpend,
+            String reasonCode,
+            String sourceType,
+            String sourceKey,
+            Instant occurredAt
+    ) {
+        if (energyToSpend <= 0) {
+            throw new IllegalArgumentException("energyToSpend должна быть положительной");
+        }
+        return repository.applyDebit(new EconomyDebit(
+                userId,
+                EconomyCurrency.ENERGY,
+                energyToSpend,
+                reasonCode,
+                sourceType,
+                sourceKey,
+                occurredAt
+        ));
+    }
+
+    @Transactional
     public WalletSnapshot debitExpeditionEnergy(
             String userId,
             long energyToSpend,
