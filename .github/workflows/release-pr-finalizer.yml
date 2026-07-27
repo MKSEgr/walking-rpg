@@ -2,10 +2,10 @@ name: Release PR finalizer
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened]
 
 concurrency:
-  group: release-pr-finalizer-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  group: release-pr-finalizer-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   finalize:
+    if: github.event.pull_request.draft == true
     name: Release gate · finalize PR
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -81,5 +82,5 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh pr ready "$PR_NUMBER" --repo "$REPOSITORY" || true
+          gh pr ready "$PR_NUMBER" --repo "$REPOSITORY"
           gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "Standard CI и Release quality завершились успешно. PR автоматически переведён в Ready for review; production signing и external gates по-прежнему требуют ручного owner approval и evidence."
