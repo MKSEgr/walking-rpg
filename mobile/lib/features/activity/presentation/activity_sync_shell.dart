@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/activity/application/activity_sync_coordinator.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
+import 'package:walking_rpg_mobile/features/platform/presentation/platform_screen.dart';
 
 typedef ActivitySynchronizer = Future<ActivitySyncResult> Function();
 typedef ActivityHomeBuilder = Widget Function(Key key);
@@ -30,8 +32,10 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
   MobileCommandRuntime? _scheduledRuntime;
   String? _buttonLabel;
   int _homeGeneration = 0;
+  int _platformGeneration = 0;
   bool _isSyncing = false;
   bool _isRecovering = false;
+  int _selectedDestination = 0;
 
   @override
   void initState() {
@@ -51,17 +55,20 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
   @override
   Widget build(BuildContext context) {
     final Widget home = _buildHome();
-    if (_synchronizer == null || _buttonLabel == null) {
+    if (_synchronizer == null ||
+        _buttonLabel == null ||
+        _selectedDestination != 0) {
       return home;
     }
 
     final bool busy = _isSyncing || _isRecovering;
+    final double buttonBottom = widget.homeBuilder == null ? 92 : 20;
     return Stack(
       children: <Widget>[
         home,
         Positioned(
           right: 16,
-          bottom: 20,
+          bottom: buttonBottom,
           child: SafeArea(
             child: FloatingActionButton.extended(
               key: const Key('activity-sync-button'),
@@ -94,10 +101,18 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       return builder(key);
     }
     final MobileCommandRuntime? runtime = _commandRuntime;
-    return HomeScreen(
-      key: key,
-      advancer: runtime?.advance,
-      eventResolver: runtime?.resolve,
+    return MainNavigationShell(
+      home: HomeScreen(
+        key: ValueKey<String>('home-$_homeGeneration'),
+        advancer: runtime?.advance,
+        eventResolver: runtime?.resolve,
+      ),
+      platform: PlatformScreen(
+        key: ValueKey<String>('platform-$_platformGeneration'),
+        commandExecutor: runtime?.executePlatform,
+        onServerStateChanged: _handlePlatformStateChanged,
+      ),
+      onDestinationChanged: _handleDestinationChanged,
     );
   }
 
@@ -118,7 +133,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
           sender: runtime.syncActivity,
         );
     if (coordinator == null) {
-      _commandRuntime = widget.commandRuntime;
+      _commandRuntime = runtime;
       _synchronizer = null;
       _buttonLabel = null;
       _scheduleReplay();
@@ -161,6 +176,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       if (report.changedServerState) {
         setState(() {
           _homeGeneration += 1;
+          _platformGeneration += 1;
         });
       }
       if (report.hasMessages) {
@@ -199,6 +215,24 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     return 'Отложенные команды · ${parts.join(' · ')}';
   }
 
+  void _handleDestinationChanged(int index) {
+    if (!mounted || _selectedDestination == index) {
+      return;
+    }
+    setState(() {
+      _selectedDestination = index;
+    });
+  }
+
+  void _handlePlatformStateChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _homeGeneration += 1;
+    });
+  }
+
   Future<void> _sync() async {
     final ActivitySynchronizer? synchronizer = _synchronizer;
     if (_isSyncing || _isRecovering || synchronizer == null) {
@@ -225,6 +259,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       );
       setState(() {
         _homeGeneration += 1;
+        _platformGeneration += 1;
       });
     } catch (error) {
       if (mounted) {

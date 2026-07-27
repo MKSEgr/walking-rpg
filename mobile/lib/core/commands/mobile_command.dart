@@ -10,7 +10,8 @@ enum MobileCommandLane {
 enum MobileCommandType {
   activitySync('ACTIVITY_SYNC', MobileCommandLane.activity),
   expeditionAdvance('EXPEDITION_ADVANCE', MobileCommandLane.gameplay),
-  eventResolution('EVENT_RESOLUTION', MobileCommandLane.gameplay);
+  eventResolution('EVENT_RESOLUTION', MobileCommandLane.gameplay),
+  platformCommand('PLATFORM_COMMAND', MobileCommandLane.gameplay);
 
   const MobileCommandType(this.wireName, this.lane);
 

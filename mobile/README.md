@@ -69,6 +69,7 @@ Mobile не вычисляет цель локально. `GET /api/v1/home` в�
 POST /api/v1/activity/sync
 POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
+POST /api/v1/platform/commands
 ```
 
 Versioned JSON store находится в application-support directory. Запись использует target, `.tmp` и `.bak`; при прерывании замены выбирается последняя валидная копия. Повреждённый store не перезаписывается молча.
@@ -77,12 +78,33 @@ Versioned JSON store находится в application-support directory. Зап
 
 ```text
 ACTIVITY — синхронизация шагов
-GAMEPLAY — продвижение экспедиции и решение события
+GAMEPLAY — продвижение экспедиции, решение события и platform-команды
 ```
 
 Внутри lane действует FIFO. Временная ошибка GAMEPLAY не блокирует ACTIVITY и наоборот. Network/transport error, `408`, `429`, `5xx` и неоднозначный response остаются pending. Подтверждённые остальные `4xx` переходят в failed и не блокируют очередь.
 
 На старте приложения pending-команды текущего технического пользователя replay-ятся один раз в foreground. После успешного replay приложение перечитывает authoritative home. Автоматического background worker-а и offline read cache пока нет.
+
+## Путевой журнал и platform state
+
+Вторая вкладка приложения читает `GET /api/v1/platform` и отображает server-owned состояние roadmap-функций:
+
+```text
+onboarding
+три питомца и эволюция
+навыки пилота
+задания и достижения
+сезон и недельный маршрут
+отряд
+косметика и sandbox-покупки
+A/B assignments и remote config diagnostics
+```
+
+Изменения отправляются одной командной ручкой `POST /api/v1/platform/commands`. Mobile не вычисляет progression и не применяет optimistic rewards: успешный response уже содержит authoritative `snapshot`, которым заменяется экран. Platform-команды проходят через ту же restart-safe GAMEPLAY lane, поэтому payload и idempotency key сохраняются до подтверждённого ответа backend.
+
+Назначенные A/B-варианты регистрируются отдельной идемпотентной командой `RECORD_EXPERIMENT_EXPOSURE`. Ключ включает content version, experiment id и variant, поэтому повторный запуск приложения не создаёт дублирующий exposure event.
+
+Навигация сохраняет состояние главного экрана и журнала через `IndexedStack`. Кнопка синхронизации шагов показывается только на вкладке экспедиции.
 
 ## Два узла и persistent inventory
 
@@ -232,7 +254,7 @@ Unit/widget tests покрывают:
 - Health authorization denial;
 - locked HealthKit protected data;
 - retry idempotency в рамках процесса и после restart;
-- persist-before-send и exact key replay для activity/expedition/event;
+- persist-before-send и exact key replay для activity/expedition/event/platform;
 - FIFO и независимость ACTIVITY/GAMEPLAY lanes;
 - temporary/backup/corruption recovery файлового store;
 - startup replay → reload authoritative home;
@@ -240,7 +262,11 @@ Unit/widget tests покрывают:
 - переход первого события на второй узел;
 - resolution второго события, material preview/result и inventory rendering;
 - restart-safe replay второго события с исходным payload/key;
-- parsing/validation `dailyGoalPolicy` и отображение default/adaptive explanation.
+- parsing/validation `dailyGoalPolicy` и отображение default/adaptive explanation;
+- mapping platform snapshot и platform command response;
+- onboarding/pet/skill/quest/season/squad/cosmetic widget flows;
+- restart-safe replay platform-команд и канонизацию payload независимо от порядка ключей;
+- навигацию между экспедицией и путевым журналом.
 
 ## Что ещё необходимо проверить на устройствах
 

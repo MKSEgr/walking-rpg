@@ -7,8 +7,11 @@ import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
+import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 
 import 'support/in_memory_mobile_command_store.dart';
+import 'support/platform_fixture.dart';
 
 void main() {
   test('persists before send and reuses the same key after restart', () async {
@@ -280,6 +283,177 @@ void main() {
     expect(report.pendingAfter, 0);
     expect(store.snapshot, hasLength(1));
   });
+
+  test(
+    'platform command persists and replays the same key and payload',
+    () async {
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+      final MobileCommandRuntime firstRuntime = _runtime(
+        store: store,
+        platformSender:
+            ({
+              required String commandType,
+              required Map<String, Object?> payload,
+              required String idempotencyKey,
+            }) async => throw StateError('response lost'),
+      );
+
+      await expectLater(
+        firstRuntime.executePlatform(
+          commandType: 'advance_weekly_route',
+          payload: <String, Object?>{
+            'metadata': <String, Object?>{'z': 2, 'a': 1},
+            'energyToSpend': 10,
+          },
+          idempotencyKey: 'weekly-original',
+        ),
+        throwsStateError,
+      );
+
+      String? replayedType;
+      Map<String, Object?>? replayedPayload;
+      String? replayedKey;
+      final MobileCommandRuntime restarted = _runtime(
+        store: store,
+        platformSender:
+            ({
+              required String commandType,
+              required Map<String, Object?> payload,
+              required String idempotencyKey,
+            }) async {
+              replayedType = commandType;
+              replayedPayload = payload;
+              replayedKey = idempotencyKey;
+              return _platformResult(commandType, idempotencyKey);
+            },
+      );
+
+      final MobileCommandReplayReport report = await restarted.replayPending();
+
+      expect(report.succeeded, 1);
+      expect(replayedType, 'ADVANCE_WEEKLY_ROUTE');
+      expect(replayedPayload, <String, Object?>{
+        'energyToSpend': 10,
+        'metadata': <String, Object?>{'a': 1, 'z': 2},
+      });
+      expect(replayedKey, 'weekly-original');
+      expect(store.snapshot, isEmpty);
+    },
+  );
+
+  test('platform fingerprint ignores map key order', () async {
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+    final MobileCommandRuntime offline = _runtime(
+      store: store,
+      platformSender:
+          ({
+            required String commandType,
+            required Map<String, Object?> payload,
+            required String idempotencyKey,
+          }) async => throw StateError('offline'),
+    );
+
+    await expectLater(
+      offline.executePlatform(
+        commandType: 'TEST_COMMAND',
+        payload: <String, Object?>{
+          'outer': <String, Object?>{'b': 2, 'a': 1},
+          'value': 3,
+        },
+        idempotencyKey: 'first-key',
+      ),
+      throwsStateError,
+    );
+
+    String? sentKey;
+    final MobileCommandRuntime online = _runtime(
+      store: store,
+      platformSender:
+          ({
+            required String commandType,
+            required Map<String, Object?> payload,
+            required String idempotencyKey,
+          }) async {
+            sentKey = idempotencyKey;
+            return _platformResult(commandType, idempotencyKey);
+          },
+    );
+
+    await online.executePlatform(
+      commandType: 'test_command',
+      payload: <String, Object?>{
+        'value': 3,
+        'outer': <String, Object?>{'a': 1, 'b': 2},
+      },
+      idempotencyKey: 'second-key',
+    );
+
+    expect(sentKey, 'first-key');
+    expect(store.snapshot, isEmpty);
+  });
+
+  test(
+    'terminal platform conflict does not block later gameplay command',
+    () async {
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+        <MobileCommand>[
+          MobileCommand.pending(
+            ownerId: 'user-1',
+            type: MobileCommandType.platformCommand,
+            idempotencyKey: 'platform-conflict',
+            fingerprint: 'platform-conflict-fingerprint',
+            payload: <String, Object?>{
+              'commandType': 'UNLOCK_SKILL',
+              'payload': <String, Object?>{'skillId': 'trail-memory'},
+            },
+            now: DateTime.utc(2026, 7, 26, 9),
+          ),
+          MobileCommand.pending(
+            ownerId: 'user-1',
+            type: MobileCommandType.eventResolution,
+            idempotencyKey: 'event-after-platform',
+            fingerprint: 'event-after-platform-fingerprint',
+            payload: <String, Object?>{
+              'eventId': 'signal-source-v1',
+              'choiceId': 'trust-spark',
+            },
+            now: DateTime.utc(2026, 7, 26, 9, 1),
+          ),
+        ],
+      );
+      int eventCalls = 0;
+      final MobileCommandRuntime runtime = _runtime(
+        store: store,
+        platformSender:
+            ({
+              required String commandType,
+              required Map<String, Object?> payload,
+              required String idempotencyKey,
+            }) async => throw const PlatformApiException(
+              statusCode: 409,
+              code: 'PLATFORM_STATE_CONFLICT',
+              message: 'state conflict',
+            ),
+        eventSender:
+            ({
+              required String eventId,
+              required String choiceId,
+              required String idempotencyKey,
+            }) async {
+              eventCalls += 1;
+              return _eventResult();
+            },
+      );
+
+      final MobileCommandReplayReport report = await runtime.replayPending();
+
+      expect(report.permanentFailures, 1);
+      expect(report.succeeded, 1);
+      expect(eventCalls, 1);
+      expect(store.snapshot.single.type, MobileCommandType.platformCommand);
+      expect(store.snapshot.single.state, MobileCommandState.failed);
+    },
+  );
 }
 
 MobileCommandRuntime _runtime({
@@ -287,6 +461,7 @@ MobileCommandRuntime _runtime({
   ActivityCommandSender? activitySender,
   ExpeditionCommandSender? expeditionSender,
   EventCommandSender? eventSender,
+  PlatformCommandSender? platformSender,
 }) {
   return MobileCommandRuntime(
     ownerId: 'user-1',
@@ -311,6 +486,13 @@ MobileCommandRuntime _runtime({
           required String choiceId,
           required String idempotencyKey,
         }) async => _eventResult(),
+    platformSender:
+        platformSender ??
+        ({
+          required String commandType,
+          required Map<String, Object?> payload,
+          required String idempotencyKey,
+        }) async => _platformResult(commandType, idempotencyKey),
     clock: () => DateTime.utc(2026, 7, 26, 10),
   );
 }
@@ -387,5 +569,16 @@ EventResolutionResult _eventResult() {
       version: 1,
     ),
     serverTime: '2026-07-26T10:00:00Z',
+  );
+}
+
+PlatformCommandResult _platformResult(
+  String commandType,
+  String idempotencyKey,
+) {
+  return platformCommandResult(
+    commandType: commandType,
+    idempotencyKey: idempotencyKey,
+    snapshot: platformSnapshot(),
   );
 }

@@ -36,7 +36,11 @@
 - Flyway V5, переводящий завершённых пользователей `starter-v1` на второй узел без повторной награды;
 - inventory и material reward snapshots в production home/Flutter UI;
 - ADR по activity, economy, home, expedition, event resolution, platform Health boundary, durable mobile outbox и inventory;
-- GitHub Actions CI и PR template.
+- GitHub Actions CI и PR template;
+- Flutter `Путевой журнал` для platform snapshot: onboarding, питомцы, навыки, задания, сезон, недельный маршрут, отряды, косметика и эксперименты;
+- typed `PlatformApiClient`, `PlatformSnapshot` и `PlatformCommandResult`;
+- restart-safe `PLATFORM_COMMAND` в mobile command outbox;
+- нижняя навигация между экспедицией и путевым журналом.
 
 ### Changed
 
