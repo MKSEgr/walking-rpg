@@ -1,122 +1,88 @@
 # Roadmap
 
-Roadmap отражает порядок снижения рисков, а не обещание конкретных календарных дат.
+Roadmap отражает снижение рисков. Статусы:
+
+- `[x] CODE_COMPLETE` — реализовано и проверяется CI;
+- `[ ] EXTERNAL_VALIDATION_REQUIRED` — нужен девайс, credential, магазин или реальные пользователи;
+- `VALIDATED` ставится только при наличии датированного evidence.
 
 ## Milestone 0 — Repository baseline
 
-- [x] Зафиксировать концепцию
-- [x] Создать Java backend shell
-- [x] Создать Flutter mobile shell
-- [x] Добавить архитектуру и ADR
-- [x] Добавить локальный PostgreSQL
-- [x] Создать удалённый Git-репозиторий
-- [x] Добавить CI для структуры, backend и Flutter
-- [x] Добавить Android/iOS host build jobs
-- [ ] Настроить branch protection
+- [x] Концепция, Java backend, Flutter shell, PostgreSQL/Flyway и ADR
+- [x] Standard CI: backend, Flutter, Android debug, iOS Simulator
+- [x] CODEOWNERS и активные ruleset для `master`
+- [x] Release-quality CI, deterministic metadata и release checklist
 
 ## Milestone 1 — Platform Health API
 
-### Реализация
+### CODE_COMPLETE
 
-- [x] Зафиксировать iOS 14 deployment target
-- [x] Зафиксировать Android minSdk 26
-- [x] Выбрать adapter за `StepSource`
-- [x] Добавить Apple HealthKit foreground source
-- [x] Добавить Health Connect foreground source
-- [x] Запрашивать только STEPS READ
-- [x] Добавить Android Activity Recognition flow
-- [x] Получать IANA timezone
-- [x] Подключить platform source к существующему activity sync
-- [x] Зафиксировать host-проекты в репозитории
-- [x] Собрать Android debug APK в CI
-- [x] Собрать iOS Simulator app в CI
+- [x] iOS 14 / Android minSdk 26
+- [x] HealthKit и Health Connect foreground adapters
+- [x] Только `STEPS READ`, IANA timezone и aggregated total
+- [x] Durable foreground outbox и safe resume fallback
+- [x] Device validation protocol и evidence template
 
-### Device validation
+### EXTERNAL_VALIDATION_REQUIRED
 
-- [ ] Проверить iPhone без Apple Watch
-- [ ] Проверить iPhone + Apple Watch
-- [ ] Проверить Android + Health Connect
-- [ ] Проверить несколько Android data providers
-- [ ] Проверить ручной ввод
-- [ ] Проверить удаление/коррекцию записи
-- [ ] Проверить отзыв разрешения
-- [ ] Проверить смену часового пояса
-- [ ] Проверить переход через полночь
-- [ ] Оценить расход батареи
-- [ ] Исследовать background delivery
-
-**Выход:** на целевых физических устройствах получаем стабильный aggregated total без двойного учёта. Код и builds готовы, device exit criteria ещё не закрыты.
+- [ ] iPhone без Apple Watch
+- [ ] iPhone + Apple Watch
+- [ ] Android + несколько Health Connect providers
+- [ ] Ручной ввод, удаление/коррекция и отзыв разрешения
+- [ ] Timezone/midnight
+- [ ] Battery/background evidence
 
 ## Milestone 2 — Activity sync vertical slice
 
-- [x] Спроектировать `/api/v1/activity/sync`
-- [x] Добавить `app_user`, `app_device`, `activity_sync_state`
-- [x] Добавить persistent idempotency
-- [x] Рассчитать положительную delta
-- [x] Начислить ENERGY через wallet/ledger
-- [x] Сериализовать конкурентные multi-device sync
-- [x] Добавить unit/API/PostgreSQL tests
-- [x] Подключить Flutter client
-- [x] Подключить platform `StepSource`
-- [ ] Зафиксировать retention processed sync
-- [x] Добавить foreground persistent mobile command outbox
-- [ ] Добавить attestation/risk score
-
-**Выход:** повторная синхронизация не создаёт повторную награду и сохраняет состояние после backend restart.
+- [x] `/api/v1/activity/sync`, user/device/state
+- [x] Persistent idempotency и multi-device serialization
+- [x] Positive delta → ENERGY wallet/ledger
+- [x] Retention processed sync
+- [x] Attestation/risk score, audit trail и admin read model в shadow mode
+- [x] Unit/API/PostgreSQL tests
 
 ## Milestone 3 — First playable
 
-- [x] Production `GET /api/v1/home`
-- [x] Flutter загружает server state
-- [x] Один пилот
-- [x] Один питомец
-- [x] Одна экспедиция
-- [x] Два последовательных узла
-- [x] ENERGY из шагов
-- [x] Economy wallet и ledger
-- [x] Атомарный debit ENERGY
-- [x] Persistent expedition progress
-- [x] Первое и второе событие READY
-- [x] Два server-owned выбора в каждом событии
-- [x] Идемпотентное разрешение события
-- [x] Persistent pilot XP, pet bond и material inventory
-- [x] Экран результата события
-
-**Выход:** пользователь проходит шаги, дважды тратит энергию, разрешает два события и получает постоянные progression/material rewards. Закрыто технически; реальный device-source требует Milestone 1 validation.
+- [x] Production home, economy, expedition, progression и inventory
+- [x] Два первоначальных узла и события
+- [x] Durable mobile gameplay commands
+- [x] Server-authoritative rewards и exact replay
 
 ## Milestone 4 — MVP content loop
 
-- [x] Персональная цель по медиане последних валидных дней
-- [x] Второй узел и переход после первого события
-- [ ] 15–20 узлов первой главы и content delivery
-- [ ] Три питомца
-- [ ] Эволюция
-- [ ] Навыки пилота
-- [x] Базовые stackable материалы и инвентарь
-- [ ] Задания
-- [ ] Достижения
-- [ ] Onboarding
-- [ ] Push
-- [ ] Remote config
-- [ ] Базовая админка контента
+- [x] 18 content-driven узлов первой главы и versioned content delivery
+- [x] Три питомца, active selection и эволюция
+- [x] Навыки, задания, достижения и onboarding
+- [x] Push provider boundary + development implementation
+- [x] Remote config и базовый admin content API
+- [x] Flutter «Путевой журнал» для platform state/commands
 
-## Milestone 5 — Closed beta
+## Milestone 5 — Closed beta technical readiness
 
-- [ ] Onboarding analytics
-- [ ] D1/D7/D30
-- [ ] Crash reporting
-- [ ] Anti-fraud dashboard
-- [ ] Баланс экономики
-- [ ] Удаление аккаунта и экспорт данных
-- [ ] Privacy policy и store declarations
-- [ ] 50–500 тестировщиков
+- [x] Onboarding/product analytics и D1/D7/D30 read model
+- [x] Crash-reporting boundary и diagnostics ingestion
+- [x] Anti-fraud admin read model
+- [x] Economy simulation/tests
+- [x] Export/delete account
+- [x] Privacy/store declarations draft
+- [x] Tester cohort/admin support и closed-beta runbook
+- [ ] 50–500 фактических тестировщиков — EXTERNAL_VALIDATION_REQUIRED
 
-## Milestone 6 — Soft launch
+## Milestone 6 — Soft-launch technical readiness
 
-- [ ] Сезон
-- [ ] Недельные маршруты
-- [ ] Отряды
-- [ ] Косметический магазин
-- [ ] Платёжные интеграции
-- [ ] Store review readiness
-- [ ] A/B tests
+- [x] Season, weekly routes и squads
+- [x] Cosmetic catalog/shop
+- [x] Payment-provider boundary + sandbox provider
+- [x] A/B assignment и exposure logging
+- [x] Release candidate CI и store review checklist
+- [ ] Production APNs/FCM — EXTERNAL_VALIDATION_REQUIRED
+- [ ] App Store / Google Play billing — EXTERNAL_VALIDATION_REQUIRED
+- [ ] Production signing/submission/review — EXTERNAL_VALIDATION_REQUIRED
+
+## Exit criteria autonomous scope
+
+- standard CI и Release quality зелёные;
+- migrations/upgrade tests зелёные;
+- документация и API соответствуют коду;
+- временных transport-файлов нет;
+- внешние gates имеют protocol/checklist/evidence и не отмечены ложным `VALIDATED`.
