@@ -1,0 +1,101 @@
+name: Fix roadmap integration tests
+
+on:
+  push:
+    branches:
+      - batch/roadmap-completion
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-roadmap-integration-tests
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out roadmap branch
+        uses: actions/checkout@v4
+        with:
+          ref: batch/roadmap-completion
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Align PostgreSQL integration assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          home = Path('backend/src/test/java/com/walkingrpg/backend/home/infrastructure/HomeReadIntegrationTest.java')
+          source = home.read_text(encoding='utf-8')
+          old = 'assertEquals("starter-v2", snapshot.contentVersion());'
+          new = 'assertEquals(StarterExpeditionContent.CONTENT_VERSION, snapshot.contentVersion());'
+          if old not in source:
+              raise SystemExit(f'Expected stale home assertion not found in {home}')
+          home.write_text(source.replace(old, new, 1), encoding='utf-8')
+
+          event = Path('backend/src/test/java/com/walkingrpg/backend/expedition/infrastructure/EventResolutionIntegrationTest.java')
+          source = event.read_text(encoding='utf-8')
+          replacements = [
+              ('void shouldCompleteTwoNodesPersistMaterialReplayAndExposeHomeInventory() {',
+               'void shouldResolveSecondNodePersistMaterialAndContinueChapter() {'),
+              ('assertEquals(ExpeditionProgressStatus.COMPLETED, secondEvent.expeditionStatus());',
+               'assertEquals(ExpeditionProgressStatus.IN_PROGRESS, secondEvent.expeditionStatus());'),
+              ('assertEquals("COMPLETED", expeditionStatus());',
+               'assertEquals("IN_PROGRESS", expeditionStatus());'),
+              ('assertEquals("starter-v2", home.contentVersion());',
+               'assertEquals(StarterExpeditionContent.CONTENT_VERSION, home.contentVersion());'),
+              ('assertEquals("COMPLETED", home.expedition().status());',
+               'assertEquals("IN_PROGRESS", home.expedition().status());'),
+              ('assertEquals(StarterExpeditionContent.SECOND_NODE_ID,\n                home.expedition().currentNodeId());',
+               'assertEquals(StarterExpeditionContent.THIRD_NODE_ID,\n                home.expedition().currentNodeId());'),
+              ('        assertNotNull(home.expedition().unlockedEvent());\n'
+               '        assertEquals("RESOLVED", home.expedition().unlockedEvent().status());\n'
+               '        assertEquals("stabilize-core",\n'
+               '                home.expedition().unlockedEvent().selectedChoiceId());\n'
+               '        assertNotNull(home.expedition().unlockedEvent().materialReward());\n'
+               '        assertEquals(2,\n'
+               '                home.expedition().unlockedEvent().materialReward().quantityAfter());',
+               '        assertNull(home.expedition().unlockedEvent());')
+          ]
+          for old, new in replacements:
+              if old not in source:
+                  raise SystemExit(f'Expected stale event assertion not found: {old[:120]}')
+              source = source.replace(old, new, 1)
+          event.write_text(source, encoding='utf-8')
+          PY
+          rm -f .github/workflows/fix-roadmap-integration-tests.yml
+          git diff --check
+
+      - name: Run PostgreSQL integration tests
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x mvnw
+          ./mvnw --batch-mode --no-transfer-progress \
+            -Dtest=ActivitySyncPersistenceIntegrationTest,HomeReadIntegrationTest,ExpeditionAdvanceIntegrationTest,EventResolutionIntegrationTest,SecondNodeInventoryMigrationTest \
+            test
+
+      - name: Publish integration-test alignment
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "test: align PostgreSQL assertions with chapter progression"
+          git push origin HEAD:batch/roadmap-completion
