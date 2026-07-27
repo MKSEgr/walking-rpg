@@ -84,7 +84,7 @@ class EventResolutionServiceTest {
     }
 
     @Test
-    void shouldResolveSecondEventAndPersistMaterialOnce() {
+    void shouldResolveSecondEventPersistMaterialAndContinueToThirdNode() {
         service.resolve(command(
                 StarterExpeditionContent.FIRST_EVENT_ID,
                 "analyze-signal",
@@ -104,9 +104,13 @@ class EventResolutionServiceTest {
 
         EventResolutionResult first = service.resolve(command);
         EventResolutionResult replayed = service.resolve(command);
+        ExpeditionProgressState state = expeditionRepository.findState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID
+        ).orElseThrow();
 
         assertSame(first, replayed);
-        assertEquals(ExpeditionProgressStatus.COMPLETED, first.expeditionStatus());
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS, first.expeditionStatus());
         assertEquals(4, first.expeditionVersion());
         assertEquals(30, first.pilot().experienceGained());
         assertEquals(90, first.pilot().currentExperience());
@@ -118,6 +122,9 @@ class EventResolutionServiceTest {
         assertEquals(1, first.material().version());
         assertEquals(1, inventoryRepository.findAll("user-1").size());
         assertEquals(2, inventoryRepository.findAll("user-1").getFirst().quantity());
+        assertEquals(StarterExpeditionContent.THIRD_NODE_ID, state.currentNodeId());
+        assertEquals(55, state.requiredEnergy());
+        assertEquals(0, state.progressEnergy());
     }
 
     @Test

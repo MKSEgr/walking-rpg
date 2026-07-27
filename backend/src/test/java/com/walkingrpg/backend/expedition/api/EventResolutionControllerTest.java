@@ -90,7 +90,7 @@ class EventResolutionControllerTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.expeditionStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.expeditionStatus").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.material.itemId").value("lumen-shard"))
                 .andExpect(jsonPath("$.material.name").value("Люминовый осколок"))
                 .andExpect(jsonPath("$.material.quantityGained").value(2))
