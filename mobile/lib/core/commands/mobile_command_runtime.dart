@@ -13,6 +13,8 @@ import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
+import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 
 typedef MobileCommandClock = DateTime Function();
 typedef MobileCommandKeyFactory =
@@ -34,6 +36,12 @@ typedef EventCommandSender =
       required String choiceId,
       required String idempotencyKey,
     });
+typedef PlatformCommandSender =
+    Future<PlatformCommandResult> Function({
+      required String commandType,
+      required Map<String, Object?> payload,
+      required String idempotencyKey,
+    });
 
 final class MobileCommandRuntime {
   MobileCommandRuntime({
@@ -42,6 +50,7 @@ final class MobileCommandRuntime {
     required ActivityCommandSender activitySender,
     required ExpeditionCommandSender expeditionSender,
     required EventCommandSender eventSender,
+    PlatformCommandSender? platformSender,
     MobileCommandClock? clock,
     MobileCommandKeyFactory? keyFactory,
   }) : ownerId = _requireText(ownerId, 'ownerId'),
@@ -49,6 +58,7 @@ final class MobileCommandRuntime {
        _activitySender = activitySender,
        _expeditionSender = expeditionSender,
        _eventSender = eventSender,
+       _platformSender = platformSender,
        _clock = clock ?? DateTime.now,
        _keyFactory = keyFactory ?? _defaultKey;
 
@@ -58,12 +68,15 @@ final class MobileCommandRuntime {
     final ExpeditionApiClient expeditionClient =
         ExpeditionApiClient.fromEnvironment();
     final EventApiClient eventClient = EventApiClient.fromEnvironment();
+    final PlatformApiClient platformClient =
+        PlatformApiClient.fromEnvironment();
     return MobileCommandRuntime(
       ownerId: AppEnvironment.demoUserId,
       store: FileMobileCommandStore.fromEnvironment(),
       activitySender: activityClient.sync,
       expeditionSender: expeditionClient.advance,
       eventSender: eventClient.resolve,
+      platformSender: platformClient.execute,
     );
   }
 
@@ -72,6 +85,7 @@ final class MobileCommandRuntime {
   final ActivityCommandSender _activitySender;
   final ExpeditionCommandSender _expeditionSender;
   final EventCommandSender _eventSender;
+  final PlatformCommandSender? _platformSender;
   final MobileCommandClock _clock;
   final MobileCommandKeyFactory _keyFactory;
   final AsyncLock _stateLock = AsyncLock();
@@ -148,6 +162,31 @@ final class MobileCommandRuntime {
       payload: <String, Object?>{
         'eventId': normalizedEventId,
         'choiceId': normalizedChoiceId,
+      },
+    );
+  }
+
+  Future<PlatformCommandResult> executePlatform({
+    required String commandType,
+    required Map<String, Object?> payload,
+    required String idempotencyKey,
+  }) {
+    final String normalizedCommandType = _requireText(
+      commandType,
+      'commandType',
+    ).toUpperCase();
+    final Map<String, Object?> canonicalPayload = _canonicalMap(payload);
+    return _submit<PlatformCommandResult>(
+      type: MobileCommandType.platformCommand,
+      proposedKey: idempotencyKey,
+      fingerprint: jsonEncode(<Object?>[
+        MobileCommandType.platformCommand.wireName,
+        normalizedCommandType,
+        canonicalPayload,
+      ]),
+      payload: <String, Object?>{
+        'commandType': normalizedCommandType,
+        'payload': canonicalPayload,
       },
     );
   }
@@ -341,6 +380,21 @@ final class MobileCommandRuntime {
           choiceId: choiceId,
           idempotencyKey: command.idempotencyKey,
         );
+      case MobileCommandType.platformCommand:
+        final PlatformCommandSender? sender = _platformSender;
+        if (sender == null) {
+          throw MobileCommandPayloadException(
+            command.commandId,
+            const FormatException('Platform sender не настроен'),
+          );
+        }
+        final String commandType = _payloadString(command, 'commandType');
+        final Map<String, Object?> payload = _payloadMap(command, 'payload');
+        return sender(
+          commandType: commandType,
+          payload: payload,
+          idempotencyKey: command.idempotencyKey,
+        );
     }
   }
 
@@ -418,6 +472,9 @@ final class MobileCommandRuntime {
     if (error is EventApiException) {
       return error.statusCode;
     }
+    if (error is PlatformApiException) {
+      return error.statusCode;
+    }
     return null;
   }
 
@@ -439,6 +496,56 @@ final class MobileCommandRuntime {
         command.commandId,
         FormatException('Поле $field должно быть целым числом'),
       );
+    }
+    return value;
+  }
+
+  Map<String, Object?> _payloadMap(MobileCommand command, String field) {
+    final Object? value = command.payload[field];
+    if (value is! Map<Object?, Object?>) {
+      throw MobileCommandPayloadException(
+        command.commandId,
+        FormatException('Поле $field должно быть JSON-объектом'),
+      );
+    }
+    return value.map<String, Object?>((Object? key, Object? item) {
+      if (key is! String) {
+        throw MobileCommandPayloadException(
+          command.commandId,
+          FormatException('Ключи поля $field должны быть строками'),
+        );
+      }
+      return MapEntry<String, Object?>(key, item);
+    });
+  }
+
+  static Map<String, Object?> _canonicalMap(Map<String, Object?> value) {
+    final List<String> keys = value.keys.toList(growable: false)..sort();
+    return <String, Object?>{
+      for (final String key in keys) key: _canonicalValue(value[key]),
+    };
+  }
+
+  static Object? _canonicalValue(Object? value) {
+    if (value is Map<String, Object?>) {
+      return _canonicalMap(value);
+    }
+    if (value is Map<Object?, Object?>) {
+      final Map<String, Object?> normalized = value.map<String, Object?>((
+        Object? key,
+        Object? item,
+      ) {
+        if (key is! String) {
+          throw const FormatException(
+            'Ключи platform payload должны быть строками',
+          );
+        }
+        return MapEntry<String, Object?>(key, item);
+      });
+      return _canonicalMap(normalized);
+    }
+    if (value is List<Object?>) {
+      return value.map<Object?>(_canonicalValue).toList(growable: false);
     }
     return value;
   }
