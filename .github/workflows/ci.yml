@@ -74,17 +74,38 @@ jobs:
         run: ./mvnw --batch-mode --no-transfer-progress -DskipTests test-compile
 
       - name: Run unit and API tests
-        run: >-
-          ./mvnw --batch-mode --no-transfer-progress
-          -Dtest=DemoHomeServiceTest,HomeQueryFactoryTest,HomeServiceTest,HomeControllerTest,AdaptiveDailyGoalCalculatorTest,DailyGoalServiceTest,ActivitySyncCalculatorTest,ActivitySyncServiceTest,ActivitySyncControllerTest,ActivitySyncFingerprintTest,EconomyServiceTest,ExpeditionAdvanceFingerprintTest,ExpeditionAdvanceServiceTest,ExpeditionAdvanceControllerTest,ProgressionServiceTest,InventoryServiceTest,EventResolutionFingerprintTest,EventResolutionServiceTest,EventResolutionControllerTest
-          test
+        id: backend-unit
+        shell: bash
+        run: |
+          set +e
+          ./mvnw --batch-mode --no-transfer-progress \
+            -Dtest=DemoHomeServiceTest,HomeQueryFactoryTest,HomeServiceTest,HomeControllerTest,AdaptiveDailyGoalCalculatorTest,DailyGoalServiceTest,ActivitySyncCalculatorTest,ActivitySyncServiceTest,ActivitySyncControllerTest,ActivitySyncFingerprintTest,ActivityRetentionServiceTest,ActivityRiskEvaluatorTest,EconomyServiceTest,ExpeditionAdvanceFingerprintTest,ExpeditionAdvanceServiceTest,ExpeditionAdvanceControllerTest,ProgressionServiceTest,InventoryServiceTest,EventResolutionFingerprintTest,EventResolutionServiceTest,EventResolutionControllerTest,PlatformContentCatalogTest,PlatformServiceTest,PlatformControllerTest \
+            test > /tmp/backend-unit.log 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
 
-      - name: Run PostgreSQL integration tests
+      - name: Upload backend unit diagnostics
+        if: steps.backend-unit.outputs.status != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-unit-log
+          path: /tmp/backend-unit.log
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Fail when backend unit tests failed
+        if: steps.backend-unit.outputs.status != '0'
+        run: exit 1
+
+      - name: Run PostgreSQL integration and migration tests
         id: postgres-integration
         shell: bash
         run: |
           set +e
-          ./mvnw --batch-mode --no-transfer-progress -Dtest=ActivitySyncPersistenceIntegrationTest,HomeReadIntegrationTest,ExpeditionAdvanceIntegrationTest,EventResolutionIntegrationTest,SecondNodeInventoryMigrationTest test > /tmp/postgres-integration.log 2>&1
+          ./mvnw --batch-mode --no-transfer-progress \
+            -Dtest=ActivitySyncPersistenceIntegrationTest,HomeReadIntegrationTest,ExpeditionAdvanceIntegrationTest,EventResolutionIntegrationTest,PlatformPersistenceIntegrationTest,SecondNodeInventoryMigrationTest,RoadmapPlatformMigrationTest \
+            test > /tmp/postgres-integration.log 2>&1
           status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
