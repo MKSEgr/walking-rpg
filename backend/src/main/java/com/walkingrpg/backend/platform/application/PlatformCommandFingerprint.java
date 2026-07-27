@@ -7,8 +7,8 @@ import java.util.HexFormat;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 public final class PlatformCommandFingerprint {
 
@@ -29,7 +29,7 @@ public final class PlatformCommandFingerprint {
             return HexFormat.of().formatHex(
                     MessageDigest.getInstance("SHA-256").digest(bytes)
             );
-        } catch (JsonProcessingException | NoSuchAlgorithmException exception) {
+        } catch (JacksonException | NoSuchAlgorithmException exception) {
             throw new IllegalStateException("Не удалось рассчитать platform fingerprint", exception);
         }
     }

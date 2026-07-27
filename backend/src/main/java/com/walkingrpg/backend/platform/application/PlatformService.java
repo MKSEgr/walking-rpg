@@ -13,8 +13,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
@@ -727,7 +727,7 @@ public class PlatformService {
     private PlatformCommandResponse readResponse(String json) {
         try {
             return objectMapper.readValue(json, PlatformCommandResponse.class);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Некорректный saved platform response", exception);
         }
     }
@@ -735,7 +735,7 @@ public class PlatformService {
     private String writeResponse(PlatformCommandResponse response) {
         try {
             return objectMapper.writeValueAsString(response);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Не удалось сохранить platform response", exception);
         }
     }

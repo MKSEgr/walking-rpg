@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.activity.retention.ActivityRetentionService;
 import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
@@ -590,7 +590,7 @@ public class PlatformAdminService {
     private String writeJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value == null ? Map.of() : value);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Не удалось сериализовать JSON", exception);
         }
     }
@@ -601,7 +601,7 @@ public class PlatformAdminService {
         }
         try {
             return objectMapper.readValue(json, Object.class);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Некорректный JSON", exception);
         }
     }

@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
 import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
 import com.walkingrpg.backend.platform.domain.PlatformUserState;
@@ -342,7 +342,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
     private PlatformUserState readState(String json) {
         try {
             return objectMapper.readValue(json, PlatformUserState.class);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Некорректный roadmap_user_state JSON", exception);
         }
     }
@@ -350,7 +350,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
     private Map<String, Object> readMap(String json) {
         try {
             return objectMapper.readValue(json, MAP_TYPE);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Некорректный JSON конфигурации", exception);
         }
     }
@@ -358,7 +358,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
     private String writeJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Не удалось сериализовать JSON", exception);
         }
     }

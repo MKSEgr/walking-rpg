@@ -2,8 +2,8 @@ package com.walkingrpg.backend.risk.infrastructure;
 
 import java.sql.Timestamp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.risk.domain.ActivityRiskAssessment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -42,7 +42,7 @@ public class JdbcActivityRiskRepository implements ActivityRiskRepository {
     private String writeJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Не удалось сериализовать risk signals", exception);
         }
     }
