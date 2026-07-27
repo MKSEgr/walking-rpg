@@ -48,4 +48,14 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
     end
   end
+
+  # Keep the checked-in Runner target aligned with the supported iOS floor even
+  # when older Flutter templates contain a lower project-level value.
+  runner_project = Xcodeproj::Project.open('Runner.xcodeproj')
+  runner_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+    end
+  end
+  runner_project.save
 end
