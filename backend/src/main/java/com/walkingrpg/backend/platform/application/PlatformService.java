@@ -147,12 +147,14 @@ public class PlatformService {
                 snapshot(normalizedUserId, updated, factsAfter, serverTime),
                 serverTime
         );
+        String responseJson = writeResponse(response);
+        PlatformCommandResponse canonicalResponse = readResponse(responseJson);
         repository.saveProcessed(
                 scope,
-                new ProcessedPlatformCommand(fingerprint, writeResponse(response)),
+                new ProcessedPlatformCommand(fingerprint, responseJson),
                 serverTime
         );
-        return response;
+        return canonicalResponse;
     }
 
     private Mutation mutate(
