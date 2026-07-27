@@ -17,6 +17,9 @@ import com.walkingrpg.backend.expedition.application.ExpeditionStateConflictExce
 import com.walkingrpg.backend.expedition.application.ExpeditionValidationException;
 import com.walkingrpg.backend.home.application.HomeQueryValidationException;
 import com.walkingrpg.backend.inventory.domain.InventoryLedgerConflictException;
+import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
+import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
+import com.walkingrpg.backend.platform.application.PlatformValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -71,6 +74,13 @@ public class ApiExceptionHandler {
         return fieldValidation(exception.getMessage(), exception.field());
     }
 
+    @ExceptionHandler(PlatformValidationException.class)
+    ResponseEntity<ApiErrorResponse> handlePlatformValidation(
+            PlatformValidationException exception
+    ) {
+        return fieldValidation(exception.getMessage(), exception.field());
+    }
+
     @ExceptionHandler(ActivitySyncConflictException.class)
     ResponseEntity<ApiErrorResponse> handleActivityConflict(
             ActivitySyncConflictException exception
@@ -88,6 +98,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(EventResolutionIdempotencyConflictException.class)
     ResponseEntity<ApiErrorResponse> handleEventIdempotencyConflict(
             EventResolutionIdempotencyConflictException exception
+    ) {
+        return idempotencyConflict(exception.getMessage());
+    }
+
+    @ExceptionHandler(PlatformIdempotencyConflictException.class)
+    ResponseEntity<ApiErrorResponse> handlePlatformIdempotencyConflict(
+            PlatformIdempotencyConflictException exception
     ) {
         return idempotencyConflict(exception.getMessage());
     }
@@ -140,6 +157,18 @@ public class ApiExceptionHandler {
                 "EVENT_STATE_CONFLICT",
                 exception.getMessage(),
                 Map.of("status", exception.status())
+        );
+    }
+
+    @ExceptionHandler(PlatformStateConflictException.class)
+    ResponseEntity<ApiErrorResponse> handlePlatformStateConflict(
+            PlatformStateConflictException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "PLATFORM_STATE_CONFLICT",
+                exception.getMessage(),
+                exception.details()
         );
     }
 
