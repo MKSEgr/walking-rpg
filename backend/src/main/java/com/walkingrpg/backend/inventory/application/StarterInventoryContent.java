@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.inventory.application;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,21 +12,65 @@ public class StarterInventoryContent {
 
     public static final String LUMEN_SHARD_ID = "lumen-shard";
     public static final String ECHO_THREAD_ID = "echo-thread";
+    public static final String ASH_SEED_ID = "ash-seed";
+    public static final String PRISM_DUST_ID = "prism-dust";
+    public static final String ION_BLOOM_ID = "ion-bloom";
+    public static final String DAWN_FRAGMENT_ID = "dawn-fragment";
 
-    private final Map<String, InventoryItemDefinition> items = Map.of(
-            LUMEN_SHARD_ID,
-            new InventoryItemDefinition(
-                    LUMEN_SHARD_ID,
-                    "Люминовый осколок",
-                    "Стабильный фрагмент светового ядра, пригодный для будущих улучшений."
-            ),
-            ECHO_THREAD_ID,
-            new InventoryItemDefinition(
-                    ECHO_THREAD_ID,
-                    "Нить эха",
-                    "Тонкая энергетическая нить, сохранившая маршрут через хранилище."
-            )
-    );
+    private final Map<String, InventoryItemDefinition> items;
+
+    public StarterInventoryContent() {
+        Map<String, InventoryItemDefinition> definitions = new LinkedHashMap<>();
+        definitions.put(
+                LUMEN_SHARD_ID,
+                new InventoryItemDefinition(
+                        LUMEN_SHARD_ID,
+                        "Люминовый осколок",
+                        "Стабильный фрагмент светового ядра, пригодный для будущих улучшений."
+                )
+        );
+        definitions.put(
+                ECHO_THREAD_ID,
+                new InventoryItemDefinition(
+                        ECHO_THREAD_ID,
+                        "Нить эха",
+                        "Тонкая энергетическая нить, сохранившая маршрут через хранилище."
+                )
+        );
+        definitions.put(
+                ASH_SEED_ID,
+                new InventoryItemDefinition(
+                        ASH_SEED_ID,
+                        "Семя пепла",
+                        "Тёплое зерно из пепельной орбиты, реагирующее на движение пилота."
+                )
+        );
+        definitions.put(
+                PRISM_DUST_ID,
+                new InventoryItemDefinition(
+                        PRISM_DUST_ID,
+                        "Призматическая пыль",
+                        "Мелкие кристаллы, меняющие спектр рядом с активным питомцем."
+                )
+        );
+        definitions.put(
+                ION_BLOOM_ID,
+                new InventoryItemDefinition(
+                        ION_BLOOM_ID,
+                        "Ионный цветок",
+                        "Редкий материал, накопивший заряд в садах первой главы."
+                )
+        );
+        definitions.put(
+                DAWN_FRAGMENT_ID,
+                new InventoryItemDefinition(
+                        DAWN_FRAGMENT_ID,
+                        "Фрагмент рассвета",
+                        "Сезонный материал из последнего ретранслятора первой главы."
+                )
+        );
+        this.items = Map.copyOf(definitions);
+    }
 
     public InventoryItemDefinition require(String itemId) {
         InventoryItemDefinition item = items.get(itemId);

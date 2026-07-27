@@ -16,6 +16,8 @@ import com.walkingrpg.backend.activity.domain.ProcessedActivitySync;
 import com.walkingrpg.backend.activity.infrastructure.ActivitySyncRepository;
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.economy.domain.WalletSnapshot;
+import com.walkingrpg.backend.risk.application.ActivityRiskRecorder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +27,23 @@ public class ActivitySyncService {
     private final ActivitySyncRepository repository;
     private final ActivitySyncCalculator calculator;
     private final EconomyService economyService;
+    private final ActivityRiskRecorder riskRecorder;
     private final Clock clock;
+
+    @Autowired
+    public ActivitySyncService(
+            ActivitySyncRepository repository,
+            ActivitySyncCalculator calculator,
+            EconomyService economyService,
+            ActivityRiskRecorder riskRecorder,
+            Clock clock
+    ) {
+        this.repository = repository;
+        this.calculator = calculator;
+        this.economyService = economyService;
+        this.riskRecorder = riskRecorder;
+        this.clock = clock;
+    }
 
     public ActivitySyncService(
             ActivitySyncRepository repository,
@@ -33,10 +51,13 @@ public class ActivitySyncService {
             EconomyService economyService,
             Clock clock
     ) {
-        this.repository = repository;
-        this.calculator = calculator;
-        this.economyService = economyService;
-        this.clock = clock;
+        this(
+                repository,
+                calculator,
+                economyService,
+                ActivityRiskRecorder.noop(),
+                clock
+        );
     }
 
     @Transactional
@@ -63,6 +84,7 @@ public class ActivitySyncService {
         ActivityDayState currentState = repository.findState(dayKey)
                 .orElse(ActivityDayState.initial());
         ActivitySyncResult result = calculator.calculate(currentState, command, serverTime);
+        riskRecorder.record(command, currentState, result, serverTime);
         WalletSnapshot wallet = economyService.creditActivityEnergy(
                 command.userId(),
                 result.energyGranted(),

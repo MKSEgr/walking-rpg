@@ -92,7 +92,7 @@ class HomeReadIntegrationTest {
         assertEquals(1, snapshot.activityStateVersion());
         assertEquals(2, snapshot.economyVersion());
         assertEquals("Europe/Berlin", snapshot.timeZone());
-        assertEquals("starter-v2", snapshot.contentVersion());
+        assertEquals(StarterExpeditionContent.CONTENT_VERSION, snapshot.contentVersion());
         assertEquals(30, snapshot.expedition().progress());
         assertEquals(1, snapshot.expedition().version());
         assertEquals("EVENT_READY", snapshot.expedition().status());

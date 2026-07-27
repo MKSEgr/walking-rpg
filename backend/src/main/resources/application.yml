@@ -40,3 +40,7 @@ walking-rpg:
     maximum-goal: ${DAILY_GOAL_MAXIMUM:12000}
     growth-percent: ${DAILY_GOAL_GROWTH_PERCENT:5}
     rounding-step: ${DAILY_GOAL_ROUNDING_STEP:250}
+
+  activity-retention:
+    days: ${ACTIVITY_RETENTION_DAYS:30}
+    cron: ${ACTIVITY_RETENTION_CRON:0 20 3 * * *}

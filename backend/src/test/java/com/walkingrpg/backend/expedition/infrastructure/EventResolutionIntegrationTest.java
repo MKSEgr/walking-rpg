@@ -112,7 +112,7 @@ class EventResolutionIntegrationTest {
     }
 
     @Test
-    void shouldCompleteTwoNodesPersistMaterialReplayAndExposeHomeInventory() {
+    void shouldResolveSecondNodePersistMaterialAndContinueChapter() {
         prepareFirstEvent("event-user");
 
         EventResolutionResult firstEvent = eventResolutionService.resolve(command(
@@ -153,7 +153,7 @@ class EventResolutionIntegrationTest {
         );
 
         assertEquals(secondEvent, replayed);
-        assertEquals(ExpeditionProgressStatus.COMPLETED, secondEvent.expeditionStatus());
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS, secondEvent.expeditionStatus());
         assertEquals("lumen-shard", secondEvent.material().itemId());
         assertEquals(2, secondEvent.material().quantityGained());
         assertEquals(2, secondEvent.material().quantityAfter());
@@ -167,24 +167,18 @@ class EventResolutionIntegrationTest {
         assertEquals(1, rowCount("inventory_stack"));
         assertEquals(1, rowCount("inventory_ledger"));
         assertEquals(2L, inventoryQuantity("lumen-shard"));
-        assertEquals("COMPLETED", expeditionStatus());
+        assertEquals("IN_PROGRESS", expeditionStatus());
 
         HomeSnapshotResponse home = homeService.getSnapshot(
                 new HomeQuery("event-user", LOCAL_DATE)
         );
-        assertEquals("starter-v2", home.contentVersion());
+        assertEquals(StarterExpeditionContent.CONTENT_VERSION, home.contentVersion());
         assertEquals(90, home.pilot().currentExperience());
         assertEquals(23, home.pet().bond());
-        assertEquals("COMPLETED", home.expedition().status());
-        assertEquals(StarterExpeditionContent.SECOND_NODE_ID,
+        assertEquals("IN_PROGRESS", home.expedition().status());
+        assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
                 home.expedition().currentNodeId());
-        assertNotNull(home.expedition().unlockedEvent());
-        assertEquals("RESOLVED", home.expedition().unlockedEvent().status());
-        assertEquals("stabilize-core",
-                home.expedition().unlockedEvent().selectedChoiceId());
-        assertNotNull(home.expedition().unlockedEvent().materialReward());
-        assertEquals(2,
-                home.expedition().unlockedEvent().materialReward().quantityAfter());
+        assertNull(home.expedition().unlockedEvent());
         assertEquals(1, home.inventory().size());
         assertEquals("lumen-shard", home.inventory().getFirst().itemId());
         assertEquals(2, home.inventory().getFirst().quantity());
