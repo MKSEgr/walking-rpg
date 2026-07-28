@@ -60,6 +60,46 @@ void main() {
     expect(store.session?.tokens.accessToken, tokens.first);
   });
 
+  test('normalizes raw refresh persistence failures', () async {
+    final OidcConfiguration oidc = _oidc();
+    final AuthSession original = _session(
+      oidc,
+      subject: 'user-1',
+      expiresAt: _past,
+    );
+    final _MemorySessionStore store = _MemorySessionStore(
+      original,
+      refreshWriteError: StateError('keystore unavailable'),
+    );
+    final AuthSessionController controller = _controller(
+      oidc: oidc,
+      store: store,
+      client: _FakeOidcClient(
+        refreshResponse: _response(
+          oidc,
+          subject: 'user-1',
+          accessTokenSuffix: 'rotated',
+          expiresAt: _future,
+        ),
+      ),
+    );
+    await controller.initialize();
+
+    await expectLater(
+      controller.accessToken(),
+      throwsA(
+        isA<AuthRefreshUnavailableException>().having(
+          (AuthRefreshUnavailableException error) => error.cause,
+          'cause',
+          isA<StateError>(),
+        ),
+      ),
+    );
+
+    expect(controller.state, AuthLifecycleState.authenticated);
+    expect(store.session?.tokens.accessToken, original.tokens.accessToken);
+  });
+
   test('invalid grant requires a new interactive login', () async {
     final OidcConfiguration oidc = _oidc();
     final _MemorySessionStore store = _MemorySessionStore(
@@ -682,6 +722,7 @@ final class _MemorySessionStore implements AuthSessionStore {
     this.refreshWriteStarted,
     this.releaseRefreshWrite,
     this.readError,
+    this.refreshWriteError,
     this.failNextClearSessionAfterWrite = false,
   }) : _state = AuthSessionStoreState(
          session: session,
@@ -692,6 +733,7 @@ final class _MemorySessionStore implements AuthSessionStore {
   final Completer<void>? refreshWriteStarted;
   final Completer<void>? releaseRefreshWrite;
   AuthSessionStoreException? readError;
+  final Object? refreshWriteError;
   bool failNextClearSessionAfterWrite;
   AuthSessionStoreState _state;
   int _nextGeneration = 1;
@@ -757,6 +799,10 @@ final class _MemorySessionStore implements AuthSessionStore {
       started.complete();
     }
     await releaseRefreshWrite?.future;
+    final Object? persistenceError = refreshWriteError;
+    if (persistenceError != null) {
+      throw persistenceError;
+    }
     if (_state.session == null ||
         _state.lastOwnerId != value.identity.ownerId ||
         _state.sessionGeneration != sessionGeneration) {
