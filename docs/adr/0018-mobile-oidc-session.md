@@ -28,7 +28,7 @@ Configuration is supplied through compile-time Dart defines:
 - `OIDC_CLIENT_ID`;
 - `OIDC_REDIRECT_URI`;
 - `OIDC_POST_LOGOUT_REDIRECT_URI`;
-- `OIDC_SCOPES`;
+- `OIDC_SCOPES` (defaults to `openid profile offline_access walking-rpg.user`);
 - `AUTH_REFRESH_SKEW_SECONDS`.
 
 The default redirect scheme is `com.walkingrpg.app`.
@@ -80,8 +80,9 @@ builds. Production builds fail closed if development mode is selected.
 ## Consequences
 
 - The identity provider must register the native redirect and post-logout URIs.
-- The provider must issue an ID token containing stable `iss` and `sub` claims and a
-  refresh token when `offline_access` is granted.
+- The provider must issue an ID token containing stable `iss` and `sub` claims, a
+  refresh token when `offline_access` is granted, and the `walking-rpg.user` scope
+  (or an equivalent configured user role) for game API access.
 - Android and iOS host projects must retain their redirect scheme configuration.
 - iOS disables the shared URL disk cache before AppAuth starts so token responses are not
   persisted in `cache.db`.
