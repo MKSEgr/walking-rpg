@@ -42,7 +42,11 @@
 - restart-safe `PLATFORM_COMMAND` в mobile command outbox;
 - нижняя навигация между экспедицией и путевым журналом;
 - versioned read-only cache последних подтверждённых `home` и `platform` snapshots;
-- явный офлайн-баннер, TTL, corruption recovery и запрет mutations поверх cached state.
+- явный офлайн-баннер, TTL, corruption recovery и запрет mutations поверх cached state;
+- Spring Security OAuth2 Resource Server и production JWT profile;
+- canonical request identity из JWT `sub`, actor/device claim mapping и `ROLE_USER`/`ROLE_ADMIN` authorization;
+- dev-header authentication, изолированная только в local/test profile;
+- security filter-chain, identity и controller regression tests.
 
 ### Changed
 
@@ -54,7 +58,9 @@
 - host-проекты больше не генерируются bootstrap-скриптами;
 - CI дополнительно компилирует нативные Android/iOS приложения;
 - roadmap разделяет готовую Health implementation и ещё не пройденную physical-device validation;
-- mobile-команды разделены на независимые ACTIVITY/GAMEPLAY lanes с FIFO внутри каждой lane.
+- mobile-команды разделены на независимые ACTIVITY/GAMEPLAY lanes с FIFO внутри каждой lane;
+- backend-контроллеры больше не принимают user/device/actor headers: identity приходит из `SecurityContext`;
+- production defaults стали fail-closed: JWT включён, demo endpoint выключен.
 
 ## [0.1.0] — 2026-07-25
 

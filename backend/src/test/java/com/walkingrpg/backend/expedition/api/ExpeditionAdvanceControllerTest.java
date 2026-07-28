@@ -10,6 +10,7 @@ import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceCommandFac
 import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryExpeditionRepository;
+import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,8 @@ class ExpeditionAdvanceControllerTest {
         );
         ExpeditionAdvanceController controller = new ExpeditionAdvanceController(
                 new ExpeditionAdvanceCommandFactory(),
-                service
+                service,
+                FixedRequestIdentityProvider.user("user-1")
         );
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new ApiExceptionHandler())
@@ -49,7 +51,6 @@ class ExpeditionAdvanceControllerTest {
     @Test
     void shouldSpendEnergyAndUnlockFirstEvent() throws Exception {
         mockMvc.perform(post("/api/v1/expeditions/starter-expedition-v1/advance")
-                        .header(ExpeditionAdvanceController.USER_HEADER, "user-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -69,15 +70,34 @@ class ExpeditionAdvanceControllerTest {
 
     @Test
     void shouldReturnStableErrorForInsufficientEnergy() throws Exception {
-        mockMvc.perform(post("/api/v1/expeditions/starter-expedition-v1/advance")
-                        .header(ExpeditionAdvanceController.USER_HEADER, "unknown-user")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "energyToSpend": 10,
-                                  "idempotencyKey": "advance-poor"
-                                }
-                                """))
+        EconomyService emptyEconomyService = new EconomyService(
+                new InMemoryEconomyRepository()
+        );
+        ExpeditionAdvanceService emptyWalletService = new ExpeditionAdvanceService(
+                new InMemoryExpeditionRepository(),
+                emptyEconomyService,
+                new StarterExpeditionContent(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        ExpeditionAdvanceController controller = new ExpeditionAdvanceController(
+                new ExpeditionAdvanceCommandFactory(),
+                emptyWalletService,
+                FixedRequestIdentityProvider.user("unknown-user")
+        );
+        MockMvc poorUserMockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        poorUserMockMvc.perform(
+                        post("/api/v1/expeditions/starter-expedition-v1/advance")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "energyToSpend": 10,
+                                          "idempotencyKey": "advance-poor"
+                                        }
+                                        """)
+                )
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INSUFFICIENT_ENERGY"))
                 .andExpect(jsonPath("$.details.availableEnergy").value(0))

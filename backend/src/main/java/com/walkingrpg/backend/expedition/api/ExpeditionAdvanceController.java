@@ -4,11 +4,11 @@ import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceCommandFac
 import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventStatus;
+import com.walkingrpg.backend.security.RequestIdentityProvider;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,27 +16,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/expeditions")
 public class ExpeditionAdvanceController {
 
-    static final String USER_HEADER = "X-User-Id";
-
     private final ExpeditionAdvanceCommandFactory commandFactory;
     private final ExpeditionAdvanceService service;
+    private final RequestIdentityProvider identityProvider;
 
     public ExpeditionAdvanceController(
             ExpeditionAdvanceCommandFactory commandFactory,
-            ExpeditionAdvanceService service
+            ExpeditionAdvanceService service,
+            RequestIdentityProvider identityProvider
     ) {
         this.commandFactory = commandFactory;
         this.service = service;
+        this.identityProvider = identityProvider;
     }
 
     @PostMapping("/{expeditionId}/advance")
     public ExpeditionAdvanceResponse advance(
-            @RequestHeader(USER_HEADER) String userId,
             @PathVariable String expeditionId,
             @Valid @RequestBody ExpeditionAdvanceRequest request
     ) {
         ExpeditionAdvanceResult result = service.advance(
-                commandFactory.create(userId, expeditionId, request)
+                commandFactory.create(
+                        identityProvider.requireIdentity().userId(),
+                        expeditionId,
+                        request
+                )
         );
 
         return new ExpeditionAdvanceResponse(

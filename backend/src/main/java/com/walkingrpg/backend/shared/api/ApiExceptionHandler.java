@@ -20,6 +20,8 @@ import com.walkingrpg.backend.inventory.domain.InventoryLedgerConflictException;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
 import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
 import com.walkingrpg.backend.platform.application.PlatformValidationException;
+import com.walkingrpg.backend.security.MissingDeviceIdentityException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -194,6 +196,19 @@ public class ApiExceptionHandler {
         return error(
                 HttpStatus.CONFLICT,
                 "INVENTORY_LEDGER_CONFLICT",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler({
+            AuthenticationCredentialsNotFoundException.class,
+            MissingDeviceIdentityException.class
+    })
+    ResponseEntity<ApiErrorResponse> handleAuthentication(RuntimeException exception) {
+        return error(
+                HttpStatus.UNAUTHORIZED,
+                "AUTHENTICATION_ERROR",
                 exception.getMessage(),
                 Map.of()
         );

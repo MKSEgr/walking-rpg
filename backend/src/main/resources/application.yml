@@ -44,3 +44,14 @@ walking-rpg:
   activity-retention:
     days: ${ACTIVITY_RETENTION_DAYS:30}
     cron: ${ACTIVITY_RETENTION_CRON:0 20 3 * * *}
+
+  security:
+    mode: ${AUTH_MODE:jwt}
+    demo-endpoints-enabled: ${DEMO_ENDPOINTS_ENABLED:false}
+    roles-claim: ${OIDC_ROLES_CLAIM:roles}
+    username-claim: ${OIDC_USERNAME_CLAIM:preferred_username}
+    device-claim: ${OIDC_DEVICE_CLAIM:device_id}
+    user-role: ${OIDC_USER_ROLE:walking-rpg-user}
+    admin-role: ${OIDC_ADMIN_ROLE:walking-rpg-admin}
+    user-scope: ${OIDC_USER_SCOPE:walking-rpg.user}
+    admin-scope: ${OIDC_ADMIN_SCOPE:walking-rpg.admin}

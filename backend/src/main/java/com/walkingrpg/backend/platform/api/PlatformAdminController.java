@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
+import com.walkingrpg.backend.security.RequestIdentityProvider;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -22,21 +22,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class PlatformAdminController {
 
-    private static final String USER_HEADER = "X-User-Id";
-    private static final String ACTOR_HEADER = "X-Mock-User";
-
     private final PlatformAdminService service;
+    private final RequestIdentityProvider identityProvider;
 
-    public PlatformAdminController(PlatformAdminService service) {
+    public PlatformAdminController(
+            PlatformAdminService service,
+            RequestIdentityProvider identityProvider
+    ) {
         this.service = service;
+        this.identityProvider = identityProvider;
     }
 
     @PostMapping("/telemetry/events")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, Object> telemetry(
-            @RequestHeader(value = USER_HEADER, required = false) String userId,
             @Valid @RequestBody TelemetryEventRequest request
     ) {
+        String userId = identityProvider.currentIdentity()
+                .map(identity -> identity.userId())
+                .orElse(null);
         service.recordEvent(
                 userId,
                 request.eventName(),
@@ -49,9 +53,11 @@ public class PlatformAdminController {
     @PostMapping("/diagnostics/crashes")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, Object> crash(
-            @RequestHeader(value = USER_HEADER, required = false) String userId,
             @Valid @RequestBody CrashReportRequest request
     ) {
+        String userId = identityProvider.currentIdentity()
+                .map(identity -> identity.userId())
+                .orElse(null);
         service.recordCrash(
                 userId,
                 request.platform(),
@@ -68,11 +74,10 @@ public class PlatformAdminController {
     @PostMapping("/push/registrations")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> registerPush(
-            @RequestHeader(USER_HEADER) String userId,
             @Valid @RequestBody PushRegistrationRequest request
     ) {
         service.registerPush(
-                userId,
+                identityProvider.requireIdentity().userId(),
                 request.deviceId(),
                 request.platform(),
                 request.provider(),
@@ -82,17 +87,16 @@ public class PlatformAdminController {
     }
 
     @GetMapping("/account/export")
-    public Map<String, Object> exportAccount(
-            @RequestHeader(USER_HEADER) String userId
-    ) {
-        return service.exportAccount(userId);
+    public Map<String, Object> exportAccount() {
+        return service.exportAccount(identityProvider.requireIdentity().userId());
     }
 
     @DeleteMapping("/account")
-    public Map<String, Object> deleteAccount(
-            @RequestHeader(USER_HEADER) String userId
-    ) {
-        return Map.of("deleted", service.deleteAccount(userId));
+    public Map<String, Object> deleteAccount() {
+        return Map.of(
+                "deleted",
+                service.deleteAccount(identityProvider.requireIdentity().userId())
+        );
     }
 
     @GetMapping("/admin/platform/risk/assessments")
@@ -116,20 +120,22 @@ public class PlatformAdminController {
 
     @PutMapping("/admin/platform/remote-config")
     public Map<String, Object> updateRemoteConfig(
-            @RequestHeader(value = ACTOR_HEADER, defaultValue = "admin") String actor,
             @Valid @RequestBody RemoteConfigUpdateRequest request
     ) {
-        return service.updateRemoteConfig(actor, request.version(), request.config());
+        return service.updateRemoteConfig(
+                identityProvider.requireIdentity().actor(),
+                request.version(),
+                request.config()
+        );
     }
 
     @PostMapping("/admin/platform/content-releases")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> publishContent(
-            @RequestHeader(value = ACTOR_HEADER, defaultValue = "admin") String actor,
             @Valid @RequestBody ContentReleaseRequest request
     ) {
         return service.publishContent(
-                actor,
+                identityProvider.requireIdentity().actor(),
                 request.contentVersion(),
                 request.releaseNotes(),
                 request.content()
@@ -149,11 +155,10 @@ public class PlatformAdminController {
     @PostMapping("/admin/platform/testers")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> upsertTester(
-            @RequestHeader(value = ACTOR_HEADER, defaultValue = "admin") String actor,
             @Valid @RequestBody TesterCohortRequest request
     ) {
         service.upsertTester(
-                actor,
+                identityProvider.requireIdentity().actor(),
                 request.cohortCode(),
                 request.userId(),
                 request.status(),

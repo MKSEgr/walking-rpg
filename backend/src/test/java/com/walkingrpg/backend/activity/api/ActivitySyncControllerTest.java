@@ -10,6 +10,7 @@ import com.walkingrpg.backend.activity.domain.ActivitySyncCalculator;
 import com.walkingrpg.backend.activity.infrastructure.InMemoryActivitySyncRepository;
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
+import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ class ActivitySyncControllerTest {
         );
         ActivitySyncController controller = new ActivitySyncController(
                 new ActivitySyncCommandFactory(),
-                service
+                service,
+                FixedRequestIdentityProvider.user("user-1", "device-1")
         );
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new ApiExceptionHandler())
@@ -45,8 +47,6 @@ class ActivitySyncControllerTest {
     @Test
     void shouldSynchronizeAuthoritativeTotalAndReturnWalletSnapshot() throws Exception {
         mockMvc.perform(post("/api/v1/activity/sync")
-                        .header(ActivitySyncController.USER_HEADER, "user-1")
-                        .header(ActivitySyncController.DEVICE_HEADER, "device-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -73,8 +73,6 @@ class ActivitySyncControllerTest {
     @Test
     void shouldRejectUnknownTimeZoneWithStableErrorBody() throws Exception {
         mockMvc.perform(post("/api/v1/activity/sync")
-                        .header(ActivitySyncController.USER_HEADER, "user-1")
-                        .header(ActivitySyncController.DEVICE_HEADER, "device-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

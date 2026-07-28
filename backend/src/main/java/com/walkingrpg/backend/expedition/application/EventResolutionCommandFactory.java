@@ -13,7 +13,7 @@ public class EventResolutionCommandFactory {
             EventResolutionRequest request
     ) {
         return new EventResolutionCommand(
-                requireText(userId, "X-User-Id", 128),
+                requireText(userId, "userId", 128),
                 requireText(eventId, "eventId", 64),
                 requireText(request.choiceId(), "choiceId", 64),
                 requireText(request.idempotencyKey(), "idempotencyKey", 128)

@@ -37,6 +37,6 @@ class HomeQueryFactoryTest {
                 () -> factory.create(" ", "2026-07-25")
         );
 
-        assertEquals("X-User-Id", exception.field());
+        assertEquals("userId", exception.field());
     }
 }

@@ -18,8 +18,8 @@ public class ActivitySyncCommandFactory {
             String deviceId,
             ActivitySyncRequest request
     ) {
-        String normalizedUserId = requireText(userId, "X-User-Id");
-        String normalizedDeviceId = requireText(deviceId, "X-Device-Id");
+        String normalizedUserId = requireText(userId, "userId");
+        String normalizedDeviceId = requireText(deviceId, "deviceId");
         ZoneId zoneId = parseZoneId(request.timeZone());
         List<ActivityBucket> buckets = request.buckets().stream()
                 .map(this::toDomainBucket)

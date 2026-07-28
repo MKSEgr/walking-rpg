@@ -19,6 +19,14 @@ CI создаёт технические release candidates. Подпись и �
 - [ ] Проверены iOS no-codesign archive и SHA-256.
 - [ ] Version/build/commit совпадают с принятым PR.
 
+## Identity gate
+
+- [ ] Backend production profile запущен в `jwt` mode; demo/dev headers не принимаются.
+- [ ] OIDC issuer, JWKS и audience соответствуют production client.
+- [ ] User/admin claims проверены на реальных токенах.
+- [ ] Mobile Authorization Code + PKCE, refresh, expiry и logout пройдены end-to-end.
+- [ ] Logout/account switch очищает локальную session, read cache и command outbox по согласованной политике.
+
 ## Protected signing environment
 
 - [ ] Android AAB подписан production upload key вне source tree.

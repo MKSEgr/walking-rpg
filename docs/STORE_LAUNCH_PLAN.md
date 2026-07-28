@@ -1,6 +1,6 @@
 # Walking RPG — план до первой публикации в App Store и Google Play
 
-Статус на 27 июля 2026 года. Документ отделяет:
+Статус на 28 июля 2026 года. Документ отделяет:
 
 - техническую готовность к сборке;
 - готовность к загрузке в TestFlight / Play Console;
@@ -20,6 +20,7 @@
 - onboarding, питомцы, навыки, задания, сезон, недельный маршрут, отряды и косметика;
 - remote config, analytics, crash ingestion, risk audit и tester cohorts;
 - account export/delete backend API;
+- backend OIDC/JWT resource-server boundary с `sub`, `ROLE_USER`/`ROLE_ADMIN` и fail-closed production profile;
 - backend JAR, Android release AAB candidate и iOS release no-codesign candidate;
 - deterministic build metadata, privacy/store declaration drafts, release checklist и device validation protocol.
 
@@ -41,17 +42,27 @@
 
 ### A2. Production identity и authentication
 
-Сейчас mobile использует compile-time `DEMO_USER_ID` / `DEMO_DEVICE_ID`, а backend принимает временные `X-User-Id` / `X-Device-Id`. До store build это необходимо заменить на production identity boundary:
+Backend boundary — `CODE_COMPLETE`:
 
-- выбрать способ входа и владения аккаунтом;
-- получить короткоживущий access token и безопасно обновлять session;
-- хранить refresh/session material только в platform secure storage;
-- валидировать подпись, issuer, audience, expiration и subject на backend;
-- вычислять user/device identity на backend из authenticated context, а не доверять произвольным headers;
-- разделить anonymous, authenticated user и admin operations;
-- добавить logout, session expiry, revoked-account и lost-network сценарии;
-- добавить integration tests на 401/403, подмену subject и повтор команд после refresh;
-- исключить demo identity из production build policy.
+- Spring Security OAuth2 Resource Server;
+- JWT signature, issuer, audience, expiration и обязательный `sub`;
+- `sub` как canonical userId, actor из настраиваемого username claim;
+- `ROLE_USER` для пользовательского API и `ROLE_ADMIN` для `/api/v1/admin/**`;
+- activity device/session identity только из подписанного claim, с SHA-256 pseudonym;
+- production profile принудительно использует JWT и отключает demo endpoint;
+- `X-User-Id`, `X-Device-Id`, `X-Mock-*` изолированы в явном local/test filter-е и игнорируются в JWT mode;
+- regression tests на 401/403, forged dev headers, role separation и security-context identity.
+
+До store build остаётся mobile/session часть:
+
+- выбрать и настроить production OIDC client и владение аккаунтом;
+- Authorization Code + PKCE;
+- короткоживущий access token и безопасный refresh/session flow;
+- хранить refresh/session material только в Keychain / Android Keystore;
+- добавить login/logout, session expiry, revoked-account и lost-network сценарии;
+- очистить read cache и command outbox при подтверждённом logout/account switch;
+- проверить повтор pending-команд после token refresh без изменения idempotency key;
+- исключить compile-time `DEMO_USER_ID` / `DEMO_DEVICE_ID` из production mobile build policy.
 
 ### A3. Account settings и удаление данных
 

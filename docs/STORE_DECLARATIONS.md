@@ -17,14 +17,14 @@ Walking RPG превращает агрегированное количеств
 
 Могут обрабатываться:
 
-- технический user/device id;
+- pseudonymous account id из OIDC subject и хэшированный device/session id;
 - aggregated daily steps, timezone и local date;
 - игровой прогресс, инвентарь и команды;
 - crash/diagnostic events;
 - experiment exposure;
 - tester cohort membership.
 
-Цели: core functionality, fraud prevention, diagnostics и product analytics. Account export/delete предусмотрены backend-контрактом.
+Цели: authentication, account management, core functionality, fraud prevention, diagnostics и product analytics. Account export/delete предусмотрены backend-контрактом.
 
 ## Payments и push
 

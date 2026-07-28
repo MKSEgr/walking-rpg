@@ -10,7 +10,9 @@
 - команды изменения поддерживают idempotency;
 - клиент не передаёт рассчитанную награду, баланс, progress или progression;
 - ошибки имеют `code`, `message`, `details`, `traceId`;
-- до authentication используются временные `X-User-Id` и `X-Device-Id`.
+- production API использует `Authorization: Bearer <access-token>`; `userId`, actor и activity device identity вычисляются backend-ом из authenticated context;
+- локальные `X-User-Id` / `X-Device-Id` разрешены только в явном профиле `local` с `dev-header`; production-профиль их игнорирует;
+- пользовательские endpoint-ы требуют `ROLE_USER`, `/api/v1/admin/**` требует `ROLE_ADMIN`.
 
 ## `GET /api/v1/system/info`
 
@@ -25,7 +27,7 @@
 Возвращает актуальный read-model главного экрана.
 
 ```http
-X-User-Id: demo-user-1
+Authorization: Bearer <access-token>
 ```
 
 После завершения второго события response содержит:
@@ -126,8 +128,7 @@ X-User-Id: demo-user-1
 Принимает cumulative authoritative total, сохраняет дневной high-watermark и начисляет ENERGY через ledger.
 
 ```http
-X-User-Id: demo-user-1
-X-Device-Id: demo-device-1
+Authorization: Bearer <access-token>
 ```
 
 Request:
@@ -181,7 +182,7 @@ TOTAL_DECREASED
 Тратит ENERGY на persistent progress экспедиции.
 
 ```http
-X-User-Id: demo-user-1
+Authorization: Bearer <access-token>
 ```
 
 Request:
@@ -234,7 +235,7 @@ Response после достижения узла:
 Разрешает открытое событие одним из server-owned вариантов и атомарно применяет progression/material reward.
 
 ```http
-X-User-Id: demo-user-1
+Authorization: Bearer <access-token>
 ```
 
 Request:
