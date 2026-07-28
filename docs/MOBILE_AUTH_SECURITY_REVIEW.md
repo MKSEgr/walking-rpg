@@ -34,4 +34,4 @@ This review records the invariants required before the mobile OIDC session slice
 - Account switching clears the previous owner before activating the new session.
 - Explicit logout waits for admitted command work, then clears owner-scoped snapshots, commands, and secure tokens.
 
-The automated suite covers session restore, concurrent refresh, invalid grant, logout ordering, forced reauthentication ordering, refresh/logout races, account switching, runtime shutdown, exact identity matching, and same-origin transport behavior.
+The automated suite covers session restore, concurrent refresh, invalid grant, logout ordering, forced reauthentication ordering, refresh/logout races, account switching, runtime shutdown, exact identity matching, same-origin transport behavior, and stale repeated-401 rejection.
