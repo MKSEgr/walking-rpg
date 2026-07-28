@@ -82,6 +82,7 @@ final class BearerHomeTransport implements HomeTransport {
     if (response.statusCode == 401) {
       _tokenProvider.rejectSession(
         'Backend повторно отклонил обновлённую сессию.',
+        rejectedAccessToken: refreshedToken,
       );
       throw const AuthReauthenticationRequiredException();
     }
