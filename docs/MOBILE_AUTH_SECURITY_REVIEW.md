@@ -25,7 +25,8 @@ This review records the invariants required before the mobile OIDC session slice
 
 - Bearer tokens are attached only to the configured API origin.
 - Caller-supplied authorization and development identity headers are removed.
-- A first HTTP 401 performs one serialized refresh and one identical request replay; a second 401 requires interactive sign-in.
+- A first HTTP 401 performs one serialized refresh and one identical request replay.
+- A repeated 401 invalidates the session only when the replayed token is still current; a stale replay cannot tear down a newer token.
 
 ## Local state
 
