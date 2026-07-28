@@ -1,23 +1,20 @@
 import 'dart:convert';
-
 import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
+import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
-import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
 
 class ActivityApiClient {
   factory ActivityApiClient({
     required Uri baseUri,
     required String userId,
-    required String deviceId,
     required HomeTransport transport,
     ReadSnapshotCache? cache,
   }) {
     final String normalizedUserId = _requireText(userId, 'userId');
-    final String normalizedDeviceId = _requireText(deviceId, 'deviceId');
     if (baseUri.scheme != 'http' && baseUri.scheme != 'https') {
       throw ArgumentError.value(
         baseUri,
@@ -32,7 +29,6 @@ class ActivityApiClient {
     return ActivityApiClient._(
       baseUri: baseUri,
       userId: normalizedUserId,
-      deviceId: normalizedDeviceId,
       transport: transport,
       cache: cache,
     );
@@ -41,7 +37,6 @@ class ActivityApiClient {
   ActivityApiClient._({
     required this.baseUri,
     required this.userId,
-    required this.deviceId,
     required this.transport,
     required ReadSnapshotCache? cache,
   }) : _cache = cache;
@@ -50,15 +45,13 @@ class ActivityApiClient {
     return ActivityApiClient(
       baseUri: Uri.parse(AppEnvironment.apiBaseUrl),
       userId: AppEnvironment.demoUserId,
-      deviceId: AppEnvironment.demoDeviceId,
-      transport: const IoHomeTransport(),
+      transport: DevelopmentHeaderHomeTransport.fromEnvironment(),
       cache: FileReadSnapshotCache.fromEnvironment(),
     );
   }
 
   final Uri baseUri;
   final String userId;
-  final String deviceId;
   final HomeTransport transport;
   final ReadSnapshotCache? _cache;
 
@@ -75,8 +68,6 @@ class ActivityApiClient {
       headers: <String, String>{
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'X-User-Id': userId,
-        'X-Device-Id': deviceId,
       },
       body: jsonEncode(<String, Object?>{
         'localDate': reading.localDateIso,

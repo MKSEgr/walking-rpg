@@ -34,7 +34,7 @@ void main() {
         transport.requestedUri?.queryParameters['localDate'],
         '2026-07-25',
       );
-      expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
+      expect(transport.requestedHeaders?.containsKey('X-User-Id'), isFalse);
       expect(snapshot.dailySteps, 6842);
       expect(snapshot.dailyGoal, 3250);
       expect(snapshot.dailyGoalPolicy.source, 'ADAPTIVE');

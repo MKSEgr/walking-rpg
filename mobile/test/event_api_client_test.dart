@@ -32,7 +32,7 @@ void main() {
       transport.requestedUri?.path,
       '/api/v1/events/echo-vault-v1/resolve',
     );
-    expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
+    expect(transport.requestedHeaders?.containsKey('X-User-Id'), isFalse);
     expect(transport.decodedBody?['choiceId'], 'stabilize-core');
     expect(transport.decodedBody?['idempotencyKey'], 'resolve-1');
     expect(result.status, 'RESOLVED');

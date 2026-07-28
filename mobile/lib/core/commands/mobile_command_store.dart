@@ -4,4 +4,6 @@ abstract interface class MobileCommandStore {
   Future<List<MobileCommand>> load();
 
   Future<void> save(List<MobileCommand> commands);
+
+  Future<void> deleteOwner(String ownerId);
 }

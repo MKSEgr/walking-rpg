@@ -35,7 +35,7 @@ void main() {
       transport.requestedUri?.path,
       '/api/v1/expeditions/starter-expedition-v1/advance',
     );
-    expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
+    expect(transport.requestedHeaders?.containsKey('X-User-Id'), isFalse);
     expect(transport.requestBody?['energyToSpend'], 30);
     expect(transport.requestBody?['idempotencyKey'], 'advance-1');
     expect(result.energyBalanceAfter, 38);

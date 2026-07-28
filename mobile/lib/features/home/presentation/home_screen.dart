@@ -30,12 +30,14 @@ class HomeScreen extends StatefulWidget {
     this.advancer,
     this.eventResolver,
     this.idempotencyKeyFactory,
+    this.onOpenAccount,
   });
 
   final HomeSnapshotLoader? loader;
   final ExpeditionAdvancer? advancer;
   final EventResolver? eventResolver;
   final IdempotencyKeyFactory? idempotencyKeyFactory;
+  final VoidCallback? onOpenAccount;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -74,9 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
-            tooltip: 'Настройки',
-            onPressed: () {},
-            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Аккаунт',
+            onPressed: widget.onOpenAccount,
+            icon: const Icon(Icons.account_circle_outlined),
           ),
         ],
       ),

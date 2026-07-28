@@ -23,7 +23,10 @@ for file in \
   docs/BRANCH_PROTECTION.md \
   docs/adr/0015-release-quality-and-external-gates.md \
   docs/adr/0017-production-authentication-boundary.md \
+  docs/adr/0018-mobile-oidc-session.md \
   backend/src/main/java/com/walkingrpg/backend/security/SecurityModeGuard.java \
+  mobile/lib/core/auth/auth_session_controller.dart \
+  mobile/lib/features/home/data/auth_home_transports.dart \
   backend/src/main/resources/application-local.yml \
   backend/src/main/resources/application-prod.yml \
   privacy/privacy-policy.md \
@@ -86,6 +89,29 @@ if grep -Fq 'signingConfigs.getByName("debug")' mobile/android/app/build.gradle.
   fail 'Android release must never use the debug signing key'
 fi
 grep -Fq "platform :ios, '14.0'" mobile/ios/Podfile || fail 'Podfile deployment target must be iOS 14.0'
+
+printf '%s\n' 'Checking mobile authentication boundary...'
+grep -Fq 'flutter_appauth: 12.0.2' mobile/pubspec.yaml || fail 'flutter_appauth must be pinned'
+grep -Fq 'flutter_secure_storage: 10.3.1' mobile/pubspec.yaml || fail 'secure token storage must be pinned'
+grep -Fq "defaultValue: 'oidc'" mobile/lib/core/config/app_environment.dart || fail 'mobile auth must fail closed as oidc'
+grep -Fq 'Development-аутентификация запрещена в production build' mobile/lib/core/auth/auth_models.dart || fail 'release builds must reject development auth'
+grep -Fq '"appAuthRedirectScheme" to "com.walkingrpg.app"' mobile/android/app/build.gradle.kts || fail 'Android AppAuth redirect scheme is missing'
+grep -Fq 'android:allowBackup="false"' mobile/android/app/src/main/AndroidManifest.xml || fail 'Android secure storage backup must be disabled'
+if grep -Fq 'android:taskAffinity=""' mobile/android/app/src/main/AndroidManifest.xml; then
+  fail 'empty Android taskAffinity breaks AppAuth browser return'
+fi
+grep -Fq '<string>com.walkingrpg.app</string>' mobile/ios/Runner/Info.plist || fail 'iOS AppAuth redirect scheme is missing'
+grep -Fq '<key>keychain-access-groups</key>' mobile/ios/Runner/Runner.entitlements || fail 'iOS Keychain capability is missing'
+grep -Fq 'diskCapacity: 0' mobile/ios/Runner/AppDelegate.swift || fail 'iOS URL disk cache must be disabled for AppAuth token responses'
+grep -Fq 'exact issuer identifier match' mobile/lib/core/auth/auth_models.dart || fail 'OIDC issuer matching must remain exact'
+grep -Fq 'writeRefreshedSession' mobile/lib/core/auth/auth_session_store.dart || fail 'refresh persistence must not reactivate invalidated sessions'
+grep -Fq "nativeOidcRedirectScheme = 'com.walkingrpg.app'" mobile/lib/core/config/app_environment.dart || fail 'Dart and native OIDC redirect schemes must stay aligned'
+MOBILE_IDENTITY_HEADERS=$(grep -RInE 'X-User-Id|X-Device-Id|X-Mock-User|X-Mock-Authorities' mobile/lib/features --include='*.dart' 2>/dev/null || true)
+MOBILE_IDENTITY_OUTSIDE_DEV=$(printf '%s\n' "$MOBILE_IDENTITY_HEADERS" | grep -v 'mobile/lib/features/home/data/auth_home_transports.dart' || true)
+if [ -n "$MOBILE_IDENTITY_OUTSIDE_DEV" ]; then
+  printf '%s\n' "$MOBILE_IDENTITY_OUTSIDE_DEV" >&2
+  fail 'mobile identity headers are allowed only inside the explicit development transport'
+fi
 
 printf '%s\n' 'Checking tracked credentials and signing material...'
 if find . -type f \( -name '*.jks' -o -name '*.keystore' -o -name '*.p12' -o -name '*.p8' -o -name '*.mobileprovision' -o -name 'key.properties' -o -name '.env' \) -not -path './.git/*' -print | grep -q .; then

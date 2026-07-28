@@ -29,7 +29,7 @@ void main() {
 
     expect(transport.requestedMethod, 'GET');
     expect(transport.requestedUri?.path, '/api/v1/platform');
-    expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
+    expect(transport.requestedHeaders?.containsKey('X-User-Id'), isFalse);
     expect(snapshot.contentVersion, 'chapter-1-v1');
   });
 

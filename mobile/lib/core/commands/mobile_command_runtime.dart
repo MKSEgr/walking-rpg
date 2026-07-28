@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -94,22 +95,28 @@ final class MobileCommandRuntime {
         MobileCommandLane.activity: AsyncLock(),
         MobileCommandLane.gameplay: AsyncLock(),
       };
+  bool _closed = false;
+  int _activeOperations = 0;
+  Completer<void>? _idleCompleter;
+  Future<void>? _closeFuture;
 
   Future<ActivitySyncResult> syncActivity({
     required StepReading reading,
     required String idempotencyKey,
   }) {
-    return _submit<ActivitySyncResult>(
-      type: MobileCommandType.activitySync,
-      proposedKey: idempotencyKey,
-      fingerprint: jsonEncode(<Object?>[
-        MobileCommandType.activitySync.wireName,
-        reading.localDateIso,
-        reading.timeZone,
-        reading.authoritativeTotal,
-        reading.syncCursor,
-      ]),
-      payload: reading.toJson(),
+    return _runOpenOperation<ActivitySyncResult>(
+      () => _submit<ActivitySyncResult>(
+        type: MobileCommandType.activitySync,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.activitySync.wireName,
+          reading.localDateIso,
+          reading.timeZone,
+          reading.authoritativeTotal,
+          reading.syncCursor,
+        ]),
+        payload: reading.toJson(),
+      ),
     );
   }
 
@@ -129,18 +136,20 @@ final class MobileCommandRuntime {
         'Значение должно быть положительным',
       );
     }
-    return _submit<ExpeditionAdvanceResult>(
-      type: MobileCommandType.expeditionAdvance,
-      proposedKey: idempotencyKey,
-      fingerprint: jsonEncode(<Object?>[
-        MobileCommandType.expeditionAdvance.wireName,
-        normalizedExpeditionId,
-        energyToSpend,
-      ]),
-      payload: <String, Object?>{
-        'expeditionId': normalizedExpeditionId,
-        'energyToSpend': energyToSpend,
-      },
+    return _runOpenOperation<ExpeditionAdvanceResult>(
+      () => _submit<ExpeditionAdvanceResult>(
+        type: MobileCommandType.expeditionAdvance,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.expeditionAdvance.wireName,
+          normalizedExpeditionId,
+          energyToSpend,
+        ]),
+        payload: <String, Object?>{
+          'expeditionId': normalizedExpeditionId,
+          'energyToSpend': energyToSpend,
+        },
+      ),
     );
   }
 
@@ -151,18 +160,20 @@ final class MobileCommandRuntime {
   }) {
     final String normalizedEventId = _requireText(eventId, 'eventId');
     final String normalizedChoiceId = _requireText(choiceId, 'choiceId');
-    return _submit<EventResolutionResult>(
-      type: MobileCommandType.eventResolution,
-      proposedKey: idempotencyKey,
-      fingerprint: jsonEncode(<Object?>[
-        MobileCommandType.eventResolution.wireName,
-        normalizedEventId,
-        normalizedChoiceId,
-      ]),
-      payload: <String, Object?>{
-        'eventId': normalizedEventId,
-        'choiceId': normalizedChoiceId,
-      },
+    return _runOpenOperation<EventResolutionResult>(
+      () => _submit<EventResolutionResult>(
+        type: MobileCommandType.eventResolution,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.eventResolution.wireName,
+          normalizedEventId,
+          normalizedChoiceId,
+        ]),
+        payload: <String, Object?>{
+          'eventId': normalizedEventId,
+          'choiceId': normalizedChoiceId,
+        },
+      ),
     );
   }
 
@@ -176,22 +187,28 @@ final class MobileCommandRuntime {
       'commandType',
     ).toUpperCase();
     final Map<String, Object?> canonicalPayload = _canonicalMap(payload);
-    return _submit<PlatformCommandResult>(
-      type: MobileCommandType.platformCommand,
-      proposedKey: idempotencyKey,
-      fingerprint: jsonEncode(<Object?>[
-        MobileCommandType.platformCommand.wireName,
-        normalizedCommandType,
-        canonicalPayload,
-      ]),
-      payload: <String, Object?>{
-        'commandType': normalizedCommandType,
-        'payload': canonicalPayload,
-      },
+    return _runOpenOperation<PlatformCommandResult>(
+      () => _submit<PlatformCommandResult>(
+        type: MobileCommandType.platformCommand,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.platformCommand.wireName,
+          normalizedCommandType,
+          canonicalPayload,
+        ]),
+        payload: <String, Object?>{
+          'commandType': normalizedCommandType,
+          'payload': canonicalPayload,
+        },
+      ),
     );
   }
 
-  Future<MobileCommandReplayReport> replayPending() async {
+  Future<MobileCommandReplayReport> replayPending() {
+    return _runOpenOperation<MobileCommandReplayReport>(_replayPending);
+  }
+
+  Future<MobileCommandReplayReport> _replayPending() async {
     int succeeded = 0;
     int retryableFailures = 0;
     int permanentFailures = 0;
@@ -227,6 +244,56 @@ final class MobileCommandRuntime {
       pendingAfter: pendingAfter,
       failedAfter: failedAfter,
     );
+  }
+
+  Future<void> close() {
+    final Future<void>? existing = _closeFuture;
+    if (existing != null) {
+      return existing;
+    }
+    _closed = true;
+    final Future<void> closing = _waitForIdle();
+    _closeFuture = closing;
+    return closing;
+  }
+
+  Future<void> _waitForIdle() async {
+    if (_activeOperations == 0) {
+      return;
+    }
+    final Completer<void> completer = _idleCompleter ??= Completer<void>();
+    await completer.future;
+  }
+
+  Future<T> _runOpenOperation<T>(Future<T> Function() action) {
+    _ensureOpen();
+    _activeOperations += 1;
+    try {
+      return action().whenComplete(_completeOperation);
+    } on Object {
+      _completeOperation();
+      rethrow;
+    }
+  }
+
+  void _completeOperation() {
+    _activeOperations -= 1;
+    if (_activeOperations < 0) {
+      throw StateError('Некорректный счётчик mobile runtime operations');
+    }
+    if (_activeOperations == 0) {
+      final Completer<void>? completer = _idleCompleter;
+      _idleCompleter = null;
+      if (completer != null && !completer.isCompleted) {
+        completer.complete();
+      }
+    }
+  }
+
+  void _ensureOpen() {
+    if (_closed) {
+      throw StateError('Mobile command runtime уже остановлен');
+    }
   }
 
   Future<T> _submit<T>({

@@ -1,8 +1,8 @@
 import 'dart:convert';
-
 import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
+import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
@@ -45,7 +45,7 @@ class PlatformApiClient {
     return PlatformApiClient(
       baseUri: Uri.parse(AppEnvironment.apiBaseUrl),
       userId: AppEnvironment.demoUserId,
-      transport: const IoHomeTransport(),
+      transport: DevelopmentHeaderHomeTransport.fromEnvironment(),
       cache: FileReadSnapshotCache.fromEnvironment(),
     );
   }
@@ -66,10 +66,7 @@ class PlatformApiClient {
     try {
       final HomeTransportResponse response = await transport.get(
         uri: baseUri.resolve('/api/v1/platform'),
-        headers: <String, String>{
-          'Accept': 'application/json',
-          'X-User-Id': userId,
-        },
+        headers: <String, String>{'Accept': 'application/json'},
       );
       final Object? decoded = _decodeJsonLenient(response.body);
       if (response.statusCode != 200) {
@@ -123,7 +120,6 @@ class PlatformApiClient {
       headers: <String, String>{
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'X-User-Id': userId,
       },
       body: jsonEncode(<String, Object?>{
         'commandType': normalizedCommandType,

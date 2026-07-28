@@ -73,3 +73,10 @@
 - архитектурная документация;
 - roadmap, backlog и первые ADR;
 - Docker Compose с PostgreSQL.
+
+## Mobile OIDC session lifecycle
+
+- Added Authorization Code + PKCE login for Android and iOS.
+- Added Keychain/Android secure token storage and serialized refresh handling.
+- Replaced client-supplied identity headers with same-origin Bearer transport.
+- Added account-scoped cache/outbox cleanup and a runtime shutdown barrier.

@@ -20,6 +20,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders += mapOf(
+            "appAuthRedirectScheme" to "com.walkingrpg.app",
+        )
     }
 
     buildTypes {

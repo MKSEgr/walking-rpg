@@ -293,3 +293,44 @@ Unit/widget tests покрывают:
 - повтор после переустановки приложения;
 - реальное потребление батареи;
 - тексты privacy rationale перед публикацией.
+
+## Production authentication
+
+Production mobile builds use `MOBILE_AUTH_MODE=oidc` and the Authorization Code
+flow with PKCE. Required build-time values:
+
+```bash
+--dart-define=MOBILE_AUTH_MODE=oidc
+--dart-define=API_BASE_URL=https://api.example.com
+--dart-define=OIDC_ISSUER=https://identity.example.com/realms/walking-rpg
+--dart-define=OIDC_CLIENT_ID=walking-rpg-mobile
+--dart-define=OIDC_SCOPES="openid profile offline_access"
+```
+
+The registered redirect URIs are:
+
+```text
+com.walkingrpg.app:/oauthredirect
+com.walkingrpg.app:/logout
+```
+
+Access, refresh and ID tokens are stored in Keychain/Android secure storage.
+A secure owner tombstone preserves account-switch cleanup across process restarts, and
+iOS disables URL disk caching before AppAuth starts. Only the Bearer transport may
+attach `Authorization`, and it refuses to send a
+token outside the configured API origin. A single 401 triggers one serialized
+refresh and one replay of the identical request. A second 401 requires an
+interactive sign-in and leaves durable pending commands available for the same
+account.
+
+Local header authentication remains available only in non-release builds:
+
+```bash
+--dart-define=MOBILE_AUTH_MODE=development
+--dart-define=API_BASE_URL=http://10.0.2.2:8080
+--dart-define=DEMO_USER_ID=demo-user-1
+--dart-define=DEMO_DEVICE_ID=android-emulator-1
+```
+
+Explicit logout waits for admitted command work to finish, then clears the
+current account's read cache, durable command outbox and secure token set.
