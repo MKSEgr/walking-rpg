@@ -211,6 +211,62 @@ void main() {
     expect(jsonDecode(second!.payload), <String, dynamic>{'owner': 2});
   });
 
+  test('uses case-insensitive-safe filenames for owners', () async {
+    await cache.write(
+      ownerId: 'aaa',
+      resource: ReadSnapshotResource.home,
+      variant: 'today',
+      payload: jsonEncode(<String, Object?>{'owner': 'aaa'}),
+      ttl: const Duration(days: 1),
+    );
+    await cache.write(
+      ownerId: 'aaG',
+      resource: ReadSnapshotResource.home,
+      variant: 'today',
+      payload: jsonEncode(<String, Object?>{'owner': 'aaG'}),
+      ttl: const Duration(days: 1),
+    );
+
+    final List<File> files = await directory
+        .list()
+        .where(
+          (FileSystemEntity entity) =>
+              entity is File && entity.path.endsWith('.json'),
+        )
+        .cast<File>()
+        .toList();
+    final List<String> names = files
+        .map((File file) => file.uri.pathSegments.last)
+        .toList(growable: false);
+
+    expect(files, hasLength(2));
+    expect(names.every((String name) => name == name.toLowerCase()), isTrue);
+    expect(
+      names.map((String name) => name.toLowerCase()).toSet(),
+      hasLength(2),
+    );
+    expect(
+      jsonDecode(
+        (await cache.read(
+          ownerId: 'aaa',
+          resource: ReadSnapshotResource.home,
+          variant: 'today',
+        ))!.payload,
+      ),
+      <String, dynamic>{'owner': 'aaa'},
+    );
+    expect(
+      jsonDecode(
+        (await cache.read(
+          ownerId: 'aaG',
+          resource: ReadSnapshotResource.home,
+          variant: 'today',
+        ))!.payload,
+      ),
+      <String, dynamic>{'owner': 'aaG'},
+    );
+  });
+
   test(
     'quarantines a fully corrupted store and accepts a new snapshot',
     () async {

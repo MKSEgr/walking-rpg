@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
+import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 
 import 'support/in_memory_read_snapshot_cache.dart';
 import 'support/platform_fixture.dart';
@@ -86,6 +87,79 @@ void main() {
       expect(await _readPlatform(cache, 'review-user-old-command'), isNull);
     },
   );
+
+  test('platform high-water survives snapshot invalidation', () async {
+    const String ownerId = 'review-user-high-water';
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache();
+    await _seedPlatform(cache, ownerId: ownerId, stateVersion: 12);
+    final PlatformApiClient observer = PlatformApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: ownerId,
+      transport: const _RetryableGetTransport(),
+      cache: cache,
+    );
+
+    final PlatformSnapshot observed = await observer.fetchSnapshot();
+    expect(observed.stateVersion, 12);
+    await invalidateReadSnapshotsBeforeMutation(cache, ownerId: ownerId);
+    expect(await _readPlatform(cache, ownerId), isNull);
+
+    final PlatformApiClient replay = PlatformApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: ownerId,
+      transport: _CommandTransport(
+        HomeTransportResponse(
+          statusCode: 200,
+          body: jsonEncode(
+            _commandResponse(
+              commandType: 'SELECT_PET',
+              idempotencyKey: 'pet-old-after-invalidation',
+              stateVersion: 4,
+            ),
+          ),
+        ),
+      ),
+      cache: cache,
+    );
+
+    await replay.execute(
+      commandType: 'SELECT_PET',
+      payload: const <String, Object?>{'petId': 'spark-v1'},
+      idempotencyKey: 'pet-old-after-invalidation',
+    );
+
+    expect(await _readPlatform(cache, ownerId), isNull);
+  });
+
+  test('command response without a trusted baseline is not cached', () async {
+    const String ownerId = 'review-user-no-baseline';
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache();
+    final PlatformApiClient client = PlatformApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: ownerId,
+      transport: _CommandTransport(
+        HomeTransportResponse(
+          statusCode: 200,
+          body: jsonEncode(
+            _commandResponse(
+              commandType: 'SELECT_PET',
+              idempotencyKey: 'pet-unknown-history',
+              stateVersion: 4,
+            ),
+          ),
+        ),
+      ),
+      cache: cache,
+    );
+
+    await client.execute(
+      commandType: 'SELECT_PET',
+      payload: const <String, Object?>{'petId': 'spark-v1'},
+      idempotencyKey: 'pet-unknown-history',
+    );
+
+    expect(await _readPlatform(cache, ownerId), isNull);
+  });
 
   test('newer authoritative command snapshot is cached', () async {
     final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache();
@@ -307,6 +381,30 @@ final class _CommandTransport implements HomeTransport {
     required String body,
   }) async {
     return response;
+  }
+}
+
+final class _RetryableGetTransport implements HomeTransport {
+  const _RetryableGetTransport();
+
+  @override
+  Future<HomeTransportResponse> get({
+    required Uri uri,
+    required Map<String, String> headers,
+  }) async {
+    return const HomeTransportResponse(
+      statusCode: 503,
+      body: '{"message":"temporarily unavailable"}',
+    );
+  }
+
+  @override
+  Future<HomeTransportResponse> post({
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  }) {
+    throw UnimplementedError();
   }
 }
 

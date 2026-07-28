@@ -209,11 +209,18 @@ void main() {
         clock: () => DateTime.utc(2026, 7, 27, 9),
       );
       await cache.write(
-        ownerId: 'user-1',
+        ownerId: 'command-cache-user',
         resource: ReadSnapshotResource.home,
         variant: '2026-07-27',
         payload: '{}',
         ttl: const Duration(days: 1),
+      );
+      await cache.write(
+        ownerId: 'command-cache-user',
+        resource: ReadSnapshotResource.platform,
+        variant: PlatformApiClient.cacheVariant,
+        payload: jsonEncode(platformSnapshotJson(stateVersion: 2)),
+        ttl: PlatformApiClient.cacheTtl,
       );
       final _FakePlatformTransport transport = _FakePlatformTransport(
         postResponse: HomeTransportResponse(
@@ -230,7 +237,7 @@ void main() {
       );
       final PlatformApiClient client = PlatformApiClient(
         baseUri: Uri.parse('http://localhost:8080'),
-        userId: 'user-1',
+        userId: 'command-cache-user',
         transport: transport,
         cache: cache,
       );
@@ -243,14 +250,14 @@ void main() {
 
       expect(
         await cache.read(
-          ownerId: 'user-1',
+          ownerId: 'command-cache-user',
           resource: ReadSnapshotResource.home,
           variant: '2026-07-27',
         ),
         isNull,
       );
       final ReadSnapshotCacheEntry? platformEntry = await cache.read(
-        ownerId: 'user-1',
+        ownerId: 'command-cache-user',
         resource: ReadSnapshotResource.platform,
         variant: PlatformApiClient.cacheVariant,
       );

@@ -40,6 +40,7 @@ final class FileReadSnapshotCache implements ReadSnapshotCache {
   }
 
   static const int schemaVersion = 1;
+  static const String _base32Alphabet = 'abcdefghijklmnopqrstuvwxyz234567';
   static final Map<String, AsyncLock> _pathLocks = <String, AsyncLock>{};
 
   final ReadCacheDirectoryProvider _directoryProvider;
@@ -186,9 +187,7 @@ final class FileReadSnapshotCache implements ReadSnapshotCache {
     final String normalizedOwner = _normalizeOwner(ownerId);
     final Directory directory = await _directoryProvider();
     await directory.create(recursive: true);
-    final String encodedOwner = base64Url
-        .encode(utf8.encode(normalizedOwner))
-        .replaceAll('=', '');
+    final String encodedOwner = _encodeOwner(normalizedOwner);
     final String safeName = '$filePrefix-$encodedOwner.json';
     if (safeName.contains('/') || safeName.contains('\\')) {
       throw const FormatException('Некорректное имя cache-файла');
@@ -397,6 +396,31 @@ final class FileReadSnapshotCache implements ReadSnapshotCache {
       throw const FormatException('Cached payload должен быть JSON-объектом');
     }
     return normalized;
+  }
+
+  String _encodeOwner(String ownerId) {
+    // Lower-case Base32 remains injective on case-insensitive Apple filesystems
+    // and stays below common filename limits for the supported 128-byte owner.
+    final StringBuffer encoded = StringBuffer();
+    int buffer = 0;
+    int bitsInBuffer = 0;
+    for (final int byte in utf8.encode(ownerId)) {
+      buffer = (buffer << 8) | byte;
+      bitsInBuffer += 8;
+      while (bitsInBuffer >= 5) {
+        bitsInBuffer -= 5;
+        encoded.write(_base32Alphabet[(buffer >> bitsInBuffer) & 0x1f]);
+      }
+      if (bitsInBuffer == 0) {
+        buffer = 0;
+      } else {
+        buffer &= (1 << bitsInBuffer) - 1;
+      }
+    }
+    if (bitsInBuffer > 0) {
+      encoded.write(_base32Alphabet[(buffer << (5 - bitsInBuffer)) & 0x1f]);
+    }
+    return encoded.toString();
   }
 
   String _normalizeOwner(String ownerId) {

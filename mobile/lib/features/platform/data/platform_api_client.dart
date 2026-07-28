@@ -53,6 +53,7 @@ class PlatformApiClient {
   static const Duration cacheTtl = Duration(days: 7);
   static const String cacheVariant = 'current';
   static const String _experimentExposureCommand = 'RECORD_EXPERIMENT_EXPOSURE';
+  static final Map<String, int> _stateVersionHighWaterMarks = <String, int>{};
 
   final Uri baseUri;
   final String userId;
@@ -110,7 +111,7 @@ class PlatformApiClient {
         normalizedCommandType == _experimentExposureCommand;
     final int? minimumStateVersion = recordsExposure
         ? null
-        : await _cachedPlatformStateVersion();
+        : await _minimumKnownStateVersion();
     ReadSnapshotGenerationToken? cacheWriteToken;
     if (!recordsExposure) {
       await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
@@ -149,6 +150,7 @@ class PlatformApiClient {
         stateVersion: result.snapshot.stateVersion,
         generationToken: cacheWriteToken,
         minimumStateVersion: minimumStateVersion,
+        requireKnownBaseline: true,
       );
     }
     return result;
@@ -173,13 +175,24 @@ class PlatformApiClient {
           _decodeJsonLenient(entry.payload),
           'Cached platform',
         );
-        return PlatformSnapshot.fromJson(
+        final PlatformSnapshot snapshot = PlatformSnapshot.fromJson(
           json,
           cacheMetadata: CachedReadMetadata(
             cachedAt: entry.storedAt,
             reason: reason,
           ),
         );
+        final int? highWaterMark = _stateVersionHighWaterMark;
+        if (highWaterMark != null && snapshot.stateVersion < highWaterMark) {
+          await cache.remove(
+            ownerId: userId,
+            resource: ReadSnapshotResource.platform,
+            variant: cacheVariant,
+          );
+          return null;
+        }
+        _observeStateVersion(snapshot.stateVersion);
+        return snapshot;
       } on Object {
         await cache.remove(
           ownerId: userId,
@@ -193,12 +206,20 @@ class PlatformApiClient {
     }
   }
 
-  Future<int?> _cachedPlatformStateVersion() async {
+  Future<int?> _minimumKnownStateVersion() async {
     final ReadSnapshotCache? cache = _cache;
-    if (cache == null) {
-      return null;
+    final int? cachedStateVersion = cache == null
+        ? null
+        : await _cachedPlatformStateVersionFrom(cache);
+    final int? highWaterMark = _stateVersionHighWaterMark;
+    if (cachedStateVersion == null) {
+      return highWaterMark;
     }
-    return _cachedPlatformStateVersionFrom(cache);
+    _observeStateVersion(cachedStateVersion);
+    if (highWaterMark == null || cachedStateVersion > highWaterMark) {
+      return cachedStateVersion;
+    }
+    return highWaterMark;
   }
 
   Future<int?> _cachedPlatformStateVersionFrom(ReadSnapshotCache cache) async {
@@ -216,7 +237,18 @@ class PlatformApiClient {
           _decodeJsonLenient(entry.payload),
           'Cached platform',
         );
-        return PlatformSnapshot.fromJson(json).stateVersion;
+        final int stateVersion = PlatformSnapshot.fromJson(json).stateVersion;
+        final int? highWaterMark = _stateVersionHighWaterMark;
+        if (highWaterMark != null && stateVersion < highWaterMark) {
+          await cache.remove(
+            ownerId: userId,
+            resource: ReadSnapshotResource.platform,
+            variant: cacheVariant,
+          );
+          return null;
+        }
+        _observeStateVersion(stateVersion);
+        return stateVersion;
       } on Object {
         await cache.remove(
           ownerId: userId,
@@ -235,6 +267,7 @@ class PlatformApiClient {
     required int stateVersion,
     required ReadSnapshotGenerationToken generationToken,
     int? minimumStateVersion,
+    bool requireKnownBaseline = false,
   }) async {
     final ReadSnapshotCache? cache = _cache;
     if (cache == null || !isReadSnapshotGenerationCurrent(generationToken)) {
@@ -244,12 +277,21 @@ class PlatformApiClient {
       final int? cachedStateVersion = await _cachedPlatformStateVersionFrom(
         cache,
       );
-      int requiredStateVersion = minimumStateVersion ?? -1;
+      int? requiredStateVersion = minimumStateVersion;
+      final int? highWaterMark = _stateVersionHighWaterMark;
+      if (highWaterMark != null &&
+          (requiredStateVersion == null ||
+              highWaterMark > requiredStateVersion)) {
+        requiredStateVersion = highWaterMark;
+      }
       if (cachedStateVersion != null &&
-          cachedStateVersion > requiredStateVersion) {
+          (requiredStateVersion == null ||
+              cachedStateVersion > requiredStateVersion)) {
         requiredStateVersion = cachedStateVersion;
       }
-      if (stateVersion < requiredStateVersion ||
+      if ((requireKnownBaseline && requiredStateVersion == null) ||
+          (requiredStateVersion != null &&
+              stateVersion < requiredStateVersion) ||
           !isReadSnapshotGenerationCurrent(generationToken)) {
         return;
       }
@@ -262,7 +304,9 @@ class PlatformApiClient {
       );
       if (!isReadSnapshotGenerationCurrent(generationToken)) {
         await _removePayloadIfCurrent(cache: cache, payload: payload);
+        return;
       }
+      _observeStateVersion(stateVersion);
     } on Object {
       // Do not keep an older snapshot after a newer authoritative response.
       try {
@@ -297,6 +341,19 @@ class PlatformApiClient {
       }
     } on Object {
       // Best effort cleanup: never fail the successful network read.
+    }
+  }
+
+  String get _stateVersionScopeKey => '${baseUri.origin}|$userId';
+
+  int? get _stateVersionHighWaterMark =>
+      _stateVersionHighWaterMarks[_stateVersionScopeKey];
+
+  void _observeStateVersion(int stateVersion) {
+    final String key = _stateVersionScopeKey;
+    final int? current = _stateVersionHighWaterMarks[key];
+    if (current == null || stateVersion > current) {
+      _stateVersionHighWaterMarks[key] = stateVersion;
     }
   }
 
