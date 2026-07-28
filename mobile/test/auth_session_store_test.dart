@@ -72,11 +72,51 @@ void main() {
     await store.write(second);
     storage.values[store.storageKey] = firstEnvelope;
 
-    await expectLater(store.read(), throwsA(isA<AuthSessionStoreException>()));
+    await expectLater(
+      store.read(),
+      throwsA(
+        isA<AuthSessionStoreException>().having(
+          (AuthSessionStoreException error) => error.cleanupRequired,
+          'cleanupRequired',
+          isTrue,
+        ),
+      ),
+    );
 
     final AuthSessionStoreState invalidated = await store.read();
     expect(invalidated.session, isNull);
     expect(invalidated.lastOwnerId, second.identity.ownerId);
+    expect(invalidated.cleanupRequired, isTrue);
+  });
+
+  test('corrupt token envelope preserves the cleanup obligation', () async {
+    final OidcConfiguration oidc = _oidc();
+    final _MemorySecureStorage storage = _MemorySecureStorage();
+    final SecureAuthSessionStore store = SecureAuthSessionStore(
+      storage: storage,
+    );
+    final AuthSession session = _session(
+      oidc,
+      subject: 'user-1',
+      marker: 'corrupt-envelope',
+    );
+    await store.write(session);
+    storage.values[store.storageKey] = 'not-json';
+
+    await expectLater(
+      store.read(),
+      throwsA(
+        isA<AuthSessionStoreException>().having(
+          (AuthSessionStoreException error) => error.cleanupRequired,
+          'cleanupRequired',
+          isTrue,
+        ),
+      ),
+    );
+
+    final AuthSessionStoreState invalidated = await store.read();
+    expect(invalidated.session, isNull);
+    expect(invalidated.lastOwnerId, session.identity.ownerId);
     expect(invalidated.cleanupRequired, isTrue);
   });
 
