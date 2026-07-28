@@ -241,6 +241,49 @@ void main() {
     expect(store.session?.identity.subject, 'user-2');
   });
 
+  test('stale replay rejection cannot invalidate a newer token', () async {
+    final OidcConfiguration oidc = _oidc();
+    final _MemorySessionStore store = _MemorySessionStore(
+      _session(oidc, subject: 'user-1', expiresAt: _past),
+    );
+    final _FakeOidcClient client = _FakeOidcClient(
+      refreshResponse: _response(
+        oidc,
+        subject: 'user-1',
+        accessTokenSuffix: 'newer',
+        expiresAt: _future,
+      ),
+    );
+    final AuthSessionController controller = _controller(
+      oidc: oidc,
+      store: store,
+      client: client,
+    );
+    await controller.initialize();
+    final String rejectedToken = store.session!.tokens.accessToken;
+
+    final String newerToken = await controller.refreshAfterUnauthorized(
+      rejectedToken,
+    );
+    controller.rejectSession(
+      'stale replay',
+      rejectedAccessToken: rejectedToken,
+    );
+
+    expect(controller.state, AuthLifecycleState.authenticated);
+    expect(store.session?.tokens.accessToken, newerToken);
+
+    controller.rejectSession(
+      'current replay',
+      rejectedAccessToken: newerToken,
+    );
+    await _waitForState(
+      controller,
+      AuthLifecycleState.reauthenticationRequired,
+    );
+    expect(store.session, isNull);
+  });
+
   test('reauthenticating as the same account preserves owner data', () async {
     final OidcConfiguration oidc = _oidc();
     final AuthSession original = _session(
