@@ -52,6 +52,7 @@ class PlatformApiClient {
 
   static const Duration cacheTtl = Duration(days: 7);
   static const String cacheVariant = 'current';
+  static const String _experimentExposureCommand = 'RECORD_EXPERIMENT_EXPOSURE';
 
   final Uri baseUri;
   final String userId;
@@ -59,6 +60,8 @@ class PlatformApiClient {
   final ReadSnapshotCache? _cache;
 
   Future<PlatformSnapshot> fetchSnapshot() async {
+    final ReadSnapshotGenerationToken cacheWriteToken =
+        captureReadSnapshotGeneration(userId);
     try {
       final HomeTransportResponse response = await transport.get(
         uri: baseUri.resolve('/api/v1/platform'),
@@ -73,7 +76,11 @@ class PlatformApiClient {
       }
       final Map<String, dynamic> json = _requireJsonObject(decoded, 'Platform');
       final PlatformSnapshot snapshot = PlatformSnapshot.fromJson(json);
-      await _writePlatformBestEffort(jsonEncode(json));
+      await _writePlatformBestEffort(
+        payload: jsonEncode(json),
+        stateVersion: snapshot.stateVersion,
+        generationToken: cacheWriteToken,
+      );
       return snapshot;
     } on Object catch (error, stackTrace) {
       if (!_canUseCache(error)) {
@@ -99,7 +106,17 @@ class PlatformApiClient {
       'commandType',
     ).toUpperCase();
     final String normalizedKey = _requireText(idempotencyKey, 'idempotencyKey');
-    await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
+    final bool recordsExposure =
+        normalizedCommandType == _experimentExposureCommand;
+    final int? minimumStateVersion = recordsExposure
+        ? null
+        : await _cachedPlatformStateVersion();
+    ReadSnapshotGenerationToken? cacheWriteToken;
+    if (!recordsExposure) {
+      await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
+      cacheWriteToken = captureReadSnapshotGeneration(userId);
+    }
+
     final HomeTransportResponse response = await transport.post(
       uri: baseUri.resolve('/api/v1/platform/commands'),
       headers: <String, String>{
@@ -126,7 +143,14 @@ class PlatformApiClient {
       json['snapshot'],
       'Platform command snapshot',
     );
-    await _writePlatformBestEffort(jsonEncode(snapshotJson));
+    if (!recordsExposure && cacheWriteToken != null) {
+      await _writePlatformBestEffort(
+        payload: jsonEncode(snapshotJson),
+        stateVersion: result.snapshot.stateVersion,
+        generationToken: cacheWriteToken,
+        minimumStateVersion: minimumStateVersion,
+      );
+    }
     return result;
   }
 
@@ -169,12 +193,66 @@ class PlatformApiClient {
     }
   }
 
-  Future<void> _writePlatformBestEffort(String payload) async {
+  Future<int?> _cachedPlatformStateVersion() async {
     final ReadSnapshotCache? cache = _cache;
     if (cache == null) {
+      return null;
+    }
+    return _cachedPlatformStateVersionFrom(cache);
+  }
+
+  Future<int?> _cachedPlatformStateVersionFrom(ReadSnapshotCache cache) async {
+    try {
+      final ReadSnapshotCacheEntry? entry = await cache.read(
+        ownerId: userId,
+        resource: ReadSnapshotResource.platform,
+        variant: cacheVariant,
+      );
+      if (entry == null) {
+        return null;
+      }
+      try {
+        final Map<String, dynamic> json = _requireJsonObject(
+          _decodeJsonLenient(entry.payload),
+          'Cached platform',
+        );
+        return PlatformSnapshot.fromJson(json).stateVersion;
+      } on Object {
+        await cache.remove(
+          ownerId: userId,
+          resource: ReadSnapshotResource.platform,
+          variant: cacheVariant,
+        );
+        return null;
+      }
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<void> _writePlatformBestEffort({
+    required String payload,
+    required int stateVersion,
+    required ReadSnapshotGenerationToken generationToken,
+    int? minimumStateVersion,
+  }) async {
+    final ReadSnapshotCache? cache = _cache;
+    if (cache == null || !isReadSnapshotGenerationCurrent(generationToken)) {
       return;
     }
     try {
+      final int? cachedStateVersion = await _cachedPlatformStateVersionFrom(
+        cache,
+      );
+      int requiredStateVersion = minimumStateVersion ?? -1;
+      if (cachedStateVersion != null &&
+          cachedStateVersion > requiredStateVersion) {
+        requiredStateVersion = cachedStateVersion;
+      }
+      if (stateVersion < requiredStateVersion ||
+          !isReadSnapshotGenerationCurrent(generationToken)) {
+        return;
+      }
       await cache.write(
         ownerId: userId,
         resource: ReadSnapshotResource.platform,
@@ -182,6 +260,9 @@ class PlatformApiClient {
         payload: payload,
         ttl: cacheTtl,
       );
+      if (!isReadSnapshotGenerationCurrent(generationToken)) {
+        await _removePayloadIfCurrent(cache: cache, payload: payload);
+      }
     } on Object {
       // Do not keep an older snapshot after a newer authoritative response.
       try {
@@ -194,6 +275,28 @@ class PlatformApiClient {
       } on Object {
         // A fresh response remains usable even when local storage is broken.
       }
+    }
+  }
+
+  Future<void> _removePayloadIfCurrent({
+    required ReadSnapshotCache cache,
+    required String payload,
+  }) async {
+    try {
+      final ReadSnapshotCacheEntry? current = await cache.read(
+        ownerId: userId,
+        resource: ReadSnapshotResource.platform,
+        variant: cacheVariant,
+      );
+      if (current?.payload == payload) {
+        await cache.remove(
+          ownerId: userId,
+          resource: ReadSnapshotResource.platform,
+          variant: cacheVariant,
+        );
+      }
+    } on Object {
+      // Best effort cleanup: never fail the successful network read.
     }
   }
 

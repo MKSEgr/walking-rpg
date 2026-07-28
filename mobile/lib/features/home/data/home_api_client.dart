@@ -62,6 +62,8 @@ class HomeApiClient {
 
   Future<HomeSnapshot> fetchHome(DateTime localDate) async {
     final String localDateIso = _formatLocalDate(localDate);
+    final ReadSnapshotGenerationToken cacheWriteToken =
+        captureReadSnapshotGeneration(userId);
     try {
       final Uri uri = baseUri
           .resolve('/api/v1/home')
@@ -87,6 +89,7 @@ class HomeApiClient {
       await _writeCacheBestEffort(
         variant: localDateIso,
         payload: jsonEncode(json),
+        generationToken: cacheWriteToken,
       );
       return snapshot;
     } on Object catch (error, stackTrace) {
@@ -149,9 +152,10 @@ class HomeApiClient {
   Future<void> _writeCacheBestEffort({
     required String variant,
     required String payload,
+    required ReadSnapshotGenerationToken generationToken,
   }) async {
     final ReadSnapshotCache? cache = _cache;
-    if (cache == null) {
+    if (cache == null || !isReadSnapshotGenerationCurrent(generationToken)) {
       return;
     }
     try {
@@ -162,6 +166,13 @@ class HomeApiClient {
         payload: payload,
         ttl: cacheTtl,
       );
+      if (!isReadSnapshotGenerationCurrent(generationToken)) {
+        await _removePayloadIfCurrent(
+          cache: cache,
+          variant: variant,
+          payload: payload,
+        );
+      }
     } on Object {
       // Do not keep an older snapshot after a newer authoritative response.
       try {
@@ -173,6 +184,29 @@ class HomeApiClient {
       } on Object {
         // A fresh response remains usable even when local storage is broken.
       }
+    }
+  }
+
+  Future<void> _removePayloadIfCurrent({
+    required ReadSnapshotCache cache,
+    required String variant,
+    required String payload,
+  }) async {
+    try {
+      final ReadSnapshotCacheEntry? current = await cache.read(
+        ownerId: userId,
+        resource: ReadSnapshotResource.home,
+        variant: variant,
+      );
+      if (current?.payload == payload) {
+        await cache.remove(
+          ownerId: userId,
+          resource: ReadSnapshotResource.home,
+          variant: variant,
+        );
+      }
+    } on Object {
+      // Best effort cleanup: never fail the successful network read.
     }
   }
 

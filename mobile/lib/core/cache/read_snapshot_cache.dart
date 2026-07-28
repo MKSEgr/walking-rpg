@@ -18,6 +18,21 @@ final class CachedReadMetadata {
   final String reason;
 }
 
+/// Captures the mutation generation that was current when a read request began.
+///
+/// A successful response may update the local read cache only while this token
+/// is still current. Every mutation advances the generation before touching
+/// the cache, so an older in-flight GET cannot recreate an invalidated entry.
+final class ReadSnapshotGenerationToken {
+  const ReadSnapshotGenerationToken._({
+    required this.ownerId,
+    required this.generation,
+  });
+
+  final String ownerId;
+  final int generation;
+}
+
 final class ReadSnapshotCacheEntry {
   const ReadSnapshotCacheEntry({
     required this.ownerId,
@@ -96,15 +111,36 @@ final class ReadSnapshotCacheEntry {
   }
 }
 
+final Map<String, int> _readSnapshotGenerations = <String, int>{};
+
+ReadSnapshotGenerationToken captureReadSnapshotGeneration(String ownerId) {
+  final String normalizedOwnerId = _normalizeOwnerId(ownerId);
+  return ReadSnapshotGenerationToken._(
+    ownerId: normalizedOwnerId,
+    generation: _readSnapshotGenerations[normalizedOwnerId] ?? 0,
+  );
+}
+
+bool isReadSnapshotGenerationCurrent(ReadSnapshotGenerationToken token) {
+  return (_readSnapshotGenerations[token.ownerId] ?? 0) == token.generation;
+}
+
 Future<void> invalidateReadSnapshotsBeforeMutation(
   ReadSnapshotCache? cache, {
   required String ownerId,
+  Set<ReadSnapshotResource>? resources,
 }) async {
+  final String normalizedOwnerId = _normalizeOwnerId(ownerId);
+  _readSnapshotGenerations[normalizedOwnerId] =
+      (_readSnapshotGenerations[normalizedOwnerId] ?? 0) + 1;
   if (cache == null) {
     return;
   }
   try {
-    await cache.invalidateOwner(ownerId: ownerId);
+    await cache.invalidateOwner(
+      ownerId: normalizedOwnerId,
+      resources: resources,
+    );
   } on Object catch (error, stackTrace) {
     Error.throwWithStackTrace(
       ReadSnapshotCacheException(
@@ -151,6 +187,14 @@ abstract interface class ReadSnapshotCache {
     required String ownerId,
     Set<ReadSnapshotResource>? resources,
   });
+}
+
+String _normalizeOwnerId(String value) {
+  final String normalized = value.trim();
+  if (normalized.isEmpty) {
+    throw ArgumentError.value(value, 'ownerId', 'Значение обязательно');
+  }
+  return normalized;
 }
 
 extension _FirstOrNull<T> on Iterable<T> {
