@@ -273,10 +273,7 @@ void main() {
     expect(controller.state, AuthLifecycleState.authenticated);
     expect(store.session?.tokens.accessToken, newerToken);
 
-    controller.rejectSession(
-      'current replay',
-      rejectedAccessToken: newerToken,
-    );
+    controller.rejectSession('current replay', rejectedAccessToken: newerToken);
     await _waitForState(
       controller,
       AuthLifecycleState.reauthenticationRequired,

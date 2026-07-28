@@ -107,10 +107,7 @@ final class _FakeTokenProvider implements AuthAccessTokenProvider {
   }
 
   @override
-  void rejectSession(
-    String reason, {
-    String? rejectedAccessToken,
-  }) {
+  void rejectSession(String reason, {String? rejectedAccessToken}) {
     rejectionReason = reason;
     this.rejectedAccessToken = rejectedAccessToken;
   }
