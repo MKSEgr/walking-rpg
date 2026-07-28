@@ -1,0 +1,46 @@
+name: One-shot mobile formatter
+
+on:
+  push:
+    branches:
+      - feat/mobile-oidc-session
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-mobile-formatter
+  cancel-in-progress: false
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/mobile-oidc-session
+          fetch-depth: 0
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.7"
+          channel: stable
+          cache: true
+
+      - name: Format changed Dart files
+        working-directory: mobile
+        run: |
+          dart format             lib/core/auth/auth_access_token_provider.dart             lib/core/auth/auth_session_controller.dart             test/auth_home_transport_test.dart             test/auth_session_controller_test.dart
+
+      - name: Remove one-shot workflow and publish
+        run: |
+          rm .github/workflows/one-shot-mobile-formatter.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add             .github/workflows/one-shot-mobile-formatter.yml             mobile/lib/core/auth/auth_access_token_provider.dart             mobile/lib/core/auth/auth_session_controller.dart             mobile/test/auth_home_transport_test.dart             mobile/test/auth_session_controller_test.dart
+          git commit -m "style(mobile): apply Dart formatting"
+          git push origin HEAD:feat/mobile-oidc-session
