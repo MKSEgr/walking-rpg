@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_access_token_provider.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
+import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
 
 void main() {
   test(
@@ -91,6 +94,62 @@ void main() {
     expect(provider.rejectionReason, isNotNull);
     expect(provider.rejectedAccessToken, 'access-new');
     expect(inner.requests, hasLength(2));
+  });
+
+  test('IO transport never follows an authenticated redirect', () async {
+    final HttpServer redirectTarget = await HttpServer.bind(
+      InternetAddress.loopbackIPv4,
+      0,
+    );
+    final HttpServer api = await HttpServer.bind(
+      InternetAddress.loopbackIPv4,
+      0,
+    );
+    addTearDown(() async {
+      await api.close(force: true);
+      await redirectTarget.close(force: true);
+    });
+
+    int targetRequests = 0;
+    redirectTarget.listen((HttpRequest request) async {
+      targetRequests += 1;
+      request.response.statusCode = HttpStatus.ok;
+      await request.response.close();
+    });
+    String? sourceAuthorization;
+    api.listen((HttpRequest request) async {
+      sourceAuthorization = request.headers.value(
+        HttpHeaders.authorizationHeader,
+      );
+      request.response.statusCode = HttpStatus.found;
+      request.response.headers.set(
+        HttpHeaders.locationHeader,
+        Uri(
+          scheme: 'http',
+          host: InternetAddress.loopbackIPv4.address,
+          port: redirectTarget.port,
+          path: '/redirected',
+        ).toString(),
+      );
+      await request.response.close();
+    });
+
+    const IoHomeTransport transport = IoHomeTransport();
+    final HomeTransportResponse response = await transport.get(
+      uri: Uri(
+        scheme: 'http',
+        host: InternetAddress.loopbackIPv4.address,
+        port: api.port,
+        path: '/start',
+      ),
+      headers: const <String, String>{
+        'Authorization': 'Bearer access-token',
+      },
+    );
+
+    expect(response.statusCode, HttpStatus.found);
+    expect(sourceAuthorization, 'Bearer access-token');
+    expect(targetRequests, 0);
   });
 }
 
