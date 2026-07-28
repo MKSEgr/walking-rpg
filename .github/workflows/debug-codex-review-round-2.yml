@@ -1,0 +1,91 @@
+name: Diagnose second Codex review cache fixes
+
+on:
+  push:
+    branches:
+      - feat/offline-read-cache
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diagnose-codex-review-round-2
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out review branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/offline-read-cache
+          fetch-depth: 0
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.7"
+          channel: stable
+          cache: true
+
+      - name: Reapply reviewed fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/apply-codex-review-round-2.yml').read_text(encoding='utf-8')
+          marker = "          python3 <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY\n", start)
+          lines = workflow[start:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines)
+          Path('/tmp/apply_codex_round_2.py').write_text(script + '\n', encoding='utf-8')
+          PY
+          python3 /tmp/apply_codex_round_2.py
+          rm -f .github/workflows/debug-codex-review-round-2.yml
+          dart format mobile/lib mobile/test
+          git diff --check
+
+      - name: Run Flutter diagnostics
+        id: diagnostics
+        working-directory: mobile
+        shell: bash
+        run: |
+          set +e
+          flutter pub get 2>&1 | tee /tmp/pub-get.log
+          PUB_STATUS=${PIPESTATUS[0]}
+          dart format --output=none --set-exit-if-changed lib test 2>&1 | tee /tmp/format.log
+          FORMAT_STATUS=${PIPESTATUS[0]}
+          flutter analyze --fatal-infos 2>&1 | tee /tmp/analyze.log
+          ANALYZE_STATUS=${PIPESTATUS[0]}
+          flutter test 2>&1 | tee /tmp/test.log
+          TEST_STATUS=${PIPESTATUS[0]}
+          {
+            echo "pub_status=$PUB_STATUS"
+            echo "format_status=$FORMAT_STATUS"
+            echo "analyze_status=$ANALYZE_STATUS"
+            echo "test_status=$TEST_STATUS"
+          } >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-review-round-2-diagnostics
+          path: |
+            /tmp/pub-get.log
+            /tmp/format.log
+            /tmp/analyze.log
+            /tmp/test.log
+          retention-days: 3
+
+      - name: Fail when diagnostics failed
+        if: steps.diagnostics.outputs.pub_status != '0' || steps.diagnostics.outputs.format_status != '0' || steps.diagnostics.outputs.analyze_status != '0' || steps.diagnostics.outputs.test_status != '0'
+        shell: bash
+        run: exit 1
