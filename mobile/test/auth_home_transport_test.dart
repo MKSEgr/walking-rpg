@@ -89,6 +89,7 @@ void main() {
     );
 
     expect(provider.rejectionReason, isNotNull);
+    expect(provider.rejectedAccessToken, 'access-new');
     expect(inner.requests, hasLength(2));
   });
 }
@@ -97,6 +98,7 @@ final class _FakeTokenProvider implements AuthAccessTokenProvider {
   int accessCalls = 0;
   int refreshCalls = 0;
   String? rejectionReason;
+  String? rejectedAccessToken;
 
   @override
   Future<String> accessToken() async {
@@ -105,8 +107,12 @@ final class _FakeTokenProvider implements AuthAccessTokenProvider {
   }
 
   @override
-  void rejectSession(String reason) {
+  void rejectSession(
+    String reason, {
+    String? rejectedAccessToken,
+  }) {
     rejectionReason = reason;
+    this.rejectedAccessToken = rejectedAccessToken;
   }
 
   @override
