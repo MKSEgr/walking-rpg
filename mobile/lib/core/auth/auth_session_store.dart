@@ -99,6 +99,7 @@ final class SecureAuthSessionStore implements AuthSessionStore {
           'Состояние владельца сессии повреждено. Сессия была отозвана.',
           cause: error,
           lastOwnerId: recoveredOwnerId,
+          cleanupRequired: recoveredOwnerId != null,
         ),
         stackTrace,
       );
@@ -144,6 +145,7 @@ final class SecureAuthSessionStore implements AuthSessionStore {
           'Маркер владельца не соответствует сохранённой сессии. '
           'Сессия была отозвана.',
           lastOwnerId: ownerId,
+          cleanupRequired: true,
         );
       }
       return AuthSessionStoreState(
@@ -155,12 +157,19 @@ final class SecureAuthSessionStore implements AuthSessionStore {
     } on AuthSessionStoreException {
       rethrow;
     } on Object catch (error, stackTrace) {
+      final String? ownerId = ownerState?.ownerId;
+      if (ownerId != null) {
+        await _writeOwnerStateBestEffort(
+          _OwnerState.invalidated(ownerId: ownerId, cleanupRequired: true),
+        );
+      }
       await _deleteBestEffort(storageKey);
       Error.throwWithStackTrace(
         AuthSessionStoreException(
           'Сохранённая сессия повреждена и была удалена',
           cause: error,
-          lastOwnerId: ownerState?.ownerId,
+          lastOwnerId: ownerId,
+          cleanupRequired: ownerId != null,
         ),
         stackTrace,
       );
@@ -555,11 +564,17 @@ final class _OwnerState {
 }
 
 final class AuthSessionStoreException implements Exception {
-  const AuthSessionStoreException(this.message, {this.cause, this.lastOwnerId});
+  const AuthSessionStoreException(
+    this.message, {
+    this.cause,
+    this.lastOwnerId,
+    this.cleanupRequired = false,
+  });
 
   final String message;
   final Object? cause;
   final String? lastOwnerId;
+  final bool cleanupRequired;
 
   @override
   String toString() => message;
