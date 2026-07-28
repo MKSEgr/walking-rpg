@@ -321,12 +321,21 @@ com.walkingrpg.app:/logout
 The `walking-rpg.user` scope is required by the backend's default JWT
 authority mapping for every `/api/v1/**` endpoint.
 
+Release-quality builds read optional repository variables
+`MOBILE_RELEASE_API_BASE_URL`, `MOBILE_RELEASE_OIDC_ISSUER`, and
+`MOBILE_RELEASE_OIDC_CLIENT_ID`. When they are absent, CI embeds reserved
+`.invalid` endpoints so unsigned technical artifacts remain configuration-valid
+without contacting a real identity system; production signing must provide the
+deployment values.
+
 Access, refresh and ID tokens are stored in Keychain/Android secure storage.
 A secure owner tombstone preserves account-switch cleanup across process restarts, and
 iOS disables URL disk caching before AppAuth starts. Only the Bearer transport may
 attach `Authorization`, and it refuses to send a
 token outside the configured API origin. A single 401 triggers one serialized
-refresh and one replay of the identical request. A second 401 requires an
+refresh and one replay of the identical request. Only OAuth `server_error`,
+`temporarily_unavailable`, and non-protocol platform failures are retried;
+permanent OAuth errors require reauthentication. A second 401 requires an
 interactive sign-in and leaves durable pending commands available for the same
 account.
 
