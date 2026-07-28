@@ -20,4 +20,11 @@ final class InMemoryMobileCommandStore implements MobileCommandStore {
   Future<void> save(List<MobileCommand> commands) async {
     _commands = <MobileCommand>[...commands];
   }
+
+  @override
+  Future<void> deleteOwner(String ownerId) async {
+    _commands = _commands
+        .where((MobileCommand command) => command.ownerId != ownerId)
+        .toList(growable: false);
+  }
 }

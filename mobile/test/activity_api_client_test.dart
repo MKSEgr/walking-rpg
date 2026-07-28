@@ -11,7 +11,7 @@ import 'support/in_memory_read_snapshot_cache.dart';
 
 void main() {
   test(
-    'client sends authoritative reading and maps successful response',
+    'client sends authoritative reading without client identity headers',
     () async {
       final _FakeTransport transport = _FakeTransport(
         HomeTransportResponse(
@@ -24,7 +24,6 @@ void main() {
       final ActivityApiClient client = ActivityApiClient(
         baseUri: Uri.parse('http://localhost:8080'),
         userId: 'user-1',
-        deviceId: 'device-1',
         transport: transport,
         cache: cache,
       );
@@ -40,8 +39,8 @@ void main() {
       );
 
       expect(transport.requestedUri?.path, '/api/v1/activity/sync');
-      expect(transport.requestedHeaders?['X-User-Id'], 'user-1');
-      expect(transport.requestedHeaders?['X-Device-Id'], 'device-1');
+      expect(transport.requestedHeaders?.containsKey('X-User-Id'), isFalse);
+      expect(transport.requestedHeaders?.containsKey('X-Device-Id'), isFalse);
       expect(transport.decodedBody?['localDate'], '2026-07-26');
       expect(transport.decodedBody?['timeZone'], 'Europe/Berlin');
       expect(transport.decodedBody?['authoritativeTotal'], 6842);
@@ -65,7 +64,6 @@ void main() {
       final ActivityApiClient client = ActivityApiClient(
         baseUri: Uri.parse('http://localhost:8080'),
         userId: 'user-1',
-        deviceId: 'device-1',
         transport: _FakeTransport(
           HomeTransportResponse(
             statusCode: 503,
@@ -109,7 +107,6 @@ void main() {
     final ActivityApiClient client = ActivityApiClient(
       baseUri: Uri.parse('http://localhost:8080'),
       userId: 'user-1',
-      deviceId: 'device-1',
       transport: transport,
       cache: cache,
     );
@@ -139,7 +136,6 @@ void main() {
     final ActivityApiClient client = ActivityApiClient(
       baseUri: Uri.parse('http://localhost:8080'),
       userId: 'user-1',
-      deviceId: 'device-1',
       transport: _FakeTransport(
         HomeTransportResponse(
           statusCode: 409,

@@ -1,11 +1,10 @@
 import 'dart:convert';
-
 import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
+import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
-import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
 
 class EventApiClient {
   factory EventApiClient({
@@ -47,7 +46,7 @@ class EventApiClient {
     return EventApiClient(
       baseUri: Uri.parse(AppEnvironment.apiBaseUrl),
       userId: AppEnvironment.demoUserId,
-      transport: const IoHomeTransport(),
+      transport: DevelopmentHeaderHomeTransport.fromEnvironment(),
       cache: FileReadSnapshotCache.fromEnvironment(),
     );
   }
@@ -81,7 +80,6 @@ class EventApiClient {
       headers: <String, String>{
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'X-User-Id': userId,
       },
       body: jsonEncode(<String, Object>{
         'choiceId': normalizedChoiceId,

@@ -40,6 +40,25 @@ final class FileMobileCommandStore implements MobileCommandStore {
     return _lock.run<void>(() => _saveUnlocked(commands));
   }
 
+  @override
+  Future<void> deleteOwner(String ownerId) {
+    final String normalizedOwnerId = ownerId.trim();
+    if (normalizedOwnerId.isEmpty) {
+      throw ArgumentError.value(ownerId, 'ownerId', 'Значение обязательно');
+    }
+    return _lock.run<void>(() async {
+      final List<MobileCommand> commands = await _loadUnlocked();
+      final List<MobileCommand> retained = commands
+          .where(
+            (MobileCommand command) => command.ownerId != normalizedOwnerId,
+          )
+          .toList(growable: false);
+      if (retained.length != commands.length) {
+        await _saveUnlocked(retained);
+      }
+    });
+  }
+
   Future<List<MobileCommand>> _loadUnlocked() async {
     final Directory directory = await _directoryProvider();
     await directory.create(recursive: true);

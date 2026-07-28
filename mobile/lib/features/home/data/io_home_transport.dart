@@ -38,6 +38,9 @@ class IoHomeTransport implements HomeTransport {
       final HttpClientRequest request = await client
           .openUrl(method, uri)
           .timeout(timeout);
+      // Redirects are returned to the caller. Following them inside this
+      // low-level transport could carry a Bearer token to a different origin.
+      request.followRedirects = false;
       headers.forEach(
         (String name, String value) => request.headers.set(name, value),
       );

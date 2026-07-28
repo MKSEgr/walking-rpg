@@ -92,3 +92,13 @@ Roadmap отражает снижение рисков. Статусы:
 - документация и API соответствуют коду;
 - временных transport-файлов нет;
 - внешние gates имеют protocol/checklist/evidence и не отмечены ложным `VALIDATED`.
+
+### Mobile OIDC session lifecycle
+
+- [x] Authorization Code + PKCE boundary and secure token storage.
+- [x] Bearer-only same-origin transport with one refresh/retry after 401.
+- [x] Reauthentication, account switching and owner-scoped local cleanup.
+- [x] Runtime shutdown barrier before logout cleanup.
+- [ ] Configure the production identity provider, client, issuer, audience and
+      signed `device_id` claim in the deployment environment.
+- [ ] Validate login, refresh and logout on physical Android/iOS devices.

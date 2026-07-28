@@ -203,3 +203,11 @@ CI не хранит signing material и не выдаёт неподписан�
 ## 14. Branch protection
 
 Feature-ветки обновляет `serbin70`; `master` защищён ruleset и CODEOWNERS. Merge выполняет `MKSEgr` после CI/review через `Squash and merge`. Подробности: `BRANCH_PROTECTION.md`.
+
+### Mobile OIDC session boundary
+
+The mobile client is a public OAuth/OIDC client. It uses Authorization Code +
+PKCE, stores tokens only in platform secure storage, and derives an opaque local
+owner partition from canonical `issuer + subject`. API clients never accept or
+send user/device identity headers in OIDC mode; backend identity comes only from
+the validated access token. See ADR 0018.

@@ -166,6 +166,7 @@ Android Emulator:
 ```bash
 flutter pub get
 flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
   --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
   --dart-define=DEMO_USER_ID=demo-user-1 \
   --dart-define=DEMO_DEVICE_ID=android-emulator-1
@@ -176,6 +177,7 @@ iOS Simulator:
 ```bash
 flutter pub get
 flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
   --dart-define=API_BASE_URL=http://127.0.0.1:8080 \
   --dart-define=DEMO_USER_ID=demo-user-1 \
   --dart-define=DEMO_DEVICE_ID=ios-simulator-1
@@ -187,6 +189,7 @@ flutter run \
 
 ```bash
 flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
   --dart-define=API_BASE_URL=http://192.168.1.10:8080 \
   --dart-define=DEMO_USER_ID=demo-user-1 \
   --dart-define=DEMO_DEVICE_ID=my-phone
@@ -196,6 +199,7 @@ flutter run \
 
 ```bash
 flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
   --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
   --dart-define=DEMO_USER_ID=demo-user-1 \
   --dart-define=DEMO_DEVICE_ID=demo-device-1 \
@@ -293,3 +297,56 @@ Unit/widget tests покрывают:
 - повтор после переустановки приложения;
 - реальное потребление батареи;
 - тексты privacy rationale перед публикацией.
+
+## Production authentication
+
+Production mobile builds use `MOBILE_AUTH_MODE=oidc` and the Authorization Code
+flow with PKCE. Required build-time values:
+
+```bash
+--dart-define=MOBILE_AUTH_MODE=oidc
+--dart-define=API_BASE_URL=https://api.example.com
+--dart-define=OIDC_ISSUER=https://identity.example.com/realms/walking-rpg
+--dart-define=OIDC_CLIENT_ID=walking-rpg-mobile
+--dart-define=OIDC_SCOPES="openid profile offline_access walking-rpg.user"
+```
+
+The registered redirect URIs are:
+
+```text
+com.walkingrpg.app:/oauthredirect
+com.walkingrpg.app:/logout
+```
+
+The `walking-rpg.user` scope is required by the backend's default JWT
+authority mapping for every `/api/v1/**` endpoint.
+
+Release-quality builds read optional repository variables
+`MOBILE_RELEASE_API_BASE_URL`, `MOBILE_RELEASE_OIDC_ISSUER`, and
+`MOBILE_RELEASE_OIDC_CLIENT_ID`. When they are absent, CI embeds reserved
+`.invalid` endpoints so unsigned technical artifacts remain configuration-valid
+without contacting a real identity system; production signing must provide the
+deployment values.
+
+Access, refresh and ID tokens are stored in Keychain/Android secure storage.
+A secure owner tombstone preserves account-switch cleanup across process restarts, and
+iOS disables URL disk caching before AppAuth starts. Only the Bearer transport may
+attach `Authorization`, and it refuses to send a
+token outside the configured API origin. A single 401 triggers one serialized
+refresh and one replay of the identical request. Only OAuth `server_error`,
+`temporarily_unavailable`, and non-protocol platform failures are retried;
+permanent OAuth errors require reauthentication. A second 401 requires an
+interactive sign-in and leaves durable pending commands available for the same
+account.
+
+Local header authentication remains available only in non-release builds:
+
+```bash
+--dart-define=MOBILE_AUTH_MODE=development
+--dart-define=API_BASE_URL=http://10.0.2.2:8080
+--dart-define=DEMO_USER_ID=demo-user-1
+--dart-define=DEMO_DEVICE_ID=android-emulator-1
+```
+
+Explicit logout waits for admitted command work to finish, then clears the
+current account's read cache, durable command outbox and secure token set.

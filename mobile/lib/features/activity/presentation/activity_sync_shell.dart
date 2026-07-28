@@ -16,11 +16,19 @@ class ActivitySyncShell extends StatefulWidget {
     this.synchronizer,
     this.homeBuilder,
     this.commandRuntime,
+    this.homeLoader,
+    this.platformLoader,
+    this.platformHomeLoader,
+    this.onOpenAccount,
   });
 
   final ActivitySynchronizer? synchronizer;
   final ActivityHomeBuilder? homeBuilder;
   final MobileCommandRuntime? commandRuntime;
+  final HomeSnapshotLoader? homeLoader;
+  final PlatformSnapshotLoader? platformLoader;
+  final PlatformHomeLoader? platformHomeLoader;
+  final VoidCallback? onOpenAccount;
 
   @override
   State<ActivitySyncShell> createState() => _ActivitySyncShellState();
@@ -104,11 +112,15 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     return MainNavigationShell(
       home: HomeScreen(
         key: ValueKey<String>('home-$_homeGeneration'),
+        loader: widget.homeLoader,
         advancer: runtime?.advance,
         eventResolver: runtime?.resolve,
+        onOpenAccount: widget.onOpenAccount,
       ),
       platform: PlatformScreen(
         key: ValueKey<String>('platform-$_platformGeneration'),
+        loader: widget.platformLoader,
+        homeLoader: widget.platformHomeLoader,
         commandExecutor: runtime?.executePlatform,
         onServerStateChanged: _handlePlatformStateChanged,
       ),
@@ -118,6 +130,14 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
 
   void _configureSynchronizer() {
     final ActivitySynchronizer? injected = widget.synchronizer;
+    if (widget.homeBuilder != null &&
+        widget.commandRuntime == null &&
+        injected == null) {
+      _commandRuntime = null;
+      _synchronizer = null;
+      _buttonLabel = null;
+      return;
+    }
     if (injected != null) {
       _commandRuntime = widget.commandRuntime;
       _synchronizer = injected;

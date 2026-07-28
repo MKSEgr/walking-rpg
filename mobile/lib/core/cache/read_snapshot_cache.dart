@@ -129,6 +129,34 @@ Future<void> invalidateReadSnapshotsBeforeMutation(
   ReadSnapshotCache? cache, {
   required String ownerId,
   Set<ReadSnapshotResource>? resources,
+}) {
+  return _advanceGenerationAndInvalidate(
+    cache,
+    ownerId: ownerId,
+    resources: resources,
+    failureMessage:
+        'Не удалось безопасно очистить локальное состояние перед отправкой команды',
+  );
+}
+
+Future<void> clearReadSnapshotsForOwner(
+  ReadSnapshotCache? cache, {
+  required String ownerId,
+  Set<ReadSnapshotResource>? resources,
+}) {
+  return _advanceGenerationAndInvalidate(
+    cache,
+    ownerId: ownerId,
+    resources: resources,
+    failureMessage: 'Не удалось очистить локальные snapshots пользователя',
+  );
+}
+
+Future<void> _advanceGenerationAndInvalidate(
+  ReadSnapshotCache? cache, {
+  required String ownerId,
+  required String failureMessage,
+  Set<ReadSnapshotResource>? resources,
 }) async {
   final String normalizedOwnerId = _normalizeOwnerId(ownerId);
   _readSnapshotGenerations[normalizedOwnerId] =
@@ -143,10 +171,7 @@ Future<void> invalidateReadSnapshotsBeforeMutation(
     );
   } on Object catch (error, stackTrace) {
     Error.throwWithStackTrace(
-      ReadSnapshotCacheException(
-        'Не удалось безопасно очистить локальное состояние перед отправкой команды',
-        cause: error,
-      ),
+      ReadSnapshotCacheException(failureMessage, cause: error),
       stackTrace,
     );
   }
