@@ -16,6 +16,7 @@ import com.walkingrpg.backend.inventory.infrastructure.InMemoryInventoryReposito
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import com.walkingrpg.backend.progression.infrastructure.InMemoryProgressionRepository;
+import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,6 @@ class EventResolutionControllerTest {
     @Test
     void shouldResolveFirstEventAndReturnSecondNodeTransition() throws Exception {
         mockMvc.perform(post("/api/v1/events/signal-source-v1/resolve")
-                        .header(EventResolutionController.USER_HEADER, "user-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -81,7 +81,6 @@ class EventResolutionControllerTest {
         ));
 
         secondEventMockMvc.perform(post("/api/v1/events/echo-vault-v1/resolve")
-                        .header(EventResolutionController.USER_HEADER, "user-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -101,7 +100,6 @@ class EventResolutionControllerTest {
     @Test
     void shouldRejectUnknownChoiceWithStableValidationError() throws Exception {
         mockMvc.perform(post("/api/v1/events/signal-source-v1/resolve")
-                        .header(EventResolutionController.USER_HEADER, "user-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -137,7 +135,8 @@ class EventResolutionControllerTest {
         );
         EventResolutionController controller = new EventResolutionController(
                 new EventResolutionCommandFactory(),
-                service
+                service,
+                FixedRequestIdentityProvider.user("user-1")
         );
         return MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new ApiExceptionHandler())

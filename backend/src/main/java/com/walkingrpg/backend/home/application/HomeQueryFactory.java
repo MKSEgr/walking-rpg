@@ -11,7 +11,7 @@ public class HomeQueryFactory {
 
     public HomeQuery create(String userId, String localDate) {
         return new HomeQuery(
-                requireText(userId, "X-User-Id", 128),
+                requireText(userId, "userId", 128),
                 parseLocalDate(localDate)
         );
     }

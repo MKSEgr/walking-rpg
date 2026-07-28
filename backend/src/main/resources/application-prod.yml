@@ -1,0 +1,14 @@
+walking-rpg:
+  security:
+    mode: jwt
+    demo-endpoints-enabled: false
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}
+          jwk-set-uri: ${OIDC_JWK_SET_URI}
+          audiences:
+            - ${OIDC_AUDIENCE}

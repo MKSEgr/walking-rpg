@@ -18,7 +18,8 @@
 ## 2. Backend-модули
 
 ```text
-identity       — технические пользователи и устройства
+security       — OIDC/JWT resource server, authorities и request identity
+identity       — runtime users и pseudonymous device/session keys
 activity       — cumulative activity, high-watermark и retention
 goal           — персональная дневная цель
 economy        — wallet и append-only ledger
@@ -125,8 +126,28 @@ activity_risk_assessment
 8. Process restart не меняет pending payload/key.
 9. Platform command first response равен replayed response.
 10. Risk engine работает в shadow mode до внешней калибровки.
+11. User/device/actor не принимаются контроллерами из произвольных headers или body в production.
+12. Валидный JWT без прикладной `ROLE_USER`/`ROLE_ADMIN` не даёт доступ к API.
 
-## 10. Health boundary
+## 10. Identity и authorization boundary
+
+```text
+OIDC access token
+→ signature + issuer + audience + expiration validation
+→ sub = canonical userId
+→ configurable role/scope claims
+→ ROLE_USER / ROLE_ADMIN
+→ RequestIdentity from SecurityContext
+→ controller/application command
+```
+
+Базовый режим backend — `jwt`; demo endpoint выключен. `dev-header` существует только в явных `local`/`test` профилях и изолирует технические headers внутри одного filter-а. В production `/api/v1/admin/**` требует `ROLE_ADMIN`, остальные защищённые `/api/v1/**` — `ROLE_USER`.
+
+Activity device identity получается из подписанного session/device claim и хранится как SHA-256 pseudonym. Произвольный `X-Device-Id` в JWT mode игнорируется. Публичными остаются только health/system info/content bootstrap и anonymous telemetry/crash ingestion.
+
+Mobile Authorization Code + PKCE, secure token storage, refresh и logout являются следующим отдельным срезом. Подробности: `docs/adr/0017-production-authentication-boundary.md`.
+
+## 11. Health boundary
 
 ```text
 StepSource
@@ -139,7 +160,7 @@ StepSource
 
 Только `STEPS READ`, local midnight → now, IANA timezone и foreground/manual sync. Resume fallback не выдаётся за гарантированную background delivery. Физическая матрица описана в `DEVICE_VALIDATION_PROTOCOL.md`.
 
-## 11. Offline read model
+## 12. Offline read model
 
 ```text
 server GET /home|platform success
@@ -155,7 +176,7 @@ Read cache не хранит неподтверждённые изменения
 
 Подробности: `docs/adr/0016-offline-read-cache.md`.
 
-## 12. Release-quality model
+## 13. Release-quality model
 
 ```text
 Standard CI
@@ -179,6 +200,6 @@ Protected external environment
 
 CI не хранит signing material и не выдаёт неподписанный candidate за публикуемый build. Device, push, payment, beta и store gates получают статус `VALIDATED` только после evidence.
 
-## 13. Branch protection
+## 14. Branch protection
 
 Feature-ветки обновляет `serbin70`; `master` защищён ruleset и CODEOWNERS. Merge выполняет `MKSEgr` после CI/review через `Squash and merge`. Подробности: `BRANCH_PROTECTION.md`.

@@ -22,12 +22,33 @@ for file in \
   docs/CLOSED_BETA_RUNBOOK.md \
   docs/BRANCH_PROTECTION.md \
   docs/adr/0015-release-quality-and-external-gates.md \
+  docs/adr/0017-production-authentication-boundary.md \
+  backend/src/main/resources/application-local.yml \
+  backend/src/main/resources/application-prod.yml \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh; do
   [ -f "$file" ] || fail "missing $file"
 done
 
 grep -Eq '^\* +@MKSEgr$' .github/CODEOWNERS || fail 'CODEOWNERS must assign all files to @MKSEgr'
+
+printf '%s\n' 'Checking authentication boundary...'
+grep -Fq 'spring-boot-starter-security' backend/pom.xml || fail 'Spring Security starter is required'
+grep -Fq 'spring-boot-starter-oauth2-resource-server' backend/pom.xml || fail 'OAuth2 resource server starter is required'
+grep -Fq 'mode: ${AUTH_MODE:jwt}' backend/src/main/resources/application.yml || fail 'default authentication mode must fail closed as jwt'
+grep -Fq 'demo-endpoints-enabled: ${DEMO_ENDPOINTS_ENABLED:false}' backend/src/main/resources/application.yml || fail 'demo endpoint must be disabled by default'
+grep -Fq 'private Mode mode = Mode.JWT;' backend/src/main/java/com/walkingrpg/backend/security/WalkingRpgSecurityProperties.java || fail 'security properties must fail closed as jwt'
+grep -Eq '^[[:space:]]+mode: jwt$' backend/src/main/resources/application-prod.yml || fail 'production profile must use jwt mode'
+grep -Eq '^[[:space:]]+demo-endpoints-enabled: false$' backend/src/main/resources/application-prod.yml || fail 'production profile must disable demo endpoints'
+grep -Eq '^[[:space:]]+mode: dev-header$' backend/src/main/resources/application-local.yml || fail 'local profile must explicitly opt into dev-header mode'
+grep -Fq 'matchIfMissing = false' backend/src/main/java/com/walkingrpg/backend/home/api/DemoHomeController.java || fail 'demo endpoint must be fail closed when the property is missing'
+
+IDENTITY_HEADER_MATCHES=$(grep -RInE 'X-User-Id|X-Device-Id|X-Mock-User|X-Mock-Authorities' backend/src/main/java 2>/dev/null || true)
+IDENTITY_HEADER_OUTSIDE_FILTER=$(printf '%s\n' "$IDENTITY_HEADER_MATCHES" | grep -v 'backend/src/main/java/com/walkingrpg/backend/security/DevHeaderAuthenticationFilter.java' || true)
+if [ -n "$IDENTITY_HEADER_OUTSIDE_FILTER" ]; then
+  printf '%s\n' "$IDENTITY_HEADER_OUTSIDE_FILTER" >&2
+  fail 'identity headers are allowed only inside the explicit dev filter'
+fi
 
 printf '%s\n' 'Checking temporary transport files...'
 if find .github -type f \( -name '*overlay*' -o -name 'export-*-source.yml' -o -name 'apply-*.yml' -o -name '*ci-trigger*' \) -print | grep -q .; then

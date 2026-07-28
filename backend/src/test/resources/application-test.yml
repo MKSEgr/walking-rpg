@@ -1,0 +1,4 @@
+walking-rpg:
+  security:
+    mode: dev-header
+    demo-endpoints-enabled: true

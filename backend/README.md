@@ -7,6 +7,7 @@ Java/Spring Boot backend walking-RPG.
 - Java 21
 - Spring Boot 4.1.x
 - Spring MVC
+- Spring Security / OAuth2 Resource Server
 - Bean Validation
 - Spring JDBC
 - PostgreSQL 17
@@ -38,7 +39,7 @@ Activity sync сериализуется advisory transaction lock по поль
 ```bash
 docker compose up -d postgres
 cd backend
-./mvnw spring-boot:run
+SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 ```
 
 Windows:
@@ -46,6 +47,7 @@ Windows:
 ```powershell
 docker compose up -d postgres
 cd backend
+$env:SPRING_PROFILES_ACTIVE = "local"
 .\mvnw.cmd spring-boot:run
 ```
 
@@ -119,12 +121,33 @@ POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
 ```
 
-До появления authentication используются временные заголовки:
+## Authentication
+
+Backend по умолчанию запускается fail-closed в режиме `jwt`. Production identity берётся только из проверенного OIDC access token:
+
+```http
+Authorization: Bearer <access-token>
+```
+
+- `sub` → канонический `userId`;
+- `preferred_username` (настраивается) → audit actor;
+- role/scope claims → `ROLE_USER` и `ROLE_ADMIN`;
+- подписанный device/session claim → хэшированный `deviceId` для activity sync;
+- `/api/v1/admin/**` требует `ROLE_ADMIN`;
+- остальные защищённые `/api/v1/**` требуют `ROLE_USER`.
+
+Локальный профиль `local` явно включает `dev-header`. Только в этом режиме разрешены:
 
 ```text
 X-User-Id
-X-Device-Id  # только activity sync
+X-Device-Id
+X-Mock-User
+X-Mock-Authorities
 ```
+
+`application-prod.yml` принудительно включает JWT и отключает demo endpoint. Для production нужны `OIDC_ISSUER_URI`, `OIDC_JWK_SET_URI` и `OIDC_AUDIENCE`. Полная модель зафиксирована в `docs/adr/0017-production-authentication-boundary.md`.
+
+Следующие curl-примеры предназначены для локального профиля `local`.
 
 ### Синхронизация шагов
 
@@ -220,7 +243,7 @@ curl -X POST \
 ## Что сохраняется
 
 ```text
-app_user                       — временная identity
+app_user                       — canonical OIDC subject и runtime user state
 app_device                     — устройство пользователя
 activity_sync_state            — дневной accepted total
 processed_activity_sync        — idempotent activity/economy response
@@ -250,7 +273,7 @@ inventory_ledger                — append-only material reward journal
 
 ## Текущие ограничения
 
-- заголовки пользователя и устройства временные;
+- mobile OIDC login/refresh/logout и secure token storage ещё не подключены;
 - attestation не проверяется;
 - одна экспедиция с двумя узлами и двумя событиями;
 - content definition хранится в коде;

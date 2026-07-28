@@ -3,6 +3,7 @@
 Roadmap отражает снижение рисков. Статусы:
 
 - `[x] CODE_COMPLETE` — реализовано и проверяется CI;
+- `[ ] CODE_PENDING` — остаётся автономная программная работа;
 - `[ ] EXTERNAL_VALIDATION_REQUIRED` — нужен девайс, credential, магазин или реальные пользователи;
 - `VALIDATED` ставится только при наличии датированного evidence.
 
@@ -66,6 +67,7 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Anti-fraud admin read model
 - [x] Economy simulation/tests
 - [x] Export/delete account
+- [x] Backend OIDC/JWT boundary: issuer/audience validation, canonical `sub`, user/admin authorization и dev-header isolation
 - [x] Privacy/store declarations draft
 - [x] Tester cohort/admin support и closed-beta runbook
 - [ ] 50–500 фактических тестировщиков — EXTERNAL_VALIDATION_REQUIRED
@@ -77,6 +79,8 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Payment-provider boundary + sandbox provider
 - [x] A/B assignment и exposure logging
 - [x] Release candidate CI и store review checklist
+- [ ] Mobile OIDC Authorization Code + PKCE, secure session storage, refresh и logout — CODE_PENDING
+- [ ] Production identity-provider client/redirect configuration — EXTERNAL_VALIDATION_REQUIRED
 - [ ] Production APNs/FCM — EXTERNAL_VALIDATION_REQUIRED
 - [ ] App Store / Google Play billing — EXTERNAL_VALIDATION_REQUIRED
 - [ ] Production signing/submission/review — EXTERNAL_VALIDATION_REQUIRED

@@ -14,6 +14,7 @@ import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.application.StarterHomeContent;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
+import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,8 @@ class HomeControllerTest {
         );
         HomeController controller = new HomeController(
                 new HomeQueryFactory(),
-                service
+                service,
+                FixedRequestIdentityProvider.user("user-1")
         );
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new ApiExceptionHandler())
@@ -79,7 +81,6 @@ class HomeControllerTest {
     @Test
     void shouldReturnProductionHomeSnapshot() throws Exception {
         mockMvc.perform(get("/api/v1/home")
-                        .header(HomeController.USER_HEADER, "user-1")
                         .queryParam("localDate", "2026-07-25"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.localDate").value("2026-07-25"))
@@ -112,7 +113,6 @@ class HomeControllerTest {
     @Test
     void shouldRejectInvalidDateWithStableError() throws Exception {
         mockMvc.perform(get("/api/v1/home")
-                        .header(HomeController.USER_HEADER, "user-1")
                         .queryParam("localDate", "25.07.2026"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
@@ -120,13 +120,4 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
     }
 
-    @Test
-    void shouldRejectBlankUserHeader() throws Exception {
-        mockMvc.perform(get("/api/v1/home")
-                        .header(HomeController.USER_HEADER, " ")
-                        .queryParam("localDate", "2026-07-25"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.details.field").value("X-User-Id"));
-    }
 }

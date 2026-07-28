@@ -4,10 +4,11 @@ import com.walkingrpg.backend.activity.application.ActivitySyncCommandFactory;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.activity.domain.ActivitySyncResult;
+import com.walkingrpg.backend.security.RequestIdentity;
+import com.walkingrpg.backend.security.RequestIdentityProvider;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,28 +16,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/activity")
 public class ActivitySyncController {
 
-    static final String USER_HEADER = "X-User-Id";
-    static final String DEVICE_HEADER = "X-Device-Id";
-
     private final ActivitySyncCommandFactory commandFactory;
     private final ActivitySyncService activitySyncService;
+    private final RequestIdentityProvider identityProvider;
 
     public ActivitySyncController(
             ActivitySyncCommandFactory commandFactory,
-            ActivitySyncService activitySyncService
+            ActivitySyncService activitySyncService,
+            RequestIdentityProvider identityProvider
     ) {
         this.commandFactory = commandFactory;
         this.activitySyncService = activitySyncService;
+        this.identityProvider = identityProvider;
     }
 
     @PostMapping("/sync")
     public ActivitySyncResponse sync(
-            @RequestHeader(USER_HEADER) String userId,
-            @RequestHeader(DEVICE_HEADER) String deviceId,
             @Valid @RequestBody ActivitySyncRequest request
     ) {
+        RequestIdentity identity = identityProvider.requireIdentity();
         ActivitySyncOutcome outcome = activitySyncService.synchronize(
-                commandFactory.create(userId, deviceId, request)
+                commandFactory.create(
+                        identity.userId(),
+                        identity.requireDeviceId(),
+                        request
+                )
         );
         ActivitySyncResult result = outcome.activity();
 

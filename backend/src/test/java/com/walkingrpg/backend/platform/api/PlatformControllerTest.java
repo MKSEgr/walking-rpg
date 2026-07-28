@@ -8,6 +8,7 @@ import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictEx
 import com.walkingrpg.backend.platform.application.PlatformService;
 import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
 import com.walkingrpg.backend.platform.application.PlatformValidationException;
+import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,10 @@ class PlatformControllerTest {
     @BeforeEach
     void setUp() {
         service = mock(PlatformService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new PlatformController(service))
+        mockMvc = MockMvcBuilders.standaloneSetup(new PlatformController(
+                        service,
+                        FixedRequestIdentityProvider.user("user-1")
+                ))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();
     }
@@ -50,8 +54,7 @@ class PlatformControllerTest {
                 NOW
         ));
 
-        mockMvc.perform(get("/api/v1/platform")
-                        .header(PlatformController.USER_HEADER, "user-1"))
+        mockMvc.perform(get("/api/v1/platform"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.contentVersion").value("chapter-1-v1"))
                 .andExpect(jsonPath("$.stateVersion").value(3))
@@ -106,18 +109,8 @@ class PlatformControllerTest {
     }
 
     @Test
-    void shouldRejectMissingUserHeader() throws Exception {
-        mockMvc.perform(get("/api/v1/platform"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.details.field").value("X-User-Id"))
-                .andExpect(jsonPath("$.traceId").isNotEmpty());
-    }
-
-    @Test
     void shouldRejectInvalidCommandBody() throws Exception {
         mockMvc.perform(post("/api/v1/platform/commands")
-                        .header(PlatformController.USER_HEADER, "user-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -179,7 +172,6 @@ class PlatformControllerTest {
             String payloadJson
     ) throws Exception {
         return mockMvc.perform(post("/api/v1/platform/commands")
-                .header(PlatformController.USER_HEADER, "user-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
