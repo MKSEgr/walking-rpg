@@ -493,7 +493,11 @@ void main() {
       controller.registerRuntimeStopper(() => stopped.future);
 
       final Future<void> logout = controller.logout();
-      for (int attempt = 0; attempt < 20 && store.clearSessionCalls < 2; attempt++) {
+      for (
+        int attempt = 0;
+        attempt < 20 && store.clearSessionCalls < 2;
+        attempt++
+      ) {
         await Future<void>.delayed(Duration.zero);
       }
 
@@ -510,42 +514,45 @@ void main() {
     },
   );
 
-  test('restore failure carries cleanupRequired into same-account sign-in', () async {
-    final OidcConfiguration oidc = _oidc();
-    final AuthSession previous = _session(
-      oidc,
-      subject: 'user-1',
-      expiresAt: _future,
-    );
-    final _MemorySessionStore store = _MemorySessionStore(
-      null,
-      readError: AuthSessionStoreException(
-        'corrupt restored session',
-        lastOwnerId: previous.identity.ownerId,
-        cleanupRequired: true,
-      ),
-    );
-    final _RecordingCleaner cleaner = _RecordingCleaner();
-    final AuthSessionController controller = _controller(
-      oidc: oidc,
-      store: store,
-      cleaner: cleaner,
-      client: _FakeOidcClient(
-        authorizeResponse: _response(
-          oidc,
-          subject: 'user-1',
-          accessTokenSuffix: 'replacement',
-          expiresAt: _future,
+  test(
+    'restore failure carries cleanupRequired into same-account sign-in',
+    () async {
+      final OidcConfiguration oidc = _oidc();
+      final AuthSession previous = _session(
+        oidc,
+        subject: 'user-1',
+        expiresAt: _future,
+      );
+      final _MemorySessionStore store = _MemorySessionStore(
+        null,
+        readError: AuthSessionStoreException(
+          'corrupt restored session',
+          lastOwnerId: previous.identity.ownerId,
+          cleanupRequired: true,
         ),
-      ),
-    );
+      );
+      final _RecordingCleaner cleaner = _RecordingCleaner();
+      final AuthSessionController controller = _controller(
+        oidc: oidc,
+        store: store,
+        cleaner: cleaner,
+        client: _FakeOidcClient(
+          authorizeResponse: _response(
+            oidc,
+            subject: 'user-1',
+            accessTokenSuffix: 'replacement',
+            expiresAt: _future,
+          ),
+        ),
+      );
 
-    await controller.initialize();
-    await controller.signIn();
+      await controller.initialize();
+      await controller.signIn();
 
-    expect(cleaner.clearedOwners, <String>[previous.identity.ownerId]);
-    expect(controller.state, AuthLifecycleState.authenticated);
-  });
+      expect(cleaner.clearedOwners, <String>[previous.identity.ownerId]);
+      expect(controller.state, AuthLifecycleState.authenticated);
+    },
+  );
 
   test('signIn is ignored while an authenticated runtime is active', () async {
     final OidcConfiguration oidc = _oidc();

@@ -142,9 +142,7 @@ void main() {
         port: api.port,
         path: '/start',
       ),
-      headers: const <String, String>{
-        'Authorization': 'Bearer access-token',
-      },
+      headers: const <String, String>{'Authorization': 'Bearer access-token'},
     );
 
     expect(response.statusCode, HttpStatus.found);
