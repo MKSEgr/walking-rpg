@@ -1,6 +1,5 @@
 package com.walkingrpg.backend.security;
 
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -110,7 +109,7 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
     }
 
     private String requireIssuer(Jwt jwt) {
-        URI issuer = jwt.getIssuer();
+        var issuer = jwt.getIssuer();
         if (issuer == null) {
             throw new AuthenticationCredentialsNotFoundException(
                     "JWT не содержит обязательный claim iss для device identity"
