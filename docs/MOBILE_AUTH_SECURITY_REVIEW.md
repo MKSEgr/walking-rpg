@@ -19,6 +19,7 @@ This review records the invariants required before the mobile OIDC session slice
 - Explicit logout persists both invalidation and the pending local-cleanup obligation before waiting for runtime shutdown.
 - Partial local cleanup is persisted and retried after process restart.
 - Failed invalidation retries never delete an already-persisted tombstone.
+- Token-envelope deletion runs even when a tombstone write fails.
 - Restore errors carry the pending cleanup obligation into the next sign-in.
 - The owner marker and token envelope carry the same random generation; any
   missing or mismatched record fails closed and requires reauthentication.
@@ -37,4 +38,4 @@ This review records the invariants required before the mobile OIDC session slice
 - Account switching clears the previous owner before activating the new session.
 - Explicit logout waits for admitted command work, then clears owner-scoped snapshots, commands, and secure tokens.
 
-The automated suite covers session restore, concurrent refresh, invalid grant, logout ordering, failed tombstone deletion, forced reauthentication ordering, refresh/logout races, account switching, runtime shutdown, exact identity matching, redirect rejection, same-origin transport behavior, and stale repeated-401 rejection.
+The automated suite covers session restore, concurrent refresh, invalid grant, logout ordering, failed tombstone writes and deletion, forced reauthentication ordering, refresh/logout races, account switching, runtime shutdown, exact identity matching, redirect rejection, same-origin transport behavior, and stale repeated-401 rejection.
