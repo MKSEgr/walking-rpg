@@ -405,7 +405,7 @@ final class AuthSessionController extends ChangeNotifier
           refreshed,
           sessionGeneration: sessionGeneration,
         );
-      } on AuthSessionStoreException catch (error) {
+      } on Object catch (error) {
         if (!_isCurrentSession(
           session,
           generation: generation,
@@ -413,6 +413,8 @@ final class AuthSessionController extends ChangeNotifier
         )) {
           throw const AuthReauthenticationRequiredException();
         }
+        // Keychain/Keystore and platform-channel failures are transient
+        // persistence failures just like normalized store errors.
         throw AuthRefreshUnavailableException(error);
       }
       if (!_isCurrentSession(
