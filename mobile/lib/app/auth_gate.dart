@@ -268,6 +268,7 @@ class _AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<_AccountScreen> {
   bool _busy = false;
+  bool _dismissRequested = false;
 
   @override
   void initState() {
@@ -319,9 +320,11 @@ class _AccountScreenState extends State<_AccountScreen> {
 
   void _handleAuthStateChanged() {
     if (!mounted ||
+        _dismissRequested ||
         widget.controller.state == AuthLifecycleState.authenticated) {
       return;
     }
+    _dismissRequested = true;
     WidgetsBinding.instance.addPostFrameCallback((Duration _) {
       if (mounted) {
         unawaited(Navigator.maybeOf(context)?.maybePop());
@@ -334,9 +337,6 @@ class _AccountScreenState extends State<_AccountScreen> {
       _busy = true;
     });
     await widget.controller.logout();
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
   }
 }
 
