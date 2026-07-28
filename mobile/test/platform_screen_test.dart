@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
@@ -162,5 +163,113 @@ void main() {
       find.text('Не удалось выполнить действие: Недостаточно сезонного опыта'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('cached journal is read-only and does not guess ENERGY balance', (
+    WidgetTester tester,
+  ) async {
+    int commands = 0;
+    final PlatformSnapshot cached = platformSnapshot(
+      cacheMetadata: CachedReadMetadata(
+        cachedAt: DateTime.utc(2026, 7, 27, 9),
+        reason: 'Нет соединения с сервером',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PlatformScreen(
+          loader: () async => cached,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+          commandExecutor:
+              ({
+                required String commandType,
+                required Map<String, Object?> payload,
+                required String idempotencyKey,
+              }) async {
+                commands += 1;
+                return platformCommandResult(
+                  commandType: commandType,
+                  idempotencyKey: idempotencyKey,
+                  snapshot: cached,
+                );
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('cached-snapshot-banner')), findsOneWidget);
+    final Finder complete = find.byKey(
+      const Key('platform-complete-onboarding-health-permission'),
+    );
+    final FilledButton completeButton = tester.widget<FilledButton>(complete);
+    expect(completeButton.onPressed, isNull);
+
+    final Finder weekly = find.byKey(const Key('platform-advance-weekly'));
+    await tester.scrollUntilVisible(
+      weekly,
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    final FilledButton weeklyButton = tester.widget<FilledButton>(weekly);
+    expect(weeklyButton.onPressed, isNull);
+    expect(find.text('Баланс ENERGY сейчас недоступен'), findsOneWidget);
+    expect(commands, 0);
+
+    final Finder refreshFinder = find.widgetWithText(
+      OutlinedButton,
+      'Обновить журнал',
+    );
+    await tester.scrollUntilVisible(
+      refreshFinder,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final OutlinedButton refresh = tester.widget<OutlinedButton>(refreshFinder);
+    expect(refresh.onPressed, isNotNull);
+  });
+
+  testWidgets('fresh journal disables weekly spend when home is unavailable', (
+    WidgetTester tester,
+  ) async {
+    int commands = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => throw StateError('home unavailable'),
+          recordExperimentExposures: false,
+          commandExecutor:
+              ({
+                required String commandType,
+                required Map<String, Object?> payload,
+                required String idempotencyKey,
+              }) async {
+                commands += 1;
+                return platformCommandResult(
+                  commandType: commandType,
+                  idempotencyKey: idempotencyKey,
+                  snapshot: platformSnapshot(),
+                );
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder weekly = find.byKey(const Key('platform-advance-weekly'));
+    await tester.scrollUntilVisible(
+      weekly,
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    final FilledButton weeklyButton = tester.widget<FilledButton>(weekly);
+    expect(weeklyButton.onPressed, isNull);
+    expect(find.text('Баланс ENERGY сейчас недоступен'), findsOneWidget);
+    expect(find.text('Потратить 10 ENERGY'), findsNothing);
+    expect(commands, 0);
   });
 }

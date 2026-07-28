@@ -1,3 +1,4 @@
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 
@@ -12,6 +13,7 @@ Map<String, dynamic> platformSnapshotJson({
   List<String> ownedCosmetics = const <String>['pilot-scarf'],
   String? activeCosmeticId = 'pilot-scarf',
   List<String> achievements = const <String>['season-reward-1'],
+  CachedReadMetadata? cacheMetadata,
 }) {
   final bool onboardingComplete = completedOnboardingSteps.length == 4;
   return <String, dynamic>{
@@ -189,6 +191,7 @@ PlatformSnapshot platformSnapshot({
   List<String> ownedCosmetics = const <String>['pilot-scarf'],
   String? activeCosmeticId = 'pilot-scarf',
   List<String> achievements = const <String>['season-reward-1'],
+  CachedReadMetadata? cacheMetadata,
 }) {
   return PlatformSnapshot.fromJson(
     platformSnapshotJson(
@@ -202,6 +205,7 @@ PlatformSnapshot platformSnapshot({
       activeCosmeticId: activeCosmeticId,
       achievements: achievements,
     ),
+    cacheMetadata: cacheMetadata,
   );
 }
 

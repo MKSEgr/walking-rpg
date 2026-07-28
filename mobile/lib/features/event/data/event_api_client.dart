@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
@@ -10,6 +12,7 @@ class EventApiClient {
     required Uri baseUri,
     required String userId,
     required HomeTransport transport,
+    ReadSnapshotCache? cache,
   }) {
     final String normalizedUserId = userId.trim();
     if (normalizedUserId.isEmpty) {
@@ -29,6 +32,7 @@ class EventApiClient {
       baseUri: baseUri,
       userId: normalizedUserId,
       transport: transport,
+      cache: cache,
     );
   }
 
@@ -36,19 +40,22 @@ class EventApiClient {
     required this.baseUri,
     required this.userId,
     required this.transport,
-  });
+    required ReadSnapshotCache? cache,
+  }) : _cache = cache;
 
   factory EventApiClient.fromEnvironment() {
     return EventApiClient(
       baseUri: Uri.parse(AppEnvironment.apiBaseUrl),
       userId: AppEnvironment.demoUserId,
       transport: const IoHomeTransport(),
+      cache: FileReadSnapshotCache.fromEnvironment(),
     );
   }
 
   final Uri baseUri;
   final String userId;
   final HomeTransport transport;
+  final ReadSnapshotCache? _cache;
 
   Future<EventResolutionResult> resolve({
     required String eventId,
@@ -63,6 +70,8 @@ class EventApiClient {
         normalizedKey.isEmpty) {
       throw ArgumentError('eventId, choiceId и idempotencyKey обязательны');
     }
+
+    await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
 
     final Uri uri = baseUri.resolve(
       '/api/v1/events/${Uri.encodeComponent(normalizedEventId)}/resolve',

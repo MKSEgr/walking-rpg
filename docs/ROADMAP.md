@@ -12,6 +12,7 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Standard CI: backend, Flutter, Android debug, iOS Simulator
 - [x] CODEOWNERS и активные ruleset для `master`
 - [x] Release-quality CI, deterministic metadata и release checklist
+- [x] Store launch gates зафиксированы в `STORE_LAUNCH_PLAN.md`
 
 ## Milestone 1 — Platform Health API
 
@@ -56,6 +57,7 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Push provider boundary + development implementation
 - [x] Remote config и базовый admin content API
 - [x] Flutter «Путевой журнал» для platform state/commands
+- [x] Read-only offline cache валидированных home/platform snapshots
 
 ## Milestone 5 — Closed beta technical readiness
 

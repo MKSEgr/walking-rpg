@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
@@ -10,6 +12,7 @@ class HomeApiClient {
     required Uri baseUri,
     required String userId,
     required HomeTransport transport,
+    ReadSnapshotCache? cache,
   }) {
     final String normalizedUserId = userId.trim();
     if (normalizedUserId.isEmpty) {
@@ -30,6 +33,7 @@ class HomeApiClient {
       baseUri: baseUri,
       userId: normalizedUserId,
       transport: transport,
+      cache: cache,
     );
   }
 
@@ -37,66 +41,197 @@ class HomeApiClient {
     required this.baseUri,
     required this.userId,
     required this.transport,
-  });
+    required ReadSnapshotCache? cache,
+  }) : _cache = cache;
 
   factory HomeApiClient.fromEnvironment() {
     return HomeApiClient(
       baseUri: Uri.parse(AppEnvironment.apiBaseUrl),
       userId: AppEnvironment.demoUserId,
       transport: const IoHomeTransport(),
+      cache: FileReadSnapshotCache.fromEnvironment(),
     );
   }
+
+  static const Duration cacheTtl = Duration(hours: 36);
 
   final Uri baseUri;
   final String userId;
   final HomeTransport transport;
+  final ReadSnapshotCache? _cache;
 
   Future<HomeSnapshot> fetchHome(DateTime localDate) async {
-    final Uri uri = baseUri
-        .resolve('/api/v1/home')
-        .replace(
-          queryParameters: <String, String>{
-            'localDate': _formatLocalDate(localDate),
-          },
-        );
-    final HomeTransportResponse response = await transport.get(
-      uri: uri,
-      headers: <String, String>{
-        'Accept': 'application/json',
-        'X-User-Id': userId,
-      },
-    );
-
-    final Object? decoded = _decodeJson(response.body);
-    if (response.statusCode != 200) {
-      throw HomeApiException(
-        statusCode: response.statusCode,
-        message: _errorMessage(decoded),
+    final String localDateIso = _formatLocalDate(localDate);
+    try {
+      final Uri uri = baseUri
+          .resolve('/api/v1/home')
+          .replace(
+            queryParameters: <String, String>{'localDate': localDateIso},
+          );
+      final HomeTransportResponse response = await transport.get(
+        uri: uri,
+        headers: <String, String>{
+          'Accept': 'application/json',
+          'X-User-Id': userId,
+        },
       );
+      final Object? decoded = _decodeJsonLenient(response.body);
+      if (response.statusCode != 200) {
+        throw HomeApiException(
+          statusCode: response.statusCode,
+          message: _errorMessage(decoded),
+        );
+      }
+      final Map<String, dynamic> json = _requireJsonObject(decoded, 'Home');
+      final HomeSnapshot snapshot = HomeSnapshot.fromJson(json);
+      await _writeCacheBestEffort(
+        variant: localDateIso,
+        payload: jsonEncode(json),
+      );
+      return snapshot;
+    } on Object catch (error, stackTrace) {
+      if (!_canUseCache(error)) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+      final HomeSnapshot? cached = await _readCached(
+        variant: localDateIso,
+        reason: _cacheReason(error),
+      );
+      if (cached != null) {
+        return cached;
+      }
+      Error.throwWithStackTrace(error, stackTrace);
     }
-    if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Home response должен быть JSON-объектом');
-    }
-
-    return HomeSnapshot.fromJson(decoded);
   }
 
-  Object? _decodeJson(String body) {
+  Future<HomeSnapshot?> _readCached({
+    required String variant,
+    required String reason,
+  }) async {
+    final ReadSnapshotCache? cache = _cache;
+    if (cache == null) {
+      return null;
+    }
+    try {
+      final ReadSnapshotCacheEntry? entry = await cache.read(
+        ownerId: userId,
+        resource: ReadSnapshotResource.home,
+        variant: variant,
+      );
+      if (entry == null) {
+        return null;
+      }
+      try {
+        final Map<String, dynamic> json = _requireJsonObject(
+          _decodeJsonLenient(entry.payload),
+          'Cached home',
+        );
+        return HomeSnapshot.fromJson(
+          json,
+          cacheMetadata: CachedReadMetadata(
+            cachedAt: entry.storedAt,
+            reason: reason,
+          ),
+        );
+      } on Object {
+        await cache.remove(
+          ownerId: userId,
+          resource: ReadSnapshotResource.home,
+          variant: variant,
+        );
+        return null;
+      }
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<void> _writeCacheBestEffort({
+    required String variant,
+    required String payload,
+  }) async {
+    final ReadSnapshotCache? cache = _cache;
+    if (cache == null) {
+      return;
+    }
+    try {
+      await cache.write(
+        ownerId: userId,
+        resource: ReadSnapshotResource.home,
+        variant: variant,
+        payload: payload,
+        ttl: cacheTtl,
+      );
+    } on Object {
+      // Do not keep an older snapshot after a newer authoritative response.
+      try {
+        await cache.remove(
+          ownerId: userId,
+          resource: ReadSnapshotResource.home,
+          variant: variant,
+        );
+      } on Object {
+        // A fresh response remains usable even when local storage is broken.
+      }
+    }
+  }
+
+  bool _canUseCache(Object error) {
+    if (error is HomeNetworkException || error is FormatException) {
+      return true;
+    }
+    if (error is HomeApiException) {
+      return error.statusCode == 408 ||
+          error.statusCode == 429 ||
+          (error.statusCode >= 500 && error.statusCode < 600);
+    }
+    return false;
+  }
+
+  Object? _decodeJsonLenient(String body) {
     try {
       return jsonDecode(body);
     } on FormatException {
-      throw const FormatException('Backend вернул некорректный JSON');
+      return null;
     }
   }
 
+  Map<String, dynamic> _requireJsonObject(Object? decoded, String label) {
+    if (decoded is! Map<Object?, Object?>) {
+      throw FormatException('$label response должен быть JSON-объектом');
+    }
+    return decoded.map<String, dynamic>((Object? key, Object? value) {
+      if (key is! String) {
+        throw FormatException('Ключи $label response должны быть строками');
+      }
+      return MapEntry<String, dynamic>(key, value);
+    });
+  }
+
   String _errorMessage(Object? decoded) {
-    if (decoded is Map<String, dynamic>) {
+    if (decoded is Map<Object?, Object?>) {
       final Object? message = decoded['message'];
       if (message is String && message.trim().isNotEmpty) {
         return message;
       }
     }
     return 'Backend отклонил запрос главного экрана';
+  }
+
+  String _cacheReason(Object error) {
+    if (error is HomeApiException) {
+      if (error.statusCode == 408) {
+        return 'Backend не ответил вовремя';
+      }
+      if (error.statusCode == 429) {
+        return 'Backend временно ограничил запросы';
+      }
+      return 'Backend временно недоступен';
+    }
+    if (error is FormatException) {
+      return 'Backend вернул некорректное состояние';
+    }
+    return 'Нет соединения с сервером';
   }
 
   String _formatLocalDate(DateTime value) {

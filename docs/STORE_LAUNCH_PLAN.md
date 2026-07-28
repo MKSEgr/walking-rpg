@@ -1,0 +1,270 @@
+# Walking RPG — план до первой публикации в App Store и Google Play
+
+Статус на 27 июля 2026 года. Документ отделяет:
+
+- техническую готовность к сборке;
+- готовность к загрузке в TestFlight / Play Console;
+- готовность к отправке на review;
+- фактическую публикацию;
+- внешнюю проверку на устройствах и реальных пользователях.
+
+## 1. Текущее состояние
+
+Уже реализованы и проходят standard CI / Release quality:
+
+- Java backend, PostgreSQL/Flyway, server-authoritative economy и activity sync;
+- HealthKit / Health Connect foreground adapters;
+- durable mobile command outbox;
+- первая content-driven глава, progression, inventory и platform state;
+- mobile UI «Экспедиция» и «Путевой журнал»;
+- onboarding, питомцы, навыки, задания, сезон, недельный маршрут, отряды и косметика;
+- remote config, analytics, crash ingestion, risk audit и tester cohorts;
+- account export/delete backend API;
+- backend JAR, Android release AAB candidate и iOS release no-codesign candidate;
+- deterministic build metadata, privacy/store declaration drafts, release checklist и device validation protocol.
+
+Текущий программный срез:
+
+- read-only offline cache подтверждённых `home` / `platform` snapshots;
+- явный cached-state UI без возможности выполнять расходные или state-changing команды.
+
+## 2. Gate A — завершить store-candidate software
+
+### A1. Offline read cache
+
+- валидированный fallback только для read-запросов;
+- явный read-only режим и время сохранения snapshot;
+- запрет расходных команд поверх cached state;
+- invalidation перед state-changing server-командами; при ошибке локальной очистки команда не отправляется и остаётся retryable;
+- TTL, corruption recovery, owner isolation и size/cap tests;
+- standard CI, Android/iOS host builds и Release quality.
+
+### A2. Production identity и authentication
+
+Сейчас mobile использует compile-time `DEMO_USER_ID` / `DEMO_DEVICE_ID`, а backend принимает временные `X-User-Id` / `X-Device-Id`. До store build это необходимо заменить на production identity boundary:
+
+- выбрать способ входа и владения аккаунтом;
+- получить короткоживущий access token и безопасно обновлять session;
+- хранить refresh/session material только в platform secure storage;
+- валидировать подпись, issuer, audience, expiration и subject на backend;
+- вычислять user/device identity на backend из authenticated context, а не доверять произвольным headers;
+- разделить anonymous, authenticated user и admin operations;
+- добавить logout, session expiry, revoked-account и lost-network сценарии;
+- добавить integration tests на 401/403, подмену subject и повтор команд после refresh;
+- исключить demo identity из production build policy.
+
+### A3. Account settings и удаление данных
+
+Backend API уже существует, но после появления production identity нужно добавить мобильный пользовательский путь:
+
+- экран настроек аккаунта;
+- понятную кнопку экспорта данных;
+- понятную кнопку удаления аккаунта;
+- повторное подтверждение необратимого действия;
+- результат операции и сведения о сроке удаления;
+- очистку local command store и read cache только после подтверждённого удаления backend-ом;
+- обработку partial failure и повтор запроса;
+- публичную web-страницу / форму запроса удаления для Google Play;
+- support contact для пользователя, потерявшего доступ к приложению.
+
+### A4. Production configuration и backend operations
+
+- production API base URL только по TLS;
+- production database, backup policy и фактический restore drill;
+- secrets только в protected environments / secret store;
+- rate limits, request/body limits, timeouts и health checks;
+- error/crash alerting и latency monitoring;
+- production remote config и content release;
+- отключение demo user/device и sandbox-only возможностей;
+- явное разделение `dev`, `stage`, `production`;
+- rollback backend/content/config без публикации новой mobile-версии;
+- support/admin runbook для удаления аккаунта, инцидентов и восстановления.
+
+## 3. Gate B — физическая Health-валидация
+
+Обязательная evidence-матрица:
+
+- iPhone без Apple Watch;
+- iPhone + Apple Watch;
+- Android с Health Connect;
+- несколько Android data providers;
+- отказ и отзыв разрешения;
+- ручной ввод, удаление и коррекция записи;
+- переход через полночь и смена timezone;
+- отсутствие двойного учёта между источниками;
+- foreground/resume fallback;
+- airplane mode / кратковременная потеря сети;
+- расход батареи и длительность sync;
+- upgrade приложения без потери command/read stores.
+
+Любой найденный дефект закрывается отдельным PR и повторной проверкой затронутых устройств. Результат фиксируется в `docs/evidence/` с датой, версией build-а и моделью устройства.
+
+## 4. Gate C — developer accounts, signing и требования SDK
+
+### Apple
+
+До загрузки первого build-а:
+
+- активный Apple Developer Program account;
+- App Store Connect app record;
+- окончательный Bundle ID;
+- сборка Xcode 26 или новее с iOS 26 SDK или новее;
+- HealthKit capability и корректные entitlements;
+- Distribution certificate / App Store provisioning profile в protected environment;
+- production archive и upload в TestFlight;
+- проверка version/build-number policy;
+- App Review contact и reviewer flow.
+
+### Google Play
+
+До production submission:
+
+- верифицированный Play Console account и app record;
+- окончательный `applicationId`;
+- явная проверка, что release candidate target-ит Android 16 / API 36;
+- Play App Signing;
+- защищённый upload key вне репозитория;
+- подписанный production AAB;
+- проверка install / update / uninstall на нескольких API/ABI.
+
+Для personal Play Console account, созданного после 13 ноября 2023 года, заранее заложить closed-test gate: не менее 12 opted-in тестировщиков в течение минимум 14 дней перед запросом production access. Для organization account этот специальный gate обычно не применяется, но verification account-а всё равно обязателен.
+
+## 5. Gate D — privacy, health и store declarations
+
+- опубликовать постоянную Privacy Policy по публичному HTTPS URL;
+- показать ссылку на Privacy Policy внутри приложения;
+- указать юридическое наименование оператора, адрес, email и сроки хранения;
+- Apple App Privacy questionnaire;
+- Google Data Safety form;
+- Apple HealthKit review notes с точным описанием чтения шагов;
+- Google Health Apps / Health Connect declarations только для фактически используемых permission-ов;
+- подтвердить отсутствие рекламы, профилирования и таргетинга по health data;
+- account deletion URL для Google Play;
+- age-rating questionnaires;
+- export compliance;
+- content rights;
+- support URL и support email;
+- regional compliance fields, которые потребует выбранная география распространения.
+
+Декларации должны совпадать с фактическим кодом, SDK dependencies, backend retention и privacy policy. Добавление нового analytics/crash/push/payment SDK требует повторного аудита деклараций.
+
+## 6. Gate E — карточки приложений
+
+Подготовить и проверить:
+
+- финальное название;
+- App Store subtitle и Google Play short description;
+- полное описание и ключевые слова;
+- category / tags;
+- финальные app icon и Android adaptive icon;
+- iPhone / iPad / Android phone screenshots нужных размеров;
+- feature graphic Google Play;
+- privacy / support / deletion URLs;
+- review notes;
+- тестовый аккаунт или воспроизводимый reviewer flow;
+- первая волна локализаций;
+- отсутствие обещаний функций, отключённых в production remote config.
+
+## 7. Gate F — beta
+
+### TestFlight
+
+- internal testing;
+- external testing после Beta App Review;
+- проверка чистой установки и upgrade поверх предыдущего build-а;
+- проверка HealthKit permission flow;
+- сбор crash/feedback и release-blocking issues.
+
+### Google Play
+
+- internal testing;
+- closed testing;
+- выполнение 12-testers / 14-days gate, если он применим к типу и возрасту account-а;
+- проверка install/update/uninstall;
+- проверка Health Connect permission flow;
+- pre-launch report и device compatibility review.
+
+Минимальные критерии выхода из beta:
+
+- нет release-blocking crash;
+- успешны onboarding и первый activity sync;
+- export/delete проходят end-to-end;
+- подтверждена корректность шагов на device matrix;
+- понятны support/privacy/deletion flows;
+- rollback-процедура проверена;
+- owner продукта подписал release checklist.
+
+Целевой продуктовый gate проекта остаётся 50–500 фактических тестировщиков. Первая техническая store submission может начаться на меньшей контролируемой когорте, но публичный rollout не должен опережать подтверждение основных метрик и стабильности.
+
+## 8. Gate G — submission и rollout
+
+- финальный release checklist;
+- release tag, notes, build metadata и SHA-256 digests;
+- загрузка build-а;
+- заполнение обязательной metadata и выбор конкретного build-а;
+- отправка в review;
+- ответы reviewer-ам и исправление замечаний;
+- staged / phased rollout;
+- мониторинг crash/error/latency после публикации;
+- возможность остановить rollout;
+- возможность откатить backend/content/remote config;
+- post-release review через 24 часа, 72 часа и 7 дней.
+
+## 9. Push и платежи
+
+Они не должны блокировать первую публикацию, если одновременно выполнены условия:
+
+- функции отключены production remote config;
+- UI не предлагает неработающие действия;
+- карточка приложения не обещает push/payment-функции;
+- sandbox providers недоступны production-пользователю.
+
+Если включаем их в первый релиз, дополнительно требуются:
+
+- APNs / FCM credentials, token lifecycle и test-send на физических устройствах;
+- store products;
+- server-side purchase verification;
+- restore purchases;
+- refunds / cancellations / subscription lifecycle;
+- отдельные декларации и review notes.
+
+## 10. Рекомендуемая последовательность PR
+
+1. `offline read cache`;
+2. `production identity/authentication boundary`;
+3. `account settings + export/delete UI + local cleanup`;
+4. `production environment/config/operations hardening`;
+5. `target API 36 + production signing scaffolding`;
+6. `device-validation fixes`;
+7. `store metadata/declarations pack`;
+8. `signed TestFlight / Play internal and closed-beta candidates`;
+9. `submission fixes`.
+
+Параллельно с PR 2–5 владелец продукта должен начать создание и верификацию developer accounts, подготовку публичных URL и набор beta-тестировщиков: эти процессы имеют внешнее время ожидания и не ускоряются кодом.
+
+## 11. Definition of ready to upload
+
+Build можно загружать в магазины, когда одновременно выполнены:
+
+- standard CI и Release quality зелёные;
+- production signing настроен вне репозитория;
+- target API / Apple SDK соответствуют действующим требованиям;
+- privacy, support и deletion URL опубликованы;
+- App Privacy, Data Safety и Health declarations подготовлены;
+- production authentication и logout/session-expiry работают end-to-end;
+- account deletion работает end-to-end;
+- physical Health matrix пройдена;
+- TestFlight / Play internal candidate не имеет release-blocking дефектов;
+- production backend, monitoring, backup и rollback готовы;
+- владелец продукта подписал release checklist.
+
+## 12. Definition of ready to publish
+
+Публичный rollout разрешён только после того, как:
+
+- соответствующий store review пройден;
+- обязательный closed-testing gate Google Play выполнен, если применим;
+- beta feedback разобран;
+- release-blocking issues отсутствуют;
+- staged/phased rollout и мониторинг подготовлены;
+- owner продукта отдельно подтвердил публикацию.

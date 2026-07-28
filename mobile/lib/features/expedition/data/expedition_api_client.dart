@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
@@ -10,6 +12,7 @@ class ExpeditionApiClient {
     required Uri baseUri,
     required String userId,
     required HomeTransport transport,
+    ReadSnapshotCache? cache,
   }) {
     final String normalizedUserId = userId.trim();
     if (normalizedUserId.isEmpty) {
@@ -30,6 +33,7 @@ class ExpeditionApiClient {
       baseUri: baseUri,
       userId: normalizedUserId,
       transport: transport,
+      cache: cache,
     );
   }
 
@@ -37,19 +41,22 @@ class ExpeditionApiClient {
     required this.baseUri,
     required this.userId,
     required this.transport,
-  });
+    required ReadSnapshotCache? cache,
+  }) : _cache = cache;
 
   factory ExpeditionApiClient.fromEnvironment() {
     return ExpeditionApiClient(
       baseUri: Uri.parse(AppEnvironment.apiBaseUrl),
       userId: AppEnvironment.demoUserId,
       transport: const IoHomeTransport(),
+      cache: FileReadSnapshotCache.fromEnvironment(),
     );
   }
 
   final Uri baseUri;
   final String userId;
   final HomeTransport transport;
+  final ReadSnapshotCache? _cache;
 
   Future<ExpeditionAdvanceResult> advance({
     required String expeditionId,
@@ -68,6 +75,8 @@ class ExpeditionApiClient {
     if (normalizedExpeditionId.isEmpty || normalizedKey.isEmpty) {
       throw ArgumentError('expeditionId и idempotencyKey обязательны');
     }
+
+    await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
 
     final Uri uri = baseUri.resolve(
       '/api/v1/expeditions/${Uri.encodeComponent(normalizedExpeditionId)}/advance',

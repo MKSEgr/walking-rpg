@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
@@ -209,6 +210,57 @@ void main() {
     expect(attempts, 2);
     expect(find.text('Сегодня: 0 / 6000'), findsOneWidget);
   });
+
+  testWidgets(
+    'cached home is clearly read-only while refresh stays available',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            loader: () async => _readyToAdvance(
+              cacheMetadata: CachedReadMetadata(
+                cachedAt: DateTime.utc(2026, 7, 27, 9),
+                reason: 'Нет соединения с сервером',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('cached-snapshot-banner')), findsOneWidget);
+      expect(
+        find.textContaining('Изменения временно недоступны'),
+        findsOneWidget,
+      );
+
+      final Finder advanceFinder = find.widgetWithText(
+        FilledButton,
+        'Изменения недоступны офлайн',
+      );
+      await tester.scrollUntilVisible(
+        advanceFinder,
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      final FilledButton advance = tester.widget<FilledButton>(advanceFinder);
+      expect(advance.onPressed, isNull);
+
+      final Finder refreshFinder = find.widgetWithText(
+        OutlinedButton,
+        'Обновить состояние',
+      );
+      await tester.scrollUntilVisible(
+        refreshFinder,
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      final OutlinedButton refresh = tester.widget<OutlinedButton>(
+        refreshFinder,
+      );
+      expect(refresh.onPressed, isNotNull);
+    },
+  );
 }
 
 const DailyGoalPolicy _adaptiveGoalPolicy = DailyGoalPolicy(
@@ -225,8 +277,8 @@ const DailyGoalPolicy _adaptiveGoalPolicy = DailyGoalPolicy(
   maximumGoal: 12000,
 );
 
-HomeSnapshot _readyToAdvance() {
-  return const HomeSnapshot(
+HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
+  return HomeSnapshot(
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
     dailySteps: 6842,
@@ -254,6 +306,7 @@ HomeSnapshot _readyToAdvance() {
     petName: 'Искра',
     petLevel: 1,
     petBond: 10,
+    cacheMetadata: cacheMetadata,
   );
 }
 

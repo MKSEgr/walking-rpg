@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
@@ -275,10 +276,15 @@ class _HomeBody extends StatelessWidget {
     final bool eventReady = event?.status == 'READY';
     final bool completed = snapshot.expeditionStatus == 'COMPLETED';
     final int spendableEnergy = snapshot.spendableEnergy;
+    final bool readOnly = snapshot.isCached;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
+        if (snapshot.cacheMetadata != null) ...<Widget>[
+          CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
+          const SizedBox(height: 12),
+        ],
         Text(
           completed ? 'Экспедиция завершена' : 'Экспедиция ждёт твоих шагов',
           style: Theme.of(context).textTheme.headlineSmall,
@@ -307,7 +313,7 @@ class _HomeBody extends StatelessWidget {
           const SizedBox(height: 4),
           _EventCard(
             event: event,
-            isResolving: isResolving,
+            isResolving: isResolving || readOnly,
             onChoose: onResolve,
           ),
         ],
@@ -343,7 +349,8 @@ class _HomeBody extends StatelessWidget {
         const SizedBox(height: 20),
         FilledButton.icon(
           onPressed:
-              eventReady ||
+              readOnly ||
+                  eventReady ||
                   completed ||
                   spendableEnergy <= 0 ||
                   isAdvancing ||
@@ -357,7 +364,9 @@ class _HomeBody extends StatelessWidget {
                 )
               : const Icon(Icons.rocket_launch_outlined),
           label: Text(
-            completed
+            readOnly
+                ? 'Изменения недоступны офлайн'
+                : completed
                 ? 'Экспедиция завершена'
                 : eventReady
                 ? 'Выберите решение события'

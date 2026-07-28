@@ -1,3 +1,5 @@
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+
 class PlatformSnapshot {
   PlatformSnapshot({
     required this.contentVersion,
@@ -6,6 +8,7 @@ class PlatformSnapshot {
     required this.content,
     required this.remoteConfig,
     required this.serverTime,
+    this.cacheMetadata,
   }) {
     if (stateVersion < 0) {
       throw ArgumentError.value(
@@ -16,7 +19,10 @@ class PlatformSnapshot {
     }
   }
 
-  factory PlatformSnapshot.fromJson(Map<String, dynamic> json) {
+  factory PlatformSnapshot.fromJson(
+    Map<String, dynamic> json, {
+    CachedReadMetadata? cacheMetadata,
+  }) {
     final PlatformContent content = PlatformContent.fromJson(
       _readMap(json, 'content'),
     );
@@ -28,15 +34,21 @@ class PlatformSnapshot {
       );
     }
 
+    final int stateVersion = _readInt(json, 'stateVersion');
+    if (stateVersion < 0) {
+      throw const FormatException('stateVersion не может быть отрицательной');
+    }
+
     return PlatformSnapshot(
       contentVersion: contentVersion,
-      stateVersion: _readInt(json, 'stateVersion'),
+      stateVersion: stateVersion,
       userState: PlatformUserState.fromJson(_readMap(json, 'userState')),
       content: content,
       remoteConfig: PlatformRemoteConfig.fromJson(
         _readMap(json, 'remoteConfig'),
       ),
       serverTime: _readString(json, 'serverTime'),
+      cacheMetadata: cacheMetadata,
     );
   }
 
@@ -46,6 +58,9 @@ class PlatformSnapshot {
   final PlatformContent content;
   final PlatformRemoteConfig remoteConfig;
   final String serverTime;
+  final CachedReadMetadata? cacheMetadata;
+
+  bool get isCached => cacheMetadata != null;
 
   int get weeklyRouteRemaining {
     final int remaining =
