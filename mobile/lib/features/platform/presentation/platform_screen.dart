@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
@@ -145,8 +146,8 @@ class _PlatformScreenState extends State<PlatformScreen> {
     int? economyVersion;
     try {
       final HomeSnapshot home = await homeLoader();
-      availableEnergy = home.availableEnergy;
-      economyVersion = home.economyVersion;
+      availableEnergy = home.isCached ? null : home.availableEnergy;
+      economyVersion = home.isCached ? null : home.economyVersion;
     } on Object {
       availableEnergy = null;
       economyVersion = null;
@@ -185,8 +186,8 @@ class _PlatformScreenState extends State<PlatformScreen> {
             widget.homeLoader ??
             () => HomeApiClient.fromEnvironment().fetchHome(DateTime.now());
         final HomeSnapshot home = await homeLoader();
-        availableEnergy = home.availableEnergy;
-        economyVersion = home.economyVersion;
+        availableEnergy = home.isCached ? null : home.availableEnergy;
+        economyVersion = home.isCached ? null : home.economyVersion;
       } on Object {
         availableEnergy = null;
         economyVersion = null;
@@ -228,7 +229,9 @@ class _PlatformScreenState extends State<PlatformScreen> {
   }
 
   void _scheduleExperimentExposures(PlatformSnapshot snapshot) {
-    if (!widget.recordExperimentExposures || widget.commandExecutor == null) {
+    if (snapshot.isCached ||
+        !widget.recordExperimentExposures ||
+        widget.commandExecutor == null) {
       return;
     }
     for (final MapEntry<String, String> assignment
@@ -321,6 +324,8 @@ class _PlatformBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final PlatformSnapshot snapshot = data.platform;
+    final bool readOnly = snapshot.isCached;
+    final bool blocked = _busy || readOnly;
     final String energyCopy =
         snapshot.userState.experimentAssignments['home-energy-copy-v1'] ==
             'MOTIVATIONAL'
@@ -333,6 +338,10 @@ class _PlatformBody extends StatelessWidget {
         key: const Key('platform-screen-list'),
         padding: const EdgeInsets.all(16),
         children: <Widget>[
+          if (snapshot.cacheMetadata != null) ...<Widget>[
+            CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
+            const SizedBox(height: 12),
+          ],
           Text(
             snapshot.content.season.name,
             style: Theme.of(context).textTheme.headlineSmall,
@@ -345,7 +354,7 @@ class _PlatformBody extends StatelessWidget {
           const SizedBox(height: 16),
           _OnboardingCard(
             snapshot: snapshot,
-            busy: _busy,
+            busy: blocked,
             onComplete: (String stepId) => onCommand(
               'COMPLETE_ONBOARDING_STEP',
               <String, Object?>{'stepId': stepId},
@@ -354,10 +363,10 @@ class _PlatformBody extends StatelessWidget {
           const SizedBox(height: 12),
           _WeeklyRouteCard(
             snapshot: snapshot,
-            availableEnergy: data.availableEnergy,
-            economyVersion: data.economyVersion,
+            availableEnergy: readOnly ? null : data.availableEnergy,
+            economyVersion: readOnly ? null : data.economyVersion,
             energyCopy: energyCopy,
-            busy: _busy,
+            busy: blocked,
             onAdvance: (int energy) => onCommand(
               'ADVANCE_WEEKLY_ROUTE',
               <String, Object?>{'energyToSpend': energy},
@@ -375,7 +384,7 @@ class _PlatformBody extends StatelessWidget {
           ...snapshot.userState.pets.map(
             (PlatformPet pet) => _PetCard(
               pet: pet,
-              busy: _busy,
+              busy: blocked,
               onSelect: () => onCommand('SELECT_PET', <String, Object?>{
                 'petId': pet.petId,
               }),
@@ -396,7 +405,7 @@ class _PlatformBody extends StatelessWidget {
               unlocked: snapshot.userState.unlockedSkills.contains(
                 skill.skillId,
               ),
-              busy: _busy,
+              busy: blocked,
               onUnlock: () => onCommand('UNLOCK_SKILL', <String, Object?>{
                 'skillId': skill.skillId,
               }),
@@ -415,7 +424,7 @@ class _PlatformBody extends StatelessWidget {
               rewardFirst:
                   snapshot.userState.experimentAssignments['quest-order-v1'] ==
                   'REWARD_FIRST',
-              busy: _busy,
+              busy: blocked,
               onClaim: () => onCommand('CLAIM_QUEST', <String, Object?>{
                 'questId': quest.questId,
               }),
@@ -426,7 +435,7 @@ class _PlatformBody extends StatelessWidget {
             squad: snapshot.userState.squad,
             nameController: squadNameController,
             idController: squadIdController,
-            busy: _busy,
+            busy: blocked,
             onCreate: () => onCommand('CREATE_SQUAD', <String, Object?>{
               'name': squadNameController.text.trim(),
             }),
@@ -451,7 +460,7 @@ class _PlatformBody extends StatelessWidget {
               active:
                   snapshot.userState.activeCosmeticId == cosmetic.cosmeticId,
               paymentsEnabled: snapshot.remoteConfig.sandboxPaymentsEnabled,
-              busy: _busy,
+              busy: blocked,
               onBuy: () => onCommand('BUY_COSMETIC', <String, Object?>{
                 'cosmeticId': cosmetic.cosmeticId,
               }),
@@ -579,7 +588,7 @@ class _WeeklyRouteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final int remaining = snapshot.weeklyRouteRemaining;
     final int spendable = availableEnergy == null
-        ? (remaining < 10 ? remaining : 10)
+        ? 0
         : _minimum(remaining, availableEnergy!);
     final int claimableLevel = snapshot.claimableSeasonLevel;
     final Set<String> achievements = snapshot.userState.achievements;
@@ -871,6 +880,7 @@ class _SquadCard extends StatelessWidget {
             TextField(
               key: const Key('platform-squad-name'),
               controller: nameController,
+              enabled: !busy,
               decoration: const InputDecoration(
                 labelText: 'Название нового отряда',
               ),
@@ -888,6 +898,7 @@ class _SquadCard extends StatelessWidget {
             TextField(
               key: const Key('platform-squad-id'),
               controller: idController,
+              enabled: !busy,
               decoration: const InputDecoration(
                 labelText: 'ID существующего отряда',
               ),

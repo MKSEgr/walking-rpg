@@ -1,9 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
+import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
+
+import 'support/in_memory_read_snapshot_cache.dart';
 
 void main() {
   test(
@@ -59,6 +63,126 @@ void main() {
           (HomeApiException error) => error.message,
           'message',
           'Некорректная дата',
+        ),
+      ),
+    );
+  });
+
+  test(
+    'falls back to a validated cached snapshot on transport failure',
+    () async {
+      final DateTime cachedAt = DateTime.utc(2026, 7, 25, 10);
+      final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache(
+        clock: () => cachedAt,
+      );
+      await cache.write(
+        ownerId: 'user-1',
+        resource: ReadSnapshotResource.home,
+        variant: '2026-07-25',
+        payload: jsonEncode(_homeResponse()),
+        ttl: const Duration(hours: 36),
+      );
+      final HomeApiClient client = HomeApiClient(
+        baseUri: Uri.parse('http://localhost:8080'),
+        userId: 'user-1',
+        transport: const _ThrowingHomeTransport(),
+        cache: cache,
+      );
+
+      final HomeSnapshot snapshot = await client.fetchHome(
+        DateTime(2026, 7, 25),
+      );
+
+      expect(snapshot.isCached, isTrue);
+      expect(snapshot.cacheMetadata?.cachedAt, cachedAt);
+      expect(snapshot.cacheMetadata?.reason, 'Нет соединения с сервером');
+      expect(snapshot.dailySteps, 6842);
+    },
+  );
+
+  test('does not hide terminal authorization errors behind cache', () async {
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache(
+      clock: () => DateTime.utc(2026, 7, 25, 10),
+    );
+    await cache.write(
+      ownerId: 'user-1',
+      resource: ReadSnapshotResource.home,
+      variant: '2026-07-25',
+      payload: jsonEncode(_homeResponse()),
+      ttl: const Duration(hours: 36),
+    );
+    final HomeApiClient client = HomeApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: 'user-1',
+      transport: _FakeHomeTransport(
+        const HomeTransportResponse(statusCode: 401, body: '<html>denied'),
+      ),
+      cache: cache,
+    );
+
+    await expectLater(
+      client.fetchHome(DateTime(2026, 7, 25)),
+      throwsA(
+        isA<HomeApiException>().having(
+          (HomeApiException error) => error.statusCode,
+          'statusCode',
+          401,
+        ),
+      ),
+    );
+  });
+
+  test('uses cache for malformed retryable server response', () async {
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache(
+      clock: () => DateTime.utc(2026, 7, 25, 10),
+    );
+    await cache.write(
+      ownerId: 'user-1',
+      resource: ReadSnapshotResource.home,
+      variant: '2026-07-25',
+      payload: jsonEncode(_homeResponse()),
+      ttl: const Duration(hours: 36),
+    );
+    final HomeApiClient client = HomeApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: 'user-1',
+      transport: _FakeHomeTransport(
+        const HomeTransportResponse(statusCode: 503, body: '<html>down'),
+      ),
+      cache: cache,
+    );
+
+    final HomeSnapshot snapshot = await client.fetchHome(DateTime(2026, 7, 25));
+
+    expect(snapshot.isCached, isTrue);
+    expect(snapshot.cacheMetadata?.reason, 'Backend временно недоступен');
+  });
+
+  test('does not mask an unexpected client error with cache', () async {
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache(
+      clock: () => DateTime.utc(2026, 7, 25, 10),
+    );
+    await cache.write(
+      ownerId: 'user-1',
+      resource: ReadSnapshotResource.home,
+      variant: '2026-07-25',
+      payload: jsonEncode(_homeResponse()),
+      ttl: const Duration(hours: 36),
+    );
+    final HomeApiClient client = HomeApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: 'user-1',
+      transport: const _BuggyHomeTransport(),
+      cache: cache,
+    );
+
+    await expectLater(
+      client.fetchHome(DateTime(2026, 7, 25)),
+      throwsA(
+        isA<StateError>().having(
+          (StateError error) => error.message,
+          'message',
+          'unexpected test bug',
         ),
       ),
     );
@@ -138,6 +262,48 @@ class _FakeHomeTransport implements HomeTransport {
     requestedUri = uri;
     requestedHeaders = Map<String, String>.from(headers);
     return response;
+  }
+
+  @override
+  Future<HomeTransportResponse> post({
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  }) {
+    throw UnimplementedError();
+  }
+}
+
+class _BuggyHomeTransport implements HomeTransport {
+  const _BuggyHomeTransport();
+
+  @override
+  Future<HomeTransportResponse> get({
+    required Uri uri,
+    required Map<String, String> headers,
+  }) async {
+    throw StateError('unexpected test bug');
+  }
+
+  @override
+  Future<HomeTransportResponse> post({
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  }) {
+    throw UnimplementedError();
+  }
+}
+
+class _ThrowingHomeTransport implements HomeTransport {
+  const _ThrowingHomeTransport();
+
+  @override
+  Future<HomeTransportResponse> get({
+    required Uri uri,
+    required Map<String, String> headers,
+  }) async {
+    throw const HomeNetworkException('Нет соединения с сервером');
   }
 
   @override

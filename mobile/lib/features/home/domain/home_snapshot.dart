@@ -1,3 +1,4 @@
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
 
 class HomeSnapshot {
@@ -30,9 +31,13 @@ class HomeSnapshot {
     this.petBond = 0,
     this.dailyGoalPolicy = const DailyGoalPolicy.legacy(),
     this.inventory = const <HomeInventoryItem>[],
+    this.cacheMetadata,
   });
 
-  factory HomeSnapshot.fromJson(Map<String, dynamic> json) {
+  factory HomeSnapshot.fromJson(
+    Map<String, dynamic> json, {
+    CachedReadMetadata? cacheMetadata,
+  }) {
     final int dailyGoal = _readInt(json, 'dailyGoal');
     final Object? dailyGoalPolicyJson = json['dailyGoalPolicy'];
     final DailyGoalPolicy dailyGoalPolicy = dailyGoalPolicyJson == null
@@ -77,6 +82,7 @@ class HomeSnapshot {
       petLevel: _readInt(pet, 'level'),
       petBond: _readInt(pet, 'bond'),
       inventory: _readInventory(json['inventory']),
+      cacheMetadata: cacheMetadata,
     );
   }
 
@@ -108,6 +114,9 @@ class HomeSnapshot {
   final int petLevel;
   final int petBond;
   final List<HomeInventoryItem> inventory;
+  final CachedReadMetadata? cacheMetadata;
+
+  bool get isCached => cacheMetadata != null;
 
   int get remainingExpeditionEnergy {
     final int remaining = requiredEnergy - expeditionProgress;

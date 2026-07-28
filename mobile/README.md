@@ -83,7 +83,22 @@ GAMEPLAY — продвижение экспедиции, решение соб�
 
 Внутри lane действует FIFO. Временная ошибка GAMEPLAY не блокирует ACTIVITY и наоборот. Network/transport error, `408`, `429`, `5xx` и неоднозначный response остаются pending. Подтверждённые остальные `4xx` переходят в failed и не блокируют очередь.
 
-На старте приложения pending-команды текущего технического пользователя replay-ятся один раз в foreground. После успешного replay приложение перечитывает authoritative home. Автоматического background worker-а и offline read cache пока нет.
+На старте приложения pending-команды текущего технического пользователя replay-ятся один раз в foreground. После успешного replay приложение перечитывает authoritative home. Автоматического background worker-а пока нет.
+
+## Read-only offline cache
+
+Последние успешно декодированные server snapshots сохраняются отдельно от command outbox:
+
+```text
+home     — owner + localDate, TTL 36 часов
+platform — owner + current, TTL 7 дней
+```
+
+Cache используется только при transport error, `408`, `429`, `5xx` или некорректном успешном snapshot backend. `401`, `403`, validation/state conflicts и остальные terminal `4xx` никогда не маскируются cached state.
+
+В cached-режиме UI показывает время сохранения и причину fallback, разрешает refresh, но блокирует expedition/event/platform mutations. Cached home не используется как подтверждение доступного ENERGY. Перед state-changing запросом зависимые snapshots инвалидируются: при неоднозначном transport failure старое состояние не должно снова появиться как безопасный fallback.
+
+Файловое хранилище versioned, ограничено по размеру и количеству записей, изолировано по owner и использует atomic target/temporary/backup recovery. Повреждённый snapshot удаляется или помещается в quarantine и не показывается пользователю.
 
 ## Путевой журнал и platform state
 

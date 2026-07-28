@@ -39,6 +39,7 @@ shared         — общие API/error/transaction primitives
 ```text
 core/config          — compile-time environment
 core/commands        — durable commands, lanes и replay
+core/cache           — read-only validated server snapshots
 activity             — HealthKit/Health Connect и sync
 home                 — authoritative home snapshot
 expedition           — ENERGY spend
@@ -138,7 +139,23 @@ StepSource
 
 Только `STEPS READ`, local midnight → now, IANA timezone и foreground/manual sync. Resume fallback не выдаётся за гарантированную background delivery. Физическая матрица описана в `DEVICE_VALIDATION_PROTOCOL.md`.
 
-## 11. Release-quality model
+## 11. Offline read model
+
+```text
+server GET /home|platform success
+→ domain validation
+→ versioned local snapshot
+
+transport/408/429/5xx/malformed success
+→ повторная domain validation cached JSON
+→ read-only UI + explicit cache timestamp
+```
+
+Read cache не хранит неподтверждённые изменения и не заменяет command outbox. Перед mutation-attempt зависимый cache инвалидируется, потому что transport failure может скрывать уже принятый backend-ом результат. Terminal `4xx` не скрываются fallback-ом. Cached ENERGY не разрешает расходные команды.
+
+Подробности: `docs/adr/0016-offline-read-cache.md`.
+
+## 12. Release-quality model
 
 ```text
 Standard CI
@@ -162,6 +179,6 @@ Protected external environment
 
 CI не хранит signing material и не выдаёт неподписанный candidate за публикуемый build. Device, push, payment, beta и store gates получают статус `VALIDATED` только после evidence.
 
-## 12. Branch protection
+## 13. Branch protection
 
 Feature-ветки обновляет `serbin70`; `master` защищён ruleset и CODEOWNERS. Merge выполняет `MKSEgr` после CI/review через `Squash and merge`. Подробности: `BRANCH_PROTECTION.md`.

@@ -1,9 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
+
+import 'support/in_memory_read_snapshot_cache.dart';
 
 void main() {
   test('client posts advance command and maps event response', () async {
@@ -13,10 +16,13 @@ void main() {
         body: jsonEncode(_advanceResponse()),
       ),
     );
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache();
+    await _seedReadCache(cache);
     final ExpeditionApiClient client = ExpeditionApiClient(
       baseUri: Uri.parse('http://localhost:8080'),
       userId: 'user-1',
       transport: transport,
+      cache: cache,
     );
 
     final ExpeditionAdvanceResult result = await client.advance(
@@ -35,6 +41,9 @@ void main() {
     expect(result.energyBalanceAfter, 38);
     expect(result.status, 'EVENT_READY');
     expect(result.unlockedEvent?.eventId, 'signal-source-v1');
+    expect(cache.invalidations, 1);
+    expect(await _readHome(cache), isNull);
+    expect(await _readPlatform(cache), isNull);
   });
 
   test('client exposes stable backend error', () async {
@@ -73,6 +82,39 @@ void main() {
       ),
     );
   });
+}
+
+Future<void> _seedReadCache(InMemoryReadSnapshotCache cache) async {
+  await cache.write(
+    ownerId: 'user-1',
+    resource: ReadSnapshotResource.home,
+    variant: 'today',
+    payload: '{}',
+    ttl: const Duration(days: 1),
+  );
+  await cache.write(
+    ownerId: 'user-1',
+    resource: ReadSnapshotResource.platform,
+    variant: 'current',
+    payload: '{}',
+    ttl: const Duration(days: 1),
+  );
+}
+
+Future<ReadSnapshotCacheEntry?> _readHome(InMemoryReadSnapshotCache cache) {
+  return cache.read(
+    ownerId: 'user-1',
+    resource: ReadSnapshotResource.home,
+    variant: 'today',
+  );
+}
+
+Future<ReadSnapshotCacheEntry?> _readPlatform(InMemoryReadSnapshotCache cache) {
+  return cache.read(
+    ownerId: 'user-1',
+    resource: ReadSnapshotResource.platform,
+    variant: 'current',
+  );
 }
 
 Map<String, dynamic> _advanceResponse() {

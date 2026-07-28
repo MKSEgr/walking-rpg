@@ -23,7 +23,7 @@
 
 Как система, я хочу принимать cumulative authoritative total и начислять только новую активность.
 
-**Статус:** реализовано с PostgreSQL, wallet/ledger, multi-device lock, Flutter client, platform source и foreground durable outbox. Остались server-side retention и attestation.
+**Статус:** реализовано с PostgreSQL, wallet/ledger, multi-device lock, Flutter client, platform source, foreground durable outbox, retention и shadow-mode risk/attestation signals.
 
 ## P0 — first playable loop
 
@@ -85,26 +85,36 @@
 
 **Статус:** policy `adaptive-median-v1`, API metadata и Flutter explanation реализованы; продуктовая проверка параметров остаётся частью device/beta validation.
 
-## P1 — после device validation
+## P1 — расширение MVP
 
-- третий и последующие узлы;
-- дополнительные типы событий;
-- полноценный level-up и навыки;
+Технически реализованы:
+
+- первая глава из 18 последовательных узлов;
+- три питомца, active selection, эволюция и навыки;
+- onboarding, задания и достижения;
+- development push provider boundary;
+- product analytics и experiment exposure;
+- read-only offline cache валидированных `home` / `platform` snapshots.
+
+После физической device-validation и beta остаются продуктовые расширения:
+
+- дополнительные типы событий и нелинейные ветки;
 - расход материалов, crafting и unique items;
-- onboarding;
-- push;
-- базовая аналитика;
-- offline read cache;
-- background activity research.
+- production APNs / FCM;
+- background activity research с battery evidence;
+- настройка баланса по фактическим retention/economy данным.
 
-## P2 — после подтверждения одиночного цикла
+## P2 — soft-launch capabilities
 
-- отряды;
-- недельный маршрут;
-- косметика;
-- сезон;
-- расширенный антифрод;
-- административное управление контентом.
+Технически реализованы season, weekly route, squads, cosmetics, sandbox payment boundary, risk/admin read models и базовый content/remote-config admin API.
+
+До включения этих функций в публичный релиз остаются:
+
+- production store billing и server-side purchase verification;
+- production push;
+- полноценный операторский UI для контента, anti-fraud и cohorts;
+- beta-проверка отрядов, сезонной экономики и косметики;
+- rollout/rollback и support-процессы.
 
 ## Icebox
 

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
@@ -12,6 +14,7 @@ class ActivityApiClient {
     required String userId,
     required String deviceId,
     required HomeTransport transport,
+    ReadSnapshotCache? cache,
   }) {
     final String normalizedUserId = _requireText(userId, 'userId');
     final String normalizedDeviceId = _requireText(deviceId, 'deviceId');
@@ -31,6 +34,7 @@ class ActivityApiClient {
       userId: normalizedUserId,
       deviceId: normalizedDeviceId,
       transport: transport,
+      cache: cache,
     );
   }
 
@@ -39,7 +43,8 @@ class ActivityApiClient {
     required this.userId,
     required this.deviceId,
     required this.transport,
-  });
+    required ReadSnapshotCache? cache,
+  }) : _cache = cache;
 
   factory ActivityApiClient.fromEnvironment() {
     return ActivityApiClient(
@@ -47,6 +52,7 @@ class ActivityApiClient {
       userId: AppEnvironment.demoUserId,
       deviceId: AppEnvironment.demoDeviceId,
       transport: const IoHomeTransport(),
+      cache: FileReadSnapshotCache.fromEnvironment(),
     );
   }
 
@@ -54,12 +60,15 @@ class ActivityApiClient {
   final String userId;
   final String deviceId;
   final HomeTransport transport;
+  final ReadSnapshotCache? _cache;
 
   Future<ActivitySyncResult> sync({
     required StepReading reading,
     required String idempotencyKey,
   }) async {
     final String normalizedKey = _requireText(idempotencyKey, 'idempotencyKey');
+    await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
+
     final Uri uri = baseUri.resolve('/api/v1/activity/sync');
     final HomeTransportResponse response = await transport.post(
       uri: uri,

@@ -40,7 +40,9 @@
 - Flutter `Путевой журнал` для platform snapshot: onboarding, питомцы, навыки, задания, сезон, недельный маршрут, отряды, косметика и эксперименты;
 - typed `PlatformApiClient`, `PlatformSnapshot` и `PlatformCommandResult`;
 - restart-safe `PLATFORM_COMMAND` в mobile command outbox;
-- нижняя навигация между экспедицией и путевым журналом.
+- нижняя навигация между экспедицией и путевым журналом;
+- versioned read-only cache последних подтверждённых `home` и `platform` snapshots;
+- явный офлайн-баннер, TTL, corruption recovery и запрет mutations поверх cached state.
 
 ### Changed
 

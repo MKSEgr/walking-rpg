@@ -62,6 +62,8 @@ class IoHomeTransport implements HomeTransport {
       throw HomeNetworkException(
         'Не удалось подключиться к backend: ${exception.message}',
       );
+    } on IOException catch (exception) {
+      throw HomeNetworkException('Ошибка соединения с backend: $exception');
     } finally {
       client.close(force: true);
     }

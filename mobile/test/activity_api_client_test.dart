@@ -1,10 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
+
+import 'support/in_memory_read_snapshot_cache.dart';
 
 void main() {
   test(
@@ -16,11 +19,14 @@ void main() {
           body: jsonEncode(_successResponse()),
         ),
       );
+      final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache();
+      await _seedReadCache(cache);
       final ActivityApiClient client = ActivityApiClient(
         baseUri: Uri.parse('http://localhost:8080'),
         userId: 'user-1',
         deviceId: 'device-1',
         transport: transport,
+        cache: cache,
       );
 
       final ActivitySyncResult result = await client.sync(
@@ -45,8 +51,89 @@ void main() {
       expect(transport.decodedBody?['attestation'], isNull);
       expect(result.energyGranted, 68);
       expect(result.energyBalanceAfter, 68);
+      expect(cache.invalidations, 1);
+      expect(await _readHome(cache), isNull);
+      expect(await _readPlatform(cache), isNull);
     },
   );
+
+  test(
+    'invalidates old snapshots before a retryable mutation attempt',
+    () async {
+      final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache();
+      await _seedReadCache(cache);
+      final ActivityApiClient client = ActivityApiClient(
+        baseUri: Uri.parse('http://localhost:8080'),
+        userId: 'user-1',
+        deviceId: 'device-1',
+        transport: _FakeTransport(
+          HomeTransportResponse(
+            statusCode: 503,
+            body: jsonEncode(<String, dynamic>{
+              'code': 'INTERNAL_ERROR',
+              'message': 'Backend временно недоступен',
+            }),
+          ),
+        ),
+        cache: cache,
+      );
+
+      await expectLater(
+        client.sync(
+          reading: StepReading(
+            authoritativeTotal: 100,
+            localDate: DateTime(2026, 7, 26),
+            timeZone: 'UTC',
+          ),
+          idempotencyKey: 'sync-retryable-1',
+        ),
+        throwsA(isA<ActivityApiException>()),
+      );
+
+      expect(cache.invalidations, 1);
+      expect(await _readHome(cache), isNull);
+      expect(await _readPlatform(cache), isNull);
+    },
+  );
+
+  test('does not send a mutation when cache invalidation fails', () async {
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache(
+      failInvalidation: true,
+    );
+    final _FakeTransport transport = _FakeTransport(
+      HomeTransportResponse(
+        statusCode: 200,
+        body: jsonEncode(_successResponse()),
+      ),
+    );
+    final ActivityApiClient client = ActivityApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: 'user-1',
+      deviceId: 'device-1',
+      transport: transport,
+      cache: cache,
+    );
+
+    await expectLater(
+      client.sync(
+        reading: StepReading(
+          authoritativeTotal: 100,
+          localDate: DateTime(2026, 7, 26),
+          timeZone: 'UTC',
+        ),
+        idempotencyKey: 'sync-cache-failure-1',
+      ),
+      throwsA(
+        isA<ReadSnapshotCacheException>().having(
+          (ReadSnapshotCacheException error) => error.message,
+          'message',
+          contains('безопасно очистить локальное состояние'),
+        ),
+      ),
+    );
+
+    expect(transport.requestedUri, isNull);
+  });
 
   test('client exposes stable backend error', () async {
     final ActivityApiClient client = ActivityApiClient(
@@ -88,6 +175,39 @@ void main() {
       ),
     );
   });
+}
+
+Future<void> _seedReadCache(InMemoryReadSnapshotCache cache) async {
+  await cache.write(
+    ownerId: 'user-1',
+    resource: ReadSnapshotResource.home,
+    variant: 'today',
+    payload: '{}',
+    ttl: const Duration(days: 1),
+  );
+  await cache.write(
+    ownerId: 'user-1',
+    resource: ReadSnapshotResource.platform,
+    variant: 'current',
+    payload: '{}',
+    ttl: const Duration(days: 1),
+  );
+}
+
+Future<ReadSnapshotCacheEntry?> _readHome(InMemoryReadSnapshotCache cache) {
+  return cache.read(
+    ownerId: 'user-1',
+    resource: ReadSnapshotResource.home,
+    variant: 'today',
+  );
+}
+
+Future<ReadSnapshotCacheEntry?> _readPlatform(InMemoryReadSnapshotCache cache) {
+  return cache.read(
+    ownerId: 'user-1',
+    resource: ReadSnapshotResource.platform,
+    variant: 'current',
+  );
 }
 
 Map<String, dynamic> _successResponse() {
