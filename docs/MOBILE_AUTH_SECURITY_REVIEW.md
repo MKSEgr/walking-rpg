@@ -18,12 +18,15 @@ This review records the invariants required before the mobile OIDC session slice
 - Session-store mutations are serialized; an obsolete refresh cannot overwrite or delete a later sign-in, including same-account ABA.
 - Explicit logout persists both invalidation and the pending local-cleanup obligation before waiting for runtime shutdown.
 - Partial local cleanup is persisted and retried after process restart.
+- Failed invalidation retries never delete an already-persisted tombstone.
+- Restore errors carry the pending cleanup obligation into the next sign-in.
 - The owner marker and token envelope carry the same random generation; any
   missing or mismatched record fails closed and requires reauthentication.
 
 ## Transport
 
 - Bearer tokens are attached only to the configured API origin.
+- Authenticated HTTP requests never follow redirects automatically.
 - Caller-supplied authorization and development identity headers are removed.
 - A first HTTP 401 performs one serialized refresh and one identical request replay.
 - A repeated 401 invalidates the session only when the replayed token is still current; a stale replay cannot tear down a newer token.
@@ -34,4 +37,4 @@ This review records the invariants required before the mobile OIDC session slice
 - Account switching clears the previous owner before activating the new session.
 - Explicit logout waits for admitted command work, then clears owner-scoped snapshots, commands, and secure tokens.
 
-The automated suite covers session restore, concurrent refresh, invalid grant, logout ordering, forced reauthentication ordering, refresh/logout races, account switching, runtime shutdown, exact identity matching, same-origin transport behavior, and stale repeated-401 rejection.
+The automated suite covers session restore, concurrent refresh, invalid grant, logout ordering, failed tombstone deletion, forced reauthentication ordering, refresh/logout races, account switching, runtime shutdown, exact identity matching, redirect rejection, same-origin transport behavior, and stale repeated-401 rejection.
