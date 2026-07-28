@@ -279,13 +279,31 @@ final class SecureAuthSessionStore implements AuthSessionStore {
     required bool cleanupRequired,
   }) async {
     final String normalizedOwnerId = _requireOwnerId(ownerId);
-    await _writeOwnerState(
-      _OwnerState.invalidated(
-        ownerId: normalizedOwnerId,
-        cleanupRequired: cleanupRequired,
-      ),
-    );
-    await _storage.delete(key: storageKey);
+    Object? firstError;
+    StackTrace? firstStackTrace;
+    try {
+      await _writeOwnerState(
+        _OwnerState.invalidated(
+          ownerId: normalizedOwnerId,
+          cleanupRequired: cleanupRequired,
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      firstError = error;
+      firstStackTrace = stackTrace;
+    }
+
+    // Token deletion is fail-closed and independent. A rejected marker write
+    // must not leave a restorable token envelope behind.
+    try {
+      await _storage.delete(key: storageKey);
+    } on Object catch (error, stackTrace) {
+      firstError ??= error;
+      firstStackTrace ??= stackTrace;
+    }
+    if (firstError != null && firstStackTrace != null) {
+      Error.throwWithStackTrace(firstError, firstStackTrace);
+    }
   }
 
   @override
