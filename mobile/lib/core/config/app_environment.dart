@@ -27,7 +27,7 @@ abstract final class AppEnvironment {
 
   static const String oidcScopes = String.fromEnvironment(
     'OIDC_SCOPES',
-    defaultValue: 'openid profile offline_access',
+    defaultValue: 'openid profile offline_access walking-rpg.user',
   );
 
   static const bool oidcAllowInsecureConnections = bool.fromEnvironment(
