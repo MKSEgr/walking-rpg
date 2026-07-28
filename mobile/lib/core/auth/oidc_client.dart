@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
 
@@ -91,6 +92,13 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
     );
   }
 
+  @visibleForTesting
+  static bool isRetryableOAuthError(String? oauthError) {
+    return oauthError == null ||
+        oauthError == 'server_error' ||
+        oauthError == 'temporarily_unavailable';
+  }
+
   OidcTokenResponseData _fromResponse({
     required String? accessToken,
     required String? refreshToken,
@@ -137,10 +145,7 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
           stackTrace,
         );
       }
-      final bool retryable =
-          oauthError != FlutterAppAuthOAuthError.invalidClient &&
-          oauthError != FlutterAppAuthOAuthError.unauthorizedClient &&
-          oauthError != FlutterAppAuthOAuthError.invalidScope;
+      final bool retryable = isRetryableOAuthError(oauthError);
       Error.throwWithStackTrace(
         AuthProviderException(
           error.platformErrorDetails.errorDescription ??
