@@ -206,11 +206,18 @@ final class AuthSessionController extends ChangeNotifier
   }
 
   @override
-  void rejectSession(String reason) {
+  void rejectSession(
+    String reason, {
+    String? rejectedAccessToken,
+  }) {
     if (configuration.mode != MobileAuthMode.oidc ||
         _state == AuthLifecycleState.stoppingRuntime ||
         _state == AuthLifecycleState.reauthenticationRequired ||
         _state == AuthLifecycleState.unauthenticated) {
+      return;
+    }
+    if (rejectedAccessToken != null &&
+        _session?.tokens.accessToken != rejectedAccessToken) {
       return;
     }
     _generation += 1;
