@@ -166,6 +166,7 @@ Android Emulator:
 ```bash
 flutter pub get
 flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
   --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
   --dart-define=DEMO_USER_ID=demo-user-1 \
   --dart-define=DEMO_DEVICE_ID=android-emulator-1
@@ -176,6 +177,7 @@ iOS Simulator:
 ```bash
 flutter pub get
 flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
   --dart-define=API_BASE_URL=http://127.0.0.1:8080 \
   --dart-define=DEMO_USER_ID=demo-user-1 \
   --dart-define=DEMO_DEVICE_ID=ios-simulator-1
@@ -187,6 +189,7 @@ flutter run \
 
 ```bash
 flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
   --dart-define=API_BASE_URL=http://192.168.1.10:8080 \
   --dart-define=DEMO_USER_ID=demo-user-1 \
   --dart-define=DEMO_DEVICE_ID=my-phone
@@ -196,6 +199,7 @@ flutter run \
 
 ```bash
 flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
   --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
   --dart-define=DEMO_USER_ID=demo-user-1 \
   --dart-define=DEMO_DEVICE_ID=demo-device-1 \
