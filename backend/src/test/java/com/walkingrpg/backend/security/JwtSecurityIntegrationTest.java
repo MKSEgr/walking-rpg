@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.hamcrest.Matchers.hasLength;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -40,6 +42,9 @@ class JwtSecurityIntegrationTest {
     @Autowired
     private WebApplicationContext applicationContext;
 
+    @Autowired
+    private FilterRegistrationBean<DevHeaderAuthenticationFilter> devHeaderFilterRegistration;
+
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -47,6 +52,11 @@ class JwtSecurityIntegrationTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(applicationContext)
                 .apply(springSecurity())
                 .build();
+    }
+
+    @Test
+    void shouldDisableServletContainerRegistrationOfDevHeaderFilter() {
+        assertFalse(devHeaderFilterRegistration.isEnabled());
     }
 
     @Test

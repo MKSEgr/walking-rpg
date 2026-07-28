@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.security;
 
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,6 +16,16 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfiguration {
+
+    @Bean
+    FilterRegistrationBean<DevHeaderAuthenticationFilter> devHeaderFilterRegistration(
+            DevHeaderAuthenticationFilter filter
+    ) {
+        FilterRegistrationBean<DevHeaderAuthenticationFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
 
     @Bean
     SecurityFilterChain securityFilterChain(
