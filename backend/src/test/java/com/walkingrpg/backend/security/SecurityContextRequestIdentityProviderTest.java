@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,31 +31,19 @@ class SecurityContextRequestIdentityProviderTest {
     }
 
     @Test
-    void shouldResolveSubjectActorAndHashedDeviceFromJwt() {
-        Instant now = Instant.parse("2026-07-28T06:00:00Z");
-        Jwt jwt = Jwt.withTokenValue("token")
-                .header("alg", "RS256")
-                .issuer("https://identity.example.com")
-                .subject("subject-123")
+    void shouldResolveSubjectActorAndHashedStableDeviceFromJwt() {
+        Jwt jwt = jwtBuilder()
                 .claim("preferred_username", "walker")
-                .claim("sid", "browser-session-9")
-                .issuedAt(now)
-                .expiresAt(now.plusSeconds(300))
+                .claim("device_id", "installation-9")
                 .build();
-        SecurityContextHolder.getContext().setAuthentication(
-                new JwtAuthenticationToken(
-                        jwt,
-                        List.of(new SimpleGrantedAuthority("ROLE_USER")),
-                        "walker"
-                )
-        );
+        authenticate(jwt);
 
         RequestIdentity identity = provider.requireIdentity();
 
         assertEquals("subject-123", identity.userId());
         assertEquals("walker", identity.actor());
         assertEquals(64, identity.requireDeviceId().length());
-        assertNotEquals("browser-session-9", identity.deviceId());
+        assertNotEquals("installation-9", identity.deviceId());
         assertTrue(identity.authorities().contains("ROLE_USER"));
     }
 
@@ -80,29 +69,49 @@ class SecurityContextRequestIdentityProviderTest {
         assertEquals("dev-device", identity.requireDeviceId());
     }
 
+    @Test
+    void shouldUseOnlyConfiguredStableDeviceClaim() {
+        properties.setDeviceClaim("installation_id");
+        Jwt jwt = jwtBuilder()
+                .claim("sid", "session-should-not-be-used")
+                .claim("installation_id", "installation-42")
+                .build();
+        authenticate(jwt);
+
+        RequestIdentity identity = provider.requireIdentity();
+
+        assertEquals(64, identity.requireDeviceId().length());
+        assertNotEquals("installation-42", identity.deviceId());
+    }
 
     @Test
-    void shouldUseOnlyConfiguredDeviceClaim() {
-        properties.setDeviceClaim("device_id");
-        Instant now = Instant.parse("2026-07-28T06:00:00Z");
-        Jwt jwt = Jwt.withTokenValue("token")
-                .header("alg", "RS256")
-                .issuer("https://identity.example.com")
-                .subject("subject-123")
-                .claim("sid", "session-should-not-be-used")
-                .issuedAt(now)
-                .expiresAt(now.plusSeconds(300))
+    void shouldRejectSessionIdWhenStableDeviceClaimIsMissing() {
+        Jwt jwt = jwtBuilder()
+                .claim("sid", "rotating-session-id")
                 .build();
-        SecurityContextHolder.getContext().setAuthentication(
-                new JwtAuthenticationToken(
-                        jwt,
-                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                )
-        );
+        authenticate(jwt);
 
         assertThrows(
                 MissingDeviceIdentityException.class,
                 () -> provider.requireIdentity().requireDeviceId()
+        );
+    }
+
+    @Test
+    void shouldRequireIssuerWhenDerivingDeviceIdentity() {
+        Instant now = Instant.parse("2026-07-28T06:00:00Z");
+        Jwt jwt = Jwt.withTokenValue("token")
+                .header("alg", "RS256")
+                .subject("subject-123")
+                .claim("device_id", "installation-9")
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(300))
+                .build();
+        authenticate(jwt);
+
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
         );
     }
 
@@ -110,31 +119,55 @@ class SecurityContextRequestIdentityProviderTest {
     void shouldRejectMissingAuthentication() {
         assertFalse(provider.currentIdentity().isPresent());
         assertThrows(
-                org.springframework.security.authentication.AuthenticationCredentialsNotFoundException.class,
+                AuthenticationCredentialsNotFoundException.class,
                 provider::requireIdentity
         );
     }
 
     @Test
-    void shouldRejectActivityDeviceWhenTokenHasNoSessionClaim() {
-        Instant now = Instant.parse("2026-07-28T06:00:00Z");
-        Jwt jwt = Jwt.withTokenValue("token")
-                .header("alg", "RS256")
-                .issuer("https://identity.example.com")
-                .subject("subject-123")
-                .issuedAt(now)
-                .expiresAt(now.plusSeconds(300))
-                .build();
+    void shouldRejectUnknownAuthenticatedPrincipalType() {
         SecurityContextHolder.getContext().setAuthentication(
-                new JwtAuthenticationToken(
-                        jwt,
+                new UsernamePasswordAuthenticationToken(
+                        "untrusted-principal",
+                        null,
                         List.of(new SimpleGrantedAuthority("ROLE_USER"))
                 )
         );
+
+        assertFalse(provider.currentIdentity().isPresent());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+    }
+
+    @Test
+    void shouldRejectActivityDeviceWhenTokenHasNoStableDeviceClaim() {
+        authenticate(jwtBuilder().build());
 
         assertThrows(
                 MissingDeviceIdentityException.class,
                 () -> provider.requireIdentity().requireDeviceId()
         );
+    }
+
+    private void authenticate(Jwt jwt) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new JwtAuthenticationToken(
+                        jwt,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER")),
+                        "walker"
+                )
+        );
+    }
+
+    private Jwt.Builder jwtBuilder() {
+        Instant now = Instant.parse("2026-07-28T06:00:00Z");
+        return Jwt.withTokenValue("token")
+                .header("alg", "RS256")
+                .issuer("https://identity.example.com")
+                .subject("subject-123")
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(300));
     }
 }

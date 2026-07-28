@@ -13,5 +13,6 @@ class WalkingRpgSecurityPropertiesTest {
 
         assertEquals(WalkingRpgSecurityProperties.Mode.JWT, properties.getMode());
         assertFalse(properties.isDemoEndpointsEnabled());
+        assertEquals("device_id", properties.getDeviceClaim());
     }
 }

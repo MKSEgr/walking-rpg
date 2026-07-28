@@ -68,14 +68,14 @@ class JwtSecurityIntegrationTest {
     }
 
     @Test
-    void shouldUseJwtSubjectActorAndSessionDerivedDevice() throws Exception {
+    void shouldUseJwtSubjectActorAndStableDeviceClaim() throws Exception {
         mockMvc.perform(get("/api/v1/security/probe")
                         .with(jwt()
                                 .jwt(token -> token
                                         .issuer("https://identity.example.com")
                                         .subject("subject-123")
                                         .claim("preferred_username", "walker")
-                                        .claim("sid", "session-9"))
+                                        .claim("device_id", "installation-9"))
                                 .authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value("subject-123"))

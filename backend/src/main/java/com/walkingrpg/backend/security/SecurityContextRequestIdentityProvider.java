@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.security;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -61,12 +62,7 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
             return Optional.of(fromJwt(jwt, authorities));
         }
 
-        String name = authentication.getName();
-        if (name == null || name.isBlank()) {
-            return Optional.empty();
-        }
-        String normalized = name.trim();
-        return Optional.of(new RequestIdentity(normalized, normalized, null, authorities));
+        return Optional.empty();
     }
 
     private RequestIdentity fromJwt(Jwt jwt, Set<String> authorities) {
@@ -76,7 +72,7 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
         String deviceId = deviceSeed == null
                 ? null
                 : sha256Hex(
-                        jwt.getIssuer()
+                        requireIssuer(jwt)
                                 + "|"
                                 + subject
                                 + "|"
@@ -111,6 +107,16 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
             );
         }
         return value.trim();
+    }
+
+    private String requireIssuer(Jwt jwt) {
+        URI issuer = jwt.getIssuer();
+        if (issuer == null) {
+            throw new AuthenticationCredentialsNotFoundException(
+                    "JWT не содержит обязательный claim iss для device identity"
+            );
+        }
+        return issuer.toString();
     }
 
     private String sha256Hex(String value) {

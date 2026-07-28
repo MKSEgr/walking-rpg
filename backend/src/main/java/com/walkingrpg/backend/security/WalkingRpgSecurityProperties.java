@@ -14,7 +14,7 @@ public class WalkingRpgSecurityProperties {
     private boolean demoEndpointsEnabled;
     private String rolesClaim = "roles";
     private String usernameClaim = "preferred_username";
-    private String deviceClaim = "sid";
+    private String deviceClaim = "device_id";
     private String userRole = "walking-rpg-user";
     private String adminRole = "walking-rpg-admin";
     private String userScope = "walking-rpg.user";

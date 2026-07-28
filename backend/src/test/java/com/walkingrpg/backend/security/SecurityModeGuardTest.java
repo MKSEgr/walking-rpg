@@ -1,0 +1,97 @@
+package com.walkingrpg.backend.security;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class SecurityModeGuardTest {
+
+    @Test
+    void shouldAllowFailClosedJwtDefaultsWithoutDevelopmentProfile() {
+        assertDoesNotThrow(() -> guard(new WalkingRpgSecurityProperties()).afterPropertiesSet());
+    }
+
+    @Test
+    void shouldAllowDevelopmentHeadersOnlyInLocalOrTestProfile() {
+        WalkingRpgSecurityProperties local = new WalkingRpgSecurityProperties();
+        local.setMode(WalkingRpgSecurityProperties.Mode.DEV_HEADER);
+        local.setDemoEndpointsEnabled(true);
+
+        assertDoesNotThrow(() -> guard(local, "local").afterPropertiesSet());
+        assertDoesNotThrow(() -> guard(local, "test").afterPropertiesSet());
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(local).afterPropertiesSet()
+        );
+    }
+
+    @Test
+    void shouldRejectDemoEndpointOutsideDevelopmentProfiles() {
+        WalkingRpgSecurityProperties properties = new WalkingRpgSecurityProperties();
+        properties.setDemoEndpointsEnabled(true);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(properties).afterPropertiesSet()
+        );
+    }
+
+    @Test
+    void shouldRejectDevelopmentSecurityOverridesInProduction() {
+        WalkingRpgSecurityProperties properties = new WalkingRpgSecurityProperties();
+        properties.setMode(WalkingRpgSecurityProperties.Mode.DEV_HEADER);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(properties, "prod").afterPropertiesSet()
+        );
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(new WalkingRpgSecurityProperties(), "prod", "local")
+                        .afterPropertiesSet()
+        );
+    }
+
+    @Test
+    void shouldRejectMissingOrAmbiguousIdentityMappings() {
+        WalkingRpgSecurityProperties blankDevice = new WalkingRpgSecurityProperties();
+        blankDevice.setDeviceClaim(" ");
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(blankDevice).afterPropertiesSet()
+        );
+
+        WalkingRpgSecurityProperties missingUser = new WalkingRpgSecurityProperties();
+        missingUser.setUserRole(" ");
+        missingUser.setUserScope(null);
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(missingUser).afterPropertiesSet()
+        );
+
+        WalkingRpgSecurityProperties sameRole = new WalkingRpgSecurityProperties();
+        sameRole.setAdminRole(sameRole.getUserRole());
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(sameRole).afterPropertiesSet()
+        );
+
+        WalkingRpgSecurityProperties sameScope = new WalkingRpgSecurityProperties();
+        sameScope.setAdminScope(sameScope.getUserScope());
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(sameScope).afterPropertiesSet()
+        );
+    }
+
+    private SecurityModeGuard guard(
+            WalkingRpgSecurityProperties properties,
+            String... profiles
+    ) {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles(profiles);
+        return new SecurityModeGuard(properties, environment);
+    }
+}

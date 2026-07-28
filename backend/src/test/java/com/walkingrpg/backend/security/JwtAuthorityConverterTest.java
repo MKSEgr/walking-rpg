@@ -26,9 +26,7 @@ class JwtAuthorityConverterTest {
                 .build();
 
         AbstractAuthenticationToken authentication = converter.convert(jwt);
-        Set<String> authorities = authentication.getAuthorities().stream()
-                .map(authority -> authority.getAuthority())
-                .collect(Collectors.toSet());
+        Set<String> authorities = authorities(authentication);
 
         assertEquals("walker", authentication.getName());
         assertTrue(authorities.contains("ROLE_USER"));
@@ -50,8 +48,7 @@ class JwtAuthorityConverterTest {
 
         AbstractAuthenticationToken authentication = converter.convert(jwt);
 
-        assertTrue(authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_USER")));
+        assertTrue(authorities(authentication).contains("ROLE_USER"));
     }
 
     @Test
@@ -65,10 +62,38 @@ class JwtAuthorityConverterTest {
 
         AbstractAuthenticationToken authentication = converter.convert(jwt);
 
-        assertTrue(authentication.getAuthorities().stream()
-                .noneMatch(authority -> authority.getAuthority().startsWith("ROLE_")));
+        assertTrue(authorities(authentication).stream()
+                .noneMatch(authority -> authority.startsWith("ROLE_")));
     }
 
+    @Test
+    void shouldNotTreatGenericUserOrAdminRoleNamesAsApplicationRoles() {
+        WalkingRpgSecurityProperties properties = new WalkingRpgSecurityProperties();
+        JwtAuthorityConverter converter = new JwtAuthorityConverter(properties);
+        Jwt jwt = jwtBuilder()
+                .claim("roles", List.of("USER", "ADMIN", "ROLE_USER", "ROLE_ADMIN"))
+                .build();
+
+        AbstractAuthenticationToken authentication = converter.convert(jwt);
+
+        assertTrue(authorities(authentication).stream()
+                .noneMatch(authority -> authority.startsWith("ROLE_")));
+    }
+
+    @Test
+    void shouldAllowGenericLookingRoleOnlyWhenExplicitlyConfigured() {
+        WalkingRpgSecurityProperties properties = new WalkingRpgSecurityProperties();
+        properties.setAdminRole("ROLE_ADMIN");
+        JwtAuthorityConverter converter = new JwtAuthorityConverter(properties);
+        Jwt jwt = jwtBuilder()
+                .claim("roles", List.of("ROLE_ADMIN"))
+                .build();
+
+        Set<String> authorities = authorities(converter.convert(jwt));
+
+        assertTrue(authorities.contains("ROLE_ADMIN"));
+        assertTrue(authorities.contains("ROLE_USER"));
+    }
 
     @Test
     void shouldRejectTokenWithoutSubject() {
@@ -86,6 +111,12 @@ class JwtAuthorityConverterTest {
                 org.springframework.security.oauth2.core.OAuth2AuthenticationException.class,
                 () -> converter.convert(jwt)
         );
+    }
+
+    private Set<String> authorities(AbstractAuthenticationToken authentication) {
+        return authentication.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .collect(Collectors.toSet());
     }
 
     private Jwt.Builder jwtBuilder() {

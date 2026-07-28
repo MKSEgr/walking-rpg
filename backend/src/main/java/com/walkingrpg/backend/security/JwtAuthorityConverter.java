@@ -1,6 +1,5 @@
 package com.walkingrpg.backend.security;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -44,10 +43,10 @@ public class JwtAuthorityConverter implements Converter<Jwt, AbstractAuthenticat
         Set<String> scopes = stringValues(jwt.getClaims().get("scope"));
         scopes.addAll(stringValues(jwt.getClaims().get("scp")));
 
-        boolean admin = contains(roles, properties.getAdminRole(), "ADMIN", "ROLE_ADMIN")
+        boolean admin = contains(roles, properties.getAdminRole())
                 || contains(scopes, properties.getAdminScope());
         boolean user = admin
-                || contains(roles, properties.getUserRole(), "USER", "ROLE_USER")
+                || contains(roles, properties.getUserRole())
                 || contains(scopes, properties.getUserScope());
 
         if (user) {
@@ -111,17 +110,14 @@ public class JwtAuthorityConverter implements Converter<Jwt, AbstractAuthenticat
         return values;
     }
 
-    private boolean contains(Set<String> values, String... expectedValues) {
-        List<String> normalizedExpected = new ArrayList<>();
-        for (String expected : expectedValues) {
-            String normalized = normalize(expected);
-            if (normalized != null) {
-                normalizedExpected.add(normalized);
-            }
+    private boolean contains(Set<String> values, String expectedValue) {
+        String normalizedExpected = normalize(expectedValue);
+        if (normalizedExpected == null) {
+            return false;
         }
         return values.stream()
                 .map(this::normalize)
-                .anyMatch(normalizedExpected::contains);
+                .anyMatch(normalizedExpected::equals);
     }
 
     private String stringValue(Object value) {
