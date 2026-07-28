@@ -470,6 +470,83 @@ void main() {
     expect(store.cleanupRequired, isFalse);
   });
 
+  test(
+    'logout retry never removes a tombstone written by the failed attempt',
+    () async {
+      final OidcConfiguration oidc = _oidc();
+      final AuthSession original = _session(
+        oidc,
+        subject: 'user-1',
+        expiresAt: _future,
+      );
+      final _MemorySessionStore store = _MemorySessionStore(
+        original,
+        failNextClearSessionAfterWrite: true,
+      );
+      final AuthSessionController controller = _controller(
+        oidc: oidc,
+        store: store,
+        client: _FakeOidcClient(),
+      );
+      await controller.initialize();
+      final Completer<void> stopped = Completer<void>();
+      controller.registerRuntimeStopper(() => stopped.future);
+
+      final Future<void> logout = controller.logout();
+      for (int attempt = 0; attempt < 20 && store.clearSessionCalls < 2; attempt++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(store.clearSessionCalls, 2);
+      expect(store.clearCalls, 0);
+      expect(store.session, isNull);
+      expect(store.cleanupRequired, isTrue);
+
+      stopped.complete();
+      await logout;
+
+      expect(store.clearCalls, 0);
+      expect(store.cleanupRequired, isTrue);
+    },
+  );
+
+  test('restore failure carries cleanupRequired into same-account sign-in', () async {
+    final OidcConfiguration oidc = _oidc();
+    final AuthSession previous = _session(
+      oidc,
+      subject: 'user-1',
+      expiresAt: _future,
+    );
+    final _MemorySessionStore store = _MemorySessionStore(
+      null,
+      readError: AuthSessionStoreException(
+        'corrupt restored session',
+        lastOwnerId: previous.identity.ownerId,
+        cleanupRequired: true,
+      ),
+    );
+    final _RecordingCleaner cleaner = _RecordingCleaner();
+    final AuthSessionController controller = _controller(
+      oidc: oidc,
+      store: store,
+      cleaner: cleaner,
+      client: _FakeOidcClient(
+        authorizeResponse: _response(
+          oidc,
+          subject: 'user-1',
+          accessTokenSuffix: 'replacement',
+          expiresAt: _future,
+        ),
+      ),
+    );
+
+    await controller.initialize();
+    await controller.signIn();
+
+    expect(cleaner.clearedOwners, <String>[previous.identity.ownerId]);
+    expect(controller.state, AuthLifecycleState.authenticated);
+  });
+
   test('signIn is ignored while an authenticated runtime is active', () async {
     final OidcConfiguration oidc = _oidc();
     final _MemorySessionStore store = _MemorySessionStore(
@@ -597,6 +674,8 @@ final class _MemorySessionStore implements AuthSessionStore {
     AuthSession? session, {
     this.refreshWriteStarted,
     this.releaseRefreshWrite,
+    this.readError,
+    this.failNextClearSessionAfterWrite = false,
   }) : _state = AuthSessionStoreState(
          session: session,
          sessionGeneration: session == null ? null : 'generation-0',
@@ -605,8 +684,12 @@ final class _MemorySessionStore implements AuthSessionStore {
 
   final Completer<void>? refreshWriteStarted;
   final Completer<void>? releaseRefreshWrite;
+  AuthSessionStoreException? readError;
+  bool failNextClearSessionAfterWrite;
   AuthSessionStoreState _state;
   int _nextGeneration = 1;
+  int clearCalls = 0;
+  int clearSessionCalls = 0;
 
   AuthSession? get session => _state.session;
 
@@ -616,6 +699,7 @@ final class _MemorySessionStore implements AuthSessionStore {
 
   @override
   Future<void> clear() async {
+    clearCalls += 1;
     _state = const AuthSessionStoreState();
   }
 
@@ -624,14 +708,26 @@ final class _MemorySessionStore implements AuthSessionStore {
     required String ownerId,
     bool cleanupRequired = false,
   }) async {
+    clearSessionCalls += 1;
     _state = AuthSessionStoreState(
       lastOwnerId: ownerId,
       cleanupRequired: cleanupRequired,
     );
+    if (failNextClearSessionAfterWrite) {
+      failNextClearSessionAfterWrite = false;
+      throw StateError('simulated token-envelope delete failure');
+    }
   }
 
   @override
-  Future<AuthSessionStoreState> read() async => _state;
+  Future<AuthSessionStoreState> read() async {
+    final AuthSessionStoreException? error = readError;
+    readError = null;
+    if (error != null) {
+      throw error;
+    }
+    return _state;
+  }
 
   @override
   Future<String> write(AuthSession value) async {
