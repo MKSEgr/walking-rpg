@@ -8,9 +8,7 @@ void main() {
       isTrue,
     );
     expect(
-      FlutterAppAuthOidcClient.isRetryableOAuthError(
-        'temporarily_unavailable',
-      ),
+      FlutterAppAuthOidcClient.isRetryableOAuthError('temporarily_unavailable'),
       isTrue,
     );
     expect(FlutterAppAuthOidcClient.isRetryableOAuthError(null), isTrue);
