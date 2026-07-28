@@ -120,6 +120,34 @@ void main() {
     expect(invalidated.cleanupRequired, isTrue);
   });
 
+  test('failed tombstone write still deletes the token envelope', () async {
+    final OidcConfiguration oidc = _oidc();
+    final _MemorySecureStorage storage = _MemorySecureStorage();
+    final SecureAuthSessionStore store = SecureAuthSessionStore(
+      storage: storage,
+    );
+    final AuthSession session = _session(
+      oidc,
+      subject: 'user-1',
+      marker: 'marker-write-failure',
+    );
+    await store.write(session);
+    storage.failNextWriteKey = store.ownerStateKey;
+
+    await expectLater(
+      store.clearSession(
+        ownerId: session.identity.ownerId,
+        cleanupRequired: true,
+      ),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(storage.values.containsKey(store.storageKey), isFalse);
+    final AuthSessionStoreState restored = await store.read();
+    expect(restored.session, isNull);
+    expect(restored.lastOwnerId, session.identity.ownerId);
+  });
+
   test('failed token publication leaves an invalidated owner marker', () async {
     final OidcConfiguration oidc = _oidc();
     final _MemorySecureStorage storage = _MemorySecureStorage();
