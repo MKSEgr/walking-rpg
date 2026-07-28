@@ -304,7 +304,7 @@ flow with PKCE. Required build-time values:
 --dart-define=API_BASE_URL=https://api.example.com
 --dart-define=OIDC_ISSUER=https://identity.example.com/realms/walking-rpg
 --dart-define=OIDC_CLIENT_ID=walking-rpg-mobile
---dart-define=OIDC_SCOPES="openid profile offline_access"
+--dart-define=OIDC_SCOPES="openid profile offline_access walking-rpg.user"
 ```
 
 The registered redirect URIs are:
@@ -313,6 +313,9 @@ The registered redirect URIs are:
 com.walkingrpg.app:/oauthredirect
 com.walkingrpg.app:/logout
 ```
+
+The `walking-rpg.user` scope is required by the backend's default JWT
+authority mapping for every `/api/v1/**` endpoint.
 
 Access, refresh and ID tokens are stored in Keychain/Android secure storage.
 A secure owner tombstone preserves account-switch cleanup across process restarts, and
