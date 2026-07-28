@@ -18,6 +18,8 @@ This review records the invariants required before the mobile OIDC session slice
 - Session-store mutations are serialized; an obsolete refresh cannot overwrite or delete a later sign-in, including same-account ABA.
 - Explicit logout persists both invalidation and the pending local-cleanup obligation before waiting for runtime shutdown.
 - Partial local cleanup is persisted and retried after process restart.
+- The owner marker and token envelope carry the same random generation; any
+  missing or mismatched record fails closed and requires reauthentication.
 
 ## Transport
 
