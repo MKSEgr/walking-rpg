@@ -123,6 +123,7 @@ final class AuthSessionController extends ChangeNotifier
       notifyListeners();
     } on AuthSessionStoreException catch (error) {
       _previousOwnerId = error.lastOwnerId ?? _previousOwnerId;
+      _cleanupRequired = error.cleanupRequired || _cleanupRequired;
       _message = error.message;
       _state = _previousOwnerId == null
           ? AuthLifecycleState.unauthenticated
@@ -258,13 +259,10 @@ final class AuthSessionController extends ChangeNotifier
       }
     } on Object catch (error) {
       cleanupError = error;
-      try {
-        await _sessionStore.clear();
-      } on Object {
-        // Continue with local cleanup; the original persistence error is kept.
-      }
       if (ownerId != null) {
         try {
+          // Retry the idempotent tombstone write without deleting the marker
+          // that the failed attempt may already have persisted.
           await _sessionStore.clearSession(
             ownerId: ownerId,
             cleanupRequired: true,
@@ -506,13 +504,9 @@ final class AuthSessionController extends ChangeNotifier
       }
     } on Object catch (error) {
       stopError = error;
-      try {
-        await _sessionStore.clear();
-      } on Object {
-        // Preserve the original invalidation error.
-      }
       if (ownerId != null) {
         try {
+          // Keep the invalidation marker continuously durable across retries.
           await _sessionStore.clearSession(ownerId: ownerId);
         } on Object {
           // No stronger durable fallback remains.
