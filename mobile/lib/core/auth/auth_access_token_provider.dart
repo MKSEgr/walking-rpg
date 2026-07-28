@@ -3,5 +3,8 @@ abstract interface class AuthAccessTokenProvider {
 
   Future<String> refreshAfterUnauthorized(String rejectedAccessToken);
 
-  void rejectSession(String reason);
+  void rejectSession(
+    String reason, {
+    String? rejectedAccessToken,
+  });
 }
