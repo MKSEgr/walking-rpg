@@ -696,6 +696,10 @@ public class PlatformService {
         userState.put("experimentAssignments", state.experimentAssignments());
         userState.put("resolvedEventCount", facts.resolvedEventCount());
         userState.put("totalAcceptedSteps", facts.totalAcceptedSteps());
+        userState.put(
+                "hasSuccessfulActivitySync",
+                facts.hasSuccessfulActivitySync()
+        );
 
         return new PlatformSnapshotResponse(
                 repository.activeContentVersion(),

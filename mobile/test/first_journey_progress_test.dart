@@ -169,6 +169,26 @@ void main() {
     expect(nextLocalDay.pendingFactMilestones, isEmpty);
   });
 
+  test('preserves a successful sync that accepted zero steps', () {
+    final FirstJourneyProgress zeroStepSync = FirstJourneyProgress(
+      home: firstJourneyHome(),
+      platform: platformSnapshot(
+        completedOnboardingSteps: const <String>[
+          'welcome',
+          'health-permission',
+          'first-sync',
+        ],
+        resolvedEventCount: 0,
+        totalAcceptedSteps: 0,
+        hasSuccessfulActivitySync: true,
+      ),
+    );
+
+    expect(zeroStepSync.home.lastActivitySyncAt, isNull);
+    expect(zeroStepSync.completedSteps, contains('first-sync'));
+    expect(zeroStepSync.stage, FirstJourneyStage.pet);
+  });
+
   test('keeps cached recovery state read-only', () {
     final FirstJourneyProgress cached = FirstJourneyProgress(
       home: firstJourneyHome(

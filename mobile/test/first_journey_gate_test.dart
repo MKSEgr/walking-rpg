@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/onboarding/domain/first_journey_progress.dart';
 import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
@@ -378,6 +379,89 @@ void main() {
 
     expect(home.lastActivitySyncAt, isNull);
     expect(find.text('Основная экспедиция'), findsOneWidget);
+    expect(find.byKey(const Key('first-journey-activity')), findsNothing);
+    await runtime.close();
+  });
+
+  testWidgets('continues after a successful zero-step sync', (
+    WidgetTester tester,
+  ) async {
+    final Set<String> completed = <String>{'welcome'};
+    bool hasSuccessfulActivitySync = false;
+    PlatformSnapshot currentPlatform() => platformSnapshot(
+      completedOnboardingSteps: FirstJourneyProgress.steps
+          .where(completed.contains)
+          .toList(growable: false),
+      resolvedEventCount: 0,
+      totalAcceptedSteps: 0,
+      hasSuccessfulActivitySync: hasSuccessfulActivitySync,
+    );
+    final MobileCommandRuntime runtime = MobileCommandRuntime(
+      ownerId: 'zero-step-user',
+      store: InMemoryMobileCommandStore(),
+      activitySender:
+          ({required reading, required String idempotencyKey}) async =>
+              throw StateError('Unexpected activity call'),
+      expeditionSender:
+          ({
+            required String expeditionId,
+            required int energyToSpend,
+            required String idempotencyKey,
+          }) async => throw StateError('Unexpected expedition call'),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw StateError('Unexpected event call'),
+      platformSender:
+          ({
+            required String commandType,
+            required Map<String, Object?> payload,
+            required String idempotencyKey,
+          }) async {
+            completed.add(payload['stepId']! as String);
+            return platformCommandResult(
+              commandType: commandType,
+              idempotencyKey: idempotencyKey,
+              snapshot: currentPlatform(),
+            );
+          },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FirstJourneyGate(
+          homeLoader: () async => firstJourneyHome(),
+          platformLoader: () async => currentPlatform(),
+          commandRuntime: runtime,
+          synchronizer: () async {
+            hasSuccessfulActivitySync = true;
+            return const ActivitySyncResult(
+              acceptedTotal: 0,
+              acceptedDelta: 0,
+              energyGranted: 0,
+              energyBalanceAfter: 0,
+              economyVersion: 0,
+              riskStatus: 'NO_NEW_ACTIVITY',
+              stateVersion: 0,
+              serverTime: '2026-07-29T08:00:00Z',
+            );
+          },
+          childBuilder: (VoidCallback onResume) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _tap(tester, const Key('first-journey-sync'));
+    expect(
+      find.byKey(const Key('first-journey-energy-reward')),
+      findsOneWidget,
+    );
+    await _tap(tester, const Key('first-journey-activity-continue'));
+
+    expect(find.byKey(const Key('first-journey-pet')), findsOneWidget);
     expect(find.byKey(const Key('first-journey-activity')), findsNothing);
     await runtime.close();
   });

@@ -388,7 +388,10 @@ remote config. Канонический первый путь содержит �
 
 `activePetId` согласован с единственным `pets[].active=true`. Каждый питомец
 содержит `trait`, независимые `level/bond/evolutionStage` и server-owned
-evolution threshold.
+evolution threshold. `userState.hasSuccessfulActivitySync` — долговечный
+authoritative fact наличия хотя бы одной успешно обработанной activity-команды,
+включая sync с нулём шагов; он не сбрасывается при смене локальной даты или
+очистке идемпотентных activity-receipts по retention policy.
 
 ## `POST /api/v1/platform/commands`
 
@@ -414,8 +417,10 @@ evolution threshold.
 - `COMPLETE_ONBOARDING_STEP` записывается после соответствующего реального
   действия; mobile не показывает отдельные кнопки фиктивного завершения;
 - после process restart mobile восстанавливает `health-permission`,
-  `first-sync`, `first-expedition` и `first-event` из authoritative facts и
-  идемпотентно backfill-ит отсутствующие служебные milestones;
+  `first-sync`, `first-expedition` и `first-event` из authoritative facts;
+  activity-факт берётся из `hasSuccessfulActivitySync`, а не из положительного
+  количества шагов, после чего mobile идемпотентно backfill-ит отсутствующие
+  служебные milestones;
 - активный питомец затем возвращается в `GET /home` и получает event bond.
 
 ## Ошибки

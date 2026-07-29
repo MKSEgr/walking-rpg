@@ -28,6 +28,13 @@ public class JdbcPlatformProgressFactsProvider implements PlatformProgressFactsP
                 FROM processed_event_resolution
                 WHERE user_id = ?
                 """, Long.class, userId);
+        Boolean hasSuccessfulActivitySync = jdbcTemplate.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM app_device
+                    WHERE user_id = ?
+                )
+                """, Boolean.class, userId);
         Map<String, Integer> petBonds = new LinkedHashMap<>();
         jdbcTemplate.query("""
                 SELECT pet_id, bond
@@ -50,7 +57,8 @@ public class JdbcPlatformProgressFactsProvider implements PlatformProgressFactsP
                 steps == null ? 0 : steps,
                 resolvedEvents == null ? 0 : resolvedEvents,
                 petBonds,
-                squads.stream().findFirst().orElse(null)
+                squads.stream().findFirst().orElse(null),
+                Boolean.TRUE.equals(hasSuccessfulActivitySync)
         );
     }
 }

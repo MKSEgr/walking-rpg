@@ -6,7 +6,8 @@ public record PlatformProgressFacts(
         long totalAcceptedSteps,
         long resolvedEventCount,
         Map<String, Integer> petBonds,
-        String squadId
+        String squadId,
+        boolean hasSuccessfulActivitySync
 ) {
     public PlatformProgressFacts {
         petBonds = petBonds == null ? Map.of() : Map.copyOf(petBonds);
@@ -26,12 +27,19 @@ public record PlatformProgressFacts(
                 totalAcceptedSteps,
                 resolvedEventCount,
                 Map.of("spark-v1", sparkBond),
-                squadId
+                squadId,
+                totalAcceptedSteps > 0
         );
     }
 
     public static PlatformProgressFacts empty() {
-        return new PlatformProgressFacts(0, 0, Map.of("spark-v1", 10), null);
+        return new PlatformProgressFacts(
+                0,
+                0,
+                Map.of("spark-v1", 10),
+                null,
+                false
+        );
     }
 
     public boolean inSquad() {

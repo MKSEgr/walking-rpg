@@ -20,6 +20,7 @@ import com.walkingrpg.backend.platform.application.PlatformContentCatalog;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
 import com.walkingrpg.backend.platform.application.PlatformService;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
+import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -210,6 +211,41 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(1, rowCount("activity_sync_state"));
     }
 
+    @Test
+    void shouldExposeSuccessfulZeroStepSyncAsDurablePlatformFact() {
+        ActivitySyncOutcome outcome = activitySyncService.synchronize(
+                new ActivitySyncCommand(
+                        "zero-step-user",
+                        "zero-step-device",
+                        LocalDate.of(2026, 7, 27),
+                        ZoneId.of("Europe/Berlin"),
+                        0,
+                        List.of(),
+                        null,
+                        "zero-step-sync-1",
+                        "signed-attestation"
+                )
+        );
+
+        assertEquals(1, rowCount("processed_activity_sync"));
+        assertEquals(1, rowCount("app_device"));
+        assertEquals(0, rowCount("activity_sync_state"));
+
+        jdbcTemplate.update("DELETE FROM processed_activity_sync");
+
+        PlatformProgressFacts facts = progressFactsProvider.factsFor("zero-step-user");
+        Map<String, Object> userState = platformService
+                .getSnapshot("zero-step-user")
+                .userState();
+
+        assertEquals(0, outcome.activity().acceptedTotal());
+        assertEquals(0, facts.totalAcceptedSteps());
+        assertTrue(facts.hasSuccessfulActivitySync());
+        assertEquals(true, userState.get("hasSuccessfulActivitySync"));
+        assertEquals(0, rowCount("processed_activity_sync"));
+        assertEquals(1, rowCount("app_device"));
+        assertEquals(0, rowCount("activity_sync_state"));
+    }
 
     private void ensureUser(String userId) {
         jdbcTemplate.update(

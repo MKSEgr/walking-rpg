@@ -70,6 +70,7 @@ class PlatformServiceTest {
         assertEquals("chapter-1-v1", first.contentVersion());
         assertEquals(0, first.stateVersion());
         assertEquals("spark-v1", first.userState().get("activePetId"));
+        assertEquals(false, first.userState().get("hasSuccessfulActivitySync"));
         assertEquals(3, list(first.userState(), "pets").size());
         assertEquals(18, first.content().get("chapterNodes"));
         assertTrue(platformRepository.findState("user-1").isEmpty());
@@ -146,6 +147,10 @@ class PlatformServiceTest {
         ));
 
         assertEquals(60, number(response.snapshot().userState(), "seasonXp"));
+        assertEquals(
+                true,
+                response.snapshot().userState().get("hasSuccessfulActivitySync")
+        );
         assertTrue(collection(response.snapshot().userState(), "claimedQuests")
                 .contains("walk-3000"));
         Map<String, Object> spark = list(response.snapshot().userState(), "pets").stream()

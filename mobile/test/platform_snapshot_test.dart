@@ -17,6 +17,19 @@ void main() {
     expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
     expect(snapshot.claimableSeasonLevel, 2);
     expect(snapshot.remoteConfig.sandboxPaymentsEnabled, isTrue);
+    expect(snapshot.userState.hasSuccessfulActivitySync, isTrue);
+  });
+
+  test('falls back to lifetime steps for an older platform response', () {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState = Map<String, dynamic>.from(
+      json['userState']! as Map<String, dynamic>,
+    )..remove('hasSuccessfulActivitySync');
+    json['userState'] = userState;
+
+    final PlatformSnapshot snapshot = PlatformSnapshot.fromJson(json);
+
+    expect(snapshot.userState.hasSuccessfulActivitySync, isTrue);
   });
 
   test('caps claimable season level by content definition', () {

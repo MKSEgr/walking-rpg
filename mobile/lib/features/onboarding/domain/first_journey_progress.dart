@@ -94,7 +94,7 @@ final class FirstJourneyProgress {
         .toSet();
     final bool hasDurableActivitySync =
         home.lastActivitySyncAt != null ||
-        platform.userState.totalAcceptedSteps > 0;
+        platform.userState.hasSuccessfulActivitySync;
     if (hasDurableActivitySync) {
       completed
         ..add(healthPermissionStep)

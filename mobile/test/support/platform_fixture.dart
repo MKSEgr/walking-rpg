@@ -15,6 +15,7 @@ Map<String, dynamic> platformSnapshotJson({
   List<String> achievements = const <String>['season-reward-1'],
   int resolvedEventCount = 2,
   int totalAcceptedSteps = 6842,
+  bool? hasSuccessfulActivitySync,
   CachedReadMetadata? cacheMetadata,
 }) {
   const List<String> onboardingSteps = <String>[
@@ -110,6 +111,8 @@ Map<String, dynamic> platformSnapshotJson({
       },
       'resolvedEventCount': resolvedEventCount,
       'totalAcceptedSteps': totalAcceptedSteps,
+      'hasSuccessfulActivitySync':
+          hasSuccessfulActivitySync ?? totalAcceptedSteps > 0,
     },
     'content': <String, dynamic>{
       'contentVersion': 'chapter-1-v1',
@@ -203,6 +206,7 @@ PlatformSnapshot platformSnapshot({
   List<String> achievements = const <String>['season-reward-1'],
   int resolvedEventCount = 2,
   int totalAcceptedSteps = 6842,
+  bool? hasSuccessfulActivitySync,
   CachedReadMetadata? cacheMetadata,
 }) {
   return PlatformSnapshot.fromJson(
@@ -218,6 +222,7 @@ PlatformSnapshot platformSnapshot({
       achievements: achievements,
       resolvedEventCount: resolvedEventCount,
       totalAcceptedSteps: totalAcceptedSteps,
+      hasSuccessfulActivitySync: hasSuccessfulActivitySync,
     ),
     cacheMetadata: cacheMetadata,
   );
