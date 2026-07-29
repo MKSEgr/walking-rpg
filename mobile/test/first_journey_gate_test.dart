@@ -230,6 +230,103 @@ void main() {
     expect(backfilled, <String>['health-permission', 'first-sync']);
     await runtime.close();
   });
+
+  testWidgets('restarts legacy manual milestones from real player actions', (
+    WidgetTester tester,
+  ) async {
+    final Set<String> completed = <String>{
+      'welcome',
+      'health-permission',
+      'first-sync',
+      'first-expedition',
+    };
+    HomeSnapshot home = firstJourneyHome();
+    String activePetId = 'spark-v1';
+
+    PlatformSnapshot currentPlatform() => platformSnapshot(
+      completedOnboardingSteps: FirstJourneyProgress.steps
+          .where(completed.contains)
+          .toList(growable: false),
+      activePetId: activePetId,
+      resolvedEventCount: 0,
+      totalAcceptedSteps: home.dailySteps,
+    );
+
+    final MobileCommandRuntime runtime = MobileCommandRuntime(
+      ownerId: 'legacy-first-journey-user',
+      store: InMemoryMobileCommandStore(),
+      activitySender:
+          ({required reading, required String idempotencyKey}) async =>
+              throw StateError('Unexpected activity runtime call'),
+      expeditionSender:
+          ({
+            required String expeditionId,
+            required int energyToSpend,
+            required String idempotencyKey,
+          }) async {
+            expect(expeditionId, 'starter-expedition-v1');
+            expect(energyToSpend, 30);
+            home = firstJourneyHome(synced: true, eventReady: true);
+            return firstJourneyAdvanceResult;
+          },
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw StateError('Unexpected event call'),
+      platformSender:
+          ({
+            required String commandType,
+            required Map<String, Object?> payload,
+            required String idempotencyKey,
+          }) async {
+            if (commandType == 'COMPLETE_ONBOARDING_STEP') {
+              completed.add(payload['stepId']! as String);
+            } else if (commandType == 'SELECT_PET') {
+              activePetId = payload['petId']! as String;
+              completed.add(FirstJourneyProgress.petSelectionStep);
+            }
+            return platformCommandResult(
+              commandType: commandType,
+              idempotencyKey: idempotencyKey,
+              snapshot: currentPlatform(),
+            );
+          },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FirstJourneyGate(
+          homeLoader: () async => home,
+          platformLoader: () async => currentPlatform(),
+          commandRuntime: runtime,
+          synchronizer: () async {
+            home = firstJourneyHome(synced: true, energy: 30);
+            return firstJourneyActivityResult;
+          },
+          childBuilder: (VoidCallback onResume) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('first-journey-activity')), findsOneWidget);
+    expect(find.byKey(const Key('first-journey-event')), findsNothing);
+
+    await _tap(tester, const Key('first-journey-sync'));
+    await _tap(tester, const Key('first-journey-activity-continue'));
+    expect(find.byKey(const Key('first-journey-pet')), findsOneWidget);
+
+    await _tap(tester, const Key('first-journey-select-moss-v1'));
+    expect(find.byKey(const Key('first-journey-expedition')), findsOneWidget);
+    expect(find.byKey(const Key('first-journey-event')), findsNothing);
+
+    await _tap(tester, const Key('first-journey-advance'));
+    expect(find.byKey(const Key('first-journey-event')), findsOneWidget);
+    expect(find.text('Источник сигнала'), findsOneWidget);
+    await runtime.close();
+  });
 }
 
 Future<void> _tap(WidgetTester tester, Key key) async {

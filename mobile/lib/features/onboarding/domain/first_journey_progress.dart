@@ -88,9 +88,10 @@ final class FirstJourneyProgress {
     HomeSnapshot home,
     PlatformSnapshot platform,
   ) {
-    final Set<String> completed = <String>{
-      ...platform.userState.completedOnboardingSteps,
-    };
+    final Set<String> persisted = platform.userState.completedOnboardingSteps;
+    final Set<String> completed = persisted
+        .where((String step) => !_factBackedSteps.contains(step))
+        .toSet();
     if (home.lastActivitySyncAt != null) {
       completed
         ..add(healthPermissionStep)
@@ -98,17 +99,17 @@ final class FirstJourneyProgress {
     }
 
     final HomeExpeditionEvent? event = home.unlockedEvent;
-    final bool firstNodeReached =
+    final bool firstEventResolved =
         platform.userState.resolvedEventCount > 0 ||
+        (event?.eventId == 'signal-source-v1' && event?.isResolved == true) ||
         home.currentNodeId != 'outer-beacon' ||
-        event?.eventId == 'signal-source-v1' ||
-        home.expeditionStatus == 'EVENT_READY' ||
         home.expeditionStatus == 'COMPLETED';
-    if (firstNodeReached) {
+    final bool firstEventReady =
+        event?.eventId == 'signal-source-v1' && event?.isResolved == false;
+    if (firstEventReady || firstEventResolved) {
       completed.add(firstExpeditionStep);
     }
-    if (platform.userState.resolvedEventCount > 0 ||
-        (event?.eventId == 'signal-source-v1' && event?.isResolved == true)) {
+    if (firstEventResolved) {
       completed.add(firstEventStep);
     }
     return completed;

@@ -110,6 +110,42 @@ void main() {
     },
   );
 
+  test('revalidates legacy manual milestones against gameplay facts', () {
+    const List<String> legacySteps = <String>[
+      'welcome',
+      'health-permission',
+      'first-sync',
+      'first-expedition',
+    ];
+    final FirstJourneyProgress beforeRealActions = FirstJourneyProgress(
+      home: firstJourneyHome(),
+      platform: platformSnapshot(
+        completedOnboardingSteps: legacySteps,
+        resolvedEventCount: 0,
+        totalAcceptedSteps: 0,
+      ),
+    );
+    final FirstJourneyProgress afterSyncAndPetSelection = FirstJourneyProgress(
+      home: firstJourneyHome(synced: true, energy: 30),
+      platform: platformSnapshot(
+        completedOnboardingSteps: const <String>[
+          ...legacySteps,
+          'pet-selection',
+        ],
+        resolvedEventCount: 0,
+      ),
+    );
+
+    expect(beforeRealActions.completedSteps, <String>{'welcome'});
+    expect(beforeRealActions.stage, FirstJourneyStage.activity);
+    expect(beforeRealActions.pendingFactMilestones, isEmpty);
+    expect(
+      afterSyncAndPetSelection.completedSteps,
+      isNot(contains('first-expedition')),
+    );
+    expect(afterSyncAndPetSelection.stage, FirstJourneyStage.expedition);
+  });
+
   test('keeps cached recovery state read-only', () {
     final FirstJourneyProgress cached = FirstJourneyProgress(
       home: firstJourneyHome(
