@@ -72,6 +72,8 @@ Mobile/session boundary — `CODE_COMPLETE`:
 До store build остаются внешние gates:
 
 - выбрать и настроить production OIDC client и владение аккаунтом;
+- включить стандартный `auth_time` в подписанный access token и проверить
+  server-side окно свежей аутентификации;
 - проверить login/refresh/logout/reinstall/upgrade на физических устройствах;
 - зафиксировать provider-side revocation и account-deletion policy.
 
@@ -82,6 +84,7 @@ Account data controls — `CODE_COMPLETE`:
 - экран настроек аккаунта;
 - JSON export через системный share sheet без постоянной staging-копии;
 - два подтверждения удаления и fresh OIDC login той же identity;
+- `prompt=login` + `max_age=0` и server-side проверка подписанного `auth_time`;
 - idempotent deletion request и durable receipt;
 - очистка local command store, read cache и secure session только после
   подтверждённого удаления backend-ом;

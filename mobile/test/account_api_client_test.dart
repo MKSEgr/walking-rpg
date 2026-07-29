@@ -98,6 +98,41 @@ void main() {
       ),
     );
   });
+
+  test('preserves the fresh-authentication error as non-retryable', () async {
+    final AccountApiClient client = AccountApiClient(
+      baseUri: Uri.parse('https://api.example'),
+      transport: _FakeAccountTransport(
+        postResponse: const HomeTransportResponse(
+          statusCode: 403,
+          body: '''
+            {
+              "code": "FRESH_AUTHENTICATION_REQUIRED",
+              "message": "fresh login required",
+              "details": {"maxAuthenticationAgeSeconds": 300}
+            }
+          ''',
+        ),
+      ),
+    );
+
+    await expectLater(
+      client.requestDeletion(idempotencyKey: 'delete-request-3'),
+      throwsA(
+        isA<AccountApiException>()
+            .having(
+              (AccountApiException error) => error.code,
+              'code',
+              'FRESH_AUTHENTICATION_REQUIRED',
+            )
+            .having(
+              (AccountApiException error) => error.retryable,
+              'retryable',
+              false,
+            ),
+      ),
+    );
+  });
 }
 
 final class _FakeAccountTransport implements HomeTransport {

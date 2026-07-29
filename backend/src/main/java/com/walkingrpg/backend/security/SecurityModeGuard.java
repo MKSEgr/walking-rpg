@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.security;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Component;
 public class SecurityModeGuard implements InitializingBean {
 
     private static final Set<String> DEVELOPMENT_PROFILES = Set.of("local", "test");
+    private static final Duration MAXIMUM_ACCOUNT_DELETION_AUTHENTICATION_AGE =
+            Duration.ofMinutes(15);
 
     private final WalkingRpgSecurityProperties properties;
     private final Environment environment;
@@ -59,6 +62,9 @@ public class SecurityModeGuard implements InitializingBean {
         }
 
         requireText(properties.getDeviceClaim(), "OIDC device claim");
+        requireAccountDeletionAuthenticationAge(
+                properties.getAccountDeletionMaxAuthenticationAge()
+        );
         requireAuthorityMapping(
                 "пользовательской authority",
                 properties.getUserRole(),
@@ -84,6 +90,18 @@ public class SecurityModeGuard implements InitializingBean {
     private void requireAuthorityMapping(String name, String role, String scope) {
         if (isBlank(role) && isBlank(scope)) {
             throw invalid("Не задан mapping для " + name);
+        }
+    }
+
+    private void requireAccountDeletionAuthenticationAge(Duration value) {
+        if (value == null
+                || value.isZero()
+                || value.isNegative()
+                || value.compareTo(MAXIMUM_ACCOUNT_DELETION_AUTHENTICATION_AGE) > 0) {
+            throw invalid(
+                    "допустимый возраст authentication для удаления аккаунта "
+                            + "должен быть от PT0S до PT15M"
+            );
         }
     }
 

@@ -21,8 +21,12 @@ Backend уже умел выгружать и удалять данные пол
   `POST /api/v1/account/deletion-requests` с обязательными
   `Idempotency-Key` и точным server-side подтверждением `DELETE`.
 - Перед destructive request mobile показывает два независимых подтверждения,
-  запускает OIDC authorization с `prompt=login` и принимает только ту же
-  canonical owner identity.
+  запускает OIDC authorization с `prompt=login`, `max_age=0` и принимает только
+  ту же canonical owner identity.
+- Backend независимо требует стандартный подписанный `auth_time` в access
+  token. Допустимый возраст задаётся
+  `ACCOUNT_DELETION_MAX_AUTH_AGE=PT5M`, а startup guard запрещает нулевое,
+  отрицательное и превышающее 15 минут окно.
 - Backend удаляет данные транзакционно и возвращает постоянную UUID-квитанцию.
   Повторный запрос возвращает ту же квитанцию.
 - Квитанция хранит SHA-256 subject и request key, timestamps и receipt UUID.
@@ -41,6 +45,8 @@ Backend уже умел выгружать и удалять данные пол
 
 - Потеря сетевого ответа не заставляет пользователя угадывать, завершилось ли
   удаление.
+- Украденного старого access token недостаточно для destructive request, даже
+  если он ещё не истёк.
 - Старый access token не может заново создать `app_user` или связанные данные.
 - Ошибка до backend receipt не очищает локальную сессию и допускает безопасный
   retry с тем же key.

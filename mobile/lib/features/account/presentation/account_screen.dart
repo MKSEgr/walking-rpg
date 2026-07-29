@@ -412,6 +412,10 @@ String _accountErrorMessage(Object error, {required String operation}) {
     if (error.statusCode == 401) {
       return 'Сессия истекла. Войдите снова, чтобы $operation.';
     }
+    if (error.code == 'FRESH_AUTHENTICATION_REQUIRED') {
+      return 'Identity provider не подтвердил свежий вход. '
+          'Повторите операцию после интерактивной авторизации.';
+    }
     if (error.statusCode == 403) {
       return 'У аккаунта нет права выполнить операцию.';
     }

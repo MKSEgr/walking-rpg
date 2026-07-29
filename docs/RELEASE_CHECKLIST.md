@@ -24,6 +24,8 @@ CI создаёт технические release candidates. Подпись и �
 - [ ] Backend production profile запущен в `jwt` mode; demo/dev headers не принимаются.
 - [ ] OIDC issuer, JWKS и audience соответствуют production client.
 - [ ] User/admin claims проверены на реальных токенах.
+- [ ] Access token после `prompt=login` + `max_age=0` содержит подписанный
+      `auth_time`; stale/missing claim отклоняется deletion endpoint.
 - [ ] Mobile Authorization Code + PKCE, refresh, expiry и logout пройдены end-to-end.
 - [ ] Logout/account switch очищает локальную session, read cache и command outbox по согласованной политике.
 

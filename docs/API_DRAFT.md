@@ -34,7 +34,8 @@ Accept: application/json
 
 Синхронно удаляет игровые данные authenticated subject и возвращает постоянную
 квитанцию. Перед запросом mobile выполняет интерактивную OIDC-проверку той же
-учётной записи и двухэтапное пользовательское подтверждение.
+учётной записи с `prompt=login` и `max_age=0`, затем двухэтапное
+пользовательское подтверждение.
 
 ```http
 Authorization: Bearer <fresh-access-token>
@@ -57,6 +58,13 @@ Content-Type: application/json
   "replayed": false
 }
 ```
+
+Backend принимает destructive request только если подписанный access token
+содержит `auth_time` не старше
+`ACCOUNT_DELETION_MAX_AUTH_AGE` (по умолчанию `PT5M`). Отсутствующий,
+некорректный или устаревший claim возвращает
+`403 FRESH_AUTHENTICATION_REQUIRED`. Production IdP обязан включать
+стандартный OIDC `auth_time` в access token.
 
 Повтор после потери ответа возвращает ту же квитанцию с `replayed=true`, в том
 числе после перезапуска клиента. Backend хранит только SHA-256 subject и

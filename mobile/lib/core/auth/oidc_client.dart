@@ -39,6 +39,9 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
           issuer: configuration.issuer.toString(),
           scopes: configuration.scopes,
           promptValues: forceLogin ? const <String>['login'] : null,
+          additionalParameters: forceLogin
+              ? const <String, String>{'max_age': '0'}
+              : null,
           allowInsecureConnections: configuration.allowInsecureConnections,
         ),
       ),

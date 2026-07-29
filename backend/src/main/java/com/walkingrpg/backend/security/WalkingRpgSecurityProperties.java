@@ -1,5 +1,7 @@
 package com.walkingrpg.backend.security;
 
+import java.time.Duration;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("walking-rpg.security")
@@ -19,6 +21,7 @@ public class WalkingRpgSecurityProperties {
     private String adminRole = "walking-rpg-admin";
     private String userScope = "walking-rpg.user";
     private String adminScope = "walking-rpg.admin";
+    private Duration accountDeletionMaxAuthenticationAge = Duration.ofMinutes(5);
 
     public Mode getMode() {
         return mode;
@@ -90,5 +93,15 @@ public class WalkingRpgSecurityProperties {
 
     public void setAdminScope(String adminScope) {
         this.adminScope = adminScope;
+    }
+
+    public Duration getAccountDeletionMaxAuthenticationAge() {
+        return accountDeletionMaxAuthenticationAge;
+    }
+
+    public void setAccountDeletionMaxAuthenticationAge(
+            Duration accountDeletionMaxAuthenticationAge
+    ) {
+        this.accountDeletionMaxAuthenticationAge = accountDeletionMaxAuthenticationAge;
     }
 }

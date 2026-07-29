@@ -220,4 +220,6 @@ the validated access token. See ADR 0018.
 OIDC login той же owner identity → транзакционное удаление → durable receipt →
 fail-closed local logout/cleanup. Backend receipt не содержит raw subject, а
 deletion registry отклоняет последующие запросы со старым Bearer token.
+Backend не доверяет только mobile step-up: destructive endpoint требует
+подписанный `auth_time` в access token в пределах короткого server-side окна.
 См. ADR 0019.

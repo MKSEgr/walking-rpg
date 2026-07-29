@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.platform.api;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
 import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
+import com.walkingrpg.backend.security.FreshAuthenticationRequiredException;
 import com.walkingrpg.backend.security.RequestIdentityProvider;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -158,6 +160,31 @@ class PlatformAdminControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.details.field").value("Idempotency-Key"));
+    }
+
+    @Test
+    void shouldRejectDeletionWithoutFreshServerVerifiedAuthentication()
+            throws Exception {
+        RequestIdentityProvider identityProvider = mock(RequestIdentityProvider.class);
+        when(identityProvider.requireIdentityForAccountDeletion()).thenThrow(
+                new FreshAuthenticationRequiredException(
+                        "Требуется свежий вход",
+                        Duration.ofMinutes(5)
+                )
+        );
+        MockMvc mockMvc = mockMvc(identityProvider);
+
+        mockMvc.perform(post("/api/v1/account/deletion-requests")
+                        .header("Idempotency-Key", "delete-request-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "confirmation": "DELETE"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FRESH_AUTHENTICATION_REQUIRED"))
+                .andExpect(jsonPath("$.details.maxAuthenticationAgeSeconds").value(300));
     }
 
     @Test

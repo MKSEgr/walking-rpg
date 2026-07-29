@@ -101,7 +101,8 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Bearer-only same-origin transport with one refresh/retry after 401.
 - [x] Reauthentication, account switching and owner-scoped local cleanup.
 - [x] Runtime shutdown barrier before logout cleanup.
-- [x] Fresh OIDC login for destructive account actions with same-owner validation.
+- [x] Fresh OIDC login for destructive account actions with same-owner
+      validation and server-side signed `auth_time` enforcement.
 - [x] Mobile export/share and idempotent account-deletion receipt flow.
 - [ ] Configure the production identity provider, client, issuer, audience and
       signed `device_id` claim in the deployment environment.

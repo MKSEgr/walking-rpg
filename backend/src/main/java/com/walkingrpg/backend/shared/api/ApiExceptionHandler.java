@@ -21,6 +21,7 @@ import com.walkingrpg.backend.inventory.domain.InventoryLedgerConflictException;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
 import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
 import com.walkingrpg.backend.platform.application.PlatformValidationException;
+import com.walkingrpg.backend.security.FreshAuthenticationRequiredException;
 import com.walkingrpg.backend.security.MissingDeviceIdentityException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -224,6 +225,21 @@ public class ApiExceptionHandler {
                 "ACCOUNT_DELETED",
                 exception.getMessage(),
                 Map.of()
+        );
+    }
+
+    @ExceptionHandler(FreshAuthenticationRequiredException.class)
+    ResponseEntity<ApiErrorResponse> handleFreshAuthenticationRequired(
+            FreshAuthenticationRequiredException exception
+    ) {
+        return error(
+                HttpStatus.FORBIDDEN,
+                "FRESH_AUTHENTICATION_REQUIRED",
+                exception.getMessage(),
+                Map.of(
+                        "maxAuthenticationAgeSeconds",
+                        exception.maxAuthenticationAge().toSeconds()
+                )
         );
     }
 
