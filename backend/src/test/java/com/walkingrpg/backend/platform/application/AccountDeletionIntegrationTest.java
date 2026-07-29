@@ -87,6 +87,7 @@ class AccountDeletionIntegrationTest {
         assertEquals(0, rowCount("app_user"));
         assertEquals(0, rowCount("activity_sync_state"));
         assertEquals(0, rowCount("platform_event"));
+        assertEquals(0, rowCount("first_journey_milestone"));
         assertEquals(1, rowCount("account_deletion_receipt"));
         assertNotEquals("delete-user", jdbcTemplate.queryForObject(
                 "SELECT subject_hash FROM account_deletion_receipt",
@@ -160,6 +161,7 @@ class AccountDeletionIntegrationTest {
                 "inventoryLedger",
                 "platformState",
                 "platformCommands",
+                "firstJourneyMilestones",
                 "squadMembership",
                 "telemetry",
                 "crashReports",
@@ -171,6 +173,7 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, ((List<?>) export.get("devices")).size());
         assertEquals(1, ((List<?>) export.get("activity")).size());
         assertEquals(1, ((List<?>) export.get("telemetry")).size());
+        assertEquals(1, ((List<?>) export.get("firstJourneyMilestones")).size());
     }
 
     @Test
@@ -239,6 +242,13 @@ class AccountDeletionIntegrationTest {
                 INSERT INTO platform_event (
                     user_id, event_name, occurred_at, attributes, received_at
                 ) VALUES (?, 'account_delete_test', ?, '{}'::jsonb, ?)
+                """, userId, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO first_journey_milestone (
+                    user_id, milestone, occurred_at, source, attributes, recorded_at
+                ) VALUES (
+                    ?, 'JOURNEY_STARTED', ?, 'AUTHORITATIVE', '{}'::jsonb, ?
+                )
                 """, userId, timestamp, timestamp);
     }
 

@@ -33,6 +33,7 @@
 - production `GET /api/v1/home`;
 - content-driven первая глава `chapter-1-v1` с 18 узлами и событиями;
 - guided «Первый путь» от разрешения шагов до первого решения;
+- server-authoritative funnel и time-to-value первого пути для alpha cohort;
 - три питомца с реальным active selection и независимым progression;
 - material inventory с append-only ledger и защитой от повторной выдачи;
 - foreground durable outbox для activity, expedition и event-команд;
@@ -196,7 +197,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V7 + PostgreSQL Testcontainers tests
+Flyway V1–V9 + PostgreSQL Testcontainers tests
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build

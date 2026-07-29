@@ -63,6 +63,11 @@
   process restart;
 - независимый progression для Искры, Мха и Руны с active-pet home/event
   integration;
+- Flyway V9 с exact-once `first_journey_milestone`, legacy backfill и
+  транзакционными triggers на activity/economy/platform/expedition/event;
+- admin cohort read model conversion и p50/p90 time-to-first-* с отдельной
+  data-quality статистикой authoritative/backfilled records;
+- milestones первого пути в JSON export и каскадном удалении аккаунта;
 
 ### Changed
 

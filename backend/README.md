@@ -83,6 +83,8 @@ PostgreSQL Testcontainers tests проверяют:
 - production home read-model до, между и после двух событий;
 - Flyway upgrade `starter-v1 → starter-v2` без повторной material reward;
 - default/adaptive daily goal, окно предыдущих дней и исключение текущего дня.
+- V9 exact-once milestones первого пути, migration backfill и cascade deletion;
+- cohort-filtered first-journey conversion и authoritative p50/p90 timing.
 
 ## Персональная дневная цель
 
@@ -123,6 +125,7 @@ POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
 GET  /api/v1/platform
 POST /api/v1/platform/commands
+GET  /api/v1/admin/platform/analytics/first-journey?cohortCode=alpha-1
 ```
 
 ## Authentication

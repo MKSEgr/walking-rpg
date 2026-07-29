@@ -1,19 +1,32 @@
 package com.walkingrpg.backend.platform.infrastructure;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import javax.sql.DataSource;
 import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivityBucket;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
 import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.economy.application.EconomyService;
+import com.walkingrpg.backend.expedition.application.EventResolutionService;
+import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.expedition.domain.EventResolutionCommand;
+import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
@@ -69,6 +82,12 @@ class PlatformPersistenceIntegrationTest {
     private ActivitySyncService activitySyncService;
 
     @Autowired
+    private ExpeditionAdvanceService expeditionAdvanceService;
+
+    @Autowired
+    private EventResolutionService eventResolutionService;
+
+    @Autowired
     private PlatformRepository platformRepository;
 
     @Autowired
@@ -94,6 +113,9 @@ class PlatformPersistenceIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DataSource dataSource;
 
     @BeforeEach
     void cleanDatabase() {
@@ -130,6 +152,7 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(1, rowCount("roadmap_user_state"));
         assertEquals(1, rowCount("processed_roadmap_command"));
         assertEquals(1, rowCount("platform_event"));
+        assertEquals(1, milestoneCount("platform-user", "JOURNEY_STARTED"));
         assertEquals("welcome", jdbcTemplate.queryForObject("""
                 SELECT state_json -> 'completedOnboardingSteps' ->> 0
                 FROM roadmap_user_state
@@ -142,6 +165,210 @@ class PlatformPersistenceIntegrationTest {
                         "welcome-once",
                         Map.of("stepId", "first-sync")
                 ))
+        );
+    }
+
+    @Test
+    void shouldRecordPetSelectionAndCompletedJourneyOnlyOnce() {
+        String userId = "journey-user";
+        completeStep(userId, "welcome");
+        activitySyncService.synchronize(new ActivitySyncCommand(
+                userId,
+                "journey-device",
+                LocalDate.of(2026, 7, 29),
+                ZoneId.of("Europe/Berlin"),
+                6_842,
+                List.of(),
+                null,
+                "journey-first-sync",
+                "signed-attestation"
+        ));
+        completeStep(userId, "health-permission");
+        completeStep(userId, "first-sync");
+        PlatformCommandRequest selection = new PlatformCommandRequest(
+                "SELECT_PET",
+                "journey-select-moss",
+                Map.of("petId", "moss-v1")
+        );
+        platformService.execute(userId, selection);
+        expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                30,
+                "journey-first-advance"
+        ));
+        completeStep(userId, "first-expedition");
+        eventResolutionService.resolve(new EventResolutionCommand(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "journey-first-event"
+        ));
+        PlatformCommandResponse completed = completeStep(userId, "first-event");
+
+        platformService.execute(userId, selection);
+        platformService.execute(userId, new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "journey-step-first-event",
+                Map.of("stepId", "first-event")
+        ));
+
+        assertEquals(true, completed.snapshot().userState().get("onboardingComplete"));
+        assertEquals(1, milestoneCount(userId, "JOURNEY_STARTED"));
+        assertEquals(1, milestoneCount(userId, "FIRST_ACTIVITY_SYNC"));
+        assertEquals(1, milestoneCount(userId, "FIRST_ENERGY"));
+        assertEquals(1, milestoneCount(userId, "PET_SELECTED"));
+        assertEquals(1, milestoneCount(userId, "FIRST_NODE_REACHED"));
+        assertEquals(1, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
+        assertEquals(1, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+        assertEquals("moss-v1", jdbcTemplate.queryForObject("""
+                SELECT attributes ->> 'petId'
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'PET_SELECTED'
+                """, String.class, userId));
+        assertEquals("AUTHORITATIVE", jdbcTemplate.queryForObject("""
+                SELECT source
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'ONBOARDING_COMPLETED'
+                """, String.class, userId));
+    }
+
+    @Test
+    void shouldDelayMeasuredCompletionUntilLastAuthoritativeFact() {
+        String userId = "marker-only-journey-user";
+        completeStep(userId, "welcome");
+        completeStep(userId, "health-permission");
+        completeStep(userId, "first-sync");
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "marker-only-select-moss",
+                Map.of("petId", "moss-v1")
+        ));
+        completeStep(userId, "first-expedition");
+        PlatformCommandResponse completed = completeStep(userId, "first-event");
+
+        assertEquals(true, completed.snapshot().userState().get("onboardingComplete"));
+        assertEquals(1, milestoneCount(userId, "JOURNEY_STARTED"));
+        assertEquals(1, milestoneCount(userId, "PET_SELECTED"));
+        assertEquals(0, milestoneCount(userId, "FIRST_ACTIVITY_SYNC"));
+        assertEquals(0, milestoneCount(userId, "FIRST_ENERGY"));
+        assertEquals(0, milestoneCount(userId, "FIRST_NODE_REACHED"));
+        assertEquals(0, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
+        assertEquals(0, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+
+        activitySyncService.synchronize(new ActivitySyncCommand(
+                userId,
+                "delayed-journey-device",
+                LocalDate.of(2026, 7, 29),
+                ZoneId.of("Europe/Berlin"),
+                6_842,
+                List.of(),
+                null,
+                "delayed-journey-sync",
+                "signed-attestation"
+        ));
+        expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                30,
+                "delayed-journey-advance"
+        ));
+        eventResolutionService.resolve(new EventResolutionCommand(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "delayed-journey-event"
+        ));
+
+        assertEquals(1, milestoneCount(userId, "FIRST_ACTIVITY_SYNC"));
+        assertEquals(1, milestoneCount(userId, "FIRST_ENERGY"));
+        assertEquals(1, milestoneCount(userId, "FIRST_NODE_REACHED"));
+        assertEquals(1, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
+        assertEquals(1, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+        assertEquals(6, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM processed_roadmap_command
+                WHERE user_id = ?
+                """, Integer.class, userId));
+    }
+
+    @Test
+    void shouldSerializeConcurrentFinalJourneyFacts() throws Exception {
+        String userId = "concurrent-journey-user";
+        completeStep(userId, "welcome");
+        completeStep(userId, "health-permission");
+        completeStep(userId, "first-sync");
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "concurrent-select-moss",
+                Map.of("petId", "moss-v1")
+        ));
+        completeStep(userId, "first-expedition");
+        completeStep(userId, "first-event");
+        Instant firstFactAt = Instant.now(clock)
+                .plusSeconds(60)
+                .truncatedTo(ChronoUnit.MICROS);
+        jdbcTemplate.update("""
+                INSERT INTO first_journey_milestone (
+                    user_id, milestone, occurred_at, source,
+                    attributes, recorded_at
+                ) VALUES
+                    (?, 'FIRST_ACTIVITY_SYNC', ?, 'AUTHORITATIVE', '{}'::jsonb, ?),
+                    (?, 'FIRST_ENERGY', ?, 'AUTHORITATIVE', '{}'::jsonb, ?)
+                """,
+                userId,
+                Timestamp.from(firstFactAt),
+                Timestamp.from(firstFactAt),
+                userId,
+                Timestamp.from(firstFactAt.plusSeconds(1)),
+                Timestamp.from(firstFactAt.plusSeconds(1))
+        );
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try (Connection firstFact = dataSource.getConnection()) {
+            firstFact.setAutoCommit(false);
+            recordMilestone(
+                    firstFact,
+                    userId,
+                    "FIRST_NODE_REACHED",
+                    firstFactAt.plusSeconds(2)
+            );
+            recheckCompletion(firstFact, userId);
+
+            Future<?> secondFact = executor.submit(() -> {
+                try (Connection connection = dataSource.getConnection()) {
+                    connection.setAutoCommit(false);
+                    recordMilestone(
+                            connection,
+                            userId,
+                            "FIRST_EVENT_RESOLVED",
+                            firstFactAt.plusSeconds(3)
+                    );
+                    recheckCompletion(connection, userId);
+                    connection.commit();
+                    return null;
+                }
+            });
+
+            awaitJourneyCompletionLockWait();
+            firstFact.commit();
+            secondFact.get(5, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(1, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+        assertEquals(
+                firstFactAt.plusSeconds(3),
+                jdbcTemplate.queryForObject("""
+                        SELECT occurred_at
+                        FROM first_journey_milestone
+                        WHERE user_id = ?
+                          AND milestone = 'ONBOARDING_COMPLETED'
+                        """, Timestamp.class, userId).toInstant()
         );
     }
 
@@ -252,6 +479,11 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(0, rowCount("activity_risk_assessment"));
         assertEquals(1, rowCount("app_device"));
         assertEquals(0, rowCount("activity_sync_state"));
+        assertEquals(1, milestoneCount(
+                "zero-step-user",
+                "FIRST_ACTIVITY_SYNC"
+        ));
+        assertEquals(0, milestoneCount("zero-step-user", "FIRST_ENERGY"));
     }
 
     @Test
@@ -288,12 +520,83 @@ class PlatformPersistenceIntegrationTest {
         );
     }
 
+    private PlatformCommandResponse completeStep(String userId, String stepId) {
+        return platformService.execute(userId, new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "journey-step-" + stepId,
+                Map.of("stepId", stepId)
+        ));
+    }
+
     private int rowCount(String table) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM " + table,
                 Integer.class
         );
         return count == null ? 0 : count;
+    }
+
+    private int milestoneCount(String userId, String milestone) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = ?
+                """, Integer.class, userId, milestone);
+        return count == null ? 0 : count;
+    }
+
+    private void recordMilestone(
+            Connection connection,
+            String userId,
+            String milestone,
+            Instant occurredAt
+    ) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT record_first_journey_milestone(
+                    ?::varchar,
+                    ?::varchar,
+                    ?::timestamptz,
+                    '{}'::jsonb
+                )
+                """)) {
+            statement.setString(1, userId);
+            statement.setString(2, milestone);
+            statement.setString(3, occurredAt.toString());
+            statement.execute();
+        }
+    }
+
+    private void recheckCompletion(Connection connection, String userId)
+            throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT record_first_journey_completion_if_ready(?::varchar)
+                """)) {
+            statement.setString(1, userId);
+            statement.execute();
+        }
+    }
+
+    private void awaitJourneyCompletionLockWait() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND lower(wait_event) = 'advisory'
+                      AND query LIKE
+                          '%record_first_journey_completion_if_ready%'
+                    """, Integer.class);
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new IllegalStateException(
+                "Concurrent milestone did not wait for completion serialization"
+        );
     }
 
     private long scalarLong(String sql) {

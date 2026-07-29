@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
 import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
+import com.walkingrpg.backend.platform.analytics.FirstJourneyAnalyticsService;
+import com.walkingrpg.backend.platform.analytics.FirstJourneyAnalyticsSnapshot;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import com.walkingrpg.backend.security.RequestIdentityProvider;
 import jakarta.validation.Valid;
@@ -24,13 +26,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlatformAdminController {
 
     private final PlatformAdminService service;
+    private final FirstJourneyAnalyticsService firstJourneyAnalyticsService;
     private final RequestIdentityProvider identityProvider;
 
     public PlatformAdminController(
             PlatformAdminService service,
+            FirstJourneyAnalyticsService firstJourneyAnalyticsService,
             RequestIdentityProvider identityProvider
     ) {
         this.service = service;
+        this.firstJourneyAnalyticsService = firstJourneyAnalyticsService;
         this.identityProvider = identityProvider;
     }
 
@@ -114,6 +119,13 @@ public class PlatformAdminController {
     @GetMapping("/admin/platform/analytics/retention")
     public Map<String, Object> retention() {
         return service.retentionSummary();
+    }
+
+    @GetMapping("/admin/platform/analytics/first-journey")
+    public FirstJourneyAnalyticsSnapshot firstJourney(
+            @RequestParam(required = false) String cohortCode
+    ) {
+        return firstJourneyAnalyticsService.summary(cohortCode);
     }
 
     @GetMapping("/admin/platform/diagnostics/crashes")

@@ -128,6 +128,7 @@ class ExpeditionAdvanceIntegrationTest {
         assertEquals(2, rowCount("economy_ledger"));
         assertEquals(1, rowCount("expedition_progress"));
         assertEquals(1, rowCount("processed_expedition_advance"));
+        assertEquals(1, milestoneCount("expedition-user", "FIRST_NODE_REACHED"));
     }
 
     @Test
@@ -148,6 +149,7 @@ class ExpeditionAdvanceIntegrationTest {
         assertEquals(1, rowCount("economy_ledger"));
         assertEquals(0, rowCount("expedition_progress"));
         assertEquals(0, rowCount("processed_expedition_advance"));
+        assertEquals(0, milestoneCount("rollback-user", "FIRST_NODE_REACHED"));
     }
 
     @Test
@@ -256,6 +258,15 @@ class ExpeditionAdvanceIntegrationTest {
 
     private int rowCount(String table) {
         return jdbcTemplate.queryForObject("SELECT count(*) FROM " + table, Integer.class);
+    }
+
+    private int milestoneCount(String userId, String milestone) {
+        return jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = ?
+                """, Integer.class, userId, milestone);
     }
 
     private long walletBalance(String userId) {

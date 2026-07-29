@@ -99,6 +99,13 @@ restart восстанавливает подтверждаемые этапы �
 feedback не входит в критический путь и не может задержать authoritative
 reload.
 
+Первый путь имеет отдельную durable observability projection
+`first_journey_milestone`. PostgreSQL triggers фиксируют первый успешный
+activity sync, ENERGY из activity ledger, выбор питомца, узел, событие и
+завершение onboarding в тех же транзакциях, что и source-of-truth операции.
+Unique `(user_id, milestone)` делает replay безопасным. Legacy backfill помечен
+отдельным source и исключается из time-to-value percentiles.
+
 `roadmap_user_state.activePetId` — источник выбора питомца. Общий
 `ActivePetProvider` связывает platform state с home/progression: event reward
 берёт тот же per-user advisory lock, что и `SELECT_PET`, затем блокирует и
@@ -130,6 +137,7 @@ roadmap_squad, roadmap_squad_member
 platform_event, platform_crash_report
 push_registration, payment_intent, tester_cohort_member
 activity_risk_assessment
+first_journey_milestone
 ```
 
 `processed_*` хранит fingerprint и immutable response. Повтор после restart не меняет состояние второй раз и возвращает канонический сохранённый результат.

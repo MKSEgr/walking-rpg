@@ -24,6 +24,8 @@
 создаёт временный JSON-файл, передаёт его через системный share sheet и удаляет
 локальную staging-копию после закрытия sheet. Постоянное место сохранения
 выбирает пользователь в системном интерфейсе.
+Экспорт включает `firstJourneyMilestones` с milestone, source, минимальными
+игровыми attributes и timestamps.
 
 ```http
 Authorization: Bearer <access-token>
@@ -423,6 +425,45 @@ push-регистрации устройства.
   количества шагов, после чего mobile идемпотентно backfill-ит отсутствующие
   служебные milestones;
 - активный питомец затем возвращается в `GET /home` и получает event bond.
+
+## `GET /api/v1/admin/platform/analytics/first-journey`
+
+Admin-only read model первого пути. Опциональный `cohortCode` ограничивает
+выборку участниками `tester_cohort_member`.
+
+```json
+{
+  "cohortCode": "alpha-1",
+  "eligibleUsers": 12,
+  "startedUsers": 10,
+  "notStartedUsers": 2,
+  "startRate": 0.8333333333333334,
+  "stages": [
+    {
+      "milestone": "FIRST_ENERGY",
+      "reachedUsers": 8,
+      "missingFromStartedUsers": 2,
+      "authoritativeReachedUsers": 8,
+      "timedUsers": 8,
+      "conversionFromStarted": 0.8,
+      "medianSecondsFromStart": 45,
+      "p90SecondsFromStart": 90
+    }
+  ],
+  "dataQuality": {
+    "authoritativeMilestoneRecords": 58,
+    "backfilledMilestoneRecords": 7
+  },
+  "generatedAt": "2026-07-29T17:00:00Z"
+}
+```
+
+`reachedUsers` допускает migration backfill ради честного conversion count.
+Latency percentiles используют только пары
+`JOURNEY_STARTED → milestone`, где обе записи `AUTHORITATIVE` и целевое время
+не раньше старта. Поэтому приблизительные legacy timestamps не смешиваются с
+alpha timing. Milestones переживают retention `processed_activity_sync`, входят
+в account export и удаляются вместе с аккаунтом.
 
 ## Ошибки
 

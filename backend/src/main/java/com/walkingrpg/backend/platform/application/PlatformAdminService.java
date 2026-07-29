@@ -465,6 +465,13 @@ public class PlatformAdminService {
                         + "FROM processed_roadmap_command WHERE user_id = ? ORDER BY created_at",
                 normalized
         ));
+        export.put("firstJourneyMilestones", jdbcTemplate.queryForList(
+                "SELECT milestone, occurred_at, source, "
+                        + "attributes::text AS attributes, recorded_at "
+                        + "FROM first_journey_milestone "
+                        + "WHERE user_id = ? ORDER BY occurred_at, milestone",
+                normalized
+        ));
         export.put("squadMembership", jdbcTemplate.queryForList(
                 "SELECT squad.squad_id, squad.squad_name, "
                         + "(squad.owner_user_id = ?) AS owner, member.joined_at "
