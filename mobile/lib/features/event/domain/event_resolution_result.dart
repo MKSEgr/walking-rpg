@@ -14,12 +14,28 @@ class EventResolutionResult {
     required this.pilot,
     required this.pet,
     required this.serverTime,
+    this.receiptId,
     this.material,
-  });
+    this.handoffRequired = false,
+    this.nextNode,
+  }) : assert(!handoffRequired || receiptId != null);
 
   factory EventResolutionResult.fromJson(Map<String, dynamic> json) {
     final Object? materialJson = json['material'];
+    final Object? nextNodeJson = json['nextNode'];
+    final String? receiptId = _readNullableString(json, 'receiptId');
+    final bool handoffRequired = _readOptionalBool(
+      json,
+      'handoffRequired',
+      fallback: false,
+    );
+    if (handoffRequired && receiptId == null) {
+      throw const FormatException(
+        'receiptId обязателен для durable event-result handoff',
+      );
+    }
     return EventResolutionResult(
+      receiptId: receiptId,
       contentVersion: _readString(json, 'contentVersion'),
       expeditionId: _readString(json, 'expeditionId'),
       expeditionStatus: _readString(json, 'expeditionStatus'),
@@ -36,10 +52,15 @@ class EventResolutionResult {
       material: materialJson == null
           ? null
           : EventMaterialReward.fromJson(_asMap(materialJson, 'material')),
+      handoffRequired: handoffRequired,
+      nextNode: nextNodeJson == null
+          ? null
+          : EventNextNode.fromJson(_asMap(nextNodeJson, 'nextNode')),
       serverTime: _readString(json, 'serverTime'),
     );
   }
 
+  final String? receiptId;
   final String contentVersion;
   final String expeditionId;
   final String expeditionStatus;
@@ -54,6 +75,48 @@ class EventResolutionResult {
   final EventPilotReward pilot;
   final EventPetReward pet;
   final EventMaterialReward? material;
+  final bool handoffRequired;
+  final EventNextNode? nextNode;
+  final String serverTime;
+}
+
+class EventNextNode {
+  const EventNextNode({required this.nodeId, required this.name});
+
+  factory EventNextNode.fromJson(Map<String, dynamic> json) {
+    return EventNextNode(
+      nodeId: _readString(json, 'nodeId'),
+      name: _readString(json, 'name'),
+    );
+  }
+
+  final String nodeId;
+  final String name;
+}
+
+class EventResultAcknowledgement {
+  const EventResultAcknowledgement({
+    required this.receiptId,
+    required this.eventId,
+    required this.status,
+    required this.acknowledgedAt,
+    required this.serverTime,
+  });
+
+  factory EventResultAcknowledgement.fromJson(Map<String, dynamic> json) {
+    return EventResultAcknowledgement(
+      receiptId: _readString(json, 'receiptId'),
+      eventId: _readString(json, 'eventId'),
+      status: _readString(json, 'status'),
+      acknowledgedAt: _readString(json, 'acknowledgedAt'),
+      serverTime: _readString(json, 'serverTime'),
+    );
+  }
+
+  final String receiptId;
+  final String eventId;
+  final String status;
+  final String acknowledgedAt;
   final String serverTime;
 }
 
@@ -175,4 +238,30 @@ int _readInt(Map<String, dynamic> json, String field) {
     return value.toInt();
   }
   throw FormatException('$field должен быть целым числом');
+}
+
+String? _readNullableString(Map<String, dynamic> json, String field) {
+  final Object? value = json[field];
+  if (value == null) {
+    return null;
+  }
+  if (value is String && value.isNotEmpty) {
+    return value;
+  }
+  throw FormatException('$field должен быть непустой строкой или null');
+}
+
+bool _readOptionalBool(
+  Map<String, dynamic> json,
+  String field, {
+  required bool fallback,
+}) {
+  final Object? value = json[field];
+  if (value == null) {
+    return fallback;
+  }
+  if (value is bool) {
+    return value;
+  }
+  throw FormatException('$field должен быть boolean');
 }

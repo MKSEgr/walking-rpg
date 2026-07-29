@@ -14,3 +14,28 @@ NNNN-short-title.md
 - Accepted
 - Superseded
 - Rejected
+
+## Реестр
+
+- [0001 — монорепозиторий и модульный монолит](0001-monorepo-and-modular-monolith.md)
+- [0002 — Java для backend](0002-java-backend.md)
+- [0003 — Walk now, play later](0003-walk-now-play-later.md)
+- [0004 — authoritative total и idempotent activity sync](0004-authoritative-total-and-idempotent-activity-sync.md)
+- [0005 — PostgreSQL persistence activity sync](0005-postgresql-activity-sync-persistence.md)
+- [0006 — ENERGY ledger](0006-activity-energy-ledger.md)
+- [0007 — production home read model](0007-production-home-read-model.md)
+- [0008 — persistent expedition advance](0008-starter-expedition-advance.md)
+- [0009 — event resolution и progression](0009-event-resolution-and-progression.md)
+- [0010 — mobile activity sync boundary](0010-mobile-activity-sync-boundary.md)
+- [0011 — platform Health step source](0011-platform-health-step-source.md)
+- [0012 — foreground durable command outbox](0012-foreground-durable-mobile-command-outbox.md)
+- [0013 — personalized daily step goal](0013-personalized-daily-step-goal.md)
+- [0014 — second node и inventory (частично superseded)](0014-second-node-and-persistent-inventory.md)
+- [0015 — release quality и external gates](0015-release-quality-and-external-gates.md)
+- [0016 — read-only offline cache](0016-offline-read-cache.md)
+- [0017 — production authentication boundary](0017-production-authentication-boundary.md)
+- [0018 — mobile OIDC session](0018-mobile-oidc-session.md)
+- [0019 — account data controls](0019-account-data-controls.md)
+- [0020 — guided first journey и active pet](0020-guided-first-journey-and-active-pet.md)
+- [0021 — first-journey observability](0021-first-journey-observability.md)
+- [0022 — durable event-result handoff](0022-durable-event-result-handoff.md)

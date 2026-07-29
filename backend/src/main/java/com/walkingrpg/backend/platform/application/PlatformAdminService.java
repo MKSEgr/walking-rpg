@@ -430,7 +430,7 @@ public class PlatformAdminService {
                 normalized
         ));
         export.put("eventResolutions", jdbcTemplate.queryForList(
-                "SELECT expedition_id, event_id, idempotency_key, content_version, "
+                "SELECT receipt_id, expedition_id, event_id, idempotency_key, content_version, "
                         + "expedition_status, expedition_version, event_title, "
                         + "resolution_status, choice_id, choice_title, outcome_title, "
                         + "outcome_summary, pilot_id, pilot_name, pilot_level_after, "
@@ -439,6 +439,7 @@ public class PlatformAdminService {
                         + "pet_level_after, pet_bond_gained, pet_bond_after, pet_version, "
                         + "material_item_id, material_item_name, material_item_description, "
                         + "material_quantity_gained, material_quantity_after, material_version, "
+                        + "handoff_required, next_node_id, next_node_name, acknowledged_at, "
                         + "server_time, created_at FROM processed_event_resolution "
                         + "WHERE user_id = ? ORDER BY created_at",
                 normalized

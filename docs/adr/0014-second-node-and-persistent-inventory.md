@@ -1,7 +1,13 @@
 # ADR 0014: второй узел стартовой экспедиции и постоянный материальный инвентарь
 
-- **Статус:** Accepted
+- **Статус:** Superseded in part
 - **Дата:** 2026-07-26
+
+> Историческая topology `starter-v2` из двух узлов заменена
+> `chapter-1-v1` с 18 последовательными узлами. Транзакционные решения по
+> inventory и Flyway V5 остаются действующими. Транзиентный показ результата
+> заменён durable receipt/home/ACK handoff из
+> [ADR 0022](0022-durable-event-result-handoff.md).
 
 ## Контекст
 
@@ -109,12 +115,13 @@ Flyway V5:
 - `GET /home` остаётся единственным authoritative read-model для mobile;
 - durable outbox не требует нового command type: event resolution уже универсален по `eventId` и `choiceId`.
 
-Ограничения:
+Исторические ограничения этого среза:
 
 - поддерживается только начисление stackable material;
 - расход предметов, лимиты stack, rarity и crafting отсутствуют;
 - starter content остаётся в Java-коде;
-- после второго события нет следующего узла;
+- историческое отсутствие следующего узла после второго события устранено в
+  `chapter-1-v1`;
 - отдельного inventory endpoint пока нет — inventory читается через `GET /home`.
 
 ## Условия пересмотра

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
+import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/onboarding/domain/first_journey_progress.dart';
 import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
@@ -22,7 +23,11 @@ void main() {
     String activePetName = 'Искра';
     int stateVersion = 0;
     int resolvedEvents = 0;
+    String? acknowledgedReceiptId;
+    String? acknowledgementKey;
     HomeSnapshot home = firstJourneyHome();
+    final InMemoryMobileCommandStore commandStore =
+        InMemoryMobileCommandStore();
 
     PlatformSnapshot currentPlatform() {
       return platformSnapshot(
@@ -38,7 +43,7 @@ void main() {
 
     final MobileCommandRuntime runtime = MobileCommandRuntime(
       ownerId: 'first-journey-user',
-      store: InMemoryMobileCommandStore(),
+      store: commandStore,
       activitySender:
           ({required reading, required String idempotencyKey}) async =>
               throw StateError('Unexpected activity runtime call'),
@@ -77,6 +82,17 @@ void main() {
               petName: activePetName,
             );
           },
+      eventResultAcknowledgementSender: ({required String receiptId}) async {
+        acknowledgedReceiptId = receiptId;
+        acknowledgementKey = commandStore.snapshot.single.idempotencyKey;
+        return EventResultAcknowledgement(
+          receiptId: receiptId,
+          eventId: 'signal-source-v1',
+          status: 'ACKNOWLEDGED',
+          acknowledgedAt: '2026-07-29T08:03:00Z',
+          serverTime: '2026-07-29T08:03:00Z',
+        );
+      },
       platformSender:
           ({
             required String commandType,
@@ -152,6 +168,12 @@ void main() {
 
     await _tap(tester, const Key('first-journey-finish'));
     expect(find.text('Основная экспедиция'), findsOneWidget);
+    expect(acknowledgedReceiptId, '11111111-1111-1111-1111-111111111111');
+    expect(
+      acknowledgementKey,
+      'first-journey-event-result-'
+      '11111111-1111-1111-1111-111111111111-ack-v1',
+    );
     expect(completed, containsAll(FirstJourneyProgress.steps));
     expect(commands, <String>[
       'COMPLETE_ONBOARDING_STEP',

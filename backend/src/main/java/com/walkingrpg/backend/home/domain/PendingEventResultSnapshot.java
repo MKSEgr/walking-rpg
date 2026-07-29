@@ -1,18 +1,18 @@
-package com.walkingrpg.backend.expedition.domain;
+package com.walkingrpg.backend.home.domain;
 
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-public record EventResolutionResult(
+import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
+import com.walkingrpg.backend.expedition.domain.EventNextNodeResult;
+import com.walkingrpg.backend.expedition.domain.EventPetRewardResult;
+import com.walkingrpg.backend.expedition.domain.EventPilotRewardResult;
+
+public record PendingEventResultSnapshot(
         UUID receiptId,
-        String contentVersion,
-        String expeditionId,
-        ExpeditionProgressStatus expeditionStatus,
-        long expeditionVersion,
         String eventId,
         String eventTitle,
-        EventResolutionStatus status,
         String choiceId,
         String choiceTitle,
         String outcomeTitle,
@@ -20,16 +20,13 @@ public record EventResolutionResult(
         EventPilotRewardResult pilot,
         EventPetRewardResult pet,
         EventMaterialRewardResult material,
-        boolean handoffRequired,
         EventNextNodeResult nextNode,
-        Instant serverTime
+        Instant resolvedAt
 ) {
-    public EventResolutionResult {
+    public PendingEventResultSnapshot {
         Objects.requireNonNull(receiptId, "receiptId");
-        Objects.requireNonNull(expeditionStatus, "expeditionStatus");
-        Objects.requireNonNull(status, "status");
         Objects.requireNonNull(pilot, "pilot");
         Objects.requireNonNull(pet, "pet");
-        Objects.requireNonNull(serverTime, "serverTime");
+        Objects.requireNonNull(resolvedAt, "resolvedAt");
     }
 }

@@ -44,7 +44,7 @@ core/cache           — read-only validated server snapshots
 activity             — HealthKit/Health Connect и sync
 home                 — authoritative home snapshot
 expedition           — ENERGY spend
-event                — event resolution
+event                — event resolution, durable result и acknowledgement
 onboarding            — guided first journey и recovery milestones
 platform             — typed snapshot, commands и «Путевой журнал»
 app                   — навигационный shell
@@ -74,12 +74,48 @@ Mobile не отправляет сырые health samples и не вычисл�
 GAMEPLAY lane
 ├── EXPEDITION_ADVANCE
 ├── EVENT_RESOLUTION
+├── EVENT_RESULT_ACKNOWLEDGEMENT
 └── PLATFORM_COMMAND
 ```
 
 Все команды сохраняются до первой сетевой попытки. Retry использует тот же payload и idempotency key. Подтверждённый terminal 4xx переводит конкретную команду в `FAILED`, а transport/408/429/5xx остаются `PENDING`.
 
 Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
+
+Результат события имеет отдельный durable handoff:
+
+```text
+POST /events/{eventId}/resolve
++ X-Walking-RPG-Capabilities: durable-event-result-v1
++ DURABLE_EVENT_RESULT_HANDOFF_ENABLED=true
+→ atomic rewards + expedition transition + immutable receipt/nextNode
+→ response handoffRequired=true или GET /home.pendingEventResult
+→ restart-visible result card
+→ persist EVENT_RESULT_ACKNOWLEDGEMENT(receiptId)
+→ bodyless POST /event-results/{receiptId}/acknowledge
+→ stable ACK response + authoritative home reload
+```
+
+`receiptId` — единственный server-side idempotency scope ACK. Пока receipt
+pending, backend возвращает `409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED` для
+нового advance/resolution, поэтому результат нельзя перепрыгнуть прямым
+API-вызовом. Cached home может показывать карточку, но не разрешает
+acknowledgement.
+
+Capability отсутствует у старого mobile или cluster activation gate выключен:
+backend сохраняет `handoff_required = false`, а V10 trigger сразу выставляет
+`acknowledged_at = server_time`. Такой result не попадает в pending projection
+или gameplay gate. Новый mobile допускает legacy response старого backend без
+receipt/handoff fields и решает, нужен ли ACK, по response
+`handoffRequired`. Exact replay сохраняет mode первого запроса. Pending,
+созданный capable-клиентом, требует capable-клиента и не обходится старым
+устройством.
+
+Activation gate остаётся false во время V10/new-backend/new-mobile rollout.
+После drain всех старых backend instances его можно включить на новом пуле.
+Rollback на старый binary допустим только после выключения gate и достижения
+нуля capable pending rows. Поэтому потерянный response никогда не replay-ится
+через старый DTO после появления первого durable receipt.
 
 `FirstJourneyGate` собирает первые действия в один непрерывный маршрут:
 
@@ -90,6 +126,7 @@ welcome
 → SELECT_PET
 → expedition advance
 → event resolution
+→ durable result acknowledgement
 → main shell
 ```
 
@@ -129,7 +166,9 @@ app_user, app_device
 activity_sync_state, processed_activity_sync
 economy_wallet, economy_ledger
 expedition_progress, processed_expedition_advance
-pilot_progress, pet_progress, processed_event_resolution
+pilot_progress, pet_progress
+processed_event_resolution
+  └─ receipt_id, handoff_required, next_node_*, acknowledged_at
 inventory_stack, inventory_ledger
 roadmap_user_state, processed_roadmap_command
 remote_config_snapshot, content_release
@@ -140,7 +179,12 @@ activity_risk_assessment
 first_journey_milestone
 ```
 
-`processed_*` хранит fingerprint и immutable response. Повтор после restart не меняет состояние второй раз и возвращает канонический сохранённый результат.
+`processed_*` хранит fingerprint и immutable response. Повтор после restart не
+меняет состояние второй раз и возвращает канонический сохранённый результат.
+V10 расширяет event resolution receipt/delivery-mode/next-node/ACK state;
+исторические результаты получают receipt, но backfill-ятся acknowledged, чтобы
+не показывать старые награды повторно. Defaults и `BEFORE INSERT` trigger
+также auto-acknowledge старый backend writer при rolling upgrade.
 
 ## 8. Конкурентность и транзакции
 
@@ -149,6 +193,10 @@ first_journey_milestone
 - idempotency lookup до мутации;
 - source uniqueness в ledger;
 - один transaction commit для связанных изменений;
+- capable pending result проверяется под тем же user+expedition serialization
+  boundary до advance/resolution;
+- ACK заполняет `acknowledged_at` условным `UPDATE`, только пока поле `NULL`;
+  replay читает сохранённое время первого ACK без повторной мутации;
 - read endpoints не создают zero-state.
 
 ## 9. Ключевые инварианты
@@ -165,6 +213,15 @@ first_journey_milestone
 10. Risk engine работает в shadow mode до внешней калибровки.
 11. User/device/actor не принимаются контроллерами из произвольных headers или body в production.
 12. Валидный JWT без прикладной `ROLE_USER`/`ROLE_ADMIN` не даёт доступ к API.
+13. Event reward с `handoffRequired = true` считается переданным UI только
+    после owner-scoped ACK соответствующего `receiptId`; legacy mode
+    auto-acknowledged.
+14. Пока capable event result pending, новый advance или resolution той же
+    экспедиции запрещён.
+15. ACK не имеет request body; replay возвращает стабильные
+    `acknowledgedAt/serverTime`.
+16. Capability не входит в idempotency fingerprint; exact replay возвращает
+    delivery mode первого commit.
 
 ## 10. Identity и authorization boundary
 
@@ -182,7 +239,10 @@ OIDC access token
 
 Activity device identity получается из подписанного session/device claim и хранится как SHA-256 pseudonym. Произвольный `X-Device-Id` в JWT mode игнорируется. Публичными остаются только health/system info/content bootstrap и anonymous telemetry/crash ingestion.
 
-Mobile Authorization Code + PKCE, secure token storage, refresh и logout являются следующим отдельным срезом. Подробности: `docs/adr/0017-production-authentication-boundary.md`.
+Mobile Authorization Code + PKCE, secure token storage, refresh и logout
+реализованы как отдельная boundary; production IdP configuration и
+device-validation остаются внешними gates. Подробности:
+`docs/adr/0018-mobile-oidc-session.md`.
 
 ## 11. Health boundary
 
@@ -209,9 +269,16 @@ transport/408/429/5xx/malformed success
 → read-only UI + explicit cache timestamp
 ```
 
-Read cache не хранит неподтверждённые изменения и не заменяет command outbox. Перед mutation-attempt зависимый cache инвалидируется, потому что transport failure может скрывать уже принятый backend-ом результат. Terminal `4xx` не скрываются fallback-ом. Cached ENERGY не разрешает расходные команды.
+Read cache не хранит неподтверждённые изменения и не заменяет command outbox.
+Перед mutation-attempt зависимый cache инвалидируется, потому что transport
+failure может скрывать уже принятый backend-ом результат. Server-owned
+`pendingEventResult` не является optimistic state: он может быть сохранён в
+cached home и показан после restart, но его ACK-кнопка остаётся read-only.
+Terminal `4xx` не скрываются fallback-ом. Cached ENERGY не разрешает расходные
+команды.
 
-Подробности: `docs/adr/0016-offline-read-cache.md`.
+Подробности: `docs/adr/0016-offline-read-cache.md` и
+`docs/adr/0022-durable-event-result-handoff.md`.
 
 ## 13. Release-quality model
 

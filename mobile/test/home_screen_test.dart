@@ -105,31 +105,137 @@ void main() {
     expect(eventStateButton, findsOneWidget);
   });
 
-  testWidgets('home screen resolves choice and reloads persistent rewards', (
+  testWidgets(
+    'home screen keeps result visible until acknowledgement and reloads',
+    (WidgetTester tester) async {
+      int loads = 0;
+      String? sentEventId;
+      String? sentChoiceId;
+      String? sentKey;
+      String? acknowledgedReceiptId;
+      String? acknowledgementKey;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            loader: () async {
+              loads += 1;
+              return switch (loads) {
+                1 => _secondEventReady(),
+                2 => _pendingEventResultHome(),
+                _ => _acknowledgedEventResultHome(),
+              };
+            },
+            idempotencyKeyFactory: () => 'event-key',
+            eventResolver:
+                ({
+                  required String eventId,
+                  required String choiceId,
+                  required String idempotencyKey,
+                }) async {
+                  sentEventId = eventId;
+                  sentChoiceId = choiceId;
+                  sentKey = idempotencyKey;
+                  return _eventResolutionResult();
+                },
+            eventResultAcknowledger:
+                ({
+                  required String receiptId,
+                  required String idempotencyKey,
+                }) async {
+                  acknowledgedReceiptId = receiptId;
+                  acknowledgementKey = idempotencyKey;
+                  return EventResultAcknowledgement(
+                    receiptId: receiptId,
+                    eventId: 'echo-vault-v1',
+                    status: 'ACKNOWLEDGED',
+                    acknowledgedAt: '2026-07-26T06:01:00Z',
+                    serverTime: '2026-07-26T06:01:00Z',
+                  );
+                },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder choiceButton = find.widgetWithText(
+        FilledButton,
+        'Стабилизировать ядро',
+      );
+      await tester.scrollUntilVisible(
+        choiceButton,
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(choiceButton);
+      await tester.pumpAndSettle();
+
+      expect(sentEventId, 'echo-vault-v1');
+      expect(sentChoiceId, 'stabilize-core');
+      expect(sentKey, 'event-key');
+      expect(loads, 2);
+
+      final Finder pendingResult = find.byKey(
+        const Key('pending-event-result-card'),
+      );
+      expect(pendingResult, findsOneWidget);
+      expect(find.text('Стабильный резонанс'), findsOneWidget);
+      expect(find.text('Следующий узел: Пепельная орбита'), findsOneWidget);
+
+      final Finder acknowledgementButton = find.byKey(
+        const Key('pending-event-result-acknowledge'),
+      );
+      await tester.scrollUntilVisible(
+        acknowledgementButton,
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(acknowledgementButton);
+      await tester.pumpAndSettle();
+
+      expect(acknowledgedReceiptId, '22222222-2222-2222-2222-222222222222');
+      expect(acknowledgementKey, 'event-key');
+      expect(loads, 3);
+      expect(pendingResult, findsNothing);
+      expect(
+        find.textContaining('0 / 55 энергии · Пепельная орбита'),
+        findsOneWidget,
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('XP 90 / 100'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('XP 90 / 100'), findsOneWidget);
+      expect(find.text('Связь 23'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Люминовый осколок × 2'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Люминовый осколок × 2'), findsOneWidget);
+    },
+  );
+
+  testWidgets('pending result disables an overlapping ready event', (
     WidgetTester tester,
   ) async {
-    int loads = 0;
-    String? sentEventId;
-    String? sentChoiceId;
-    String? sentKey;
+    int resolutions = 0;
 
     await tester.pumpWidget(
       MaterialApp(
         home: HomeScreen(
-          loader: () async {
-            loads += 1;
-            return loads == 1 ? _secondEventReady() : _resolvedEvent();
-          },
-          idempotencyKeyFactory: () => 'event-key',
+          loader: () async => _pendingEventResultHome(includeReadyEvent: true),
           eventResolver:
               ({
                 required String eventId,
                 required String choiceId,
                 required String idempotencyKey,
               }) async {
-                sentEventId = eventId;
-                sentChoiceId = choiceId;
-                sentKey = idempotencyKey;
+                resolutions += 1;
                 return _eventResolutionResult();
               },
         ),
@@ -147,37 +253,10 @@ void main() {
       scrollable: find.byType(Scrollable),
     );
     await tester.pumpAndSettle();
-    await tester.tap(choiceButton);
-    await tester.pumpAndSettle();
 
-    expect(sentEventId, 'echo-vault-v1');
-    expect(sentChoiceId, 'stabilize-core');
-    expect(sentKey, 'event-key');
-    expect(loads, 2);
-
-    final Finder resolvedLabel = find.text('Событие разрешено');
-    await tester.scrollUntilVisible(
-      resolvedLabel,
-      200,
-      scrollable: find.byType(Scrollable),
-    );
-    await tester.pumpAndSettle();
-    expect(resolvedLabel, findsOneWidget);
-    expect(find.text('Стабильный резонанс'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('XP 90 / 100'),
-      200,
-      scrollable: find.byType(Scrollable),
-    );
-    expect(find.text('XP 90 / 100'), findsOneWidget);
-    expect(find.text('Связь 23'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Люминовый осколок × 2'),
-      200,
-      scrollable: find.byType(Scrollable),
-    );
-    expect(find.text('Люминовый осколок × 2'), findsOneWidget);
+    expect(choiceButton, findsOneWidget);
+    expect(tester.widget<FilledButton>(choiceButton).onPressed, isNull);
+    expect(resolutions, 0);
   });
 
   testWidgets('home screen can retry after backend error', (
@@ -261,6 +340,53 @@ void main() {
       expect(refresh.onPressed, isNotNull);
     },
   );
+
+  testWidgets(
+    'cached pending result stays visible but cannot be acknowledged',
+    (WidgetTester tester) async {
+      int acknowledgementCalls = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            loader: () async => _pendingEventResultHome(
+              cacheMetadata: CachedReadMetadata(
+                cachedAt: DateTime.utc(2026, 7, 27, 9),
+                reason: 'Нет соединения с сервером',
+              ),
+            ),
+            eventResultAcknowledger:
+                ({
+                  required String receiptId,
+                  required String idempotencyKey,
+                }) async {
+                  acknowledgementCalls += 1;
+                  throw StateError('cached snapshot must be read-only');
+                },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('pending-event-result-card')),
+        findsOneWidget,
+      );
+      final Finder acknowledgementFinder = find.byKey(
+        const Key('pending-event-result-acknowledge'),
+      );
+      await tester.scrollUntilVisible(
+        acknowledgementFinder,
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      final FilledButton acknowledgement = tester.widget<FilledButton>(
+        acknowledgementFinder,
+      );
+      expect(acknowledgement.onPressed, isNull);
+      expect(find.text('Подтверждение недоступно офлайн'), findsOneWidget);
+      expect(acknowledgementCalls, 0);
+    },
+  );
 }
 
 const DailyGoalPolicy _adaptiveGoalPolicy = DailyGoalPolicy(
@@ -289,7 +415,7 @@ HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
     economyVersion: 1,
     lastActivitySyncAt: '2026-07-26T05:55:00Z',
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v2',
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'outer-beacon',
@@ -322,7 +448,7 @@ HomeSnapshot _eventReady() {
     economyVersion: 2,
     lastActivitySyncAt: '2026-07-26T05:55:00Z',
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v2',
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'outer-beacon',
@@ -375,7 +501,7 @@ HomeSnapshot _secondEventReady() {
     economyVersion: 3,
     lastActivitySyncAt: '2026-07-26T05:55:00Z',
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v2',
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'lumen-gate',
@@ -426,8 +552,12 @@ HomeSnapshot _secondEventReady() {
   );
 }
 
-HomeSnapshot _resolvedEvent() {
-  return const HomeSnapshot(
+HomeSnapshot _pendingEventResultHome({
+  CachedReadMetadata? cacheMetadata,
+  bool includePending = true,
+  bool includeReadyEvent = false,
+}) {
+  return HomeSnapshot(
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
     dailySteps: 10000,
@@ -438,33 +568,16 @@ HomeSnapshot _resolvedEvent() {
     economyVersion: 3,
     lastActivitySyncAt: '2026-07-26T05:55:00Z',
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v2',
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
-    currentNodeId: 'lumen-gate',
-    currentNodeName: 'Люминовые ворота',
-    expeditionProgress: 45,
-    requiredEnergy: 45,
-    expeditionStatus: 'COMPLETED',
+    currentNodeId: 'ash-orbit',
+    currentNodeName: 'Пепельная орбита',
+    expeditionProgress: 0,
+    requiredEnergy: 55,
+    expeditionStatus: includeReadyEvent ? 'EVENT_READY' : 'IN_PROGRESS',
     expeditionVersion: 4,
-    unlockedEvent: HomeExpeditionEvent(
-      eventId: 'echo-vault-v1',
-      title: 'Хранилище эха',
-      summary: 'Ядро нестабильно.',
-      status: 'RESOLVED',
-      selectedChoiceId: 'stabilize-core',
-      selectedChoiceTitle: 'Стабилизировать ядро',
-      outcomeTitle: 'Стабильный резонанс',
-      outcomeSummary: 'Ядро перестало разрушаться.',
-      materialReward: HomeMaterialReward(
-        itemId: 'lumen-shard',
-        itemName: 'Люминовый осколок',
-        description: 'Стабильный фрагмент светового ядра.',
-        quantityGained: 2,
-        quantityAfter: 2,
-        version: 1,
-      ),
-    ),
+    unlockedEvent: includeReadyEvent ? _secondEventReady().unlockedEvent : null,
     pilotName: 'Навигатор',
     pilotLevel: 1,
     pilotCurrentExperience: 90,
@@ -472,7 +585,7 @@ HomeSnapshot _resolvedEvent() {
     petName: 'Искра',
     petLevel: 1,
     petBond: 23,
-    inventory: <HomeInventoryItem>[
+    inventory: const <HomeInventoryItem>[
       HomeInventoryItem(
         itemId: 'lumen-shard',
         name: 'Люминовый осколок',
@@ -481,12 +594,58 @@ HomeSnapshot _resolvedEvent() {
         version: 1,
       ),
     ],
+    pendingEventResult: includePending
+        ? const PendingEventResult(
+            receiptId: '22222222-2222-2222-2222-222222222222',
+            eventId: 'echo-vault-v1',
+            eventTitle: 'Хранилище эха',
+            choiceId: 'stabilize-core',
+            choiceTitle: 'Стабилизировать ядро',
+            outcomeTitle: 'Стабильный резонанс',
+            outcomeSummary: 'Ядро перестало разрушаться.',
+            pilot: EventPilotReward(
+              pilotId: 'navigator-v1',
+              name: 'Навигатор',
+              level: 1,
+              experienceGained: 30,
+              currentExperience: 90,
+              nextLevelExperience: 100,
+              version: 2,
+            ),
+            pet: EventPetReward(
+              petId: 'spark-v1',
+              name: 'Искра',
+              level: 1,
+              bondGained: 8,
+              bond: 23,
+              version: 2,
+            ),
+            material: EventMaterialReward(
+              itemId: 'lumen-shard',
+              name: 'Люминовый осколок',
+              description: 'Стабильный фрагмент светового ядра.',
+              quantityGained: 2,
+              quantityAfter: 2,
+              version: 1,
+            ),
+            nextNode: EventNextNode(
+              nodeId: 'ash-orbit',
+              name: 'Пепельная орбита',
+            ),
+            resolvedAt: '2026-07-26T06:00:00Z',
+          )
+        : null,
+    cacheMetadata: cacheMetadata,
   );
+}
+
+HomeSnapshot _acknowledgedEventResultHome() {
+  return _pendingEventResultHome(includePending: false);
 }
 
 ExpeditionAdvanceResult _advanceResult() {
   return const ExpeditionAdvanceResult(
-    contentVersion: 'starter-v2',
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     energySpent: 30,
@@ -510,9 +669,11 @@ ExpeditionAdvanceResult _advanceResult() {
 
 EventResolutionResult _eventResolutionResult() {
   return const EventResolutionResult(
-    contentVersion: 'starter-v2',
+    receiptId: '22222222-2222-2222-2222-222222222222',
+    handoffRequired: true,
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
-    expeditionStatus: 'COMPLETED',
+    expeditionStatus: 'IN_PROGRESS',
     expeditionVersion: 4,
     eventId: 'echo-vault-v1',
     eventTitle: 'Хранилище эха',
@@ -546,6 +707,7 @@ EventResolutionResult _eventResolutionResult() {
       quantityAfter: 2,
       version: 1,
     ),
+    nextNode: EventNextNode(nodeId: 'ash-orbit', name: 'Пепельная орбита'),
     serverTime: '2026-07-26T06:00:00Z',
   );
 }

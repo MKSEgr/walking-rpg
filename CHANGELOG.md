@@ -68,6 +68,14 @@
 - admin cohort read model conversion и p50/p90 time-to-first-* с отдельной
   data-quality статистикой authoritative/backfilled records;
 - milestones первого пути в JSON export и каскадном удалении аккаунта;
+- durable `receiptId` и nullable `nextNode` в event-resolution response;
+- top-level `pendingEventResult` в `GET /home` и bodyless owner-scoped
+  `POST /api/v1/event-results/{receiptId}/acknowledge`;
+- Flyway V10 с receipt/delivery-mode/next-node/ack state; backfill и rolling
+  legacy writers auto-acknowledged и не всплывают повторно;
+- restart-visible mobile result card и persist-before-send
+  `EVENT_RESULT_ACKNOWLEDGEMENT` в GAMEPLAY outbox;
+- ADR 0022 о durable event-result handoff;
 
 ### Changed
 
@@ -90,7 +98,16 @@
   канонической pet progression без потери старого platform progress;
 - сюжетные тексты первого пути больше не предполагают, что всегда выбрана
   Искра; стабильные command/choice IDs сохранены;
-- haptic feedback первого пути исключён из критического пути server reload.
+- haptic feedback первого пути исключён из критического пути server reload;
+- backend блокирует новый advance/resolution только до acknowledgement
+  capable pending event receipt;
+- `receiptId` стал единственным server-side idempotency scope ACK; повтор
+  возвращает стабильные `acknowledgedAt` и `serverTime`;
+- durable handoff включается capability
+  `X-Walking-RPG-Capabilities: durable-event-result-v1` только после явной
+  cluster activation; exact replay сохраняет mode первого запроса, старые
+  backend instances drain-ятся до активации, rollback требует ноль pending
+  receipts.
 
 ## [0.1.0] — 2026-07-25
 

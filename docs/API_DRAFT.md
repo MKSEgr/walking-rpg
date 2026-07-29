@@ -93,8 +93,8 @@ idempotency key, UUID квитанции и timestamps; raw OIDC subject в кв
 Authorization: Bearer <access-token>
 ```
 
-После разрешения второго события response содержит следующий узел и
-накопленный inventory:
+После capable-разрешения второго события и до явного acknowledgement response
+содержит накопленный inventory, следующий узел и durable результат события:
 
 ```json
 {
@@ -144,6 +144,45 @@ Authorization: Bearer <access-token>
       "version": 1
     }
   ],
+  "pendingEventResult": {
+    "receiptId": "22222222-2222-2222-2222-222222222222",
+    "eventId": "echo-vault-v1",
+    "eventTitle": "Хранилище эха",
+    "choiceId": "stabilize-core",
+    "choiceTitle": "Стабилизировать ядро",
+    "outcomeTitle": "Стабильный резонанс",
+    "outcomeSummary": "Ядро перестало разрушаться, а два люминовых осколка сохранили его энергию.",
+    "pilot": {
+      "pilotId": "navigator-v1",
+      "name": "Навигатор",
+      "level": 1,
+      "experienceGained": 30,
+      "currentExperience": 90,
+      "nextLevelExperience": 100,
+      "version": 2
+    },
+    "pet": {
+      "petId": "spark-v1",
+      "name": "Искра",
+      "level": 1,
+      "bondGained": 8,
+      "bond": 23,
+      "version": 2
+    },
+    "material": {
+      "itemId": "lumen-shard",
+      "name": "Люминовый осколок",
+      "description": "Стабильный фрагмент светового ядра, пригодный для будущих улучшений.",
+      "quantityGained": 2,
+      "quantityAfter": 2,
+      "version": 1
+    },
+    "nextNode": {
+      "nodeId": "ash-orbit",
+      "name": "Пепельная орбита"
+    },
+    "resolvedAt": "2026-07-26T07:00:00Z"
+  },
   "expedition": {
     "expeditionId": "starter-expedition-v1",
     "name": "Сигнал из туманного сектора",
@@ -167,9 +206,13 @@ Authorization: Bearer <access-token>
 - `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
 - неизвестный пользователь получает zero-state и starter content;
-- `inventory[]` содержит актуальный stack; immutable material snapshot всегда
-  возвращается командой resolution и остаётся в home, только пока read-model
-  указывает на соответствующее событие;
+- `inventory[]` содержит актуальный stack;
+- `pendingEventResult` — nullable top-level receipt единственного
+  неподтверждённого результата текущей экспедиции; он содержит immutable
+  choice/reward snapshot и nullable `nextNode`;
+- результат остаётся доступен после reload/restart, даже когда authoritative
+  expedition уже перешла на следующий узел; после acknowledgement конкретного
+  receipt он исчезает из pending projection;
 - `GET` не выполняет `INSERT` или `UPDATE`.
 
 ## `POST /api/v1/activity/sync`
@@ -247,7 +290,7 @@ Response после достижения узла:
 
 ```json
 {
-  "contentVersion": "starter-v2",
+  "contentVersion": "chapter-1-v1",
   "expeditionId": "starter-expedition-v1",
   "expeditionName": "Сигнал из туманного сектора",
   "energySpent": 30,
@@ -275,6 +318,9 @@ Response после достижения узла:
 - amount не превышает остаток до узла;
 - partial advance разрешён;
 - wallet не становится отрицательным;
+- пока существует неподтверждённый `pendingEventResult` этой экспедиции, новый
+  advance возвращает `409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED`: сначала
+  пользователь должен подтвердить durable receipt;
 - после `EVENT_READY` новый advance возвращает `409 EXPEDITION_STATE_CONFLICT`;
 - после первого event resolution тот же endpoint продвигает второй узел `lumen-gate` с порогом 45;
 - debit, ledger, progress и response сохраняются одной транзакцией.
@@ -285,6 +331,7 @@ Response после достижения узла:
 
 ```http
 Authorization: Bearer <access-token>
+X-Walking-RPG-Capabilities: durable-event-result-v1
 ```
 
 Request:
@@ -313,6 +360,7 @@ Response второго события:
 
 ```json
 {
+  "receiptId": "22222222-2222-2222-2222-222222222222",
   "contentVersion": "chapter-1-v1",
   "expeditionId": "starter-expedition-v1",
   "expeditionStatus": "IN_PROGRESS",
@@ -349,27 +397,106 @@ Response второго события:
     "quantityAfter": 2,
     "version": 1
   },
+  "handoffRequired": true,
+  "nextNode": {
+    "nodeId": "ash-orbit",
+    "name": "Пепельная орбита"
+  },
   "serverTime": "2026-07-26T07:00:00Z"
 }
 ```
 
 Для первого события `material = null`. Первое и второе события возвращают
 `expeditionStatus = IN_PROGRESS`, потому что открывают следующий узел.
+Финальное событие главы возвращает `nextNode = null` и
+`expeditionStatus = COMPLETED`.
 
 Правила:
 
 - event должен быть фактически открыт и expedition должна иметь `EVENT_READY`;
+- durable handoff включается только сочетанием capability
+  `X-Walking-RPG-Capabilities: durable-event-result-v1` и cluster gate
+  `DURABLE_EVENT_RESULT_HANDOFF_ENABLED=true`; response явно возвращает
+  сохранённый `handoffRequired`;
+- без capability или при выключенном gate backend сохраняет legacy delivery с
+  `handoffRequired = false`, auto-ACK и без pending/gameplay gate; это позволяет
+  старому mobile продолжить работу;
+- новый resolution возвращает
+  `409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED`, если у пользователя уже есть
+  неподтверждённый capable result receipt той же экспедиции;
 - `choiceId` выбирается из server-owned definition соответствующего `eventId`;
+- `receiptId`, immutable reward snapshot и `nextNode` сохраняются в той же
+  транзакции, что и progression/inventory/expedition transition;
 - первый event resolution переводит progress на второй узел, второй — на
   третий; только финальное событие главы возвращает `COMPLETED`;
-- тот же key и payload возвращает исходный response без второй награды;
+- тот же key и payload возвращает исходный response с тем же `receiptId`,
+  `handoffRequired` и `nextNode` без второй награды; capabilities повторного
+  запроса не меняют delivery mode;
 - тот же key с другим choice возвращает `409 IDEMPOTENCY_CONFLICT`;
 - неизвестный choice возвращает `400 VALIDATION_ERROR`;
-- повторное resolution новым key возвращает `409 EVENT_STATE_CONFLICT`;
+- после ACK повторное resolution новым key возвращает
+  `409 EVENT_STATE_CONFLICT`;
 - один inventory source не может выдать другой item или quantity;
-- expedition transition/completion, pilot XP, pet bond, inventory stack/ledger и processed response фиксируются одной транзакцией.
+- expedition transition/completion, pilot XP, pet bond, inventory stack/ledger
+  и processed response фиксируются одной транзакцией;
 - pet reward получает активный питомец из authoritative platform state; его
   progress хранится отдельно от других питомцев.
+
+## `POST /api/v1/event-results/{receiptId}/acknowledge`
+
+Подтверждает, что authenticated пользователь увидел durable результат события
+и готов продолжить экспедицию.
+
+```http
+Authorization: Bearer <access-token>
+Accept: application/json
+```
+
+```json
+{
+  "receiptId": "22222222-2222-2222-2222-222222222222",
+  "eventId": "echo-vault-v1",
+  "status": "ACKNOWLEDGED",
+  "acknowledgedAt": "2026-07-26T07:01:00Z",
+  "serverTime": "2026-07-26T07:01:00Z"
+}
+```
+
+Правила:
+
+- request не содержит body; `receiptId` является единственным server-side
+  idempotency scope;
+- receipt доступен только своему authenticated user; неизвестный или чужой
+  receipt возвращает `404 EVENT_RESULT_NOT_FOUND` без раскрытия владельца;
+- повторное acknowledgement того же receipt возвращает стабильные
+  `acknowledgedAt` и `serverTime` и не выполняет вторую мутацию;
+- после успешного acknowledgement mobile перечитывает authoritative
+  `GET /home`;
+- acknowledgement не начисляет награды и не меняет expedition/progression или
+  inventory;
+- mobile сохраняет receipt в durable GAMEPLAY outbox до первой сетевой попытки
+  и replay-ит тот же URL после restart; локальный command key не является
+  частью HTTP-контракта.
+
+Flyway V10 присваивает legacy resolutions `receiptId`, но сразу заполняет им
+`acknowledgedAt = serverTime`: результаты, уже показанные до появления этого
+контракта, не всплывают повторно после upgrade. Колонка
+`handoff_required = false` и `BEFORE INSERT` trigger auto-acknowledge также
+сохраняют совместимость старого backend writer после применения V10. Partial
+unique index ограничивает только строки с `handoff_required = true` и
+`acknowledged_at IS NULL`.
+
+Новый mobile принимает legacy response старого backend без `receiptId`,
+`handoffRequired` и `nextNode` как немедленно доставленный результат. До
+активации gate backend и mobile можно обновлять в любом порядке. Gate
+включается только после полного drain старых backend instances; старый binary
+нельзя возвращать в mixed pool после активации. Для rollback gate сначала
+выключается на всём новом пуле, затем число
+`handoff_required AND acknowledged_at IS NULL` доводится до нуля.
+
+В mixed-device сценарии pending receipt, созданный capable-клиентом, остаётся
+каноническим и блокирует старый клиент того же аккаунта до ACK; такой клиент
+нужно обновить либо подтвердить результат на capable-устройстве.
 
 ## `GET /api/v1/platform`
 
@@ -487,6 +614,8 @@ IDEMPOTENCY_CONFLICT
 INSUFFICIENT_ENERGY
 EXPEDITION_STATE_CONFLICT
 EVENT_STATE_CONFLICT
+EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED
+EVENT_RESULT_NOT_FOUND
 INVENTORY_LEDGER_CONFLICT
 VALIDATION_ERROR
 NOT_FOUND

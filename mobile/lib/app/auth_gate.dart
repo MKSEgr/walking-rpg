@@ -150,6 +150,7 @@ class _AuthenticatedApplicationShellState
       activitySender: activityClient.sync,
       expeditionSender: expeditionClient.advance,
       eventSender: eventClient.resolve,
+      eventResultAcknowledgementSender: eventClient.acknowledge,
       platformSender: _platformClient.execute,
     );
     _coordinator = ActivitySyncCoordinator.fromEnvironmentIfSupported(

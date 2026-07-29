@@ -19,22 +19,28 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EventResolutionServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-07-26T06:00:00Z");
 
     private InMemoryExpeditionRepository expeditionRepository;
+    private InMemoryEventResolutionRepository eventResolutionRepository;
     private InMemoryInventoryRepository inventoryRepository;
+    private StarterExpeditionContent content;
     private EventResolutionService service;
 
     @BeforeEach
     void setUp() {
         expeditionRepository = new InMemoryExpeditionRepository();
+        eventResolutionRepository = new InMemoryEventResolutionRepository();
         inventoryRepository = new InMemoryInventoryRepository();
+        content = new StarterExpeditionContent();
         expeditionRepository.saveState(
                 "user-1",
                 StarterExpeditionContent.EXPEDITION_ID,
@@ -43,13 +49,13 @@ class EventResolutionServiceTest {
         );
         service = new EventResolutionService(
                 expeditionRepository,
-                new InMemoryEventResolutionRepository(),
+                eventResolutionRepository,
                 new ProgressionService(
                         new InMemoryProgressionRepository(),
                         new StarterProgressionContent()
                 ),
                 new InventoryService(inventoryRepository),
-                new StarterExpeditionContent(),
+                content,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -63,13 +69,22 @@ class EventResolutionServiceTest {
         );
 
         EventResolutionResult first = service.resolve(command);
-        EventResolutionResult replayed = service.resolve(command);
+        EventResolutionResult replayed = service.resolve(command, false);
         ExpeditionProgressState state = expeditionRepository.findState(
                 "user-1",
                 StarterExpeditionContent.EXPEDITION_ID
         ).orElseThrow();
 
         assertSame(first, replayed);
+        assertNotNull(first.receiptId());
+        assertEquals(true, first.handoffRequired());
+        assertEquals(
+                first.receiptId(),
+                eventResolutionRepository.findPendingResult(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().result().receiptId()
+        );
         assertEquals(ExpeditionProgressStatus.IN_PROGRESS, first.expeditionStatus());
         assertEquals(2, first.expeditionVersion());
         assertEquals(40, first.pilot().experienceGained());
@@ -78,18 +93,46 @@ class EventResolutionServiceTest {
         assertEquals(15, first.pet().bond());
         assertEquals("Карта импульсов", first.outcomeTitle());
         assertNull(first.material());
+        assertEquals(StarterExpeditionContent.SECOND_NODE_ID,
+                first.nextNode().nodeId());
         assertEquals(StarterExpeditionContent.SECOND_NODE_ID, state.currentNodeId());
         assertEquals(45, state.requiredEnergy());
         assertEquals(0, state.progressEnergy());
     }
 
     @Test
+    void shouldKeepLegacyDeliveryOnCapableExactReplay() {
+        EventResolutionCommand command = command(
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "legacy-delivery"
+        );
+
+        EventResolutionResult delivered = service.resolve(command, false);
+        EventResolutionResult replayed = service.resolve(command, true);
+
+        assertSame(delivered, replayed);
+        assertEquals(false, delivered.handoffRequired());
+        assertTrue(
+                eventResolutionRepository.findPendingResult(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).isEmpty()
+        );
+    }
+
+    @Test
     void shouldResolveSecondEventPersistMaterialAndContinueToThirdNode() {
-        service.resolve(command(
+        EventResolutionResult firstEvent = service.resolve(command(
                 StarterExpeditionContent.FIRST_EVENT_ID,
                 "analyze-signal",
                 "first-event"
         ));
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                firstEvent.receiptId(),
+                NOW
+        );
         expeditionRepository.saveState(
                 "user-1",
                 StarterExpeditionContent.EXPEDITION_ID,
@@ -110,6 +153,7 @@ class EventResolutionServiceTest {
         ).orElseThrow();
 
         assertSame(first, replayed);
+        assertNotNull(first.receiptId());
         assertEquals(ExpeditionProgressStatus.IN_PROGRESS, first.expeditionStatus());
         assertEquals(4, first.expeditionVersion());
         assertEquals(30, first.pilot().experienceGained());
@@ -120,11 +164,90 @@ class EventResolutionServiceTest {
         assertEquals(2, first.material().quantityGained());
         assertEquals(2, first.material().quantityAfter());
         assertEquals(1, first.material().version());
+        assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
+                first.nextNode().nodeId());
         assertEquals(1, inventoryRepository.findAll("user-1").size());
         assertEquals(2, inventoryRepository.findAll("user-1").getFirst().quantity());
         assertEquals(StarterExpeditionContent.THIRD_NODE_ID, state.currentNodeId());
         assertEquals(55, state.requiredEnergy());
         assertEquals(0, state.progressEnergy());
+    }
+
+    @Test
+    void shouldCompleteChapterWithReceiptAndNoNextNode() {
+        var finalNode = content.requireNode(
+                StarterExpeditionContent.FINAL_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                new ExpeditionProgressState(
+                        finalNode.requiredEnergy(),
+                        finalNode.requiredEnergy(),
+                        ExpeditionProgressStatus.EVENT_READY,
+                        finalNode.currentNodeId(),
+                        finalNode.event().eventId(),
+                        35
+                ),
+                NOW
+        );
+        String choiceId = content.eventChoices(finalNode.event().eventId())
+                .getFirst()
+                .choiceId();
+
+        EventResolutionResult result = service.resolve(command(
+                finalNode.event().eventId(),
+                choiceId,
+                "resolve-final"
+        ));
+
+        assertEquals(ExpeditionProgressStatus.COMPLETED, result.expeditionStatus());
+        assertNotNull(result.receiptId());
+        assertNull(result.nextNode());
+        assertEquals(
+                ExpeditionProgressStatus.COMPLETED,
+                expeditionRepository.findState(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().status()
+        );
+    }
+
+    @Test
+    void shouldRejectAnotherResolutionUntilPendingReceiptIsAcknowledged() {
+        EventResolutionResult first = service.resolve(command(
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "pending-first"
+        ));
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                secondReadyState(3),
+                NOW
+        );
+
+        PendingEventResultException conflict = assertThrows(
+                PendingEventResultException.class,
+                () -> service.resolve(command(
+                        StarterExpeditionContent.SECOND_EVENT_ID,
+                        "stabilize-core",
+                        "pending-second"
+                ))
+        );
+        assertEquals(first.receiptId(), conflict.receiptId());
+
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                first.receiptId(),
+                NOW
+        );
+        EventResolutionResult second = service.resolve(command(
+                StarterExpeditionContent.SECOND_EVENT_ID,
+                "stabilize-core",
+                "pending-second"
+        ));
+        assertEquals(StarterExpeditionContent.SECOND_EVENT_ID, second.eventId());
     }
 
     @Test
@@ -168,11 +291,16 @@ class EventResolutionServiceTest {
 
     @Test
     void shouldRejectSecondResolutionWithAnotherKey() {
-        service.resolve(command(
+        EventResolutionResult first = service.resolve(command(
                 StarterExpeditionContent.FIRST_EVENT_ID,
                 "analyze-signal",
                 "first-key"
         ));
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                first.receiptId(),
+                NOW
+        );
 
         EventStateConflictException exception = assertThrows(
                 EventStateConflictException.class,

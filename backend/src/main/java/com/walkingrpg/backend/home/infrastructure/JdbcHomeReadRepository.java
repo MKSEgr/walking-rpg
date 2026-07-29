@@ -4,7 +4,10 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
+import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
+import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
 import com.walkingrpg.backend.progression.application.ActivePetProvider;
@@ -19,15 +22,26 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
     private final JdbcTemplate jdbcTemplate;
     private final StarterProgressionContent progressionContent;
     private final ActivePetProvider activePetProvider;
+    private final EventResolutionRepository eventResolutionRepository;
 
     public JdbcHomeReadRepository(
             JdbcTemplate jdbcTemplate,
             StarterProgressionContent progressionContent,
-            ActivePetProvider activePetProvider
+            ActivePetProvider activePetProvider,
+            EventResolutionRepository eventResolutionRepository
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.progressionContent = progressionContent;
         this.activePetProvider = activePetProvider;
+        this.eventResolutionRepository = eventResolutionRepository;
+    }
+
+    @Override
+    public Optional<ProcessedEventResolution> findPendingEventResult(
+            String userId,
+            String expeditionId
+    ) {
+        return eventResolutionRepository.findPendingResult(userId, expeditionId);
     }
 
     @Override
@@ -56,17 +70,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        COALESCE(pilot.current_experience, 0) AS pilot_current_experience,
                        COALESCE(pilot.next_level_experience, 0) AS pilot_next_level_experience,
                        COALESCE(pet.level, 0) AS pet_level,
-                       COALESCE(pet.bond, 0) AS pet_bond,
-                       resolution.choice_id AS resolved_choice_id,
-                       resolution.choice_title AS resolved_choice_title,
-                       resolution.outcome_title,
-                       resolution.outcome_summary,
-                       resolution.material_item_id,
-                       resolution.material_item_name,
-                       resolution.material_item_description,
-                       resolution.material_quantity_gained,
-                       resolution.material_quantity_after,
-                       resolution.material_version
+                       COALESCE(pet.bond, 0) AS pet_bond
                 FROM (VALUES (1)) AS anchor(value)
                 LEFT JOIN activity_sync_state activity
                   ON activity.user_id = ?
@@ -83,10 +87,6 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 LEFT JOIN pet_progress pet
                   ON pet.user_id = ?
                  AND pet.pet_id = ?
-                LEFT JOIN processed_event_resolution resolution
-                  ON resolution.user_id = ?
-                 AND resolution.expedition_id = ?
-                 AND resolution.event_id = expedition.unlocked_event_id
                 """, (resultSet, rowNumber) -> {
             Timestamp lastSync = resultSet.getTimestamp("last_activity_sync_at");
             Instant lastActivitySyncAt = lastSync == null ? null : lastSync.toInstant();
@@ -112,17 +112,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                     true,
                     Math.max(resultSet.getInt("pet_level"), activePet.level()),
                     Math.max(resultSet.getInt("pet_bond"), activePet.bond()),
-                    resultSet.getString("resolved_choice_id"),
-                    resultSet.getString("resolved_choice_title"),
-                    resultSet.getString("outcome_title"),
-                    resultSet.getString("outcome_summary"),
-                    resultSet.getString("material_item_id"),
-                    resultSet.getString("material_item_name"),
-                    resultSet.getString("material_item_description"),
-                    resultSet.getObject("material_quantity_gained", Long.class),
-                    resultSet.getObject("material_quantity_after", Long.class),
-                    resultSet.getObject("material_version", Long.class),
-                    List.of()
+                    null,
+                    null,
+                    null,
+                    null
             );
         },
                 userId,
@@ -133,9 +126,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 userId,
                 progressionContent.pilot().pilotId(),
                 userId,
-                activePetId,
-                userId,
-                expeditionId
+                activePetId
         );
 
         if (state == null) {

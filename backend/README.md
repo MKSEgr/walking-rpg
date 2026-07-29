@@ -26,7 +26,9 @@ authoritative step total
 → production home snapshot
 → ENERGY debit
 → first event READY and resolution
-→ transition to second node
+→ atomic transition + durable result receipt
+→ pending result in home
+→ bodyless receipt acknowledgement
 → следующие content-driven узлы
 → persistent pilot XP + active-pet bond + material inventory
 → chapter completion
@@ -82,9 +84,13 @@ PostgreSQL Testcontainers tests проверяют:
 - rollback activity/economy/expedition/progression/inventory при поздней ошибке;
 - production home read-model до, между и после двух событий;
 - Flyway upgrade `starter-v1 → starter-v2` без повторной material reward;
-- default/adaptive daily goal, окно предыдущих дней и исключение текущего дня.
+- default/adaptive daily goal, окно предыдущих дней и исключение текущего дня;
 - V9 exact-once milestones первого пути, migration backfill и cascade deletion;
-- cohort-filtered first-journey conversion и authoritative p50/p90 timing.
+- cohort-filtered first-journey conversion и authoritative p50/p90 timing;
+- capability-gated durable event receipt, `pendingEventResult`, owner-scoped
+  idempotent acknowledgement и gameplay gate до ACK;
+- Flyway V10: legacy/backfilled writers auto-acknowledged, а capable results
+  остаются pending.
 
 ## Персональная дневная цель
 
@@ -123,6 +129,7 @@ GET  /api/v1/home?localDate=YYYY-MM-DD
 POST /api/v1/activity/sync
 POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
+POST /api/v1/event-results/{receiptId}/acknowledge
 GET  /api/v1/platform
 POST /api/v1/platform/commands
 GET  /api/v1/admin/platform/analytics/first-journey?cohortCode=alpha-1
@@ -155,6 +162,10 @@ X-Mock-Authorities
 `application-prod.yml` принудительно включает JWT и отключает demo endpoint. Для production нужны `OIDC_ISSUER_URI`, `OIDC_JWK_SET_URI` и `OIDC_AUDIENCE`. Полная модель зафиксирована в `docs/adr/0017-production-authentication-boundary.md`.
 
 Следующие curl-примеры предназначены для локального профиля `local`.
+Чтобы примеры durable result возвращали `handoffRequired = true`, single-node
+локальный backend запускается с
+`DURABLE_EVENT_RESULT_HANDOFF_ENABLED=true`. Значение по умолчанию `false`
+предназначено для безопасного cluster rollout.
 
 ### Синхронизация шагов
 
@@ -211,6 +222,7 @@ dawn-relay     — 130 ENERGY → dawn-relay-v1
 curl -X POST \
   http://localhost:8080/api/v1/events/signal-source-v1/resolve \
   -H 'Content-Type: application/json' \
+  -H 'X-Walking-RPG-Capabilities: durable-event-result-v1' \
   -H 'X-User-Id: demo-user-1' \
   -d '{
     "choiceId": "analyze-signal",
@@ -224,6 +236,7 @@ curl -X POST \
 curl -X POST \
   http://localhost:8080/api/v1/events/echo-vault-v1/resolve \
   -H 'Content-Type: application/json' \
+  -H 'X-Walking-RPG-Capabilities: durable-event-result-v1' \
   -H 'X-User-Id: demo-user-1' \
   -d '{
     "choiceId": "stabilize-core",
@@ -235,10 +248,12 @@ curl -X POST \
 
 ```json
 {
+  "receiptId": "22222222-2222-2222-2222-222222222222",
   "contentVersion": "chapter-1-v1",
   "expeditionStatus": "IN_PROGRESS",
   "eventId": "echo-vault-v1",
   "choiceId": "stabilize-core",
+  "handoffRequired": true,
   "material": {
     "itemId": "lumen-shard",
     "name": "Люминовый осколок",
@@ -246,11 +261,79 @@ curl -X POST \
     "quantityGained": 2,
     "quantityAfter": 2,
     "version": 1
+  },
+  "nextNode": {
+    "nodeId": "ash-orbit",
+    "name": "Пепельная орбита"
   }
 }
 ```
 
-`stabilize-core` выдаёт 2 `lumen-shard`; `follow-echo` — 1 `echo-thread`. Immutable response хранит material snapshot, а текущий stack возвращается через `GET /home`.
+`stabilize-core` выдаёт 2 `lumen-shard`; `follow-echo` — 1 `echo-thread`.
+Immutable response хранит material snapshot и следующий узел, а текущий stack
+возвращается через `GET /home`.
+
+### Durable результат события
+
+Event resolution с capability
+`X-Walking-RPG-Capabilities: durable-event-result-v1` и cluster gate
+`DURABLE_EVENT_RESULT_HANDOFF_ENABLED=true` сохраняет `receiptId`,
+`handoffRequired = true`, reward snapshot и nullable `nextNode` в той же
+транзакции, что и progression, inventory и переход экспедиции. Пока receipt не
+подтверждён, `GET /api/v1/home` возвращает top-level `pendingEventResult`.
+Потеря HTTP response или restart mobile поэтому не скрывают уже начисленную
+награду.
+
+Acknowledgement не принимает body:
+
+```bash
+curl -X POST \
+  http://localhost:8080/api/v1/event-results/22222222-2222-2222-2222-222222222222/acknowledge \
+  -H 'Accept: application/json' \
+  -H 'X-User-Id: demo-user-1'
+```
+
+```json
+{
+  "receiptId": "22222222-2222-2222-2222-222222222222",
+  "eventId": "echo-vault-v1",
+  "status": "ACKNOWLEDGED",
+  "acknowledgedAt": "2026-07-26T07:01:00Z",
+  "serverTime": "2026-07-26T07:01:00Z"
+}
+```
+
+`receiptId` — единственный server-side idempotency scope. Replay возвращает
+стабильные `acknowledgedAt` и `serverTime`. Чужой или неизвестный receipt
+возвращает `404 EVENT_RESULT_NOT_FOUND`. Пока есть pending receipt этой
+экспедиции, backend отклоняет новый expedition advance и новый event resolution
+кодом
+`409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED`; ACK не меняет progression,
+inventory или expedition второй раз.
+
+Запрос без capability или при выключенном activation gate остаётся совместимым
+со старым mobile: `handoffRequired = false`, receipt физически
+auto-acknowledged и не попадает в home pending projection или gameplay gate.
+Exact replay сохраняет mode первого запроса, даже если повтор пришёл с другим
+набором capabilities. V10 trigger применяет тот же auto-ACK к `INSERT` старого
+backend. Новый mobile принимает legacy response без `receiptId`,
+`handoffRequired` и `nextNode` и не отправляет ACK.
+
+Безопасный deploy: применить V10, развернуть новый backend с
+`DURABLE_EVENT_RESULT_HANDOFF_ENABLED=false`, обновить mobile, полностью
+вывести старые backend instances и только затем включить gate на новом пуле.
+После активации старый backend нельзя возвращать в pool. Для rollback сначала
+выключить gate на всех новых instances и дождаться нуля:
+
+```sql
+SELECT count(*)
+FROM processed_event_resolution
+WHERE handoff_required
+  AND acknowledged_at IS NULL;
+```
+
+Только после этого разрешён rollback на старый binary. Pending result, уже
+созданный capable-клиентом, требует capable-клиента для подтверждения.
 
 ## Что сохраняется
 
@@ -265,7 +348,7 @@ expedition_progress            — progress/status стартовой экспе
 processed_expedition_advance   — idempotent expedition/economy response
 pilot_progress                 — уровень и опыт пилота
 pet_progress                   — уровень и bond питомца
-processed_event_resolution     — idempotent event/progression/material response
+processed_event_resolution     — immutable event result, receipt/next node и ACK state
 inventory_stack                 — текущий material stack
 inventory_ledger                — append-only material reward journal
 ```
@@ -279,6 +362,10 @@ inventory_ledger                — append-only material reward journal
 - один command key не создаёт повторное изменение состояния;
 - key с другим payload возвращает `IDEMPOTENCY_CONFLICT`;
 - event разрешается только из `EVENT_READY`;
+- pending capable event receipt блокирует следующий advance/resolution той же
+  экспедиции до явного ACK; legacy delivery auto-acknowledged;
+- acknowledgement scoped только authenticated user + `receiptId`, не имеет
+  request body и возвращает стабильное время первого ACK;
 - progression, inventory reward и expedition transition/completion фиксируются одной транзакцией;
 - `GET /home` не создаёт данные или goal snapshots;
 - текущий локальный день не участвует в собственной daily goal.

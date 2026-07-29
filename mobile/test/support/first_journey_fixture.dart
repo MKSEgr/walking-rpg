@@ -46,7 +46,7 @@ HomeSnapshot firstJourneyHome({
     economyVersion: synced ? 1 : 0,
     lastActivitySyncAt: synced ? '2026-07-29T08:00:00Z' : null,
     serverTime: '2026-07-29T08:00:00Z',
-    contentVersion: 'starter-v2',
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: firstEventResolved ? 'lumen-gate' : 'outer-beacon',
@@ -80,7 +80,7 @@ const ActivitySyncResult firstJourneyActivityResult = ActivitySyncResult(
 
 const ExpeditionAdvanceResult firstJourneyAdvanceResult =
     ExpeditionAdvanceResult(
-      contentVersion: 'starter-v2',
+      contentVersion: 'chapter-1-v1',
       expeditionId: 'starter-expedition-v1',
       expeditionName: 'Сигнал из туманного сектора',
       energySpent: 30,
@@ -106,7 +106,9 @@ EventResolutionResult firstJourneyResolutionResult({
   String petName = 'Искра',
 }) {
   return EventResolutionResult(
-    contentVersion: 'starter-v2',
+    receiptId: '11111111-1111-1111-1111-111111111111',
+    handoffRequired: true,
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionStatus: 'IN_PROGRESS',
     expeditionVersion: 2,
@@ -133,6 +135,10 @@ EventResolutionResult firstJourneyResolutionResult({
       bondGained: 5,
       bond: 15,
       version: 1,
+    ),
+    nextNode: const EventNextNode(
+      nodeId: 'lumen-gate',
+      name: 'Люминовые ворота',
     ),
     serverTime: '2026-07-29T08:02:00Z',
   );

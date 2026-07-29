@@ -1,11 +1,13 @@
 package com.walkingrpg.backend.expedition.api;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import com.walkingrpg.backend.expedition.domain.EventResolutionStatus;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 
 public record EventResolutionResponse(
+        UUID receiptId,
         String contentVersion,
         String expeditionId,
         ExpeditionProgressStatus expeditionStatus,
@@ -20,6 +22,8 @@ public record EventResolutionResponse(
         EventPilotRewardResponse pilot,
         EventPetRewardResponse pet,
         EventMaterialRewardResponse material,
+        boolean handoffRequired,
+        EventNextNodeResponse nextNode,
         Instant serverTime
 ) {
 }

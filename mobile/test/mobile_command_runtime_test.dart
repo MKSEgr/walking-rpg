@@ -4,6 +4,7 @@ import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
+import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
@@ -111,6 +112,56 @@ void main() {
     expect(replayedKey, 'second-event-original');
     expect(store.snapshot, isEmpty);
   });
+
+  test(
+    'event result acknowledgement persists and replays the same receipt',
+    () async {
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+      bool persistedBeforeSend = false;
+      final MobileCommandRuntime firstRuntime = _runtime(
+        store: store,
+        eventResultAcknowledgementSender: ({required String receiptId}) async {
+          final MobileCommand command = store.snapshot.single;
+          persistedBeforeSend =
+              command.type == MobileCommandType.eventResultAcknowledgement &&
+              command.payload['receiptId'] == receiptId &&
+              command.idempotencyKey == 'ack-original';
+          throw StateError('response lost after acknowledgement');
+        },
+      );
+
+      await expectLater(
+        firstRuntime.acknowledgeEventResult(
+          receiptId: '22222222-2222-2222-2222-222222222222',
+          idempotencyKey: 'ack-original',
+        ),
+        throwsStateError,
+      );
+
+      expect(persistedBeforeSend, isTrue);
+      expect(store.snapshot.single.lane, MobileCommandLane.gameplay);
+      expect(store.snapshot.single.state, MobileCommandState.pending);
+
+      String? replayedReceiptId;
+      String? replayedKey;
+      final MobileCommandRuntime restartedRuntime = _runtime(
+        store: store,
+        eventResultAcknowledgementSender: ({required String receiptId}) async {
+          replayedReceiptId = receiptId;
+          replayedKey = store.snapshot.single.idempotencyKey;
+          return _acknowledgementResult(receiptId);
+        },
+      );
+
+      final MobileCommandReplayReport report = await restartedRuntime
+          .replayPending();
+
+      expect(report.succeeded, 1);
+      expect(replayedReceiptId, '22222222-2222-2222-2222-222222222222');
+      expect(replayedKey, 'ack-original');
+      expect(store.snapshot, isEmpty);
+    },
+  );
 
   test('retryable activity failure does not block gameplay lane', () async {
     final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
@@ -221,6 +272,64 @@ void main() {
     expect(report.permanentFailures, 1);
     expect(report.failedAfter, 1);
     expect(eventCalls, 1);
+    expect(store.snapshot.single.state, MobileCommandState.failed);
+  });
+
+  test('unknown acknowledgement receipt does not block gameplay', () async {
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+      <MobileCommand>[
+        MobileCommand.pending(
+          ownerId: 'user-1',
+          type: MobileCommandType.eventResultAcknowledgement,
+          idempotencyKey: 'ack-unknown',
+          fingerprint: 'ack-unknown-fingerprint',
+          payload: <String, Object?>{
+            'receiptId': '22222222-2222-2222-2222-222222222222',
+          },
+          now: DateTime.utc(2026, 7, 26, 9),
+        ),
+        MobileCommand.pending(
+          ownerId: 'user-1',
+          type: MobileCommandType.eventResolution,
+          idempotencyKey: 'event-after-ack',
+          fingerprint: 'event-after-ack-fingerprint',
+          payload: <String, Object?>{
+            'eventId': 'signal-source-v1',
+            'choiceId': 'trust-spark',
+          },
+          now: DateTime.utc(2026, 7, 26, 9, 1),
+        ),
+      ],
+    );
+    int eventCalls = 0;
+    final MobileCommandRuntime runtime = _runtime(
+      store: store,
+      eventResultAcknowledgementSender: ({required String receiptId}) async =>
+          throw const EventApiException(
+            statusCode: 404,
+            code: 'EVENT_RESULT_NOT_FOUND',
+            message: 'receipt is unknown or belongs to another user',
+          ),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async {
+            eventCalls += 1;
+            return _eventResult();
+          },
+    );
+
+    final MobileCommandReplayReport report = await runtime.replayPending();
+
+    expect(report.permanentFailures, 1);
+    expect(report.succeeded, 1);
+    expect(eventCalls, 1);
+    expect(
+      store.snapshot.single.type,
+      MobileCommandType.eventResultAcknowledgement,
+    );
     expect(store.snapshot.single.state, MobileCommandState.failed);
   });
 
@@ -461,6 +570,7 @@ MobileCommandRuntime _runtime({
   ActivityCommandSender? activitySender,
   ExpeditionCommandSender? expeditionSender,
   EventCommandSender? eventSender,
+  EventResultAcknowledgementSender? eventResultAcknowledgementSender,
   PlatformCommandSender? platformSender,
 }) {
   return MobileCommandRuntime(
@@ -486,6 +596,10 @@ MobileCommandRuntime _runtime({
           required String choiceId,
           required String idempotencyKey,
         }) async => _eventResult(),
+    eventResultAcknowledgementSender:
+        eventResultAcknowledgementSender ??
+        ({required String receiptId}) async =>
+            _acknowledgementResult(receiptId),
     platformSender:
         platformSender ??
         ({
@@ -521,7 +635,7 @@ ActivitySyncResult _activityResult(int total) {
 
 ExpeditionAdvanceResult _advanceResult() {
   return const ExpeditionAdvanceResult(
-    contentVersion: 'starter-v2',
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     energySpent: 30,
@@ -540,9 +654,11 @@ ExpeditionAdvanceResult _advanceResult() {
 
 EventResolutionResult _eventResult() {
   return const EventResolutionResult(
-    contentVersion: 'starter-v2',
+    receiptId: '11111111-1111-1111-1111-111111111111',
+    handoffRequired: true,
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
-    expeditionStatus: 'COMPLETED',
+    expeditionStatus: 'IN_PROGRESS',
     expeditionVersion: 2,
     eventId: 'signal-source-v1',
     eventTitle: 'Источник сигнала',
@@ -568,7 +684,18 @@ EventResolutionResult _eventResult() {
       bond: 15,
       version: 1,
     ),
+    nextNode: EventNextNode(nodeId: 'lumen-gate', name: 'Люминовые ворота'),
     serverTime: '2026-07-26T10:00:00Z',
+  );
+}
+
+EventResultAcknowledgement _acknowledgementResult(String receiptId) {
+  return EventResultAcknowledgement(
+    receiptId: receiptId,
+    eventId: 'signal-source-v1',
+    status: 'ACKNOWLEDGED',
+    acknowledgedAt: '2026-07-26T10:00:01Z',
+    serverTime: '2026-07-26T10:00:01Z',
   );
 }
 

@@ -109,6 +109,9 @@ Account data controls — `CODE_COMPLETE`:
 - отключение demo user/device и sandbox-only возможностей;
 - явное разделение `dev`, `stage`, `production`;
 - rollback backend/content/config без публикации новой mobile-версии;
+- durable result handoff активируется только после drain старых backend
+  instances; rollback сначала выключает activation gate и дренирует pending
+  receipts до нуля;
 - support/admin runbook для удаления аккаунта, инцидентов и восстановления.
 
 ## 3. Gate B — физическая Health-валидация

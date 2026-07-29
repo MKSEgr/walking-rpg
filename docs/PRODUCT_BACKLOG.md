@@ -48,14 +48,18 @@
 
 - событие разрешается один раз;
 - выбор идемпотентен;
-- результат хранится сервером;
+- результат получает durable `receiptId` и хранится сервером до
+  acknowledgement;
 - pilot XP и pet bond сохраняются;
-- home показывает resolved outcome;
+- home показывает top-level `pendingEventResult` после потери ответа или
+  restart;
+- следующий advance/resolution запрещён до owner-scoped ACK receipt;
 - поздняя ошибка откатывает progression и expedition completion.
 
 **Статус:** реализовано для `signal-source-v1` с choices `analyze-signal` и
 стабильным legacy id `trust-spark` (пользовательский текст «Довериться
-питомцу»); после resolution открывается второй узел.
+питомцу»); после resolution открывается второй узел, а result card остаётся
+pending до явного подтверждения.
 
 ### US-006. Завершить второй узел и получить material reward
 
@@ -67,7 +71,8 @@
 - advance использует существующий ENERGY ledger и idempotency;
 - второе событие имеет два server-owned выбора;
 - material reward выдаётся один раз и записывается в inventory ledger;
-- home возвращает inventory stack и immutable reward snapshot;
+- home возвращает inventory stack и durable immutable reward snapshot с
+  `receiptId` и `nextNode`;
 - пользователи `starter-v1` мигрируют на второй узел без повторной награды;
 - durable outbox replay-ит second-event command с исходным key.
 
@@ -106,6 +111,38 @@
 и cohort read model измеряют conversion и time-to-value; фактический темп первых
 10 минут, permission UX и эмоциональная ценность требуют alpha validation на
 физических устройствах.
+
+### US-009. Не потерять результат события
+
+Как пользователь, я хочу увидеть решение и награду после сетевой ошибки или
+перезапуска приложения, прежде чем перейти к следующему узлу.
+
+Критерии:
+
+- capable event resolution атомарно сохраняет уникальный receipt, delivery mode
+  и nullable следующий узел вместе с reward/progression;
+- `GET /home` возвращает top-level `pendingEventResult`, пока receipt не
+  подтверждён;
+- result card переживает restart и видна из cached snapshot в read-only режиме;
+- ACK использует bodyless
+  `POST /api/v1/event-results/{receiptId}/acknowledge`;
+- `receiptId` является единственным server-side idempotency scope, replay
+  возвращает стабильное время первого ACK;
+- mobile сохраняет acknowledgement в durable GAMEPLAY outbox до отправки;
+- backend блокирует следующий advance/resolution до ACK только для
+  `handoffRequired = true`;
+- capability отсутствует у старого mobile или cluster activation gate
+  выключен: backend auto-acknowledge результат и не создаёт gameplay gate;
+  новый mobile принимает старый response без handoff fields;
+- exact replay сохраняет delivery mode первого запроса;
+- activation выполняется только после drain старых backend instances; rollback
+  требует disabled gate и ноль capable pending receipts;
+- V10 помечает backfill и rolling legacy writes acknowledged, чтобы не
+  показывать старые награды повторно.
+
+**Статус:** backend/mobile код и автоматические API, PostgreSQL migration,
+outbox и widget tests реализованы. Это не заменяет physical-device и alpha
+cohort validation из US-001/US-008.
 
 ## P1 — расширение MVP
 

@@ -3,9 +3,12 @@ package com.walkingrpg.backend.expedition.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+import java.util.UUID;
 
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
+import com.walkingrpg.backend.expedition.domain.EventNextNodeResult;
 import com.walkingrpg.backend.expedition.domain.EventPetRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventPilotRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventResolutionCommand;
@@ -54,6 +57,21 @@ public class EventResolutionService {
 
     @Transactional
     public EventResolutionResult resolve(EventResolutionCommand command) {
+        return resolveInternal(command, true);
+    }
+
+    @Transactional
+    public EventResolutionResult resolve(
+            EventResolutionCommand command,
+            boolean handoffRequired
+    ) {
+        return resolveInternal(command, handoffRequired);
+    }
+
+    private EventResolutionResult resolveInternal(
+            EventResolutionCommand command,
+            boolean handoffRequired
+    ) {
         ExpeditionDefinition definition = content.requireEvent(command.eventId());
         Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
         expeditionRepository.acquireLock(command.userId(), definition.expeditionId());
@@ -68,6 +86,7 @@ public class EventResolutionService {
             }
             return processed.result();
         }
+        requireNoPendingResult(command.userId(), definition.expeditionId());
 
         ExpeditionProgressState current = expeditionRepository.findState(
                 command.userId(),
@@ -94,11 +113,15 @@ public class EventResolutionService {
                 choice,
                 serverTime
         );
-        ExpeditionProgressState updated = content.nextNodeAfterEvent(command.eventId())
-                .map(nextNode -> current.resolveAndContinue(command.eventId(), nextNode))
+        Optional<ExpeditionDefinition> nextNode = content.nextNodeAfterEvent(
+                command.eventId()
+        );
+        ExpeditionProgressState updated = nextNode
+                .map(node -> current.resolveAndContinue(command.eventId(), node))
                 .orElseGet(() -> current.resolveAndComplete(command.eventId()));
 
         EventResolutionResult result = new EventResolutionResult(
+                UUID.randomUUID(),
                 content.contentVersion(),
                 definition.expeditionId(),
                 updated.status(),
@@ -128,6 +151,11 @@ public class EventResolutionService {
                         progression.pet().version()
                 ),
                 material,
+                handoffRequired,
+                nextNode.map(node -> new EventNextNodeResult(
+                        node.currentNodeId(),
+                        node.currentNodeName()
+                )).orElse(null),
                 serverTime
         );
 
@@ -142,6 +170,17 @@ public class EventResolutionService {
                 new ProcessedEventResolution(fingerprint, result)
         );
         return result;
+    }
+
+    private void requireNoPendingResult(String userId, String expeditionId) {
+        eventRepository.findPendingResult(userId, expeditionId)
+                .ifPresent(pending -> {
+                    EventResolutionResult result = pending.result();
+                    throw new PendingEventResultException(
+                            result.receiptId(),
+                            result.eventId()
+                    );
+                });
     }
 
     private EventMaterialRewardResult materialReward(

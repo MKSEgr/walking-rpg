@@ -117,6 +117,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         loader: widget.homeLoader,
         advancer: runtime?.advance,
         eventResolver: runtime?.resolve,
+        eventResultAcknowledger: runtime?.acknowledgeEventResult,
         onOpenAccount: widget.onOpenAccount,
       ),
       platform: PlatformScreen(

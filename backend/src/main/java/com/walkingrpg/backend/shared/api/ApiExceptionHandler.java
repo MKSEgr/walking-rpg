@@ -11,11 +11,13 @@ import com.walkingrpg.backend.economy.domain.InsufficientEnergyException;
 import com.walkingrpg.backend.expedition.application.EventNotFoundException;
 import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.EventResolutionValidationException;
+import com.walkingrpg.backend.expedition.application.EventResultReceiptNotFoundException;
 import com.walkingrpg.backend.expedition.application.EventStateConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionNotFoundException;
 import com.walkingrpg.backend.expedition.application.ExpeditionStateConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionValidationException;
+import com.walkingrpg.backend.expedition.application.PendingEventResultException;
 import com.walkingrpg.backend.home.application.HomeQueryValidationException;
 import com.walkingrpg.backend.inventory.domain.InventoryLedgerConflictException;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
@@ -134,6 +136,33 @@ public class ApiExceptionHandler {
                 "NOT_FOUND",
                 exception.getMessage(),
                 Map.of("eventId", exception.eventId())
+        );
+    }
+
+    @ExceptionHandler(EventResultReceiptNotFoundException.class)
+    ResponseEntity<ApiErrorResponse> handleEventResultNotFound(
+            EventResultReceiptNotFoundException exception
+    ) {
+        return error(
+                HttpStatus.NOT_FOUND,
+                "EVENT_RESULT_NOT_FOUND",
+                exception.getMessage(),
+                Map.of("receiptId", exception.receiptId())
+        );
+    }
+
+    @ExceptionHandler(PendingEventResultException.class)
+    ResponseEntity<ApiErrorResponse> handlePendingEventResult(
+            PendingEventResultException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED",
+                exception.getMessage(),
+                Map.of(
+                        "receiptId", exception.receiptId(),
+                        "eventId", exception.eventId()
+                )
         );
     }
 

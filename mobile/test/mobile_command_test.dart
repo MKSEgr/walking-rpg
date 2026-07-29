@@ -58,6 +58,28 @@ void main() {
     expect(failed.lastError, contains('rejected'));
   });
 
+  test('event result acknowledgement survives JSON persistence', () {
+    final MobileCommand original = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.eventResultAcknowledgement,
+      idempotencyKey: 'ack-key',
+      fingerprint: 'ack-fingerprint',
+      payload: <String, Object?>{
+        'receiptId': '22222222-2222-2222-2222-222222222222',
+      },
+      now: DateTime.utc(2026, 7, 26, 9),
+    );
+
+    final MobileCommand restored = MobileCommand.fromJson(original.toJson());
+
+    expect(restored.type, MobileCommandType.eventResultAcknowledgement);
+    expect(restored.lane, MobileCommandLane.gameplay);
+    expect(
+      restored.payload['receiptId'],
+      '22222222-2222-2222-2222-222222222222',
+    );
+  });
+
   test('step reading JSON preserves the local-day identity', () {
     final StepReading reading = StepReading(
       authoritativeTotal: 6842,

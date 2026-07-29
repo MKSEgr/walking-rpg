@@ -92,9 +92,9 @@ void main() {
     expect(snapshot.petBond, 15);
   });
 
-  test('second event maps material reward and persistent inventory', () {
+  test('pending event result maps beside the next node and inventory', () {
     final Map<String, dynamic> response = _readyHomeResponse();
-    response['contentVersion'] = 'starter-v2';
+    response['contentVersion'] = 'chapter-1-v1';
     response['inventory'] = <Map<String, dynamic>>[
       <String, dynamic>{
         'itemId': 'lumen-shard',
@@ -107,36 +107,60 @@ void main() {
     final Map<String, dynamic> expedition =
         response['expedition'] as Map<String, dynamic>;
     expedition
-      ..['currentNodeId'] = 'lumen-gate'
-      ..['currentNode'] = 'Люминовые ворота'
-      ..['progress'] = 45
-      ..['requiredEnergy'] = 45
-      ..['status'] = 'COMPLETED'
+      ..['currentNodeId'] = 'ash-orbit'
+      ..['currentNode'] = 'Пепельная орбита'
+      ..['progress'] = 0
+      ..['requiredEnergy'] = 55
+      ..['status'] = 'IN_PROGRESS'
       ..['version'] = 4
-      ..['unlockedEvent'] = <String, dynamic>{
-        'eventId': 'echo-vault-v1',
-        'title': 'Хранилище эха',
-        'summary': 'Ядро нестабильно.',
-        'status': 'RESOLVED',
-        'choices': <Map<String, dynamic>>[],
-        'selectedChoiceId': 'stabilize-core',
-        'selectedChoiceTitle': 'Стабилизировать ядро',
-        'outcomeTitle': 'Стабильный резонанс',
-        'outcomeSummary': 'Ядро перестало разрушаться.',
-        'materialReward': <String, dynamic>{
-          'itemId': 'lumen-shard',
-          'itemName': 'Люминовый осколок',
-          'description': 'Стабильный фрагмент светового ядра.',
-          'quantityGained': 2,
-          'quantityAfter': 2,
-          'version': 1,
-        },
-      };
+      ..['unlockedEvent'] = null;
+    response['pendingEventResult'] = <String, dynamic>{
+      'receiptId': '22222222-2222-2222-2222-222222222222',
+      'eventId': 'echo-vault-v1',
+      'eventTitle': 'Хранилище эха',
+      'choiceId': 'stabilize-core',
+      'choiceTitle': 'Стабилизировать ядро',
+      'outcomeTitle': 'Стабильный резонанс',
+      'outcomeSummary': 'Ядро перестало разрушаться.',
+      'pilot': <String, dynamic>{
+        'pilotId': 'navigator-v1',
+        'name': 'Навигатор',
+        'level': 1,
+        'experienceGained': 30,
+        'currentExperience': 90,
+        'nextLevelExperience': 100,
+        'version': 2,
+      },
+      'pet': <String, dynamic>{
+        'petId': 'spark-v1',
+        'name': 'Искра',
+        'level': 1,
+        'bondGained': 8,
+        'bond': 23,
+        'version': 2,
+      },
+      'material': <String, dynamic>{
+        'itemId': 'lumen-shard',
+        'name': 'Люминовый осколок',
+        'description': 'Стабильный фрагмент светового ядра.',
+        'quantityGained': 2,
+        'quantityAfter': 2,
+        'version': 1,
+      },
+      'nextNode': <String, dynamic>{
+        'nodeId': 'ash-orbit',
+        'name': 'Пепельная орбита',
+      },
+      'resolvedAt': '2026-07-26T06:00:00Z',
+    };
 
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
-    expect(snapshot.currentNodeId, 'lumen-gate');
-    expect(snapshot.unlockedEvent?.materialReward?.quantityAfter, 2);
+    expect(snapshot.currentNodeId, 'ash-orbit');
+    expect(snapshot.unlockedEvent, isNull);
+    expect(snapshot.pendingEventResult?.eventId, 'echo-vault-v1');
+    expect(snapshot.pendingEventResult?.material?.quantityAfter, 2);
+    expect(snapshot.pendingEventResult?.nextNode?.nodeId, 'ash-orbit');
     expect(snapshot.inventory, hasLength(1));
     expect(snapshot.inventory.first.itemId, 'lumen-shard');
     expect(snapshot.inventory.first.quantity, 2);
@@ -190,7 +214,7 @@ Map<String, dynamic> _readyHomeResponse() {
     'economyVersion': 2,
     'lastActivitySyncAt': '2026-07-26T05:55:00Z',
     'serverTime': '2026-07-26T06:00:00Z',
-    'contentVersion': 'starter-v2',
+    'contentVersion': 'chapter-1-v1',
     'pilot': <String, dynamic>{
       'name': 'Навигатор',
       'level': 1,

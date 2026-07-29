@@ -4,7 +4,13 @@
 - **Base:** `master`
 - **Integration branch:** `batch/second-node-inventory`
 - **Merge policy:** only the repository owner merges the final stable PR into `master`
-- **Status:** in progress
+- **Status:** completed by PR #27; superseded as an active plan
+
+> This file is retained as historical execution context. Its two-node
+> `starter-v2` topology was later replaced by `chapter-1-v1`, and transient
+> result presentation was replaced by
+> [ADR 0022](../adr/0022-durable-event-result-handoff.md). Unchecked operational
+> items below are a frozen batch checklist, not current roadmap work.
 
 ## Objective
 
