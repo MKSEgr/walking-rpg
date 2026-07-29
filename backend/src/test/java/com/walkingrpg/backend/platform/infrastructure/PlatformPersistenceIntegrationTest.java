@@ -225,7 +225,7 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
-    void shouldNotMeasureCompletionFromClientOnboardingMarkersAlone() {
+    void shouldDelayMeasuredCompletionUntilLastAuthoritativeFact() {
         String userId = "marker-only-journey-user";
         completeStep(userId, "welcome");
         completeStep(userId, "health-permission");
@@ -246,6 +246,41 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(0, milestoneCount(userId, "FIRST_NODE_REACHED"));
         assertEquals(0, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
         assertEquals(0, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+
+        activitySyncService.synchronize(new ActivitySyncCommand(
+                userId,
+                "delayed-journey-device",
+                LocalDate.of(2026, 7, 29),
+                ZoneId.of("Europe/Berlin"),
+                6_842,
+                List.of(),
+                null,
+                "delayed-journey-sync",
+                "signed-attestation"
+        ));
+        expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                30,
+                "delayed-journey-advance"
+        ));
+        eventResolutionService.resolve(new EventResolutionCommand(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "delayed-journey-event"
+        ));
+
+        assertEquals(1, milestoneCount(userId, "FIRST_ACTIVITY_SYNC"));
+        assertEquals(1, milestoneCount(userId, "FIRST_ENERGY"));
+        assertEquals(1, milestoneCount(userId, "FIRST_NODE_REACHED"));
+        assertEquals(1, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
+        assertEquals(1, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+        assertEquals(6, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM processed_roadmap_command
+                WHERE user_id = ?
+                """, Integer.class, userId));
     }
 
     @Test

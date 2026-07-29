@@ -1,14 +1,25 @@
 package com.walkingrpg.backend.platform.analytics;
 
+import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -23,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
+@Import(FirstJourneyAnalyticsIntegrationTest.FixedClockConfiguration.class)
 class FirstJourneyAnalyticsIntegrationTest {
 
     private static final Instant START = Instant.parse("2026-07-29T16:00:00Z");
@@ -43,15 +55,15 @@ class FirstJourneyAnalyticsIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
     private FirstJourneyAnalyticsService service;
 
     @BeforeEach
     void setUp() {
         jdbcTemplate.execute("TRUNCATE TABLE app_user CASCADE");
-        service = new FirstJourneyAnalyticsService(
-                jdbcTemplate,
-                Clock.fixed(GENERATED_AT, ZoneOffset.UTC)
-        );
     }
 
     @Test
@@ -154,6 +166,54 @@ class FirstJourneyAnalyticsIntegrationTest {
         }
     }
 
+    @Test
+    void shouldReadEveryFunnelStageFromOneDatabaseSnapshot() throws Exception {
+        addUser("snapshot-user", "snapshot-cohort");
+
+        FirstJourneyAnalyticsSnapshot duringInsert;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try (Connection blocker = dataSource.getConnection();
+             Statement statement = blocker.createStatement()) {
+            blocker.setAutoCommit(false);
+            statement.execute("""
+                    LOCK TABLE first_journey_milestone
+                    IN ACCESS EXCLUSIVE MODE
+                    """);
+
+            Future<FirstJourneyAnalyticsSnapshot> pending =
+                    executor.submit(() -> service.summary(null));
+            awaitBlockedMilestoneRead();
+
+            statement.executeUpdate("""
+                    INSERT INTO first_journey_milestone (
+                        user_id, milestone, occurred_at, source,
+                        attributes, recorded_at
+                    ) VALUES (
+                        'snapshot-user',
+                        'JOURNEY_STARTED',
+                        '2026-07-29T16:00:00Z',
+                        'AUTHORITATIVE',
+                        '{}'::jsonb,
+                        '2026-07-29T16:00:00Z'
+                    )
+                    """);
+            blocker.commit();
+            duringInsert = pending.get(5, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(1, duringInsert.eligibleUsers());
+        assertEquals(0, duringInsert.startedUsers());
+        assertEquals(1, duringInsert.notStartedUsers());
+
+        FirstJourneyAnalyticsSnapshot afterInsert = service.summary(null);
+        assertEquals(1, afterInsert.eligibleUsers());
+        assertEquals(1, afterInsert.startedUsers());
+        assertEquals(0, afterInsert.notStartedUsers());
+    }
+
     private void addUser(String userId, String cohortCode) {
         Timestamp timestamp = Timestamp.from(START.minusSeconds(60));
         jdbcTemplate.update("""
@@ -242,5 +302,35 @@ class FirstJourneyAnalyticsIntegrationTest {
                 .filter(stage -> stage.milestone() == milestone)
                 .findFirst()
                 .orElseThrow();
+    }
+
+    private void awaitBlockedMilestoneRead() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer blocked = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND query LIKE '%first_journey_milestone started%'
+                    """, Integer.class);
+            if (blocked != null && blocked > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new IllegalStateException(
+                "Analytics query did not reach the blocked milestone read"
+        );
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class FixedClockConfiguration {
+
+        @Bean
+        @Primary
+        Clock firstJourneyAnalyticsClock() {
+            return Clock.fixed(GENERATED_AT, ZoneOffset.UTC);
+        }
     }
 }

@@ -28,7 +28,9 @@ p50/p90 в alpha cohort.
   и игровое действие, и откатывается вместе с ним.
 - `ONBOARDING_COMPLETED` записывается только если существуют все шесть
   предшествующих фактов, включая ENERGY из activity ledger. Одних служебных
-  onboarding-команд недостаточно.
+  onboarding-команд недостаточно. Проверка повторяется после каждого нового
+  authoritative факта, поэтому отложенный sync/node/event завершает уже
+  сохранённый onboarding без повторной клиентской команды.
 - Первое значение неизменно: `ON CONFLICT DO NOTHING` сохраняет исходное время
   при exact replay, повторном запуске и последующих событиях.
 - V9 восстанавливает доступные legacy milestones с
@@ -36,7 +38,8 @@ p50/p90 в alpha cohort.
 - `GET /api/v1/admin/platform/analytics/first-journey` строит cohort-filtered
   read model. Conversion counts включают backfill, но p50/p90 рассчитываются
   только когда и старт, и целевой milestone имеют authoritative source и
-  неотрицательный интервал.
+  неотрицательный интервал. Все связанные запросы одного ответа выполняются в
+  одной `REPEATABLE_READ` snapshot.
 - Milestone attributes содержат только минимальные игровые идентификаторы и
   размер ENERGY-награды; raw health samples и cumulative health total не
   копируются.

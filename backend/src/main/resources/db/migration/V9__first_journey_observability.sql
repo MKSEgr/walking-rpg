@@ -58,6 +58,63 @@ AS $$
     ON CONFLICT (user_id, milestone) DO NOTHING
 $$;
 
+CREATE FUNCTION record_first_journey_completion_if_ready(
+    completion_user_id varchar
+) RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    onboarding_completed_at timestamptz;
+    onboarding_state_version jsonb;
+    final_fact_at timestamptz;
+    prerequisite_count bigint;
+BEGIN
+    SELECT command.created_at,
+           command.response_json #> '{snapshot,stateVersion}'
+    INTO onboarding_completed_at, onboarding_state_version
+    FROM processed_roadmap_command command
+    WHERE command.user_id = completion_user_id
+      AND COALESCE(
+          (
+              command.response_json
+              #>> '{snapshot,userState,onboardingComplete}'
+          )::boolean,
+          false
+      )
+    ORDER BY command.created_at, command.command_type, command.idempotency_key
+    LIMIT 1;
+
+    IF onboarding_completed_at IS NULL THEN
+        RETURN;
+    END IF;
+
+    SELECT max(milestone.occurred_at),
+           count(*)
+    INTO final_fact_at, prerequisite_count
+    FROM first_journey_milestone milestone
+    WHERE milestone.user_id = completion_user_id
+      AND milestone.milestone IN (
+          'JOURNEY_STARTED',
+          'FIRST_ACTIVITY_SYNC',
+          'FIRST_ENERGY',
+          'PET_SELECTED',
+          'FIRST_NODE_REACHED',
+          'FIRST_EVENT_RESOLVED'
+      );
+
+    IF prerequisite_count <> 6 THEN
+        RETURN;
+    END IF;
+
+    PERFORM record_first_journey_milestone(
+        completion_user_id,
+        'ONBOARDING_COMPLETED',
+        GREATEST(onboarding_completed_at, final_fact_at),
+        jsonb_build_object('stateVersion', onboarding_state_version)
+    );
+END
+$$;
+
 CREATE FUNCTION capture_roadmap_first_journey_milestones()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -86,33 +143,7 @@ BEGIN
         );
     END IF;
 
-    IF COALESCE(
-        (NEW.response_json #>> '{snapshot,userState,onboardingComplete}')::boolean,
-        false
-    )
-       AND (
-           SELECT count(*)
-           FROM first_journey_milestone milestone
-           WHERE milestone.user_id = NEW.user_id
-             AND milestone.milestone IN (
-                 'JOURNEY_STARTED',
-                 'FIRST_ACTIVITY_SYNC',
-                 'FIRST_ENERGY',
-                 'PET_SELECTED',
-                 'FIRST_NODE_REACHED',
-                 'FIRST_EVENT_RESOLVED'
-             )
-       ) = 6 THEN
-        PERFORM record_first_journey_milestone(
-            NEW.user_id,
-            'ONBOARDING_COMPLETED',
-            NEW.created_at,
-            jsonb_build_object(
-                'stateVersion',
-                NEW.response_json #> '{snapshot,stateVersion}'
-            )
-        );
-    END IF;
+    PERFORM record_first_journey_completion_if_ready(NEW.user_id);
 
     RETURN NEW;
 END
@@ -136,6 +167,7 @@ BEGIN
             'energyGranted', NEW.energy_granted
         )
     );
+    PERFORM record_first_journey_completion_if_ready(NEW.user_id);
     RETURN NEW;
 END
 $$;
@@ -160,6 +192,7 @@ BEGIN
             NEW.created_at,
             jsonb_build_object('energyGranted', NEW.amount)
         );
+        PERFORM record_first_journey_completion_if_ready(NEW.user_id);
     END IF;
     RETURN NEW;
 END
@@ -185,6 +218,7 @@ BEGIN
                 'eventId', NEW.event_id
             )
         );
+        PERFORM record_first_journey_completion_if_ready(NEW.user_id);
     END IF;
     RETURN NEW;
 END
@@ -209,6 +243,7 @@ BEGIN
             'choiceId', NEW.choice_id
         )
     );
+    PERFORM record_first_journey_completion_if_ready(NEW.user_id);
     RETURN NEW;
 END
 $$;

@@ -8,6 +8,8 @@ import java.util.List;
 import com.walkingrpg.backend.platform.application.PlatformValidationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FirstJourneyAnalyticsService {
@@ -34,6 +36,7 @@ public class FirstJourneyAnalyticsService {
         this.clock = clock;
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public FirstJourneyAnalyticsSnapshot summary(String cohortCode) {
         String normalizedCohort = normalizeCohort(cohortCode);
         long eligibleUsers = eligibleUsers(normalizedCohort);
