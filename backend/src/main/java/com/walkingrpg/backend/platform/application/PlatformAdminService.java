@@ -292,6 +292,7 @@ public class PlatformAdminService {
         return result;
     }
 
+    @Transactional
     public PushDeliveryResult sendTestPush(String userId, String title, String body) {
         String normalizedUser = requireText(userId, "userId");
         Instant timestamp = now();

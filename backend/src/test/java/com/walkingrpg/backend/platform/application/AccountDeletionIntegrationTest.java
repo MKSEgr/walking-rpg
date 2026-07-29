@@ -5,16 +5,29 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
+import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -28,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
+@Import(AccountDeletionIntegrationTest.BlockingPushConfiguration.class)
 class AccountDeletionIntegrationTest {
 
     private static final Instant NOW = Instant.parse("2026-07-29T05:00:00Z");
@@ -49,9 +63,13 @@ class AccountDeletionIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private BlockingPushDeliveryProvider blockingPushDeliveryProvider;
+
     @BeforeEach
     void cleanDatabase() {
         jdbcTemplate.execute("TRUNCATE TABLE account_deletion_receipt, app_user CASCADE");
+        blockingPushDeliveryProvider.reset();
     }
 
     @Test
@@ -155,6 +173,49 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, ((List<?>) export.get("telemetry")).size());
     }
 
+    @Test
+    void shouldSerializeTestPushWithDeletionForSameSubject() throws Exception {
+        seedAccount("push-race-user");
+        blockingPushDeliveryProvider.blockNextSend();
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            Future<PushDeliveryResult> push = executor.submit(() -> service.sendTestPush(
+                    "push-race-user",
+                    "Test title",
+                    "Test body"
+            ));
+            assertTrue(blockingPushDeliveryProvider.awaitSend(5, TimeUnit.SECONDS));
+            assertTrue(blockingPushDeliveryProvider.transactionActiveDuringSend());
+
+            Future<AccountDeletionReceipt> deletion = executor.submit(
+                    () -> service.requestAccountDeletion(
+                            "push-race-user",
+                            "push-race-deletion",
+                            "DELETE"
+                    )
+            );
+
+            try {
+                assertThrows(
+                        TimeoutException.class,
+                        () -> deletion.get(250, TimeUnit.MILLISECONDS)
+                );
+            } finally {
+                blockingPushDeliveryProvider.releaseSend();
+            }
+
+            assertTrue(push.get(5, TimeUnit.SECONDS).accepted());
+            assertEquals(
+                    "COMPLETED",
+                    deletion.get(5, TimeUnit.SECONDS).status()
+            );
+        }
+
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(0, rowCount("platform_event"));
+        assertEquals(1, rowCount("account_deletion_receipt"));
+    }
+
     private void seedAccount(String userId) {
         Timestamp timestamp = Timestamp.from(NOW);
         jdbcTemplate.update(
@@ -187,5 +248,74 @@ class AccountDeletionIntegrationTest {
                 Integer.class
         );
         return count == null ? 0 : count;
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class BlockingPushConfiguration {
+
+        @Bean
+        @Primary
+        BlockingPushDeliveryProvider blockingPushDeliveryProvider() {
+            return new BlockingPushDeliveryProvider();
+        }
+    }
+
+    static final class BlockingPushDeliveryProvider implements PushDeliveryProvider {
+
+        private volatile CountDownLatch sendStarted;
+        private volatile CountDownLatch sendRelease;
+        private volatile boolean transactionActiveDuringSend;
+
+        void reset() {
+            sendStarted = null;
+            sendRelease = null;
+            transactionActiveDuringSend = false;
+        }
+
+        void blockNextSend() {
+            sendStarted = new CountDownLatch(1);
+            sendRelease = new CountDownLatch(1);
+        }
+
+        boolean awaitSend(long timeout, TimeUnit unit) throws InterruptedException {
+            CountDownLatch started = sendStarted;
+            return started != null && started.await(timeout, unit);
+        }
+
+        void releaseSend() {
+            CountDownLatch release = sendRelease;
+            if (release != null) {
+                release.countDown();
+            }
+        }
+
+        boolean transactionActiveDuringSend() {
+            return transactionActiveDuringSend;
+        }
+
+        @Override
+        public PushDeliveryResult send(String userId, String title, String body) {
+            CountDownLatch started = sendStarted;
+            CountDownLatch release = sendRelease;
+            transactionActiveDuringSend =
+                    TransactionSynchronizationManager.isActualTransactionActive();
+            if (started != null && release != null) {
+                started.countDown();
+                try {
+                    if (!release.await(10, TimeUnit.SECONDS)) {
+                        throw new IllegalStateException(
+                                "Timed out waiting to release test push"
+                        );
+                    }
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(
+                            "Interrupted while waiting to release test push",
+                            exception
+                    );
+                }
+            }
+            return new PushDeliveryResult("TEST", true, "test-push");
+        }
     }
 }
