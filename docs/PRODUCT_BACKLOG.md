@@ -102,8 +102,10 @@
 - cached state не разрешает mutations;
 - анимация и вибрация не блокируют progression.
 
-**Статус:** код и автоматические tests готовы; темп первых 10 минут, permission
-UX и эмоциональная ценность требуют alpha validation на физических устройствах.
+**Статус:** код и автоматические tests готовы. Server-authoritative milestones
+и cohort read model измеряют conversion и time-to-value; фактический темп первых
+10 минут, permission UX и эмоциональная ценность требуют alpha validation на
+физических устройствах.
 
 ## P1 — расширение MVP
 

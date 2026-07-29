@@ -2,10 +2,16 @@ package com.walkingrpg.backend.platform.api;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.platform.analytics.FirstJourneyAnalyticsService;
+import com.walkingrpg.backend.platform.analytics.FirstJourneyAnalyticsSnapshot;
+import com.walkingrpg.backend.platform.analytics.FirstJourneyDataQuality;
+import com.walkingrpg.backend.platform.analytics.FirstJourneyMilestone;
+import com.walkingrpg.backend.platform.analytics.FirstJourneyStageMetric;
 import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
 import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
@@ -33,10 +39,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PlatformAdminControllerTest {
 
     private PlatformAdminService service;
+    private FirstJourneyAnalyticsService firstJourneyAnalyticsService;
 
     @BeforeEach
     void setUp() {
         service = mock(PlatformAdminService.class);
+        firstJourneyAnalyticsService = mock(FirstJourneyAnalyticsService.class);
     }
 
     @Test
@@ -222,6 +230,47 @@ class PlatformAdminControllerTest {
     }
 
     @Test
+    void shouldReturnFirstJourneyAnalyticsForSelectedCohort() throws Exception {
+        MockMvc mockMvc = mockMvc(FixedRequestIdentityProvider.admin(
+                "admin-subject",
+                "analytics-operator"
+        ));
+        when(firstJourneyAnalyticsService.summary("alpha-1")).thenReturn(
+                new FirstJourneyAnalyticsSnapshot(
+                        "alpha-1",
+                        12,
+                        10,
+                        2,
+                        10.0 / 12.0,
+                        List.of(new FirstJourneyStageMetric(
+                                FirstJourneyMilestone.FIRST_ENERGY,
+                                8,
+                                2,
+                                8,
+                                8,
+                                0.8,
+                                45L,
+                                90L
+                        )),
+                        new FirstJourneyDataQuality(18, 0),
+                        Instant.parse("2026-07-29T17:00:00Z")
+                )
+        );
+
+        mockMvc.perform(get("/api/v1/admin/platform/analytics/first-journey")
+                        .param("cohortCode", "alpha-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cohortCode").value("alpha-1"))
+                .andExpect(jsonPath("$.eligibleUsers").value(12))
+                .andExpect(jsonPath("$.startedUsers").value(10))
+                .andExpect(jsonPath("$.stages[0].milestone").value("FIRST_ENERGY"))
+                .andExpect(jsonPath("$.stages[0].medianSecondsFromStart").value(45))
+                .andExpect(jsonPath("$.dataQuality.backfilledMilestoneRecords").value(0));
+
+        verify(firstJourneyAnalyticsService).summary("alpha-1");
+    }
+
+    @Test
     void shouldReturnAuthenticationErrorWhenIdentityIsMissingFromProtectedOperation()
             throws Exception {
         MockMvc mockMvc = mockMvc(FixedRequestIdentityProvider.anonymous());
@@ -244,7 +293,11 @@ class PlatformAdminControllerTest {
 
     private MockMvc mockMvc(RequestIdentityProvider identityProvider) {
         return MockMvcBuilders.standaloneSetup(
-                        new PlatformAdminController(service, identityProvider)
+                        new PlatformAdminController(
+                                service,
+                                firstJourneyAnalyticsService,
+                                identityProvider
+                        )
                 )
                 .setControllerAdvice(new ApiExceptionHandler())
                 .build();

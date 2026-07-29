@@ -24,6 +24,7 @@ for file in \
   docs/adr/0015-release-quality-and-external-gates.md \
   docs/adr/0017-production-authentication-boundary.md \
   docs/adr/0018-mobile-oidc-session.md \
+  docs/adr/0021-first-journey-observability.md \
   backend/src/main/java/com/walkingrpg/backend/security/SecurityModeGuard.java \
   mobile/lib/core/auth/auth_session_controller.dart \
   mobile/lib/features/home/data/auth_home_transports.dart \

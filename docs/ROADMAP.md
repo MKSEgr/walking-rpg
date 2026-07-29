@@ -101,12 +101,15 @@ Roadmap отражает снижение рисков. Статусы:
       события; progression разных питомцев не смешивается
 - [x] Неблокирующая reward/haptic feedback и read-only поведение cached state
 - [x] Domain/widget/backend regression tests первого пути
+- [x] Durable server-authoritative milestones первого пути с exact-once временем
+- [x] Cohort funnel и p50/p90 time-to-value без смешивания legacy backfill
 
 ### EXTERNAL_VALIDATION_REQUIRED
 
 - [ ] Пройти первые 10 минут на чистой установке iOS и Android
 - [ ] Проверить понятность Health permission, отказ, повторный запрос и отзыв
-- [ ] Измерить time-to-first-ENERGY, time-to-first-node и onboarding completion
+- [ ] Собрать фактические time-to-first-ENERGY, time-to-first-node и completion
+      на alpha cohort и принять продуктовые пороги
 - [ ] Проверить тексты, темп и эмоциональную ценность выбора питомца на alpha
       cohort
 

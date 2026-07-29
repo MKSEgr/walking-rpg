@@ -20,6 +20,7 @@ Walking RPG превращает агрегированное количеств
 - pseudonymous account id из OIDC subject и хэшированный device/session id;
 - aggregated daily steps, timezone и local date;
 - игровой прогресс, инвентарь и команды;
+- timestamps ключевых этапов первого пути и их data-quality source;
 - crash/diagnostic events;
 - experiment exposure;
 - tester cohort membership.

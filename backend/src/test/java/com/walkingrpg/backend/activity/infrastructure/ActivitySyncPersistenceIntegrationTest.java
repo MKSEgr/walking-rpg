@@ -121,6 +121,8 @@ class ActivitySyncPersistenceIntegrationTest {
         assertEquals(68L, ledgerAmountSum());
         assertEquals(1, rowCount("app_user"));
         assertEquals(1, rowCount("app_device"));
+        assertEquals(1, milestoneCount("FIRST_ACTIVITY_SYNC"));
+        assertEquals(1, milestoneCount("FIRST_ENERGY"));
 
         ActivitySyncCommand conflicting = command("persistent-device", 7_000, "persisted-key");
         assertThrows(
@@ -217,6 +219,7 @@ class ActivitySyncPersistenceIntegrationTest {
         assertEquals(0, rowCount("economy_wallet"));
         assertEquals(0, rowCount("app_device"));
         assertEquals(0, rowCount("app_user"));
+        assertEquals(0, rowCount("first_journey_milestone"));
     }
 
     private ActivitySyncOutcome synchronizedCall(
@@ -231,6 +234,14 @@ class ActivitySyncPersistenceIntegrationTest {
 
     private int rowCount(String table) {
         return jdbcTemplate.queryForObject("SELECT count(*) FROM " + table, Integer.class);
+    }
+
+    private int milestoneCount(String milestone) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM first_journey_milestone WHERE milestone = ?",
+                Integer.class,
+                milestone
+        );
     }
 
     private long acceptedTotal() {

@@ -15,6 +15,10 @@
 ## Метрики
 
 - onboarding completion;
+- first-journey start rate и conversion до sync/ENERGY/pet/node/event;
+- p50/p90 time-to-first-ENERGY, node, event и onboarding completion только по
+  authoritative milestones;
+- доля migration-backfilled milestone records как data-quality caveat;
 - D1/D7/D30 retention;
 - activity sync success/retry rate;
 - duplicate/idempotency conflicts;
@@ -22,6 +26,11 @@
 - risk decision distribution и false positives;
 - weekly route/quest completion;
 - support incidents.
+
+Срез доступен через
+`GET /api/v1/admin/platform/analytics/first-journey?cohortCode=...`.
+`reachedUsers` может включать legacy backfill; временные percentiles используют
+только новые authoritative пары от `JOURNEY_STARTED`.
 
 ## Stop conditions
 

@@ -180,6 +180,16 @@ class EventResolutionIntegrationTest {
         assertEquals(1, rowCount("pet_progress"));
         assertEquals(1, rowCount("inventory_stack"));
         assertEquals(1, rowCount("inventory_ledger"));
+        assertEquals(1, milestoneCount("event-user", "FIRST_EVENT_RESOLVED"));
+        assertEquals(
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                jdbcTemplate.queryForObject("""
+                        SELECT attributes ->> 'eventId'
+                        FROM first_journey_milestone
+                        WHERE user_id = 'event-user'
+                          AND milestone = 'FIRST_EVENT_RESOLVED'
+                        """, String.class)
+        );
         assertEquals(2L, inventoryQuantity("lumen-shard"));
         assertEquals("IN_PROGRESS", expeditionStatus());
 
@@ -268,6 +278,10 @@ class EventResolutionIntegrationTest {
         assertEquals(0, rowCount("inventory_ledger"));
         assertEquals(1, rowCount("processed_event_resolution"));
         assertEquals(25, walletBalance());
+        assertEquals(1, milestoneCount(
+                "rollback-event-user",
+                "FIRST_EVENT_RESOLVED"
+        ));
     }
 
     @Test
@@ -442,6 +456,16 @@ class EventResolutionIntegrationTest {
 
     private int rowCount(String table) {
         return jdbcTemplate.queryForObject("SELECT count(*) FROM " + table, Integer.class);
+    }
+
+    private int milestoneCount(String userId, String milestone) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = ?
+                """, Integer.class, userId, milestone);
+        return count == null ? 0 : count;
     }
 
     private int pilotExperience() {

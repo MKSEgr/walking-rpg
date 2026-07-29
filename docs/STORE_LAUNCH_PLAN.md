@@ -19,6 +19,7 @@
 - mobile UI «Экспедиция» и «Путевой журнал»;
 - onboarding, питомцы, навыки, задания, сезон, недельный маршрут, отряды и косметика;
 - remote config, analytics, crash ingestion, risk audit и tester cohorts;
+- server-authoritative funnel первого пути и cohort time-to-value read model;
 - mobile OIDC Authorization Code + PKCE, secure refresh/logout и
   owner-scoped local cleanup;
 - экран «Аккаунт и данные», JSON export/share и idempotent удаление с durable
@@ -28,12 +29,12 @@
 - backend JAR, Android release AAB candidate и iOS release no-codesign candidate;
 - deterministic build metadata, privacy/store declaration drafts, release checklist и device validation protocol.
 
-Последний завершённый программный срез:
+Последние завершённые программные срезы:
 
-- повторная OIDC-проверка той же identity перед удалением;
-- двухэтапное подтверждение и безопасный retry удаления;
-- полная локальная очистка после server receipt и обработка
-  `410 ACCOUNT_DELETED`.
+- guided первый путь от Health sync до первого события с реальным выбором
+  активного питомца;
+- exact-once milestones и cohort funnel/time-to-value read model для alpha;
+- account export/delete с fresh OIDC authentication и локальной очисткой.
 
 ## 2. Gate A — завершить store-candidate software
 

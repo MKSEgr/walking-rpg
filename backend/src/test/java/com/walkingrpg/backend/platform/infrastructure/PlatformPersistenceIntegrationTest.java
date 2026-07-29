@@ -14,6 +14,11 @@ import com.walkingrpg.backend.activity.domain.ActivityBucket;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
 import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.economy.application.EconomyService;
+import com.walkingrpg.backend.expedition.application.EventResolutionService;
+import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.expedition.domain.EventResolutionCommand;
+import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
@@ -67,6 +72,12 @@ class PlatformPersistenceIntegrationTest {
 
     @Autowired
     private ActivitySyncService activitySyncService;
+
+    @Autowired
+    private ExpeditionAdvanceService expeditionAdvanceService;
+
+    @Autowired
+    private EventResolutionService eventResolutionService;
 
     @Autowired
     private PlatformRepository platformRepository;
@@ -130,6 +141,7 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(1, rowCount("roadmap_user_state"));
         assertEquals(1, rowCount("processed_roadmap_command"));
         assertEquals(1, rowCount("platform_event"));
+        assertEquals(1, milestoneCount("platform-user", "JOURNEY_STARTED"));
         assertEquals("welcome", jdbcTemplate.queryForObject("""
                 SELECT state_json -> 'completedOnboardingSteps' ->> 0
                 FROM roadmap_user_state
@@ -143,6 +155,97 @@ class PlatformPersistenceIntegrationTest {
                         Map.of("stepId", "first-sync")
                 ))
         );
+    }
+
+    @Test
+    void shouldRecordPetSelectionAndCompletedJourneyOnlyOnce() {
+        String userId = "journey-user";
+        completeStep(userId, "welcome");
+        activitySyncService.synchronize(new ActivitySyncCommand(
+                userId,
+                "journey-device",
+                LocalDate.of(2026, 7, 29),
+                ZoneId.of("Europe/Berlin"),
+                6_842,
+                List.of(),
+                null,
+                "journey-first-sync",
+                "signed-attestation"
+        ));
+        completeStep(userId, "health-permission");
+        completeStep(userId, "first-sync");
+        PlatformCommandRequest selection = new PlatformCommandRequest(
+                "SELECT_PET",
+                "journey-select-moss",
+                Map.of("petId", "moss-v1")
+        );
+        platformService.execute(userId, selection);
+        expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                30,
+                "journey-first-advance"
+        ));
+        completeStep(userId, "first-expedition");
+        eventResolutionService.resolve(new EventResolutionCommand(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "journey-first-event"
+        ));
+        PlatformCommandResponse completed = completeStep(userId, "first-event");
+
+        platformService.execute(userId, selection);
+        platformService.execute(userId, new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "journey-step-first-event",
+                Map.of("stepId", "first-event")
+        ));
+
+        assertEquals(true, completed.snapshot().userState().get("onboardingComplete"));
+        assertEquals(1, milestoneCount(userId, "JOURNEY_STARTED"));
+        assertEquals(1, milestoneCount(userId, "FIRST_ACTIVITY_SYNC"));
+        assertEquals(1, milestoneCount(userId, "FIRST_ENERGY"));
+        assertEquals(1, milestoneCount(userId, "PET_SELECTED"));
+        assertEquals(1, milestoneCount(userId, "FIRST_NODE_REACHED"));
+        assertEquals(1, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
+        assertEquals(1, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+        assertEquals("moss-v1", jdbcTemplate.queryForObject("""
+                SELECT attributes ->> 'petId'
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'PET_SELECTED'
+                """, String.class, userId));
+        assertEquals("AUTHORITATIVE", jdbcTemplate.queryForObject("""
+                SELECT source
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'ONBOARDING_COMPLETED'
+                """, String.class, userId));
+    }
+
+    @Test
+    void shouldNotMeasureCompletionFromClientOnboardingMarkersAlone() {
+        String userId = "marker-only-journey-user";
+        completeStep(userId, "welcome");
+        completeStep(userId, "health-permission");
+        completeStep(userId, "first-sync");
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "marker-only-select-moss",
+                Map.of("petId", "moss-v1")
+        ));
+        completeStep(userId, "first-expedition");
+        PlatformCommandResponse completed = completeStep(userId, "first-event");
+
+        assertEquals(true, completed.snapshot().userState().get("onboardingComplete"));
+        assertEquals(1, milestoneCount(userId, "JOURNEY_STARTED"));
+        assertEquals(1, milestoneCount(userId, "PET_SELECTED"));
+        assertEquals(0, milestoneCount(userId, "FIRST_ACTIVITY_SYNC"));
+        assertEquals(0, milestoneCount(userId, "FIRST_ENERGY"));
+        assertEquals(0, milestoneCount(userId, "FIRST_NODE_REACHED"));
+        assertEquals(0, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
+        assertEquals(0, milestoneCount(userId, "ONBOARDING_COMPLETED"));
     }
 
     @Test
@@ -252,6 +355,11 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(0, rowCount("activity_risk_assessment"));
         assertEquals(1, rowCount("app_device"));
         assertEquals(0, rowCount("activity_sync_state"));
+        assertEquals(1, milestoneCount(
+                "zero-step-user",
+                "FIRST_ACTIVITY_SYNC"
+        ));
+        assertEquals(0, milestoneCount("zero-step-user", "FIRST_ENERGY"));
     }
 
     @Test
@@ -288,11 +396,29 @@ class PlatformPersistenceIntegrationTest {
         );
     }
 
+    private PlatformCommandResponse completeStep(String userId, String stepId) {
+        return platformService.execute(userId, new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "journey-step-" + stepId,
+                Map.of("stepId", stepId)
+        ));
+    }
+
     private int rowCount(String table) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM " + table,
                 Integer.class
         );
+        return count == null ? 0 : count;
+    }
+
+    private int milestoneCount(String userId, String milestone) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = ?
+                """, Integer.class, userId, milestone);
         return count == null ? 0 : count;
     }
 
