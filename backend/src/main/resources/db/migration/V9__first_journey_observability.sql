@@ -69,6 +69,13 @@ DECLARE
     final_fact_at timestamptz;
     prerequisite_count bigint;
 BEGIN
+    PERFORM pg_advisory_xact_lock(
+        hashtextextended(
+            length(completion_user_id)::text || ':' || completion_user_id,
+            23
+        )
+    );
+
     SELECT command.created_at,
            command.response_json #> '{snapshot,stateVersion}'
     INTO onboarding_completed_at, onboarding_state_version

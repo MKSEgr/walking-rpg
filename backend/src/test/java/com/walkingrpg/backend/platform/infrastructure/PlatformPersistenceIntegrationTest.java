@@ -1,13 +1,21 @@
 package com.walkingrpg.backend.platform.infrastructure;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import javax.sql.DataSource;
 import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivityBucket;
@@ -105,6 +113,9 @@ class PlatformPersistenceIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DataSource dataSource;
 
     @BeforeEach
     void cleanDatabase() {
@@ -284,6 +295,84 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldSerializeConcurrentFinalJourneyFacts() throws Exception {
+        String userId = "concurrent-journey-user";
+        completeStep(userId, "welcome");
+        completeStep(userId, "health-permission");
+        completeStep(userId, "first-sync");
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "concurrent-select-moss",
+                Map.of("petId", "moss-v1")
+        ));
+        completeStep(userId, "first-expedition");
+        completeStep(userId, "first-event");
+        Instant firstFactAt = Instant.now(clock)
+                .plusSeconds(60)
+                .truncatedTo(ChronoUnit.MICROS);
+        jdbcTemplate.update("""
+                INSERT INTO first_journey_milestone (
+                    user_id, milestone, occurred_at, source,
+                    attributes, recorded_at
+                ) VALUES
+                    (?, 'FIRST_ACTIVITY_SYNC', ?, 'AUTHORITATIVE', '{}'::jsonb, ?),
+                    (?, 'FIRST_ENERGY', ?, 'AUTHORITATIVE', '{}'::jsonb, ?)
+                """,
+                userId,
+                Timestamp.from(firstFactAt),
+                Timestamp.from(firstFactAt),
+                userId,
+                Timestamp.from(firstFactAt.plusSeconds(1)),
+                Timestamp.from(firstFactAt.plusSeconds(1))
+        );
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try (Connection firstFact = dataSource.getConnection()) {
+            firstFact.setAutoCommit(false);
+            recordMilestone(
+                    firstFact,
+                    userId,
+                    "FIRST_NODE_REACHED",
+                    firstFactAt.plusSeconds(2)
+            );
+            recheckCompletion(firstFact, userId);
+
+            Future<?> secondFact = executor.submit(() -> {
+                try (Connection connection = dataSource.getConnection()) {
+                    connection.setAutoCommit(false);
+                    recordMilestone(
+                            connection,
+                            userId,
+                            "FIRST_EVENT_RESOLVED",
+                            firstFactAt.plusSeconds(3)
+                    );
+                    recheckCompletion(connection, userId);
+                    connection.commit();
+                    return null;
+                }
+            });
+
+            awaitJourneyCompletionLockWait();
+            firstFact.commit();
+            secondFact.get(5, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(1, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+        assertEquals(
+                firstFactAt.plusSeconds(3),
+                jdbcTemplate.queryForObject("""
+                        SELECT occurred_at
+                        FROM first_journey_milestone
+                        WHERE user_id = ?
+                          AND milestone = 'ONBOARDING_COMPLETED'
+                        """, Timestamp.class, userId).toInstant()
+        );
+    }
+
+    @Test
     void shouldDebitWeeklyRouteOnlyOnceAndPersistDerivedAchievement() {
         ensureUser("weekly-user");
         economyService.creditActivityEnergy("weekly-user", 100, "weekly-seed", NOW);
@@ -455,6 +544,59 @@ class PlatformPersistenceIntegrationTest {
                   AND milestone = ?
                 """, Integer.class, userId, milestone);
         return count == null ? 0 : count;
+    }
+
+    private void recordMilestone(
+            Connection connection,
+            String userId,
+            String milestone,
+            Instant occurredAt
+    ) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT record_first_journey_milestone(
+                    ?::varchar,
+                    ?::varchar,
+                    ?::timestamptz,
+                    '{}'::jsonb
+                )
+                """)) {
+            statement.setString(1, userId);
+            statement.setString(2, milestone);
+            statement.setString(3, occurredAt.toString());
+            statement.execute();
+        }
+    }
+
+    private void recheckCompletion(Connection connection, String userId)
+            throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT record_first_journey_completion_if_ready(?::varchar)
+                """)) {
+            statement.setString(1, userId);
+            statement.execute();
+        }
+    }
+
+    private void awaitJourneyCompletionLockWait() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND lower(wait_event) = 'advisory'
+                      AND query LIKE
+                          '%record_first_journey_completion_if_ready%'
+                    """, Integer.class);
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new IllegalStateException(
+                "Concurrent milestone did not wait for completion serialization"
+        );
     }
 
     private long scalarLong(String sql) {
