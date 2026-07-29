@@ -72,9 +72,11 @@ idempotency key, UUID квитанции и timestamps; raw OIDC subject в кв
 сохраняется.
 
 После создания квитанции остальные authenticated endpoints для этого subject
-возвращают `410 ACCOUNT_DELETED`, поэтому старый Bearer token не может
-пересоздать игровой аккаунт. Сам deletion endpoint остаётся доступен для
-idempotent replay квитанции. Bearer transport воспринимает этот код как
+проверяются общим security filter до controller и возвращают
+`410 ACCOUNT_DELETED`, включая `/api/v1/admin/**`. Поэтому старый Bearer token
+не может пересоздать игровой аккаунт, читать административные данные или
+выполнять привилегированные операции. Сам deletion endpoint остаётся доступен
+для idempotent replay квитанции. Bearer transport воспринимает этот код как
 окончательное удаление и запускает fail-closed локальную очистку без refresh.
 
 ## `GET /api/v1/home/demo`

@@ -32,8 +32,9 @@ Backend уже умел выгружать и удалять данные пол
 - Квитанция хранит SHA-256 subject и request key, timestamps и receipt UUID.
   Raw OIDC subject и экспортированные данные в ней не сохраняются.
 - Subject-level advisory lock сериализует удаление и новые записи. После
-  удаления account registry возвращает `410 ACCOUNT_DELETED` для обычных
-  authenticated операций; только deletion endpoint допускает replay квитанции.
+  удаления общий security filter до controller возвращает
+  `410 ACCOUNT_DELETED` для всех authenticated операций, включая admin API;
+  только deletion endpoint допускает replay квитанции.
 - Mobile Bearer transport не пытается refresh при `410 ACCOUNT_DELETED` и
   принудительно запускает тот же fail-closed logout/cleanup, закрывая окно
   process death между server receipt и локальной очисткой.

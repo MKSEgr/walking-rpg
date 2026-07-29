@@ -52,6 +52,8 @@
 - idempotent `POST /api/v1/account/deletion-requests` с постоянной квитанцией;
 - Flyway V7 с минимизированным deletion receipt без raw OIDC subject;
 - `410 ACCOUNT_DELETED` guard против пересоздания данных старым Bearer-токеном;
+- общий authenticated-request guard, блокирующий удалённый subject до любого
+  user/admin controller;
 - server-side `auth_time` gate для удаления аккаунта и `max_age=0` в mobile
   OIDC step-up;
 - удаление временной локальной копии JSON сразу после системного share flow;

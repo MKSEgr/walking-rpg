@@ -1,7 +1,10 @@
 package com.walkingrpg.backend.security;
 
+import java.time.Clock;
 import java.util.Map;
 
+import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +22,9 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import tools.jackson.databind.ObjectMapper;
 
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -35,10 +41,14 @@ class DevHeaderSecurityIntegrationTest {
     @Autowired
     private WebApplicationContext applicationContext;
 
+    @Autowired
+    private AccountDeletionRegistry accountDeletionRegistry;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
+        reset(accountDeletionRegistry);
         mockMvc = MockMvcBuilders.webAppContextSetup(applicationContext)
                 .apply(springSecurity())
                 .build();
@@ -83,6 +93,19 @@ class DevHeaderSecurityIntegrationTest {
     }
 
     @Test
+    void shouldRejectDeletedDevelopmentAdminBeforeController() throws Exception {
+        doThrow(new AccountDeletedException())
+                .when(accountDeletionRegistry)
+                .requireActive("deleted-admin");
+
+        mockMvc.perform(get("/api/v1/admin/security/raw-probe")
+                        .header(DevHeaderAuthenticationFilter.USER_HEADER, "deleted-admin")
+                        .header(DevHeaderAuthenticationFilter.AUTHORITIES_HEADER, "ADMIN"))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.code").value("ACCOUNT_DELETED"));
+    }
+
+    @Test
     void shouldKeepExplicitPublicEndpointsAnonymous() throws Exception {
         mockMvc.perform(get("/api/v1/content/bootstrap"))
                 .andExpect(status().isOk())
@@ -118,9 +141,19 @@ class DevHeaderSecurityIntegrationTest {
 
         @Bean
         RequestIdentityProvider requestIdentityProvider(
-                WalkingRpgSecurityProperties properties
+                WalkingRpgSecurityProperties properties,
+                AccountDeletionRegistry accountDeletionRegistry
         ) {
-            return new SecurityContextRequestIdentityProvider(properties);
+            return new SecurityContextRequestIdentityProvider(
+                    properties,
+                    accountDeletionRegistry,
+                    Clock.systemUTC()
+            );
+        }
+
+        @Bean
+        AccountDeletionRegistry accountDeletionRegistry() {
+            return mock(AccountDeletionRegistry.class);
         }
 
         @Bean
@@ -164,6 +197,11 @@ class DevHeaderSecurityIntegrationTest {
         Map<String, Object> adminProbe() {
             RequestIdentity identity = identityProvider.requireIdentity();
             return Map.of("userId", identity.userId(), "actor", identity.actor());
+        }
+
+        @GetMapping("/api/v1/admin/security/raw-probe")
+        Map<String, Object> rawAdminProbe() {
+            return Map.of("admin", true);
         }
 
         @GetMapping("/api/v1/content/bootstrap")

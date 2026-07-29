@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
@@ -28,10 +29,29 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    ActiveAccountFilter activeAccountFilter(
+            RequestIdentityProvider identityProvider,
+            JsonSecurityErrorWriter errorWriter
+    ) {
+        return new ActiveAccountFilter(identityProvider, errorWriter);
+    }
+
+    @Bean
+    FilterRegistrationBean<ActiveAccountFilter> activeAccountFilterRegistration(
+            ActiveAccountFilter filter
+    ) {
+        FilterRegistrationBean<ActiveAccountFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             WalkingRpgSecurityProperties properties,
             DevHeaderAuthenticationFilter devHeaderAuthenticationFilter,
+            ActiveAccountFilter activeAccountFilter,
             JwtAuthorityConverter jwtAuthorityConverter,
             JsonSecurityErrorWriter errorWriter
     ) throws Exception {
@@ -79,8 +99,13 @@ public class SecurityConfiguration {
                     .authenticationEntryPoint(errorWriter)
                     .accessDeniedHandler(errorWriter)
             );
+            http.addFilterAfter(
+                    activeAccountFilter,
+                    BearerTokenAuthenticationFilter.class
+            );
         } else {
             http.addFilterBefore(devHeaderAuthenticationFilter, AnonymousAuthenticationFilter.class);
+            http.addFilterAfter(activeAccountFilter, DevHeaderAuthenticationFilter.class);
         }
 
         return http.build();
