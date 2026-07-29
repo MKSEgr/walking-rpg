@@ -89,6 +89,9 @@ class _AuthenticatedApplicationShellState
   late final AccountApiClient _accountClient;
   late final MobileCommandRuntime _runtime;
   late final ActivitySyncCoordinator? _coordinator;
+  late final FirstJourneyHomeLoader _homeLoader;
+  late final FirstJourneyPlatformLoader _platformLoader;
+  late final FirstJourneyActivitySynchronizer? _synchronizer;
   late final RuntimeStopper _runtimeStopper;
 
   @override
@@ -152,6 +155,9 @@ class _AuthenticatedApplicationShellState
     _coordinator = ActivitySyncCoordinator.fromEnvironmentIfSupported(
       sender: _runtime.syncActivity,
     );
+    _homeLoader = () => _homeClient.fetchHome(DateTime.now());
+    _platformLoader = _platformClient.fetchSnapshot;
+    _synchronizer = _coordinator?.synchronize;
     _runtimeStopper = _runtime.close;
     widget.controller.registerRuntimeStopper(_runtimeStopper);
   }
@@ -165,21 +171,19 @@ class _AuthenticatedApplicationShellState
 
   @override
   Widget build(BuildContext context) {
-    final FirstJourneyHomeLoader homeLoader = () =>
-        _homeClient.fetchHome(DateTime.now());
     return FirstJourneyGate(
-      homeLoader: homeLoader,
-      platformLoader: _platformClient.fetchSnapshot,
+      homeLoader: _homeLoader,
+      platformLoader: _platformLoader,
       commandRuntime: _runtime,
-      synchronizer: _coordinator?.synchronize,
+      synchronizer: _synchronizer,
       onOpenAccount: _openAccount,
       childBuilder: (VoidCallback onResumeFirstJourney) {
         return ActivitySyncShell(
-          synchronizer: _coordinator?.synchronize,
+          synchronizer: _synchronizer,
           commandRuntime: _runtime,
-          homeLoader: homeLoader,
-          platformLoader: _platformClient.fetchSnapshot,
-          platformHomeLoader: homeLoader,
+          homeLoader: _homeLoader,
+          platformLoader: _platformLoader,
+          platformHomeLoader: _homeLoader,
           onOpenAccount: _openAccount,
           onResumeFirstJourney: onResumeFirstJourney,
         );
