@@ -619,6 +619,177 @@ void main() {
     expect(client.authorizeCalls, 0);
     expect(controller.identity?.subject, 'user-1');
   });
+
+  test(
+    'sensitive action reauthentication forces login and rotates tokens',
+    () async {
+      final OidcConfiguration oidc = _oidc();
+      final _MemorySessionStore store = _MemorySessionStore(
+        _session(oidc, subject: 'user-1', expiresAt: _future),
+      );
+      final _FakeOidcClient client = _FakeOidcClient(
+        authorizeResponse: _response(
+          oidc,
+          subject: 'user-1',
+          accessTokenSuffix: 'sensitive-action',
+          expiresAt: _future.add(const Duration(hours: 1)),
+        ),
+      );
+      final AuthSessionController controller = _controller(
+        oidc: oidc,
+        store: store,
+        client: client,
+      );
+      await controller.initialize();
+
+      await controller.reauthenticateForSensitiveAction();
+
+      expect(client.forceLoginRequests, <bool>[true]);
+      expect(store.session?.tokens.accessToken, contains('sensitive-action'));
+      expect(controller.state, AuthLifecycleState.authenticated);
+      expect(controller.identity?.subject, 'user-1');
+    },
+  );
+
+  test(
+    'sensitive action rejects a different reauthenticated account',
+    () async {
+      final OidcConfiguration oidc = _oidc();
+      final AuthSession original = _session(
+        oidc,
+        subject: 'user-1',
+        expiresAt: _future,
+      );
+      final _MemorySessionStore store = _MemorySessionStore(original);
+      final AuthSessionController controller = _controller(
+        oidc: oidc,
+        store: store,
+        client: _FakeOidcClient(
+          authorizeResponse: _response(
+            oidc,
+            subject: 'user-2',
+            accessTokenSuffix: 'wrong-account',
+            expiresAt: _future.add(const Duration(hours: 1)),
+          ),
+        ),
+      );
+      await controller.initialize();
+
+      await expectLater(
+        controller.reauthenticateForSensitiveAction(),
+        throwsA(isA<AuthSensitiveActionException>()),
+      );
+
+      expect(store.session?.tokens.accessToken, original.tokens.accessToken);
+      expect(controller.state, AuthLifecycleState.authenticated);
+      expect(controller.identity?.subject, 'user-1');
+    },
+  );
+
+  test('account deletion notice survives successful local logout', () async {
+    final OidcConfiguration oidc = _oidc();
+    final _MemorySessionStore store = _MemorySessionStore(
+      _session(oidc, subject: 'user-1', expiresAt: _future),
+    );
+    final AuthSessionController controller = _controller(
+      oidc: oidc,
+      store: store,
+      client: _FakeOidcClient(),
+    );
+    await controller.initialize();
+
+    await controller.logout(completionNotice: 'Квитанция: receipt-1');
+
+    expect(controller.state, AuthLifecycleState.unauthenticated);
+    expect(controller.notice, 'Квитанция: receipt-1');
+  });
+
+  test('server account tombstone forces fail-closed local logout', () async {
+    final OidcConfiguration oidc = _oidc();
+    final _MemorySessionStore store = _MemorySessionStore(
+      _session(oidc, subject: 'user-1', expiresAt: _future),
+    );
+    final AuthSessionController controller = _controller(
+      oidc: oidc,
+      store: store,
+      client: _FakeOidcClient(),
+    );
+    await controller.initialize();
+    final String accessToken = await controller.accessToken();
+
+    controller.rejectDeletedAccount(
+      'Игровой аккаунт удалён',
+      rejectedAccessToken: accessToken,
+    );
+    await _waitForState(controller, AuthLifecycleState.unauthenticated);
+
+    expect(store.session, isNull);
+    expect(controller.identity, isNull);
+    expect(controller.notice, 'Игровой аккаунт удалён');
+  });
+
+  test(
+    'server tombstone from a stale token still logs out the same owner',
+    () async {
+      final OidcConfiguration oidc = _oidc();
+      final _MemorySessionStore store = _MemorySessionStore(
+        _session(oidc, subject: 'user-1', expiresAt: _future),
+      );
+      final AuthSessionController controller = _controller(
+        oidc: oidc,
+        store: store,
+        client: _FakeOidcClient(),
+      );
+      await controller.initialize();
+      final String staleToken = _response(
+        oidc,
+        subject: 'user-1',
+        accessTokenSuffix: 'stale',
+        expiresAt: _future,
+      ).accessToken;
+
+      controller.rejectDeletedAccount(
+        'Игровой аккаунт удалён',
+        rejectedAccessToken: staleToken,
+      );
+      await _waitForState(controller, AuthLifecycleState.unauthenticated);
+
+      expect(store.session, isNull);
+      expect(controller.notice, 'Игровой аккаунт удалён');
+    },
+  );
+
+  test(
+    'server tombstone from another owner cannot log out current user',
+    () async {
+      final OidcConfiguration oidc = _oidc();
+      final _MemorySessionStore store = _MemorySessionStore(
+        _session(oidc, subject: 'user-2', expiresAt: _future),
+      );
+      final AuthSessionController controller = _controller(
+        oidc: oidc,
+        store: store,
+        client: _FakeOidcClient(),
+      );
+      await controller.initialize();
+      final String previousOwnerToken = _response(
+        oidc,
+        subject: 'user-1',
+        accessTokenSuffix: 'late-response',
+        expiresAt: _future,
+      ).accessToken;
+
+      controller.rejectDeletedAccount(
+        'Игровой аккаунт удалён',
+        rejectedAccessToken: previousOwnerToken,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.state, AuthLifecycleState.authenticated);
+      expect(controller.identity?.subject, 'user-2');
+      expect(store.session, isNotNull);
+    },
+  );
 }
 
 final DateTime _past = DateTime.utc(2026, 7, 28, 9);
@@ -842,12 +1013,15 @@ final class _FakeOidcClient implements OidcAuthorizationClient {
   final Object? refreshError;
   int refreshCalls = 0;
   int authorizeCalls = 0;
+  final List<bool> forceLoginRequests = <bool>[];
 
   @override
   Future<OidcTokenResponseData> authorize(
-    OidcConfiguration configuration,
-  ) async {
+    OidcConfiguration configuration, {
+    bool forceLogin = false,
+  }) async {
     authorizeCalls += 1;
+    forceLoginRequests.add(forceLogin);
     return authorizeResponse ??
         (throw StateError('authorize response is not configured'));
   }

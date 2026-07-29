@@ -50,6 +50,8 @@ final class AuthSessionController extends ChangeNotifier
   int _generation = 0;
   bool _initialized = false;
   bool _cleanupRequired = false;
+  bool _sensitiveAuthInProgress = false;
+  String? _notice;
 
   AuthLifecycleState get state => _state;
 
@@ -57,11 +59,14 @@ final class AuthSessionController extends ChangeNotifier
 
   String? get message => _message;
 
+  String? get notice => _notice;
+
   bool get isDevelopment => configuration.mode == MobileAuthMode.development;
 
   bool get isBusy =>
       _state == AuthLifecycleState.authenticating ||
-      _state == AuthLifecycleState.stoppingRuntime;
+      _state == AuthLifecycleState.stoppingRuntime ||
+      _sensitiveAuthInProgress;
 
   Future<void> initialize() async {
     if (_initialized) {
@@ -150,6 +155,7 @@ final class AuthSessionController extends ChangeNotifier
         : AuthLifecycleState.reauthenticationRequired;
     _state = AuthLifecycleState.authenticating;
     _message = null;
+    _notice = null;
     notifyListeners();
 
     try {
@@ -206,6 +212,80 @@ final class AuthSessionController extends ChangeNotifier
     return (await _refresh(session)).tokens.accessToken;
   }
 
+  Future<void> reauthenticateForSensitiveAction() async {
+    if (configuration.mode == MobileAuthMode.development) {
+      return;
+    }
+    if (_state != AuthLifecycleState.authenticated ||
+        _session == null ||
+        _sessionGeneration == null ||
+        isBusy) {
+      throw const AuthSensitiveActionException(
+        'Для подтверждения действия нужна активная сессия',
+      );
+    }
+
+    _sensitiveAuthInProgress = true;
+    _message = null;
+    notifyListeners();
+    try {
+      final Future<AuthSession>? activeRefresh = _refreshFuture;
+      if (activeRefresh != null) {
+        await activeRefresh;
+      }
+      final AuthSession session = _requireOidcSession();
+      final int generation = _generation;
+      final String sessionGeneration = _sessionGeneration!;
+      final OidcConfiguration oidc = configuration.oidc!;
+      final OidcTokenResponseData response = await _oidcClient.authorize(
+        oidc,
+        forceLogin: true,
+      );
+      if (!_isCurrentSession(
+        session,
+        generation: generation,
+        sessionGeneration: sessionGeneration,
+      )) {
+        throw const AuthReauthenticationRequiredException();
+      }
+
+      final AuthSession reauthenticated;
+      try {
+        reauthenticated = session.refreshed(
+          configuration: oidc,
+          response: response,
+        );
+      } on AuthTokenException catch (error) {
+        throw AuthSensitiveActionException(
+          'Подтверждена другая учётная запись: $error',
+        );
+      }
+      try {
+        await _sessionStore.writeRefreshedSession(
+          reauthenticated,
+          sessionGeneration: sessionGeneration,
+        );
+      } on Object catch (error) {
+        throw AuthSensitiveActionException(
+          'Не удалось безопасно сохранить подтверждённую сессию: $error',
+        );
+      }
+      if (!_isCurrentSession(
+        session,
+        generation: generation,
+        sessionGeneration: sessionGeneration,
+      )) {
+        throw const AuthReauthenticationRequiredException();
+      }
+      _session = reauthenticated;
+      _identity = reauthenticated.identity;
+      notifyListeners();
+    } finally {
+      _sensitiveAuthInProgress = false;
+      notifyListeners();
+    }
+  }
+
   @override
   void rejectSession(String reason, {String? rejectedAccessToken}) {
     if (configuration.mode != MobileAuthMode.oidc ||
@@ -229,8 +309,32 @@ final class AuthSessionController extends ChangeNotifier
     unawaited(_finishReauthentication(stopper));
   }
 
-  Future<void> logout() async {
-    if (configuration.mode == MobileAuthMode.development || isBusy) {
+  @override
+  void rejectDeletedAccount(String reason, {String? rejectedAccessToken}) {
+    if (configuration.mode != MobileAuthMode.oidc ||
+        _state != AuthLifecycleState.authenticated) {
+      return;
+    }
+    if (rejectedAccessToken != null &&
+        _session?.tokens.accessToken != rejectedAccessToken &&
+        !_tokenBelongsToCurrentOwner(rejectedAccessToken)) {
+      return;
+    }
+    unawaited(_logout(completionNotice: reason, force: true));
+  }
+
+  Future<void> logout({String? completionNotice}) {
+    return _logout(completionNotice: completionNotice, force: false);
+  }
+
+  Future<void> _logout({
+    required String? completionNotice,
+    required bool force,
+  }) async {
+    if (configuration.mode == MobileAuthMode.development ||
+        (!force && isBusy) ||
+        _state == AuthLifecycleState.stoppingRuntime ||
+        _state == AuthLifecycleState.unauthenticated) {
       return;
     }
     final AuthSession? session = _session;
@@ -241,6 +345,7 @@ final class AuthSessionController extends ChangeNotifier
     _sessionGeneration = null;
     _state = AuthLifecycleState.stoppingRuntime;
     _message = null;
+    _notice = null;
     notifyListeners();
 
     Object? cleanupError;
@@ -328,6 +433,7 @@ final class AuthSessionController extends ChangeNotifier
     _message = cleanupError == null
         ? null
         : 'Сессия завершена, но часть локальных данных не удалось очистить';
+    _notice = completionNotice;
     notifyListeners();
   }
 
@@ -342,6 +448,11 @@ final class AuthSessionController extends ChangeNotifier
   }
 
   Future<AuthSession> _refresh(AuthSession session) {
+    if (_sensitiveAuthInProgress) {
+      throw AuthRefreshUnavailableException(
+        StateError('Выполняется подтверждение чувствительного действия'),
+      );
+    }
     final int generation = _generation;
     final String? sessionGeneration = _sessionGeneration;
     if (sessionGeneration == null) {
@@ -544,6 +655,18 @@ final class AuthSessionController extends ChangeNotifier
     }
     return session;
   }
+
+  bool _tokenBelongsToCurrentOwner(String accessToken) {
+    try {
+      final AuthIdentity rejectedIdentity = AuthIdentity.fromTokens(
+        configuration: configuration.oidc!,
+        accessToken: accessToken,
+      );
+      return rejectedIdentity.ownerId == _identity?.ownerId;
+    } on AuthTokenException {
+      return false;
+    }
+  }
 }
 
 final class AuthRefreshUnavailableException implements Exception {
@@ -560,4 +683,20 @@ final class AuthReauthenticationRequiredException implements Exception {
 
   @override
   String toString() => 'Требуется повторный вход';
+}
+
+final class AuthSensitiveActionException implements Exception {
+  const AuthSensitiveActionException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+final class AuthAccountDeletedException implements Exception {
+  const AuthAccountDeletedException();
+
+  @override
+  String toString() => 'Игровой аккаунт удалён';
 }

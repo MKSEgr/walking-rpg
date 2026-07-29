@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_access_token_provider.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
@@ -66,6 +68,7 @@ final class BearerHomeTransport implements HomeTransport {
     HomeTransportResponse response = await operation(
       _withBearer(headers, accessToken),
     );
+    _rejectDeletedAccount(response, accessToken);
     if (response.statusCode != 401) {
       return response;
     }
@@ -79,6 +82,7 @@ final class BearerHomeTransport implements HomeTransport {
       throw HomeNetworkException(error.toString());
     }
     response = await operation(_withBearer(headers, refreshedToken));
+    _rejectDeletedAccount(response, refreshedToken);
     if (response.statusCode == 401) {
       _tokenProvider.rejectSession(
         'Backend повторно отклонил обновлённую сессию.',
@@ -87,6 +91,33 @@ final class BearerHomeTransport implements HomeTransport {
       throw const AuthReauthenticationRequiredException();
     }
     return response;
+  }
+
+  void _rejectDeletedAccount(
+    HomeTransportResponse response,
+    String accessToken,
+  ) {
+    if (response.statusCode != 410 ||
+        !_hasErrorCode(response, 'ACCOUNT_DELETED')) {
+      return;
+    }
+    const String message =
+        'Игровой аккаунт уже удалён. Локальная сессия очищена.';
+    _tokenProvider.rejectDeletedAccount(
+      message,
+      rejectedAccessToken: accessToken,
+    );
+    throw const AuthAccountDeletedException();
+  }
+
+  bool _hasErrorCode(HomeTransportResponse response, String expectedCode) {
+    try {
+      final Object? decoded = jsonDecode(response.body);
+      return decoded is Map<Object?, Object?> &&
+          decoded['code'] == expectedCode;
+    } on FormatException {
+      return false;
+    }
   }
 
   Future<String> _tokenForRequest() async {

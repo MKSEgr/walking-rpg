@@ -18,6 +18,67 @@
 
 Проверка запущенного backend.
 
+## `GET /api/v1/account/export`
+
+Возвращает полный JSON-экспорт данных текущего authenticated subject. Mobile
+создаёт временный JSON-файл, передаёт его через системный share sheet и удаляет
+локальную staging-копию после закрытия sheet. Постоянное место сохранения
+выбирает пользователь в системном интерфейсе.
+
+```http
+Authorization: Bearer <access-token>
+Accept: application/json
+```
+
+## `POST /api/v1/account/deletion-requests`
+
+Синхронно удаляет игровые данные authenticated subject и возвращает постоянную
+квитанцию. Перед запросом mobile выполняет интерактивную OIDC-проверку той же
+учётной записи с `prompt=login` и `max_age=0`, затем двухэтапное
+пользовательское подтверждение.
+
+```http
+Authorization: Bearer <fresh-access-token>
+Idempotency-Key: account-delete-7a35d4bbf64f4e7ca441e59b61eb9ec4
+Content-Type: application/json
+```
+
+```json
+{
+  "confirmation": "DELETE"
+}
+```
+
+```json
+{
+  "receiptId": "11111111-1111-1111-1111-111111111111",
+  "status": "COMPLETED",
+  "requestedAt": "2026-07-29T05:00:00Z",
+  "completedAt": "2026-07-29T05:00:00Z",
+  "replayed": false
+}
+```
+
+Backend принимает destructive request только если подписанный access token
+содержит `auth_time` не старше
+`ACCOUNT_DELETION_MAX_AUTH_AGE` (по умолчанию `PT5M`). Отсутствующий,
+некорректный или устаревший claim возвращает
+`403 FRESH_AUTHENTICATION_REQUIRED`. Production IdP обязан включать
+стандартный OIDC `auth_time` в access token.
+
+Повтор после потери ответа возвращает ту же квитанцию с `replayed=true`, в том
+числе после перезапуска клиента. Backend хранит только SHA-256 subject и
+idempotency key, UUID квитанции и timestamps; raw OIDC subject в квитанции не
+сохраняется.
+
+После создания квитанции остальные authenticated endpoints для этого subject
+проверяются общим security filter до controller и возвращают
+`410 ACCOUNT_DELETED`, включая `/api/v1/admin/**`. Поэтому старый Bearer token
+не может пересоздать игровой аккаунт, читать административные данные или
+выполнять привилегированные операции. Сам deletion endpoint остаётся доступен
+для idempotent replay квитанции. Bearer transport воспринимает этот код как
+окончательное удаление и запускает fail-closed локальную очистку без refresh.
+
 ## `GET /api/v1/home/demo`
 
 Явное демонстрационное состояние. Production mobile не использует его как silent fallback.

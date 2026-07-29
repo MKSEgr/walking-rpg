@@ -1,5 +1,7 @@
 package com.walkingrpg.backend.security;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -83,6 +85,23 @@ class SecurityModeGuardTest {
         assertThrows(
                 IllegalStateException.class,
                 () -> guard(sameScope).afterPropertiesSet()
+        );
+    }
+
+    @Test
+    void shouldRejectUnsafeAccountDeletionAuthenticationWindows() {
+        WalkingRpgSecurityProperties disabled = new WalkingRpgSecurityProperties();
+        disabled.setAccountDeletionMaxAuthenticationAge(Duration.ZERO);
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(disabled).afterPropertiesSet()
+        );
+
+        WalkingRpgSecurityProperties tooLong = new WalkingRpgSecurityProperties();
+        tooLong.setAccountDeletionMaxAuthenticationAge(Duration.ofMinutes(16));
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(tooLong).afterPropertiesSet()
         );
     }
 

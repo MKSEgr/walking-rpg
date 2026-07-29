@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
+import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.shared.api.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -51,6 +52,18 @@ public class JsonSecurityErrorWriter implements AuthenticationEntryPoint, Access
                 HttpServletResponse.SC_FORBIDDEN,
                 "FORBIDDEN",
                 "Недостаточно прав для выполнения операции"
+        );
+    }
+
+    public void writeAccountDeleted(
+            HttpServletResponse response,
+            AccountDeletedException exception
+    ) throws IOException {
+        write(
+                response,
+                HttpServletResponse.SC_GONE,
+                "ACCOUNT_DELETED",
+                exception.getMessage()
         );
     }
 

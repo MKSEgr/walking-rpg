@@ -55,3 +55,4 @@ walking-rpg:
     admin-role: ${OIDC_ADMIN_ROLE:walking-rpg-admin}
     user-scope: ${OIDC_USER_SCOPE:walking-rpg.user}
     admin-scope: ${OIDC_ADMIN_SCOPE:walking-rpg.admin}
+    account-deletion-max-authentication-age: ${ACCOUNT_DELETION_MAX_AUTH_AGE:PT5M}

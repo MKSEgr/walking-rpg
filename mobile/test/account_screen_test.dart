@@ -1,0 +1,268 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
+import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
+import 'package:walking_rpg_mobile/core/auth/auth_session_store.dart';
+import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
+import 'package:walking_rpg_mobile/core/auth/owner_local_state_cleaner.dart';
+import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
+import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
+import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
+
+void main() {
+  testWidgets('account deletion requires two confirmations and fresh login', (
+    WidgetTester tester,
+  ) async {
+    final OidcConfiguration oidc = _oidc();
+    final _MemoryStore store = _MemoryStore(
+      _session(oidc, subject: 'user-1', suffix: 'initial'),
+    );
+    final _FakeOidcClient oidcClient = _FakeOidcClient(
+      authorizeResponse: _response(
+        oidc,
+        subject: 'user-1',
+        suffix: 'confirmed',
+      ),
+    );
+    final AuthSessionController controller = AuthSessionController(
+      configuration: MobileAuthConfiguration(
+        mode: MobileAuthMode.oidc,
+        apiBaseUri: Uri.parse('https://api.example'),
+        refreshSkew: const Duration(seconds: 60),
+        oidc: oidc,
+      ),
+      sessionStore: store,
+      oidcClient: oidcClient,
+      localStateCleaner: _NoopCleaner(),
+      clock: () => DateTime.utc(2026, 7, 29, 5),
+    );
+    await controller.initialize();
+    final _AccountTransport transport = _AccountTransport();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AccountScreen(
+          controller: controller,
+          identity: controller.identity!,
+          apiClient: AccountApiClient(
+            baseUri: Uri.parse('https://api.example'),
+            transport: transport,
+          ),
+          idempotencyKeyFactory: () => 'delete-widget-test',
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('account-delete-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Удалить аккаунт?'), findsOneWidget);
+    expect(find.byKey(const Key('account-delete-phrase')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('account-delete-continue')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('account-delete-phrase')), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('account-delete-confirm')))
+          .onPressed,
+      isNull,
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('account-delete-phrase')),
+      'УДАЛИТЬ',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('account-delete-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(oidcClient.forceLoginRequests, <bool>[true]);
+    expect(transport.postCalls, 1);
+    expect(transport.lastHeaders?['Idempotency-Key'], 'delete-widget-test');
+    expect(controller.state, AuthLifecycleState.unauthenticated);
+    expect(controller.notice, contains('11111111-1111-1111-1111-111111111111'));
+    expect(store.session, isNull);
+  });
+}
+
+final class _AccountTransport implements HomeTransport {
+  int postCalls = 0;
+  Map<String, String>? lastHeaders;
+
+  @override
+  Future<HomeTransportResponse> get({
+    required Uri uri,
+    required Map<String, String> headers,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<HomeTransportResponse> post({
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  }) async {
+    postCalls += 1;
+    lastHeaders = Map<String, String>.of(headers);
+    return const HomeTransportResponse(
+      statusCode: 200,
+      body: '''
+        {
+          "receiptId": "11111111-1111-1111-1111-111111111111",
+          "status": "COMPLETED",
+          "requestedAt": "2026-07-29T05:00:00Z",
+          "completedAt": "2026-07-29T05:00:00Z",
+          "replayed": false
+        }
+      ''',
+    );
+  }
+}
+
+final class _FakeOidcClient implements OidcAuthorizationClient {
+  _FakeOidcClient({required this.authorizeResponse});
+
+  final OidcTokenResponseData authorizeResponse;
+  final List<bool> forceLoginRequests = <bool>[];
+
+  @override
+  Future<OidcTokenResponseData> authorize(
+    OidcConfiguration configuration, {
+    bool forceLogin = false,
+  }) async {
+    forceLoginRequests.add(forceLogin);
+    return authorizeResponse;
+  }
+
+  @override
+  Future<void> endSession(
+    OidcConfiguration configuration, {
+    required String idToken,
+  }) async {}
+
+  @override
+  Future<OidcTokenResponseData> refresh(
+    OidcConfiguration configuration, {
+    required String refreshToken,
+  }) {
+    throw UnimplementedError();
+  }
+}
+
+final class _MemoryStore implements AuthSessionStore {
+  _MemoryStore(AuthSession value)
+    : _state = AuthSessionStoreState(
+        session: value,
+        sessionGeneration: 'generation-1',
+        lastOwnerId: value.identity.ownerId,
+      );
+
+  AuthSessionStoreState _state;
+
+  AuthSession? get session => _state.session;
+
+  @override
+  Future<void> clear() async {
+    _state = const AuthSessionStoreState();
+  }
+
+  @override
+  Future<void> clearSession({
+    required String ownerId,
+    bool cleanupRequired = false,
+  }) async {
+    _state = AuthSessionStoreState(
+      lastOwnerId: ownerId,
+      cleanupRequired: cleanupRequired,
+    );
+  }
+
+  @override
+  Future<AuthSessionStoreState> read() async => _state;
+
+  @override
+  Future<String> write(AuthSession session) async {
+    _state = AuthSessionStoreState(
+      session: session,
+      sessionGeneration: 'generation-2',
+      lastOwnerId: session.identity.ownerId,
+    );
+    return 'generation-2';
+  }
+
+  @override
+  Future<void> writeRefreshedSession(
+    AuthSession session, {
+    required String sessionGeneration,
+  }) async {
+    if (_state.sessionGeneration != sessionGeneration) {
+      throw StateError('stale session generation');
+    }
+    _state = AuthSessionStoreState(
+      session: session,
+      sessionGeneration: sessionGeneration,
+      lastOwnerId: session.identity.ownerId,
+    );
+  }
+}
+
+final class _NoopCleaner implements LocalStateCleaner {
+  @override
+  Future<void> clear(String ownerId) async {}
+}
+
+OidcConfiguration _oidc() {
+  return OidcConfiguration(
+    issuer: Uri.parse('https://identity.example/realms/walking'),
+    clientId: 'walking-mobile',
+    redirectUri: Uri.parse('com.walkingrpg.app:/oauthredirect'),
+    postLogoutRedirectUri: Uri.parse('com.walkingrpg.app:/logout'),
+    scopes: const <String>['openid', 'profile', 'offline_access'],
+    allowInsecureConnections: false,
+  );
+}
+
+AuthSession _session(
+  OidcConfiguration oidc, {
+  required String subject,
+  required String suffix,
+}) {
+  return AuthSession.fromResponse(
+    configuration: oidc,
+    response: _response(oidc, subject: subject, suffix: suffix),
+  );
+}
+
+OidcTokenResponseData _response(
+  OidcConfiguration oidc, {
+  required String subject,
+  required String suffix,
+}) {
+  final DateTime expiresAt = DateTime.utc(2026, 7, 29, 6);
+  return OidcTokenResponseData(
+    accessToken:
+        '${_jwt(<String, Object?>{'iss': oidc.issuer.toString(), 'sub': subject, 'exp': expiresAt.millisecondsSinceEpoch ~/ 1000})}-$suffix',
+    accessTokenExpiration: expiresAt,
+    refreshToken: 'refresh-$subject',
+    idToken: _jwt(<String, Object?>{
+      'iss': oidc.issuer.toString(),
+      'sub': subject,
+      'preferred_username': subject,
+      'exp': expiresAt.millisecondsSinceEpoch ~/ 1000,
+    }),
+    tokenType: 'Bearer',
+    scopes: oidc.scopes,
+  );
+}
+
+String _jwt(Map<String, Object?> claims) {
+  String encode(Map<String, Object?> value) {
+    return base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
+  }
+
+  return '${encode(<String, Object?>{'alg': 'none'})}.'
+      '${encode(claims)}.signature';
+}

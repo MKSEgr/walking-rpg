@@ -4,16 +4,17 @@ import java.util.List;
 import java.util.Map;
 
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
+import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import com.walkingrpg.backend.security.RequestIdentityProvider;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -91,11 +92,15 @@ public class PlatformAdminController {
         return service.exportAccount(identityProvider.requireIdentity().userId());
     }
 
-    @DeleteMapping("/account")
-    public Map<String, Object> deleteAccount() {
-        return Map.of(
-                "deleted",
-                service.deleteAccount(identityProvider.requireIdentity().userId())
+    @PostMapping("/account/deletion-requests")
+    public AccountDeletionReceipt deleteAccount(
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody AccountDeletionRequest request
+    ) {
+        return service.requestAccountDeletion(
+                identityProvider.requireIdentityForAccountDeletion().userId(),
+                idempotencyKey,
+                request.confirmation()
         );
     }
 

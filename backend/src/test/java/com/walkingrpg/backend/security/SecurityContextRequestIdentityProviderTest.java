@@ -1,8 +1,12 @@
 package com.walkingrpg.backend.security;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 
+import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -17,8 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class SecurityContextRequestIdentityProviderTest {
+
+    private static final Instant NOW = Instant.parse("2026-07-28T06:00:00Z");
 
     private final WalkingRpgSecurityProperties properties =
             new WalkingRpgSecurityProperties();
@@ -151,6 +160,90 @@ class SecurityContextRequestIdentityProviderTest {
         );
     }
 
+    @Test
+    void shouldRejectADeletedSubjectButAllowDeletionReceiptReplay() {
+        AccountDeletionRegistry registry = mock(AccountDeletionRegistry.class);
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        registry,
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        authenticate(jwtBuilder()
+                .claim("auth_time", NOW.minusSeconds(30).getEpochSecond())
+                .build());
+        doThrow(new AccountDeletedException())
+                .when(registry)
+                .requireActive("subject-123");
+
+        assertThrows(AccountDeletedException.class, guardedProvider::requireIdentity);
+        assertEquals(
+                "subject-123",
+                guardedProvider.requireIdentityForAccountDeletion().userId()
+        );
+        verify(registry).requireActive("subject-123");
+    }
+
+    @Test
+    void shouldRequireRecentSignedAuthenticationTimeForDeletion() {
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        mock(AccountDeletionRegistry.class),
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        authenticate(jwtBuilder()
+                .claim("auth_time", NOW.minusSeconds(60).getEpochSecond())
+                .build());
+
+        assertEquals(
+                "subject-123",
+                guardedProvider.requireIdentityForAccountDeletion().userId()
+        );
+    }
+
+    @Test
+    void shouldRejectMissingOrStaleAuthenticationTimeForDeletion() {
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        mock(AccountDeletionRegistry.class),
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+
+        authenticate(jwtBuilder().build());
+        assertThrows(
+                FreshAuthenticationRequiredException.class,
+                guardedProvider::requireIdentityForAccountDeletion
+        );
+
+        authenticate(jwtBuilder()
+                .claim("auth_time", NOW.minusSeconds(301).getEpochSecond())
+                .build());
+        assertThrows(
+                FreshAuthenticationRequiredException.class,
+                guardedProvider::requireIdentityForAccountDeletion
+        );
+    }
+
+    @Test
+    void shouldRejectAuthenticationTimeBeyondClockSkew() {
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        mock(AccountDeletionRegistry.class),
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        authenticate(jwtBuilder()
+                .claim("auth_time", NOW.plusSeconds(31).getEpochSecond())
+                .build());
+
+        assertThrows(
+                FreshAuthenticationRequiredException.class,
+                guardedProvider::requireIdentityForAccountDeletion
+        );
+    }
+
     private void authenticate(Jwt jwt) {
         SecurityContextHolder.getContext().setAuthentication(
                 new JwtAuthenticationToken(
@@ -162,12 +255,11 @@ class SecurityContextRequestIdentityProviderTest {
     }
 
     private Jwt.Builder jwtBuilder() {
-        Instant now = Instant.parse("2026-07-28T06:00:00Z");
         return Jwt.withTokenValue("token")
                 .header("alg", "RS256")
                 .issuer("https://identity.example.com")
                 .subject("subject-123")
-                .issuedAt(now)
-                .expiresAt(now.plusSeconds(300));
+                .issuedAt(NOW)
+                .expiresAt(NOW.plusSeconds(300));
     }
 }

@@ -66,7 +66,9 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Crash-reporting boundary и diagnostics ingestion
 - [x] Anti-fraud admin read model
 - [x] Economy simulation/tests
-- [x] Export/delete account
+- [x] Backend export/delete account
+- [x] Mobile «Аккаунт и данные»: JSON export/share, повторная OIDC-проверка,
+      двухэтапное подтверждение, idempotent deletion receipt и локальная очистка
 - [x] Backend OIDC/JWT boundary: issuer/audience validation, canonical `sub`, user/admin authorization и dev-header isolation
 - [x] Privacy/store declarations draft
 - [x] Tester cohort/admin support и closed-beta runbook
@@ -79,7 +81,7 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Payment-provider boundary + sandbox provider
 - [x] A/B assignment и exposure logging
 - [x] Release candidate CI и store review checklist
-- [ ] Mobile OIDC Authorization Code + PKCE, secure session storage, refresh и logout — CODE_PENDING
+- [x] Mobile OIDC Authorization Code + PKCE, secure session storage, refresh и logout
 - [ ] Production identity-provider client/redirect configuration — EXTERNAL_VALIDATION_REQUIRED
 - [ ] Production APNs/FCM — EXTERNAL_VALIDATION_REQUIRED
 - [ ] App Store / Google Play billing — EXTERNAL_VALIDATION_REQUIRED
@@ -99,6 +101,9 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Bearer-only same-origin transport with one refresh/retry after 401.
 - [x] Reauthentication, account switching and owner-scoped local cleanup.
 - [x] Runtime shutdown barrier before logout cleanup.
+- [x] Fresh OIDC login for destructive account actions with same-owner
+      validation and server-side signed `auth_time` enforcement.
+- [x] Mobile export/share and idempotent account-deletion receipt flow.
 - [ ] Configure the production identity provider, client, issuer, audience and
       signed `device_id` claim in the deployment environment.
 - [ ] Validate login, refresh and logout on physical Android/iOS devices.

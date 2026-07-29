@@ -6,6 +6,8 @@ import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
+import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
 import 'package:walking_rpg_mobile/features/activity/application/activity_sync_coordinator.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
@@ -83,6 +85,7 @@ class _AuthenticatedApplicationShellState
     extends State<AuthenticatedApplicationShell> {
   late final HomeApiClient _homeClient;
   late final PlatformApiClient _platformClient;
+  late final AccountApiClient _accountClient;
   late final MobileCommandRuntime _runtime;
   late final ActivitySyncCoordinator? _coordinator;
   late final RuntimeStopper _runtimeStopper;
@@ -133,6 +136,10 @@ class _AuthenticatedApplicationShellState
       transport: transport,
       cache: widget.cache,
     );
+    _accountClient = AccountApiClient(
+      baseUri: configuration.apiBaseUri,
+      transport: transport,
+    );
     _runtime = MobileCommandRuntime(
       ownerId: widget.identity.ownerId,
       store: widget.commandStore,
@@ -170,9 +177,10 @@ class _AuthenticatedApplicationShellState
   void _openAccount() {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (BuildContext context) => _AccountScreen(
+        builder: (BuildContext context) => AccountScreen(
           controller: widget.controller,
           identity: widget.identity,
+          apiClient: _accountClient,
         ),
       ),
     );
@@ -230,6 +238,17 @@ class _LoginScreen extends StatelessWidget {
                           ),
                         ),
                       ],
+                      if (controller.notice != null) ...<Widget>[
+                        const SizedBox(height: 12),
+                        Text(
+                          controller.notice!,
+                          key: const Key('auth-notice'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       FilledButton.icon(
                         key: const Key('oidc-sign-in-button'),
@@ -253,90 +272,6 @@ class _LoginScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _AccountScreen extends StatefulWidget {
-  const _AccountScreen({required this.controller, required this.identity});
-
-  final AuthSessionController controller;
-  final AuthIdentity identity;
-
-  @override
-  State<_AccountScreen> createState() => _AccountScreenState();
-}
-
-class _AccountScreenState extends State<_AccountScreen> {
-  bool _busy = false;
-  bool _dismissRequested = false;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_handleAuthStateChanged);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_handleAuthStateChanged);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Аккаунт')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: Text(widget.identity.displayName),
-              subtitle: Text(
-                widget.identity.isDevelopment
-                    ? 'Локальный development-режим'
-                    : 'OIDC-сессия',
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (!widget.identity.isDevelopment)
-              FilledButton.tonalIcon(
-                key: const Key('logout-button'),
-                onPressed: _busy ? null : _logout,
-                icon: _busy
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.logout),
-                label: const Text('Выйти и очистить локальные данные'),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _handleAuthStateChanged() {
-    if (!mounted ||
-        _dismissRequested ||
-        widget.controller.state == AuthLifecycleState.authenticated) {
-      return;
-    }
-    _dismissRequested = true;
-    WidgetsBinding.instance.addPostFrameCallback((Duration _) {
-      if (mounted) {
-        unawaited(Navigator.maybeOf(context)?.maybePop());
-      }
-    });
-  }
-
-  Future<void> _logout() async {
-    setState(() {
-      _busy = true;
-    });
-    await widget.controller.logout();
   }
 }
 

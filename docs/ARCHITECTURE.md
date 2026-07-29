@@ -211,3 +211,15 @@ PKCE, stores tokens only in platform secure storage, and derives an opaque local
 owner partition from canonical `issuer + subject`. API clients never accept or
 send user/device identity headers in OIDC mode; backend identity comes only from
 the validated access token. See ADR 0018.
+
+### Account data-control boundary
+
+Экспорт читается только через authenticated API, временно staging-ится для
+системного share sheet и удаляется из sandbox приложения после передачи.
+Удаление использует отдельный idempotent command: два UI-подтверждения → fresh
+OIDC login той же owner identity → транзакционное удаление → durable receipt →
+fail-closed local logout/cleanup. Backend receipt не содержит raw subject, а
+deletion registry отклоняет последующие запросы со старым Bearer token.
+Backend не доверяет только mobile step-up: destructive endpoint требует
+подписанный `auth_time` в access token в пределах короткого server-side окна.
+См. ADR 0019.

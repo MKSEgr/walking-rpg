@@ -11,6 +11,7 @@ import java.util.Optional;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
 import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
 import com.walkingrpg.backend.platform.domain.PlatformUserState;
@@ -33,10 +34,16 @@ public class JdbcPlatformRepository implements PlatformRepository {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final AccountDeletionRegistry accountDeletionRegistry;
 
-    public JdbcPlatformRepository(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
+    public JdbcPlatformRepository(
+            JdbcTemplate jdbcTemplate,
+            ObjectMapper objectMapper,
+            AccountDeletionRegistry accountDeletionRegistry
+    ) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
+        this.accountDeletionRegistry = accountDeletionRegistry;
     }
 
     @Override
@@ -330,6 +337,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
     }
 
     private void ensureUser(String userId, Instant observedAt) {
+        accountDeletionRegistry.requireActive(userId);
         Timestamp timestamp = Timestamp.from(observedAt);
         jdbcTemplate.update("""
                 INSERT INTO app_user (user_id, created_at, last_seen_at)
