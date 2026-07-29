@@ -8,6 +8,11 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
@@ -46,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -315,6 +321,67 @@ class EventResolutionIntegrationTest {
         assertEquals(19, home.pet().bond());
     }
 
+    @Test
+    void shouldSerializeEventRewardWithConcurrentPetSelection() throws Exception {
+        String userId = "concurrent-pet-user";
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "select-spark-before-race",
+                Map.of("petId", "spark-v1")
+        ));
+        prepareFirstEvent(userId);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch selectionSaved = new CountDownLatch(1);
+        CountDownLatch allowSelectionCommit = new CountDownLatch(1);
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        try {
+            Future<?> selection = executor.submit(() ->
+                    transaction.executeWithoutResult(status -> {
+                        platformService.execute(userId, new PlatformCommandRequest(
+                                "SELECT_PET",
+                                "select-moss-during-race",
+                                Map.of("petId", "moss-v1")
+                        ));
+                        selectionSaved.countDown();
+                        awaitLatch(allowSelectionCommit);
+                    })
+            );
+            assertTrue(selectionSaved.await(10, TimeUnit.SECONDS));
+
+            Future<EventResolutionResult> event = executor.submit(() ->
+                    eventResolutionService.resolve(command(
+                            userId,
+                            StarterExpeditionContent.FIRST_EVENT_ID,
+                            "analyze-signal",
+                            "resolve-during-selection"
+                    ))
+            );
+
+            awaitAdvisoryLockWait();
+            allowSelectionCommit.countDown();
+
+            selection.get(10, TimeUnit.SECONDS);
+            EventResolutionResult result = event.get(10, TimeUnit.SECONDS);
+
+            assertEquals("moss-v1", result.pet().petId());
+            assertEquals("moss-v1", jdbcTemplate.queryForObject("""
+                    SELECT pet_id
+                    FROM pet_progress
+                    WHERE user_id = ?
+                    """, String.class, userId));
+            assertEquals(0, jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pet_progress
+                    WHERE user_id = ?
+                      AND pet_id = 'spark-v1'
+                    """, Integer.class, userId));
+        } finally {
+            allowSelectionCommit.countDown();
+            executor.shutdownNow();
+        }
+    }
+
     private void prepareFirstEvent(String userId) {
         activitySyncService.synchronize(new ActivitySyncCommand(
                 userId,
@@ -342,6 +409,35 @@ class EventResolutionIntegrationTest {
             String idempotencyKey
     ) {
         return new EventResolutionCommand(userId, eventId, choiceId, idempotencyKey);
+    }
+
+    private void awaitLatch(CountDownLatch latch) {
+        try {
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Timed out waiting to commit pet selection");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Pet selection wait interrupted", exception);
+        }
+    }
+
+    private void awaitAdvisoryLockWait() throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND lower(wait_event) = 'advisory'
+                    """, Integer.class);
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new AssertionError("Event reward did not wait for the pet selection lock");
     }
 
     private int rowCount(String table) {

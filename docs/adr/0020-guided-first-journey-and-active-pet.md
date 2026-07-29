@@ -44,6 +44,10 @@ restart.
   `ActivePetProvider`. Home отображает выбранного питомца, event progression
   блокирует и награждает его отдельную `pet_progress` строку, а pilot XP
   остаётся общим.
+- Перед event reward `ActivePetProvider` берёт тот же per-user advisory lock,
+  что и `SELECT_PET`. Поэтому конкурентные выбор питомца и награда получают
+  однозначный transaction order и bond не уходит предыдущему питомцу после
+  более раннего commit выбора.
 - Bond из `CLAIM_QUEST` и уровень из `EVOLVE_PET` синхронизируются с
   `pet_progress` в той же транзакции. При чтении старого состояния provider
   объединяет platform progress с relational progress по максимуму, поэтому
@@ -64,7 +68,8 @@ restart.
   milestones автоматически, но должен явно подтвердить выбор питомца.
 - У каждого питомца независимые bond/level/version; переключение питомца не
   переносит между ними progression.
-- Схема БД не меняется: используются существующие `roadmap_user_state` и
-  составной ключ `pet_progress (user_id, pet_id)`.
+- Flyway V8 добавляет monotonic activity-маркер в `app_user`; выбор и награды
+  питомца используют существующие `roadmap_user_state` и составной ключ
+  `pet_progress (user_id, pet_id)`.
 - Physical-device проверка permission UX, темпа первых десяти минут и
   эмоциональной ценности выбора остаётся внешним alpha gate.

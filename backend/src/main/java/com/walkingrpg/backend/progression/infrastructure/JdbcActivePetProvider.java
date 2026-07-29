@@ -2,6 +2,7 @@ package com.walkingrpg.backend.progression.infrastructure;
 
 import java.util.List;
 
+import com.walkingrpg.backend.platform.infrastructure.PlatformRepository;
 import com.walkingrpg.backend.progression.application.ActivePetProvider;
 import com.walkingrpg.backend.progression.application.ActivePetSelection;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
@@ -14,17 +15,21 @@ public class JdbcActivePetProvider implements ActivePetProvider {
 
     private final JdbcTemplate jdbcTemplate;
     private final StarterProgressionContent content;
+    private final PlatformRepository platformRepository;
 
     public JdbcActivePetProvider(
             JdbcTemplate jdbcTemplate,
-            StarterProgressionContent content
+            StarterProgressionContent content,
+            PlatformRepository platformRepository
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.content = content;
+        this.platformRepository = platformRepository;
     }
 
     @Override
     public ActivePetSelection activePetFor(String userId) {
+        platformRepository.acquireUserLock(userId);
         List<ActivePetSelection> selected = jdbcTemplate.query("""
                 SELECT state_json ->> 'activePetId' AS pet_id,
                        COALESCE(

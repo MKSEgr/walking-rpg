@@ -101,11 +101,12 @@ reload.
 
 `roadmap_user_state.activePetId` — источник выбора питомца. Общий
 `ActivePetProvider` связывает platform state с home/progression: event reward
-блокирует и изменяет строку выбранного `pet_id`, а pilot XP остаётся общим.
-Quest bond и evolution level синхронизируются с той же `pet_progress` строкой в
-транзакции platform-команды. Для старого раздвоенного состояния read/reward
-использует максимальные подтверждённые level/bond. Отсутствующее platform state
-безопасно использует `spark-v1`.
+берёт тот же per-user advisory lock, что и `SELECT_PET`, затем блокирует и
+изменяет строку выбранного `pet_id`; pilot XP остаётся общим. Quest bond и
+evolution level синхронизируются с той же `pet_progress` строкой в транзакции
+platform-команды. Для старого раздвоенного состояния read/reward использует
+максимальные подтверждённые level/bond. Отсутствующее platform state безопасно
+использует `spark-v1`.
 
 ## 6. Контент
 
