@@ -7,6 +7,8 @@ import java.util.List;
 
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
+import com.walkingrpg.backend.progression.application.ActivePetProvider;
+import com.walkingrpg.backend.progression.application.ActivePetSelection;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -16,13 +18,16 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
 
     private final JdbcTemplate jdbcTemplate;
     private final StarterProgressionContent progressionContent;
+    private final ActivePetProvider activePetProvider;
 
     public JdbcHomeReadRepository(
             JdbcTemplate jdbcTemplate,
-            StarterProgressionContent progressionContent
+            StarterProgressionContent progressionContent,
+            ActivePetProvider activePetProvider
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.progressionContent = progressionContent;
+        this.activePetProvider = activePetProvider;
     }
 
     @Override
@@ -31,6 +36,8 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
             LocalDate localDate,
             String expeditionId
     ) {
+        ActivePetSelection activePet = activePetProvider.activePetFor(userId);
+        String activePetId = activePet.petId();
         HomeRuntimeState state = jdbcTemplate.queryForObject("""
                 SELECT COALESCE(activity.accepted_total, 0) AS daily_steps,
                        COALESCE(activity.state_version, 0) AS activity_state_version,
@@ -48,7 +55,6 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        COALESCE(pilot.level, 0) AS pilot_level,
                        COALESCE(pilot.current_experience, 0) AS pilot_current_experience,
                        COALESCE(pilot.next_level_experience, 0) AS pilot_next_level_experience,
-                       (pet.user_id IS NOT NULL) AS pet_progress_present,
                        COALESCE(pet.level, 0) AS pet_level,
                        COALESCE(pet.bond, 0) AS pet_bond,
                        resolution.choice_id AS resolved_choice_id,
@@ -102,9 +108,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                     resultSet.getInt("pilot_level"),
                     resultSet.getInt("pilot_current_experience"),
                     resultSet.getInt("pilot_next_level_experience"),
-                    resultSet.getBoolean("pet_progress_present"),
-                    resultSet.getInt("pet_level"),
-                    resultSet.getInt("pet_bond"),
+                    activePetId,
+                    true,
+                    Math.max(resultSet.getInt("pet_level"), activePet.level()),
+                    Math.max(resultSet.getInt("pet_bond"), activePet.bond()),
                     resultSet.getString("resolved_choice_id"),
                     resultSet.getString("resolved_choice_title"),
                     resultSet.getString("outcome_title"),
@@ -126,7 +133,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 userId,
                 progressionContent.pilot().pilotId(),
                 userId,
-                progressionContent.pet().petId(),
+                activePetId,
                 userId,
                 expeditionId
         );

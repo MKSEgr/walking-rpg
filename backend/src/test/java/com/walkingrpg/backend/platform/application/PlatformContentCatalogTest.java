@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import com.walkingrpg.backend.progression.application.StarterProgressionContent;
+import com.walkingrpg.backend.progression.domain.PetDefinition;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,8 +27,22 @@ class PlatformContentCatalogTest {
         assertEquals(5, catalog.quests().size());
         assertEquals(4, catalog.cosmetics().size());
         assertEquals(2, catalog.experiments().size());
+        assertEquals(6, catalog.onboardingSteps().size());
         assertEquals(6, list(publicCatalog, "materials").size());
         assertEquals(64, String.valueOf(publicCatalog.get("catalogDigest")).length());
+    }
+
+    @Test
+    void shouldKeepPlatformAndGameplayPetDefinitionsAligned() {
+        StarterProgressionContent progression = new StarterProgressionContent();
+
+        for (PlatformContentCatalog.PetDefinition platformPet : catalog.pets()) {
+            PetDefinition gameplayPet = progression.requirePet(platformPet.petId());
+            assertEquals(platformPet.name(), gameplayPet.name());
+            assertTrue(platformPet.species().equalsIgnoreCase(gameplayPet.species()));
+            assertEquals(platformPet.trait(), gameplayPet.trait());
+            assertEquals(platformPet.initialBond(), gameplayPet.initialBond());
+        }
     }
 
     @Test

@@ -82,6 +82,57 @@ class HomeServiceTest {
         assertNotNull(snapshot.expedition().unlockedEvent());
     }
 
+    @Test
+    void shouldRenderSelectedPetBeforeItsFirstReward() {
+        HomeReadRepository repository = (userId, localDate, expeditionId) ->
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        0,
+                        0,
+                        null,
+                        0,
+                        null,
+                        null,
+                        false,
+                        0,
+                        0,
+                        0,
+                        "moss-v1",
+                        false,
+                        0,
+                        0,
+                        null,
+                        null,
+                        null,
+                        null
+                );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                new StarterExpeditionContent(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        HomeSnapshotResponse snapshot = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        );
+
+        assertEquals("Мох", snapshot.pet().name());
+        assertEquals("Терра", snapshot.pet().species());
+        assertEquals(10, snapshot.pet().bond());
+    }
+
     private DailyGoalPolicyProperties goalProperties() {
         return new DailyGoalPolicyProperties(
                 "adaptive-median-v1",

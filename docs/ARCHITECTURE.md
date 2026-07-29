@@ -44,7 +44,8 @@ core/cache           — read-only validated server snapshots
 activity             — HealthKit/Health Connect и sync
 home                 — authoritative home snapshot
 expedition           — ENERGY spend
- event                — event resolution
+event                — event resolution
+onboarding            — guided first journey и recovery milestones
 platform             — typed snapshot, commands и «Путевой журнал»
 app                   — навигационный shell
 ```
@@ -80,6 +81,33 @@ GAMEPLAY lane
 
 Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
 
+`FirstJourneyGate` собирает первые действия в один непрерывный маршрут:
+
+```text
+welcome
+→ health permission + authoritative sync
+→ ENERGY reward
+→ SELECT_PET
+→ expedition advance
+→ event resolution
+→ main shell
+```
+
+Milestones не являются самостоятельными пользовательскими действиями. Mobile
+записывает их после реальных команд, допускает «Продолжить позже» и после
+restart восстанавливает подтверждаемые этапы из home/platform facts. Haptic
+feedback не входит в критический путь и не может задержать authoritative
+reload.
+
+`roadmap_user_state.activePetId` — источник выбора питомца. Общий
+`ActivePetProvider` связывает platform state с home/progression: event reward
+берёт тот же per-user advisory lock, что и `SELECT_PET`, затем блокирует и
+изменяет строку выбранного `pet_id`; pilot XP остаётся общим. Quest bond и
+evolution level синхронизируются с той же `pet_progress` строкой в транзакции
+platform-команды. Для старого раздвоенного состояния read/reward использует
+максимальные подтверждённые level/bond. Отсутствующее platform state безопасно
+использует `spark-v1`.
+
 ## 6. Контент
 
 Активная версия `chapter-1-v1` содержит 18 последовательных узлов от `outer-beacon` до `dawn-relay`, server-owned choices и material rewards. Stable IDs сохраняются между версиями; mutable user state отделён от definitions. `content_release` и remote config позволяют публиковать активную версию без переписывания исторических command responses.
@@ -90,6 +118,7 @@ Platform snapshot содержит onboarding, три питомца, skills, qu
 
 ```text
 app_user, app_device
+  └─ has_successful_activity_sync — monotonic fact реального activity sync
 activity_sync_state, processed_activity_sync
 economy_wallet, economy_ledger
 expedition_progress, processed_expedition_advance

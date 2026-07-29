@@ -13,9 +13,22 @@ Map<String, dynamic> platformSnapshotJson({
   List<String> ownedCosmetics = const <String>['pilot-scarf'],
   String? activeCosmeticId = 'pilot-scarf',
   List<String> achievements = const <String>['season-reward-1'],
+  int resolvedEventCount = 2,
+  int totalAcceptedSteps = 6842,
+  bool? hasSuccessfulActivitySync,
   CachedReadMetadata? cacheMetadata,
 }) {
-  final bool onboardingComplete = completedOnboardingSteps.length == 4;
+  const List<String> onboardingSteps = <String>[
+    'welcome',
+    'health-permission',
+    'first-sync',
+    'pet-selection',
+    'first-expedition',
+    'first-event',
+  ];
+  final bool onboardingComplete = completedOnboardingSteps.toSet().containsAll(
+    onboardingSteps,
+  );
   return <String, dynamic>{
     'contentVersion': 'chapter-1-v1',
     'stateVersion': stateVersion,
@@ -26,6 +39,7 @@ Map<String, dynamic> platformSnapshotJson({
           'petId': 'spark-v1',
           'name': 'Искра',
           'species': 'люмин',
+          'trait': 'Чуткий разведчик',
           'level': 1,
           'bond': 50,
           'evolutionStage': 0,
@@ -36,6 +50,7 @@ Map<String, dynamic> platformSnapshotJson({
           'petId': 'moss-v1',
           'name': 'Мох',
           'species': 'терра',
+          'trait': 'Спокойный хранитель',
           'level': 1,
           'bond': 12,
           'evolutionStage': 0,
@@ -46,6 +61,7 @@ Map<String, dynamic> platformSnapshotJson({
           'petId': 'rune-v1',
           'name': 'Руна',
           'species': 'эхо',
+          'trait': 'Смелый навигатор',
           'level': 1,
           'bond': 9,
           'evolutionStage': 0,
@@ -93,18 +109,15 @@ Map<String, dynamic> platformSnapshotJson({
         'home-energy-copy-v1': 'MOTIVATIONAL',
         'quest-order-v1': 'REWARD_FIRST',
       },
-      'resolvedEventCount': 2,
-      'totalAcceptedSteps': 6842,
+      'resolvedEventCount': resolvedEventCount,
+      'totalAcceptedSteps': totalAcceptedSteps,
+      'hasSuccessfulActivitySync':
+          hasSuccessfulActivitySync ?? totalAcceptedSteps > 0,
     },
     'content': <String, dynamic>{
       'contentVersion': 'chapter-1-v1',
       'chapterNodes': 18,
-      'onboardingSteps': <String>[
-        'welcome',
-        'health-permission',
-        'first-sync',
-        'first-expedition',
-      ],
+      'onboardingSteps': onboardingSteps,
       'pets': const <Map<String, dynamic>>[],
       'skills': <Map<String, dynamic>>[
         <String, dynamic>{
@@ -191,6 +204,9 @@ PlatformSnapshot platformSnapshot({
   List<String> ownedCosmetics = const <String>['pilot-scarf'],
   String? activeCosmeticId = 'pilot-scarf',
   List<String> achievements = const <String>['season-reward-1'],
+  int resolvedEventCount = 2,
+  int totalAcceptedSteps = 6842,
+  bool? hasSuccessfulActivitySync,
   CachedReadMetadata? cacheMetadata,
 }) {
   return PlatformSnapshot.fromJson(
@@ -204,6 +220,9 @@ PlatformSnapshot platformSnapshot({
       ownedCosmetics: ownedCosmetics,
       activeCosmeticId: activeCosmeticId,
       achievements: achievements,
+      resolvedEventCount: resolvedEventCount,
+      totalAcceptedSteps: totalAcceptedSteps,
+      hasSuccessfulActivitySync: hasSuccessfulActivitySync,
     ),
     cacheMetadata: cacheMetadata,
   );

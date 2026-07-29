@@ -87,6 +87,29 @@ Roadmap отражает снижение рисков. Статусы:
 - [ ] App Store / Google Play billing — EXTERNAL_VALIDATION_REQUIRED
 - [ ] Production signing/submission/review — EXTERNAL_VALIDATION_REQUIRED
 
+## Milestone 7 — Alpha first journey
+
+### CODE_COMPLETE
+
+- [x] Один guided flow: вход → разрешение шагов → первая ENERGY → выбор
+      питомца → первый узел → первое событие
+- [x] Шесть onboarding milestones отмечаются реальными действиями, а не
+      отдельными кнопками «завершить»
+- [x] «Продолжить позже», restart-safe command replay и восстановление
+      milestones из authoritative home/platform facts
+- [x] Выбранный питомец используется в home и получает собственный bond за
+      события; progression разных питомцев не смешивается
+- [x] Неблокирующая reward/haptic feedback и read-only поведение cached state
+- [x] Domain/widget/backend regression tests первого пути
+
+### EXTERNAL_VALIDATION_REQUIRED
+
+- [ ] Пройти первые 10 минут на чистой установке iOS и Android
+- [ ] Проверить понятность Health permission, отказ, повторный запрос и отзыв
+- [ ] Измерить time-to-first-ENERGY, time-to-first-node и onboarding completion
+- [ ] Проверить тексты, темп и эмоциональную ценность выбора питомца на alpha
+      cohort
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

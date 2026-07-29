@@ -12,7 +12,9 @@ const Map<String, String> _onboardingNames = <String, String>{
   'welcome': 'Познакомиться с навигатором',
   'health-permission': 'Разрешить чтение активности',
   'first-sync': 'Синхронизировать первые шаги',
+  'pet-selection': 'Выбрать питомца',
   'first-expedition': 'Начать первую экспедицию',
+  'first-event': 'Принять первое решение',
 };
 
 typedef PlatformSnapshotLoader = Future<PlatformSnapshot> Function();
@@ -33,6 +35,7 @@ class PlatformScreen extends StatefulWidget {
     this.commandExecutor,
     this.idempotencyKeyFactory,
     this.onServerStateChanged,
+    this.onResumeFirstJourney,
     this.recordExperimentExposures = true,
   });
 
@@ -41,6 +44,7 @@ class PlatformScreen extends StatefulWidget {
   final PlatformCommandExecutor? commandExecutor;
   final PlatformIdempotencyKeyFactory? idempotencyKeyFactory;
   final VoidCallback? onServerStateChanged;
+  final VoidCallback? onResumeFirstJourney;
   final bool recordExperimentExposures;
 
   @override
@@ -127,6 +131,7 @@ class _PlatformScreenState extends State<PlatformScreen> {
                   squadIdController: _squadIdController,
                   onCommand: _executeCommand,
                   onRefresh: _reload,
+                  onResumeFirstJourney: widget.onResumeFirstJourney,
                 );
               },
         ),
@@ -310,6 +315,7 @@ class _PlatformBody extends StatelessWidget {
     required this.squadIdController,
     required this.onCommand,
     required this.onRefresh,
+    required this.onResumeFirstJourney,
   });
 
   final _PlatformViewData data;
@@ -318,6 +324,7 @@ class _PlatformBody extends StatelessWidget {
   final TextEditingController squadIdController;
   final void Function(String, Map<String, Object?>) onCommand;
   final VoidCallback onRefresh;
+  final VoidCallback? onResumeFirstJourney;
 
   bool get _busy => busyCommand != null;
 
@@ -352,14 +359,7 @@ class _PlatformBody extends StatelessWidget {
             'состояние ${snapshot.stateVersion}',
           ),
           const SizedBox(height: 16),
-          _OnboardingCard(
-            snapshot: snapshot,
-            busy: blocked,
-            onComplete: (String stepId) => onCommand(
-              'COMPLETE_ONBOARDING_STEP',
-              <String, Object?>{'stepId': stepId},
-            ),
-          ),
+          _OnboardingCard(snapshot: snapshot, onResume: onResumeFirstJourney),
           const SizedBox(height: 12),
           _WeeklyRouteCard(
             snapshot: snapshot,
@@ -493,28 +493,15 @@ class _PlatformBody extends StatelessWidget {
 }
 
 class _OnboardingCard extends StatelessWidget {
-  const _OnboardingCard({
-    required this.snapshot,
-    required this.busy,
-    required this.onComplete,
-  });
+  const _OnboardingCard({required this.snapshot, required this.onResume});
 
   final PlatformSnapshot snapshot;
-  final bool busy;
-  final ValueChanged<String> onComplete;
+  final VoidCallback? onResume;
 
   @override
   Widget build(BuildContext context) {
     final List<String> steps = snapshot.content.onboardingSteps;
     final Set<String> completed = snapshot.userState.completedOnboardingSteps;
-    String? nextStep;
-    for (final String step in steps) {
-      if (!completed.contains(step)) {
-        nextStep = step;
-        break;
-      }
-    }
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -551,13 +538,15 @@ class _OnboardingCard extends StatelessWidget {
                 title: Text(_onboardingNames[step] ?? step),
               ),
             ),
-            if (nextStep case final String step)
+            if (!snapshot.userState.onboardingComplete) ...<Widget>[
+              const SizedBox(height: 8),
               FilledButton.icon(
-                key: Key('platform-complete-onboarding-$step'),
-                onPressed: busy ? null : () => onComplete(step),
-                icon: const Icon(Icons.check),
-                label: Text('Завершить: ${_onboardingNames[step] ?? step}'),
+                key: const Key('platform-resume-first-journey'),
+                onPressed: onResume,
+                icon: const Icon(Icons.route_outlined),
+                label: const Text('Продолжить первый путь'),
               ),
+            ],
           ],
         ),
       ),

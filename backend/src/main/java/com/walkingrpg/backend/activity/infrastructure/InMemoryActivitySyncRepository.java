@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.walkingrpg.backend.activity.domain.ActivityDayKey;
@@ -16,6 +17,7 @@ public class InMemoryActivitySyncRepository implements ActivitySyncRepository {
     private final Map<ActivityDayKey, ActivityDayState> states = new ConcurrentHashMap<>();
     private final Map<IdempotencyScope, ProcessedActivitySync> processedSyncs =
             new ConcurrentHashMap<>();
+    private final Set<String> successfullySyncedUsers = ConcurrentHashMap.newKeySet();
 
     @Override
     public void acquireUserLock(String userId) {
@@ -48,5 +50,10 @@ public class InMemoryActivitySyncRepository implements ActivitySyncRepository {
             ProcessedActivitySync processedSync
     ) {
         processedSyncs.put(scope, processedSync);
+    }
+
+    @Override
+    public void markSuccessfulSync(String userId) {
+        successfullySyncedUsers.add(userId);
     }
 }

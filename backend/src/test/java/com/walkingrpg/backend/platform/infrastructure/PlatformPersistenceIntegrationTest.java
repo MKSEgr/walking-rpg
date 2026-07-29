@@ -16,11 +16,14 @@ import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
+import com.walkingrpg.backend.platform.application.PlatformAdminService;
 import com.walkingrpg.backend.platform.application.PlatformContentCatalog;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
 import com.walkingrpg.backend.platform.application.PlatformService;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
+import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
+import com.walkingrpg.backend.progression.application.ProgressionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,6 +63,9 @@ class PlatformPersistenceIntegrationTest {
     private PlatformService platformService;
 
     @Autowired
+    private PlatformAdminService platformAdminService;
+
+    @Autowired
     private ActivitySyncService activitySyncService;
 
     @Autowired
@@ -75,6 +82,9 @@ class PlatformPersistenceIntegrationTest {
 
     @Autowired
     private PaymentProvider paymentProvider;
+
+    @Autowired
+    private ProgressionService progressionService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -110,7 +120,8 @@ class PlatformPersistenceIntegrationTest {
                 economyService,
                 paymentProvider,
                 objectMapper,
-                clock
+                clock,
+                progressionService
         );
         PlatformCommandResponse replayed = restarted.execute("platform-user", request);
 
@@ -205,6 +216,68 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(1, rowCount("activity_sync_state"));
     }
 
+    @Test
+    void shouldExposeSuccessfulZeroStepSyncAsDurablePlatformFact() {
+        ActivitySyncOutcome outcome = activitySyncService.synchronize(
+                new ActivitySyncCommand(
+                        "zero-step-user",
+                        "zero-step-device",
+                        LocalDate.of(2026, 7, 27),
+                        ZoneId.of("Europe/Berlin"),
+                        0,
+                        List.of(),
+                        null,
+                        "zero-step-sync-1",
+                        "signed-attestation"
+                )
+        );
+
+        assertEquals(1, rowCount("processed_activity_sync"));
+        assertEquals(1, rowCount("app_device"));
+        assertEquals(0, rowCount("activity_sync_state"));
+
+        jdbcTemplate.update("DELETE FROM processed_activity_sync");
+        jdbcTemplate.update("DELETE FROM activity_risk_assessment");
+
+        PlatformProgressFacts facts = progressFactsProvider.factsFor("zero-step-user");
+        Map<String, Object> userState = platformService
+                .getSnapshot("zero-step-user")
+                .userState();
+
+        assertEquals(0, outcome.activity().acceptedTotal());
+        assertEquals(0, facts.totalAcceptedSteps());
+        assertTrue(facts.hasSuccessfulActivitySync());
+        assertEquals(true, userState.get("hasSuccessfulActivitySync"));
+        assertEquals(0, rowCount("processed_activity_sync"));
+        assertEquals(0, rowCount("activity_risk_assessment"));
+        assertEquals(1, rowCount("app_device"));
+        assertEquals(0, rowCount("activity_sync_state"));
+    }
+
+    @Test
+    void shouldNotTreatPushOnlyDeviceAsSuccessfulActivitySync() {
+        platformAdminService.registerPush(
+                "push-only-user",
+                "push-only-device",
+                "ANDROID",
+                "FCM",
+                "push-only-token"
+        );
+
+        PlatformProgressFacts facts = progressFactsProvider.factsFor(
+                "push-only-user"
+        );
+        Boolean marker = jdbcTemplate.queryForObject("""
+                SELECT has_successful_activity_sync
+                FROM app_user
+                WHERE user_id = 'push-only-user'
+                """, Boolean.class);
+
+        assertEquals(1, rowCount("app_device"));
+        assertEquals(1, rowCount("push_registration"));
+        assertFalse(Boolean.TRUE.equals(marker));
+        assertFalse(facts.hasSuccessfulActivitySync());
+    }
 
     private void ensureUser(String userId) {
         jdbcTemplate.update(

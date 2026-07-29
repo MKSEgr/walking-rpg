@@ -17,6 +17,7 @@ import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart'
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
+import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 
 class AuthGate extends StatelessWidget {
@@ -88,6 +89,9 @@ class _AuthenticatedApplicationShellState
   late final AccountApiClient _accountClient;
   late final MobileCommandRuntime _runtime;
   late final ActivitySyncCoordinator? _coordinator;
+  late final FirstJourneyHomeLoader _homeLoader;
+  late final FirstJourneyPlatformLoader _platformLoader;
+  late final FirstJourneyActivitySynchronizer? _synchronizer;
   late final RuntimeStopper _runtimeStopper;
 
   @override
@@ -151,6 +155,9 @@ class _AuthenticatedApplicationShellState
     _coordinator = ActivitySyncCoordinator.fromEnvironmentIfSupported(
       sender: _runtime.syncActivity,
     );
+    _homeLoader = () => _homeClient.fetchHome(DateTime.now());
+    _platformLoader = _platformClient.fetchSnapshot;
+    _synchronizer = _coordinator?.synchronize;
     _runtimeStopper = _runtime.close;
     widget.controller.registerRuntimeStopper(_runtimeStopper);
   }
@@ -164,13 +171,23 @@ class _AuthenticatedApplicationShellState
 
   @override
   Widget build(BuildContext context) {
-    return ActivitySyncShell(
-      synchronizer: _coordinator?.synchronize,
+    return FirstJourneyGate(
+      homeLoader: _homeLoader,
+      platformLoader: _platformLoader,
       commandRuntime: _runtime,
-      homeLoader: () => _homeClient.fetchHome(DateTime.now()),
-      platformLoader: _platformClient.fetchSnapshot,
-      platformHomeLoader: () => _homeClient.fetchHome(DateTime.now()),
+      synchronizer: _synchronizer,
       onOpenAccount: _openAccount,
+      childBuilder: (VoidCallback onResumeFirstJourney) {
+        return ActivitySyncShell(
+          synchronizer: _synchronizer,
+          commandRuntime: _runtime,
+          homeLoader: _homeLoader,
+          platformLoader: _platformLoader,
+          platformHomeLoader: _homeLoader,
+          onOpenAccount: _openAccount,
+          onResumeFirstJourney: onResumeFirstJourney,
+        );
+      },
     );
   }
 

@@ -122,6 +122,7 @@ class PlatformUserState {
     required Map<String, String> experimentAssignments,
     required this.resolvedEventCount,
     required this.totalAcceptedSteps,
+    required this.hasSuccessfulActivitySync,
   }) : pets = List<PlatformPet>.unmodifiable(pets),
        completedOnboardingSteps = Set<String>.unmodifiable(
          completedOnboardingSteps,
@@ -173,6 +174,11 @@ class PlatformUserState {
         )
         .toList(growable: false);
     final Object? rawSquad = json['squad'];
+    final int totalAcceptedSteps = _readInt(json, 'totalAcceptedSteps');
+    final bool hasSuccessfulActivitySync =
+        json.containsKey('hasSuccessfulActivitySync')
+        ? _readBool(json, 'hasSuccessfulActivitySync')
+        : totalAcceptedSteps > 0;
 
     return PlatformUserState(
       activePetId: _readString(json, 'activePetId'),
@@ -197,7 +203,8 @@ class PlatformUserState {
       activeCosmeticId: _readNullableString(json, 'activeCosmeticId'),
       experimentAssignments: _readStringMap(json, 'experimentAssignments'),
       resolvedEventCount: _readInt(json, 'resolvedEventCount'),
-      totalAcceptedSteps: _readInt(json, 'totalAcceptedSteps'),
+      totalAcceptedSteps: totalAcceptedSteps,
+      hasSuccessfulActivitySync: hasSuccessfulActivitySync,
     );
   }
 
@@ -219,6 +226,7 @@ class PlatformUserState {
   final Map<String, String> experimentAssignments;
   final int resolvedEventCount;
   final int totalAcceptedSteps;
+  final bool hasSuccessfulActivitySync;
 }
 
 class PlatformPet {
@@ -226,6 +234,7 @@ class PlatformPet {
     required this.petId,
     required this.name,
     required this.species,
+    required this.trait,
     required this.level,
     required this.bond,
     required this.evolutionStage,
@@ -245,6 +254,11 @@ class PlatformPet {
       petId: _readString(json, 'petId'),
       name: _readString(json, 'name'),
       species: _readString(json, 'species'),
+      trait: _readOptionalString(
+        json,
+        'trait',
+        'Спутник для исследования маршрутов.',
+      ),
       level: level,
       bond: bond,
       evolutionStage: evolutionStage,
@@ -256,6 +270,7 @@ class PlatformPet {
   final String petId;
   final String name;
   final String species;
+  final String trait;
   final int level;
   final int bond;
   final int evolutionStage;

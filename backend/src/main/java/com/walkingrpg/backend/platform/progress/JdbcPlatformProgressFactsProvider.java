@@ -1,8 +1,9 @@
 package com.walkingrpg.backend.platform.progress;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -10,14 +11,9 @@ import org.springframework.stereotype.Repository;
 public class JdbcPlatformProgressFactsProvider implements PlatformProgressFactsProvider {
 
     private final JdbcTemplate jdbcTemplate;
-    private final StarterProgressionContent progressionContent;
 
-    public JdbcPlatformProgressFactsProvider(
-            JdbcTemplate jdbcTemplate,
-            StarterProgressionContent progressionContent
-    ) {
+    public JdbcPlatformProgressFactsProvider(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.progressionContent = progressionContent;
     }
 
     @Override
@@ -32,16 +28,26 @@ public class JdbcPlatformProgressFactsProvider implements PlatformProgressFactsP
                 FROM processed_event_resolution
                 WHERE user_id = ?
                 """, Long.class, userId);
-        Integer sparkBond = jdbcTemplate.queryForObject("""
-                SELECT COALESCE(max(bond), ?)
+        Boolean hasSuccessfulActivitySync = jdbcTemplate.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM app_user
+                    WHERE user_id = ?
+                      AND has_successful_activity_sync
+                )
+                """, Boolean.class, userId);
+        Map<String, Integer> petBonds = new LinkedHashMap<>();
+        jdbcTemplate.query("""
+                SELECT pet_id, bond
                 FROM pet_progress
                 WHERE user_id = ?
-                  AND pet_id = ?
-                """, Integer.class,
-                progressionContent.pet().initialBond(),
-                userId,
-                progressionContent.pet().petId()
-        );
+                ORDER BY pet_id
+                """, resultSet -> {
+            petBonds.put(
+                    resultSet.getString("pet_id"),
+                    resultSet.getInt("bond")
+            );
+        }, userId);
         List<String> squads = jdbcTemplate.query("""
                 SELECT squad_id::text
                 FROM roadmap_squad_member
@@ -51,8 +57,9 @@ public class JdbcPlatformProgressFactsProvider implements PlatformProgressFactsP
         return new PlatformProgressFacts(
                 steps == null ? 0 : steps,
                 resolvedEvents == null ? 0 : resolvedEvents,
-                sparkBond == null ? progressionContent.pet().initialBond() : sparkBond,
-                squads.stream().findFirst().orElse(null)
+                petBonds,
+                squads.stream().findFirst().orElse(null),
+                Boolean.TRUE.equals(hasSuccessfulActivitySync)
         );
     }
 }

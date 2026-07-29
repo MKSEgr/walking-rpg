@@ -22,4 +22,6 @@ public interface ActivitySyncRepository {
     Optional<ProcessedActivitySync> findProcessed(IdempotencyScope scope);
 
     void saveProcessed(IdempotencyScope scope, ProcessedActivitySync processedSync);
+
+    void markSuccessfulSync(String userId);
 }

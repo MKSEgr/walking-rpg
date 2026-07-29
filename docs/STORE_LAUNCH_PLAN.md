@@ -217,7 +217,8 @@ Account data controls — `CODE_COMPLETE`:
 Минимальные критерии выхода из beta:
 
 - нет release-blocking crash;
-- успешны onboarding и первый activity sync;
+- успешно пройден непрерывный первый путь: permission, activity sync, первая
+  ENERGY, выбор питомца, первый узел и событие;
 - export/delete проходят end-to-end;
 - подтверждена корректность шагов на device matrix;
 - понятны support/privacy/deletion flows;

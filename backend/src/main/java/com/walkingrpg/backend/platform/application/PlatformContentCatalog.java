@@ -27,6 +27,8 @@ public class PlatformContentCatalog {
             String name,
             String evolvedName,
             String species,
+            String trait,
+            int initialBond,
             int evolutionBond
     ) {
     }
@@ -74,12 +76,38 @@ public class PlatformContentCatalog {
             "welcome",
             "health-permission",
             "first-sync",
-            "first-expedition"
+            "pet-selection",
+            "first-expedition",
+            "first-event"
     );
     private final List<PetDefinition> pets = List.of(
-            new PetDefinition("spark-v1", "Искра", "Искра-проводник", "люмин", 50),
-            new PetDefinition("moss-v1", "Мох", "Мох-хранитель", "терра", 45),
-            new PetDefinition("rune-v1", "Руна", "Руна-навигация", "эхо", 55)
+            new PetDefinition(
+                    "spark-v1",
+                    "Искра",
+                    "Искра-проводник",
+                    "люмин",
+                    "Чуткий разведчик",
+                    10,
+                    50
+            ),
+            new PetDefinition(
+                    "moss-v1",
+                    "Мох",
+                    "Мох-хранитель",
+                    "терра",
+                    "Спокойный хранитель",
+                    10,
+                    45
+            ),
+            new PetDefinition(
+                    "rune-v1",
+                    "Руна",
+                    "Руна-навигация",
+                    "эхо",
+                    "Смелый навигатор",
+                    10,
+                    55
+            )
     );
     private final List<SkillDefinition> skills = List.of(
             new SkillDefinition("steady-step", "Ровный шаг",

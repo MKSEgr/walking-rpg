@@ -14,9 +14,22 @@ void main() {
     expect(snapshot.activePet.canEvolve, isTrue);
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.weeklyRouteProgressValue, 0.4);
-    expect(snapshot.onboardingProgressValue, 0.25);
+    expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
     expect(snapshot.claimableSeasonLevel, 2);
     expect(snapshot.remoteConfig.sandboxPaymentsEnabled, isTrue);
+    expect(snapshot.userState.hasSuccessfulActivitySync, isTrue);
+  });
+
+  test('falls back to lifetime steps for an older platform response', () {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState = Map<String, dynamic>.from(
+      json['userState']! as Map<String, dynamic>,
+    )..remove('hasSuccessfulActivitySync');
+    json['userState'] = userState;
+
+    final PlatformSnapshot snapshot = PlatformSnapshot.fromJson(json);
+
+    expect(snapshot.userState.hasSuccessfulActivitySync, isTrue);
   });
 
   test('caps claimable season level by content definition', () {

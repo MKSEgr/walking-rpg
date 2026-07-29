@@ -9,45 +9,21 @@ import 'package:walking_rpg_mobile/features/platform/presentation/platform_scree
 import 'support/platform_fixture.dart';
 
 void main() {
-  testWidgets('renders platform snapshot and completes onboarding command', (
+  testWidgets('renders platform snapshot and resumes guided first journey', (
     WidgetTester tester,
   ) async {
     final PlatformSnapshot initial = platformSnapshot();
-    final PlatformSnapshot updated = platformSnapshot(
-      stateVersion: 4,
-      completedOnboardingSteps: const <String>['welcome', 'health-permission'],
-    );
-    String? sentType;
-    Map<String, Object?>? sentPayload;
-    String? sentKey;
-    int serverStateChanges = 0;
+    int resumes = 0;
 
     await tester.pumpWidget(
       MaterialApp(
         home: PlatformScreen(
           loader: () async => initial,
           homeLoader: () async => HomeSnapshot.demo,
-          idempotencyKeyFactory: (String type) => 'fixed-$type',
           recordExperimentExposures: false,
-          onServerStateChanged: () {
-            serverStateChanges += 1;
+          onResumeFirstJourney: () {
+            resumes += 1;
           },
-          commandExecutor:
-              ({
-                required String commandType,
-                required Map<String, Object?> payload,
-                required String idempotencyKey,
-              }) async {
-                sentType = commandType;
-                sentPayload = payload;
-                sentKey = idempotencyKey;
-                return platformCommandResult(
-                  commandType: commandType,
-                  idempotencyKey: idempotencyKey,
-                  snapshot: updated,
-                  message: 'Шаг onboarding завершён',
-                );
-              },
         ),
       ),
     );
@@ -55,24 +31,15 @@ void main() {
 
     expect(find.text('Путевой журнал'), findsOneWidget);
     expect(find.text('Сезон первого сигнала'), findsWidgets);
-    expect(find.text('1/4'), findsOneWidget);
+    expect(find.text('1/6'), findsOneWidget);
 
-    final Finder complete = find.byKey(
-      const Key('platform-complete-onboarding-health-permission'),
+    final Finder resume = find.byKey(
+      const Key('platform-resume-first-journey'),
     );
-    await tester.tap(complete);
+    await tester.tap(resume);
     await tester.pumpAndSettle();
 
-    expect(sentType, 'COMPLETE_ONBOARDING_STEP');
-    expect(sentPayload, <String, Object?>{'stepId': 'health-permission'});
-    expect(sentKey, 'fixed-COMPLETE_ONBOARDING_STEP');
-    expect(serverStateChanges, 1);
-    expect(find.text('2/4'), findsOneWidget);
-    expect(find.text('Шаг onboarding завершён'), findsOneWidget);
-    expect(
-      find.byKey(const Key('platform-complete-onboarding-first-sync')),
-      findsOneWidget,
-    );
+    expect(resumes, 1);
     await tester.scrollUntilVisible(
       find.text('Искра · уровень 1'),
       300,
@@ -153,10 +120,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final Finder complete = find.byKey(
-      const Key('platform-complete-onboarding-health-permission'),
+    final Finder selectPet = find.byKey(
+      const Key('platform-select-pet-moss-v1'),
     );
-    await tester.tap(complete);
+    await tester.scrollUntilVisible(
+      selectPet,
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.tap(selectPet);
     await tester.pumpAndSettle();
 
     expect(
@@ -201,11 +173,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('cached-snapshot-banner')), findsOneWidget);
-    final Finder complete = find.byKey(
-      const Key('platform-complete-onboarding-health-permission'),
+    final Finder resume = find.byKey(
+      const Key('platform-resume-first-journey'),
     );
-    final FilledButton completeButton = tester.widget<FilledButton>(complete);
-    expect(completeButton.onPressed, isNull);
+    final FilledButton resumeButton = tester.widget<FilledButton>(resume);
+    expect(resumeButton.onPressed, isNull);
 
     final Finder weekly = find.byKey(const Key('platform-advance-weekly'));
     await tester.scrollUntilVisible(
