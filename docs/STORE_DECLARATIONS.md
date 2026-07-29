@@ -24,7 +24,12 @@ Walking RPG превращает агрегированное количеств
 - experiment exposure;
 - tester cohort membership.
 
-Цели: authentication, account management, core functionality, fraud prevention, diagnostics и product analytics. Account export/delete предусмотрены backend-контрактом.
+Цели: authentication, account management, core functionality, fraud prevention, diagnostics и product analytics. В приложении доступны JSON export/share и инициирование полного удаления игровых данных с повторной OIDC-проверкой, двухэтапным подтверждением и квитанцией.
+
+Удаление внешней учётной записи у выбранного production identity provider
+остаётся отдельным launch-gate: до submission необходимо либо подключить его к
+этому flow, либо документировать, что OIDC identity не создаётся и не
+контролируется Walking RPG.
 
 ## Payments и push
 

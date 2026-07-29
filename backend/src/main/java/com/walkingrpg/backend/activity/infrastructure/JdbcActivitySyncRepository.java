@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.activity.domain.ActivityDayKey;
 import com.walkingrpg.backend.activity.domain.ActivityDayState;
 import com.walkingrpg.backend.activity.domain.ActivityRiskStatus;
@@ -26,9 +27,14 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
             """;
 
     private final JdbcTemplate jdbcTemplate;
+    private final AccountDeletionRegistry accountDeletionRegistry;
 
-    public JdbcActivitySyncRepository(JdbcTemplate jdbcTemplate) {
+    public JdbcActivitySyncRepository(
+            JdbcTemplate jdbcTemplate,
+            AccountDeletionRegistry accountDeletionRegistry
+    ) {
         this.jdbcTemplate = jdbcTemplate;
+        this.accountDeletionRegistry = accountDeletionRegistry;
     }
 
     @Override
@@ -45,6 +51,7 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
 
     @Override
     public void registerDevice(String userId, String deviceId, Instant seenAt) {
+        accountDeletionRegistry.requireActive(userId);
         Timestamp timestamp = Timestamp.from(seenAt);
         jdbcTemplate.update("""
                 INSERT INTO app_user (user_id, created_at, last_seen_at)

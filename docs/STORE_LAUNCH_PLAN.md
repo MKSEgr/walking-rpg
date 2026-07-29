@@ -1,6 +1,6 @@
 # Walking RPG — план до первой публикации в App Store и Google Play
 
-Статус на 28 июля 2026 года. Документ отделяет:
+Статус на 29 июля 2026 года. Документ отделяет:
 
 - техническую готовность к сборке;
 - готовность к загрузке в TestFlight / Play Console;
@@ -19,19 +19,25 @@
 - mobile UI «Экспедиция» и «Путевой журнал»;
 - onboarding, питомцы, навыки, задания, сезон, недельный маршрут, отряды и косметика;
 - remote config, analytics, crash ingestion, risk audit и tester cohorts;
-- account export/delete backend API;
+- mobile OIDC Authorization Code + PKCE, secure refresh/logout и
+  owner-scoped local cleanup;
+- экран «Аккаунт и данные», JSON export/share и idempotent удаление с durable
+  receipt;
+- backend account deletion registry, блокирующий stale Bearer token;
 - backend OIDC/JWT resource-server boundary с `sub`, `ROLE_USER`/`ROLE_ADMIN` и fail-closed production profile;
 - backend JAR, Android release AAB candidate и iOS release no-codesign candidate;
 - deterministic build metadata, privacy/store declaration drafts, release checklist и device validation protocol.
 
-Текущий программный срез:
+Последний завершённый программный срез:
 
-- read-only offline cache подтверждённых `home` / `platform` snapshots;
-- явный cached-state UI без возможности выполнять расходные или state-changing команды.
+- повторная OIDC-проверка той же identity перед удалением;
+- двухэтапное подтверждение и безопасный retry удаления;
+- полная локальная очистка после server receipt и обработка
+  `410 ACCOUNT_DELETED`.
 
 ## 2. Gate A — завершить store-candidate software
 
-### A1. Offline read cache
+### A1. Offline read cache — `CODE_COMPLETE`
 
 - валидированный fallback только для read-запросов;
 - явный read-only режим и время сохранения snapshot;
@@ -53,30 +59,40 @@ Backend boundary — `CODE_COMPLETE`:
 - `X-User-Id`, `X-Device-Id`, `X-Mock-*` изолированы в явном local/test filter-е и игнорируются в JWT mode;
 - regression tests на 401/403, forged dev headers, role separation и security-context identity.
 
-До store build остаётся mobile/session часть:
+Mobile/session boundary — `CODE_COMPLETE`:
+
+- Authorization Code + PKCE;
+- короткоживущий access token и сериализованный refresh/session flow;
+- refresh/session material только в Keychain / Android Keystore;
+- login/logout, session expiry, account switch и lost-network сценарии;
+- owner-scoped очистка read cache и command outbox;
+- повтор pending-команд после refresh без изменения idempotency key;
+- production build запрещает development identity mode.
+
+До store build остаются внешние gates:
 
 - выбрать и настроить production OIDC client и владение аккаунтом;
-- Authorization Code + PKCE;
-- короткоживущий access token и безопасный refresh/session flow;
-- хранить refresh/session material только в Keychain / Android Keystore;
-- добавить login/logout, session expiry, revoked-account и lost-network сценарии;
-- очистить read cache и command outbox при подтверждённом logout/account switch;
-- проверить повтор pending-команд после token refresh без изменения idempotency key;
-- исключить compile-time `DEMO_USER_ID` / `DEMO_DEVICE_ID` из production mobile build policy.
+- проверить login/refresh/logout/reinstall/upgrade на физических устройствах;
+- зафиксировать provider-side revocation и account-deletion policy.
 
 ### A3. Account settings и удаление данных
 
-Backend API уже существует, но после появления production identity нужно добавить мобильный пользовательский путь:
+Account data controls — `CODE_COMPLETE`:
 
 - экран настроек аккаунта;
-- понятную кнопку экспорта данных;
-- понятную кнопку удаления аккаунта;
-- повторное подтверждение необратимого действия;
-- результат операции и сведения о сроке удаления;
-- очистку local command store и read cache только после подтверждённого удаления backend-ом;
-- обработку partial failure и повтор запроса;
-- публичную web-страницу / форму запроса удаления для Google Play;
-- support contact для пользователя, потерявшего доступ к приложению.
+- JSON export через системный share sheet без постоянной staging-копии;
+- два подтверждения удаления и fresh OIDC login той же identity;
+- idempotent deletion request и durable receipt;
+- очистка local command store, read cache и secure session только после
+  подтверждённого удаления backend-ом;
+- обработка partial failure, повтор запроса и stale-token `410`.
+
+До submission остаётся:
+
+- подготовить публичную web-страницу / форму запроса удаления для Google Play;
+- указать support contact для пользователя, потерявшего доступ к приложению;
+- production IdP decision: удаление внешней учётной записи или документированное
+  отсутствие аккаунта, принадлежащего Walking RPG.
 
 ### A4. Production configuration и backend operations
 
@@ -250,6 +266,10 @@ Backend API уже существует, но после появления prod
 7. `store metadata/declarations pack`;
 8. `signed TestFlight / Play internal and closed-beta candidates`;
 9. `submission fixes`.
+
+Пункты 1–3 имеют автономную реализацию в коде. Для пункта 3 до загрузки в
+магазины остаются end-to-end проверка с production IdP и решение о судьбе
+внешней identity-provider учётной записи.
 
 Параллельно с PR 2–5 владелец продукта должен начать создание и верификацию developer accounts, подготовку публичных URL и набор beta-тестировщиков: эти процессы имеют внешнее время ожидания и не ускоряются кодом.
 

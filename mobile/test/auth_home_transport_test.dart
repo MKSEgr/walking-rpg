@@ -96,6 +96,39 @@ void main() {
     expect(inner.requests, hasLength(2));
   });
 
+  test(
+    'account tombstone clears the local session without token refresh',
+    () async {
+      final _RecordingTransport inner = _RecordingTransport(
+        const <HomeTransportResponse>[
+          HomeTransportResponse(
+            statusCode: 410,
+            body: '{"code":"ACCOUNT_DELETED"}',
+          ),
+        ],
+      );
+      final _FakeTokenProvider provider = _FakeTokenProvider();
+      final BearerHomeTransport transport = BearerHomeTransport(
+        apiBaseUri: Uri.parse('https://api.example'),
+        inner: inner,
+        tokenProvider: provider,
+      );
+
+      await expectLater(
+        transport.get(
+          uri: Uri.parse('https://api.example/api/v1/home'),
+          headers: const <String, String>{},
+        ),
+        throwsA(isA<AuthAccountDeletedException>()),
+      );
+
+      expect(provider.deletedAccountReason, isNotNull);
+      expect(provider.deletedAccessToken, 'access-old');
+      expect(provider.refreshCalls, 0);
+      expect(inner.requests, hasLength(1));
+    },
+  );
+
   test('IO transport never follows an authenticated redirect', () async {
     final HttpServer redirectTarget = await HttpServer.bind(
       InternetAddress.loopbackIPv4,
@@ -156,6 +189,8 @@ final class _FakeTokenProvider implements AuthAccessTokenProvider {
   int refreshCalls = 0;
   String? rejectionReason;
   String? rejectedAccessToken;
+  String? deletedAccountReason;
+  String? deletedAccessToken;
 
   @override
   Future<String> accessToken() async {
@@ -167,6 +202,12 @@ final class _FakeTokenProvider implements AuthAccessTokenProvider {
   void rejectSession(String reason, {String? rejectedAccessToken}) {
     rejectionReason = reason;
     this.rejectedAccessToken = rejectedAccessToken;
+  }
+
+  @override
+  void rejectDeletedAccount(String reason, {String? rejectedAccessToken}) {
+    deletedAccountReason = reason;
+    deletedAccessToken = rejectedAccessToken;
   }
 
   @override

@@ -122,7 +122,7 @@ if grep -RIl --exclude-dir=.git --exclude='*.md' -E -- '-----BEGIN (RSA |EC |OPE
 fi
 
 printf '%s\n' 'Checking oversized source files...'
-if find . -type f -size +5M -not -path './.git/*' -not -path './backend/target/*' -not -path './mobile/build/*' -print | grep -q .; then
+if find . -type f -size +5M -not -path './.git/*' -not -path './backend/target/*' -not -path './mobile/.dart_tool/*' -not -path './mobile/build/*' -print | grep -q .; then
   fail 'source file exceeds 5 MiB'
 fi
 

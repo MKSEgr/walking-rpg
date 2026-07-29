@@ -99,6 +99,8 @@ class RoadmapPlatformMigrationTest {
                     "SELECT to_regclass('public.roadmap_user_state')::text"));
             assertNotNull(scalarString(statement,
                     "SELECT to_regclass('public.activity_risk_assessment')::text"));
+            assertNotNull(scalarString(statement,
+                    "SELECT to_regclass('public.account_deletion_receipt')::text"));
         }
     }
 

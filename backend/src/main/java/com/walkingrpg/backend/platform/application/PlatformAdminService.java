@@ -12,9 +12,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.activity.retention.ActivityRetentionService;
 import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
@@ -38,6 +40,7 @@ public class PlatformAdminService {
     private final ObjectMapper objectMapper;
     private final PushDeliveryProvider pushDeliveryProvider;
     private final ActivityRetentionService retentionService;
+    private final AccountDeletionRegistry accountDeletionRegistry;
     private final Clock clock;
 
     public PlatformAdminService(
@@ -45,12 +48,14 @@ public class PlatformAdminService {
             ObjectMapper objectMapper,
             PushDeliveryProvider pushDeliveryProvider,
             ActivityRetentionService retentionService,
+            AccountDeletionRegistry accountDeletionRegistry,
             Clock clock
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
         this.pushDeliveryProvider = pushDeliveryProvider;
         this.retentionService = retentionService;
+        this.accountDeletionRegistry = accountDeletionRegistry;
         this.clock = clock;
     }
 
@@ -370,14 +375,21 @@ public class PlatformAdminService {
                         + "FROM activity_sync_state WHERE user_id = ? ORDER BY local_date",
                 normalized
         ));
+        export.put("activityOperations", jdbcTemplate.queryForList(
+                "SELECT device_id, idempotency_key, accepted_total, accepted_delta, "
+                        + "energy_granted, energy_balance_after, economy_version, risk_status, "
+                        + "state_version, server_time, created_at "
+                        + "FROM processed_activity_sync WHERE user_id = ? ORDER BY created_at",
+                normalized
+        ));
         export.put("riskAssessments", jdbcTemplate.queryForList(
-                "SELECT local_date, authoritative_total, accepted_delta, risk_score, decision, "
-                        + "signals::text AS signals, created_at "
+                "SELECT device_id, local_date, authoritative_total, accepted_delta, "
+                        + "risk_score, decision, signals::text AS signals, created_at "
                         + "FROM activity_risk_assessment WHERE user_id = ? ORDER BY created_at",
                 normalized
         ));
         export.put("wallet", jdbcTemplate.queryForList(
-                "SELECT currency_code, balance, version, updated_at "
+                "SELECT currency_code, balance, version, created_at, updated_at "
                         + "FROM economy_wallet WHERE user_id = ?",
                 normalized
         ));
@@ -389,12 +401,47 @@ public class PlatformAdminService {
         ));
         export.put("expedition", jdbcTemplate.queryForList(
                 "SELECT expedition_id, current_node_id, progress_energy, required_energy, "
-                        + "status, unlocked_event_id, version, updated_at "
+                        + "status, unlocked_event_id, version, created_at, updated_at "
                         + "FROM expedition_progress WHERE user_id = ?",
                 normalized
         ));
+        export.put("expeditionOperations", jdbcTemplate.queryForList(
+                "SELECT expedition_id, idempotency_key, content_version, expedition_name, "
+                        + "energy_spent, energy_balance_after, economy_version, progress_after, "
+                        + "required_energy, expedition_version, expedition_status, "
+                        + "current_node_id, current_node_name, event_id, event_title, "
+                        + "event_summary, server_time, created_at "
+                        + "FROM processed_expedition_advance "
+                        + "WHERE user_id = ? ORDER BY created_at",
+                normalized
+        ));
+        export.put("pilotProgress", jdbcTemplate.queryForList(
+                "SELECT pilot_id, level, current_experience, next_level_experience, "
+                        + "version, created_at, updated_at "
+                        + "FROM pilot_progress WHERE user_id = ? ORDER BY pilot_id",
+                normalized
+        ));
+        export.put("petProgress", jdbcTemplate.queryForList(
+                "SELECT pet_id, level, bond, version, created_at, updated_at "
+                        + "FROM pet_progress WHERE user_id = ? ORDER BY pet_id",
+                normalized
+        ));
+        export.put("eventResolutions", jdbcTemplate.queryForList(
+                "SELECT expedition_id, event_id, idempotency_key, content_version, "
+                        + "expedition_status, expedition_version, event_title, "
+                        + "resolution_status, choice_id, choice_title, outcome_title, "
+                        + "outcome_summary, pilot_id, pilot_name, pilot_level_after, "
+                        + "pilot_experience_gained, pilot_experience_after, "
+                        + "pilot_next_level_experience, pilot_version, pet_id, pet_name, "
+                        + "pet_level_after, pet_bond_gained, pet_bond_after, pet_version, "
+                        + "material_item_id, material_item_name, material_item_description, "
+                        + "material_quantity_gained, material_quantity_after, material_version, "
+                        + "server_time, created_at FROM processed_event_resolution "
+                        + "WHERE user_id = ? ORDER BY created_at",
+                normalized
+        ));
         export.put("inventory", jdbcTemplate.queryForList(
-                "SELECT item_id, quantity, version, updated_at "
+                "SELECT item_id, quantity, version, created_at, updated_at "
                         + "FROM inventory_stack WHERE user_id = ? ORDER BY item_id",
                 normalized
         ));
@@ -410,13 +457,29 @@ public class PlatformAdminService {
                 normalized
         ));
         export.put("platformCommands", jdbcTemplate.queryForList(
-                "SELECT command_type, idempotency_key, created_at "
+                "SELECT command_type, idempotency_key, response_json::text AS response_json, "
+                        + "created_at "
                         + "FROM processed_roadmap_command WHERE user_id = ? ORDER BY created_at",
                 normalized
         ));
+        export.put("squadMembership", jdbcTemplate.queryForList(
+                "SELECT squad.squad_id, squad.squad_name, "
+                        + "(squad.owner_user_id = ?) AS owner, member.joined_at "
+                        + "FROM roadmap_squad_member member "
+                        + "JOIN roadmap_squad squad ON squad.squad_id = member.squad_id "
+                        + "WHERE member.user_id = ?",
+                normalized,
+                normalized
+        ));
         export.put("telemetry", jdbcTemplate.queryForList(
-                "SELECT event_name, occurred_at, attributes::text AS attributes "
+                "SELECT event_name, occurred_at, attributes::text AS attributes, received_at "
                         + "FROM platform_event WHERE user_id = ? ORDER BY occurred_at",
+                normalized
+        ));
+        export.put("crashReports", jdbcTemplate.queryForList(
+                "SELECT platform, app_version, error_type, message, stack_trace, "
+                        + "context::text AS context, occurred_at, received_at "
+                        + "FROM platform_crash_report WHERE user_id = ? ORDER BY occurred_at",
                 normalized
         ));
         export.put("pushRegistrations", jdbcTemplate.queryForList(
@@ -438,8 +501,72 @@ public class PlatformAdminService {
     }
 
     @Transactional
-    public boolean deleteAccount(String userId) {
+    public AccountDeletionReceipt requestAccountDeletion(
+            String userId,
+            String idempotencyKey,
+            String confirmation
+    ) {
         String normalized = requireText(userId, "userId");
+        String normalizedKey = requireText(idempotencyKey, "idempotencyKey");
+        if (normalizedKey.length() > 128) {
+            throw new PlatformValidationException(
+                    "idempotencyKey не может быть длиннее 128 символов",
+                    "idempotencyKey"
+            );
+        }
+        if (!"DELETE".equals(confirmation)) {
+            throw new PlatformValidationException(
+                    "Для удаления аккаунта требуется точное подтверждение DELETE",
+                    "confirmation"
+            );
+        }
+
+        String subjectHash = accountDeletionRegistry.lockSubject(normalized);
+        AccountDeletionReceipt existing = findDeletionReceipt(subjectHash, true);
+        if (existing != null) {
+            return existing;
+        }
+
+        Instant requestedAt = now();
+        UUID receiptId = UUID.randomUUID();
+        deleteAccountData(normalized);
+        Instant completedAt = now();
+        int inserted = jdbcTemplate.update("""
+                INSERT INTO account_deletion_receipt (
+                    subject_hash,
+                    receipt_id,
+                    request_key_hash,
+                    requested_at,
+                    completed_at
+                ) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (subject_hash) DO NOTHING
+                """,
+                subjectHash,
+                receiptId,
+                sha256(normalizedKey),
+                Timestamp.from(requestedAt),
+                Timestamp.from(completedAt)
+        );
+        if (inserted == 0) {
+            AccountDeletionReceipt replay = findDeletionReceipt(subjectHash, true);
+            if (replay == null) {
+                throw new IllegalStateException(
+                        "Квитанция удаления не найдена после idempotent replay"
+                );
+            }
+            return replay;
+        }
+
+        return new AccountDeletionReceipt(
+                receiptId,
+                "COMPLETED",
+                requestedAt,
+                completedAt,
+                false
+        );
+    }
+
+    private void deleteAccountData(String normalized) {
         List<String> ownedSquads = jdbcTemplate.query("""
                 SELECT squad_id::text
                 FROM roadmap_squad
@@ -467,7 +594,25 @@ public class PlatformAdminService {
         jdbcTemplate.update("DELETE FROM roadmap_squad_member WHERE user_id = ?", normalized);
         jdbcTemplate.update("DELETE FROM platform_event WHERE user_id = ?", normalized);
         jdbcTemplate.update("DELETE FROM platform_crash_report WHERE user_id = ?", normalized);
-        return jdbcTemplate.update("DELETE FROM app_user WHERE user_id = ?", normalized) == 1;
+        jdbcTemplate.update("DELETE FROM app_user WHERE user_id = ?", normalized);
+    }
+
+    private AccountDeletionReceipt findDeletionReceipt(
+            String subjectHash,
+            boolean replayed
+    ) {
+        List<AccountDeletionReceipt> receipts = jdbcTemplate.query("""
+                SELECT receipt_id, requested_at, completed_at
+                FROM account_deletion_receipt
+                WHERE subject_hash = ?
+                """, (resultSet, rowNumber) -> new AccountDeletionReceipt(
+                resultSet.getObject("receipt_id", UUID.class),
+                "COMPLETED",
+                resultSet.getTimestamp("requested_at").toInstant(),
+                resultSet.getTimestamp("completed_at").toInstant(),
+                replayed
+        ), subjectHash);
+        return receipts.isEmpty() ? null : receipts.getFirst();
     }
 
     public int cleanupActivityRetention() {
@@ -562,6 +707,7 @@ public class PlatformAdminService {
     }
 
     private void ensureUser(String userId, Instant observedAt) {
+        accountDeletionRegistry.requireActive(userId);
         Timestamp timestamp = Timestamp.from(observedAt);
         jdbcTemplate.update("""
                 INSERT INTO app_user (user_id, created_at, last_seen_at)

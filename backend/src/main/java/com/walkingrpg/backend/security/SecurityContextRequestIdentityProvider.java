@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,20 +22,49 @@ import org.springframework.stereotype.Component;
 public class SecurityContextRequestIdentityProvider implements RequestIdentityProvider {
 
     private final WalkingRpgSecurityProperties properties;
+    private final AccountDeletionRegistry accountDeletionRegistry;
 
-    public SecurityContextRequestIdentityProvider(WalkingRpgSecurityProperties properties) {
+    @Autowired
+    public SecurityContextRequestIdentityProvider(
+            WalkingRpgSecurityProperties properties,
+            AccountDeletionRegistry accountDeletionRegistry
+    ) {
         this.properties = properties;
+        this.accountDeletionRegistry = accountDeletionRegistry;
+    }
+
+    /**
+     * Test-only convenience constructor for isolated security mapping tests.
+     */
+    SecurityContextRequestIdentityProvider(WalkingRpgSecurityProperties properties) {
+        this.properties = properties;
+        this.accountDeletionRegistry = null;
     }
 
     @Override
     public RequestIdentity requireIdentity() {
-        return currentIdentity().orElseThrow(() ->
+        RequestIdentity identity = resolveIdentity().orElseThrow(() ->
+                new AuthenticationCredentialsNotFoundException("Требуется аутентификация")
+        );
+        requireActive(identity);
+        return identity;
+    }
+
+    @Override
+    public RequestIdentity requireIdentityForAccountDeletion() {
+        return resolveIdentity().orElseThrow(() ->
                 new AuthenticationCredentialsNotFoundException("Требуется аутентификация")
         );
     }
 
     @Override
     public Optional<RequestIdentity> currentIdentity() {
+        Optional<RequestIdentity> identity = resolveIdentity();
+        identity.ifPresent(this::requireActive);
+        return identity;
+    }
+
+    private Optional<RequestIdentity> resolveIdentity() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()
@@ -62,6 +93,12 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
         }
 
         return Optional.empty();
+    }
+
+    private void requireActive(RequestIdentity identity) {
+        if (accountDeletionRegistry != null) {
+            accountDeletionRegistry.requireActive(identity.userId());
+        }
     }
 
     private RequestIdentity fromJwt(Jwt jwt, Set<String> authorities) {

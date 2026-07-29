@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.activity.application.ActivitySyncConflictException;
 import com.walkingrpg.backend.activity.application.ActivitySyncValidationException;
 import com.walkingrpg.backend.economy.domain.InsufficientEnergyException;
@@ -209,6 +210,18 @@ public class ApiExceptionHandler {
         return error(
                 HttpStatus.UNAUTHORIZED,
                 "AUTHENTICATION_ERROR",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(AccountDeletedException.class)
+    ResponseEntity<ApiErrorResponse> handleDeletedAccount(
+            AccountDeletedException exception
+    ) {
+        return error(
+                HttpStatus.GONE,
+                "ACCOUNT_DELETED",
                 exception.getMessage(),
                 Map.of()
         );

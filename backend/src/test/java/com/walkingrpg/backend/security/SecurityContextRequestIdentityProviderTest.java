@@ -3,6 +3,8 @@ package com.walkingrpg.backend.security;
 import java.time.Instant;
 import java.util.List;
 
+import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -17,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class SecurityContextRequestIdentityProviderTest {
 
@@ -149,6 +154,24 @@ class SecurityContextRequestIdentityProviderTest {
                 MissingDeviceIdentityException.class,
                 () -> provider.requireIdentity().requireDeviceId()
         );
+    }
+
+    @Test
+    void shouldRejectADeletedSubjectButAllowDeletionReceiptReplay() {
+        AccountDeletionRegistry registry = mock(AccountDeletionRegistry.class);
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(properties, registry);
+        authenticate(jwtBuilder().build());
+        doThrow(new AccountDeletedException())
+                .when(registry)
+                .requireActive("subject-123");
+
+        assertThrows(AccountDeletedException.class, guardedProvider::requireIdentity);
+        assertEquals(
+                "subject-123",
+                guardedProvider.requireIdentityForAccountDeletion().userId()
+        );
+        verify(registry).requireActive("subject-123");
     }
 
     private void authenticate(Jwt jwt) {

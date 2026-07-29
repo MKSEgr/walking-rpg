@@ -3,7 +3,10 @@ import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
 
 abstract interface class OidcAuthorizationClient {
-  Future<OidcTokenResponseData> authorize(OidcConfiguration configuration);
+  Future<OidcTokenResponseData> authorize(
+    OidcConfiguration configuration, {
+    bool forceLogin = false,
+  });
 
   Future<OidcTokenResponseData> refresh(
     OidcConfiguration configuration, {
@@ -25,8 +28,9 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
 
   @override
   Future<OidcTokenResponseData> authorize(
-    OidcConfiguration configuration,
-  ) async {
+    OidcConfiguration configuration, {
+    bool forceLogin = false,
+  }) async {
     final AuthorizationTokenResponse response = await _translate(
       () => _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
@@ -34,6 +38,7 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
           configuration.redirectUri.toString(),
           issuer: configuration.issuer.toString(),
           scopes: configuration.scopes,
+          promptValues: forceLogin ? const <String>['login'] : null,
           allowInsecureConnections: configuration.allowInsecureConnections,
         ),
       ),

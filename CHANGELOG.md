@@ -47,6 +47,12 @@
 - canonical request identity из JWT `sub`, actor/device claim mapping и `ROLE_USER`/`ROLE_ADMIN` authorization;
 - dev-header authentication, изолированная только в local/test profile;
 - security filter-chain, identity и controller regression tests.
+- mobile-экран «Аккаунт и данные» с JSON export/share;
+- двухэтапное подтверждение удаления и fresh OIDC login той же учётной записи;
+- idempotent `POST /api/v1/account/deletion-requests` с постоянной квитанцией;
+- Flyway V7 с минимизированным deletion receipt без raw OIDC subject;
+- `410 ACCOUNT_DELETED` guard против пересоздания данных старым Bearer-токеном;
+- удаление временной локальной копии JSON сразу после системного share flow;
 
 ### Changed
 
@@ -80,3 +86,4 @@
 - Added Keychain/Android secure token storage and serialized refresh handling.
 - Replaced client-supplied identity headers with same-origin Bearer transport.
 - Added account-scoped cache/outbox cleanup and a runtime shutdown barrier.
+- Added fresh-login confirmation for destructive account operations.
