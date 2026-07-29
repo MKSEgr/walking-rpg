@@ -13,8 +13,9 @@
 → идемпотентная синхронизация активности
 → ENERGY wallet + append-only ledger
 → home с личной дневной целью из предыдущих активных дней
-→ первый узел и событие
-→ второй узел и второе событие
+→ реальный выбор одного из трёх питомцев
+→ guided первый узел и событие
+→ 18 узлов первой главы
 → постоянные XP пилота, bond питомца и материалы
 → persistent inventory
 → завершённое состояние экспедиции
@@ -30,8 +31,9 @@
 - development-only источник шагов для воспроизводимых локальных проверок;
 - server-authoritative ENERGY economy;
 - production `GET /api/v1/home`;
-- стартовая экспедиция `starter-v2` с двумя узлами и двумя событиями;
-- постоянный progression пилота и питомца;
+- content-driven первая глава `chapter-1-v1` с 18 узлами и событиями;
+- guided «Первый путь» от разрешения шагов до первого решения;
+- три питомца с реальным active selection и независимым progression;
 - material inventory с append-only ledger и защитой от повторной выдачи;
 - foreground durable outbox для activity, expedition и event-команд;
 - GitHub Actions для backend, Flutter, Android APK и iOS Simulator build.
@@ -61,16 +63,23 @@ localDate + IANA timeZone + authoritativeTotal
 
 Очередь разделена на независимые `ACTIVITY` и `GAMEPLAY` lane. Внутри lane команды обрабатываются FIFO. Network error, `408`, `429`, `5xx` и неоднозначный response остаются pending; подтверждённые остальные `4xx` становятся terminal failed и не блокируют следующие команды. Подробности: [ADR 0012](docs/adr/0012-foreground-durable-mobile-command-outbox.md).
 
-## Starter content v2 и инвентарь
+## Первая глава и инвентарь
 
-После разрешения первого события экспедиция больше не завершается: backend переводит пользователя на узел `lumen-gate`, для которого требуется ещё 45 ENERGY. Второе событие `echo-vault-v1` выдаёт XP, bond и одну из материальных наград:
+`chapter-1-v1` содержит 18 последовательных узлов от `outer-beacon` до
+`dawn-relay`. После первого события backend переводит пользователя на
+`lumen-gate`, для которого требуется ещё 45 ENERGY. Второе событие
+`echo-vault-v1` выдаёт XP, bond активному питомцу и одну из материальных наград:
 
 ```text
 stabilize-core → 2 × Люминовый осколок
 follow-echo    → 1 × Нить эха
 ```
 
-Материалы сохраняются в `inventory_stack`, а каждое начисление — в append-only `inventory_ledger`. Повтор события с тем же idempotency key возвращает исходный snapshot и не выдаёт предмет повторно. Существующие пользователи, завершившие `starter-v1`, мигрируют на второй узел без потери XP/bond и без ретроактивной material reward. Подробности: [ADR 0014](docs/adr/0014-second-node-and-persistent-inventory.md).
+Материалы сохраняются в `inventory_stack`, а каждое начисление — в append-only
+`inventory_ledger`. Повтор события с тем же idempotency key возвращает исходный
+snapshot и не выдаёт предмет повторно. Существующие пользователи, завершившие
+`starter-v1`, мигрируют без потери XP/bond и без ретроактивной material reward.
+Подробности: [ADR 0014](docs/adr/0014-second-node-and-persistent-inventory.md).
 
 ## Структура
 
@@ -187,7 +196,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V5 + PostgreSQL Testcontainers tests
+Flyway V1–V7 + PostgreSQL Testcontainers tests
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build
@@ -206,12 +215,11 @@ iOS Simulator debug build
 Пока не реализованы:
 
 - проверка на физических iPhone/Android и связках телефон + часы;
-- background delivery;
-- background command delivery и offline read cache;
-- attestation;
-- полноценный anti-fraud по источникам;
-- store privacy forms и production privacy-policy flow;
-- третий узел и расширенная первая глава;
-- расход предметов, crafting, навыки и эволюция.
+- production IdP, APNs/FCM, store billing, signing и submission;
+- гарантированная background health/command delivery;
+- enforcement anti-fraud по источникам (текущий риск-контур работает в shadow
+  mode);
+- нелинейные события, расход предметов, crafting и уникальные предметы;
+- подтверждение темпа первого пути и первой недели на реальной alpha cohort.
 
 Дальнейший порядок работ: [docs/ROADMAP.md](docs/ROADMAP.md).

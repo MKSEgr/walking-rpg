@@ -29,6 +29,9 @@ import com.walkingrpg.backend.platform.payment.PaymentProvider;
 import com.walkingrpg.backend.platform.payment.PaymentReceipt;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
+import com.walkingrpg.backend.progression.application.ProgressionService;
+import com.walkingrpg.backend.progression.domain.PetProgressState;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +48,9 @@ public class PlatformService {
     private final PaymentProvider paymentProvider;
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final ProgressionService progressionService;
 
+    @Autowired
     public PlatformService(
             PlatformRepository repository,
             PlatformContentCatalog content,
@@ -53,7 +58,8 @@ public class PlatformService {
             EconomyService economyService,
             PaymentProvider paymentProvider,
             ObjectMapper objectMapper,
-            Clock clock
+            Clock clock,
+            ProgressionService progressionService
     ) {
         this.repository = repository;
         this.content = content;
@@ -62,6 +68,7 @@ public class PlatformService {
         this.paymentProvider = paymentProvider;
         this.objectMapper = objectMapper;
         this.clock = clock;
+        this.progressionService = progressionService;
     }
 
     public PlatformSnapshotResponse getSnapshot(String userId) {
@@ -169,9 +176,11 @@ public class PlatformService {
         return switch (commandType) {
             case "COMPLETE_ONBOARDING_STEP" -> completeOnboarding(state, payload);
             case "SELECT_PET" -> selectPet(state, payload);
-            case "EVOLVE_PET" -> evolvePet(state, payload);
+            case "EVOLVE_PET" -> evolvePet(userId, state, payload, occurredAt);
             case "UNLOCK_SKILL" -> unlockSkill(state, payload);
-            case "CLAIM_QUEST" -> claimQuest(state, payload, facts);
+            case "CLAIM_QUEST" -> claimQuest(
+                    userId, state, payload, facts, occurredAt
+            );
             case "ADVANCE_WEEKLY_ROUTE" -> advanceWeeklyRoute(
                     userId, state, payload, scope, occurredAt
             );
@@ -210,13 +219,39 @@ public class PlatformService {
     private Mutation selectPet(PlatformUserState state, Map<String, Object> payload) {
         String petId = payloadText(payload, "petId");
         content.requirePet(petId);
-        if (petId.equals(state.activePetId())) {
+        Set<String> onboarding = new LinkedHashSet<>(state.completedOnboardingSteps());
+        boolean onboardingChanged = onboarding.add("pet-selection");
+        if (petId.equals(state.activePetId()) && !onboardingChanged) {
             return new Mutation(state, "Питомец уже активен");
         }
-        return new Mutation(withActivePet(state, petId), "Активный питомец изменён");
+        PlatformUserState updated = changed(
+                state,
+                petId,
+                state.pets(),
+                onboarding,
+                state.unlockedSkills(),
+                state.claimedQuests(),
+                state.achievements(),
+                state.seasonXp(),
+                state.weeklyRouteProgress(),
+                state.squadId(),
+                state.ownedCosmetics(),
+                state.activeCosmeticId()
+        );
+        return new Mutation(
+                updated,
+                petId.equals(state.activePetId())
+                        ? "Питомец выбран"
+                        : "Активный питомец изменён"
+        );
     }
 
-    private Mutation evolvePet(PlatformUserState state, Map<String, Object> payload) {
+    private Mutation evolvePet(
+            String userId,
+            PlatformUserState state,
+            Map<String, Object> payload,
+            Instant occurredAt
+    ) {
         String petId = payloadText(payload, "petId");
         PlatformContentCatalog.PetDefinition definition = content.requirePet(petId);
         PlatformPetProgress progress = state.pets().get(petId);
@@ -236,7 +271,20 @@ public class PlatformService {
             );
         }
         Map<String, PlatformPetProgress> pets = new LinkedHashMap<>(state.pets());
-        pets.put(petId, progress.evolve());
+        PlatformPetProgress evolved = progress.evolve();
+        PetProgressState canonical = progressionService.synchronizeAndReward(
+                userId,
+                petId,
+                evolved.level(),
+                evolved.bond(),
+                0,
+                occurredAt
+        );
+        pets.put(petId, new PlatformPetProgress(
+                canonical.level(),
+                canonical.bond(),
+                evolved.evolutionStage()
+        ));
         return new Mutation(withPets(state, pets), "Питомец эволюционировал");
     }
 
@@ -260,9 +308,11 @@ public class PlatformService {
     }
 
     private Mutation claimQuest(
+            String userId,
             PlatformUserState state,
             Map<String, Object> payload,
-            PlatformProgressFacts facts
+            PlatformProgressFacts facts,
+            Instant occurredAt
     ) {
         String questId = payloadText(payload, "questId");
         PlatformContentCatalog.QuestDefinition quest = content.requireQuest(questId);
@@ -279,10 +329,20 @@ public class PlatformService {
         Set<String> quests = new LinkedHashSet<>(state.claimedQuests());
         quests.add(questId);
         Map<String, PlatformPetProgress> pets = new LinkedHashMap<>(state.pets());
-        pets.put(
+        PlatformPetProgress progress = pets.get(state.activePetId());
+        PetProgressState canonical = progressionService.synchronizeAndReward(
+                userId,
                 state.activePetId(),
-                pets.get(state.activePetId()).rewardBond(quest.petBondReward())
+                progress.level(),
+                progress.bond(),
+                quest.petBondReward(),
+                occurredAt
         );
+        pets.put(state.activePetId(), new PlatformPetProgress(
+                canonical.level(),
+                canonical.bond(),
+                progress.evolutionStage()
+        ));
         PlatformUserState rewarded = withQuestReward(
                 state,
                 pets,
@@ -532,9 +592,7 @@ public class PlatformService {
                 definition.petId(),
                 new PlatformPetProgress(
                         1,
-                        definition.petId().equals(DEFAULT_PET_ID)
-                                ? Math.max(10, facts.sparkBond())
-                                : 0,
+                        facts.petBond(definition.petId(), definition.initialBond()),
                         0
                 )
         ));
@@ -570,11 +628,14 @@ public class PlatformService {
         for (PlatformContentCatalog.PetDefinition definition : content.pets()) {
             pets.putIfAbsent(definition.petId(), new PlatformPetProgress(1, 0, 0));
         }
-        PlatformPetProgress spark = pets.get(DEFAULT_PET_ID);
-        if (spark != null && facts.sparkBond() > spark.bond()) {
-            pets.put(DEFAULT_PET_ID, new PlatformPetProgress(
-                    spark.level(), facts.sparkBond(), spark.evolutionStage()
-            ));
+        for (PlatformContentCatalog.PetDefinition definition : content.pets()) {
+            PlatformPetProgress progress = pets.get(definition.petId());
+            int factBond = facts.petBond(definition.petId(), definition.initialBond());
+            if (progress != null && factBond > progress.bond()) {
+                pets.put(definition.petId(), new PlatformPetProgress(
+                        progress.level(), factBond, progress.evolutionStage()
+                ));
+            }
         }
         Map<String, String> assignments = new LinkedHashMap<>(state.experimentAssignments());
         content.experiments().forEach(experiment -> assignments.putIfAbsent(
@@ -656,6 +717,7 @@ public class PlatformService {
                     ? definition.evolvedName()
                     : definition.name());
             view.put("species", definition.species());
+            view.put("trait", definition.trait());
             view.put("level", progress.level());
             view.put("bond", progress.bond());
             view.put("evolutionStage", progress.evolutionStage());
@@ -771,13 +833,6 @@ public class PlatformService {
             throw new PlatformValidationException("Поле обязательно", field);
         }
         return value.trim();
-    }
-
-    private PlatformUserState withActivePet(PlatformUserState state, String activePetId) {
-        return changed(state, activePetId, state.pets(), state.completedOnboardingSteps(),
-                state.unlockedSkills(), state.claimedQuests(), state.achievements(),
-                state.seasonXp(), state.weeklyRouteProgress(), state.squadId(),
-                state.ownedCosmetics(), state.activeCosmeticId());
     }
 
     private PlatformUserState withPets(

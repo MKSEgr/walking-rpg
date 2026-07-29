@@ -19,6 +19,9 @@ import com.walkingrpg.backend.platform.infrastructure.InMemoryPlatformRepository
 import com.walkingrpg.backend.platform.payment.SandboxPaymentProvider;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
+import com.walkingrpg.backend.progression.application.ProgressionService;
+import com.walkingrpg.backend.progression.application.StarterProgressionContent;
+import com.walkingrpg.backend.progression.infrastructure.InMemoryProgressionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +53,11 @@ class PlatformServiceTest {
                 economyService,
                 new SandboxPaymentProvider(),
                 JsonMapper.builder().findAndAddModules().build(),
-                Clock.fixed(NOW, ZoneOffset.UTC)
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                new ProgressionService(
+                        new InMemoryProgressionRepository(),
+                        new StarterProgressionContent()
+                )
         );
     }
 
@@ -86,6 +93,29 @@ class PlatformServiceTest {
         assertEquals(1, platformRepository.processedCommandCount());
         assertEquals(1, platformRepository.eventCount());
         assertTrue(platformRepository.findState("user-1").isPresent());
+    }
+
+    @Test
+    void shouldMakePetSelectionAnAtomicOnboardingMilestone() {
+        PlatformCommandResponse selected = service.execute("user-1", command(
+                "SELECT_PET",
+                "select-moss-onboarding",
+                Map.of("petId", "moss-v1")
+        ));
+
+        assertEquals("moss-v1", selected.snapshot().userState().get("activePetId"));
+        assertTrue(collection(
+                selected.snapshot().userState(),
+                "completedOnboardingSteps"
+        ).contains("pet-selection"));
+        assertEquals(1, selected.stateVersion());
+
+        PlatformCommandResponse replayed = service.execute("user-1", command(
+                "SELECT_PET",
+                "select-moss-onboarding",
+                Map.of("petId", "moss-v1")
+        ));
+        assertEquals(selected, replayed);
     }
 
     @Test

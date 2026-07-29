@@ -44,7 +44,8 @@ core/cache           — read-only validated server snapshots
 activity             — HealthKit/Health Connect и sync
 home                 — authoritative home snapshot
 expedition           — ENERGY spend
- event                — event resolution
+event                — event resolution
+onboarding            — guided first journey и recovery milestones
 platform             — typed snapshot, commands и «Путевой журнал»
 app                   — навигационный shell
 ```
@@ -79,6 +80,32 @@ GAMEPLAY lane
 Все команды сохраняются до первой сетевой попытки. Retry использует тот же payload и idempotency key. Подтверждённый terminal 4xx переводит конкретную команду в `FAILED`, а transport/408/429/5xx остаются `PENDING`.
 
 Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
+
+`FirstJourneyGate` собирает первые действия в один непрерывный маршрут:
+
+```text
+welcome
+→ health permission + authoritative sync
+→ ENERGY reward
+→ SELECT_PET
+→ expedition advance
+→ event resolution
+→ main shell
+```
+
+Milestones не являются самостоятельными пользовательскими действиями. Mobile
+записывает их после реальных команд, допускает «Продолжить позже» и после
+restart восстанавливает подтверждаемые этапы из home/platform facts. Haptic
+feedback не входит в критический путь и не может задержать authoritative
+reload.
+
+`roadmap_user_state.activePetId` — источник выбора питомца. Общий
+`ActivePetProvider` связывает platform state с home/progression: event reward
+блокирует и изменяет строку выбранного `pet_id`, а pilot XP остаётся общим.
+Quest bond и evolution level синхронизируются с той же `pet_progress` строкой в
+транзакции platform-команды. Для старого раздвоенного состояния read/reward
+использует максимальные подтверждённые level/bond. Отсутствующее platform state
+безопасно использует `spark-v1`.
 
 ## 6. Контент
 

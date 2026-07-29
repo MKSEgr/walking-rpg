@@ -656,7 +656,7 @@ public class PlatformAdminService {
                 SELECT count(*)
                 FROM roadmap_user_state
                 WHERE state_json -> 'completedOnboardingSteps' @>
-                      '["welcome","health-permission","first-sync","first-expedition"]'::jsonb
+                      '["welcome","health-permission","first-sync","pet-selection","first-expedition","first-event"]'::jsonb
                 """, Long.class);
         return Map.of(
                 "startedUsers", started == null ? 0 : started,

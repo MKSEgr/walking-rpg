@@ -17,6 +17,7 @@ import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart'
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
+import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 
 class AuthGate extends StatelessWidget {
@@ -164,13 +165,25 @@ class _AuthenticatedApplicationShellState
 
   @override
   Widget build(BuildContext context) {
-    return ActivitySyncShell(
-      synchronizer: _coordinator?.synchronize,
-      commandRuntime: _runtime,
-      homeLoader: () => _homeClient.fetchHome(DateTime.now()),
+    final FirstJourneyHomeLoader homeLoader = () =>
+        _homeClient.fetchHome(DateTime.now());
+    return FirstJourneyGate(
+      homeLoader: homeLoader,
       platformLoader: _platformClient.fetchSnapshot,
-      platformHomeLoader: () => _homeClient.fetchHome(DateTime.now()),
+      commandRuntime: _runtime,
+      synchronizer: _coordinator?.synchronize,
       onOpenAccount: _openAccount,
+      childBuilder: (VoidCallback onResumeFirstJourney) {
+        return ActivitySyncShell(
+          synchronizer: _coordinator?.synchronize,
+          commandRuntime: _runtime,
+          homeLoader: homeLoader,
+          platformLoader: _platformClient.fetchSnapshot,
+          platformHomeLoader: homeLoader,
+          onOpenAccount: _openAccount,
+          onResumeFirstJourney: onResumeFirstJourney,
+        );
+      },
     );
   }
 

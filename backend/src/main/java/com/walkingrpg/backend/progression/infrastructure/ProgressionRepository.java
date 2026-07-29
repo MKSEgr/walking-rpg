@@ -15,5 +15,11 @@ public interface ProgressionRepository {
             Instant observedAt
     );
 
-    void save(String userId, ProgressionState state, Instant updatedAt);
+    void save(
+            String userId,
+            String pilotId,
+            String petId,
+            ProgressionState state,
+            Instant updatedAt
+    );
 }

@@ -79,7 +79,13 @@ public class JdbcProgressionRepository implements ProgressionRepository {
     }
 
     @Override
-    public void save(String userId, ProgressionState state, Instant updatedAt) {
+    public void save(
+            String userId,
+            String pilotId,
+            String petId,
+            ProgressionState state,
+            Instant updatedAt
+    ) {
         Timestamp timestamp = Timestamp.from(updatedAt);
         int pilotRows = jdbcTemplate.update("""
                 UPDATE pilot_progress
@@ -89,13 +95,15 @@ public class JdbcProgressionRepository implements ProgressionRepository {
                     version = ?,
                     updated_at = ?
                 WHERE user_id = ?
+                  AND pilot_id = ?
                 """,
                 state.pilot().level(),
                 state.pilot().currentExperience(),
                 state.pilot().nextLevelExperience(),
                 state.pilot().version(),
                 timestamp,
-                userId
+                userId,
+                pilotId
         );
         int petRows = jdbcTemplate.update("""
                 UPDATE pet_progress
@@ -104,12 +112,14 @@ public class JdbcProgressionRepository implements ProgressionRepository {
                     version = ?,
                     updated_at = ?
                 WHERE user_id = ?
+                  AND pet_id = ?
                 """,
                 state.pet().level(),
                 state.pet().bond(),
                 state.pet().version(),
                 timestamp,
-                userId
+                userId,
+                petId
         );
         if (pilotRows != 1 || petRows != 1) {
             throw new IllegalStateException("Не удалось сохранить progression state");

@@ -37,7 +37,8 @@
 
 Как пользователь, я хочу тратить ENERGY и последовательно достигать узлов экспедиции.
 
-**Статус:** реализовано для двух узлов `starter-expedition-v1` с persistent progress и idempotent debit.
+**Статус:** реализовано для 18 последовательных узлов
+`starter-expedition-v1` с persistent progress и idempotent debit.
 
 ### US-005. Разрешить первое событие
 
@@ -52,7 +53,9 @@
 - home показывает resolved outcome;
 - поздняя ошибка откатывает progression и expedition completion.
 
-**Статус:** реализовано для `signal-source-v1` с choices `analyze-signal` и `trust-spark`; после resolution открывается второй узел.
+**Статус:** реализовано для `signal-source-v1` с choices `analyze-signal` и
+стабильным legacy id `trust-spark` (пользовательский текст «Довериться
+питомцу»); после resolution открывается второй узел.
 
 ### US-006. Завершить второй узел и получить material reward
 
@@ -84,6 +87,23 @@
 - `GET /home` остаётся read-only.
 
 **Статус:** policy `adaptive-median-v1`, API metadata и Flutter explanation реализованы; продуктовая проверка параметров остаётся частью device/beta validation.
+
+### US-008. Пройти честный первый путь
+
+Как новый пользователь, я хочу за один понятный маршрут подключить шаги,
+получить ENERGY, выбрать питомца, достигнуть узла и принять решение.
+
+Критерии:
+
+- этапы завершаются реальными игровыми действиями;
+- выбранный питомец появляется в home и получает event bond;
+- маршрут можно отложить и безопасно продолжить после restart;
+- подтверждаемые этапы восстанавливаются из server facts;
+- cached state не разрешает mutations;
+- анимация и вибрация не блокируют progression.
+
+**Статус:** код и автоматические tests готовы; темп первых 10 минут, permission
+UX и эмоциональная ценность требуют alpha validation на физических устройствах.
 
 ## P1 — расширение MVP
 

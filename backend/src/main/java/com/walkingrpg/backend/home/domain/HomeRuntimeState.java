@@ -20,6 +20,7 @@ public record HomeRuntimeState(
         int pilotLevel,
         int pilotCurrentExperience,
         int pilotNextLevelExperience,
+        String petId,
         boolean petProgressPresent,
         int petLevel,
         int petBond,
@@ -35,6 +36,8 @@ public record HomeRuntimeState(
         Long materialVersion,
         List<InventoryRuntimeItem> inventory
 ) {
+    private static final String DEFAULT_PET_ID = "spark-v1";
+
     public HomeRuntimeState {
         if (dailySteps < 0 || activityStateVersion < 0) {
             throw new IllegalArgumentException("Activity state не может быть отрицательным");
@@ -52,6 +55,9 @@ public record HomeRuntimeState(
         }
         if (petLevel < 0 || petBond < 0) {
             throw new IllegalArgumentException("Pet state не может быть отрицательным");
+        }
+        if (petId == null || petId.isBlank()) {
+            throw new IllegalArgumentException("petId обязателен");
         }
         boolean noMaterial = materialItemId == null
                 && materialItemName == null
@@ -116,6 +122,61 @@ public record HomeRuntimeState(
                 pilotLevel,
                 pilotCurrentExperience,
                 pilotNextLevelExperience,
+                DEFAULT_PET_ID,
+                petProgressPresent,
+                petLevel,
+                petBond,
+                resolvedChoiceId,
+                resolvedChoiceTitle,
+                outcomeTitle,
+                outcomeSummary
+        );
+    }
+
+    public HomeRuntimeState(
+            long dailySteps,
+            long activityStateVersion,
+            String timeZone,
+            Instant lastActivitySyncAt,
+            long availableEnergy,
+            long economyVersion,
+            long expeditionProgress,
+            long expeditionRequiredEnergy,
+            String expeditionStatus,
+            long expeditionVersion,
+            String currentNodeId,
+            String unlockedEventId,
+            boolean pilotProgressPresent,
+            int pilotLevel,
+            int pilotCurrentExperience,
+            int pilotNextLevelExperience,
+            String petId,
+            boolean petProgressPresent,
+            int petLevel,
+            int petBond,
+            String resolvedChoiceId,
+            String resolvedChoiceTitle,
+            String outcomeTitle,
+            String outcomeSummary
+    ) {
+        this(
+                dailySteps,
+                activityStateVersion,
+                timeZone,
+                lastActivitySyncAt,
+                availableEnergy,
+                economyVersion,
+                expeditionProgress,
+                expeditionRequiredEnergy,
+                expeditionStatus,
+                expeditionVersion,
+                currentNodeId,
+                unlockedEventId,
+                pilotProgressPresent,
+                pilotLevel,
+                pilotCurrentExperience,
+                pilotNextLevelExperience,
+                petId,
                 petProgressPresent,
                 petLevel,
                 petBond,
@@ -192,6 +253,7 @@ public record HomeRuntimeState(
                 pilotLevel,
                 pilotCurrentExperience,
                 pilotNextLevelExperience,
+                petId,
                 petProgressPresent,
                 petLevel,
                 petBond,

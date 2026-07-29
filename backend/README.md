@@ -27,9 +27,9 @@ authoritative step total
 → ENERGY debit
 → first event READY and resolution
 → transition to second node
-→ second event READY and resolution
-→ persistent pilot XP + pet bond + material inventory
-→ expedition COMPLETED
+→ следующие content-driven узлы
+→ persistent pilot XP + active-pet bond + material inventory
+→ chapter completion
 ```
 
 Activity sync сериализуется advisory transaction lock по пользователю. Advance и event resolution используют lock по пользователю и экспедиции. Economy блокирует wallet row через `FOR UPDATE`.
@@ -76,6 +76,8 @@ PostgreSQL Testcontainers tests проверяют:
 - exact replay command response;
 - expedition progress и конкурентные advance;
 - event choices, переход между узлами и persistent pilot/pet progression;
+- active pet selection, независимый pet progression и выбранный питомец в home;
+- транзакционную синхронизацию quest/evolution/event rewards одного питомца;
 - повторное/конфликтное resolution и inventory source protection;
 - rollback activity/economy/expedition/progression/inventory при поздней ошибке;
 - production home read-model до, между и после двух событий;
@@ -119,6 +121,8 @@ GET  /api/v1/home?localDate=YYYY-MM-DD
 POST /api/v1/activity/sync
 POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
+GET  /api/v1/platform
+POST /api/v1/platform/commands
 ```
 
 ## Authentication
@@ -167,9 +171,9 @@ curl -X POST http://localhost:8080/api/v1/activity/sync \
   }'
 ```
 
-### Два узла стартовой экспедиции
+### Первая глава стартовой экспедиции
 
-Один и тот же endpoint используется для обоих узлов:
+Один и тот же endpoint используется для всех 18 узлов:
 
 ```bash
 curl -X POST \
@@ -182,14 +186,19 @@ curl -X POST \
   }'
 ```
 
-Порядок `starter-v2`:
+Начало `chapter-1-v1`:
 
 ```text
 outer-beacon   — 30 ENERGY → signal-source-v1
 lumen-gate     — 45 ENERGY → echo-vault-v1
+ash-orbit      — 55 ENERGY → ash-orbit-v1
+...
+dawn-relay     — 130 ENERGY → dawn-relay-v1
 ```
 
-После разрешения первого события progress атомарно переключается на второй узел с нулевой энергией. После второго события экспедиция получает `COMPLETED`.
+После каждого промежуточного события progress атомарно переключается на
+следующий узел с нулевой энергией. Только событие `dawn-relay-v1` переводит
+экспедицию в `COMPLETED`.
 
 ### Разрешение событий и material reward
 
@@ -206,7 +215,7 @@ curl -X POST \
   }'
 ```
 
-Второе событие завершает экспедицию и выдаёт материал:
+Второе событие продолжает экспедицию и выдаёт материал:
 
 ```bash
 curl -X POST \
@@ -223,8 +232,8 @@ curl -X POST \
 
 ```json
 {
-  "contentVersion": "starter-v2",
-  "expeditionStatus": "COMPLETED",
+  "contentVersion": "chapter-1-v1",
+  "expeditionStatus": "IN_PROGRESS",
   "eventId": "echo-vault-v1",
   "choiceId": "stabilize-core",
   "material": {
@@ -273,10 +282,11 @@ inventory_ledger                — append-only material reward journal
 
 ## Текущие ограничения
 
-- mobile OIDC login/refresh/logout и secure token storage ещё не подключены;
-- attestation не проверяется;
-- одна экспедиция с двумя узлами и двумя событиями;
-- content definition хранится в коде;
+- production IdP ещё требует client/redirect/issuer configuration;
+- attestation/risk работает в shadow mode без blocking enforcement;
+- одна последовательная глава без нелинейных веток;
+- content definitions поставляются с backend, а release/config управляются
+  versioned platform state;
 - inventory поддерживает только положительные stackable material rewards; расход и unique items отсутствуют;
 - HealthKit/Health Connect требуют проверки на физических устройствах;
-- отдельный inventory endpoint и offline read cache отсутствуют.
+- отдельный inventory endpoint отсутствует; mobile читает stack через home.

@@ -124,7 +124,7 @@ public class HomeService {
     }
 
     private PetSnapshot petSnapshot(HomeRuntimeState state) {
-        PetSnapshot starter = starterContent.pet();
+        PetSnapshot starter = starterContent.pet(state.petId());
         if (!state.petProgressPresent()) {
             return starter;
         }

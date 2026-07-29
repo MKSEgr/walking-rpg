@@ -91,7 +91,8 @@ idempotency key, UUID квитанции и timestamps; raw OIDC subject в кв
 Authorization: Bearer <access-token>
 ```
 
-После завершения второго события response содержит:
+После разрешения второго события response содержит следующий узел и
+накопленный inventory:
 
 ```json
 {
@@ -117,7 +118,7 @@ Authorization: Bearer <access-token>
   "economyVersion": 3,
   "lastActivitySyncAt": "2026-07-26T06:55:00Z",
   "serverTime": "2026-07-26T07:00:00Z",
-  "contentVersion": "starter-v2",
+  "contentVersion": "chapter-1-v1",
   "pilot": {
     "name": "Навигатор",
     "level": 1,
@@ -144,30 +145,13 @@ Authorization: Bearer <access-token>
   "expedition": {
     "expeditionId": "starter-expedition-v1",
     "name": "Сигнал из туманного сектора",
-    "currentNodeId": "lumen-gate",
-    "currentNode": "Люминовые ворота",
-    "progress": 45,
-    "requiredEnergy": 45,
-    "status": "COMPLETED",
+    "currentNodeId": "ash-orbit",
+    "currentNode": "Пепельная орбита",
+    "progress": 0,
+    "requiredEnergy": 55,
+    "status": "IN_PROGRESS",
     "version": 4,
-    "unlockedEvent": {
-      "eventId": "echo-vault-v1",
-      "title": "Хранилище эха",
-      "summary": "За воротами найден архив маршрутов.",
-      "status": "RESOLVED",
-      "selectedChoiceId": "stabilize-core",
-      "selectedChoiceTitle": "Стабилизировать ядро",
-      "outcomeTitle": "Стабильный резонанс",
-      "outcomeSummary": "Ядро перестало разрушаться.",
-      "materialReward": {
-        "itemId": "lumen-shard",
-        "itemName": "Люминовый осколок",
-        "description": "Стабильный фрагмент светового ядра, пригодный для будущих улучшений.",
-        "quantityGained": 2,
-        "quantityAfter": 2,
-        "version": 1
-      }
-    }
+    "unlockedEvent": null
   }
 }
 ```
@@ -181,7 +165,9 @@ Authorization: Bearer <access-token>
 - `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
 - неизвестный пользователь получает zero-state и starter content;
-- `inventory[]` содержит актуальный stack; `materialReward` — immutable snapshot последнего разрешённого события;
+- `inventory[]` содержит актуальный stack; immutable material snapshot всегда
+  возвращается командой resolution и остаётся в home, только пока read-model
+  указывает на соответствующее событие;
 - `GET` не выполняет `INSERT` или `UPDATE`.
 
 ## `POST /api/v1/activity/sync`
@@ -308,25 +294,26 @@ Request:
 }
 ```
 
-Starter content v2:
+Первые два события `chapter-1-v1`:
 
 ```text
 signal-source-v1
   analyze-signal  → +40 pilot XP, +5 pet bond, переход к lumen-gate
   trust-spark     → +20 pilot XP, +15 pet bond, переход к lumen-gate
+                    (стабильный legacy id; UI: «Довериться питомцу»)
 
 echo-vault-v1
-  stabilize-core  → +30 pilot XP, +8 pet bond, +2 lumen-shard, COMPLETED
-  follow-echo     → +20 pilot XP, +18 pet bond, +1 echo-thread, COMPLETED
+  stabilize-core  → +30 pilot XP, +8 pet bond, +2 lumen-shard, переход к ash-orbit
+  follow-echo     → +20 pilot XP, +18 pet bond, +1 echo-thread, переход к ash-orbit
 ```
 
 Response второго события:
 
 ```json
 {
-  "contentVersion": "starter-v2",
+  "contentVersion": "chapter-1-v1",
   "expeditionId": "starter-expedition-v1",
-  "expeditionStatus": "COMPLETED",
+  "expeditionStatus": "IN_PROGRESS",
   "expeditionVersion": 4,
   "eventId": "echo-vault-v1",
   "eventTitle": "Хранилище эха",
@@ -364,19 +351,72 @@ Response второго события:
 }
 ```
 
-Для первого события `material = null`, а `expeditionStatus = IN_PROGRESS`, потому что команда открывает второй узел.
+Для первого события `material = null`. Первое и второе события возвращают
+`expeditionStatus = IN_PROGRESS`, потому что открывают следующий узел.
 
 Правила:
 
 - event должен быть фактически открыт и expedition должна иметь `EVENT_READY`;
 - `choiceId` выбирается из server-owned definition соответствующего `eventId`;
-- первый event resolution переводит progress на второй узел, второй — в `COMPLETED`;
+- первый event resolution переводит progress на второй узел, второй — на
+  третий; только финальное событие главы возвращает `COMPLETED`;
 - тот же key и payload возвращает исходный response без второй награды;
 - тот же key с другим choice возвращает `409 IDEMPOTENCY_CONFLICT`;
 - неизвестный choice возвращает `400 VALIDATION_ERROR`;
 - повторное resolution новым key возвращает `409 EVENT_STATE_CONFLICT`;
 - один inventory source не может выдать другой item или quantity;
 - expedition transition/completion, pilot XP, pet bond, inventory stack/ledger и processed response фиксируются одной транзакцией.
+- pet reward получает активный питомец из authoritative platform state; его
+  progress хранится отдельно от других питомцев.
+
+## `GET /api/v1/platform`
+
+Возвращает versioned platform snapshot: onboarding, три питомца, навыки,
+задания, достижения, сезон, недельный маршрут, отряд, косметику, эксперименты и
+remote config. Канонический первый путь содержит шесть шагов:
+
+```json
+[
+  "welcome",
+  "health-permission",
+  "first-sync",
+  "pet-selection",
+  "first-expedition",
+  "first-event"
+]
+```
+
+`activePetId` согласован с единственным `pets[].active=true`. Каждый питомец
+содержит `trait`, независимые `level/bond/evolutionStage` и server-owned
+evolution threshold.
+
+## `POST /api/v1/platform/commands`
+
+Все platform mutations используют одну restart-safe командную ручку:
+
+```json
+{
+  "commandType": "SELECT_PET",
+  "idempotencyKey": "first-journey-select-moss-v1",
+  "payload": {
+    "petId": "moss-v1"
+  }
+}
+```
+
+Правила первого пути:
+
+- `SELECT_PET` атомарно меняет `activePetId` и отмечает `pet-selection`;
+- выбор уже активного питомца всё равно завершает milestone, если он ещё не
+  был сохранён;
+- `CLAIM_QUEST` и `EVOLVE_PET` обновляют platform state и соответствующую
+  `pet_progress` строку одной транзакцией;
+- `COMPLETE_ONBOARDING_STEP` записывается после соответствующего реального
+  действия; mobile не показывает отдельные кнопки фиктивного завершения;
+- после process restart mobile восстанавливает `health-permission`,
+  `first-sync`, `first-expedition` и `first-event` из authoritative facts и
+  идемпотентно backfill-ит отсутствующие служебные milestones;
+- активный питомец затем возвращается в `GET /home` и получает event bond.
 
 ## Ошибки
 
@@ -405,9 +445,8 @@ VALIDATION_ERROR
 NOT_FOUND
 ```
 
-## Следующие endpoint-ы
+## Дополнительный content endpoint
 
 ```text
 GET  /api/v1/content/bootstrap
-POST /api/v1/pets/{petId}/upgrade
 ```

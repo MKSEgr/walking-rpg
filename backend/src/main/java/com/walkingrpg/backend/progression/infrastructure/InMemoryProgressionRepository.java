@@ -12,7 +12,8 @@ import com.walkingrpg.backend.progression.domain.ProgressionState;
 
 public class InMemoryProgressionRepository implements ProgressionRepository {
 
-    private final Map<String, ProgressionState> states = new HashMap<>();
+    private final Map<String, PilotProgressState> pilots = new HashMap<>();
+    private final Map<String, Map<String, PetProgressState>> pets = new HashMap<>();
 
     @Override
     public synchronized ProgressionState lockOrCreate(
@@ -21,21 +22,32 @@ public class InMemoryProgressionRepository implements ProgressionRepository {
             PetDefinition pet,
             Instant observedAt
     ) {
-        return states.computeIfAbsent(
+        PilotProgressState pilotState = pilots.computeIfAbsent(
                 userId,
-                ignored -> new ProgressionState(
-                        PilotProgressState.initial(pilot),
-                        PetProgressState.initial(pet)
-                )
+                ignored -> PilotProgressState.initial(pilot)
+        );
+        PetProgressState petState = pets
+                .computeIfAbsent(userId, ignored -> new HashMap<>())
+                .computeIfAbsent(
+                        pet.petId(),
+                        ignored -> PetProgressState.initial(pet)
+                );
+        return new ProgressionState(
+                pilotState,
+                petState
         );
     }
 
     @Override
     public synchronized void save(
             String userId,
+            String pilotId,
+            String petId,
             ProgressionState state,
             Instant updatedAt
     ) {
-        states.put(userId, state);
+        pilots.put(userId, state.pilot());
+        pets.computeIfAbsent(userId, ignored -> new HashMap<>())
+                .put(petId, state.pet());
     }
 }

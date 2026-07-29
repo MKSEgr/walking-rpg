@@ -57,6 +57,12 @@
 - server-side `auth_time` gate для удаления аккаунта и `max_age=0` в mobile
   OIDC step-up;
 - удаление временной локальной копии JSON сразу после системного share flow;
+- guided mobile «Первый путь»: разрешение шагов, первая ENERGY, выбор питомца,
+  первый узел и первое событие в одном flow;
+- восстановление onboarding milestones из authoritative gameplay facts после
+  process restart;
+- независимый progression для Искры, Мха и Руны с active-pet home/event
+  integration;
 
 ### Changed
 
@@ -71,6 +77,15 @@
 - mobile-команды разделены на независимые ACTIVITY/GAMEPLAY lanes с FIFO внутри каждой lane;
 - backend-контроллеры больше не принимают user/device/actor headers: identity приходит из `SecurityContext`;
 - production defaults стали fail-closed: JWT включён, demo endpoint выключен.
+- ручные onboarding-кнопки в «Путевом журнале» заменены на продолжение
+  реального первого пути;
+- `SELECT_PET` одновременно сохраняет выбор питомца и milestone, а event reward
+  начисляет bond выбранному питомцу;
+- quest bond, evolution level, event reward и home теперь сходятся в одной
+  канонической pet progression без потери старого platform progress;
+- сюжетные тексты первого пути больше не предполагают, что всегда выбрана
+  Искра; стабильные command/choice IDs сохранены;
+- haptic feedback первого пути исключён из критического пути server reload.
 
 ## [0.1.0] — 2026-07-25
 

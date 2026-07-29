@@ -20,6 +20,7 @@ class ActivitySyncShell extends StatefulWidget {
     this.platformLoader,
     this.platformHomeLoader,
     this.onOpenAccount,
+    this.onResumeFirstJourney,
   });
 
   final ActivitySynchronizer? synchronizer;
@@ -29,6 +30,7 @@ class ActivitySyncShell extends StatefulWidget {
   final PlatformSnapshotLoader? platformLoader;
   final PlatformHomeLoader? platformHomeLoader;
   final VoidCallback? onOpenAccount;
+  final VoidCallback? onResumeFirstJourney;
 
   @override
   State<ActivitySyncShell> createState() => _ActivitySyncShellState();
@@ -123,6 +125,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         homeLoader: widget.platformHomeLoader,
         commandExecutor: runtime?.executePlatform,
         onServerStateChanged: _handlePlatformStateChanged,
+        onResumeFirstJourney: widget.onResumeFirstJourney,
       ),
       onDestinationChanged: _handleDestinationChanged,
     );

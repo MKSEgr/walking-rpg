@@ -226,6 +226,7 @@ class PlatformPet {
     required this.petId,
     required this.name,
     required this.species,
+    required this.trait,
     required this.level,
     required this.bond,
     required this.evolutionStage,
@@ -245,6 +246,11 @@ class PlatformPet {
       petId: _readString(json, 'petId'),
       name: _readString(json, 'name'),
       species: _readString(json, 'species'),
+      trait: _readOptionalString(
+        json,
+        'trait',
+        'Спутник для исследования маршрутов.',
+      ),
       level: level,
       bond: bond,
       evolutionStage: evolutionStage,
@@ -256,6 +262,7 @@ class PlatformPet {
   final String petId;
   final String name;
   final String species;
+  final String trait;
   final int level;
   final int bond;
   final int evolutionStage;

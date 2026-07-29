@@ -14,7 +14,7 @@ void main() {
     expect(snapshot.activePet.canEvolve, isTrue);
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.weeklyRouteProgressValue, 0.4);
-    expect(snapshot.onboardingProgressValue, 0.25);
+    expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
     expect(snapshot.claimableSeasonLevel, 2);
     expect(snapshot.remoteConfig.sandboxPaymentsEnabled, isTrue);
   });

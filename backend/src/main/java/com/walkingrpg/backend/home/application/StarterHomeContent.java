@@ -39,7 +39,11 @@ public class StarterHomeContent {
     }
 
     public PetSnapshot pet() {
-        PetDefinition pet = progressionContent.pet();
+        return pet(StarterProgressionContent.PET_ID);
+    }
+
+    public PetSnapshot pet(String petId) {
+        PetDefinition pet = progressionContent.requirePet(petId);
         return new PetSnapshot(
                 pet.name(),
                 pet.species(),

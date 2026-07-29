@@ -21,6 +21,7 @@ import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictEx
 import com.walkingrpg.backend.platform.application.PlatformService;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
+import com.walkingrpg.backend.progression.application.ProgressionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +78,9 @@ class PlatformPersistenceIntegrationTest {
     private PaymentProvider paymentProvider;
 
     @Autowired
+    private ProgressionService progressionService;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
@@ -110,7 +114,8 @@ class PlatformPersistenceIntegrationTest {
                 economyService,
                 paymentProvider,
                 objectMapper,
-                clock
+                clock,
+                progressionService
         );
         PlatformCommandResponse replayed = restarted.execute("platform-user", request);
 

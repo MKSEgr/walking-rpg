@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
@@ -24,6 +25,8 @@ import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.inventory.application.InventoryService;
+import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
+import com.walkingrpg.backend.platform.application.PlatformService;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,6 +83,9 @@ class EventResolutionIntegrationTest {
 
     @Autowired
     private ProgressionService progressionService;
+
+    @Autowired
+    private PlatformService platformService;
 
     @Autowired
     private InventoryService inventoryService;
@@ -256,6 +262,57 @@ class EventResolutionIntegrationTest {
         assertEquals(0, rowCount("inventory_ledger"));
         assertEquals(1, rowCount("processed_event_resolution"));
         assertEquals(25, walletBalance());
+    }
+
+    @Test
+    void shouldRewardSelectedPetAndExposeItOnHome() {
+        String userId = "selected-pet-user";
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "select-moss-first-journey",
+                Map.of("petId", "moss-v1")
+        ));
+        prepareFirstEvent(userId);
+        platformService.execute(userId, new PlatformCommandRequest(
+                "CLAIM_QUEST",
+                "claim-walk-quest-with-moss",
+                Map.of("questId", "walk-3000")
+        ));
+
+        HomeSnapshotResponse beforeEvent = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        assertEquals("Мох", beforeEvent.pet().name());
+        assertEquals(14, beforeEvent.pet().bond());
+
+        EventResolutionResult result = eventResolutionService.resolve(command(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "resolve-with-moss"
+        ));
+
+        assertEquals("moss-v1", result.pet().petId());
+        assertEquals("Мох", result.pet().name());
+        assertEquals(19, result.pet().bond());
+        assertEquals("moss-v1", jdbcTemplate.queryForObject("""
+                SELECT pet_id
+                FROM pet_progress
+                WHERE user_id = ?
+                """, String.class, userId));
+        assertEquals(0, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM pet_progress
+                WHERE user_id = ?
+                  AND pet_id = 'spark-v1'
+                """, Integer.class, userId));
+
+        HomeSnapshotResponse home = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        assertEquals("Мох", home.pet().name());
+        assertEquals("Терра", home.pet().species());
+        assertEquals(19, home.pet().bond());
     }
 
     private void prepareFirstEvent(String userId) {
