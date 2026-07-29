@@ -146,6 +146,29 @@ void main() {
     expect(afterSyncAndPetSelection.stage, FirstJourneyStage.expedition);
   });
 
+  test('preserves activity completion across local-day snapshots', () {
+    final FirstJourneyProgress nextLocalDay = FirstJourneyProgress(
+      home: firstJourneyHome(),
+      platform: platformSnapshot(
+        completedOnboardingSteps: const <String>[
+          'welcome',
+          'health-permission',
+          'first-sync',
+        ],
+        resolvedEventCount: 0,
+        totalAcceptedSteps: 3000,
+      ),
+    );
+
+    expect(nextLocalDay.home.lastActivitySyncAt, isNull);
+    expect(
+      nextLocalDay.completedSteps,
+      containsAll(<String>['health-permission', 'first-sync']),
+    );
+    expect(nextLocalDay.stage, FirstJourneyStage.pet);
+    expect(nextLocalDay.pendingFactMilestones, isEmpty);
+  });
+
   test('keeps cached recovery state read-only', () {
     final FirstJourneyProgress cached = FirstJourneyProgress(
       home: firstJourneyHome(

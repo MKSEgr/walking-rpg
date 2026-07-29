@@ -92,7 +92,10 @@ final class FirstJourneyProgress {
     final Set<String> completed = persisted
         .where((String step) => !_factBackedSteps.contains(step))
         .toSet();
-    if (home.lastActivitySyncAt != null) {
+    final bool hasDurableActivitySync =
+        home.lastActivitySyncAt != null ||
+        platform.userState.totalAcceptedSteps > 0;
+    if (hasDurableActivitySync) {
       completed
         ..add(healthPermissionStep)
         ..add(firstSyncStep);

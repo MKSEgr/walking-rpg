@@ -327,6 +327,60 @@ void main() {
     expect(find.text('Источник сигнала'), findsOneWidget);
     await runtime.close();
   });
+
+  testWidgets('keeps a completed journey open on the next local day', (
+    WidgetTester tester,
+  ) async {
+    final HomeSnapshot home = firstJourneyHome(firstEventResolved: true);
+    final PlatformSnapshot platform = platformSnapshot(
+      completedOnboardingSteps: FirstJourneyProgress.steps,
+      resolvedEventCount: 1,
+      totalAcceptedSteps: 3000,
+    );
+    final MobileCommandRuntime runtime = MobileCommandRuntime(
+      ownerId: 'next-day-user',
+      store: InMemoryMobileCommandStore(),
+      activitySender:
+          ({required reading, required String idempotencyKey}) async =>
+              throw StateError('Unexpected activity call'),
+      expeditionSender:
+          ({
+            required String expeditionId,
+            required int energyToSpend,
+            required String idempotencyKey,
+          }) async => throw StateError('Unexpected expedition call'),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw StateError('Unexpected event call'),
+      platformSender:
+          ({
+            required String commandType,
+            required Map<String, Object?> payload,
+            required String idempotencyKey,
+          }) async => throw StateError('Unexpected platform call'),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FirstJourneyGate(
+          homeLoader: () async => home,
+          platformLoader: () async => platform,
+          commandRuntime: runtime,
+          childBuilder: (VoidCallback onResume) =>
+              const Scaffold(body: Text('Основная экспедиция')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(home.lastActivitySyncAt, isNull);
+    expect(find.text('Основная экспедиция'), findsOneWidget);
+    expect(find.byKey(const Key('first-journey-activity')), findsNothing);
+    await runtime.close();
+  });
 }
 
 Future<void> _tap(WidgetTester tester, Key key) async {
