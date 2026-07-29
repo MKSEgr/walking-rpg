@@ -29,12 +29,14 @@ restart.
   После restart mobile выводит подтверждаемые milestones из authoritative
   `home` и `platform` facts и идемпотентно backfill-ит отсутствующие отметки.
 - Успешный activity sync подтверждается platform-фактом
-  `hasSuccessfulActivitySync`, вычисляемым по зарегистрированному
-  `app_device`. Запись устройства создаётся только внутри успешно завершившейся
-  activity-транзакции и не удаляется вместе с идемпотентными receipts по
-  retention policy. Поэтому sync с нулём шагов считается выполненным, а смена
-  локальной даты не возвращает прошедшего onboarding пользователя к permission
-  flow.
+  `hasSuccessfulActivitySync`, вычисляемым по monotonic-маркеру
+  `app_user.has_successful_activity_sync`. Маркер выставляется только в конце
+  успешно завершившейся activity-транзакции, не зависит от push-регистрации
+  устройства и не удаляется вместе с идемпотентными receipts по retention
+  policy. Flyway backfill использует только activity-specific state, receipts
+  и risk assessments. Поэтому sync с нулём шагов считается выполненным, а
+  смена локальной даты не возвращает прошедшего onboarding пользователя к
+  permission flow.
 - Cached state остаётся read-only. Он может объяснить текущий этап, но не
   разрешает mutations или backfill.
 - `SELECT_PET` атомарно меняет active pet и завершает `pet-selection`.

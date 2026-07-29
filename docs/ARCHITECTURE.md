@@ -117,6 +117,7 @@ Quest bond и evolution level синхронизируются с той же `p
 
 ```text
 app_user, app_device
+  └─ has_successful_activity_sync — monotonic fact реального activity sync
 activity_sync_state, processed_activity_sync
 economy_wallet, economy_ledger
 expedition_progress, processed_expedition_advance

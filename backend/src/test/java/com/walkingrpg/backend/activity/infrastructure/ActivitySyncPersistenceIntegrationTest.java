@@ -314,5 +314,10 @@ class ActivitySyncPersistenceIntegrationTest {
         ) {
             throw new IllegalStateException("forced processed response failure");
         }
+
+        @Override
+        public void markSuccessfulSync(String userId) {
+            delegate.markSuccessfulSync(userId);
+        }
     }
 }

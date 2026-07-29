@@ -181,4 +181,18 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                 Timestamp.from(result.serverTime())
         );
     }
+
+    @Override
+    public void markSuccessfulSync(String userId) {
+        int updated = jdbcTemplate.update("""
+                UPDATE app_user
+                SET has_successful_activity_sync = true
+                WHERE user_id = ?
+                """, userId);
+        if (updated != 1) {
+            throw new IllegalStateException(
+                    "Не удалось сохранить факт успешной синхронизации"
+            );
+        }
+    }
 }

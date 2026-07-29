@@ -108,6 +108,7 @@ public class ActivitySyncService {
                 idempotencyScope,
                 new ProcessedActivitySync(requestFingerprint, outcome)
         );
+        repository.markSuccessfulSync(command.userId());
 
         return outcome;
     }

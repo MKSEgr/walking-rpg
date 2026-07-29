@@ -391,7 +391,8 @@ remote config. Канонический первый путь содержит �
 evolution threshold. `userState.hasSuccessfulActivitySync` — долговечный
 authoritative fact наличия хотя бы одной успешно обработанной activity-команды,
 включая sync с нулём шагов; он не сбрасывается при смене локальной даты или
-очистке идемпотентных activity-receipts по retention policy.
+очистке идемпотентных activity-receipts по retention policy и не выводится из
+push-регистрации устройства.
 
 ## `POST /api/v1/platform/commands`
 

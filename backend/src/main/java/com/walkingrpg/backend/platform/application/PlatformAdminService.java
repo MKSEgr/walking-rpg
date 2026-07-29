@@ -364,7 +364,9 @@ public class PlatformAdminService {
         Map<String, Object> export = new LinkedHashMap<>();
         export.put("exportedAt", now());
         export.put("user", jdbcTemplate.queryForList(
-                "SELECT user_id, created_at, last_seen_at FROM app_user WHERE user_id = ?",
+                "SELECT user_id, created_at, last_seen_at, "
+                        + "has_successful_activity_sync "
+                        + "FROM app_user WHERE user_id = ?",
                 normalized
         ));
         export.put("devices", jdbcTemplate.queryForList(

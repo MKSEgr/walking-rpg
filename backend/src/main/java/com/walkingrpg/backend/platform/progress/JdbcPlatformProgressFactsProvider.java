@@ -31,8 +31,9 @@ public class JdbcPlatformProgressFactsProvider implements PlatformProgressFactsP
         Boolean hasSuccessfulActivitySync = jdbcTemplate.queryForObject("""
                 SELECT EXISTS (
                     SELECT 1
-                    FROM app_device
+                    FROM app_user
                     WHERE user_id = ?
+                      AND has_successful_activity_sync
                 )
                 """, Boolean.class, userId);
         Map<String, Integer> petBonds = new LinkedHashMap<>();
