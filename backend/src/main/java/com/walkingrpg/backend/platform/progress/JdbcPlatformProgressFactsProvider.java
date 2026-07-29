@@ -34,10 +34,12 @@ public class JdbcPlatformProgressFactsProvider implements PlatformProgressFactsP
                 FROM pet_progress
                 WHERE user_id = ?
                 ORDER BY pet_id
-                """, resultSet -> petBonds.put(
-                resultSet.getString("pet_id"),
-                resultSet.getInt("bond")
-        ), userId);
+                """, resultSet -> {
+            petBonds.put(
+                    resultSet.getString("pet_id"),
+                    resultSet.getInt("bond")
+            );
+        }, userId);
         List<String> squads = jdbcTemplate.query("""
                 SELECT squad_id::text
                 FROM roadmap_squad_member

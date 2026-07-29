@@ -319,29 +319,29 @@ public class PlatformService {
         if (state.claimedQuests().contains(questId)) {
             return new Mutation(state, "Награда задания уже получена");
         }
-        long progress = questProgress(quest, facts);
-        if (progress < quest.target()) {
+        long questProgress = questProgress(quest, facts);
+        if (questProgress < quest.target()) {
             throw new PlatformStateConflictException(
                     "Условия задания ещё не выполнены",
-                    Map.of("progress", progress, "target", quest.target())
+                    Map.of("progress", questProgress, "target", quest.target())
             );
         }
         Set<String> quests = new LinkedHashSet<>(state.claimedQuests());
         quests.add(questId);
         Map<String, PlatformPetProgress> pets = new LinkedHashMap<>(state.pets());
-        PlatformPetProgress progress = pets.get(state.activePetId());
+        PlatformPetProgress activePetProgress = pets.get(state.activePetId());
         PetProgressState canonical = progressionService.synchronizeAndReward(
                 userId,
                 state.activePetId(),
-                progress.level(),
-                progress.bond(),
+                activePetProgress.level(),
+                activePetProgress.bond(),
                 quest.petBondReward(),
                 occurredAt
         );
         pets.put(state.activePetId(), new PlatformPetProgress(
                 canonical.level(),
                 canonical.bond(),
-                progress.evolutionStage()
+                activePetProgress.evolutionStage()
         ));
         PlatformUserState rewarded = withQuestReward(
                 state,
