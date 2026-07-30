@@ -21,6 +21,11 @@ typedef EventResolver =
       required String choiceId,
       required String idempotencyKey,
     });
+typedef EventResultAcknowledger =
+    Future<EventResultAcknowledgement> Function({
+      required String receiptId,
+      required String idempotencyKey,
+    });
 typedef IdempotencyKeyFactory = String Function();
 
 class HomeScreen extends StatefulWidget {
@@ -29,6 +34,7 @@ class HomeScreen extends StatefulWidget {
     this.loader,
     this.advancer,
     this.eventResolver,
+    this.eventResultAcknowledger,
     this.idempotencyKeyFactory,
     this.onOpenAccount,
   });
@@ -36,6 +42,7 @@ class HomeScreen extends StatefulWidget {
   final HomeSnapshotLoader? loader;
   final ExpeditionAdvancer? advancer;
   final EventResolver? eventResolver;
+  final EventResultAcknowledger? eventResultAcknowledger;
   final IdempotencyKeyFactory? idempotencyKeyFactory;
   final VoidCallback? onOpenAccount;
 
@@ -47,8 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
   late Future<HomeSnapshot> _snapshotFuture;
   bool _isAdvancing = false;
   bool _isResolving = false;
+  bool _isAcknowledging = false;
 
-  bool get _isBusy => _isAdvancing || _isResolving;
+  bool get _isBusy => _isAdvancing || _isResolving || _isAcknowledging;
 
   @override
   void initState() {
@@ -112,9 +120,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   snapshot: snapshot,
                   isAdvancing: _isAdvancing,
                   isResolving: _isResolving,
+                  isAcknowledging: _isAcknowledging,
                   onAdvance: () => _advance(snapshot),
                   onResolve: (HomeEventChoice choice) =>
                       _resolveEvent(snapshot, choice),
+                  onAcknowledgeEventResult: () =>
+                      _acknowledgeEventResult(snapshot),
                   onRefresh: _reload,
                 );
               },
@@ -181,7 +192,11 @@ class _HomeScreenState extends State<HomeScreen> {
     HomeEventChoice choice,
   ) async {
     final HomeExpeditionEvent? event = snapshot.unlockedEvent;
-    if (_isBusy || event == null || event.isResolved) {
+    if (_isBusy ||
+        snapshot.isCached ||
+        snapshot.pendingEventResult != null ||
+        event == null ||
+        event.isResolved) {
       return;
     }
 
@@ -229,6 +244,49 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _acknowledgeEventResult(HomeSnapshot snapshot) async {
+    final PendingEventResult? result = snapshot.pendingEventResult;
+    if (_isBusy || snapshot.isCached || result == null) {
+      return;
+    }
+
+    setState(() {
+      _isAcknowledging = true;
+    });
+    try {
+      final EventResultAcknowledger acknowledger =
+          widget.eventResultAcknowledger ??
+          ({required String receiptId, required String idempotencyKey}) =>
+              EventApiClient.fromEnvironment().acknowledge(
+                receiptId: receiptId,
+              );
+      await acknowledger(
+        receiptId: result.receiptId,
+        idempotencyKey: _nextKey('event-result-${result.receiptId}'),
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _snapshotFuture = _loadSnapshot();
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Не удалось подтвердить результат события: $error'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAcknowledging = false;
+        });
+      }
+    }
+  }
+
   String _nextKey(String sourceId) {
     return widget.idempotencyKeyFactory?.call() ??
         '$sourceId-${DateTime.now().microsecondsSinceEpoch}';
@@ -255,16 +313,20 @@ class _HomeBody extends StatelessWidget {
     required this.snapshot,
     required this.isAdvancing,
     required this.isResolving,
+    required this.isAcknowledging,
     required this.onAdvance,
     required this.onResolve,
+    required this.onAcknowledgeEventResult,
     required this.onRefresh,
   });
 
   final HomeSnapshot snapshot;
   final bool isAdvancing;
   final bool isResolving;
+  final bool isAcknowledging;
   final VoidCallback onAdvance;
   final ValueChanged<HomeEventChoice> onResolve;
+  final VoidCallback onAcknowledgeEventResult;
   final VoidCallback onRefresh;
 
   @override
@@ -275,6 +337,7 @@ class _HomeBody extends StatelessWidget {
     final String activitySubtitle =
         '${snapshot.dailyGoalPolicy.explanation}\n$lastSync';
     final HomeExpeditionEvent? event = snapshot.unlockedEvent;
+    final PendingEventResult? pendingEventResult = snapshot.pendingEventResult;
     final bool eventReady = event?.status == 'READY';
     final bool completed = snapshot.expeditionStatus == 'COMPLETED';
     final int spendableEnergy = snapshot.spendableEnergy;
@@ -296,6 +359,15 @@ class _HomeBody extends StatelessWidget {
           'Сначала прогулка. Решения и награды — после неё.',
           style: Theme.of(context).textTheme.bodyLarge,
         ),
+        if (pendingEventResult != null) ...<Widget>[
+          const SizedBox(height: 16),
+          _PendingEventResultCard(
+            result: pendingEventResult,
+            readOnly: readOnly,
+            acknowledging: isAcknowledging,
+            onAcknowledge: onAcknowledgeEventResult,
+          ),
+        ],
         const SizedBox(height: 20),
         ProgressCard(
           title: 'Сегодня: ${snapshot.dailySteps} / ${snapshot.dailyGoal}',
@@ -315,7 +387,12 @@ class _HomeBody extends StatelessWidget {
           const SizedBox(height: 4),
           _EventCard(
             event: event,
-            isResolving: isResolving || readOnly,
+            isResolving: isResolving,
+            disabled:
+                isResolving ||
+                isAcknowledging ||
+                readOnly ||
+                pendingEventResult != null,
             onChoose: onResolve,
           ),
         ],
@@ -354,9 +431,11 @@ class _HomeBody extends StatelessWidget {
               readOnly ||
                   eventReady ||
                   completed ||
+                  pendingEventResult != null ||
                   spendableEnergy <= 0 ||
                   isAdvancing ||
-                  isResolving
+                  isResolving ||
+                  isAcknowledging
               ? null
               : onAdvance,
           icon: isAdvancing
@@ -370,6 +449,8 @@ class _HomeBody extends StatelessWidget {
                 ? 'Изменения недоступны офлайн'
                 : completed
                 ? 'Экспедиция завершена'
+                : pendingEventResult != null
+                ? 'Сначала подтвердите результат'
                 : eventReady
                 ? 'Выберите решение события'
                 : spendableEnergy > 0
@@ -379,7 +460,9 @@ class _HomeBody extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: isAdvancing || isResolving ? null : onRefresh,
+          onPressed: isAdvancing || isResolving || isAcknowledging
+              ? null
+              : onRefresh,
           icon: const Icon(Icons.sync),
           label: const Text('Обновить состояние'),
         ),
@@ -408,15 +491,161 @@ class _HomeBody extends StatelessWidget {
   }
 }
 
+class _PendingEventResultCard extends StatelessWidget {
+  const _PendingEventResultCard({
+    required this.result,
+    required this.readOnly,
+    required this.acknowledging,
+    required this.onAcknowledge,
+  });
+
+  final PendingEventResult result;
+  final bool readOnly;
+  final bool acknowledging;
+  final VoidCallback onAcknowledge;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final EventMaterialReward? material = result.material;
+    final EventNextNode? nextNode = result.nextNode;
+    return Card(
+      key: const Key('pending-event-result-card'),
+      elevation: 3,
+      color: colors.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CircleAvatar(
+                radius: 28,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
+                child: const Icon(Icons.emoji_events_outlined, size: 30),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'СОБЫТИЕ ЗАВЕРШЕНО',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colors.primary,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              result.eventTitle,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              result.choiceTitle,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              result.outcomeTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(result.outcomeSummary),
+            const SizedBox(height: 16),
+            _RewardLine(
+              icon: Icons.person_outline,
+              text:
+                  '+${result.pilot.experienceGained} XP · '
+                  'всего ${result.pilot.currentExperience}',
+            ),
+            const SizedBox(height: 8),
+            _RewardLine(
+              icon: Icons.pets_outlined,
+              text:
+                  '+${result.pet.bondGained} связи · '
+                  '${result.pet.name}: ${result.pet.bond}',
+            ),
+            if (material != null) ...<Widget>[
+              const SizedBox(height: 8),
+              _RewardLine(
+                icon: Icons.inventory_2_outlined,
+                text:
+                    '+${material.quantityGained} ${material.name} · '
+                    'всего ${material.quantityAfter}',
+              ),
+              const SizedBox(height: 4),
+              Text(
+                material.description,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+            if (nextNode != null) ...<Widget>[
+              const SizedBox(height: 16),
+              Text(
+                'Следующий узел: ${nextNode.name}',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ],
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              key: const Key('pending-event-result-acknowledge'),
+              onPressed: readOnly || acknowledging ? null : onAcknowledge,
+              icon: acknowledging
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.arrow_forward),
+              label: Text(
+                readOnly
+                    ? 'Подтверждение недоступно офлайн'
+                    : acknowledging
+                    ? 'Сохраняем продолжение...'
+                    : nextNode == null
+                    ? 'Завершить экспедицию'
+                    : 'Продолжить к узлу «${nextNode.name}»',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RewardLine extends StatelessWidget {
+  const _RewardLine({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Icon(icon, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(text, style: Theme.of(context).textTheme.labelLarge),
+        ),
+      ],
+    );
+  }
+}
+
 class _EventCard extends StatelessWidget {
   const _EventCard({
     required this.event,
     required this.isResolving,
+    required this.disabled,
     required this.onChoose,
   });
 
   final HomeExpeditionEvent event;
   final bool isResolving;
+  final bool disabled;
   final ValueChanged<HomeEventChoice> onChoose;
 
   @override
@@ -465,7 +694,7 @@ class _EventCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.tonal(
-                    onPressed: isResolving ? null : () => onChoose(choice),
+                    onPressed: disabled ? null : () => onChoose(choice),
                     child: Column(
                       children: <Widget>[
                         Text(choice.title),

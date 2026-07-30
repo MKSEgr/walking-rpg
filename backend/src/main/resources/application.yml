@@ -45,6 +45,9 @@ walking-rpg:
     days: ${ACTIVITY_RETENTION_DAYS:30}
     cron: ${ACTIVITY_RETENTION_CRON:0 20 3 * * *}
 
+  event-result-handoff:
+    enabled: ${DURABLE_EVENT_RESULT_HANDOFF_ENABLED:false}
+
   security:
     mode: ${AUTH_MODE:jwt}
     demo-endpoints-enabled: ${DEMO_ENDPOINTS_ENABLED:false}

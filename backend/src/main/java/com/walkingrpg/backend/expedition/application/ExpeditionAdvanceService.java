@@ -14,6 +14,8 @@ import com.walkingrpg.backend.expedition.domain.ExpeditionIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionAdvance;
+import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
+import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.ExpeditionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,17 +24,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class ExpeditionAdvanceService {
 
     private final ExpeditionRepository repository;
+    private final EventResolutionRepository eventResolutionRepository;
     private final EconomyService economyService;
     private final StarterExpeditionContent content;
     private final Clock clock;
 
     public ExpeditionAdvanceService(
             ExpeditionRepository repository,
+            EventResolutionRepository eventResolutionRepository,
             EconomyService economyService,
             StarterExpeditionContent content,
             Clock clock
     ) {
         this.repository = repository;
+        this.eventResolutionRepository = eventResolutionRepository;
         this.economyService = economyService;
         this.content = content;
         this.clock = clock;
@@ -54,6 +59,7 @@ public class ExpeditionAdvanceService {
             }
             return processed.result();
         }
+        requireNoPendingResult(command.userId(), command.expeditionId());
 
         ExpeditionProgressState current = repository.findState(
                 command.userId(),
@@ -98,6 +104,17 @@ public class ExpeditionAdvanceService {
                 new ProcessedExpeditionAdvance(fingerprint, result)
         );
         return result;
+    }
+
+    private void requireNoPendingResult(String userId, String expeditionId) {
+        eventResolutionRepository.findPendingResult(userId, expeditionId)
+                .map(ProcessedEventResolution::result)
+                .ifPresent(result -> {
+                    throw new PendingEventResultException(
+                            result.receiptId(),
+                            result.eventId()
+                    );
+                });
     }
 
     private void validateStateAndAmount(

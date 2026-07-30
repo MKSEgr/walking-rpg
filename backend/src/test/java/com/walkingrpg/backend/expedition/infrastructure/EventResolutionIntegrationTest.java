@@ -8,6 +8,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,12 +19,16 @@ import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
 import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.EventResolutionService;
+import com.walkingrpg.backend.expedition.application.EventResultAcknowledgementService;
 import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
+import com.walkingrpg.backend.expedition.application.PendingEventResultException;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventResolutionCommand;
 import com.walkingrpg.backend.expedition.domain.EventResolutionResult;
+import com.walkingrpg.backend.expedition.domain.EventResultAcknowledgementResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
+import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
@@ -103,6 +108,9 @@ class EventResolutionIntegrationTest {
     private HomeService homeService;
 
     @Autowired
+    private EventResultAcknowledgementService acknowledgementService;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
@@ -138,6 +146,10 @@ class EventResolutionIntegrationTest {
         assertEquals(ExpeditionProgressStatus.IN_PROGRESS, firstEvent.expeditionStatus());
         assertNull(firstEvent.material());
         assertEquals(StarterExpeditionContent.SECOND_NODE_ID, currentNodeId());
+        acknowledgementService.acknowledge(
+                "event-user",
+                firstEvent.receiptId()
+        );
 
         expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
                 "event-user",
@@ -203,9 +215,36 @@ class EventResolutionIntegrationTest {
         assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
                 home.expedition().currentNodeId());
         assertNull(home.expedition().unlockedEvent());
+        assertNotNull(home.pendingEventResult());
+        assertEquals(secondEvent.receiptId(), home.pendingEventResult().receiptId());
+        assertEquals(StarterExpeditionContent.SECOND_EVENT_ID,
+                home.pendingEventResult().eventId());
+        assertEquals("Пепельная орбита",
+                home.pendingEventResult().nextNode().name());
         assertEquals(1, home.inventory().size());
         assertEquals("lumen-shard", home.inventory().getFirst().itemId());
         assertEquals(2, home.inventory().getFirst().quantity());
+
+        var acknowledgement = acknowledgementService.acknowledge(
+                "event-user",
+                secondEvent.receiptId()
+        );
+        var replayedAcknowledgement = acknowledgementService.acknowledge(
+                "event-user",
+                secondEvent.receiptId()
+        );
+        assertEquals(acknowledgement.acknowledgedAt(),
+                replayedAcknowledgement.acknowledgedAt());
+
+        HomeSnapshotResponse acknowledgedHome = homeService.getSnapshot(
+                new HomeQuery("event-user", LOCAL_DATE)
+        );
+        assertNull(acknowledgedHome.pendingEventResult());
+        assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
+                acknowledgedHome.expedition().currentNodeId());
+        assertEquals(90, acknowledgedHome.pilot().currentExperience());
+        assertEquals(23, acknowledgedHome.pet().bond());
+        assertEquals(2, acknowledgedHome.inventory().getFirst().quantity());
 
         assertThrows(
                 EventResolutionIdempotencyConflictException.class,
@@ -219,14 +258,179 @@ class EventResolutionIntegrationTest {
     }
 
     @Test
+    void shouldRequireAcknowledgementBeforeAdvancingToAnotherResult() {
+        String userId = "pending-result-user";
+        prepareFirstEvent(userId);
+        EventResolutionResult firstEvent = eventResolutionService.resolve(command(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "pending-first"
+        ));
+        ExpeditionAdvanceResult replayedInitialAdvance =
+                expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                        userId,
+                        StarterExpeditionContent.EXPEDITION_ID,
+                        30,
+                        "advance-first-" + userId
+                ));
+        long balanceBeforeAdvance = walletBalance();
+
+        assertEquals(ExpeditionProgressStatus.EVENT_READY,
+                replayedInitialAdvance.status());
+        assertEquals(30, replayedInitialAdvance.progressAfter());
+        PendingEventResultException conflict = assertThrows(
+                PendingEventResultException.class,
+                () -> expeditionAdvanceService.advance(
+                        new ExpeditionAdvanceCommand(
+                                userId,
+                                StarterExpeditionContent.EXPEDITION_ID,
+                                1,
+                                "advance-before-ack"
+                        )
+                )
+        );
+
+        assertEquals(firstEvent.receiptId(), conflict.receiptId());
+        assertEquals(firstEvent.eventId(), conflict.eventId());
+        assertEquals(balanceBeforeAdvance, walletBalance());
+        assertEquals(1, rowCount("processed_expedition_advance"));
+
+        acknowledgementService.acknowledge(userId, firstEvent.receiptId());
+        ExpeditionAdvanceResult continued = expeditionAdvanceService.advance(
+                new ExpeditionAdvanceCommand(
+                        userId,
+                        StarterExpeditionContent.EXPEDITION_ID,
+                        1,
+                        "advance-after-ack"
+                )
+        );
+        assertEquals(1, continued.progressAfter());
+    }
+
+    @Test
+    void shouldKeepAcknowledgementTimeMonotonicAfterClockRollback() {
+        String userId = "clock-rollback-user";
+        prepareFirstEvent(userId);
+        EventResolutionResult event = eventResolutionService.resolve(command(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "clock-rollback-event"
+        ));
+        EventResultAcknowledgementService rolledBackClockService =
+                new EventResultAcknowledgementService(
+                        eventResolutionRepository,
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+
+        var acknowledged = transaction.execute(status ->
+                rolledBackClockService.acknowledge(userId, event.receiptId())
+        );
+
+        assertNotNull(acknowledged);
+        assertEquals(event.serverTime(), acknowledged.acknowledgedAt());
+        assertEquals(event.serverTime(), acknowledged.serverTime());
+        assertNull(homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        ).pendingEventResult());
+    }
+
+    @Test
+    void shouldSerializeConcurrentAcknowledgementsAndAvoidReplayUpdate()
+            throws Exception {
+        String userId = "concurrent-ack-user";
+        prepareFirstEvent(userId);
+        EventResolutionResult event = eventResolutionService.resolve(command(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "concurrent-ack-event"
+        ));
+        EventResultAcknowledgementService firstService =
+                new EventResultAcknowledgementService(
+                        eventResolutionRepository,
+                        Clock.fixed(
+                                event.serverTime().plusSeconds(1),
+                                ZoneOffset.UTC
+                        )
+                );
+        EventResultAcknowledgementService secondService =
+                new EventResultAcknowledgementService(
+                        eventResolutionRepository,
+                        Clock.fixed(
+                                event.serverTime().plusSeconds(2),
+                                ZoneOffset.UTC
+                        )
+                );
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<EventResultAcknowledgementResult> first = executor.submit(() ->
+                    new TransactionTemplate(transactionManager).execute(status -> {
+                        ready.countDown();
+                        awaitLatch(start, "start concurrent acknowledgement");
+                        return firstService.acknowledge(userId, event.receiptId());
+                    })
+            );
+            Future<EventResultAcknowledgementResult> second = executor.submit(() ->
+                    new TransactionTemplate(transactionManager).execute(status -> {
+                        ready.countDown();
+                        awaitLatch(start, "start concurrent acknowledgement");
+                        return secondService.acknowledge(userId, event.receiptId());
+                    })
+            );
+
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            start.countDown();
+
+            EventResultAcknowledgementResult firstResult =
+                    first.get(10, TimeUnit.SECONDS);
+            EventResultAcknowledgementResult secondResult =
+                    second.get(10, TimeUnit.SECONDS);
+            assertNotNull(firstResult);
+            assertNotNull(secondResult);
+            assertEquals(firstResult, secondResult);
+
+            String rowVersionBeforeReplay = jdbcTemplate.queryForObject("""
+                    SELECT xmin::text
+                    FROM processed_event_resolution
+                    WHERE user_id = ?
+                      AND receipt_id = ?
+                    """, String.class, userId, event.receiptId());
+            EventResultAcknowledgementResult replayed =
+                    acknowledgementService.acknowledge(userId, event.receiptId());
+            String rowVersionAfterReplay = jdbcTemplate.queryForObject("""
+                    SELECT xmin::text
+                    FROM processed_event_resolution
+                    WHERE user_id = ?
+                      AND receipt_id = ?
+                    """, String.class, userId, event.receiptId());
+
+            assertEquals(firstResult, replayed);
+            assertEquals(rowVersionBeforeReplay, rowVersionAfterReplay);
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
     void shouldRollbackSecondEventInventoryProgressionAndExpeditionOnLateFailure() {
         prepareFirstEvent("rollback-event-user");
-        eventResolutionService.resolve(command(
+        EventResolutionResult firstEvent = eventResolutionService.resolve(command(
                 "rollback-event-user",
                 StarterExpeditionContent.FIRST_EVENT_ID,
                 "analyze-signal",
                 "rollback-first"
         ));
+        acknowledgementService.acknowledge(
+                "rollback-event-user",
+                firstEvent.receiptId()
+        );
         expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
                 "rollback-event-user",
                 StarterExpeditionContent.EXPEDITION_ID,
@@ -242,11 +446,35 @@ class EventResolutionIntegrationTest {
             }
 
             @Override
+            public Optional<ProcessedEventResolution> findPendingResult(
+                    String userId,
+                    String expeditionId
+            ) {
+                return eventResolutionRepository.findPendingResult(
+                        userId,
+                        expeditionId
+                );
+            }
+
+            @Override
             public void saveProcessed(
                     EventIdempotencyScope scope,
                     ProcessedEventResolution processed
             ) {
                 throw new IllegalStateException("forced processed event failure");
+            }
+
+            @Override
+            public Optional<EventResultAcknowledgementResult> acknowledgeResult(
+                    String userId,
+                    UUID receiptId,
+                    Instant serverTime
+            ) {
+                return eventResolutionRepository.acknowledgeResult(
+                        userId,
+                        receiptId,
+                        serverTime
+                );
             }
         };
         EventResolutionService failingService = new EventResolutionService(
@@ -426,13 +654,17 @@ class EventResolutionIntegrationTest {
     }
 
     private void awaitLatch(CountDownLatch latch) {
+        awaitLatch(latch, "commit pet selection");
+    }
+
+    private void awaitLatch(CountDownLatch latch, String action) {
         try {
             if (!latch.await(10, TimeUnit.SECONDS)) {
-                throw new IllegalStateException("Timed out waiting to commit pet selection");
+                throw new IllegalStateException("Timed out waiting to " + action);
             }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Pet selection wait interrupted", exception);
+            throw new IllegalStateException(action + " wait interrupted", exception);
         }
     }
 

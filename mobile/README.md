@@ -69,6 +69,7 @@ Mobile не вычисляет цель локально. `GET /api/v1/home` в�
 POST /api/v1/activity/sync
 POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
+POST /api/v1/event-results/{receiptId}/acknowledge
 POST /api/v1/platform/commands
 ```
 
@@ -78,10 +79,15 @@ Versioned JSON store находится в application-support directory. Зап
 
 ```text
 ACTIVITY — синхронизация шагов
-GAMEPLAY — продвижение экспедиции, решение события и platform-команды
+GAMEPLAY — продвижение экспедиции, решение/подтверждение события и
+           platform-команды
 ```
 
 Внутри lane действует FIFO. Временная ошибка GAMEPLAY не блокирует ACTIVITY и наоборот. Network/transport error, `408`, `429`, `5xx` и неоднозначный response остаются pending. Подтверждённые остальные `4xx` переходят в failed и не блокируют очередь.
+
+Для event-result acknowledgement outbox хранит `receiptId` и replay-ит тот же
+bodyless URL после restart. Локальный command key нужен файловой очереди, но не
+передаётся backend: единственный server-side idempotency scope — сам receipt.
 
 На старте приложения pending-команды текущего технического пользователя replay-ятся один раз в foreground. После успешного replay приложение перечитывает authoritative home. Автоматического background worker-а пока нет.
 
@@ -133,14 +139,26 @@ authoritative flow:
 → выбор Искры / Мха / Руны
 → расход ENERGY на outer-beacon
 → решение signal-source-v1
+→ подтверждение durable result receipt, если handoffRequired=true
 → основная экспедиция
 ```
 
 Экран можно закрыть через «Продолжить позже» и снова открыть из «Путевого
 журнала». Все mutations проходят существующий durable outbox. После restart
-шаги, sync, достигнутый узел и resolved event восстанавливаются из server facts,
-а отсутствующие milestones записываются идемпотентно. Cached snapshot остаётся
-read-only.
+шаги, sync, достигнутый узел и resolved event восстанавливаются из server
+facts. Если response события был потерян или приложение завершилось до показа
+награды, `pendingEventResult` возвращает ту же карточку, а завершение первого
+пути отправляет ACK через GAMEPLAY lane. Отсутствующие milestones записываются
+идемпотентно. Cached snapshot остаётся read-only.
+
+Mobile объявляет `X-Walking-RPG-Capabilities: durable-event-result-v1` при
+resolution и доверяет response `handoffRequired`, а не факту отправки header.
+Пока backend cluster gate выключен, response остаётся legacy delivery даже с
+этим header. Response старого backend без `receiptId`, `handoffRequired` и
+`nextNode` также не требует ACK. Gate включается операционно только после
+полного drain старых backend instances. Если capable-устройство уже создало
+pending receipt, старый клиент того же аккаунта нужно обновить либо завершить
+handoff на capable-устройстве.
 
 `SELECT_PET` — реальный игровой выбор: выбранный питомец возвращается в home и
 получает bond за события. Вибрация и анимация являются только feedback и не
@@ -153,14 +171,28 @@ read-only.
 события authoritative reload показывает второй узел `lumen-gate`; после его
 события маршрут продолжается на `ash-orbit`.
 
-Варианты второго события содержат preview материальной награды. После успешного resolution UI показывает исход события и новый stack, а отдельная карточка **«Инвентарь»** отображает текущие item и quantity. Поддерживаются:
+Варианты второго события содержат preview материальной награды. После
+resolution authoritative `GET /home` возвращает top-level
+`pendingEventResult`: receipt, выбор, XP/bond/material snapshot и nullable
+следующий узел. UI показывает отдельную result card до явного подтверждения, а
+карточка **«Инвентарь»** отображает текущие item и quantity. Результат
+восстанавливается после restart; cached snapshot также показывает его, но не
+разрешает ACK. Поддерживаются:
 
 ```text
 2 × Люминовый осколок
 1 × Нить эха
 ```
 
-Event-команда уже использует generic durable outbox, поэтому второй `eventId` и его `choiceId` сохраняются и replay-ятся без нового типа команды. Optimistic update XP, bond, inventory или статуса экспедиции не выполняется: после ответа всегда перечитывается home.
+Event resolution использует generic durable outbox, поэтому `eventId`,
+`choiceId` и исходный key сохраняются и replay-ятся. Для
+`handoffRequired = true` подтверждение result card использует отдельный
+`EVENT_RESULT_ACKNOWLEDGEMENT` в той же GAMEPLAY lane: persist-before-send
+хранит `receiptId`, HTTP POST не имеет body, успешный replay возвращает
+стабильное время первого ACK. Пока capable receipt pending, backend и UI не
+разрешают следующий advance/resolution той же экспедиции. Optimistic update XP,
+bond, inventory или статуса экспедиции не выполняется: после resolution и ACK
+всегда перечитывается home.
 
 ## Минимальные платформенные настройки
 
@@ -301,13 +333,17 @@ Unit/widget tests покрывают:
 - Health authorization denial;
 - locked HealthKit protected data;
 - retry idempotency в рамках процесса и после restart;
-- persist-before-send и exact key replay для activity/expedition/event/platform;
+- persist-before-send и exact key replay для
+  activity/expedition/event/platform;
+- persist-before-send/restart replay receipt для bodyless event-result ACK;
 - FIFO и независимость ACTIVITY/GAMEPLAY lanes;
 - temporary/backup/corruption recovery файлового store;
 - startup replay → reload authoritative home;
 - `sync → reload authoritative home`;
 - переход первого события на второй узел;
 - resolution второго события, material preview/result и inventory rendering;
+- parsing и restart-visible rendering top-level `pendingEventResult`;
+- ACK result card, authoritative reload и read-only cached card;
 - restart-safe replay второго события с исходным payload/key;
 - parsing/validation `dailyGoalPolicy` и отображение default/adaptive explanation;
 - mapping platform snapshot и platform command response;

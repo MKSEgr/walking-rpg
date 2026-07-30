@@ -51,6 +51,9 @@ class EventApiClient {
     );
   }
 
+  static const String durableHandoffCapability = 'durable-event-result-v1';
+  static const String clientCapabilitiesHeader = 'X-Walking-RPG-Capabilities';
+
   final Uri baseUri;
   final String userId;
   final HomeTransport transport;
@@ -80,6 +83,7 @@ class EventApiClient {
       headers: <String, String>{
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        clientCapabilitiesHeader: durableHandoffCapability,
       },
       body: jsonEncode(<String, Object>{
         'choiceId': normalizedChoiceId,
@@ -101,6 +105,45 @@ class EventApiClient {
     return EventResolutionResult.fromJson(decoded);
   }
 
+  Future<EventResultAcknowledgement> acknowledge({
+    required String receiptId,
+  }) async {
+    final String normalizedReceiptId = receiptId.trim();
+    if (normalizedReceiptId.isEmpty) {
+      throw ArgumentError('receiptId обязателен');
+    }
+
+    await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
+
+    final Uri uri = baseUri.resolve(
+      '/api/v1/event-results/'
+      '${Uri.encodeComponent(normalizedReceiptId)}/acknowledge',
+    );
+    final HomeTransportResponse response = await transport.post(
+      uri: uri,
+      headers: <String, String>{'Accept': 'application/json'},
+      body: '',
+    );
+
+    final Object? decoded = _decodeJson(response.body);
+    if (response.statusCode != 200) {
+      throw EventApiException(
+        statusCode: response.statusCode,
+        code: _errorCode(decoded),
+        message: _errorMessage(
+          decoded,
+          fallback: 'Backend отклонил подтверждение результата события',
+        ),
+      );
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Event acknowledgement response должен быть JSON-объектом',
+      );
+    }
+    return EventResultAcknowledgement.fromJson(decoded);
+  }
+
   Object? _decodeJson(String body) {
     try {
       return jsonDecode(body);
@@ -119,14 +162,17 @@ class EventApiClient {
     return 'EVENT_API_ERROR';
   }
 
-  String _errorMessage(Object? decoded) {
+  String _errorMessage(
+    Object? decoded, {
+    String fallback = 'Backend отклонил выбор события',
+  }) {
     if (decoded is Map<String, dynamic>) {
       final Object? message = decoded['message'];
       if (message is String && message.trim().isNotEmpty) {
         return message;
       }
     }
-    return 'Backend отклонил выбор события';
+    return fallback;
   }
 }
 

@@ -3,13 +3,17 @@ package com.walkingrpg.backend.expedition.infrastructure;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
+import com.walkingrpg.backend.expedition.domain.EventNextNodeResult;
 import com.walkingrpg.backend.expedition.domain.EventPetRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventPilotRewardResult;
+import com.walkingrpg.backend.expedition.domain.EventResultAcknowledgementResult;
 import com.walkingrpg.backend.expedition.domain.EventResolutionResult;
 import com.walkingrpg.backend.expedition.domain.EventResolutionStatus;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
@@ -20,6 +24,45 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class JdbcEventResolutionRepository implements EventResolutionRepository {
 
+    private static final String RESULT_COLUMNS = """
+            receipt_id,
+            event_id,
+            request_fingerprint,
+            content_version,
+            expedition_id,
+            expedition_status,
+            expedition_version,
+            event_title,
+            resolution_status,
+            choice_id,
+            choice_title,
+            outcome_title,
+            outcome_summary,
+            pilot_id,
+            pilot_name,
+            pilot_level_after,
+            pilot_experience_gained,
+            pilot_experience_after,
+            pilot_next_level_experience,
+            pilot_version,
+            pet_id,
+            pet_name,
+            pet_level_after,
+            pet_bond_gained,
+            pet_bond_after,
+            pet_version,
+            material_item_id,
+            material_item_name,
+            material_item_description,
+            material_quantity_gained,
+            material_quantity_after,
+            material_version,
+            handoff_required,
+            next_node_id,
+            next_node_name,
+            server_time
+            """;
+
     private final JdbcTemplate jdbcTemplate;
 
     public JdbcEventResolutionRepository(JdbcTemplate jdbcTemplate) {
@@ -29,80 +72,32 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
     @Override
     public Optional<ProcessedEventResolution> findProcessed(EventIdempotencyScope scope) {
         List<ProcessedEventResolution> resolutions = jdbcTemplate.query("""
-                SELECT request_fingerprint,
-                       content_version,
-                       expedition_id,
-                       expedition_status,
-                       expedition_version,
-                       event_title,
-                       resolution_status,
-                       choice_id,
-                       choice_title,
-                       outcome_title,
-                       outcome_summary,
-                       pilot_id,
-                       pilot_name,
-                       pilot_level_after,
-                       pilot_experience_gained,
-                       pilot_experience_after,
-                       pilot_next_level_experience,
-                       pilot_version,
-                       pet_id,
-                       pet_name,
-                       pet_level_after,
-                       pet_bond_gained,
-                       pet_bond_after,
-                       pet_version,
-                       material_item_id,
-                       material_item_name,
-                       material_item_description,
-                       material_quantity_gained,
-                       material_quantity_after,
-                       material_version,
-                       server_time
+                SELECT %s
                 FROM processed_event_resolution
                 WHERE user_id = ?
                   AND event_id = ?
                   AND idempotency_key = ?
-                """, (resultSet, rowNumber) -> new ProcessedEventResolution(
-                resultSet.getString("request_fingerprint"),
-                new EventResolutionResult(
-                        resultSet.getString("content_version"),
-                        resultSet.getString("expedition_id"),
-                        ExpeditionProgressStatus.valueOf(
-                                resultSet.getString("expedition_status")
-                        ),
-                        resultSet.getLong("expedition_version"),
-                        scope.eventId(),
-                        resultSet.getString("event_title"),
-                        EventResolutionStatus.valueOf(
-                                resultSet.getString("resolution_status")
-                        ),
-                        resultSet.getString("choice_id"),
-                        resultSet.getString("choice_title"),
-                        resultSet.getString("outcome_title"),
-                        resultSet.getString("outcome_summary"),
-                        new EventPilotRewardResult(
-                                resultSet.getString("pilot_id"),
-                                resultSet.getString("pilot_name"),
-                                resultSet.getInt("pilot_level_after"),
-                                resultSet.getInt("pilot_experience_gained"),
-                                resultSet.getInt("pilot_experience_after"),
-                                resultSet.getInt("pilot_next_level_experience"),
-                                resultSet.getLong("pilot_version")
-                        ),
-                        new EventPetRewardResult(
-                                resultSet.getString("pet_id"),
-                                resultSet.getString("pet_name"),
-                                resultSet.getInt("pet_level_after"),
-                                resultSet.getInt("pet_bond_gained"),
-                                resultSet.getInt("pet_bond_after"),
-                                resultSet.getLong("pet_version")
-                        ),
-                        readMaterial(resultSet),
-                        resultSet.getTimestamp("server_time").toInstant()
-                )
-        ), scope.userId(), scope.eventId(), scope.idempotencyKey());
+                """.formatted(RESULT_COLUMNS), this::mapProcessed,
+                scope.userId(), scope.eventId(), scope.idempotencyKey());
+        return resolutions.stream().findFirst();
+    }
+
+    @Override
+    public Optional<ProcessedEventResolution> findPendingResult(
+            String userId,
+            String expeditionId
+    ) {
+        List<ProcessedEventResolution> resolutions = jdbcTemplate.query("""
+                SELECT %s
+                FROM processed_event_resolution
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                  AND handoff_required
+                  AND acknowledged_at IS NULL
+                ORDER BY server_time, receipt_id
+                LIMIT 1
+                """.formatted(RESULT_COLUMNS), this::mapProcessed,
+                userId, expeditionId);
         return resolutions.stream().findFirst();
     }
 
@@ -115,6 +110,7 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
         EventMaterialRewardResult material = result.material();
         jdbcTemplate.update("""
                 INSERT INTO processed_event_resolution (
+                    receipt_id,
                     user_id,
                     expedition_id,
                     event_id,
@@ -148,6 +144,9 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                     material_quantity_gained,
                     material_quantity_after,
                     material_version,
+                    handoff_required,
+                    next_node_id,
+                    next_node_name,
                     server_time,
                     created_at
                 )
@@ -155,9 +154,10 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, now()
+                    ?, ?, ?, ?, ?, ?, ?, ?, now()
                 )
                 """,
+                result.receiptId(),
                 scope.userId(),
                 result.expeditionId(),
                 scope.eventId(),
@@ -191,7 +191,105 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                 material == null ? null : material.quantityGained(),
                 material == null ? null : material.quantityAfter(),
                 material == null ? null : material.version(),
+                result.handoffRequired(),
+                result.nextNode() == null ? null : result.nextNode().nodeId(),
+                result.nextNode() == null ? null : result.nextNode().name(),
                 Timestamp.from(result.serverTime())
+        );
+    }
+
+    @Override
+    public Optional<EventResultAcknowledgementResult> acknowledgeResult(
+            String userId,
+            UUID receiptId,
+            Instant serverTime
+    ) {
+        List<EventResultAcknowledgementResult> acknowledged = jdbcTemplate.query("""
+                UPDATE processed_event_resolution
+                SET acknowledged_at = GREATEST(server_time, ?)
+                WHERE user_id = ?
+                  AND receipt_id = ?
+                  AND acknowledged_at IS NULL
+                RETURNING receipt_id, event_id, acknowledged_at
+                """, this::mapAcknowledgement,
+                Timestamp.from(serverTime), userId, receiptId);
+        if (!acknowledged.isEmpty()) {
+            return acknowledged.stream().findFirst();
+        }
+
+        List<EventResultAcknowledgementResult> existing = jdbcTemplate.query("""
+                SELECT receipt_id, event_id, acknowledged_at
+                FROM processed_event_resolution
+                WHERE user_id = ?
+                  AND receipt_id = ?
+                  AND acknowledged_at IS NOT NULL
+                """, this::mapAcknowledgement, userId, receiptId);
+        return existing.stream().findFirst();
+    }
+
+    private EventResultAcknowledgementResult mapAcknowledgement(
+            ResultSet resultSet,
+            int rowNumber
+    ) throws SQLException {
+        Instant acknowledgedAt =
+                resultSet.getTimestamp("acknowledged_at").toInstant();
+        return new EventResultAcknowledgementResult(
+                resultSet.getObject("receipt_id", UUID.class),
+                resultSet.getString("event_id"),
+                acknowledgedAt,
+                acknowledgedAt
+        );
+    }
+
+    private ProcessedEventResolution mapProcessed(
+            ResultSet resultSet,
+            int rowNumber
+    ) throws SQLException {
+        String nextNodeId = resultSet.getString("next_node_id");
+        return new ProcessedEventResolution(
+                resultSet.getString("request_fingerprint"),
+                new EventResolutionResult(
+                        resultSet.getObject("receipt_id", UUID.class),
+                        resultSet.getString("content_version"),
+                        resultSet.getString("expedition_id"),
+                        ExpeditionProgressStatus.valueOf(
+                                resultSet.getString("expedition_status")
+                        ),
+                        resultSet.getLong("expedition_version"),
+                        resultSet.getString("event_id"),
+                        resultSet.getString("event_title"),
+                        EventResolutionStatus.valueOf(
+                                resultSet.getString("resolution_status")
+                        ),
+                        resultSet.getString("choice_id"),
+                        resultSet.getString("choice_title"),
+                        resultSet.getString("outcome_title"),
+                        resultSet.getString("outcome_summary"),
+                        new EventPilotRewardResult(
+                                resultSet.getString("pilot_id"),
+                                resultSet.getString("pilot_name"),
+                                resultSet.getInt("pilot_level_after"),
+                                resultSet.getInt("pilot_experience_gained"),
+                                resultSet.getInt("pilot_experience_after"),
+                                resultSet.getInt("pilot_next_level_experience"),
+                                resultSet.getLong("pilot_version")
+                        ),
+                        new EventPetRewardResult(
+                                resultSet.getString("pet_id"),
+                                resultSet.getString("pet_name"),
+                                resultSet.getInt("pet_level_after"),
+                                resultSet.getInt("pet_bond_gained"),
+                                resultSet.getInt("pet_bond_after"),
+                                resultSet.getLong("pet_version")
+                        ),
+                        readMaterial(resultSet),
+                        resultSet.getBoolean("handoff_required"),
+                        nextNodeId == null ? null : new EventNextNodeResult(
+                                nextNodeId,
+                                resultSet.getString("next_node_name")
+                        ),
+                        resultSet.getTimestamp("server_time").toInstant()
+                )
         );
     }
 

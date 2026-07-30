@@ -2,10 +2,13 @@ package com.walkingrpg.backend.home.api;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
 import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
@@ -31,7 +34,7 @@ class HomeControllerTest {
 
     @BeforeEach
     void setUp() {
-        HomeReadRepository repository = (userId, localDate, expeditionId) ->
+        HomeReadRepository repository = repository(
                 new HomeRuntimeState(
                         6_842,
                         1,
@@ -45,7 +48,8 @@ class HomeControllerTest {
                         1,
                         "outer-beacon",
                         "signal-source-v1"
-                );
+                )
+        );
         DailyGoalPolicyProperties goalProperties = new DailyGoalPolicyProperties(
                 "adaptive-median-v1",
                 7,
@@ -120,4 +124,24 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
     }
 
+    private HomeReadRepository repository(HomeRuntimeState state) {
+        return new HomeReadRepository() {
+            @Override
+            public HomeRuntimeState findState(
+                    String userId,
+                    LocalDate localDate,
+                    String expeditionId
+            ) {
+                return state;
+            }
+
+            @Override
+            public Optional<ProcessedEventResolution> findPendingEventResult(
+                    String userId,
+                    String expeditionId
+            ) {
+                return Optional.empty();
+            }
+        };
+    }
 }

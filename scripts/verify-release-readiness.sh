@@ -25,6 +25,7 @@ for file in \
   docs/adr/0017-production-authentication-boundary.md \
   docs/adr/0018-mobile-oidc-session.md \
   docs/adr/0021-first-journey-observability.md \
+  docs/adr/0022-durable-event-result-handoff.md \
   backend/src/main/java/com/walkingrpg/backend/security/SecurityModeGuard.java \
   mobile/lib/core/auth/auth_session_controller.dart \
   mobile/lib/features/home/data/auth_home_transports.dart \
@@ -44,6 +45,7 @@ grep -Fq 'mode: ${AUTH_MODE:jwt}' backend/src/main/resources/application.yml || 
 grep -Fq 'demo-endpoints-enabled: ${DEMO_ENDPOINTS_ENABLED:false}' backend/src/main/resources/application.yml || fail 'demo endpoint must be disabled by default'
 grep -Fq 'device-claim: ${OIDC_DEVICE_CLAIM:device_id}' backend/src/main/resources/application.yml || fail 'default device claim must be stable device_id'
 grep -Fq 'account-deletion-max-authentication-age: ${ACCOUNT_DELETION_MAX_AUTH_AGE:PT5M}' backend/src/main/resources/application.yml || fail 'account deletion must require recent authentication'
+grep -Fq 'enabled: ${DURABLE_EVENT_RESULT_HANDOFF_ENABLED:false}' backend/src/main/resources/application.yml || fail 'durable event-result handoff must require explicit cluster activation'
 grep -Fq 'private Mode mode = Mode.JWT;' backend/src/main/java/com/walkingrpg/backend/security/WalkingRpgSecurityProperties.java || fail 'security properties must fail closed as jwt'
 grep -Fq 'private String deviceClaim = "device_id";' backend/src/main/java/com/walkingrpg/backend/security/WalkingRpgSecurityProperties.java || fail 'security properties must default to stable device_id'
 grep -Eq '^[[:space:]]+mode: jwt$' backend/src/main/resources/application-prod.yml || fail 'production profile must use jwt mode'

@@ -37,6 +37,8 @@ typedef EventCommandSender =
       required String choiceId,
       required String idempotencyKey,
     });
+typedef EventResultAcknowledgementSender =
+    Future<EventResultAcknowledgement> Function({required String receiptId});
 typedef PlatformCommandSender =
     Future<PlatformCommandResult> Function({
       required String commandType,
@@ -51,6 +53,7 @@ final class MobileCommandRuntime {
     required ActivityCommandSender activitySender,
     required ExpeditionCommandSender expeditionSender,
     required EventCommandSender eventSender,
+    EventResultAcknowledgementSender? eventResultAcknowledgementSender,
     PlatformCommandSender? platformSender,
     MobileCommandClock? clock,
     MobileCommandKeyFactory? keyFactory,
@@ -59,6 +62,7 @@ final class MobileCommandRuntime {
        _activitySender = activitySender,
        _expeditionSender = expeditionSender,
        _eventSender = eventSender,
+       _eventResultAcknowledgementSender = eventResultAcknowledgementSender,
        _platformSender = platformSender,
        _clock = clock ?? DateTime.now,
        _keyFactory = keyFactory ?? _defaultKey;
@@ -77,6 +81,7 @@ final class MobileCommandRuntime {
       activitySender: activityClient.sync,
       expeditionSender: expeditionClient.advance,
       eventSender: eventClient.resolve,
+      eventResultAcknowledgementSender: eventClient.acknowledge,
       platformSender: platformClient.execute,
     );
   }
@@ -86,6 +91,7 @@ final class MobileCommandRuntime {
   final ActivityCommandSender _activitySender;
   final ExpeditionCommandSender _expeditionSender;
   final EventCommandSender _eventSender;
+  final EventResultAcknowledgementSender? _eventResultAcknowledgementSender;
   final PlatformCommandSender? _platformSender;
   final MobileCommandClock _clock;
   final MobileCommandKeyFactory _keyFactory;
@@ -173,6 +179,24 @@ final class MobileCommandRuntime {
           'eventId': normalizedEventId,
           'choiceId': normalizedChoiceId,
         },
+      ),
+    );
+  }
+
+  Future<EventResultAcknowledgement> acknowledgeEventResult({
+    required String receiptId,
+    required String idempotencyKey,
+  }) {
+    final String normalizedReceiptId = _requireText(receiptId, 'receiptId');
+    return _runOpenOperation<EventResultAcknowledgement>(
+      () => _submit<EventResultAcknowledgement>(
+        type: MobileCommandType.eventResultAcknowledgement,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.eventResultAcknowledgement.wireName,
+          normalizedReceiptId,
+        ]),
+        payload: <String, Object?>{'receiptId': normalizedReceiptId},
       ),
     );
   }
@@ -447,6 +471,19 @@ final class MobileCommandRuntime {
           choiceId: choiceId,
           idempotencyKey: command.idempotencyKey,
         );
+      case MobileCommandType.eventResultAcknowledgement:
+        final EventResultAcknowledgementSender? sender =
+            _eventResultAcknowledgementSender;
+        if (sender == null) {
+          throw MobileCommandPayloadException(
+            command.commandId,
+            const FormatException(
+              'Event result acknowledgement sender не настроен',
+            ),
+          );
+        }
+        final String receiptId = _payloadString(command, 'receiptId');
+        return sender(receiptId: receiptId);
       case MobileCommandType.platformCommand:
         final PlatformCommandSender? sender = _platformSender;
         if (sender == null) {

@@ -72,6 +72,9 @@ class ExpeditionAdvanceIntegrationTest {
     private ExpeditionRepository expeditionRepository;
 
     @Autowired
+    private EventResolutionRepository eventResolutionRepository;
+
+    @Autowired
     private EconomyService economyService;
 
     @Autowired
@@ -194,6 +197,7 @@ class ExpeditionAdvanceIntegrationTest {
         );
         ExpeditionAdvanceService failingService = new ExpeditionAdvanceService(
                 failingRepository,
+                eventResolutionRepository,
                 economyService,
                 content,
                 Clock.fixed(Instant.parse("2026-07-25T12:00:00Z"), ZoneOffset.UTC)

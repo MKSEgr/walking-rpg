@@ -9,6 +9,7 @@ import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
 import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceCommandFactory;
 import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.expedition.infrastructure.InMemoryEventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryExpeditionRepository;
 import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
@@ -34,6 +35,7 @@ class ExpeditionAdvanceControllerTest {
         economyService.creditActivityEnergy("user-1", 68, "activity-1", NOW);
         ExpeditionAdvanceService service = new ExpeditionAdvanceService(
                 new InMemoryExpeditionRepository(),
+                new InMemoryEventResolutionRepository(),
                 economyService,
                 new StarterExpeditionContent(),
                 Clock.fixed(NOW, ZoneOffset.UTC)
@@ -75,6 +77,7 @@ class ExpeditionAdvanceControllerTest {
         );
         ExpeditionAdvanceService emptyWalletService = new ExpeditionAdvanceService(
                 new InMemoryExpeditionRepository(),
+                new InMemoryEventResolutionRepository(),
                 emptyEconomyService,
                 new StarterExpeditionContent(),
                 Clock.fixed(NOW, ZoneOffset.UTC)

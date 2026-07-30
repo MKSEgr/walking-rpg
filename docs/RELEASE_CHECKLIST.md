@@ -56,3 +56,5 @@ CI создаёт технические release candidates. Подпись и �
 - [ ] Есть evidence для поддерживаемых iOS/Android сценариев.
 - [ ] Измерена батарея.
 - [ ] Определены beta cohort, stop conditions и rollback plan.
+- [ ] Durable result activation выполняется только после drain старых backend
+      instances; rollback проверяет disabled gate и ноль pending receipts.

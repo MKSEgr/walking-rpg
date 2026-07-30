@@ -8,6 +8,7 @@ import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.InventoryItemSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
+import com.walkingrpg.backend.home.domain.PendingEventResultSnapshot;
 import com.walkingrpg.backend.home.domain.PilotSnapshot;
 
 public record HomeSnapshotResponse(
@@ -25,6 +26,7 @@ public record HomeSnapshotResponse(
         PilotSnapshot pilot,
         PetSnapshot pet,
         List<InventoryItemSnapshot> inventory,
+        PendingEventResultSnapshot pendingEventResult,
         ExpeditionSnapshot expedition
 ) {
     public HomeSnapshotResponse {
@@ -62,6 +64,7 @@ public record HomeSnapshotResponse(
                 pilot,
                 pet,
                 List.of(),
+                null,
                 expedition
         );
     }

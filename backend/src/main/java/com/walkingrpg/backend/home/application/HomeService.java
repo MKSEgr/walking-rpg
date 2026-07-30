@@ -9,6 +9,7 @@ import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.domain.ExpeditionDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventChoiceDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
+import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.goal.domain.DailyGoal;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
@@ -20,14 +21,15 @@ import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryItemSnapshot;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
-import com.walkingrpg.backend.home.domain.MaterialRewardSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
+import com.walkingrpg.backend.home.domain.PendingEventResultSnapshot;
 import com.walkingrpg.backend.home.domain.PilotSnapshot;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.domain.InventoryItemDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -74,7 +76,7 @@ public class HomeService {
         );
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public HomeSnapshotResponse getSnapshot(HomeQuery query) {
         ExpeditionDefinition initialDefinition = expeditionContent.initialDefinition();
         DailyGoal dailyGoal = dailyGoalService.calculate(
@@ -105,8 +107,32 @@ public class HomeService {
                 pilotSnapshot(state),
                 petSnapshot(state),
                 inventorySnapshots(state),
+                pendingEventResult(query.userId(), initialDefinition.expeditionId()),
                 expeditionSnapshot(currentDefinition, state)
         );
+    }
+
+    private PendingEventResultSnapshot pendingEventResult(
+            String userId,
+            String expeditionId
+    ) {
+        return repository.findPendingEventResult(userId, expeditionId)
+                .map(ProcessedEventResolution::result)
+                .map(result -> new PendingEventResultSnapshot(
+                        result.receiptId(),
+                        result.eventId(),
+                        result.eventTitle(),
+                        result.choiceId(),
+                        result.choiceTitle(),
+                        result.outcomeTitle(),
+                        result.outcomeSummary(),
+                        result.pilot(),
+                        result.pet(),
+                        result.material(),
+                        result.nextNode(),
+                        result.serverTime()
+                ))
+                .orElse(null);
     }
 
     private PilotSnapshot pilotSnapshot(HomeRuntimeState state) {
@@ -187,24 +213,27 @@ public class HomeService {
         if (state.unlockedEventId() == null) {
             return null;
         }
+        if (ExpeditionProgressStatus.COMPLETED.name().equals(
+                state.expeditionStatus()
+        )) {
+            return null;
+        }
         List<ExpeditionEventChoiceSnapshot> choices = expeditionContent
                 .eventChoices(state.unlockedEventId())
                 .stream()
                 .map(this::choiceSnapshot)
                 .toList();
-        boolean resolved = ExpeditionProgressStatus.COMPLETED.name()
-                .equals(state.expeditionStatus());
         return new ExpeditionEventSnapshot(
                 definition.event().eventId(),
                 definition.event().title(),
                 definition.event().summary(),
-                resolved ? "RESOLVED" : "READY",
+                "READY",
                 choices,
-                resolved ? state.resolvedChoiceId() : null,
-                resolved ? state.resolvedChoiceTitle() : null,
-                resolved ? state.outcomeTitle() : null,
-                resolved ? state.outcomeSummary() : null,
-                resolved ? materialRewardSnapshot(state) : null
+                null,
+                null,
+                null,
+                null,
+                null
         );
     }
 
@@ -228,17 +257,4 @@ public class HomeService {
         );
     }
 
-    private MaterialRewardSnapshot materialRewardSnapshot(HomeRuntimeState state) {
-        if (state.materialItemId() == null) {
-            return null;
-        }
-        return new MaterialRewardSnapshot(
-                state.materialItemId(),
-                state.materialItemName(),
-                state.materialItemDescription(),
-                state.materialQuantityGained(),
-                state.materialQuantityAfter(),
-                state.materialVersion()
-        );
-    }
 }

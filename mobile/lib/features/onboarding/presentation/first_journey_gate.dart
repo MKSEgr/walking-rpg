@@ -106,7 +106,9 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
               onAdvance: () => _advance(progress),
               onResolve: (HomeEventChoice choice) => _resolve(progress, choice),
               onContinueAfterActivity: _continueAfterActivityReward,
-              onFinish: _finish,
+              onFinish: () {
+                unawaited(_finish());
+              },
               onContinueLater: _continueLater,
               onOpenAccount: widget.onOpenAccount,
             );
@@ -326,15 +328,50 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     });
   }
 
-  void _finish() {
+  Future<void> _finish() async {
     if (_busy) {
       return;
     }
-    setState(() {
-      _eventReward = null;
-      _activityReward = null;
-      _showMainExperience = true;
-      _errorMessage = null;
+    final EventResolutionResult? result = _eventReward;
+    if (result == null) {
+      setState(() {
+        _activityReward = null;
+        _showMainExperience = true;
+        _errorMessage = null;
+      });
+      return;
+    }
+    if (!result.handoffRequired) {
+      setState(() {
+        _eventReward = null;
+        _activityReward = null;
+        _showMainExperience = true;
+        _errorMessage = null;
+      });
+      return;
+    }
+    final String? receiptId = result.receiptId;
+    if (receiptId == null || receiptId.isEmpty) {
+      setState(() {
+        _errorMessage =
+            'Backend подтвердил durable handoff без result receipt.';
+      });
+      return;
+    }
+    await _runAction(() async {
+      await widget.commandRuntime.acknowledgeEventResult(
+        receiptId: receiptId,
+        idempotencyKey: 'first-journey-event-result-$receiptId-ack-v1',
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _eventReward = null;
+        _activityReward = null;
+        _showMainExperience = true;
+        _errorMessage = null;
+      });
     });
   }
 

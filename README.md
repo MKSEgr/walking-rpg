@@ -18,6 +18,7 @@
 → 18 узлов первой главы
 → постоянные XP пилота, bond питомца и материалы
 → persistent inventory
+→ durable карточка результата и явное подтверждение продолжения
 → завершённое состояние экспедиции
 ```
 
@@ -36,7 +37,10 @@
 - server-authoritative funnel и time-to-value первого пути для alpha cohort;
 - три питомца с реальным active selection и независимым progression;
 - material inventory с append-only ledger и защитой от повторной выдачи;
-- foreground durable outbox для activity, expedition и event-команд;
+- durable event-result receipt, который восстанавливается через `GET /home`
+  после потери ответа или restart;
+- foreground durable outbox для activity, expedition, event и acknowledgement
+  команд;
 - GitHub Actions для backend, Flutter, Android APK и iOS Simulator build.
 
 ## Платформенные шаги
@@ -60,7 +64,14 @@ localDate + IANA timeZone + authoritativeTotal
 
 ## Надёжная отправка команд
 
-Перед первой сетевой попыткой mobile сохраняет полный payload и idempotency key для activity sync, продвижения экспедиции и решения события. После потери ответа или завершения процесса следующий запуск повторяет ту же команду с тем же key. Успешно восстановленные команды всегда завершаются повторным чтением `GET /api/v1/home`; локальная очередь не считается источником игрового состояния.
+Перед первой сетевой попыткой mobile сохраняет полный payload и idempotency key
+для activity sync, продвижения экспедиции и решения события. Для подтверждения
+результата outbox сохраняет `receiptId`: он же является единственным
+server-side idempotency scope bodyless ACK-запроса. После потери ответа или
+завершения процесса следующий запуск повторяет исходную команду. Успешно
+восстановленные команды всегда завершаются повторным чтением
+`GET /api/v1/home`; локальная очередь не считается источником игрового
+состояния.
 
 Очередь разделена на независимые `ACTIVITY` и `GAMEPLAY` lane. Внутри lane команды обрабатываются FIFO. Network error, `408`, `429`, `5xx` и неоднозначный response остаются pending; подтверждённые остальные `4xx` становятся terminal failed и не блокируют следующие команды. Подробности: [ADR 0012](docs/adr/0012-foreground-durable-mobile-command-outbox.md).
 
@@ -81,6 +92,31 @@ follow-echo    → 1 × Нить эха
 snapshot и не выдаёт предмет повторно. Существующие пользователи, завершившие
 `starter-v1`, мигрируют без потери XP/bond и без ретроактивной material reward.
 Подробности: [ADR 0014](docs/adr/0014-second-node-and-persistent-inventory.md).
+
+Новый mobile объявляет capability
+`X-Walking-RPG-Capabilities: durable-event-result-v1`. После cluster-wide
+активации `DURABLE_EVENT_RESULT_HANDOFF_ENABLED=true` backend возвращает для
+такого resolution стабильный `receiptId`, `handoffRequired = true` и nullable
+`nextNode`. Пока пользователь не подтвердил результат,
+`GET /api/v1/home` возвращает top-level `pendingEventResult`, а mobile
+показывает полную карточку решения и наград даже после restart. Кнопка
+продолжения отправляет bodyless
+`POST /api/v1/event-results/{receiptId}/acknowledge` через GAMEPLAY outbox и
+только после подтверждённого ответа перечитывает home. Пока receipt не
+подтверждён, backend отклоняет следующий advance или event resolution. Cached
+карточка остаётся видимой, но read-only.
+
+Если capability отсутствует или activation gate выключен, новый backend
+сохраняет результат в legacy delivery mode (`handoffRequired = false`) и сразу
+отмечает receipt подтверждённым: старый mobile не блокируется после события.
+Новый mobile также принимает response старого backend без receipt/handoff
+fields. Exact replay всегда возвращает delivery mode первого запроса.
+Activation разрешена только после полного drain старых backend instances; для
+rollback gate сначала выключается и число pending receipts доводится до нуля.
+Если capable-клиент уже создал pending receipt, старый клиент того же аккаунта
+должен быть обновлён или результат нужно подтвердить на capable-клиенте.
+Подробности:
+[ADR 0022](docs/adr/0022-durable-event-result-handoff.md).
 
 ## Структура
 
@@ -131,6 +167,7 @@ POST /api/v1/activity/sync
 POST /api/v1/expeditions/starter-expedition-v1/advance
 POST /api/v1/events/signal-source-v1/resolve
 POST /api/v1/events/echo-vault-v1/resolve
+POST /api/v1/event-results/{receiptId}/acknowledge
 ```
 
 Подробности: [backend/README.md](backend/README.md).
@@ -197,7 +234,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V9 + PostgreSQL Testcontainers tests
+Flyway V1–V10 + PostgreSQL Testcontainers tests
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build

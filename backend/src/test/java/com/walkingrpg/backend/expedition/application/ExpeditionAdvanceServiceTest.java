@@ -10,6 +10,7 @@ import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
+import com.walkingrpg.backend.expedition.infrastructure.InMemoryEventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryExpeditionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ class ExpeditionAdvanceServiceTest {
         economyService = new EconomyService(new InMemoryEconomyRepository());
         service = new ExpeditionAdvanceService(
                 new InMemoryExpeditionRepository(),
+                new InMemoryEventResolutionRepository(),
                 economyService,
                 new StarterExpeditionContent(),
                 Clock.fixed(NOW, ZoneOffset.UTC)
@@ -80,6 +82,7 @@ class ExpeditionAdvanceServiceTest {
         );
         ExpeditionAdvanceService secondNodeService = new ExpeditionAdvanceService(
                 repository,
+                new InMemoryEventResolutionRepository(),
                 secondNodeEconomy,
                 new StarterExpeditionContent(),
                 Clock.fixed(NOW, ZoneOffset.UTC)
@@ -121,6 +124,7 @@ class ExpeditionAdvanceServiceTest {
         poorEconomy.creditActivityEnergy("poor-user", 5, "activity-poor", NOW);
         ExpeditionAdvanceService poorService = new ExpeditionAdvanceService(
                 new InMemoryExpeditionRepository(),
+                new InMemoryEventResolutionRepository(),
                 poorEconomy,
                 new StarterExpeditionContent(),
                 Clock.fixed(NOW, ZoneOffset.UTC)

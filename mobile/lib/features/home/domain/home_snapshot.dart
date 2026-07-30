@@ -1,4 +1,5 @@
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
 
 class HomeSnapshot {
@@ -31,6 +32,7 @@ class HomeSnapshot {
     this.petBond = 0,
     this.dailyGoalPolicy = const DailyGoalPolicy.legacy(),
     this.inventory = const <HomeInventoryItem>[],
+    this.pendingEventResult,
     this.cacheMetadata,
   });
 
@@ -50,6 +52,7 @@ class HomeSnapshot {
     final Map<String, dynamic> pet = _readMap(json, 'pet');
     final Map<String, dynamic> expedition = _readMap(json, 'expedition');
     final Object? eventJson = expedition['unlockedEvent'];
+    final Object? pendingEventResultJson = json['pendingEventResult'];
 
     return HomeSnapshot(
       localDate: _readString(json, 'localDate'),
@@ -82,6 +85,11 @@ class HomeSnapshot {
       petLevel: _readInt(pet, 'level'),
       petBond: _readInt(pet, 'bond'),
       inventory: _readInventory(json['inventory']),
+      pendingEventResult: pendingEventResultJson == null
+          ? null
+          : PendingEventResult.fromJson(
+              _asMap(pendingEventResultJson, 'pendingEventResult'),
+            ),
       cacheMetadata: cacheMetadata,
     );
   }
@@ -114,6 +122,7 @@ class HomeSnapshot {
   final int petLevel;
   final int petBond;
   final List<HomeInventoryItem> inventory;
+  final PendingEventResult? pendingEventResult;
   final CachedReadMetadata? cacheMetadata;
 
   bool get isCached => cacheMetadata != null;
@@ -169,7 +178,7 @@ class HomeSnapshot {
     economyVersion: 0,
     lastActivitySyncAt: null,
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'starter-v2',
+    contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'outer-beacon',
@@ -418,6 +427,63 @@ class HomeInventoryItem {
   final String description;
   final int quantity;
   final int version;
+}
+
+class PendingEventResult {
+  const PendingEventResult({
+    required this.receiptId,
+    required this.eventId,
+    required this.eventTitle,
+    required this.choiceId,
+    required this.choiceTitle,
+    required this.outcomeTitle,
+    required this.outcomeSummary,
+    required this.pilot,
+    required this.pet,
+    required this.resolvedAt,
+    this.material,
+    this.nextNode,
+  });
+
+  factory PendingEventResult.fromJson(Map<String, dynamic> json) {
+    final Object? materialJson = json['material'];
+    final Object? nextNodeJson = json['nextNode'];
+    return PendingEventResult(
+      receiptId: HomeSnapshot._readString(json, 'receiptId'),
+      eventId: HomeSnapshot._readString(json, 'eventId'),
+      eventTitle: HomeSnapshot._readString(json, 'eventTitle'),
+      choiceId: HomeSnapshot._readString(json, 'choiceId'),
+      choiceTitle: HomeSnapshot._readString(json, 'choiceTitle'),
+      outcomeTitle: HomeSnapshot._readString(json, 'outcomeTitle'),
+      outcomeSummary: HomeSnapshot._readString(json, 'outcomeSummary'),
+      pilot: EventPilotReward.fromJson(HomeSnapshot._readMap(json, 'pilot')),
+      pet: EventPetReward.fromJson(HomeSnapshot._readMap(json, 'pet')),
+      material: materialJson == null
+          ? null
+          : EventMaterialReward.fromJson(
+              _asMap(materialJson, 'pendingEventResult.material'),
+            ),
+      nextNode: nextNodeJson == null
+          ? null
+          : EventNextNode.fromJson(
+              _asMap(nextNodeJson, 'pendingEventResult.nextNode'),
+            ),
+      resolvedAt: HomeSnapshot._readString(json, 'resolvedAt'),
+    );
+  }
+
+  final String receiptId;
+  final String eventId;
+  final String eventTitle;
+  final String choiceId;
+  final String choiceTitle;
+  final String outcomeTitle;
+  final String outcomeSummary;
+  final EventPilotReward pilot;
+  final EventPetReward pet;
+  final EventMaterialReward? material;
+  final EventNextNode? nextNode;
+  final String resolvedAt;
 }
 
 Map<String, dynamic> _asMap(Object? value, String field) {

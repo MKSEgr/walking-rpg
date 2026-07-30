@@ -49,6 +49,7 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Два первоначальных узла и события
 - [x] Durable mobile gameplay commands
 - [x] Server-authoritative rewards и exact replay
+- [x] Durable event-result receipt, home pending projection и owner-scoped ACK
 
 ## Milestone 4 — MVP content loop
 
@@ -100,6 +101,11 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Выбранный питомец используется в home и получает собственный bond за
       события; progression разных питомцев не смешивается
 - [x] Неблокирующая reward/haptic feedback и read-only поведение cached state
+- [x] Restart-visible result card и persist-before-send acknowledgement перед
+      следующим advance/resolution
+- [x] Capability + cluster activation gate: V10/new backend/new mobile
+      выкатываются при disabled gate, durable mode включается после drain
+      старых instances, exact replay сохраняет исходный delivery mode
 - [x] Domain/widget/backend regression tests первого пути
 - [x] Durable server-authoritative milestones первого пути с exact-once временем
 - [x] Cohort funnel и p50/p90 time-to-value без смешивания legacy backfill

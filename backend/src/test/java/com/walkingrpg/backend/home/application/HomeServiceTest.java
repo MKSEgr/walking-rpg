@@ -6,8 +6,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
 import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class HomeServiceTest {
 
@@ -27,7 +30,7 @@ class HomeServiceTest {
 
     @Test
     void shouldCombineRuntimeStateWithStarterContentAndEvent() {
-        HomeReadRepository repository = (userId, localDate, expeditionId) ->
+        HomeReadRepository repository = repository(
                 new HomeRuntimeState(
                         6_842,
                         3,
@@ -41,7 +44,8 @@ class HomeServiceTest {
                         1,
                         "outer-beacon",
                         "signal-source-v1"
-                );
+                )
+        );
         DailyGoalPolicyProperties goalProperties = goalProperties();
         HomeService service = new HomeService(
                 repository,
@@ -83,8 +87,49 @@ class HomeServiceTest {
     }
 
     @Test
+    void shouldNotDuplicateCompletedEventInsideExpeditionProjection() {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        var finalNode = content.requireNode(StarterExpeditionContent.FINAL_NODE_ID);
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        12_000,
+                        1,
+                        "Europe/Berlin",
+                        LAST_SYNC,
+                        0,
+                        1,
+                        finalNode.requiredEnergy(),
+                        finalNode.requiredEnergy(),
+                        "COMPLETED",
+                        36,
+                        finalNode.currentNodeId(),
+                        finalNode.event().eventId()
+                )
+        );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        HomeSnapshotResponse snapshot = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        );
+
+        assertEquals("COMPLETED", snapshot.expedition().status());
+        assertNull(snapshot.expedition().unlockedEvent());
+    }
+
+    @Test
     void shouldRenderSelectedPetBeforeItsFirstReward() {
-        HomeReadRepository repository = (userId, localDate, expeditionId) ->
+        HomeReadRepository repository = repository(
                 new HomeRuntimeState(
                         0,
                         0,
@@ -110,7 +155,8 @@ class HomeServiceTest {
                         null,
                         null,
                         null
-                );
+                )
+        );
         DailyGoalPolicyProperties goalProperties = goalProperties();
         HomeService service = new HomeService(
                 repository,
@@ -144,5 +190,26 @@ class HomeServiceTest {
                 5,
                 250
         );
+    }
+
+    private HomeReadRepository repository(HomeRuntimeState state) {
+        return new HomeReadRepository() {
+            @Override
+            public HomeRuntimeState findState(
+                    String userId,
+                    LocalDate localDate,
+                    String expeditionId
+            ) {
+                return state;
+            }
+
+            @Override
+            public Optional<ProcessedEventResolution> findPendingEventResult(
+                    String userId,
+                    String expeditionId
+            ) {
+                return Optional.empty();
+            }
+        };
     }
 }

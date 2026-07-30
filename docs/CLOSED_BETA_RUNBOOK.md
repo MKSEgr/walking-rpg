@@ -43,4 +43,25 @@
 
 ## Rollback
 
-Остановить расширение cohort, отключить рискованные функции remote config, отозвать build, сохранить immutable evidence и выпустить исправление отдельным PR с новым build number.
+Остановить расширение cohort, отключить рискованные функции remote config,
+отозвать build, сохранить immutable evidence и выпустить исправление отдельным
+PR с новым build number.
+
+Durable event-result handoff имеет отдельную безопасную последовательность:
+
+1. V10, новый backend и новый mobile выкатываются с
+   `DURABLE_EVENT_RESULT_HANDOFF_ENABLED=false`;
+2. старые backend instances полностью drain-ятся;
+3. только новый backend pool получает `...=true`;
+4. перед rollback gate снова выключается на всём пуле;
+5. rollback binary разрешён только после `count(*) = 0`:
+
+```sql
+SELECT count(*)
+FROM processed_event_resolution
+WHERE handoff_required
+  AND acknowledged_at IS NULL;
+```
+
+Старый backend нельзя смешивать с новым pool после activation. Если pending не
+дренируется, выполняется forward fix совместимым binary, а не unsafe rollback.
