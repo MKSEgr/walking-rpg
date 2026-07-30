@@ -92,10 +92,10 @@ class ProductionRuntimeGuardTest {
         MockEnvironment stage = safeProtectedEnvironment("stage");
 
         assertDoesNotThrow(() ->
-                environmentGuard().postProcessEnvironment(prod, null)
+                ProductionRuntimeGuard.validateProtectedEnvironment(prod)
         );
         assertDoesNotThrow(() ->
-                environmentGuard().postProcessEnvironment(stage, null)
+                ProductionRuntimeGuard.validateProtectedEnvironment(stage)
         );
         assertDoesNotThrow(() ->
                 environmentGuard().postProcessEnvironment(new MockEnvironment(), null)
@@ -266,10 +266,10 @@ class ProductionRuntimeGuardTest {
     }
 
     @Test
-    void shouldApplyProtectedGuardToDefaultProfile() {
+    void shouldApplyProtectedRuntimeGuardToDefaultProfile() {
         MockEnvironment safeDefault = defaultProtectedEnvironment("prod", SAFE_URL);
         assertDoesNotThrow(() ->
-                environmentGuard().postProcessEnvironment(safeDefault, null)
+                ProductionRuntimeGuard.validateProtectedEnvironment(safeDefault)
         );
 
         assertRejected(defaultProtectedEnvironment(

@@ -110,7 +110,9 @@ Identity provider принимает только ожидаемые principal-�
 
 - mobile OIDC Authorization Code + PKCE, secure token storage, refresh и logout реализуются следующим PR;
 - token revocation/introspection зависит от выбранного identity provider и его session policy;
-- telemetry/crash ingestion потребуют rate limiting на production ingress;
+- telemetry/crash ingestion остаётся anonymous, но получает bounded
+  per-process rate/body boundary из [ADR 0026](0026-production-operational-controls.md);
+  distributed ingress policy остаётся внешней;
 - signed device claim и физическая attestation ещё не доказывают целостность устройства.
 
 ## Проверки

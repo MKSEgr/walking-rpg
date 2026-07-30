@@ -79,10 +79,18 @@ CI создаёт технические release candidates. Подпись и �
 
 ## Operations
 
+- [ ] A4b ingress/probe/metrics/timeout tests и release-policy checks зелёные.
+- [ ] Synthetic backup/restore evidence имеет
+      `scope=SYNTHETIC_CI`, `productionValidated=false`, корректные checksums и
+      exact schema/data/sequence match.
 - [ ] Liveness/readiness и защищённый metrics endpoint проверены в фактическом
-      deployment.
+      deployment; management listener не доступен из public ingress.
+- [ ] Проверены внешние WAF/gateway/distributed abuse controls; per-process
+      application limiter не выдан за глобальную quota.
 - [ ] Настроены alerting, log retention и redaction без secrets/tokens.
 - [ ] Назначены владельцы rollback и инцидента, procedure проверена.
 - [ ] Backup создан фактическим production-процессом; restore drill выполнен в
       изолированной среде, проверены версия схемы и контрольные данные.
+- [ ] Backup scheduling/encryption/retention, PITR и RPO/RTO policy утверждены
+      и подтверждены датированным evidence.
 - [ ] Production secrets rotation и least-privilege DB role подтверждены.

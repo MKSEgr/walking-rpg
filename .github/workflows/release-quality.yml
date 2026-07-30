@@ -104,6 +104,69 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  backup-restore-drill:
+    name: Release quality · synthetic backup/restore drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPECTED_SOURCE_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Run isolated PostgreSQL backup/restore drill
+        id: backup-restore-drill
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x backend/mvnw scripts/operations/run-synthetic-backup-restore-drill.sh
+          output="$RUNNER_TEMP/walking-rpg-backup-restore-$EXPECTED_SOURCE_GIT_SHA"
+          receipt="$RUNNER_TEMP/walking-rpg-backup-restore-receipt-$EXPECTED_SOURCE_GIT_SHA"
+          bash scripts/operations/run-synthetic-backup-restore-drill.sh \
+            "$output" \
+            "$EXPECTED_SOURCE_GIT_SHA"
+          install -d -m 700 "$receipt"
+          install -m 600 \
+            "$output/evidence.json" \
+            "$output/evidence.json.sha256" \
+            "$receipt/"
+          python3 scripts/operations/verify-backup-restore-evidence.py \
+            receipt \
+            "$receipt" \
+            "$EXPECTED_SOURCE_GIT_SHA"
+          printf 'receipt=%s\n' "$receipt" >> "$GITHUB_OUTPUT"
+
+      - name: Upload sanitized synthetic evidence
+        id: upload-evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-backup-restore-evidence
+          path: |
+            ${{ steps.backup-restore-drill.outputs.receipt }}/evidence.json
+            ${{ steps.backup-restore-drill.outputs.receipt }}/evidence.json.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Record retained artifact provenance
+        env:
+          ARTIFACT_DIGEST: ${{ steps.upload-evidence.outputs.artifact-digest }}
+        run: |
+          printf 'Synthetic evidence artifact SHA-256: `%s`\n' \
+            "$ARTIFACT_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Tested source commit: `%s`\n' \
+            "$EXPECTED_SOURCE_GIT_SHA" >> "$GITHUB_STEP_SUMMARY"
+
   android-release:
     name: Release quality · Android unsigned AAB
     runs-on: ubuntu-latest

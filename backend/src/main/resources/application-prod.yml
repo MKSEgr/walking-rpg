@@ -16,3 +16,8 @@ spring:
           jwk-set-uri: ${OIDC_JWK_SET_URI}
           audiences:
             - ${OIDC_AUDIENCE}
+
+management:
+  server:
+    port: ${MANAGEMENT_PORT:8081}
+    address: ${MANAGEMENT_ADDRESS:127.0.0.1}

@@ -12,5 +12,6 @@ public class ProductionEnvironmentPostProcessor implements EnvironmentPostProces
             SpringApplication application
     ) {
         ProductionRuntimeGuard.validateProtectedEnvironment(environment);
+        ProductionOperationsGuard.validateProtectedEnvironment(environment);
     }
 }

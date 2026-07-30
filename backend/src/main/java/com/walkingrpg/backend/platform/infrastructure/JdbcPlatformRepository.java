@@ -12,6 +12,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
+import com.walkingrpg.backend.operations.JdbcStatementTimeouts;
 import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
 import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
 import com.walkingrpg.backend.platform.domain.PlatformUserState;
@@ -50,6 +51,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
     public void acquireUserLock(String userId) {
         jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(USER_LOCK_SQL)) {
+                JdbcStatementTimeouts.apply(jdbcTemplate, statement);
                 statement.setString(1, userId.length() + ":" + userId);
                 statement.execute();
             }

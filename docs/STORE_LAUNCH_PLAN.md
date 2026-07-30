@@ -30,6 +30,10 @@
   local/test-only sandbox payment/development push;
 - effective sandbox capability и mobile UI, скрывающий purchase action при
   release/disabled/cached state;
+- bounded diagnostics/telemetry ingress, public no-detail probes, loopback
+  management/Prometheus и fail-closed operational timeouts;
+- synthetic PostgreSQL backup/restore drill с machine-verifiable evidence и
+  явным `productionValidated=false`;
 - backend JAR, Android release AAB candidate и iOS release no-codesign candidate;
 - deterministic build metadata, privacy/store declaration drafts, release checklist и device validation protocol.
 
@@ -39,7 +43,8 @@
   активного питомца;
 - exact-once milestones и cohort funnel/time-to-value read model для alpha;
 - account export/delete с fresh OIDC authentication и локальной очисткой;
-- A4a profile/provider isolation с Flyway V12 и effective-capability UI gate.
+- A4a profile/provider isolation с Flyway V12 и effective-capability UI gate;
+- A4b operational ingress/probes/timeouts и synthetic restore tooling.
 
 ## 2. Gate A — завершить store-candidate software
 
@@ -120,26 +125,36 @@ Account data controls — `CODE_COMPLETE`:
 - mobile скрывает purchase action в release build, при effective `false` и для
   cached snapshot.
 
-#### A4b. Operations hardening — `CODE_PENDING`
+#### A4b. Operations hardening — `CODE_COMPLETE`
 
-- production API base URL только по TLS;
-- rate limits, request/body limits, timeouts и разделённые health/metrics
-  endpoints;
-- error/crash alerting и latency monitoring;
-- проверяемый backup/restore-drill pack без production secret;
-- rollback backend/content/config без публикации новой mobile-версии;
+- release API base URL проверяется как TLS-only, а cleartext остаётся только в
+  debug host configuration;
+- anonymous diagnostics/telemetry имеют проверяемые per-process
+  client/global rate, body и DTO limits; reject не пишет state;
+- liveness/readiness разделены, Prometheus защищён, а management listener
+  `stage`/`prod` по умолчанию привязан к loopback;
+- HTTP/database/shutdown timeouts закреплены protected-profile guard;
+- synthetic PostgreSQL 17 backup/restore pack проверяет archive checksum и
+  exact schema/data/sequence round-trip без production data или secret;
+- operational runbook фиксирует безопасный rollback backend/content/config,
+  incidents и восстановление без публикации новой mobile-версии;
 - durable result handoff активируется только после drain старых backend
   instances; rollback сначала выключает activation gate и дренирует pending
-  receipts до нуля;
-- support/admin runbook для удаления аккаунта, инцидентов и восстановления.
+  receipts до нуля.
+
+Эти controls являются code-level defense in depth. Per-process limiter не
+является WAF или distributed quota; synthetic restore не является production
+restore evidence.
 
 #### A4 external gates — `EXTERNAL_VALIDATION_REQUIRED`
 
 - secrets только из фактического protected environment / secret store;
 - production database, least-privilege role и реальный TLS endpoint;
 - production remote config и content release;
-- deployment, monitoring/alerting и rollback drill;
-- backup policy и датированный фактический restore drill.
+- deployment, management network isolation, WAF/distributed abuse policy,
+  monitoring/alerting и rollback drill;
+- backup scheduling/encryption/retention, PITR/RPO/RTO policy и датированный
+  restore реального backup в изолированной среде.
 
 ## 3. Gate B — физическая Health-валидация
 
@@ -302,10 +317,10 @@ Account data controls — `CODE_COMPLETE`:
 8. `signed TestFlight / Play internal and closed-beta candidates`;
 9. `submission fixes`.
 
-Пункты 1–3 и A4a имеют автономную реализацию в коде. Для пункта 3 до загрузки
+Пункты 1–3 и A4a–A4b имеют автономную реализацию в коде. Для пункта 3 до загрузки
 в магазины остаются end-to-end проверка с production IdP и решение о судьбе
-внешней identity-provider учётной записи. A4b и все A4 external gates не
-считаются завершёнными из-за наличия profile guard.
+внешней identity-provider учётной записи. A4b не закрывает и не валидирует
+никакой A4 external gate.
 
 Параллельно с PR 2–5 владелец продукта должен начать создание и верификацию developer accounts, подготовку публичных URL и набор beta-тестировщиков: эти процессы имеют внешнее время ожидания и не ускоряются кодом.
 

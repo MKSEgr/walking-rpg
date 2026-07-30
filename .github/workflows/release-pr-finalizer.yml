@@ -43,6 +43,7 @@ jobs:
               'iOS host · simulator debug',
               'Release quality · policy and metadata',
               'Release quality · backend package',
+              'Release quality · synthetic backup/restore drill',
               'Release quality · Android unsigned AAB',
               'Release quality · iOS no-codesign app',
           }

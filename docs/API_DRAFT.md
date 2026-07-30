@@ -614,13 +614,102 @@ continuity `conversionFromStarted`, но исключаются из
 используется `authoritativeConversionFromStarted`. Если у state-only legacy
 пользователя нет receipt evidence, ACK milestone не синтезируется.
 
+## Anonymous telemetry и diagnostics
+
+Оба endpoint-а нужны для startup/pre-authentication diagnostics и поэтому
+принимают anonymous request. Если валидная authentication присутствует,
+backend может связать запись с canonical subject; client-controlled `userId`
+не принимается.
+
+### `POST /api/v1/telemetry/events`
+
+Raw JSON body ограничен 16 KiB. `eventName` обязателен и не длиннее 100
+символов; `attributes` содержит не более 64 top-level keys.
+
+```json
+{
+  "eventName": "app_started",
+  "occurredAt": "2026-07-30T08:00:00Z",
+  "attributes": {
+    "source": "cold-start"
+  }
+}
+```
+
+Успех: `202 Accepted`.
+
+```json
+{
+  "accepted": true
+}
+```
+
+### `POST /api/v1/diagnostics/crashes`
+
+Raw JSON body ограничен 64 KiB. Ограничения:
+
+- `platform`: 32 символа;
+- `appVersion`: 64;
+- `errorType`: 160;
+- `message`: 2 000;
+- `stackTrace`: 32 768;
+- `context`: не более 64 top-level keys.
+
+```json
+{
+  "platform": "android",
+  "appVersion": "0.1.0",
+  "errorType": "startup_failure",
+  "message": "Initialization failed",
+  "stackTrace": null,
+  "context": {
+    "phase": "bootstrap"
+  },
+  "occurredAt": "2026-07-30T08:00:00Z"
+}
+```
+
+Успех: `202 Accepted` с `{"accepted":true}`.
+
+### Abuse responses
+
+Каждый route имеет bounded per-process client и global rate limits. Backend не
+доверяет forwarded headers как client identity. Эти limits не являются
+distributed WAF/gateway quota.
+
+- oversized raw body: `413 PAYLOAD_TOO_LARGE`;
+- исчерпанный client/global bucket: `429 RATE_LIMITED` и `Retry-After`;
+- DTO violation: `400 VALIDATION_ERROR`.
+
+Все reject происходят до application service/database write, имеют
+`Cache-Control: no-store`. Error envelope не содержит raw body, client key,
+remote address, token, crash message или stack trace.
+
+## Operational endpoints
+
+Operational endpoints не являются mobile API:
+
+| Endpoint | Назначение | Доступ |
+|---|---|---|
+| `GET /livez` | canonical application-port liveness без dependency details | anonymous |
+| `GET /readyz` | canonical application-port readiness, включая PostgreSQL | anonymous |
+| `GET /actuator/health/liveness` | management-port liveness counterpart | anonymous |
+| `GET /actuator/health/readiness` | management-port readiness counterpart | anonymous |
+| `GET /actuator/prometheus` | management-port low-cardinality metrics | `ROLE_ADMIN` |
+
+В `stage`/`prod` management listener по умолчанию отделён от application
+listener и привязан к `127.0.0.1:8081`; на application listener дополнительно
+проецируются только no-detail `/livez` и `/readyz`. Health details/components и
+Actuator discovery не публикуются; остальные operational routes запрещены.
+Реальный ingress и monitoring path требуют external network evidence.
+
 ## Ошибки
 
 Базовый формат:
 
 ```json
 {
-  "code": "VALIDATION_ERROR | NOT_FOUND | CONFLICT | INTERNAL_ERROR",
+  "code": "VALIDATION_ERROR | PAYLOAD_TOO_LARGE | RATE_LIMITED | NOT_FOUND | CONFLICT | INTERNAL_ERROR",
   "message": "человекочитаемое описание",
   "details": {
     "field": "idempotencyKey"

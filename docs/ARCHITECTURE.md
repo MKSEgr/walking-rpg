@@ -288,6 +288,15 @@ provider mode.
 25. Replay сохранённой покупки возвращает прежний command outcome/user state
     без нового provider call или mutation; capability fields заново
     проецируются из текущего deployment и после disable могут стать `false`.
+26. Oversized или rate-limited anonymous telemetry/crash request не вызывает
+    application service и не создаёт database state.
+27. Salted hashes direct client keys public ingress limiter-а bounded и
+    ephemeral; raw address не персистируется и не используется как metric
+    label.
+28. Liveness не зависит от PostgreSQL; readiness включает его, а health
+    details никогда не раскрываются.
+29. Synthetic backup/restore evidence всегда имеет
+    `productionValidated=false` и не закрывает реальный restore gate.
 
 ## 10. Identity и authorization boundary
 
@@ -303,7 +312,7 @@ OIDC access token
 
 Базовый режим backend — `jwt`; demo endpoint выключен. `dev-header` существует только в явных `local`/`test` профилях и изолирует технические headers внутри одного filter-а. В production `/api/v1/admin/**` требует `ROLE_ADMIN`, остальные защищённые `/api/v1/**` — `ROLE_USER`.
 
-Activity device identity получается из подписанного session/device claim и хранится как SHA-256 pseudonym. Произвольный `X-Device-Id` в JWT mode игнорируется. Публичными остаются только health/system info/content bootstrap и anonymous telemetry/crash ingestion.
+Activity device identity получается из подписанного session/device claim и хранится как SHA-256 pseudonym. Произвольный `X-Device-Id` в JWT mode игнорируется. На public application surface остаются system info, content bootstrap, bounded anonymous telemetry/crash ingestion и no-detail aliases `/livez`/`/readyz`. Actuator counterparts остаются на management boundary; metrics требуют `ROLE_ADMIN`.
 
 Mobile Authorization Code + PKCE, secure token storage, refresh и logout
 реализованы как отдельная boundary; production IdP configuration и
@@ -343,7 +352,52 @@ delivery.
 server verification, restore/refunds, APNs/FCM, production secrets,
 deployment и delivery evidence остаются внешними gates. См. ADR 0025.
 
-## 12. Health boundary
+## 12. Operations boundary
+
+```text
+public application listener
+├── authenticated /api/v1/**
+├── system info/content bootstrap
+├── bounded anonymous telemetry/crash
+├── /livez
+└── /readyz
+
+loopback management listener (stage/prod)
+├── actuator liveness
+├── actuator readiness + PostgreSQL
+└── Prometheus + ROLE_ADMIN
+```
+
+Public ingestion использует отдельные per-process client и global token
+buckets, raw-body limits и DTO limits. Forwarded headers не являются доверенной
+client identity. Salted client-key hashes имеют bounded count/TTL; raw address
+не персистируется и не попадает в metrics.
+`413 PAYLOAD_TOO_LARGE`/`429 RATE_LIMITED` возвращают privacy-safe error без
+raw payload, ставят `Cache-Control: no-store` и не вызывают application
+service. Metric outcome `accepted` означает admission этим filter, а не
+обязательно controller response `202`.
+
+Actuator discovery и `info` выключены. `/livez`, `/readyz` и Prometheus имеют
+разную семантику; health details/components скрыты, остальные application-port
+operational routes запрещены. Protected `stage`/`prod` по умолчанию выносят
+Actuator/Prometheus на `127.0.0.1:8081`, а application listener получает только
+canonical no-detail probe aliases. Фактическая network policy management
+listener-а, WAF/distributed quota, monitoring и alerts остаются внешними gates.
+
+HTTP connection/keep-alive/async request, datasource
+acquisition/validation, JDBC query, transaction и graceful shutdown имеют
+явные finite budgets, проверяемые protected runtime guard.
+
+Synthetic PostgreSQL 17 drill применяет Flyway V1–latest к disposable fixture,
+создаёт custom-format archive, проверяет checksum до fresh-target restore и
+сравнивает schema/data/sequence manifests. Его evidence всегда имеет
+`scope=SYNTHETIC_CI` и `productionValidated=false`; production backup policy,
+PITR/RPO/RTO и dated real restore требуют отдельного evidence.
+
+Подробности: [ADR 0026](adr/0026-production-operational-controls.md) и
+[production operations runbook](PRODUCTION_OPERATIONS_RUNBOOK.md).
+
+## 13. Health boundary
 
 ```text
 StepSource
@@ -356,7 +410,7 @@ StepSource
 
 Только `STEPS READ`, local midnight → now, IANA timezone и foreground/manual sync. Resume fallback не выдаётся за гарантированную background delivery. Физическая матрица описана в `DEVICE_VALIDATION_PROTOCOL.md`.
 
-## 13. Offline read model
+## 14. Offline read model
 
 ```text
 server GET /home|platform success
@@ -379,7 +433,7 @@ Terminal `4xx` не скрываются fallback-ом. Cached ENERGY не ра�
 Подробности: `docs/adr/0016-offline-read-cache.md` и
 `docs/adr/0022-durable-event-result-handoff.md`.
 
-## 14. Release-quality model
+## 15. Release-quality model
 
 ```text
 Standard CI
@@ -402,12 +456,13 @@ Protected external environment
 ```
 
 CI не хранит signing material и не выдаёт неподписанный candidate за
-публикуемый build. Protected profile/provider tests подтверждают только
-code-level isolation; production database, secrets, deployment, restore drill,
-device, push, payment, beta и store gates получают статус `VALIDATED` только
-после evidence.
+публикуемый build. Protected profile/provider/operations tests и synthetic
+restore подтверждают только code-level isolation и reproducible tooling;
+production database, secrets, management network, deployment, monitoring,
+dated restore, device, push, payment, beta и store gates получают статус
+`VALIDATED` только после evidence.
 
-## 15. Branch protection
+## 16. Branch protection
 
 Feature-ветки обновляет `serbin70`; `master` защищён ruleset и CODEOWNERS. Merge выполняет `MKSEgr` после CI/review через `Squash and merge`. Подробности: `BRANCH_PROTECTION.md`.
 

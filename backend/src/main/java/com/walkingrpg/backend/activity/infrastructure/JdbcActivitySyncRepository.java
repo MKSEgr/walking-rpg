@@ -15,6 +15,7 @@ import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.activity.domain.ActivitySyncResult;
 import com.walkingrpg.backend.activity.domain.IdempotencyScope;
 import com.walkingrpg.backend.activity.domain.ProcessedActivitySync;
+import com.walkingrpg.backend.operations.JdbcStatementTimeouts;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -42,6 +43,7 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
         String lockKey = userId.length() + ":" + userId;
         jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(USER_LOCK_SQL)) {
+                JdbcStatementTimeouts.apply(jdbcTemplate, statement);
                 statement.setString(1, lockKey);
                 statement.execute();
             }

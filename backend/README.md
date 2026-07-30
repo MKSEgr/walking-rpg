@@ -90,6 +90,9 @@ PUSH_PROVIDER=development
   или внешний Hikari configuration file;
 - production database user не является локальным/default superuser;
 - payment и push provider modes равны `disabled`.
+- management listener отделён от application port и привязан к loopback;
+- health/metrics exposure, HTTP/JDBC/transaction/shutdown timeouts и anonymous
+  diagnostics/telemetry ceilings не могут быть ослаблены external override.
 
 Небезопасная конфигурация останавливает процесс на environment-preparation
 этапе, до сетевого подключения к БД или применения миграций.
@@ -125,6 +128,11 @@ PostgreSQL Testcontainers tests проверяют:
 - Flyway V12 отключает development capabilities во всех сохранённых remote
   configs; provider/profile guards и exact idempotency replay проверяются
   отдельными unit/integration tests.
+- operational integration проверяет main-port `/livez`/`readyz`, PostgreSQL в
+  readiness, скрытые health details и admin-only Prometheus;
+- synthetic PostgreSQL 17.10 backup/restore drill сверяет archive checksum,
+  Flyway version и schema/data/sequence manifests на fresh target. Он не
+  заменяет датированный restore реального production backup.
 
 ## Персональная дневная цель
 
@@ -156,7 +164,10 @@ DAILY_GOAL_ROUNDING_STEP
 ## Endpoint-ы
 
 ```text
-GET  /actuator/health
+GET  /livez
+GET  /readyz
+GET  127.0.0.1:8081/actuator/health/{liveness,readiness}
+GET  127.0.0.1:8081/actuator/prometheus (ROLE_ADMIN)
 GET  /api/v1/system/info
 GET  /api/v1/home/demo
 GET  /api/v1/home?localDate=YYYY-MM-DD
