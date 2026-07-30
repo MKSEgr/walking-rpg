@@ -54,6 +54,10 @@ ACK rate используется именно authoritative conversion.
 6. dismiss `FAILED` удаляет только локальную диагностику и не отменяет
    backend mutation.
 
+Обычный reload/resume экрана не является повторной отправкой: startup replay
+выполняется один раз на authenticated runtime. Для следующей попытки в той же
+сессии использовать только явную кнопку Recovery.
+
 Не запрашивать screenshot/raw export с payload, idempotency key, receipt,
 Health cursor, token или filesystem path. При corruption не советовать reset
 или переустановку до сохранения incident evidence и отдельного решения owner:

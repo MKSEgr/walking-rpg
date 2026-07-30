@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
@@ -24,9 +26,12 @@ class ActivitySyncShell extends StatefulWidget {
     this.recoveryCount = 0,
     this.recoveryUnavailable = false,
     this.onResumeFirstJourney,
-    this.replayOnStart = true,
+    this.replayOnStart = false,
     this.authoritativeRefreshGeneration = 0,
-  });
+  }) : assert(
+         !replayOnStart || commandRuntime != null,
+         'Startup replay requires a session-owned command runtime',
+       );
 
   final ActivitySynchronizer? synchronizer;
   final ActivityHomeBuilder? homeBuilder;
@@ -49,6 +54,7 @@ class ActivitySyncShell extends StatefulWidget {
 class _ActivitySyncShellState extends State<ActivitySyncShell> {
   ActivitySynchronizer? _synchronizer;
   MobileCommandRuntime? _commandRuntime;
+  MobileCommandRuntime? _ownedCommandRuntime;
   MobileCommandRuntime? _scheduledRuntime;
   String? _buttonLabel;
   int _homeGeneration = 0;
@@ -73,6 +79,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       _platformGeneration += 1;
     }
     if (oldWidget.synchronizer != widget.synchronizer ||
+        oldWidget.homeBuilder != widget.homeBuilder ||
         oldWidget.commandRuntime != widget.commandRuntime ||
         oldWidget.replayOnStart != widget.replayOnStart) {
       if (!oldWidget.replayOnStart && widget.replayOnStart) {
@@ -80,6 +87,12 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       }
       _configureSynchronizer();
     }
+  }
+
+  @override
+  void dispose() {
+    _closeOwnedCommandRuntime();
+    super.dispose();
   }
 
   @override
@@ -166,12 +179,14 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     if (widget.homeBuilder != null &&
         widget.commandRuntime == null &&
         injected == null) {
+      _closeOwnedCommandRuntime();
       _commandRuntime = null;
       _synchronizer = null;
       _buttonLabel = null;
       return;
     }
     if (injected != null) {
+      _closeOwnedCommandRuntime();
       _commandRuntime = widget.commandRuntime;
       _synchronizer = injected;
       _buttonLabel = 'Синхронизировать шаги';
@@ -179,8 +194,14 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       return;
     }
 
-    final MobileCommandRuntime runtime =
-        widget.commandRuntime ?? MobileCommandRuntime.fromEnvironment();
+    final MobileCommandRuntime runtime;
+    final MobileCommandRuntime? injectedRuntime = widget.commandRuntime;
+    if (injectedRuntime != null) {
+      _closeOwnedCommandRuntime();
+      runtime = injectedRuntime;
+    } else {
+      runtime = _ownedCommandRuntime ??= MobileCommandRuntime.fromEnvironment();
+    }
     final ActivitySyncCoordinator? coordinator =
         ActivitySyncCoordinator.fromEnvironmentIfSupported(
           sender: runtime.syncActivity,
@@ -201,10 +222,26 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     _scheduleReplay();
   }
 
+  void _closeOwnedCommandRuntime() {
+    final MobileCommandRuntime? runtime = _ownedCommandRuntime;
+    if (runtime == null) {
+      return;
+    }
+    _ownedCommandRuntime = null;
+    if (identical(_commandRuntime, runtime)) {
+      _commandRuntime = null;
+    }
+    if (identical(_scheduledRuntime, runtime)) {
+      _scheduledRuntime = null;
+    }
+    unawaited(runtime.close());
+  }
+
   void _scheduleReplay() {
-    final MobileCommandRuntime? runtime = _commandRuntime;
+    final MobileCommandRuntime? runtime = widget.commandRuntime;
     if (!widget.replayOnStart ||
         runtime == null ||
+        !identical(_commandRuntime, runtime) ||
         identical(_scheduledRuntime, runtime)) {
       return;
     }
@@ -226,7 +263,9 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     try {
       final MobileCommandReplayReport report = await runtime
           .replayPendingOnStart();
-      if (!mounted) {
+      if (!mounted ||
+          !identical(_commandRuntime, runtime) ||
+          !runtime.claimStartupReplayOutcome()) {
         return;
       }
       if (report.changedServerState) {
@@ -241,10 +280,12 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         ).showSnackBar(SnackBar(content: Text(_replayMessage(report))));
       }
     } catch (error) {
-      if (mounted) {
+      if (mounted &&
+          identical(_commandRuntime, runtime) &&
+          runtime.claimStartupReplayOutcome()) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Не удалось восстановить отложенные команды: $error'),
+          const SnackBar(
+            content: Text('Не удалось прочитать сохранённые действия.'),
           ),
         );
       }

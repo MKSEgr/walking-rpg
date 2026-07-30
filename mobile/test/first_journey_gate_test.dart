@@ -630,6 +630,202 @@ void main() {
     },
   );
 
+  testWidgets(
+    'reload and resume reuse one startup replay for the runtime lifetime',
+    (WidgetTester tester) async {
+      final StepReading reading = StepReading(
+        authoritativeTotal: 3000,
+        localDate: DateTime(2026, 7, 29),
+        timeZone: 'Europe/Berlin',
+      );
+      final MobileCommand activity = MobileCommand.pending(
+        ownerId: 'startup-once-user',
+        type: MobileCommandType.activitySync,
+        idempotencyKey: 'startup-once-activity',
+        fingerprint: 'startup-once-activity-fingerprint',
+        payload: reading.toJson(),
+        now: DateTime.utc(2026, 7, 29, 8),
+      );
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+        <MobileCommand>[activity],
+      );
+      int activityCalls = 0;
+      int homeLoads = 0;
+      final MobileCommandRuntime runtime = MobileCommandRuntime(
+        ownerId: 'startup-once-user',
+        store: store,
+        activitySender:
+            ({
+              required StepReading reading,
+              required String idempotencyKey,
+            }) async {
+              activityCalls += 1;
+              throw StateError('activity offline');
+            },
+        expeditionSender:
+            ({
+              required String expeditionId,
+              required int energyToSpend,
+              required String idempotencyKey,
+            }) async => throw StateError('unused'),
+        eventSender:
+            ({
+              required String eventId,
+              required String choiceId,
+              required String idempotencyKey,
+            }) async => throw StateError('unused'),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FirstJourneyGate(
+            homeLoader: () async {
+              homeLoads += 1;
+              if (homeLoads == 1) {
+                throw StateError('home offline');
+              }
+              return firstJourneyHome();
+            },
+            platformLoader: () async => platformSnapshot(
+              resolvedEventCount: 0,
+              totalAcceptedSteps: 0,
+              hasSuccessfulActivitySync: false,
+            ),
+            commandRuntime: runtime,
+            childBuilder: (VoidCallback onResume) => Scaffold(
+              body: Center(
+                child: FilledButton(
+                  key: const Key('resume-after-startup-replay'),
+                  onPressed: onResume,
+                  child: const Text('Вернуться в первый путь'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('first-journey-retry')), findsOneWidget);
+      expect(activityCalls, 1);
+      expect(store.snapshot.single.attemptCount, 1);
+
+      await _tap(tester, const Key('first-journey-retry'));
+      expect(
+        find.byKey(const Key('first-journey-continue-later')),
+        findsOneWidget,
+      );
+      expect(activityCalls, 1);
+      expect(store.snapshot.single.attemptCount, 1);
+
+      await _tap(tester, const Key('first-journey-continue-later'));
+      await _tap(tester, const Key('resume-after-startup-replay'));
+
+      expect(
+        find.byKey(const Key('first-journey-continue-later')),
+        findsOneWidget,
+      );
+      expect(activityCalls, 1);
+      expect(store.snapshot.single.attemptCount, 1);
+      await runtime.close();
+    },
+  );
+
+  testWidgets(
+    'in-flight remount performs authoritative reads only in the new gate',
+    (WidgetTester tester) async {
+      final Completer<void> activityStarted = Completer<void>();
+      final Completer<void> releaseActivity = Completer<void>();
+      int homeLoads = 0;
+      int platformLoads = 0;
+      final MobileCommandRuntime runtime = _blockedStartupRuntime(
+        ownerId: 'journey-remount-user',
+        activityStarted: activityStarted,
+        releaseActivity: releaseActivity,
+      );
+
+      Widget buildGate() {
+        return MaterialApp(
+          home: FirstJourneyGate(
+            homeLoader: () async {
+              homeLoads += 1;
+              return firstJourneyHome();
+            },
+            platformLoader: () async {
+              platformLoads += 1;
+              return platformSnapshot();
+            },
+            commandRuntime: runtime,
+            childBuilder: (VoidCallback onResume) => const SizedBox.shrink(),
+          ),
+        );
+      }
+
+      await tester.pumpWidget(buildGate());
+      await tester.pump();
+      await activityStarted.future;
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(buildGate());
+      await tester.pump();
+
+      releaseActivity.complete();
+      await tester.pumpAndSettle();
+
+      expect(homeLoads, 1);
+      expect(platformLoads, 1);
+      expect(
+        find.byKey(const Key('first-journey-continue-later')),
+        findsOneWidget,
+      );
+      await runtime.close();
+    },
+  );
+
+  testWidgets('runtime close prevents post-auth first journey reads', (
+    WidgetTester tester,
+  ) async {
+    final Completer<void> activityStarted = Completer<void>();
+    final Completer<void> releaseActivity = Completer<void>();
+    int homeLoads = 0;
+    int platformLoads = 0;
+    final MobileCommandRuntime runtime = _blockedStartupRuntime(
+      ownerId: 'journey-close-user',
+      activityStarted: activityStarted,
+      releaseActivity: releaseActivity,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FirstJourneyGate(
+          homeLoader: () async {
+            homeLoads += 1;
+            return firstJourneyHome();
+          },
+          platformLoader: () async {
+            platformLoads += 1;
+            return platformSnapshot();
+          },
+          commandRuntime: runtime,
+          childBuilder: (VoidCallback onResume) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await activityStarted.future;
+
+    final Future<void> closing = runtime.close();
+    releaseActivity.complete();
+    await closing;
+    await tester.pump();
+    await tester.pump();
+
+    expect(homeLoads, 0);
+    expect(platformLoads, 0);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byKey(const Key('first-journey-retry')), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('manual recovery clears the stale offline notice', (
     WidgetTester tester,
   ) async {
@@ -693,7 +889,15 @@ void main() {
               platformLoader: () async => platform,
               commandRuntime: runtime,
               authoritativeRefreshGeneration: refreshGeneration,
-              childBuilder: (VoidCallback onResume) => const SizedBox.shrink(),
+              childBuilder: (VoidCallback onResume) => Scaffold(
+                body: Center(
+                  child: FilledButton(
+                    key: const Key('resume-after-manual-recovery'),
+                    onPressed: onResume,
+                    child: const Text('Вернуться в первый путь'),
+                  ),
+                ),
+              ),
             );
           },
         ),
@@ -713,10 +917,16 @@ void main() {
 
     expect(find.textContaining('ждёт соединения'), findsNothing);
     expect(activityCalls, 2);
+
+    await _tap(tester, const Key('first-journey-continue-later'));
+    await _tap(tester, const Key('resume-after-manual-recovery'));
+
+    expect(find.textContaining('ждёт соединения'), findsNothing);
+    expect(activityCalls, 2);
     await runtime.close();
   });
 
-  testWidgets('corrupt command store never exposes its raw path', (
+  testWidgets('corrupt command store stays private while retry loads reads', (
     WidgetTester tester,
   ) async {
     final MobileCommandRuntime runtime = MobileCommandRuntime(
@@ -757,8 +967,60 @@ void main() {
     );
     expect(find.textContaining('/private/outbox.json'), findsNothing);
     expect(find.textContaining('private-token'), findsNothing);
+
+    await _tap(tester, const Key('first-journey-retry'));
+
+    expect(
+      find.byKey(const Key('first-journey-continue-later')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('/private/outbox.json'), findsNothing);
+    expect(find.textContaining('private-token'), findsNothing);
     await runtime.close();
   });
+}
+
+MobileCommandRuntime _blockedStartupRuntime({
+  required String ownerId,
+  required Completer<void> activityStarted,
+  required Completer<void> releaseActivity,
+}) {
+  final StepReading reading = StepReading(
+    authoritativeTotal: 3000,
+    localDate: DateTime(2026, 7, 29),
+    timeZone: 'Europe/Berlin',
+  );
+  return MobileCommandRuntime(
+    ownerId: ownerId,
+    store: InMemoryMobileCommandStore(<MobileCommand>[
+      MobileCommand.pending(
+        ownerId: ownerId,
+        type: MobileCommandType.activitySync,
+        idempotencyKey: '$ownerId-startup-activity',
+        fingerprint: '$ownerId-startup-activity-fingerprint',
+        payload: reading.toJson(),
+        now: DateTime.utc(2026, 7, 29, 8),
+      ),
+    ]),
+    activitySender:
+        ({required StepReading reading, required String idempotencyKey}) async {
+          activityStarted.complete();
+          await releaseActivity.future;
+          return firstJourneyActivityResult;
+        },
+    expeditionSender:
+        ({
+          required String expeditionId,
+          required int energyToSpend,
+          required String idempotencyKey,
+        }) async => throw StateError('unused'),
+    eventSender:
+        ({
+          required String eventId,
+          required String choiceId,
+          required String idempotencyKey,
+        }) async => throw StateError('unused'),
+  );
 }
 
 Future<void> _tap(WidgetTester tester, Key key) async {

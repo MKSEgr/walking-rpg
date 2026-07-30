@@ -99,8 +99,15 @@ Terminal-команда сохраняется для диагностики, н
 ## Startup replay
 
 После первого кадра приложения выполняется однократный foreground replay для
-текущего `ownerId`. Единственный владелец replay в authenticated shell и
-ручное безопасное восстановление описаны в ADR 0024.
+текущего `ownerId`. Runtime memoize-ит первую startup Future на lifetime
+authenticated session: rebuild, resume и reload не создают повторную сетевую
+попытку. Первый всё ещё активный UI-владелец claim-ит завершённый report/error
+один раз: in-flight remount принимает outcome, а remount после обработки не
+повторяет Snackbar или generation refresh. Resume/reload читает только
+authoritative state. Новый runtime после process restart или 401
+reauthentication получает новый однократный replay. Единственный владелец
+replay в authenticated shell и ручное безопасное восстановление описаны в ADR
+0024.
 
 После хотя бы одной успешно восстановленной команды mobile перечитывает `GET /api/v1/home`. Outbox никогда не становится источником игрового состояния и не выполняет optimistic update.
 

@@ -886,6 +886,68 @@ void main() {
     },
   );
 
+  test(
+    'startup replay is memoized per runtime and resets after restart',
+    () async {
+      final MobileCommand activity = MobileCommand.pending(
+        ownerId: 'user-1',
+        type: MobileCommandType.activitySync,
+        idempotencyKey: 'startup-activity',
+        fingerprint: 'startup-activity-fingerprint',
+        payload: _reading(6842).toJson(),
+        now: DateTime.utc(2026, 7, 26, 9),
+      );
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+        <MobileCommand>[activity],
+      );
+      int activityCalls = 0;
+
+      final ActivityCommandSender offlineSender =
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async {
+            activityCalls += 1;
+            throw StateError('activity offline');
+          };
+
+      final MobileCommandRuntime firstRuntime = _runtime(
+        store: store,
+        activitySender: offlineSender,
+      );
+      final Future<MobileCommandReplayReport> firstReplay = firstRuntime
+          .replayPendingOnStart();
+      final Future<MobileCommandReplayReport> concurrentReplay = firstRuntime
+          .replayPendingOnStart();
+
+      expect(identical(firstReplay, concurrentReplay), isTrue);
+      final MobileCommandReplayReport firstReport = await firstReplay;
+      final MobileCommandReplayReport concurrentReport = await concurrentReplay;
+      final Future<MobileCommandReplayReport> completedReplay = firstRuntime
+          .replayPendingOnStart();
+
+      expect(identical(firstReplay, completedReplay), isTrue);
+      expect(await completedReplay, same(firstReport));
+      expect(concurrentReport, same(firstReport));
+      expect(activityCalls, 1);
+      expect(firstReport.retryableFailures, 1);
+      expect(store.snapshot.single.attemptCount, 1);
+      await firstRuntime.close();
+
+      final MobileCommandRuntime restartedRuntime = _runtime(
+        store: store,
+        activitySender: offlineSender,
+      );
+      final MobileCommandReplayReport restartedReport = await restartedRuntime
+          .replayPendingOnStart();
+
+      expect(activityCalls, 2);
+      expect(restartedReport.retryableFailures, 1);
+      expect(store.snapshot.single.attemptCount, 2);
+      await restartedRuntime.close();
+    },
+  );
+
   test('retryable activity replay keeps dependent gameplay pending', () async {
     final MobileCommand activity = MobileCommand.pending(
       ownerId: 'user-1',

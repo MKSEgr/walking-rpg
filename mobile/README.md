@@ -101,9 +101,24 @@ bodyless URL после restart. Локальный command key нужен фа�
 передаётся backend: единственный server-side idempotency scope — сам receipt.
 
 На старте authenticated shell pending-команды текущего owner replay-ятся один
-раз в foreground. После успешного ACTIVITY/GAMEPLAY startup replay приложение
-перечитывает authoritative home; telemetry-only completion обновляет recovery
-badge. Автоматического background worker-а пока нет.
+раз в foreground. Runtime memoize-ит первую startup Future до конца
+authenticated session, поэтому rebuild, resume и reload не отправляют
+`PENDING` повторно. Первый всё ещё активный UI-владелец claim-ит завершённый
+startup report/error один раз: in-flight remount принимает outcome, а remount
+после обработки не повторяет старый Snackbar или generation refresh. После
+завершения startup attempt UI resume/reload читает только authoritative
+Home/Platform. Close, logout или замена runtime прекращает stale continuation
+без новых owner-scoped reads.
+`ActivitySyncShell` имеет default `replayOnStart = false`, а явный opt-in
+требует injected session-owned runtime; созданный shell runtime закрывается
+при dispose и startup replay не запускает. Новый однократный replay появляется
+с новым runtime после process restart или 401 reauthentication. Повторного
+автоматического startup retry в текущей runtime нет; ручная попытка из
+Recovery вызывает `replayPending`. Обычный новый business submit сохраняет
+FIFO и может сначала обработать более старый `PENDING` своей lane. После
+успешного ACTIVITY/GAMEPLAY startup replay приложение перечитывает authoritative
+home; telemetry-only completion обновляет recovery badge. Автоматического
+background worker-а пока нет.
 
 Экран **«Сохранённые действия»** доступен из первого пути, home, путевого
 журнала и аккаунта. Он не показывает payload, idempotency key, fingerprint,
@@ -115,9 +130,9 @@ receipt, Health cursor, raw error или путь к store.
   диагностическую запись после подтверждения; server state не меняется.
 - ошибка чтения store остаётся видимой и не приводит к автоматическому reset.
 - успешный ручной replay заставляет shell перечитать authoritative state.
-- targeted refresh не повторяет startup replay и не перемонтирует уже открытый
-  основной shell; при потере authenticated-сессии owner-scoped routes
-  закрываются.
+- targeted refresh/resume читает authoritative state, не повторяет startup
+  replay и не перемонтирует уже открытый основной shell; при потере
+  authenticated-сессии owner-scoped routes закрываются.
 
 Optional `lastFailureCategory` и динамическая telemetry lane совместимы со
 старыми v1-файлами без миграции envelope.

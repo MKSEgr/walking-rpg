@@ -85,6 +85,9 @@
 - Flutter recovery center **«Сохранённые действия»** с owner-scoped badge,
   safe `PENDING` replay, подтверждённым dismiss terminal `FAILED` и
   fail-closed corruption state;
+- однократный startup replay на lifetime authenticated mobile runtime без
+  автоматической повторной отправки или повторного показа исторического
+  результата при resume/reload/remount;
 - coarse mobile command failure categories без вывода raw payload/key/error в
   presentation;
 - ADR 0024 о безопасном recovery и изоляции telemetry;

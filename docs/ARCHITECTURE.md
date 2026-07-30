@@ -98,10 +98,21 @@ lane. Exposure lane выводится из
 
 Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
 
-Authenticated shell выполняет startup replay ровно в одном месте. Recovery
-center показывает owner-scoped тип, состояние, попытки, coarse category и
-время, но не payload, key, fingerprint, receipt, Health cursor, raw error или
-filesystem path. `PENDING` разрешено только повторить исходной командой и
+Authenticated shell выполняет startup replay ровно в одном месте, а runtime
+memoize-ит его Future до завершения authenticated session. После первой
+попытки resume/reload перечитывают только authoritative state и не создают
+новую сетевую попытку; завершённый report/error claim-ится первым всё ещё
+активным UI-владельцем один раз. Remount во время replay принимает outcome, а
+remount после его обработки не переинтерпретирует историю. Новый runtime после
+process restart или 401 reauthentication получает новый startup replay.
+`ActivitySyncShell`
+по умолчанию не владеет replay и требует injected session runtime для явного
+opt-in. Закрытый или заменённый runtime прекращает stale presentation
+continuation без новых owner-scoped Home/Platform reads.
+Recovery center показывает owner-scoped тип, состояние, попытки, coarse
+category и время, но не payload, key, fingerprint, receipt, Health cursor,
+raw error или filesystem path. `PENDING` разрешено только повторить исходной
+командой и
 нельзя удалить; `FAILED` не retry-ится, но его локальную диагностическую запись
 можно убрать после подтверждения. Успешное восстановление инвалидирует
 экранный generation и перечитывает authoritative state без повторного startup

@@ -101,6 +101,9 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const _FirstJourneyLoading();
             }
+            if (snapshot.error is _FirstJourneyPreparationAbandoned) {
+              return const _FirstJourneyLoading();
+            }
             if (snapshot.hasError || snapshot.data == null) {
               return _FirstJourneyLoadError(
                 error: snapshot.error,
@@ -147,8 +150,29 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
   }
 
   Future<FirstJourneyProgress> _prepareProgress() async {
-    final MobileCommandReplayReport report = await widget.commandRuntime
-        .replayPendingOnStart();
+    final MobileCommandRuntime runtime = widget.commandRuntime;
+    late final MobileCommandReplayReport report;
+    try {
+      report = await runtime.replayPendingOnStart();
+    } on Object {
+      if (!mounted ||
+          !identical(widget.commandRuntime, runtime) ||
+          runtime.isClosed) {
+        throw const _FirstJourneyPreparationAbandoned();
+      }
+      if (!runtime.claimStartupReplayOutcome()) {
+        return _loadProgress();
+      }
+      rethrow;
+    }
+    if (!mounted ||
+        !identical(widget.commandRuntime, runtime) ||
+        runtime.isClosed) {
+      throw const _FirstJourneyPreparationAbandoned();
+    }
+    if (!runtime.claimStartupReplayOutcome()) {
+      return _loadProgress();
+    }
     _notice = null;
     if (report.retryableFailures > 0) {
       _notice =
@@ -425,7 +449,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
       _activityReward = null;
       _eventReward = null;
       _errorMessage = null;
-      _progressFuture = _prepareProgress();
+      _progressFuture = _loadProgress();
     });
   }
 
@@ -437,7 +461,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
       _attemptedBackfills.clear();
       _lastProgress = null;
       _errorMessage = null;
-      _progressFuture = _prepareProgress();
+      _progressFuture = _loadProgress();
     });
   }
 
@@ -456,6 +480,10 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     );
     return text.isEmpty ? 'Не удалось выполнить действие.' : text;
   }
+}
+
+final class _FirstJourneyPreparationAbandoned implements Exception {
+  const _FirstJourneyPreparationAbandoned();
 }
 
 class _FirstJourneyLoading extends StatelessWidget {

@@ -169,8 +169,14 @@ validation из US-001/US-008.
   диагностическая запись после подтверждения;
 - успешный replay приводит к authoritative reload;
 - retryable ACTIVITY не позволяет replay перейти к зависимой GAMEPLAY;
-- targeted reload не повторяет startup replay, не перемонтирует основной shell,
-  а auth boundary закрывает owner-scoped routes;
+- startup replay memoize-ится на lifetime authenticated runtime; targeted
+  reload/resume не создаёт повторную сетевую попытку и не перемонтирует
+  основной shell, а новый runtime после process restart/401 reauthentication
+  получает новый replay;
+- startup report/error показывается только первому активному UI-владельцу:
+  in-flight remount принимает outcome, а завершённый outcome после обработки
+  повторно не используется;
+- auth boundary закрывает owner-scoped routes;
 - corrupt store не очищается и не перезаписывается молча;
 - experiment exposure выполняется отдельно от gameplay, сохраняя FIFO внутри
   каждой lane, и не удерживает завершение startup state replay;

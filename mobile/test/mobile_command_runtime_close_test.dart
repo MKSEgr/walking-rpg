@@ -131,6 +131,99 @@ void main() {
   });
 
   test(
+    'close waits for memoized startup state replay and rejects cached access',
+    () async {
+      final StepReading reading = StepReading(
+        authoritativeTotal: 1200,
+        localDate: DateTime.utc(2026, 7, 28),
+        timeZone: 'UTC',
+      );
+      final MobileCommand activity = MobileCommand.pending(
+        ownerId: 'owner-1',
+        type: MobileCommandType.activitySync,
+        idempotencyKey: 'startup-activity',
+        fingerprint: 'startup-activity-fingerprint',
+        payload: reading.toJson(),
+        now: DateTime.utc(2026, 7, 28, 10),
+      );
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+        <MobileCommand>[activity],
+      );
+      final Completer<void> activityStarted = Completer<void>();
+      final Completer<void> releaseActivity = Completer<void>();
+      int activityCalls = 0;
+      final MobileCommandRuntime runtime = MobileCommandRuntime(
+        ownerId: 'owner-1',
+        store: store,
+        activitySender:
+            ({
+              required StepReading reading,
+              required String idempotencyKey,
+            }) async {
+              activityCalls += 1;
+              activityStarted.complete();
+              await releaseActivity.future;
+              throw StateError('activity offline');
+            },
+        expeditionSender:
+            ({
+              required String expeditionId,
+              required int energyToSpend,
+              required String idempotencyKey,
+            }) async => throw StateError('unused'),
+        eventSender:
+            ({
+              required String eventId,
+              required String choiceId,
+              required String idempotencyKey,
+            }) async => throw StateError('unused'),
+      );
+      int changes = 0;
+      bool streamClosed = false;
+      final StreamSubscription<void> subscription = runtime.changes.listen(
+        (void _) {
+          changes += 1;
+        },
+        onDone: () {
+          streamClosed = true;
+        },
+      );
+
+      final Future<MobileCommandReplayReport> firstReplay = runtime
+          .replayPendingOnStart();
+      final Future<MobileCommandReplayReport> repeatedReplay = runtime
+          .replayPendingOnStart();
+      expect(identical(firstReplay, repeatedReplay), isTrue);
+      await activityStarted.future;
+
+      bool closeCompleted = false;
+      final Future<void> closing = runtime.close().then((void _) {
+        closeCompleted = true;
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(closeCompleted, isFalse);
+      expect(() => runtime.replayPendingOnStart(), throwsA(isA<StateError>()));
+
+      releaseActivity.complete();
+      final List<MobileCommandReplayReport> reports = await Future.wait(
+        <Future<MobileCommandReplayReport>>[firstReplay, repeatedReplay],
+      );
+      await closing;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(reports[1], same(reports[0]));
+      expect(reports[0].retryableFailures, 1);
+      expect(activityCalls, 1);
+      expect(store.snapshot.single.attemptCount, 1);
+      expect(changes, 0);
+      expect(closeCompleted, isTrue);
+      expect(streamClosed, isTrue);
+      await subscription.cancel();
+    },
+  );
+
+  test(
     'close waits for detached startup telemetry and suppresses late changes',
     () async {
       final MobileCommand telemetry = MobileCommand.pending(

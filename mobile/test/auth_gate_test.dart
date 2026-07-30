@@ -60,6 +60,7 @@ void main() {
     expect(after.homeLoader, same(before.homeLoader));
     expect(after.platformLoader, same(before.platformLoader));
     expect(after.synchronizer, same(before.synchronizer));
+    expect(after.commandRuntime, same(before.commandRuntime));
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

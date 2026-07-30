@@ -58,8 +58,26 @@ Startup replay ждёт только state-changing цепочку. TELEMETRY
 
 В authenticated application shell владельцем однократного startup replay
 остаётся `FirstJourneyGate`. Вложенный `ActivitySyncShell` получает
-`replayOnStart = false`. Его самостоятельный режим сохраняет default `true`
-для изолированного использования и тестов.
+`replayOnStart = false`. Самостоятельный `ActivitySyncShell` также имеет
+безопасный default `false`; явный opt-in требует injected session-owned
+runtime. Созданный самим shell runtime используется только для foreground
+submit, не запускает startup replay и закрывается вместе со State.
+
+`MobileCommandRuntime` memoize-ит первую startup Future на весь lifetime
+authenticated runtime. Первый всё ещё активный UI-владелец claim-ит
+завершённый report/error: in-flight remount принимает outcome, а последующий
+remount после обработки не интерпретирует исторический результат повторно и
+не показывает stale Snackbar/refresh. При logout, close или замене runtime
+stale presentation continuation прекращается без новых owner-scoped
+Home/Platform reads.
+Повторный rebuild не отправляет `PENDING` и не увеличивает счётчик попыток.
+После завершения первой попытки resume и retry UI перечитывают только
+authoritative Home/Platform. Новая authenticated runtime после process restart
+или 401 reauthentication получает новый однократный replay. Повторная
+startup-попытка в той же сессии автоматически не запускается; явный
+пользовательский retry из recovery center вызывает `replayPending`. Обычный
+новый business submit сохраняет FIFO-семантику lane и поэтому может сначала
+дренировать более старый `PENDING`.
 
 ### Owner-scoped recovery center
 

@@ -109,6 +109,8 @@ final class MobileCommandRuntime {
   int _activeOperations = 0;
   Completer<void>? _idleCompleter;
   Future<void>? _closeFuture;
+  Future<MobileCommandReplayReport>? _startupReplay;
+  bool _startupReplayClaimed = false;
   Future<void>? _startupTelemetryReplay;
 
   Future<ActivitySyncResult> syncActivity({
@@ -240,12 +242,30 @@ final class MobileCommandRuntime {
   }
 
   Future<MobileCommandReplayReport> replayPendingOnStart() {
-    return _runOpenOperation<MobileCommandReplayReport>(
-      () => _runRecoveryOperation(_replayPendingOnStart),
-    );
+    _ensureOpen();
+    final Future<MobileCommandReplayReport>? existing = _startupReplay;
+    if (existing != null) {
+      return existing;
+    }
+    final Future<MobileCommandReplayReport> replay =
+        _runOpenOperation<MobileCommandReplayReport>(
+          () => _runRecoveryOperation(_replayPendingOnStart),
+        );
+    _startupReplay = replay;
+    return replay;
+  }
+
+  bool claimStartupReplayOutcome() {
+    if (_closed || _startupReplayClaimed) {
+      return false;
+    }
+    _startupReplayClaimed = true;
+    return true;
   }
 
   Stream<void> get changes => _changesController.stream;
+
+  bool get isClosed => _closed;
 
   Future<MobileCommandRecoverySnapshot> recoverySnapshot() {
     return _runOpenOperation<MobileCommandRecoverySnapshot>(
