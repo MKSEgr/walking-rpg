@@ -39,3 +39,4 @@ NNNN-short-title.md
 - [0020 — guided first journey и active pet](0020-guided-first-journey-and-active-pet.md)
 - [0021 — first-journey observability](0021-first-journey-observability.md)
 - [0022 — durable event-result handoff](0022-durable-event-result-handoff.md)
+- [0023 — acknowledged first-journey result](0023-acknowledged-first-journey-result.md)

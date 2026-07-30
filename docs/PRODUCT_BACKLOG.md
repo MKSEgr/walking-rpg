@@ -108,9 +108,12 @@ pending до явного подтверждения.
 - анимация и вибрация не блокируют progression.
 
 **Статус:** код и автоматические tests готовы. Server-authoritative milestones
-и cohort read model измеряют conversion и time-to-value; фактический темп первых
-10 минут, permission UX и эмоциональная ценность требуют alpha validation на
-физических устройствах.
+и cohort read model отдельно измеряют resolution, завершение platform
+onboarding и result-ACK. Continuity conversion для ACK допускает legacy
+backfill, а explicit delivery completion считается по
+`authoritativeConversionFromStarted`; legacy auto-ACK не участвует в этой
+метрике или p50/p90. Фактический темп первых 10 минут, permission UX и
+эмоциональная ценность требуют alpha validation на физических устройствах.
 
 ### US-009. Не потерять результат события
 
@@ -139,10 +142,16 @@ pending до явного подтверждения.
   требует disabled gate и ноль capable pending receipts;
 - V10 помечает backfill и rolling legacy writes acknowledged, чтобы не
   показывать старые награды повторно.
+- первый explicit ACK атомарно создаёт immutable
+  `FIRST_EVENT_RESULT_ACKNOWLEDGED`; replay не меняет его время;
+- legacy auto-ACK и migration backfill видны только как `BACKFILLED`, поэтому
+  не выдают resolution time за пользовательское подтверждение.
 
 **Статус:** backend/mobile код и автоматические API, PostgreSQL migration,
-outbox и widget tests реализованы. Это не заменяет physical-device и alpha
-cohort validation из US-001/US-008.
+outbox и widget tests реализованы. V11 связывает ACK lifecycle с
+first-journey analytics без изменения исторической семантики
+`ONBOARDING_COMPLETED`. Это не заменяет physical-device и alpha cohort
+validation из US-001/US-008.
 
 ## P1 — расширение MVP
 

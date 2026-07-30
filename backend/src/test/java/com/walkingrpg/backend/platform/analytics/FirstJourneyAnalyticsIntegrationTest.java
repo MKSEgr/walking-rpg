@@ -112,8 +112,8 @@ class FirstJourneyAnalyticsIntegrationTest {
         assertEquals(1, snapshot.notStartedUsers());
         assertEquals(0.75, snapshot.startRate());
         assertEquals(GENERATED_AT, snapshot.generatedAt());
-        assertEquals(10, snapshot.dataQuality().authoritativeMilestoneRecords());
-        assertEquals(7, snapshot.dataQuality().backfilledMilestoneRecords());
+        assertEquals(11, snapshot.dataQuality().authoritativeMilestoneRecords());
+        assertEquals(8, snapshot.dataQuality().backfilledMilestoneRecords());
 
         FirstJourneyStageMetric sync = stage(
                 snapshot,
@@ -124,6 +124,7 @@ class FirstJourneyAnalyticsIntegrationTest {
         assertEquals(2, sync.authoritativeReachedUsers());
         assertEquals(2, sync.timedUsers());
         assertEquals(1.0, sync.conversionFromStarted());
+        assertEquals(2.0 / 3.0, sync.authoritativeConversionFromStarted());
         assertEquals(45L, sync.medianSecondsFromStart());
         assertEquals(57L, sync.p90SecondsFromStart());
 
@@ -136,6 +137,7 @@ class FirstJourneyAnalyticsIntegrationTest {
         assertEquals(1, energy.authoritativeReachedUsers());
         assertEquals(1, energy.timedUsers());
         assertEquals(2.0 / 3.0, energy.conversionFromStarted());
+        assertEquals(1.0 / 3.0, energy.authoritativeConversionFromStarted());
         assertEquals(60L, energy.medianSecondsFromStart());
         assertEquals(60L, energy.p90SecondsFromStart());
 
@@ -147,6 +149,22 @@ class FirstJourneyAnalyticsIntegrationTest {
         assertEquals(1, completed.timedUsers());
         assertEquals(130L, completed.medianSecondsFromStart());
         assertEquals(130L, completed.p90SecondsFromStart());
+
+        FirstJourneyStageMetric acknowledged = stage(
+                snapshot,
+                FirstJourneyMilestone.FIRST_EVENT_RESULT_ACKNOWLEDGED
+        );
+        assertEquals(2, acknowledged.reachedUsers());
+        assertEquals(1, acknowledged.missingFromStartedUsers());
+        assertEquals(1, acknowledged.authoritativeReachedUsers());
+        assertEquals(1, acknowledged.timedUsers());
+        assertEquals(2.0 / 3.0, acknowledged.conversionFromStarted());
+        assertEquals(
+                1.0 / 3.0,
+                acknowledged.authoritativeConversionFromStarted()
+        );
+        assertEquals(140L, acknowledged.medianSecondsFromStart());
+        assertEquals(140L, acknowledged.p90SecondsFromStart());
     }
 
     @Test
@@ -161,9 +179,66 @@ class FirstJourneyAnalyticsIntegrationTest {
             assertEquals(0, stage.reachedUsers());
             assertEquals(0, stage.timedUsers());
             assertEquals(0.0, stage.conversionFromStarted());
+            assertEquals(0.0, stage.authoritativeConversionFromStarted());
             assertNull(stage.medianSecondsFromStart());
             assertNull(stage.p90SecondsFromStart());
         }
+    }
+
+    @Test
+    void shouldNotTreatResolvedOnboardingAsAcknowledgedDelivery() {
+        addUser("resolved-without-ack", "alpha-ack-gap");
+        addCompleteJourney(
+                "resolved-without-ack",
+                START,
+                "AUTHORITATIVE"
+        );
+        jdbcTemplate.update("""
+                DELETE FROM first_journey_milestone
+                WHERE user_id = 'resolved-without-ack'
+                  AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                """);
+
+        FirstJourneyAnalyticsSnapshot snapshot = service.summary("alpha-ack-gap");
+
+        assertEquals(1, stage(
+                snapshot,
+                FirstJourneyMilestone.ONBOARDING_COMPLETED
+        ).reachedUsers());
+        FirstJourneyStageMetric acknowledged = stage(
+                snapshot,
+                FirstJourneyMilestone.FIRST_EVENT_RESULT_ACKNOWLEDGED
+        );
+        assertEquals(0, acknowledged.reachedUsers());
+        assertEquals(1, acknowledged.missingFromStartedUsers());
+        assertEquals(0.0, acknowledged.conversionFromStarted());
+        assertEquals(0.0, acknowledged.authoritativeConversionFromStarted());
+        assertNull(acknowledged.medianSecondsFromStart());
+        assertNull(acknowledged.p90SecondsFromStart());
+    }
+
+    @Test
+    void shouldExcludeLegacyAutoAcknowledgementFromTiming() {
+        addUser("legacy-auto-ack", "alpha-legacy");
+        addCompleteJourney("legacy-auto-ack", START, "AUTHORITATIVE");
+        jdbcTemplate.update("""
+                UPDATE first_journey_milestone
+                SET attributes = '{"handoffRequired":false}'::jsonb
+                WHERE user_id = 'legacy-auto-ack'
+                  AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                """);
+
+        FirstJourneyStageMetric acknowledged = stage(
+                service.summary("alpha-legacy"),
+                FirstJourneyMilestone.FIRST_EVENT_RESULT_ACKNOWLEDGED
+        );
+
+        assertEquals(1, acknowledged.reachedUsers());
+        assertEquals(1, acknowledged.authoritativeReachedUsers());
+        assertEquals(1.0, acknowledged.authoritativeConversionFromStarted());
+        assertEquals(0, acknowledged.timedUsers());
+        assertNull(acknowledged.medianSecondsFromStart());
+        assertNull(acknowledged.p90SecondsFromStart());
     }
 
     @Test
@@ -272,6 +347,15 @@ class FirstJourneyAnalyticsIntegrationTest {
                 start.plusSeconds(130),
                 source
         );
+        addMilestone(
+                userId,
+                FirstJourneyMilestone.FIRST_EVENT_RESULT_ACKNOWLEDGED,
+                start.plusSeconds(140),
+                source,
+                source.equals("AUTHORITATIVE")
+                        ? "{\"handoffRequired\":true}"
+                        : "{\"handoffRequired\":false}"
+        );
     }
 
     private void addMilestone(
@@ -280,16 +364,27 @@ class FirstJourneyAnalyticsIntegrationTest {
             Instant occurredAt,
             String source
     ) {
+        addMilestone(userId, milestone, occurredAt, source, "{}");
+    }
+
+    private void addMilestone(
+            String userId,
+            FirstJourneyMilestone milestone,
+            Instant occurredAt,
+            String source,
+            String attributes
+    ) {
         jdbcTemplate.update("""
                 INSERT INTO first_journey_milestone (
                     user_id, milestone, occurred_at, source,
                     attributes, recorded_at
-                ) VALUES (?, ?, ?, ?, '{}'::jsonb, ?)
+                ) VALUES (?, ?, ?, ?, ?::jsonb, ?)
                 """,
                 userId,
                 milestone.name(),
                 Timestamp.from(occurredAt),
                 source,
+                attributes,
                 Timestamp.from(occurredAt)
         );
     }

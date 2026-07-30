@@ -76,6 +76,12 @@
 - restart-visible mobile result card и persist-before-send
   `EVENT_RESULT_ACKNOWLEDGEMENT` в GAMEPLAY outbox;
 - ADR 0022 о durable event-result handoff;
+- Flyway V11 с immutable
+  `FIRST_EVENT_RESULT_ACKNOWLEDGED`, V10→V11 backfill и transactional
+  `NULL → acknowledged_at` trigger;
+- final first-journey delivery stage в cohort analytics: explicit durable ACK
+  участвует в p50/p90, legacy auto-ACK остаётся только backfilled conversion;
+- ADR 0023 об ACK-aware evidence первого пути;
 
 ### Changed
 
@@ -108,6 +114,8 @@
   cluster activation; exact replay сохраняет mode первого запроса, старые
   backend instances drain-ятся до активации, rollback требует ноль pending
   receipts.
+- `acknowledged_at` становится immutable после первого успешного ACK, а
+  `ONBOARDING_COMPLETED` сохраняет исходную V9-семантику отдельно от delivery.
 
 ## [0.1.0] — 2026-07-25
 

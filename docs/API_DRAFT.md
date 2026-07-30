@@ -573,6 +573,7 @@ Admin-only read model первого пути. Опциональный `cohortC
       "authoritativeReachedUsers": 8,
       "timedUsers": 8,
       "conversionFromStarted": 0.8,
+      "authoritativeConversionFromStarted": 0.8,
       "medianSecondsFromStart": 45,
       "p90SecondsFromStart": 90
     }
@@ -585,12 +586,33 @@ Admin-only read model первого пути. Опциональный `cohortC
 }
 ```
 
-`reachedUsers` допускает migration backfill ради честного conversion count.
+`reachedUsers` и `conversionFromStarted` допускают migration/compatibility
+backfill ради continuity coverage. `authoritativeReachedUsers` и
+`authoritativeConversionFromStarted` показывают долю без такого inference.
 Latency percentiles используют только пары
 `JOURNEY_STARTED → milestone`, где обе записи `AUTHORITATIVE` и целевое время
 не раньше старта. Поэтому приблизительные legacy timestamps не смешиваются с
 alpha timing. Milestones переживают retention `processed_activity_sync`, входят
 в account export и удаляются вместе с аккаунтом.
+
+`stages` — расширяемый массив, а каждый stage object допускает additive fields:
+consumer должен игнорировать неизвестные поля, находить запись по `milestone`
+и не полагаться на фиксированную длину или индекс. Для конца первого пути
+различаются три факта:
+
+- `FIRST_EVENT_RESOLVED` — rewards/progression атомарно сохранены;
+- `ONBOARDING_COMPLETED` — прежний platform onboarding state и шесть
+  server-authoritative фактов завершены;
+- `FIRST_EVENT_RESULT_ACKNOWLEDGED` — результат подтверждён через durable
+  receipt и является отдельным delivery stage alpha.
+
+Explicit durable ACK имеет `source = AUTHORITATIVE`,
+`attributes.handoffRequired = true` и участвует в p50/p90. V10 legacy auto-ACK
+и V11 migration backfill имеют `source = BACKFILLED`: они могут участвовать в
+continuity `conversionFromStarted`, но исключаются из
+`authoritativeConversionFromStarted` и timing. Для explicit alpha ACK rate
+используется `authoritativeConversionFromStarted`. Если у state-only legacy
+пользователя нет receipt evidence, ACK milestone не синтезируется.
 
 ## Ошибки
 
