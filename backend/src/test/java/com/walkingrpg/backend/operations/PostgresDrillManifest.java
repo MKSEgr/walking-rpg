@@ -19,6 +19,18 @@ import java.util.TreeMap;
 
 final class PostgresDrillManifest {
 
+    private static final List<String> SCHEMA_SECTION_NAMES = List.of(
+            "database",
+            "relations",
+            "constraints",
+            "indexes",
+            "routines",
+            "triggers"
+    );
+    private static final String CONSTRAINTS_SECTION = "constraints";
+    private static final String CONSTRAINT_DEFINITION_COLUMN =
+            "pg_get_constraintdef";
+
     private static final List<String> SCHEMA_QUERIES = List.of(
             """
             SELECT pg_encoding_to_char(database_entry.encoding) AS encoding,
@@ -108,6 +120,7 @@ final class PostgresDrillManifest {
     );
 
     private final String schemaSha256;
+    private final SortedMap<String, SectionDigest> schemaSections;
     private final String dataSha256;
     private final String sequenceSha256;
     private final SortedMap<String, TableDigest> tables;
@@ -115,12 +128,16 @@ final class PostgresDrillManifest {
 
     private PostgresDrillManifest(
             String schemaSha256,
+            SortedMap<String, SectionDigest> schemaSections,
             String dataSha256,
             String sequenceSha256,
             SortedMap<String, TableDigest> tables,
             SortedMap<String, String> sequences
     ) {
         this.schemaSha256 = schemaSha256;
+        this.schemaSections = Collections.unmodifiableSortedMap(
+                new TreeMap<>(schemaSections)
+        );
         this.dataSha256 = dataSha256;
         this.sequenceSha256 = sequenceSha256;
         this.tables = Collections.unmodifiableSortedMap(new TreeMap<>(tables));
@@ -134,9 +151,11 @@ final class PostgresDrillManifest {
 
         SortedMap<String, TableDigest> tables = captureTables(connection);
         SortedMap<String, String> sequences = captureSequences(connection);
+        SchemaDigest schema = captureSchema(connection);
 
         return new PostgresDrillManifest(
-                captureSchemaSha256(connection),
+                schema.sha256(),
+                schema.sections(),
                 digestTableSummary(tables),
                 digestSequenceSummary(sequences),
                 tables,
@@ -146,6 +165,10 @@ final class PostgresDrillManifest {
 
     String schemaSha256() {
         return schemaSha256;
+    }
+
+    SortedMap<String, SectionDigest> schemaSections() {
+        return schemaSections;
     }
 
     String dataSha256() {
@@ -185,16 +208,42 @@ final class PostgresDrillManifest {
                 .toList();
     }
 
-    private static String captureSchemaSha256(Connection connection) throws SQLException {
+    private static SchemaDigest captureSchema(Connection connection)
+            throws SQLException {
+        if (SCHEMA_SECTION_NAMES.size() != SCHEMA_QUERIES.size()) {
+            throw new IllegalStateException(
+                    "Every schema query must have a stable diagnostic section"
+            );
+        }
+
         MessageDigest digest = newDigest();
+        SortedMap<String, SectionDigest> sections = new TreeMap<>();
         for (int index = 0; index < SCHEMA_QUERIES.size(); index++) {
+            String sectionName = SCHEMA_SECTION_NAMES.get(index);
             update(digest, "schema-query-" + index);
+            MessageDigest sectionDigest = newDigest();
+            long rowCount;
             try (Statement statement = connection.createStatement();
                     ResultSet result = statement.executeQuery(SCHEMA_QUERIES.get(index))) {
-                appendResultSet(digest, result);
+                rowCount = appendResultSet(
+                        digest,
+                        sectionDigest,
+                        sectionName,
+                        result
+                );
             }
+            sections.put(
+                    sectionName,
+                    new SectionDigest(
+                            rowCount,
+                            HexFormat.of().formatHex(sectionDigest.digest())
+                    )
+            );
         }
-        return HexFormat.of().formatHex(digest.digest());
+        return new SchemaDigest(
+                HexFormat.of().formatHex(digest.digest()),
+                sections
+        );
     }
 
     private static SortedMap<String, TableDigest> captureTables(Connection connection)
@@ -351,16 +400,54 @@ final class PostgresDrillManifest {
         return HexFormat.of().formatHex(digest.digest());
     }
 
-    private static void appendResultSet(MessageDigest digest, ResultSet result)
-            throws SQLException {
+    private static long appendResultSet(
+            MessageDigest digest,
+            MessageDigest sectionDigest,
+            String sectionName,
+            ResultSet result
+    ) throws SQLException {
         ResultSetMetaData metadata = result.getMetaData();
+        long rowCount = 0;
         while (result.next()) {
             for (int column = 1; column <= metadata.getColumnCount(); column++) {
                 String value = result.getString(column);
-                update(digest, value == null ? "<NULL>" : value);
+                String canonicalValue = value == null ? "<NULL>" : value;
+                if (sectionName.equals(CONSTRAINTS_SECTION)
+                        && metadata.getColumnLabel(column)
+                        .equals(CONSTRAINT_DEFINITION_COLUMN)) {
+                    canonicalValue = canonicalizeConstraintDefinition(
+                            canonicalValue
+                    );
+                }
+                update(digest, canonicalValue);
+                update(sectionDigest, canonicalValue);
             }
             update(digest, "<ROW>");
+            update(sectionDigest, "<ROW>");
+            rowCount++;
         }
+        return rowCount;
+    }
+
+    static String canonicalizeConstraintDefinition(String definition) {
+        if (!definition.contains("= ANY (ARRAY[")) {
+            return definition;
+        }
+
+        /*
+         * pg_dump emits varchar IN-lists as text arrays. PostgreSQL can
+         * redistribute the same cast from the array to each element when the
+         * dump is restored, so raw pg_get_constraintdef text is not stable
+         * across the first round trip even though the constraint is identical.
+         * Preserve every operator and value while normalizing only that known
+         * deparse/reparse artifact.
+         */
+        return definition
+                .replace(
+                        "::character varying::text",
+                        "::character varying"
+                )
+                .replace("]::text[]", "]");
     }
 
     private static MessageDigest newDigest() {
@@ -384,5 +471,19 @@ final class PostgresDrillManifest {
     }
 
     record TableDigest(long rowCount, String sha256) {
+    }
+
+    record SectionDigest(long rowCount, String sha256) {
+    }
+
+    private record SchemaDigest(
+            String sha256,
+            SortedMap<String, SectionDigest> sections
+    ) {
+        private SchemaDigest {
+            sections = Collections.unmodifiableSortedMap(
+                    new TreeMap<>(sections)
+            );
+        }
     }
 }

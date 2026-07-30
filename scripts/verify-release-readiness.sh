@@ -12,6 +12,7 @@ fail() {
 printf '%s\n' 'Checking required release files...'
 for file in \
   .github/CODEOWNERS \
+  .github/workflows/release-pr-finalizer.yml \
   .github/workflows/release-quality.yml \
   docs/ROADMAP.md \
   docs/RELEASE_CHECKLIST.md \
@@ -31,7 +32,9 @@ for file in \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
+  backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java \
   backend/src/main/java/com/walkingrpg/backend/operations/ProductionEnvironmentPostProcessor.java \
+  backend/src/main/java/com/walkingrpg/backend/operations/JdbcStatementTimeouts.java \
   backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java \
   backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java \
   backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressProtectionFilter.java \
@@ -52,13 +55,18 @@ for file in \
   backend/src/main/resources/db/migration/V12__disable_development_providers.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/OperationalEndpointsIntegrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/PostgresDrillManifest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/PostgresDrillManifestTest.java \
   backend/src/test/java/com/walkingrpg/backend/platform/config/PlatformProviderConfigurationTest.java \
   backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformAdminServiceProviderTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ProductionProviderIsolationMigrationTest.java \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
+  scripts/ci/wait_for_required_checks.py \
+  scripts/ci/test_wait_for_required_checks.py \
   scripts/operations/run-synthetic-backup-restore-drill.sh \
   scripts/operations/verify-backup-restore-evidence.py \
   scripts/operations/test_verify_backup_restore_evidence.py; do
@@ -209,6 +217,8 @@ grep -Fq 'overflowClient' backend/src/main/java/com/walkingrpg/backend/operation
 grep -Fq '@Size(max = 160) String errorType' backend/src/main/java/com/walkingrpg/backend/platform/api/CrashReportRequest.java || fail 'crash error type must fit the database schema'
 grep -Fq '@Size(max = 32768) String stackTrace' backend/src/main/java/com/walkingrpg/backend/platform/api/CrashReportRequest.java || fail 'crash stack trace must be bounded'
 grep -Fq '@Size(max = 64) Map<String, Object> attributes' backend/src/main/java/com/walkingrpg/backend/platform/api/TelemetryEventRequest.java || fail 'telemetry attributes must be bounded'
+grep -Fq '@Component("dbHealthContributor")' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'bounded database readiness must keep the canonical db contributor id'
+grep -Fq 'connection.isValid(VALIDATION_TIMEOUT_SECONDS)' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'database readiness validation must use a non-zero bounded timeout'
 MANUAL_TIMEOUTS=$(grep -RFl 'JdbcStatementTimeouts.apply(jdbcTemplate, statement);' backend/src/main/java | wc -l | tr -d ' ')
 [ "$MANUAL_TIMEOUTS" -eq 4 ] || fail 'all four manual advisory-lock statements must inherit the JDBC timeout'
 for test_name in \
@@ -217,6 +227,7 @@ for test_name in \
   PublicIngressRateLimiterTest \
   PublicIngressProtectionFilterTest \
   JdbcStatementTimeoutsTest \
+  BoundedDataSourceHealthIndicatorTest \
   ActiveAccountFilterTest \
   OperationalEndpointsIntegrationTest; do
   grep -Fq "$test_name" .github/workflows/ci.yml || fail "$test_name must run in CI"
@@ -235,7 +246,9 @@ if grep -Fq '"--clean"' backend/src/test/java/com/walkingrpg/backend/operations/
   fail 'destructive backup drill restore flags are forbidden'
 fi
 grep -Fq 'Release quality · synthetic backup/restore drill' .github/workflows/release-quality.yml || fail 'synthetic restore drill must have a dedicated release check'
-grep -Fq 'Release quality · synthetic backup/restore drill' .github/workflows/release-pr-finalizer.yml || fail 'release finalizer must require the synthetic restore drill'
+grep -Fq 'Release quality · synthetic backup/restore drill' scripts/ci/wait_for_required_checks.py || fail 'release finalizer must require the synthetic restore drill'
+grep -Fq 'scripts/ci/wait_for_required_checks.py' .github/workflows/release-pr-finalizer.yml || fail 'release finalizer must use the tested strict check evaluator'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_wait_for_required_checks.py
 grep -Fq 'object_pairs_hook=reject_duplicate_keys' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must reject duplicate JSON keys'
 grep -Fq 'require_exact_keys(evidence, TOP_LEVEL_KEYS, "$")' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must reject unknown top-level fields'
 grep -Fq 'require_exact_keys(postgres, POSTGRES_KEYS, "postgres")' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must reject unknown nested fields'

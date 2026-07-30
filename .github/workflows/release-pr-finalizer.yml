@@ -21,6 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - name: Check out exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
       - name: Wait for standard and release checks
         env:
           GH_TOKEN: ${{ github.token }}
@@ -29,51 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json
-          import os
-          import subprocess
-          import time
-
-          required = {
-              'Project structure',
-              'Backend · Java 21',
-              'Mobile · Flutter 3.44.7',
-              'Android host · debug APK',
-              'iOS host · simulator debug',
-              'Release quality · policy and metadata',
-              'Release quality · backend package',
-              'Release quality · synthetic backup/restore drill',
-              'Release quality · Android unsigned AAB',
-              'Release quality · iOS no-codesign app',
-          }
-          repository = os.environ['REPOSITORY']
-          sha = os.environ['CHECK_SHA']
-
-          for attempt in range(90):
-              raw = subprocess.check_output([
-                  'gh', 'api',
-                  f'repos/{repository}/commits/{sha}/check-runs?per_page=100',
-              ], text=True)
-              runs = json.loads(raw)['check_runs']
-              by_name = {run['name']: run for run in runs}
-              missing = sorted(required - by_name.keys())
-              failed = sorted(
-                  name for name in required
-                  if name in by_name
-                  and by_name[name]['status'] == 'completed'
-                  and by_name[name]['conclusion'] not in {'success', 'neutral', 'skipped'}
-              )
-              if failed:
-                  raise SystemExit(f'Required checks failed: {failed}')
-              if not missing and all(by_name[name]['status'] == 'completed' for name in required):
-                  print('All standard and release checks completed successfully.')
-                  break
-              print(f'Waiting for checks; missing={missing}, attempt={attempt + 1}/90')
-              time.sleep(30)
-          else:
-              raise SystemExit('Timed out waiting for required checks')
-          PY
+          python3 scripts/ci/wait_for_required_checks.py
 
       - name: Publish release gate summary
         env:

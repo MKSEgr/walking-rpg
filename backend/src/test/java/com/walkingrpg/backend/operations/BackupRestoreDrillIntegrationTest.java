@@ -474,6 +474,11 @@ class BackupRestoreDrillIntegrationTest {
             PostgresDrillManifest source,
             PostgresDrillManifest restored
     ) {
+        assertEquals(
+                source.schemaSections(),
+                restored.schemaSections(),
+                "Schema section digests must match after restore"
+        );
         assertEquals(source.schemaSha256(), restored.schemaSha256());
         assertEquals(source.dataSha256(), restored.dataSha256());
         assertEquals(source.sequenceSha256(), restored.sequenceSha256());

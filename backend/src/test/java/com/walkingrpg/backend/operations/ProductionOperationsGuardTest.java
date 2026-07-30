@@ -1,6 +1,7 @@
 package com.walkingrpg.backend.operations;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -181,7 +182,12 @@ class ProductionOperationsGuardTest {
                 )
         );
 
-        assertTrue(exception.getMessage().contains(name));
+        assertTrue(
+                exception.getMessage().contains(
+                        expectedDiagnosticProperty(name)
+                ),
+                exception::getMessage
+        );
     }
 
     @ParameterizedTest(name = "missing {0}")
@@ -384,7 +390,12 @@ class ProductionOperationsGuardTest {
                     () -> ProductionOperationsGuard
                             .validateProtectedEnvironment(environment)
             );
-            assertTrue(exception.getMessage().contains(propertyName));
+            assertTrue(
+                    exception.getMessage().contains(
+                            expectedDiagnosticProperty(propertyName)
+                    ),
+                    exception::getMessage
+            );
         }
     }
 
@@ -959,6 +970,10 @@ class ProductionOperationsGuardTest {
                         "unrestricted"
                 ),
                 Arguments.of(
+                        "management.endpoint.prometheus.cache.time-to-live",
+                        "1h"
+                ),
+                Arguments.of(
                         "management.metrics.tags.application",
                         "other-service"
                 ),
@@ -971,6 +986,27 @@ class ProductionOperationsGuardTest {
                         "101"
                 )
         );
+    }
+
+    private static String expectedDiagnosticProperty(String propertyName) {
+        String indexedReadinessProperty =
+                "management.endpoint.health.group.readiness.include";
+        if (propertyName.startsWith(indexedReadinessProperty + "[")) {
+            return indexedReadinessProperty;
+        }
+        for (String mapPrefix : List.of(
+                "management.endpoints.web.path-mapping",
+                "management.prometheus.metrics.export.pushgateway",
+                "management.endpoint.health.status.http-mapping",
+                "management.metrics.tags"
+        )) {
+            if (propertyName.equals(mapPrefix)
+                    || propertyName.startsWith(mapPrefix + ".")
+                    || propertyName.startsWith(mapPrefix + "[")) {
+                return mapPrefix;
+            }
+        }
+        return propertyName;
     }
 
     private static Stream<String> publicIngressPropertyNames() {
@@ -1200,6 +1236,10 @@ class ProductionOperationsGuardTest {
         properties.put(
                 "management.endpoint.prometheus.access",
                 "read-only"
+        );
+        properties.put(
+                "management.endpoint.prometheus.cache.time-to-live",
+                "0ms"
         );
         properties.put(
                 "management.metrics.tags.application",

@@ -388,6 +388,11 @@ public final class ProductionOperationsGuard {
                 "management.endpoint.prometheus.access",
                 "read-only"
         );
+        requireDuration(
+                environment,
+                "management.endpoint.prometheus.cache.time-to-live",
+                Duration.ZERO
+        );
 
         requireExact(
                 environment,

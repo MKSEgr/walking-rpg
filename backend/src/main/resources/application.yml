@@ -106,6 +106,8 @@ management:
           include: readinessState,db
     prometheus:
       access: read-only
+      cache:
+        time-to-live: 0ms
   metrics:
     observations:
       ignored-meters: []

@@ -8,9 +8,11 @@ import java.time.Duration;
 
 import com.walkingrpg.backend.security.DevHeaderAuthenticationFilter;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -54,6 +56,9 @@ class OperationalEndpointsIntegrationTest {
     @LocalManagementPort
     private int managementPort;
 
+    @Autowired
+    private ApplicationContext applicationContext;
+
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .build();
@@ -61,6 +66,10 @@ class OperationalEndpointsIntegrationTest {
     @Test
     void shouldKeepProbeSemanticsAndMetricsBoundarySeparate() throws Exception {
         assertNotEquals(applicationPort, managementPort);
+        assertTrue(
+                applicationContext.getBean("dbHealthContributor")
+                        instanceof BoundedDataSourceHealthIndicator
+        );
 
         HttpResponse<String> mainLiveness = get(applicationPort, "/livez");
         HttpResponse<String> mainReadiness = get(applicationPort, "/readyz");
