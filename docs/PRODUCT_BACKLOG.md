@@ -153,6 +153,33 @@ first-journey analytics без изменения исторической се�
 `ONBOARDING_COMPLETED`. Это не заменяет physical-device и alpha cohort
 validation из US-001/US-008.
 
+### US-010. Восстановить сохранённое действие без дублирования
+
+Как alpha-пользователь, я хочу увидеть действие, ответ на которое потерялся,
+и безопасно повторить доставку после восстановления сети.
+
+Критерии:
+
+- экран доступен из первого пути, home, путевого журнала и аккаунта;
+- список изолирован по authenticated owner;
+- UI не показывает payload, idempotency key, fingerprint, receipt, Health
+  cursor, raw error или локальный путь;
+- `PENDING` повторяется исходным payload/key и не может быть удалён;
+- `FAILED` не retry-ится автоматически и удаляется только как локальная
+  диагностическая запись после подтверждения;
+- успешный replay приводит к authoritative reload;
+- retryable ACTIVITY не позволяет replay перейти к зависимой GAMEPLAY;
+- targeted reload не повторяет startup replay, не перемонтирует основной shell,
+  а auth boundary закрывает owner-scoped routes;
+- corrupt store не очищается и не перезаписывается молча;
+- experiment exposure выполняется отдельно от gameplay, сохраняя FIFO внутри
+  каждой lane, и не удерживает завершение startup state replay;
+- старые v1 records читаются без локальной schema migration.
+
+**Статус:** Flutter runtime/UI и unit/widget/concurrency regression tests
+реализованы. Foreground/restart поведение на физических устройствах остаётся
+частью alpha validation из US-001/US-008.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

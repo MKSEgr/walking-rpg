@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/widgets/progress_card.dart';
+import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
 
 typedef HomeSnapshotLoader = Future<HomeSnapshot> Function();
 typedef ExpeditionAdvancer =
@@ -37,6 +38,10 @@ class HomeScreen extends StatefulWidget {
     this.eventResultAcknowledger,
     this.idempotencyKeyFactory,
     this.onOpenAccount,
+    this.onOpenRecovery,
+    this.recoveryCount = 0,
+    this.recoveryUnavailable = false,
+    this.authoritativeRefreshGeneration = 0,
   });
 
   final HomeSnapshotLoader? loader;
@@ -45,6 +50,10 @@ class HomeScreen extends StatefulWidget {
   final EventResultAcknowledger? eventResultAcknowledger;
   final IdempotencyKeyFactory? idempotencyKeyFactory;
   final VoidCallback? onOpenAccount;
+  final VoidCallback? onOpenRecovery;
+  final int recoveryCount;
+  final bool recoveryUnavailable;
+  final int authoritativeRefreshGeneration;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -67,7 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didUpdateWidget(HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.loader != widget.loader) {
+    if (oldWidget.loader != widget.loader ||
+        oldWidget.authoritativeRefreshGeneration !=
+            widget.authoritativeRefreshGeneration) {
       _snapshotFuture = _loadSnapshot();
     }
   }
@@ -82,6 +93,12 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Обновить',
             onPressed: _isBusy ? null : _reload,
             icon: const Icon(Icons.refresh),
+          ),
+          MobileCommandRecoveryAction(
+            key: const Key('home-command-recovery'),
+            onPressed: widget.onOpenRecovery,
+            count: widget.recoveryCount,
+            unavailable: widget.recoveryUnavailable,
           ),
           IconButton(
             tooltip: 'Аккаунт',

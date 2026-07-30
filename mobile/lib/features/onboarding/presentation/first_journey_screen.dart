@@ -4,6 +4,7 @@ import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/onboarding/domain/first_journey_progress.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
+import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
 
 class FirstJourneyScreen extends StatelessWidget {
   const FirstJourneyScreen({
@@ -19,6 +20,9 @@ class FirstJourneyScreen extends StatelessWidget {
     required this.onFinish,
     required this.onContinueLater,
     this.onOpenAccount,
+    this.onOpenRecovery,
+    this.recoveryCount = 0,
+    this.recoveryUnavailable = false,
     this.activityReward,
     this.eventReward,
     this.errorMessage,
@@ -36,6 +40,9 @@ class FirstJourneyScreen extends StatelessWidget {
   final VoidCallback onFinish;
   final VoidCallback onContinueLater;
   final VoidCallback? onOpenAccount;
+  final VoidCallback? onOpenRecovery;
+  final int recoveryCount;
+  final bool recoveryUnavailable;
   final ActivitySyncResult? activityReward;
   final EventResolutionResult? eventReward;
   final String? errorMessage;
@@ -48,6 +55,12 @@ class FirstJourneyScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Первый путь'),
         actions: <Widget>[
+          MobileCommandRecoveryAction(
+            key: const Key('first-journey-recovery'),
+            onPressed: onOpenRecovery,
+            count: recoveryCount,
+            unavailable: recoveryUnavailable,
+          ),
           IconButton(
             tooltip: 'Аккаунт',
             onPressed: onOpenAccount,

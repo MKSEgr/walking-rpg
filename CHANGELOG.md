@@ -82,6 +82,12 @@
 - final first-journey delivery stage в cohort analytics: explicit durable ACK
   участвует в p50/p90, legacy auto-ACK остаётся только backfilled conversion;
 - ADR 0023 об ACK-aware evidence первого пути;
+- Flutter recovery center **«Сохранённые действия»** с owner-scoped badge,
+  safe `PENDING` replay, подтверждённым dismiss terminal `FAILED` и
+  fail-closed corruption state;
+- coarse mobile command failure categories без вывода raw payload/key/error в
+  presentation;
+- ADR 0024 о безопасном recovery и изоляции telemetry;
 
 ### Changed
 
@@ -116,6 +122,16 @@
   receipts.
 - `acknowledged_at` становится immutable после первого успешного ACK, а
   `ONBOARDING_COMPLETED` сохраняет исходную V9-семантику отдельно от delivery.
+- mobile outbox использует отдельную `TELEMETRY` lane для
+  `RECORD_EXPERIMENT_EXPOSURE`, сохраняет `ACTIVITY → GAMEPLAY`, replay-ит
+  close-tracked telemetry параллельно с этой цепочкой без задержки startup
+  result и выполняет startup replay один раз в authenticated shell;
+- retryable ACTIVITY удерживает зависимую GAMEPLAY в `PENDING`, а успешный
+  manual recovery перечитывает authoritative state без перемонтирования main
+  shell; auth boundary закрывает owner-scoped overlay routes;
+- v1 command store остаётся совместимым: telemetry lane выводится из
+  сохранённого payload, а `lastFailureCategory` является optional additive
+  полем.
 
 ## [0.1.0] — 2026-07-25
 

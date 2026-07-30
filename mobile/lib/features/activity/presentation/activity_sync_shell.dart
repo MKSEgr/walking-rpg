@@ -20,7 +20,12 @@ class ActivitySyncShell extends StatefulWidget {
     this.platformLoader,
     this.platformHomeLoader,
     this.onOpenAccount,
+    this.onOpenRecovery,
+    this.recoveryCount = 0,
+    this.recoveryUnavailable = false,
     this.onResumeFirstJourney,
+    this.replayOnStart = true,
+    this.authoritativeRefreshGeneration = 0,
   });
 
   final ActivitySynchronizer? synchronizer;
@@ -30,7 +35,12 @@ class ActivitySyncShell extends StatefulWidget {
   final PlatformSnapshotLoader? platformLoader;
   final PlatformHomeLoader? platformHomeLoader;
   final VoidCallback? onOpenAccount;
+  final VoidCallback? onOpenRecovery;
+  final int recoveryCount;
+  final bool recoveryUnavailable;
   final VoidCallback? onResumeFirstJourney;
+  final bool replayOnStart;
+  final int authoritativeRefreshGeneration;
 
   @override
   State<ActivitySyncShell> createState() => _ActivitySyncShellState();
@@ -56,8 +66,18 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
   @override
   void didUpdateWidget(ActivitySyncShell oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.authoritativeRefreshGeneration !=
+            widget.authoritativeRefreshGeneration &&
+        widget.homeBuilder != null) {
+      _homeGeneration += 1;
+      _platformGeneration += 1;
+    }
     if (oldWidget.synchronizer != widget.synchronizer ||
-        oldWidget.commandRuntime != widget.commandRuntime) {
+        oldWidget.commandRuntime != widget.commandRuntime ||
+        oldWidget.replayOnStart != widget.replayOnStart) {
+      if (!oldWidget.replayOnStart && widget.replayOnStart) {
+        _scheduledRuntime = null;
+      }
       _configureSynchronizer();
     }
   }
@@ -119,6 +139,10 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         eventResolver: runtime?.resolve,
         eventResultAcknowledger: runtime?.acknowledgeEventResult,
         onOpenAccount: widget.onOpenAccount,
+        onOpenRecovery: widget.onOpenRecovery,
+        recoveryCount: widget.recoveryCount,
+        recoveryUnavailable: widget.recoveryUnavailable,
+        authoritativeRefreshGeneration: widget.authoritativeRefreshGeneration,
       ),
       platform: PlatformScreen(
         key: ValueKey<String>('platform-$_platformGeneration'),
@@ -127,6 +151,11 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         commandExecutor: runtime?.executePlatform,
         onServerStateChanged: _handlePlatformStateChanged,
         onResumeFirstJourney: widget.onResumeFirstJourney,
+        onOpenAccount: widget.onOpenAccount,
+        onOpenRecovery: widget.onOpenRecovery,
+        recoveryCount: widget.recoveryCount,
+        recoveryUnavailable: widget.recoveryUnavailable,
+        authoritativeRefreshGeneration: widget.authoritativeRefreshGeneration,
       ),
       onDestinationChanged: _handleDestinationChanged,
     );
@@ -174,7 +203,9 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
 
   void _scheduleReplay() {
     final MobileCommandRuntime? runtime = _commandRuntime;
-    if (runtime == null || identical(_scheduledRuntime, runtime)) {
+    if (!widget.replayOnStart ||
+        runtime == null ||
+        identical(_scheduledRuntime, runtime)) {
       return;
     }
     _scheduledRuntime = runtime;
@@ -193,7 +224,8 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       _isRecovering = true;
     });
     try {
-      final MobileCommandReplayReport report = await runtime.replayPending();
+      final MobileCommandReplayReport report = await runtime
+          .replayPendingOnStart();
       if (!mounted) {
         return;
       }
@@ -233,8 +265,8 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     if (report.retryableFailures > 0) {
       parts.add('ждут повторной отправки: ${report.pendingAfter}');
     }
-    if (report.permanentFailures > 0) {
-      parts.add('отклонено сервером: ${report.permanentFailures}');
+    if (report.failedAfter > 0) {
+      parts.add('требуют проверки: ${report.failedAfter}');
     }
     return 'Отложенные команды · ${parts.join(' · ')}';
   }

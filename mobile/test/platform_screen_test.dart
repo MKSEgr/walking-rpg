@@ -14,6 +14,7 @@ void main() {
   ) async {
     final PlatformSnapshot initial = platformSnapshot();
     int resumes = 0;
+    bool recoveryOpened = false;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -21,6 +22,10 @@ void main() {
           loader: () async => initial,
           homeLoader: () async => HomeSnapshot.demo,
           recordExperimentExposures: false,
+          recoveryUnavailable: true,
+          onOpenRecovery: () {
+            recoveryOpened = true;
+          },
           onResumeFirstJourney: () {
             resumes += 1;
           },
@@ -29,6 +34,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byKey(const Key('platform-command-recovery')));
+    expect(recoveryOpened, isTrue);
     expect(find.text('Путевой журнал'), findsOneWidget);
     expect(find.text('Сезон первого сигнала'), findsWidgets);
     expect(find.text('1/6'), findsOneWidget);
@@ -46,6 +53,62 @@ void main() {
       scrollable: find.byType(Scrollable),
     );
     expect(find.text('Искра · уровень 1'), findsOneWidget);
+  });
+
+  testWidgets('authoritative generation reloads journal without losing input', (
+    WidgetTester tester,
+  ) async {
+    int generation = 0;
+    int loads = 0;
+    late StateSetter setHostState;
+    Future<PlatformSnapshot> loader() async {
+      loads += 1;
+      return platformSnapshot();
+    }
+
+    Future<HomeSnapshot> homeLoader() async => HomeSnapshot.demo;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            setHostState = setState;
+            return PlatformScreen(
+              loader: loader,
+              homeLoader: homeLoader,
+              recordExperimentExposures: false,
+              authoritativeRefreshGeneration: generation,
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final Finder squadName = find.byKey(const Key('platform-squad-name'));
+    await tester.scrollUntilVisible(
+      squadName,
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.enterText(squadName, 'Сохранённый отряд');
+    await tester.pump();
+    expect(loads, 1);
+
+    setHostState(() {
+      generation += 1;
+    });
+    await tester.pumpAndSettle();
+
+    expect(loads, 2);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('platform-squad-name'), skipOffstage: false),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    final TextField refreshedSquadName = tester.widget<TextField>(
+      find.byKey(const Key('platform-squad-name'), skipOffstage: false),
+    );
+    expect(refreshedSquadName.controller?.text, 'Сохранённый отряд');
   });
 
   testWidgets('enables squad actions when text is entered', (

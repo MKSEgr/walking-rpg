@@ -38,6 +38,28 @@ auto-ACK виден в `conversionFromStarted` как continuity `BACKFILLED`, �
 входит в `authoritativeConversionFromStarted` и p50/p90. Для explicit alpha
 ACK rate используется именно authoritative conversion.
 
+## Поддержка сохранённых действий
+
+Если пользователь сообщает о зависшем выборе, награде или синхронизации:
+
+1. попросить открыть **«Сохранённые действия»** из home, путевого журнала или
+   аккаунта;
+2. зафиксировать build, платформу и только счётчики `PENDING`/`FAILED` или
+   состояние ошибки чтения;
+3. для `PENDING` предложить восстановить сеть и нажать
+   **«Повторить ожидающие действия»**;
+4. после успеха убедиться, что экран перечитал server state;
+5. `FAILED` не повторять вслепую: вернуться к свежему server state и создать
+   новое пользовательское действие, если оно всё ещё допустимо;
+6. dismiss `FAILED` удаляет только локальную диагностику и не отменяет
+   backend mutation.
+
+Не запрашивать screenshot/raw export с payload, idempotency key, receipt,
+Health cursor, token или filesystem path. При corruption не советовать reset
+или переустановку до сохранения incident evidence и отдельного решения owner:
+непрочитанная `PENDING` запись может соответствовать уже выполненной server
+mutation.
+
 ## Stop conditions
 
 - потеря или дублирование экономики;

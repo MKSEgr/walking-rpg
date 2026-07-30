@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
+import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/onboarding/domain/first_journey_progress.dart';
@@ -192,6 +197,21 @@ void main() {
     final Set<String> completed = <String>{'welcome'};
     final List<String> backfilled = <String>[];
     final HomeSnapshot home = firstJourneyHome(synced: true, energy: 30);
+    final MobileCommand exposure = MobileCommand.pending(
+      ownerId: 'recovery-user',
+      type: MobileCommandType.platformCommand,
+      idempotencyKey: 'recovery-exposure',
+      fingerprint: 'recovery-exposure-fingerprint',
+      payload: <String, Object?>{
+        'commandType': 'RECORD_EXPERIMENT_EXPOSURE',
+        'payload': <String, Object?>{
+          'experimentId': 'first-journey-copy',
+          'variant': 'b',
+        },
+      },
+      now: DateTime.utc(2026, 7, 29, 8),
+    );
+    int exposureAttempts = 0;
     late MobileCommandRuntime runtime;
 
     PlatformSnapshot currentPlatform() => platformSnapshot(
@@ -204,7 +224,7 @@ void main() {
 
     runtime = MobileCommandRuntime(
       ownerId: 'recovery-user',
-      store: InMemoryMobileCommandStore(),
+      store: InMemoryMobileCommandStore(<MobileCommand>[exposure]),
       activitySender:
           ({required reading, required String idempotencyKey}) async =>
               throw StateError('Unexpected activity call'),
@@ -226,6 +246,10 @@ void main() {
             required Map<String, Object?> payload,
             required String idempotencyKey,
           }) async {
+            if (commandType == 'RECORD_EXPERIMENT_EXPOSURE') {
+              exposureAttempts += 1;
+              throw StateError('telemetry offline');
+            }
             final String step = payload['stepId']! as String;
             completed.add(step);
             backfilled.add(step);
@@ -251,6 +275,7 @@ void main() {
 
     expect(find.byKey(const Key('first-journey-pet')), findsOneWidget);
     expect(backfilled, <String>['health-permission', 'first-sync']);
+    expect(exposureAttempts, 1);
     await runtime.close();
   });
 
@@ -487,6 +512,253 @@ void main() {
     expect(find.byKey(const Key('first-journey-activity')), findsNothing);
     await runtime.close();
   });
+
+  testWidgets(
+    'authoritative refresh preserves completed main shell without replay',
+    (WidgetTester tester) async {
+      final MobileCommand exposure = MobileCommand.pending(
+        ownerId: 'refresh-user',
+        type: MobileCommandType.platformCommand,
+        idempotencyKey: 'exposure-key',
+        fingerprint: 'exposure-fingerprint',
+        payload: <String, Object?>{
+          'commandType': 'RECORD_EXPERIMENT_EXPOSURE',
+          'payload': <String, Object?>{
+            'experimentId': 'first-journey-copy',
+            'variant': 'b',
+          },
+        },
+        now: DateTime.utc(2026, 7, 29, 8),
+      );
+      int exposureCalls = 0;
+      int homeLoads = 0;
+      int platformLoads = 0;
+      int mainExperienceMounts = 0;
+      int refreshGeneration = 0;
+      late StateSetter setHostState;
+      final Completer<void> telemetryStarted = Completer<void>();
+      final Completer<void> releaseTelemetry = Completer<void>();
+      final MobileCommandRuntime runtime = MobileCommandRuntime(
+        ownerId: 'refresh-user',
+        store: InMemoryMobileCommandStore(<MobileCommand>[exposure]),
+        activitySender:
+            ({required reading, required String idempotencyKey}) async =>
+                throw StateError('Unexpected activity call'),
+        expeditionSender:
+            ({
+              required String expeditionId,
+              required int energyToSpend,
+              required String idempotencyKey,
+            }) async => throw StateError('Unexpected expedition call'),
+        eventSender:
+            ({
+              required String eventId,
+              required String choiceId,
+              required String idempotencyKey,
+            }) async => throw StateError('Unexpected event call'),
+        platformSender:
+            ({
+              required String commandType,
+              required Map<String, Object?> payload,
+              required String idempotencyKey,
+            }) async {
+              exposureCalls += 1;
+              telemetryStarted.complete();
+              await releaseTelemetry.future;
+              throw StateError('offline');
+            },
+      );
+      final HomeSnapshot home = firstJourneyHome(
+        synced: true,
+        firstEventResolved: true,
+      );
+      final PlatformSnapshot platform = platformSnapshot(
+        completedOnboardingSteps: FirstJourneyProgress.steps,
+        resolvedEventCount: 1,
+        totalAcceptedSteps: home.dailySteps,
+        hasSuccessfulActivitySync: true,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              setHostState = setState;
+              return FirstJourneyGate(
+                homeLoader: () async {
+                  homeLoads += 1;
+                  return home;
+                },
+                platformLoader: () async {
+                  platformLoads += 1;
+                  return platform;
+                },
+                commandRuntime: runtime,
+                authoritativeRefreshGeneration: refreshGeneration,
+                childBuilder: (VoidCallback onResume) => _MainExperienceProbe(
+                  onMount: () {
+                    mainExperienceMounts += 1;
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final int homeLoadsBeforeRefresh = homeLoads;
+      final int platformLoadsBeforeRefresh = platformLoads;
+
+      expect(exposureCalls, 1);
+      expect(telemetryStarted.isCompleted, isTrue);
+      expect(releaseTelemetry.isCompleted, isFalse);
+      expect(mainExperienceMounts, 1);
+      expect(find.text('Основная экспедиция'), findsOneWidget);
+
+      setHostState(() {
+        refreshGeneration += 1;
+      });
+      await tester.pumpAndSettle();
+
+      expect(exposureCalls, 1);
+      expect(homeLoads, homeLoadsBeforeRefresh);
+      expect(platformLoads, platformLoadsBeforeRefresh);
+      expect(mainExperienceMounts, 1);
+      expect(find.text('Основная экспедиция'), findsOneWidget);
+      releaseTelemetry.complete();
+      await runtime.close();
+    },
+  );
+
+  testWidgets('manual recovery clears the stale offline notice', (
+    WidgetTester tester,
+  ) async {
+    final StepReading reading = StepReading(
+      authoritativeTotal: 3000,
+      localDate: DateTime(2026, 7, 29),
+      timeZone: 'Europe/Berlin',
+    );
+    final MobileCommand activity = MobileCommand.pending(
+      ownerId: 'notice-user',
+      type: MobileCommandType.activitySync,
+      idempotencyKey: 'notice-activity',
+      fingerprint: 'notice-activity-fingerprint',
+      payload: reading.toJson(),
+      now: DateTime.utc(2026, 7, 29, 8),
+    );
+    final PlatformSnapshot platform = platformSnapshot(
+      resolvedEventCount: 0,
+      totalAcceptedSteps: 0,
+      hasSuccessfulActivitySync: false,
+    );
+    bool online = false;
+    int activityCalls = 0;
+    int refreshGeneration = 0;
+    late StateSetter setHostState;
+    final MobileCommandRuntime runtime = MobileCommandRuntime(
+      ownerId: 'notice-user',
+      store: InMemoryMobileCommandStore(<MobileCommand>[activity]),
+      activitySender:
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async {
+            activityCalls += 1;
+            if (!online) {
+              throw StateError('offline');
+            }
+            return firstJourneyActivityResult;
+          },
+      expeditionSender:
+          ({
+            required String expeditionId,
+            required int energyToSpend,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            setHostState = setState;
+            return FirstJourneyGate(
+              homeLoader: () async => firstJourneyHome(),
+              platformLoader: () async => platform,
+              commandRuntime: runtime,
+              authoritativeRefreshGeneration: refreshGeneration,
+              childBuilder: (VoidCallback onResume) => const SizedBox.shrink(),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('ждёт соединения'), findsOneWidget);
+    expect(activityCalls, 1);
+
+    online = true;
+    final MobileCommandReplayReport report = await runtime.replayPending();
+    expect(report.succeeded, 1);
+    setHostState(() {
+      refreshGeneration += 1;
+    });
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('ждёт соединения'), findsNothing);
+    expect(activityCalls, 2);
+    await runtime.close();
+  });
+
+  testWidgets('corrupt command store never exposes its raw path', (
+    WidgetTester tester,
+  ) async {
+    final MobileCommandRuntime runtime = MobileCommandRuntime(
+      ownerId: 'corrupt-store-user',
+      store: _ThrowingCommandStore(),
+      activitySender:
+          ({required reading, required String idempotencyKey}) async =>
+              throw StateError('unused'),
+      expeditionSender:
+          ({
+            required String expeditionId,
+            required int energyToSpend,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FirstJourneyGate(
+          homeLoader: () async => firstJourneyHome(),
+          platformLoader: () async => platformSnapshot(),
+          commandRuntime: runtime,
+          childBuilder: (VoidCallback onResume) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Локальная очередь сохранённых действий недоступна'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('/private/outbox.json'), findsNothing);
+    expect(find.textContaining('private-token'), findsNothing);
+    await runtime.close();
+  });
 }
 
 Future<void> _tap(WidgetTester tester, Key key) async {
@@ -495,4 +767,43 @@ Future<void> _tap(WidgetTester tester, Key key) async {
   await tester.pumpAndSettle();
   await tester.tap(finder);
   await tester.pumpAndSettle();
+}
+
+final class _ThrowingCommandStore implements MobileCommandStore {
+  @override
+  Future<void> deleteOwner(String ownerId) async {
+    throw StateError('private-token at /private/outbox.json');
+  }
+
+  @override
+  Future<List<MobileCommand>> load() async {
+    throw StateError('private-token at /private/outbox.json');
+  }
+
+  @override
+  Future<void> save(List<MobileCommand> commands) async {
+    throw StateError('private-token at /private/outbox.json');
+  }
+}
+
+class _MainExperienceProbe extends StatefulWidget {
+  const _MainExperienceProbe({required this.onMount});
+
+  final VoidCallback onMount;
+
+  @override
+  State<_MainExperienceProbe> createState() => _MainExperienceProbeState();
+}
+
+class _MainExperienceProbeState extends State<_MainExperienceProbe> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onMount();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Text('Основная экспедиция'));
+  }
 }

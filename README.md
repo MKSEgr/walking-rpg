@@ -40,8 +40,8 @@
 - material inventory с append-only ledger и защитой от повторной выдачи;
 - durable event-result receipt, который восстанавливается через `GET /home`
   после потери ответа или restart;
-- foreground durable outbox для activity, expedition, event и acknowledgement
-  команд;
+- foreground durable outbox для activity, gameplay, platform и telemetry
+  команд с owner-scoped recovery center;
 - GitHub Actions для backend, Flutter, Android APK и iOS Simulator build.
 
 ## Платформенные шаги
@@ -70,11 +70,29 @@ localDate + IANA timeZone + authoritativeTotal
 результата outbox сохраняет `receiptId`: он же является единственным
 server-side idempotency scope bodyless ACK-запроса. После потери ответа или
 завершения процесса следующий запуск повторяет исходную команду. Успешно
-восстановленные команды всегда завершаются повторным чтением
+восстановленные state-changing команды завершаются повторным чтением
 `GET /api/v1/home`; локальная очередь не считается источником игрового
 состояния.
 
-Очередь разделена на независимые `ACTIVITY` и `GAMEPLAY` lane. Внутри lane команды обрабатываются FIFO. Network error, `408`, `429`, `5xx` и неоднозначный response остаются pending; подтверждённые остальные `4xx` становятся terminal failed и не блокируют следующие команды. Подробности: [ADR 0012](docs/adr/0012-foreground-durable-mobile-command-outbox.md).
+Очередь разделена на `ACTIVITY`, `GAMEPLAY` и `TELEMETRY` lane.
+Внутри lane команды обрабатываются FIFO; replay сохраняет state dependency
+`ACTIVITY → GAMEPLAY`: retryable ACTIVITY оставляет GAMEPLAY нетронутой до
+следующего replay, а `TELEMETRY` выполняется параллельно с этой цепочкой.
+Experiment exposure не может задержать игровой ACK. Network error, `408`,
+`429`, `5xx` и неоднозначный response остаются pending; подтверждённые
+остальные `4xx` становятся terminal failed и не блокируют следующие команды.
+Startup replay возвращает управление после state-changing цепочки;
+close-tracked telemetry завершается отдельно и обновляет recovery badge.
+
+Экран **«Сохранённые действия»** показывает только безопасную owner-scoped
+сводку. `PENDING` можно повторить с исходным payload/key, но нельзя удалить.
+`FAILED` не отправляется снова; пользователь может убрать только локальную
+диагностическую запись. Повреждённый store виден fail-closed и не очищается
+автоматически. Успешный ручной replay перечитывает authoritative state без
+повторного startup replay и без перемонтирования основного shell; потеря
+authenticated-сессии закрывает owner-scoped recovery/account routes. Подробности:
+[ADR 0012](docs/adr/0012-foreground-durable-mobile-command-outbox.md) и
+[ADR 0024](docs/adr/0024-mobile-command-recovery-and-telemetry-isolation.md).
 
 ## Первая глава и инвентарь
 

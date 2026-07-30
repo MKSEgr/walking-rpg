@@ -21,6 +21,7 @@ void main() {
           now: DateTime.utc(2026, 7, 26, 9, 1),
           error: StateError('network failed'),
           terminal: false,
+          category: MobileCommandFailureCategory.connectionOrResponse,
         );
 
     final MobileCommand restored = MobileCommand.fromJson(original.toJson());
@@ -32,6 +33,10 @@ void main() {
     expect(restored.state, MobileCommandState.pending);
     expect(restored.attemptCount, 1);
     expect(restored.lastAttemptAt, DateTime.utc(2026, 7, 26, 9, 1));
+    expect(
+      restored.lastFailureCategory,
+      MobileCommandFailureCategory.connectionOrResponse,
+    );
     expect(restored.payload, original.payload);
   });
 
@@ -51,11 +56,13 @@ void main() {
           now: DateTime.utc(2026, 7, 26, 9, 1),
           error: StateError('rejected'),
           terminal: true,
+          category: MobileCommandFailureCategory.rejected,
         );
 
     expect(failed.state, MobileCommandState.failed);
     expect(failed.attemptCount, 1);
     expect(failed.lastError, contains('rejected'));
+    expect(failed.lastFailureCategory, MobileCommandFailureCategory.rejected);
   });
 
   test('event result acknowledgement survives JSON persistence', () {
@@ -78,6 +85,51 @@ void main() {
       restored.payload['receiptId'],
       '22222222-2222-2222-2222-222222222222',
     );
+  });
+
+  test('legacy exposure record gets telemetry lane without a schema bump', () {
+    final MobileCommand original = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.platformCommand,
+      idempotencyKey: 'exposure-key',
+      fingerprint: 'exposure-fingerprint',
+      payload: <String, Object?>{
+        'commandType': 'RECORD_EXPERIMENT_EXPOSURE',
+        'payload': <String, Object?>{
+          'experimentId': 'first-journey-copy',
+          'variant': 'b',
+        },
+      },
+      now: DateTime.utc(2026, 7, 26, 9),
+    );
+    final Map<String, Object?> legacyJson = original.toJson()
+      ..remove('lastFailureCategory');
+
+    final MobileCommand restored = MobileCommand.fromJson(legacyJson);
+
+    expect(restored.lane, MobileCommandLane.telemetry);
+    expect(restored.lastFailureCategory, isNull);
+  });
+
+  test('unknown future failure category does not corrupt the local store', () {
+    final Map<String, Object?> json = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.activitySync,
+      idempotencyKey: 'activity-key',
+      fingerprint: 'activity-fingerprint',
+      payload: <String, Object?>{
+        'authoritativeTotal': 6842,
+        'localDate': '2026-07-26',
+        'timeZone': 'Europe/Berlin',
+        'syncCursor': 'cursor-1',
+      },
+      now: DateTime.utc(2026, 7, 26, 9),
+    ).toJson();
+    json['lastFailureCategory'] = 'FUTURE_CATEGORY';
+
+    final MobileCommand restored = MobileCommand.fromJson(json);
+
+    expect(restored.lastFailureCategory, isNull);
   });
 
   test('step reading JSON preserves the local-day identity', () {

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
@@ -163,30 +166,8 @@ void main() {
     },
   );
 
-  test('retryable activity failure does not block gameplay lane', () async {
-    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
-      <MobileCommand>[
-        MobileCommand.pending(
-          ownerId: 'user-1',
-          type: MobileCommandType.activitySync,
-          idempotencyKey: 'activity-1',
-          fingerprint: 'activity-fingerprint',
-          payload: _reading(100).toJson(),
-          now: DateTime.utc(2026, 7, 26, 9),
-        ),
-        MobileCommand.pending(
-          ownerId: 'user-1',
-          type: MobileCommandType.expeditionAdvance,
-          idempotencyKey: 'advance-1',
-          fingerprint: 'advance-fingerprint',
-          payload: <String, Object?>{
-            'expeditionId': 'starter-expedition-v1',
-            'energyToSpend': 30,
-          },
-          now: DateTime.utc(2026, 7, 26, 9, 1),
-        ),
-      ],
-    );
+  test('retryable activity submit releases the gameplay lane', () async {
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
     int advanceCalls = 0;
     final MobileCommandRuntime runtime = _runtime(
       store: store,
@@ -206,11 +187,19 @@ void main() {
           },
     );
 
-    final MobileCommandReplayReport report = await runtime.replayPending();
+    await expectLater(
+      runtime.syncActivity(
+        reading: _reading(100),
+        idempotencyKey: 'activity-1',
+      ),
+      throwsStateError,
+    );
+    await runtime.advance(
+      expeditionId: 'starter-expedition-v1',
+      energyToSpend: 30,
+      idempotencyKey: 'advance-1',
+    );
 
-    expect(report.succeeded, 1);
-    expect(report.retryableFailures, 1);
-    expect(report.pendingAfter, 1);
     expect(advanceCalls, 1);
     expect(store.snapshot.single.type, MobileCommandType.activitySync);
   });
@@ -271,6 +260,7 @@ void main() {
     expect(report.succeeded, 1);
     expect(report.permanentFailures, 1);
     expect(report.failedAfter, 1);
+    expect(report.hasMessages, isTrue);
     expect(eventCalls, 1);
     expect(store.snapshot.single.state, MobileCommandState.failed);
   });
@@ -563,6 +553,445 @@ void main() {
       expect(store.snapshot.single.state, MobileCommandState.failed);
     },
   );
+
+  test('recovery snapshot is owner scoped and presentation safe', () async {
+    final MobileCommand ownPending = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.eventResultAcknowledgement,
+      idempotencyKey: 'private-ack-key',
+      fingerprint: 'private-fingerprint',
+      payload: <String, Object?>{'receiptId': 'private-receipt'},
+      now: DateTime.utc(2026, 7, 26, 9),
+    );
+    final MobileCommand ownFailed =
+        MobileCommand.pending(
+          ownerId: 'user-1',
+          type: MobileCommandType.expeditionAdvance,
+          idempotencyKey: 'private-advance-key',
+          fingerprint: 'private-advance-fingerprint',
+          payload: <String, Object?>{
+            'expeditionId': 'private-expedition',
+            'energyToSpend': 30,
+          },
+          now: DateTime.utc(2026, 7, 26, 9, 1),
+        ).withAttemptFailure(
+          now: DateTime.utc(2026, 7, 26, 9, 2),
+          error: const ExpeditionApiException(
+            statusCode: 409,
+            code: 'STATE_CONFLICT',
+            message: 'private backend detail',
+          ),
+          terminal: true,
+          category: MobileCommandFailureCategory.rejected,
+        );
+    final MobileCommand foreign = MobileCommand.pending(
+      ownerId: 'another-user',
+      type: MobileCommandType.activitySync,
+      idempotencyKey: 'foreign-key',
+      fingerprint: 'foreign-fingerprint',
+      payload: _reading(500).toJson(),
+      now: DateTime.utc(2026, 7, 26, 9, 3),
+    );
+    final MobileCommandRuntime runtime = _runtime(
+      store: InMemoryMobileCommandStore(<MobileCommand>[
+        ownFailed,
+        foreign,
+        ownPending,
+      ]),
+    );
+
+    final MobileCommandRecoverySnapshot snapshot = await runtime
+        .recoverySnapshot();
+
+    expect(snapshot.totalCount, 2);
+    expect(snapshot.pendingCount, 1);
+    expect(snapshot.failedCount, 1);
+    expect(
+      snapshot.items.map((MobileCommandRecoveryItem item) => item.type),
+      <MobileCommandType>[
+        MobileCommandType.eventResultAcknowledgement,
+        MobileCommandType.expeditionAdvance,
+      ],
+    );
+    expect(
+      snapshot.items.last.failureCategory,
+      MobileCommandFailureCategory.rejected,
+    );
+  });
+
+  test('dismisses only current-owner terminal records', () async {
+    MobileCommand failed(String ownerId, String key) =>
+        MobileCommand.pending(
+          ownerId: ownerId,
+          type: MobileCommandType.eventResolution,
+          idempotencyKey: key,
+          fingerprint: 'fingerprint-$key',
+          payload: <String, Object?>{
+            'eventId': 'signal-source-v1',
+            'choiceId': 'trust-spark',
+          },
+          now: DateTime.utc(2026, 7, 26, 9),
+        ).withAttemptFailure(
+          now: DateTime.utc(2026, 7, 26, 9, 1),
+          error: StateError('terminal'),
+          terminal: true,
+          category: MobileCommandFailureCategory.invalidCommand,
+        );
+
+    final MobileCommand own = failed('user-1', 'own-failed');
+    final MobileCommand foreign = failed('another-user', 'foreign-failed');
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+      <MobileCommand>[own, foreign],
+    );
+    final MobileCommandRuntime runtime = _runtime(store: store);
+
+    expect(
+      await runtime.dismissFailed(
+        item: MobileCommandRecoveryItem.fromCommand(foreign),
+      ),
+      isFalse,
+    );
+    final MobileCommandRecoveryItem ownItem =
+        (await runtime.recoverySnapshot()).items.single;
+    expect(await runtime.dismissFailed(item: ownItem), isTrue);
+    expect(store.snapshot, <MobileCommand>[foreign]);
+    expect(await runtime.dismissFailed(item: ownItem), isFalse);
+  });
+
+  test('never dismisses an ambiguous pending command', () async {
+    final MobileCommand pending = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.expeditionAdvance,
+      idempotencyKey: 'pending-advance',
+      fingerprint: 'pending-fingerprint',
+      payload: <String, Object?>{
+        'expeditionId': 'starter-expedition-v1',
+        'energyToSpend': 30,
+      },
+      now: DateTime.utc(2026, 7, 26, 9),
+    );
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+      <MobileCommand>[pending],
+    );
+    final MobileCommandRuntime runtime = _runtime(store: store);
+    final MobileCommandRecoveryItem item =
+        (await runtime.recoverySnapshot()).items.single;
+
+    await expectLater(
+      runtime.dismissFailed(item: item),
+      throwsA(isA<MobileCommandDismissalException>()),
+    );
+    expect(store.snapshot, <MobileCommand>[pending]);
+  });
+
+  test('stale recovery item cannot dismiss a replacement record', () async {
+    MobileCommand failedAt(DateTime createdAt, DateTime failedAt) =>
+        MobileCommand.pending(
+          ownerId: 'user-1',
+          type: MobileCommandType.eventResolution,
+          idempotencyKey: 'reused-key',
+          fingerprint: 'reused-fingerprint',
+          payload: <String, Object?>{
+            'eventId': 'signal-source-v1',
+            'choiceId': 'trust-spark',
+          },
+          now: createdAt,
+        ).withAttemptFailure(
+          now: failedAt,
+          error: StateError('terminal'),
+          terminal: true,
+          category: MobileCommandFailureCategory.rejected,
+        );
+    final MobileCommand first = failedAt(
+      DateTime.utc(2026, 7, 26, 9),
+      DateTime.utc(2026, 7, 26, 9, 1),
+    );
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+      <MobileCommand>[first],
+    );
+    final MobileCommandRuntime runtime = _runtime(store: store);
+    final MobileCommandRecoveryItem staleItem =
+        (await runtime.recoverySnapshot()).items.single;
+    final MobileCommand replacement = failedAt(
+      DateTime.utc(2026, 7, 26, 10),
+      DateTime.utc(2026, 7, 26, 10, 1),
+    );
+    await store.save(<MobileCommand>[replacement]);
+
+    expect(await runtime.dismissFailed(item: staleItem), isFalse);
+    expect(store.snapshot, <MobileCommand>[replacement]);
+  });
+
+  test('experiment exposure cannot block gameplay recovery', () async {
+    final MobileCommand exposure = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.platformCommand,
+      idempotencyKey: 'exposure-key',
+      fingerprint: 'exposure-fingerprint',
+      payload: <String, Object?>{
+        'commandType': 'RECORD_EXPERIMENT_EXPOSURE',
+        'payload': <String, Object?>{
+          'experimentId': 'first-journey-copy',
+          'variant': 'b',
+        },
+      },
+      now: DateTime.utc(2026, 7, 26, 9),
+    );
+    final MobileCommand event = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.eventResolution,
+      idempotencyKey: 'event-key',
+      fingerprint: 'event-fingerprint',
+      payload: <String, Object?>{
+        'eventId': 'signal-source-v1',
+        'choiceId': 'trust-spark',
+      },
+      now: DateTime.utc(2026, 7, 26, 9, 1),
+    );
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+      <MobileCommand>[exposure, event],
+    );
+    int eventCalls = 0;
+    final MobileCommandRuntime runtime = _runtime(
+      store: store,
+      platformSender:
+          ({
+            required String commandType,
+            required Map<String, Object?> payload,
+            required String idempotencyKey,
+          }) async => throw StateError('telemetry offline'),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async {
+            eventCalls += 1;
+            return _eventResult();
+          },
+    );
+
+    final MobileCommandReplayReport report = await runtime.replayPending();
+    await runtime.close();
+
+    expect(exposure.lane, MobileCommandLane.telemetry);
+    expect(report.retryableFailures, 1);
+    expect(report.succeeded, 1);
+    expect(eventCalls, 1);
+    expect(store.snapshot.single.commandId, exposure.commandId);
+    expect(store.snapshot.single.state, MobileCommandState.pending);
+  });
+
+  test(
+    'replay preserves activity before gameplay while telemetry runs aside',
+    () async {
+      final MobileCommand activity = MobileCommand.pending(
+        ownerId: 'user-1',
+        type: MobileCommandType.activitySync,
+        idempotencyKey: 'activity-key',
+        fingerprint: 'activity-fingerprint',
+        payload: _reading(6842).toJson(),
+        now: DateTime.utc(2026, 7, 26, 9),
+      );
+      final MobileCommand event = MobileCommand.pending(
+        ownerId: 'user-1',
+        type: MobileCommandType.eventResolution,
+        idempotencyKey: 'event-key',
+        fingerprint: 'event-fingerprint',
+        payload: <String, Object?>{
+          'eventId': 'signal-source-v1',
+          'choiceId': 'trust-spark',
+        },
+        now: DateTime.utc(2026, 7, 26, 9, 1),
+      );
+      final MobileCommand exposure = MobileCommand.pending(
+        ownerId: 'user-1',
+        type: MobileCommandType.platformCommand,
+        idempotencyKey: 'exposure-key',
+        fingerprint: 'exposure-fingerprint',
+        payload: <String, Object?>{
+          'commandType': 'RECORD_EXPERIMENT_EXPOSURE',
+          'payload': <String, Object?>{
+            'experimentId': 'first-journey-copy',
+            'variant': 'b',
+          },
+        },
+        now: DateTime.utc(2026, 7, 26, 9, 2),
+      );
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+        <MobileCommand>[activity, event, exposure],
+      );
+      final Completer<void> activityStarted = Completer<void>();
+      final Completer<void> releaseActivity = Completer<void>();
+      final Completer<void> telemetryStarted = Completer<void>();
+      final Completer<void> releaseTelemetry = Completer<void>();
+      final Completer<void> gameplayStarted = Completer<void>();
+      int gameplayCalls = 0;
+      final MobileCommandRuntime runtime = _runtime(
+        store: store,
+        activitySender:
+            ({
+              required StepReading reading,
+              required String idempotencyKey,
+            }) async {
+              activityStarted.complete();
+              await releaseActivity.future;
+              return _activityResult(reading.authoritativeTotal);
+            },
+        eventSender:
+            ({
+              required String eventId,
+              required String choiceId,
+              required String idempotencyKey,
+            }) async {
+              gameplayCalls += 1;
+              gameplayStarted.complete();
+              return _eventResult();
+            },
+        platformSender:
+            ({
+              required String commandType,
+              required Map<String, Object?> payload,
+              required String idempotencyKey,
+            }) async {
+              telemetryStarted.complete();
+              await releaseTelemetry.future;
+              throw StateError('telemetry offline');
+            },
+      );
+
+      final Future<MobileCommandReplayReport> replay = runtime
+          .replayPendingOnStart();
+      await Future.wait(<Future<void>>[
+        activityStarted.future,
+        telemetryStarted.future,
+      ]);
+      await Future<void>.delayed(Duration.zero);
+      expect(gameplayCalls, 0);
+
+      releaseActivity.complete();
+      await gameplayStarted.future;
+      expect(gameplayCalls, 1);
+      expect(releaseTelemetry.isCompleted, isFalse);
+
+      final MobileCommandReplayReport report = await replay;
+      expect(report.succeeded, 2);
+      expect(report.retryableFailures, 0);
+      expect(report.pendingAfter, 1);
+      expect(releaseTelemetry.isCompleted, isFalse);
+
+      releaseTelemetry.complete();
+      await runtime.close();
+      expect(store.snapshot.single.lane, MobileCommandLane.telemetry);
+    },
+  );
+
+  test('retryable activity replay keeps dependent gameplay pending', () async {
+    final MobileCommand activity = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.activitySync,
+      idempotencyKey: 'activity-key',
+      fingerprint: 'activity-fingerprint',
+      payload: _reading(6842).toJson(),
+      now: DateTime.utc(2026, 7, 26, 9),
+    );
+    final MobileCommand event = MobileCommand.pending(
+      ownerId: 'user-1',
+      type: MobileCommandType.eventResolution,
+      idempotencyKey: 'event-key',
+      fingerprint: 'event-fingerprint',
+      payload: <String, Object?>{
+        'eventId': 'signal-source-v1',
+        'choiceId': 'trust-spark',
+      },
+      now: DateTime.utc(2026, 7, 26, 9, 1),
+    );
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+      <MobileCommand>[activity, event],
+    );
+    int gameplayCalls = 0;
+    final MobileCommandRuntime runtime = _runtime(
+      store: store,
+      activitySender:
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async => throw StateError('activity offline'),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async {
+            gameplayCalls += 1;
+            return _eventResult();
+          },
+    );
+
+    final MobileCommandReplayReport report = await runtime.replayPending();
+
+    expect(gameplayCalls, 0);
+    expect(report.succeeded, 0);
+    expect(report.retryableFailures, 1);
+    expect(report.pendingAfter, 2);
+    expect(store.snapshot, hasLength(2));
+    expect(store.snapshot[0].attemptCount, 1);
+    expect(store.snapshot[1].attemptCount, 0);
+    expect(
+      store.snapshot.map((MobileCommand command) => command.state),
+      everyElement(MobileCommandState.pending),
+    );
+  });
+
+  test('in-flight experiment exposure does not hold gameplay lock', () async {
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+    final Completer<void> exposureStarted = Completer<void>();
+    final Completer<void> releaseExposure = Completer<void>();
+    int eventCalls = 0;
+    final MobileCommandRuntime runtime = _runtime(
+      store: store,
+      platformSender:
+          ({
+            required String commandType,
+            required Map<String, Object?> payload,
+            required String idempotencyKey,
+          }) async {
+            exposureStarted.complete();
+            await releaseExposure.future;
+            throw StateError('telemetry offline');
+          },
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async {
+            eventCalls += 1;
+            return _eventResult();
+          },
+    );
+
+    final Future<PlatformCommandResult> exposure = runtime.executePlatform(
+      commandType: 'RECORD_EXPERIMENT_EXPOSURE',
+      payload: <String, Object?>{
+        'experimentId': 'first-journey-copy',
+        'variant': 'b',
+      },
+      idempotencyKey: 'exposure-key',
+    );
+    await exposureStarted.future;
+
+    await runtime.resolve(
+      eventId: 'signal-source-v1',
+      choiceId: 'trust-spark',
+      idempotencyKey: 'event-key',
+    );
+    expect(eventCalls, 1);
+
+    releaseExposure.complete();
+    await expectLater(exposure, throwsStateError);
+    expect(store.snapshot.single.lane, MobileCommandLane.telemetry);
+  });
 }
 
 MobileCommandRuntime _runtime({

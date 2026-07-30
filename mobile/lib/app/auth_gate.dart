@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
@@ -19,8 +20,9 @@ import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
 import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
+import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_screen.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({
     super.key,
     required this.controller,
@@ -33,33 +35,86 @@ class AuthGate extends StatelessWidget {
   final MobileCommandStore commandStore;
 
   @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  NavigatorState? _rootNavigator;
+  bool _authenticatedRoutesDismissScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_handleAuthStateChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rootNavigator = Navigator.maybeOf(context, rootNavigator: true);
+  }
+
+  @override
+  void didUpdateWidget(AuthGate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handleAuthStateChanged);
+      widget.controller.addListener(_handleAuthStateChanged);
+      _authenticatedRoutesDismissScheduled = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleAuthStateChanged);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: controller,
+      animation: widget.controller,
       builder: (BuildContext context, Widget? child) {
-        switch (controller.state) {
+        switch (widget.controller.state) {
           case AuthLifecycleState.initializing:
           case AuthLifecycleState.stoppingRuntime:
             return const _AuthProgressScreen();
           case AuthLifecycleState.unauthenticated:
           case AuthLifecycleState.reauthenticationRequired:
           case AuthLifecycleState.authenticating:
-            return _LoginScreen(controller: controller);
+            return _LoginScreen(controller: widget.controller);
           case AuthLifecycleState.authenticated:
-            final AuthIdentity? identity = controller.identity;
+            final AuthIdentity? identity = widget.controller.identity;
             if (identity == null) {
               return const _AuthProgressScreen();
             }
             return AuthenticatedApplicationShell(
               key: ValueKey<String>(identity.ownerId),
-              controller: controller,
+              controller: widget.controller,
               identity: identity,
-              cache: cache,
-              commandStore: commandStore,
+              cache: widget.cache,
+              commandStore: widget.commandStore,
             );
         }
       },
     );
+  }
+
+  void _handleAuthStateChanged() {
+    if (widget.controller.state == AuthLifecycleState.authenticated) {
+      _authenticatedRoutesDismissScheduled = false;
+      return;
+    }
+    if (_authenticatedRoutesDismissScheduled) {
+      return;
+    }
+    _authenticatedRoutesDismissScheduled = true;
+    final NavigatorState? navigator = _rootNavigator;
+    WidgetsBinding.instance.addPostFrameCallback((Duration _) {
+      if (navigator?.mounted ?? false) {
+        navigator!.popUntil((Route<Object?> route) => route.isFirst);
+      }
+    });
   }
 }
 
@@ -93,6 +148,11 @@ class _AuthenticatedApplicationShellState
   late final FirstJourneyPlatformLoader _platformLoader;
   late final FirstJourneyActivitySynchronizer? _synchronizer;
   late final RuntimeStopper _runtimeStopper;
+  StreamSubscription<void>? _commandChangesSubscription;
+  int _recoveryCount = 0;
+  bool _recoveryUnavailable = false;
+  int _recoveryLoadGeneration = 0;
+  int _authoritativeRefreshGeneration = 0;
 
   @override
   void initState() {
@@ -161,11 +221,16 @@ class _AuthenticatedApplicationShellState
     _synchronizer = _coordinator?.synchronize;
     _runtimeStopper = _runtime.close;
     widget.controller.registerRuntimeStopper(_runtimeStopper);
+    _commandChangesSubscription = _runtime.changes.listen((void _) {
+      unawaited(_refreshRecoveryStatus());
+    });
+    unawaited(_refreshRecoveryStatus());
   }
 
   @override
   void dispose() {
     widget.controller.unregisterRuntimeStopper(_runtimeStopper);
+    unawaited(_commandChangesSubscription?.cancel());
     unawaited(_runtime.close());
     super.dispose();
   }
@@ -176,16 +241,25 @@ class _AuthenticatedApplicationShellState
       homeLoader: _homeLoader,
       platformLoader: _platformLoader,
       commandRuntime: _runtime,
+      authoritativeRefreshGeneration: _authoritativeRefreshGeneration,
       synchronizer: _synchronizer,
       onOpenAccount: _openAccount,
+      onOpenRecovery: _openRecovery,
+      recoveryCount: _recoveryCount,
+      recoveryUnavailable: _recoveryUnavailable,
       childBuilder: (VoidCallback onResumeFirstJourney) {
         return ActivitySyncShell(
           synchronizer: _synchronizer,
           commandRuntime: _runtime,
+          replayOnStart: false,
+          authoritativeRefreshGeneration: _authoritativeRefreshGeneration,
           homeLoader: _homeLoader,
           platformLoader: _platformLoader,
           platformHomeLoader: _homeLoader,
           onOpenAccount: _openAccount,
+          onOpenRecovery: _openRecovery,
+          recoveryCount: _recoveryCount,
+          recoveryUnavailable: _recoveryUnavailable,
           onResumeFirstJourney: onResumeFirstJourney,
         );
       },
@@ -199,9 +273,58 @@ class _AuthenticatedApplicationShellState
           controller: widget.controller,
           identity: widget.identity,
           apiClient: _accountClient,
+          commandRuntime: _runtime,
+          onOpenRecovery: _openRecovery,
+          recoveryCount: _recoveryCount,
+          recoveryUnavailable: _recoveryUnavailable,
         ),
       ),
     );
+  }
+
+  Future<void> _openRecovery() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => MobileCommandRecoveryScreen(
+          runtime: _runtime,
+          onServerStateChanged: _handleRecoveredServerState,
+        ),
+      ),
+    );
+    if (mounted) {
+      await _refreshRecoveryStatus();
+    }
+  }
+
+  void _handleRecoveredServerState() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _authoritativeRefreshGeneration += 1;
+    });
+  }
+
+  Future<void> _refreshRecoveryStatus() async {
+    final int generation = ++_recoveryLoadGeneration;
+    try {
+      final MobileCommandRecoverySnapshot snapshot = await _runtime
+          .recoverySnapshot();
+      if (!mounted || generation != _recoveryLoadGeneration) {
+        return;
+      }
+      setState(() {
+        _recoveryCount = snapshot.totalCount;
+        _recoveryUnavailable = false;
+      });
+    } on Object {
+      if (!mounted || generation != _recoveryLoadGeneration) {
+        return;
+      }
+      setState(() {
+        _recoveryUnavailable = true;
+      });
+    }
   }
 }
 
