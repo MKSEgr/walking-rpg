@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/features/account/application/account_export_coordinator.dart';
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
 import 'package:walking_rpg_mobile/features/account/domain/account_deletion_receipt.dart';
@@ -20,6 +22,10 @@ class AccountScreen extends StatefulWidget {
     required this.apiClient,
     this.exportCoordinator,
     this.idempotencyKeyFactory,
+    this.commandRuntime,
+    this.onOpenRecovery,
+    this.recoveryCount = 0,
+    this.recoveryUnavailable = false,
   });
 
   final AuthSessionController controller;
@@ -27,6 +33,10 @@ class AccountScreen extends StatefulWidget {
   final AccountApiClient apiClient;
   final AccountExportCoordinator? exportCoordinator;
   final String Function()? idempotencyKeyFactory;
+  final MobileCommandRuntime? commandRuntime;
+  final Future<void> Function()? onOpenRecovery;
+  final int recoveryCount;
+  final bool recoveryUnavailable;
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -37,18 +47,43 @@ class _AccountScreenState extends State<AccountScreen> {
   AccountExportArtifact? _lastExport;
   String? _pendingDeletionKey;
   bool _dismissRequested = false;
+  StreamSubscription<void>? _recoverySubscription;
+  late int _recoveryCount;
+  late bool _recoveryUnavailable;
+  int _recoveryLoadGeneration = 0;
 
   bool get _busy => _action != null;
 
   @override
   void initState() {
     super.initState();
+    _recoveryCount = widget.recoveryCount;
+    _recoveryUnavailable = widget.recoveryUnavailable;
     widget.controller.addListener(_handleAuthStateChanged);
+    _subscribeRecovery();
+  }
+
+  @override
+  void didUpdateWidget(AccountScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.commandRuntime != widget.commandRuntime) {
+      unawaited(_recoverySubscription?.cancel());
+      _recoverySubscription = null;
+      _recoveryCount = widget.recoveryCount;
+      _recoveryUnavailable = widget.recoveryUnavailable;
+      _subscribeRecovery();
+    } else if (widget.commandRuntime == null &&
+        (oldWidget.recoveryCount != widget.recoveryCount ||
+            oldWidget.recoveryUnavailable != widget.recoveryUnavailable)) {
+      _recoveryCount = widget.recoveryCount;
+      _recoveryUnavailable = widget.recoveryUnavailable;
+    }
   }
 
   @override
   void dispose() {
     widget.controller.removeListener(_handleAuthStateChanged);
+    unawaited(_recoverySubscription?.cancel());
     super.dispose();
   }
 
@@ -69,6 +104,37 @@ class _AccountScreenState extends State<AccountScreen> {
                       ? 'Локальный development-режим'
                       : 'Защищённая OIDC-сессия',
                 ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                key: const Key('account-command-recovery'),
+                leading: Badge(
+                  isLabelVisible: _recoveryUnavailable || _recoveryCount > 0,
+                  label: Text(
+                    _recoveryUnavailable
+                        ? '!'
+                        : _recoveryCount > 99
+                        ? '99+'
+                        : '$_recoveryCount',
+                  ),
+                  child: const Icon(Icons.cloud_sync_outlined),
+                ),
+                title: const Text('Сохранённые действия'),
+                subtitle: Text(
+                  _recoveryUnavailable
+                      ? 'Локальная очередь требует внимания'
+                      : _recoveryCount == 0
+                      ? 'Все действия отправлены'
+                      : 'Ожидают проверки: $_recoveryCount',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: widget.onOpenRecovery == null
+                    ? null
+                    : () {
+                        unawaited(_openRecoveryAndRefresh());
+                      },
               ),
             ),
             const SizedBox(height: 12),
@@ -328,6 +394,58 @@ class _AccountScreenState extends State<AccountScreen> {
         unawaited(Navigator.maybeOf(context)?.maybePop());
       }
     });
+  }
+
+  void _subscribeRecovery() {
+    final MobileCommandRuntime? runtime = widget.commandRuntime;
+    if (runtime == null) {
+      return;
+    }
+    _recoverySubscription = runtime.changes.listen((void _) {
+      unawaited(_refreshRecoveryStatus(runtime));
+    });
+    unawaited(_refreshRecoveryStatus(runtime));
+  }
+
+  Future<void> _refreshRecoveryStatus(MobileCommandRuntime runtime) async {
+    final int generation = ++_recoveryLoadGeneration;
+    try {
+      final MobileCommandRecoverySnapshot snapshot = await runtime
+          .recoverySnapshot();
+      if (!mounted ||
+          generation != _recoveryLoadGeneration ||
+          !identical(widget.commandRuntime, runtime)) {
+        return;
+      }
+      setState(() {
+        _recoveryCount = snapshot.totalCount;
+        _recoveryUnavailable = false;
+      });
+    } on Object {
+      if (!mounted ||
+          generation != _recoveryLoadGeneration ||
+          !identical(widget.commandRuntime, runtime)) {
+        return;
+      }
+      setState(() {
+        _recoveryUnavailable = true;
+      });
+    }
+  }
+
+  Future<void> _openRecoveryAndRefresh() async {
+    final Future<void> Function()? openRecovery = widget.onOpenRecovery;
+    if (openRecovery == null) {
+      return;
+    }
+    try {
+      await openRecovery();
+    } finally {
+      final MobileCommandRuntime? runtime = widget.commandRuntime;
+      if (mounted && runtime != null) {
+        await _refreshRecoveryStatus(runtime);
+      }
+    }
   }
 
   void _showError(String message) {

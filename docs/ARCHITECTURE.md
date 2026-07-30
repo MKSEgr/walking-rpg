@@ -39,7 +39,7 @@ shared         — общие API/error/transaction primitives
 
 ```text
 core/config          — compile-time environment
-core/commands        — durable commands, lanes и replay
+core/commands        — durable commands, lanes, replay и safe recovery projection
 core/cache           — read-only validated server snapshots
 activity             — HealthKit/Health Connect и sync
 home                 — authoritative home snapshot
@@ -47,6 +47,7 @@ expedition           — ENERGY spend
 event                — event resolution, durable result и acknowledgement
 onboarding            — guided first journey и recovery milestones
 platform             — typed snapshot, commands и «Путевой журнал»
+recovery             — owner-scoped UI сохранённых действий
 app                   — навигационный shell
 ```
 
@@ -68,19 +69,56 @@ HealthKit / Health Connect
 
 Mobile не отправляет сырые health samples и не вычисляет награду.
 
-## 5. Gameplay и platform commands
+## 5. Durable mobile commands
 
 ```text
-GAMEPLAY lane
+ACTIVITY
+└── ACTIVITY_SYNC
+
+GAMEPLAY
 ├── EXPEDITION_ADVANCE
 ├── EVENT_RESOLUTION
 ├── EVENT_RESULT_ACKNOWLEDGEMENT
-└── PLATFORM_COMMAND
+└── state-changing PLATFORM_COMMAND
+
+TELEMETRY
+└── PLATFORM_COMMAND(RECORD_EXPERIMENT_EXPOSURE)
 ```
 
-Все команды сохраняются до первой сетевой попытки. Retry использует тот же payload и idempotency key. Подтверждённый terminal 4xx переводит конкретную команду в `FAILED`, а transport/408/429/5xx остаются `PENDING`.
+Все команды сохраняются до первой сетевой попытки. Retry использует тот же
+payload и idempotency key. Подтверждённый terminal 4xx переводит конкретную
+команду в `FAILED`, а transport/408/429/5xx остаются `PENDING`. Внутри lane
+сохраняется FIFO. Replay сначала завершает `ACTIVITY`, затем `GAMEPLAY`, чтобы
+ENERGY credit не гонялся с debit. Retryable ACTIVITY является барьером:
+GAMEPLAY не вызывается и остаётся `PENDING`; `TELEMETRY` выполняется
+параллельно с этой цепочкой как close-tracked операция, но не удерживает
+завершение startup replay и первый экран. Явный Recovery retry ожидает все
+lane. Exposure lane выводится из
+сохранённого payload, поэтому старый v1 record изолируется без миграции store.
 
 Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
+
+Authenticated shell выполняет startup replay ровно в одном месте, а runtime
+memoize-ит его Future до завершения authenticated session. После первой
+попытки resume/reload перечитывают только authoritative state и не создают
+новую сетевую попытку; завершённый report/error claim-ится первым всё ещё
+активным UI-владельцем один раз. Remount во время replay принимает outcome, а
+remount после его обработки не переинтерпретирует историю. Новый runtime после
+process restart или 401 reauthentication получает новый startup replay.
+`ActivitySyncShell`
+по умолчанию не владеет replay и требует injected session runtime для явного
+opt-in. Закрытый или заменённый runtime прекращает stale presentation
+continuation без новых owner-scoped Home/Platform reads.
+Recovery center показывает owner-scoped тип, состояние, попытки, coarse
+category и время, но не payload, key, fingerprint, receipt, Health cursor,
+raw error или filesystem path. `PENDING` разрешено только повторить исходной
+командой и
+нельзя удалить; `FAILED` не retry-ится, но его локальную диагностическую запись
+можно убрать после подтверждения. Успешное восстановление инвалидирует
+экранный generation и перечитывает authoritative state без повторного startup
+replay или перемонтирования завершённого main shell. Выход сессии из
+`authenticated` закрывает owner-scoped overlay routes. Corrupt store остаётся
+fail-closed и не сбрасывается UI.
 
 Результат события имеет отдельный durable handoff:
 
@@ -234,6 +272,11 @@ V11 добавляет ACK milestone и запрещает менять уже �
 17. `ONBOARDING_COMPLETED` сохраняет V9-семантику; доказательством доставки
     первого результата является отдельный
     `FIRST_EVENT_RESULT_ACKNOWLEDGED`.
+18. `PENDING` mobile-команда не удаляется пользовательским действием и
+    повторяется только с исходным payload/key.
+19. Telemetry failure не удерживает ACTIVITY или GAMEPLAY lane.
+20. Recovery presentation не раскрывает command payload, idempotency key,
+    receipt, raw error или локальный путь.
 
 ## 10. Identity и authorization boundary
 

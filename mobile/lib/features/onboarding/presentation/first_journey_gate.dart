@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/onboarding/domain/first_journey_progress.dart';
 import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_screen.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
+import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
 
 typedef FirstJourneyHomeLoader = Future<HomeSnapshot> Function();
 typedef FirstJourneyPlatformLoader = Future<PlatformSnapshot> Function();
@@ -25,6 +26,10 @@ class FirstJourneyGate extends StatefulWidget {
     required this.childBuilder,
     this.synchronizer,
     this.onOpenAccount,
+    this.onOpenRecovery,
+    this.recoveryCount = 0,
+    this.recoveryUnavailable = false,
+    this.authoritativeRefreshGeneration = 0,
   });
 
   final FirstJourneyHomeLoader homeLoader;
@@ -33,6 +38,10 @@ class FirstJourneyGate extends StatefulWidget {
   final FirstJourneyChildBuilder childBuilder;
   final FirstJourneyActivitySynchronizer? synchronizer;
   final VoidCallback? onOpenAccount;
+  final VoidCallback? onOpenRecovery;
+  final int recoveryCount;
+  final bool recoveryUnavailable;
+  final int authoritativeRefreshGeneration;
 
   @override
   State<FirstJourneyGate> createState() => _FirstJourneyGateState();
@@ -41,6 +50,7 @@ class FirstJourneyGate extends StatefulWidget {
 class _FirstJourneyGateState extends State<FirstJourneyGate> {
   late Future<FirstJourneyProgress> _progressFuture;
   final Set<String> _attemptedBackfills = <String>{};
+  FirstJourneyProgress? _lastProgress;
 
   bool _showMainExperience = false;
   bool _busy = false;
@@ -58,11 +68,24 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
   @override
   void didUpdateWidget(FirstJourneyGate oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.commandRuntime != widget.commandRuntime) {
+      _attemptedBackfills.clear();
+      _lastProgress = null;
+      _progressFuture = _prepareProgress();
+      return;
+    }
     if (oldWidget.homeLoader != widget.homeLoader ||
         oldWidget.platformLoader != widget.platformLoader ||
-        oldWidget.commandRuntime != widget.commandRuntime) {
+        oldWidget.authoritativeRefreshGeneration !=
+            widget.authoritativeRefreshGeneration) {
       _attemptedBackfills.clear();
-      _progressFuture = _prepareProgress();
+      _activityReward = null;
+      _eventReward = null;
+      _errorMessage = null;
+      _notice = null;
+      if (!_showMainExperience && _lastProgress?.complete != true) {
+        _progressFuture = _loadProgress();
+      }
     }
   }
 
@@ -78,15 +101,22 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const _FirstJourneyLoading();
             }
+            if (snapshot.error is _FirstJourneyPreparationAbandoned) {
+              return const _FirstJourneyLoading();
+            }
             if (snapshot.hasError || snapshot.data == null) {
               return _FirstJourneyLoadError(
                 error: snapshot.error,
                 onRetry: _reload,
                 onContinueLater: _continueLater,
                 onOpenAccount: widget.onOpenAccount,
+                onOpenRecovery: widget.onOpenRecovery,
+                recoveryCount: widget.recoveryCount,
+                recoveryUnavailable: widget.recoveryUnavailable,
               );
             }
             final FirstJourneyProgress progress = snapshot.data!;
+            _lastProgress = progress;
             _scheduleFactBackfill(progress);
             if (progress.complete &&
                 _eventReward == null &&
@@ -111,17 +141,43 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
               },
               onContinueLater: _continueLater,
               onOpenAccount: widget.onOpenAccount,
+              onOpenRecovery: widget.onOpenRecovery,
+              recoveryCount: widget.recoveryCount,
+              recoveryUnavailable: widget.recoveryUnavailable,
             );
           },
     );
   }
 
   Future<FirstJourneyProgress> _prepareProgress() async {
-    final MobileCommandReplayReport report = await widget.commandRuntime
-        .replayPending();
+    final MobileCommandRuntime runtime = widget.commandRuntime;
+    late final MobileCommandReplayReport report;
+    try {
+      report = await runtime.replayPendingOnStart();
+    } on Object {
+      if (!mounted ||
+          !identical(widget.commandRuntime, runtime) ||
+          runtime.isClosed) {
+        throw const _FirstJourneyPreparationAbandoned();
+      }
+      if (!runtime.claimStartupReplayOutcome()) {
+        return _loadProgress();
+      }
+      rethrow;
+    }
+    if (!mounted ||
+        !identical(widget.commandRuntime, runtime) ||
+        runtime.isClosed) {
+      throw const _FirstJourneyPreparationAbandoned();
+    }
+    if (!runtime.claimStartupReplayOutcome()) {
+      return _loadProgress();
+    }
+    _notice = null;
     if (report.retryableFailures > 0) {
       _notice =
-          'Часть сохранённых действий ждёт соединения и будет повторена автоматически.';
+          'Часть сохранённых действий ждёт соединения. '
+          'Открой «Сохранённые действия» для безопасного повтора.';
     } else if (report.permanentFailures > 0) {
       _notice =
           'Одно из ранее сохранённых действий отклонено сервером. '
@@ -174,7 +230,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
       }
     }
     if (mounted) {
-      _reload();
+      _reloadProgressWithoutReplay();
     }
   }
 
@@ -388,11 +444,12 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
   void _resume() {
     setState(() {
       _attemptedBackfills.clear();
+      _lastProgress = null;
       _showMainExperience = false;
       _activityReward = null;
       _eventReward = null;
       _errorMessage = null;
-      _progressFuture = _prepareProgress();
+      _progressFuture = _loadProgress();
     });
   }
 
@@ -402,8 +459,17 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     }
     setState(() {
       _attemptedBackfills.clear();
+      _lastProgress = null;
       _errorMessage = null;
-      _progressFuture = _prepareProgress();
+      _progressFuture = _loadProgress();
+    });
+  }
+
+  void _reloadProgressWithoutReplay() {
+    setState(() {
+      _lastProgress = null;
+      _errorMessage = null;
+      _progressFuture = _loadProgress();
     });
   }
 
@@ -414,6 +480,10 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     );
     return text.isEmpty ? 'Не удалось выполнить действие.' : text;
   }
+}
+
+final class _FirstJourneyPreparationAbandoned implements Exception {
+  const _FirstJourneyPreparationAbandoned();
 }
 
 class _FirstJourneyLoading extends StatelessWidget {
@@ -444,12 +514,18 @@ class _FirstJourneyLoadError extends StatelessWidget {
     required this.onRetry,
     required this.onContinueLater,
     this.onOpenAccount,
+    this.onOpenRecovery,
+    this.recoveryCount = 0,
+    this.recoveryUnavailable = false,
   });
 
   final Object? error;
   final VoidCallback onRetry;
   final VoidCallback onContinueLater;
   final VoidCallback? onOpenAccount;
+  final VoidCallback? onOpenRecovery;
+  final int recoveryCount;
+  final bool recoveryUnavailable;
 
   @override
   Widget build(BuildContext context) {
@@ -457,6 +533,12 @@ class _FirstJourneyLoadError extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Первый путь'),
         actions: <Widget>[
+          MobileCommandRecoveryAction(
+            key: const Key('first-journey-load-recovery'),
+            onPressed: onOpenRecovery,
+            count: recoveryCount,
+            unavailable: recoveryUnavailable,
+          ),
           IconButton(
             tooltip: 'Аккаунт',
             onPressed: onOpenAccount,

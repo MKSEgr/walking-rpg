@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:walking_rpg_mobile/core/commands/async_lock.dart';
 import 'package:walking_rpg_mobile/core/commands/file_mobile_command_store.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
@@ -95,16 +96,22 @@ final class MobileCommandRuntime {
   final PlatformCommandSender? _platformSender;
   final MobileCommandClock _clock;
   final MobileCommandKeyFactory _keyFactory;
+  final StreamController<void> _changesController =
+      StreamController<void>.broadcast(sync: true);
   final AsyncLock _stateLock = AsyncLock();
   final Map<MobileCommandLane, AsyncLock> _laneLocks =
       <MobileCommandLane, AsyncLock>{
         MobileCommandLane.activity: AsyncLock(),
         MobileCommandLane.gameplay: AsyncLock(),
+        MobileCommandLane.telemetry: AsyncLock(),
       };
   bool _closed = false;
   int _activeOperations = 0;
   Completer<void>? _idleCompleter;
   Future<void>? _closeFuture;
+  Future<MobileCommandReplayReport>? _startupReplay;
+  bool _startupReplayClaimed = false;
+  Future<void>? _startupTelemetryReplay;
 
   Future<ActivitySyncResult> syncActivity({
     required StepReading reading,
@@ -229,22 +236,124 @@ final class MobileCommandRuntime {
   }
 
   Future<MobileCommandReplayReport> replayPending() {
-    return _runOpenOperation<MobileCommandReplayReport>(_replayPending);
+    return _runOpenOperation<MobileCommandReplayReport>(
+      () => _runRecoveryOperation(_replayPending),
+    );
+  }
+
+  Future<MobileCommandReplayReport> replayPendingOnStart() {
+    _ensureOpen();
+    final Future<MobileCommandReplayReport>? existing = _startupReplay;
+    if (existing != null) {
+      return existing;
+    }
+    final Future<MobileCommandReplayReport> replay =
+        _runOpenOperation<MobileCommandReplayReport>(
+          () => _runRecoveryOperation(_replayPendingOnStart),
+        );
+    _startupReplay = replay;
+    return replay;
+  }
+
+  bool claimStartupReplayOutcome() {
+    if (_closed || _startupReplayClaimed) {
+      return false;
+    }
+    _startupReplayClaimed = true;
+    return true;
+  }
+
+  Stream<void> get changes => _changesController.stream;
+
+  bool get isClosed => _closed;
+
+  Future<MobileCommandRecoverySnapshot> recoverySnapshot() {
+    return _runOpenOperation<MobileCommandRecoverySnapshot>(
+      () => _runRecoveryOperation(_loadRecoverySnapshot),
+    );
+  }
+
+  Future<bool> dismissFailed({required MobileCommandRecoveryItem item}) {
+    return _runOpenOperation<bool>(
+      () => _runRecoveryOperation(
+        () => _stateLock.run<bool>(() async {
+          final List<MobileCommand> commands = await _store.load();
+          final int index = commands.indexWhere(
+            (MobileCommand command) =>
+                command.ownerId == ownerId && item.refersTo(command),
+          );
+          if (index < 0) {
+            return false;
+          }
+          if (commands[index].state != MobileCommandState.failed) {
+            throw const MobileCommandDismissalException();
+          }
+          final List<MobileCommand> updated = <MobileCommand>[...commands]
+            ..removeAt(index);
+          await _store.save(updated);
+          _publishChanges();
+          return true;
+        }),
+      ),
+    );
+  }
+
+  Future<T> _runRecoveryOperation<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } on MobileCommandDismissalException {
+      rethrow;
+    } on MobileCommandRecoveryUnavailableException {
+      rethrow;
+    } on Object {
+      throw const MobileCommandRecoveryUnavailableException();
+    }
+  }
+
+  Future<T> _runStorageOperation<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } on MobileCommandRecoveryUnavailableException {
+      rethrow;
+    } on Object {
+      throw const MobileCommandRecoveryUnavailableException();
+    }
   }
 
   Future<MobileCommandReplayReport> _replayPending() async {
-    int succeeded = 0;
-    int retryableFailures = 0;
-    int permanentFailures = 0;
+    final List<_ReplayLaneReport> laneReports =
+        await Future.wait(<Future<_ReplayLaneReport>>[
+          _replayOrderedStateLanes(),
+          _laneLocks[MobileCommandLane.telemetry]!.run(
+            () => _replayLane(MobileCommandLane.telemetry),
+          ),
+        ]);
+    return _buildReplayReport(laneReports);
+  }
 
-    for (final MobileCommandLane lane in MobileCommandLane.values) {
-      final _ReplayLaneReport laneReport = await _laneLocks[lane]!.run(
-        () => _replayLane(lane),
-      );
-      succeeded += laneReport.succeeded;
-      retryableFailures += laneReport.retryableFailures;
-      permanentFailures += laneReport.permanentFailures;
-    }
+  Future<MobileCommandReplayReport> _replayPendingOnStart() async {
+    _startTelemetryReplay();
+    final List<_ReplayLaneReport> laneReports = <_ReplayLaneReport>[
+      await _replayOrderedStateLanes(),
+    ];
+    return _buildReplayReport(laneReports);
+  }
+
+  Future<MobileCommandReplayReport> _buildReplayReport(
+    List<_ReplayLaneReport> laneReports,
+  ) async {
+    final int succeeded = laneReports.fold<int>(
+      0,
+      (int total, _ReplayLaneReport report) => total + report.succeeded,
+    );
+    final int retryableFailures = laneReports.fold<int>(
+      0,
+      (int total, _ReplayLaneReport report) => total + report.retryableFailures,
+    );
+    final int permanentFailures = laneReports.fold<int>(
+      0,
+      (int total, _ReplayLaneReport report) => total + report.permanentFailures,
+    );
 
     final List<MobileCommand> commands = await _loadCommands();
     final int pendingAfter = commands
@@ -270,15 +379,63 @@ final class MobileCommandRuntime {
     );
   }
 
+  void _startTelemetryReplay() {
+    if (_startupTelemetryReplay != null) {
+      return;
+    }
+    final Future<void> replay = _runOpenOperation<void>(
+      () => _runRecoveryOperation<void>(() async {
+        await _laneLocks[MobileCommandLane.telemetry]!.run(
+          () => _replayLane(MobileCommandLane.telemetry),
+        );
+      }),
+    );
+    _startupTelemetryReplay = replay;
+    unawaited(
+      replay.then<void>(
+        (void _) {
+          if (identical(_startupTelemetryReplay, replay)) {
+            _startupTelemetryReplay = null;
+          }
+        },
+        onError: (Object _, StackTrace _) {
+          if (identical(_startupTelemetryReplay, replay)) {
+            _startupTelemetryReplay = null;
+          }
+        },
+      ),
+    );
+  }
+
+  Future<_ReplayLaneReport> _replayOrderedStateLanes() async {
+    final _ReplayLaneReport activity =
+        await _laneLocks[MobileCommandLane.activity]!.run(
+          () => _replayLane(MobileCommandLane.activity),
+        );
+    if (activity.retryableFailures > 0) {
+      return activity;
+    }
+    final _ReplayLaneReport gameplay =
+        await _laneLocks[MobileCommandLane.gameplay]!.run(
+          () => _replayLane(MobileCommandLane.gameplay),
+        );
+    return activity.combinedWith(gameplay);
+  }
+
   Future<void> close() {
     final Future<void>? existing = _closeFuture;
     if (existing != null) {
       return existing;
     }
     _closed = true;
-    final Future<void> closing = _waitForIdle();
+    final Future<void> closing = _shutdown();
     _closeFuture = closing;
     return closing;
+  }
+
+  Future<void> _shutdown() async {
+    await _waitForIdle();
+    await _changesController.close();
   }
 
   Future<void> _waitForIdle() async {
@@ -326,7 +483,8 @@ final class MobileCommandRuntime {
     required String fingerprint,
     required Map<String, Object?> payload,
   }) {
-    final AsyncLock laneLock = _laneLocks[type.lane]!;
+    final MobileCommandLane lane = mobileCommandLaneFor(type, payload);
+    final AsyncLock laneLock = _laneLocks[lane]!;
     return laneLock.run<T>(() async {
       final MobileCommand target = await _ensurePending(
         type: type,
@@ -334,6 +492,9 @@ final class MobileCommandRuntime {
         fingerprint: fingerprint,
         payload: payload,
       );
+      if (target.lane != lane) {
+        throw StateError('Сохранённое действие сменило очередь выполнения');
+      }
       final Object result = await _drainForSubmit(target);
       return result as T;
     });
@@ -345,44 +506,53 @@ final class MobileCommandRuntime {
     required String fingerprint,
     required Map<String, Object?> payload,
   }) {
-    return _stateLock.run<MobileCommand>(() async {
-      final List<MobileCommand> commands = await _store.load();
-      final List<MobileCommand> matching =
-          commands
-              .where(
-                (MobileCommand command) =>
-                    command.ownerId == ownerId &&
-                    command.type == type &&
-                    command.fingerprint == fingerprint &&
-                    command.state == MobileCommandState.pending,
-              )
-              .toList(growable: false)
-            ..sort(_compareCommands);
-      if (matching.isNotEmpty) {
-        return matching.first;
-      }
+    final String normalizedProposedKey = _requireText(
+      proposedKey,
+      'idempotencyKey',
+    );
+    return _runStorageOperation(
+      () => _stateLock.run<MobileCommand>(() async {
+        final List<MobileCommand> commands = await _store.load();
+        final List<MobileCommand> matching =
+            commands
+                .where(
+                  (MobileCommand command) =>
+                      command.ownerId == ownerId &&
+                      command.type == type &&
+                      command.fingerprint == fingerprint &&
+                      command.state == MobileCommandState.pending,
+                )
+                .toList(growable: false)
+              ..sort(_compareCommands);
+        if (matching.isNotEmpty) {
+          return matching.first;
+        }
 
-      String key = _requireText(proposedKey, 'idempotencyKey');
-      String commandId = '${type.wireName}:$key';
-      while (commands.any(
-        (MobileCommand command) => command.commandId == commandId,
-      )) {
-        key = _keyFactory(type, _clock().toUtc());
-        commandId = '${type.wireName}:$key';
-      }
-      final MobileCommand command = MobileCommand.pending(
-        ownerId: ownerId,
-        type: type,
-        idempotencyKey: key,
-        fingerprint: fingerprint,
-        payload: payload,
-        now: _clock(),
-      );
-      final List<MobileCommand> updated = <MobileCommand>[...commands, command]
-        ..sort(_compareCommands);
-      await _store.save(updated);
-      return command;
-    });
+        String key = normalizedProposedKey;
+        String commandId = '${type.wireName}:$key';
+        while (commands.any(
+          (MobileCommand command) => command.commandId == commandId,
+        )) {
+          key = _keyFactory(type, _clock().toUtc());
+          commandId = '${type.wireName}:$key';
+        }
+        final MobileCommand command = MobileCommand.pending(
+          ownerId: ownerId,
+          type: type,
+          idempotencyKey: key,
+          fingerprint: fingerprint,
+          payload: payload,
+          now: _clock(),
+        );
+        final List<MobileCommand> updated = <MobileCommand>[
+          ...commands,
+          command,
+        ]..sort(_compareCommands);
+        await _store.save(updated);
+        _publishChanges();
+        return command;
+      }),
+    );
   }
 
   Future<Object> _drainForSubmit(MobileCommand target) async {
@@ -401,16 +571,11 @@ final class MobileCommandRuntime {
           Error.throwWithStackTrace(error, stackTrace);
         }
         if (!terminal) {
-          throw MobileCommandLaneBlockedException(
-            command: command,
-            cause: error,
-          );
+          throw MobileCommandLaneBlockedException(lane: command.lane);
         }
       }
     }
-    throw StateError(
-      'Pending-команда ${target.commandId} исчезла до выполнения',
-    );
+    throw StateError('Ожидающее действие исчезло до выполнения');
   }
 
   Future<_ReplayLaneReport> _replayLane(MobileCommandLane lane) async {
@@ -448,8 +613,8 @@ final class MobileCommandRuntime {
         final StepReading reading;
         try {
           reading = StepReading.fromJson(command.payload);
-        } on Object catch (error) {
-          throw MobileCommandPayloadException(command.commandId, error);
+        } on Object {
+          throw const MobileCommandPayloadException();
         }
         return _activitySender(
           reading: reading,
@@ -475,22 +640,14 @@ final class MobileCommandRuntime {
         final EventResultAcknowledgementSender? sender =
             _eventResultAcknowledgementSender;
         if (sender == null) {
-          throw MobileCommandPayloadException(
-            command.commandId,
-            const FormatException(
-              'Event result acknowledgement sender не настроен',
-            ),
-          );
+          throw const MobileCommandPayloadException();
         }
         final String receiptId = _payloadString(command, 'receiptId');
         return sender(receiptId: receiptId);
       case MobileCommandType.platformCommand:
         final PlatformCommandSender? sender = _platformSender;
         if (sender == null) {
-          throw MobileCommandPayloadException(
-            command.commandId,
-            const FormatException('Platform sender не настроен'),
-          );
+          throw const MobileCommandPayloadException();
         }
         final String commandType = _payloadString(command, 'commandType');
         final Map<String, Object?> payload = _payloadMap(command, 'payload');
@@ -516,17 +673,25 @@ final class MobileCommandRuntime {
   }
 
   Future<List<MobileCommand>> _loadCommands() {
-    return _stateLock.run<List<MobileCommand>>(_store.load);
+    return _runStorageOperation(
+      () => _stateLock.run<List<MobileCommand>>(_store.load),
+    );
   }
 
   Future<void> _remove(String commandId) {
-    return _stateLock.run<void>(() async {
-      final List<MobileCommand> commands = await _store.load();
-      final List<MobileCommand> updated = commands
-          .where((MobileCommand command) => command.commandId != commandId)
-          .toList(growable: false);
-      await _store.save(updated);
-    });
+    return _runStorageOperation(
+      () => _stateLock.run<void>(() async {
+        final List<MobileCommand> commands = await _store.load();
+        final List<MobileCommand> updated = commands
+            .where(
+              (MobileCommand command) =>
+                  command.ownerId != ownerId || command.commandId != commandId,
+            )
+            .toList(growable: false);
+        await _store.save(updated);
+        _publishChanges();
+      }),
+    );
   }
 
   Future<void> _recordFailure(
@@ -534,22 +699,28 @@ final class MobileCommandRuntime {
     Object error, {
     required bool terminal,
   }) {
-    return _stateLock.run<void>(() async {
-      final List<MobileCommand> commands = await _store.load();
-      final int index = commands.indexWhere(
-        (MobileCommand command) => command.commandId == failed.commandId,
-      );
-      if (index < 0) {
-        return;
-      }
-      final List<MobileCommand> updated = <MobileCommand>[...commands];
-      updated[index] = commands[index].withAttemptFailure(
-        now: _clock(),
-        error: error,
-        terminal: terminal,
-      );
-      await _store.save(updated);
-    });
+    return _runStorageOperation(
+      () => _stateLock.run<void>(() async {
+        final List<MobileCommand> commands = await _store.load();
+        final int index = commands.indexWhere(
+          (MobileCommand command) =>
+              command.ownerId == ownerId &&
+              command.commandId == failed.commandId,
+        );
+        if (index < 0) {
+          return;
+        }
+        final List<MobileCommand> updated = <MobileCommand>[...commands];
+        updated[index] = commands[index].withAttemptFailure(
+          now: _clock(),
+          error: error,
+          terminal: terminal,
+          category: _failureCategory(error),
+        );
+        await _store.save(updated);
+        _publishChanges();
+      }),
+    );
   }
 
   bool _isTerminal(Object error) {
@@ -582,13 +753,44 @@ final class MobileCommandRuntime {
     return null;
   }
 
+  MobileCommandFailureCategory _failureCategory(Object error) {
+    if (error is MobileCommandPayloadException || error is ArgumentError) {
+      return MobileCommandFailureCategory.invalidCommand;
+    }
+    final int? statusCode = _statusCode(error);
+    if (statusCode == 429) {
+      return MobileCommandFailureCategory.rateLimited;
+    }
+    if (statusCode == 408 || (statusCode != null && statusCode >= 500)) {
+      return MobileCommandFailureCategory.serverUnavailable;
+    }
+    if (statusCode != null && statusCode >= 400 && statusCode < 500) {
+      return MobileCommandFailureCategory.rejected;
+    }
+    return MobileCommandFailureCategory.connectionOrResponse;
+  }
+
+  Future<MobileCommandRecoverySnapshot> _loadRecoverySnapshot() async {
+    final List<MobileCommand> commands = await _loadCommands();
+    final List<MobileCommandRecoveryItem> items =
+        commands
+            .where((MobileCommand command) => command.ownerId == ownerId)
+            .map(MobileCommandRecoveryItem.fromCommand)
+            .toList(growable: false)
+          ..sort(_compareRecoveryItems);
+    return MobileCommandRecoverySnapshot(items);
+  }
+
+  void _publishChanges() {
+    if (!_closed && !_changesController.isClosed) {
+      _changesController.add(null);
+    }
+  }
+
   String _payloadString(MobileCommand command, String field) {
     final Object? value = command.payload[field];
     if (value is! String || value.trim().isEmpty) {
-      throw MobileCommandPayloadException(
-        command.commandId,
-        FormatException('Поле $field должно быть непустой строкой'),
-      );
+      throw const MobileCommandPayloadException();
     }
     return value;
   }
@@ -596,10 +798,7 @@ final class MobileCommandRuntime {
   int _payloadInt(MobileCommand command, String field) {
     final Object? value = command.payload[field];
     if (value is! int) {
-      throw MobileCommandPayloadException(
-        command.commandId,
-        FormatException('Поле $field должно быть целым числом'),
-      );
+      throw const MobileCommandPayloadException();
     }
     return value;
   }
@@ -607,17 +806,11 @@ final class MobileCommandRuntime {
   Map<String, Object?> _payloadMap(MobileCommand command, String field) {
     final Object? value = command.payload[field];
     if (value is! Map<Object?, Object?>) {
-      throw MobileCommandPayloadException(
-        command.commandId,
-        FormatException('Поле $field должно быть JSON-объектом'),
-      );
+      throw const MobileCommandPayloadException();
     }
     return value.map<String, Object?>((Object? key, Object? item) {
       if (key is! String) {
-        throw MobileCommandPayloadException(
-          command.commandId,
-          FormatException('Ключи поля $field должны быть строками'),
-        );
+        throw const MobileCommandPayloadException();
       }
       return MapEntry<String, Object?>(key, item);
     });
@@ -661,6 +854,14 @@ final class MobileCommandRuntime {
         : left.commandId.compareTo(right.commandId);
   }
 
+  static int _compareRecoveryItems(
+    MobileCommandRecoveryItem left,
+    MobileCommandRecoveryItem right,
+  ) {
+    final int byCreatedAt = left.createdAt.compareTo(right.createdAt);
+    return byCreatedAt != 0 ? byCreatedAt : left.compareStableIdentity(right);
+  }
+
   static String _defaultKey(MobileCommandType type, DateTime now) {
     final Random random = Random.secure();
     final String randomHex = List<int>.generate(
@@ -699,33 +900,28 @@ final class MobileCommandReplayReport {
   bool get changedServerState => succeeded > 0;
 
   bool get hasMessages =>
-      succeeded > 0 || retryableFailures > 0 || permanentFailures > 0;
+      succeeded > 0 ||
+      retryableFailures > 0 ||
+      permanentFailures > 0 ||
+      failedAfter > 0;
 }
 
 final class MobileCommandLaneBlockedException implements Exception {
-  const MobileCommandLaneBlockedException({
-    required this.command,
-    required this.cause,
-  });
+  const MobileCommandLaneBlockedException({required this.lane});
 
-  final MobileCommand command;
-  final Object cause;
+  final MobileCommandLane lane;
 
   @override
   String toString() {
-    return 'Очередь ${command.lane.wireName} ожидает повтор команды '
-        '${command.commandId}: $cause';
+    return 'Очередь ${lane.wireName} ожидает безопасной повторной отправки';
   }
 }
 
 final class MobileCommandPayloadException implements Exception {
-  const MobileCommandPayloadException(this.commandId, this.cause);
-
-  final String commandId;
-  final Object cause;
+  const MobileCommandPayloadException();
 
   @override
-  String toString() => 'Некорректный payload команды $commandId: $cause';
+  String toString() => 'Сохранённое действие содержит некорректные данные';
 }
 
 final class _ReplayLaneReport {
@@ -738,4 +934,12 @@ final class _ReplayLaneReport {
   final int succeeded;
   final int retryableFailures;
   final int permanentFailures;
+
+  _ReplayLaneReport combinedWith(_ReplayLaneReport other) {
+    return _ReplayLaneReport(
+      succeeded: succeeded + other.succeeded,
+      retryableFailures: retryableFailures + other.retryableFailures,
+      permanentFailures: permanentFailures + other.permanentFailures,
+    );
+  }
 }

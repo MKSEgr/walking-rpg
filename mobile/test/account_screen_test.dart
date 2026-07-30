@@ -7,9 +7,15 @@ import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_store.dart';
 import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
 import 'package:walking_rpg_mobile/core/auth/owner_local_state_cleaner.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
 import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
+import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
+
+import 'support/in_memory_mobile_command_store.dart';
 
 void main() {
   testWidgets('account deletion requires two confirmations and fresh login', (
@@ -40,6 +46,7 @@ void main() {
     );
     await controller.initialize();
     final _AccountTransport transport = _AccountTransport();
+    bool recoveryOpened = false;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -51,9 +58,17 @@ void main() {
             transport: transport,
           ),
           idempotencyKeyFactory: () => 'delete-widget-test',
+          recoveryCount: 2,
+          onOpenRecovery: () async {
+            recoveryOpened = true;
+          },
         ),
       ),
     );
+
+    expect(find.text('Ожидают проверки: 2'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('account-command-recovery')));
+    expect(recoveryOpened, isTrue);
 
     await tester.tap(find.byKey(const Key('account-delete-button')));
     await tester.pumpAndSettle();
@@ -85,6 +100,190 @@ void main() {
     expect(controller.notice, contains('11111111-1111-1111-1111-111111111111'));
     expect(store.session, isNull);
   });
+
+  testWidgets('account recovery count follows runtime changes while open', (
+    WidgetTester tester,
+  ) async {
+    final AuthSessionController controller = AuthSessionController(
+      configuration: MobileAuthConfiguration(
+        mode: MobileAuthMode.development,
+        apiBaseUri: Uri.parse('https://api.example'),
+        refreshSkew: const Duration(seconds: 60),
+        developmentUserId: 'account-recovery-user',
+        developmentDeviceId: 'account-recovery-device',
+      ),
+      sessionStore: _MemoryStore(
+        _session(_oidc(), subject: 'unused', suffix: 'unused'),
+      ),
+      oidcClient: _FakeOidcClient(
+        authorizeResponse: _response(
+          _oidc(),
+          subject: 'unused',
+          suffix: 'unused',
+        ),
+      ),
+      localStateCleaner: _NoopCleaner(),
+    );
+    await controller.initialize();
+    final MobileCommandRuntime runtime = MobileCommandRuntime(
+      ownerId: controller.identity!.ownerId,
+      store: InMemoryMobileCommandStore(),
+      activitySender:
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async => throw StateError('offline'),
+      expeditionSender:
+          ({
+            required String expeditionId,
+            required int energyToSpend,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AccountScreen(
+          controller: controller,
+          identity: controller.identity!,
+          apiClient: AccountApiClient(
+            baseUri: Uri.parse('https://api.example'),
+            transport: _AccountTransport(),
+          ),
+          commandRuntime: runtime,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Все действия отправлены'), findsOneWidget);
+
+    await expectLater(
+      runtime.syncActivity(
+        reading: StepReading(
+          authoritativeTotal: 1200,
+          localDate: DateTime.utc(2026, 7, 30),
+          timeZone: 'UTC',
+        ),
+        idempotencyKey: 'account-pending',
+      ),
+      throwsStateError,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ожидают проверки: 1'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await runtime.close();
+    controller.dispose();
+  });
+
+  testWidgets('account clears transient recovery warning after returning', (
+    WidgetTester tester,
+  ) async {
+    final AuthSessionController controller = AuthSessionController(
+      configuration: MobileAuthConfiguration(
+        mode: MobileAuthMode.development,
+        apiBaseUri: Uri.parse('https://api.example'),
+        refreshSkew: const Duration(seconds: 60),
+        developmentUserId: 'account-recovery-user',
+        developmentDeviceId: 'account-recovery-device',
+      ),
+      sessionStore: _MemoryStore(
+        _session(_oidc(), subject: 'unused', suffix: 'unused'),
+      ),
+      oidcClient: _FakeOidcClient(
+        authorizeResponse: _response(
+          _oidc(),
+          subject: 'unused',
+          suffix: 'unused',
+        ),
+      ),
+      localStateCleaner: _NoopCleaner(),
+    );
+    await controller.initialize();
+    final _TransientCommandStore store = _TransientCommandStore();
+    final MobileCommandRuntime runtime = MobileCommandRuntime(
+      ownerId: controller.identity!.ownerId,
+      store: store,
+      activitySender:
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+      expeditionSender:
+          ({
+            required String expeditionId,
+            required int energyToSpend,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw StateError('unused'),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AccountScreen(
+          controller: controller,
+          identity: controller.identity!,
+          apiClient: AccountApiClient(
+            baseUri: Uri.parse('https://api.example'),
+            transport: _AccountTransport(),
+          ),
+          commandRuntime: runtime,
+          onOpenRecovery: () async {
+            store.failReads = false;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Локальная очередь требует внимания'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('account-command-recovery')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Все действия отправлены'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await runtime.close();
+    controller.dispose();
+  });
+}
+
+final class _TransientCommandStore implements MobileCommandStore {
+  bool failReads = true;
+  List<MobileCommand> commands = <MobileCommand>[];
+
+  @override
+  Future<void> deleteOwner(String ownerId) async {
+    commands = commands
+        .where((MobileCommand command) => command.ownerId != ownerId)
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<MobileCommand>> load() async {
+    if (failReads) {
+      throw StateError('private path /command-store.json');
+    }
+    return <MobileCommand>[...commands];
+  }
+
+  @override
+  Future<void> save(List<MobileCommand> commands) async {
+    this.commands = <MobileCommand>[...commands];
+  }
 }
 
 final class _AccountTransport implements HomeTransport {

@@ -59,7 +59,7 @@ attempt count и последнюю ошибку
 
 ## Lanes и порядок
 
-Команды разделены на две независимые lane:
+Первоначальное решение разделяло команды на две lane:
 
 ```text
 ACTIVITY — activity sync
@@ -69,6 +69,10 @@ GAMEPLAY — expedition advance и event resolution
 Внутри lane используется FIFO. Retryable failure блокирует только последующие команды той же lane. Например, временная ошибка expedition не мешает синхронизации шагов.
 
 Это не означает параллельную модификацию одного игрового aggregate: все gameplay-команды остаются последовательно упорядоченными.
+
+Эта историческая двух-lane модель заменена актуальной трёх-lane семантикой,
+dependency barrier `ACTIVITY → GAMEPLAY` и изолированной `TELEMETRY` из
+[ADR 0024](0024-mobile-command-recovery-and-telemetry-isolation.md).
 
 ## Классификация ошибок
 
@@ -86,11 +90,24 @@ GAMEPLAY — expedition advance и event resolution
 - некорректный сохранённый payload;
 - локальная argument validation failure.
 
-Terminal-команда сохраняется для диагностики, но не блокирует следующие команды lane. Полноценный dead-letter UI и retention failed-команд не входят в этот срез.
+Terminal-команда сохраняется для диагностики, но не блокирует следующие
+команды lane. Owner-scoped recovery UI и отдельная telemetry lane добавлены
+позже в
+[ADR 0024](0024-mobile-command-recovery-and-telemetry-isolation.md);
+автоматический retention failed-команд по-прежнему не реализован.
 
 ## Startup replay
 
-После первого кадра приложения выполняется однократный foreground replay для текущего `ownerId`.
+После первого кадра приложения выполняется однократный foreground replay для
+текущего `ownerId`. Runtime memoize-ит первую startup Future на lifetime
+authenticated session: rebuild, resume и reload не создают повторную сетевую
+попытку. Первый всё ещё активный UI-владелец claim-ит завершённый report/error
+один раз: in-flight remount принимает outcome, а remount после обработки не
+повторяет Snackbar или generation refresh. Resume/reload читает только
+authoritative state. Новый runtime после process restart или 401
+reauthentication получает новый однократный replay. Единственный владелец
+replay в authenticated shell и ручное безопасное восстановление описаны в ADR
+0024.
 
 После хотя бы одной успешно восстановленной команды mobile перечитывает `GET /api/v1/home`. Outbox никогда не становится источником игрового состояния и не выполняет optimistic update.
 

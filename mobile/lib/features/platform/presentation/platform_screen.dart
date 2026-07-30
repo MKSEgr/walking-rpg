@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
+import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
 
 const Map<String, String> _onboardingNames = <String, String>{
   'welcome': 'Познакомиться с навигатором',
@@ -36,7 +37,12 @@ class PlatformScreen extends StatefulWidget {
     this.idempotencyKeyFactory,
     this.onServerStateChanged,
     this.onResumeFirstJourney,
+    this.onOpenAccount,
+    this.onOpenRecovery,
+    this.recoveryCount = 0,
+    this.recoveryUnavailable = false,
     this.recordExperimentExposures = true,
+    this.authoritativeRefreshGeneration = 0,
   });
 
   final PlatformSnapshotLoader? loader;
@@ -45,7 +51,12 @@ class PlatformScreen extends StatefulWidget {
   final PlatformIdempotencyKeyFactory? idempotencyKeyFactory;
   final VoidCallback? onServerStateChanged;
   final VoidCallback? onResumeFirstJourney;
+  final VoidCallback? onOpenAccount;
+  final VoidCallback? onOpenRecovery;
+  final int recoveryCount;
+  final bool recoveryUnavailable;
   final bool recordExperimentExposures;
+  final int authoritativeRefreshGeneration;
 
   @override
   State<PlatformScreen> createState() => _PlatformScreenState();
@@ -71,7 +82,9 @@ class _PlatformScreenState extends State<PlatformScreen> {
   void didUpdateWidget(PlatformScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.loader != widget.loader ||
-        oldWidget.homeLoader != widget.homeLoader) {
+        oldWidget.homeLoader != widget.homeLoader ||
+        oldWidget.authoritativeRefreshGeneration !=
+            widget.authoritativeRefreshGeneration) {
       _dataFuture = _loadData();
     }
   }
@@ -95,6 +108,17 @@ class _PlatformScreenState extends State<PlatformScreen> {
             tooltip: 'Обновить',
             onPressed: _busyCommand == null ? _reload : null,
             icon: const Icon(Icons.refresh),
+          ),
+          MobileCommandRecoveryAction(
+            key: const Key('platform-command-recovery'),
+            onPressed: widget.onOpenRecovery,
+            count: widget.recoveryCount,
+            unavailable: widget.recoveryUnavailable,
+          ),
+          IconButton(
+            tooltip: 'Аккаунт',
+            onPressed: widget.onOpenAccount,
+            icon: const Icon(Icons.account_circle_outlined),
           ),
         ],
       ),

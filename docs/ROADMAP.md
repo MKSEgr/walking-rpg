@@ -111,6 +111,11 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Cohort funnel и p50/p90 time-to-value без смешивания legacy backfill
 - [x] Explicit result-ACK как финальный delivery milestone; legacy auto-ACK
       участвует только в backfilled conversion без ложного timing
+- [x] Owner-scoped mobile recovery center: безопасный повтор `PENDING`,
+      подтверждённый dismiss только terminal `FAILED` и fail-closed corruption
+- [x] Отдельная `TELEMETRY` lane для experiment exposure, ordered
+      `ACTIVITY → GAMEPLAY` replay с retryable barrier и единственный startup
+      replay owner
 
 ### EXTERNAL_VALIDATION_REQUIRED
 

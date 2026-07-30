@@ -75,21 +75,67 @@ POST /api/v1/platform/commands
 
 Versioned JSON store находится в application-support directory. Запись использует target, `.tmp` и `.bak`; при прерывании замены выбирается последняя валидная копия. Повреждённый store не перезаписывается молча.
 
-Команды разделены на две lane:
+Команды разделены на три lane:
 
 ```text
 ACTIVITY — синхронизация шагов
 GAMEPLAY — продвижение экспедиции, решение/подтверждение события и
-           platform-команды
+           изменяющие state platform-команды
+TELEMETRY — RECORD_EXPERIMENT_EXPOSURE
 ```
 
-Внутри lane действует FIFO. Временная ошибка GAMEPLAY не блокирует ACTIVITY и наоборот. Network/transport error, `408`, `429`, `5xx` и неоднозначный response остаются pending. Подтверждённые остальные `4xx` переходят в failed и не блокируют очередь.
+Внутри lane действует FIFO. При replay `ACTIVITY` завершается до `GAMEPLAY`,
+потому что activity sync может зачислить ENERGY для следующего advance.
+Retryable ACTIVITY останавливает state-changing цепочку: GAMEPLAY не
+отправляется и остаётся `PENDING` до следующего replay.
+`TELEMETRY` выполняется параллельно со всей state-changing цепочкой, поэтому
+недоступная exposure не блокирует gameplay или первый экран. Startup replay
+возвращает результат после ACTIVITY/GAMEPLAY, а close-tracked TELEMETRY
+завершается отдельно и обновляет recovery badge. Явный retry в Recovery ждёт
+итог всех lane. Network/transport error, `408`,
+`429`, `5xx` и неоднозначный response остаются pending. Подтверждённые
+остальные `4xx` переходят в failed и не блокируют очередь.
 
 Для event-result acknowledgement outbox хранит `receiptId` и replay-ит тот же
 bodyless URL после restart. Локальный command key нужен файловой очереди, но не
 передаётся backend: единственный server-side idempotency scope — сам receipt.
 
-На старте приложения pending-команды текущего технического пользователя replay-ятся один раз в foreground. После успешного replay приложение перечитывает authoritative home. Автоматического background worker-а пока нет.
+На старте authenticated shell pending-команды текущего owner replay-ятся один
+раз в foreground. Runtime memoize-ит первую startup Future до конца
+authenticated session, поэтому rebuild, resume и reload не отправляют
+`PENDING` повторно. Первый всё ещё активный UI-владелец claim-ит завершённый
+startup report/error один раз: in-flight remount принимает outcome, а remount
+после обработки не повторяет старый Snackbar или generation refresh. После
+завершения startup attempt UI resume/reload читает только authoritative
+Home/Platform. Close, logout или замена runtime прекращает stale continuation
+без новых owner-scoped reads.
+`ActivitySyncShell` имеет default `replayOnStart = false`, а явный opt-in
+требует injected session-owned runtime; созданный shell runtime закрывается
+при dispose и startup replay не запускает. Новый однократный replay появляется
+с новым runtime после process restart или 401 reauthentication. Повторного
+автоматического startup retry в текущей runtime нет; ручная попытка из
+Recovery вызывает `replayPending`. Обычный новый business submit сохраняет
+FIFO и может сначала обработать более старый `PENDING` своей lane. После
+успешного ACTIVITY/GAMEPLAY startup replay приложение перечитывает authoritative
+home; telemetry-only completion обновляет recovery badge. Автоматического
+background worker-а пока нет.
+
+Экран **«Сохранённые действия»** доступен из первого пути, home, путевого
+журнала и аккаунта. Он не показывает payload, idempotency key, fingerprint,
+receipt, Health cursor, raw error или путь к store.
+
+- `PENDING` можно повторить только существующим replay исходной записи; удалять
+  такую запись нельзя.
+- `FAILED` больше не отправляется. Его можно убрать только как локальную
+  диагностическую запись после подтверждения; server state не меняется.
+- ошибка чтения store остаётся видимой и не приводит к автоматическому reset.
+- успешный ручной replay заставляет shell перечитать authoritative state.
+- targeted refresh/resume читает authoritative state, не повторяет startup
+  replay и не перемонтирует уже открытый основной shell; при потере
+  authenticated-сессии owner-scoped routes закрываются.
+
+Optional `lastFailureCategory` и динамическая telemetry lane совместимы со
+старыми v1-файлами без миграции envelope.
 
 ## Read-only offline cache
 
@@ -121,9 +167,16 @@ onboarding
 A/B assignments и remote config diagnostics
 ```
 
-Изменения отправляются одной командной ручкой `POST /api/v1/platform/commands`. Mobile не вычисляет progression и не применяет optimistic rewards: успешный response уже содержит authoritative `snapshot`, которым заменяется экран. Platform-команды проходят через ту же restart-safe GAMEPLAY lane, поэтому payload и idempotency key сохраняются до подтверждённого ответа backend.
+Изменения отправляются одной командной ручкой
+`POST /api/v1/platform/commands`. Mobile не вычисляет progression и не
+применяет optimistic rewards: успешный response уже содержит authoritative
+`snapshot`, которым заменяется экран. Изменяющие state platform-команды
+проходят через restart-safe GAMEPLAY lane, поэтому payload и idempotency key
+сохраняются до подтверждённого ответа backend.
 
 Назначенные A/B-варианты регистрируются отдельной идемпотентной командой `RECORD_EXPERIMENT_EXPOSURE`. Ключ включает content version, experiment id и variant, поэтому повторный запуск приложения не создаёт дублирующий exposure event.
+Exposure сохраняется тем же outbox, но выполняется в отдельной `TELEMETRY`
+lane и не задерживает игровой handoff.
 
 Навигация сохраняет состояние главного экрана и журнала через `IndexedStack`. Кнопка синхронизации шагов показывается только на вкладке экспедиции.
 
@@ -283,7 +336,9 @@ flutter run \
 - backend/network error;
 - повреждённое локальное command store.
 
-Ошибка отображается через SnackBar; существующий home state остаётся доступным.
+Health/network ошибки отображаются через SnackBar; существующий home state
+остаётся доступным. Состояние command store дополнительно остаётся видимым на
+экране **«Сохранённые действия»** без raw diagnostics.
 
 ## Данные и приватность
 
@@ -336,9 +391,13 @@ Unit/widget tests покрывают:
 - persist-before-send и exact key replay для
   activity/expedition/event/platform;
 - persist-before-send/restart replay receipt для bodyless event-result ACK;
-- FIFO и независимость ACTIVITY/GAMEPLAY lanes;
+- FIFO внутри lanes, порядок ACTIVITY → GAMEPLAY и параллельная TELEMETRY;
 - temporary/backup/corruption recovery файлового store;
-- startup replay → reload authoritative home;
+- единственный startup replay → reload authoritative home;
+- owner-scoped recovery projection без payload/key/raw error;
+- manual replay `PENDING`, запрет его удаления и dismiss только `FAILED`;
+- fail-closed recovery UI при corruption;
+- legacy v1 exposure → TELEMETRY без schema migration;
 - `sync → reload authoritative home`;
 - переход первого события на второй узел;
 - resolution второго события, material preview/result и inventory rendering;

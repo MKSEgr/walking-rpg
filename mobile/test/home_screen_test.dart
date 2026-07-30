@@ -12,11 +12,22 @@ void main() {
   testWidgets('home screen renders loaded backend snapshot', (
     WidgetTester tester,
   ) async {
+    bool recoveryOpened = false;
     await tester.pumpWidget(
-      MaterialApp(home: HomeScreen(loader: () async => HomeSnapshot.demo)),
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async => HomeSnapshot.demo,
+          recoveryCount: 1,
+          onOpenRecovery: () {
+            recoveryOpened = true;
+          },
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byKey(const Key('home-command-recovery')));
+    expect(recoveryOpened, isTrue);
     expect(find.text('Сегодня: 0 / 6000'), findsOneWidget);
     expect(find.text('Навигатор'), findsOneWidget);
     expect(find.text('Искра'), findsOneWidget);
@@ -36,6 +47,42 @@ void main() {
     expect(find.text('XP 20 / 100'), findsOneWidget);
     expect(find.text('Связь 10'), findsOneWidget);
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
+  });
+
+  testWidgets('authoritative generation reloads home in place', (
+    WidgetTester tester,
+  ) async {
+    int generation = 0;
+    int loads = 0;
+    late StateSetter setHostState;
+    Future<HomeSnapshot> loader() async {
+      loads += 1;
+      return HomeSnapshot.demo;
+    }
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            setHostState = setState;
+            return HomeScreen(
+              loader: loader,
+              authoritativeRefreshGeneration: generation,
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(loads, 1);
+
+    setHostState(() {
+      generation += 1;
+    });
+    await tester.pumpAndSettle();
+
+    expect(loads, 2);
+    expect(find.text('Walking RPG'), findsOneWidget);
   });
 
   testWidgets('home screen spends energy and reloads unlocked event', (

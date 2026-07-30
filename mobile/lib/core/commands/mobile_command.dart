@@ -1,6 +1,7 @@
 enum MobileCommandLane {
   activity('ACTIVITY'),
-  gameplay('GAMEPLAY');
+  gameplay('GAMEPLAY'),
+  telemetry('TELEMETRY');
 
   const MobileCommandLane(this.wireName);
 
@@ -31,6 +32,19 @@ enum MobileCommandType {
   }
 }
 
+MobileCommandLane mobileCommandLaneFor(
+  MobileCommandType type,
+  Map<String, Object?> payload,
+) {
+  final Object? platformCommandType = payload['commandType'];
+  if (type == MobileCommandType.platformCommand &&
+      platformCommandType is String &&
+      platformCommandType.toUpperCase() == 'RECORD_EXPERIMENT_EXPOSURE') {
+    return MobileCommandLane.telemetry;
+  }
+  return type.lane;
+}
+
 enum MobileCommandState {
   pending('PENDING'),
   failed('FAILED');
@@ -48,6 +62,36 @@ enum MobileCommandState {
   }
 }
 
+enum MobileCommandFailureCategory {
+  connectionOrResponse('CONNECTION_OR_RESPONSE'),
+  rateLimited('RATE_LIMITED'),
+  serverUnavailable('SERVER_UNAVAILABLE'),
+  rejected('REJECTED'),
+  invalidCommand('INVALID_COMMAND');
+
+  const MobileCommandFailureCategory(this.wireName);
+
+  final String wireName;
+
+  static MobileCommandFailureCategory? fromNullableWireName(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is! String) {
+      throw const FormatException(
+        'Поле lastFailureCategory должно быть строкой или null',
+      );
+    }
+    for (final MobileCommandFailureCategory category
+        in MobileCommandFailureCategory.values) {
+      if (category.wireName == value) {
+        return category;
+      }
+    }
+    return null;
+  }
+}
+
 final class MobileCommand {
   MobileCommand({
     required String commandId,
@@ -62,6 +106,7 @@ final class MobileCommand {
     required this.updatedAt,
     this.lastAttemptAt,
     this.lastError,
+    this.lastFailureCategory,
   }) : commandId = _requireText(commandId, 'commandId'),
        ownerId = _requireText(ownerId, 'ownerId'),
        idempotencyKey = _requireText(idempotencyKey, 'idempotencyKey'),
@@ -114,6 +159,9 @@ final class MobileCommand {
       updatedAt: _readDateTime(json, 'updatedAt'),
       lastAttemptAt: _readNullableDateTime(json, 'lastAttemptAt'),
       lastError: _readNullableString(json, 'lastError'),
+      lastFailureCategory: MobileCommandFailureCategory.fromNullableWireName(
+        json['lastFailureCategory'],
+      ),
     );
   }
 
@@ -129,13 +177,15 @@ final class MobileCommand {
   final DateTime updatedAt;
   final DateTime? lastAttemptAt;
   final String? lastError;
+  final MobileCommandFailureCategory? lastFailureCategory;
 
-  MobileCommandLane get lane => type.lane;
+  MobileCommandLane get lane => mobileCommandLaneFor(type, payload);
 
   MobileCommand withAttemptFailure({
     required DateTime now,
     required Object error,
     required bool terminal,
+    required MobileCommandFailureCategory category,
   }) {
     final DateTime timestamp = now.toUtc();
     return MobileCommand(
@@ -151,6 +201,7 @@ final class MobileCommand {
       updatedAt: timestamp,
       lastAttemptAt: timestamp,
       lastError: _truncateError(error.toString()),
+      lastFailureCategory: category,
     );
   }
 
@@ -168,6 +219,7 @@ final class MobileCommand {
       'updatedAt': updatedAt.toUtc().toIso8601String(),
       'lastAttemptAt': lastAttemptAt?.toUtc().toIso8601String(),
       'lastError': lastError,
+      'lastFailureCategory': lastFailureCategory?.wireName,
     };
   }
 
