@@ -90,7 +90,9 @@ PostgreSQL Testcontainers tests проверяют:
 - capability-gated durable event receipt, `pendingEventResult`, owner-scoped
   idempotent acknowledgement и gameplay gate до ACK;
 - Flyway V10: legacy/backfilled writers auto-acknowledged, а capable results
-  остаются pending.
+  остаются pending;
+- Flyway V11: explicit ACK атомарно создаёт immutable authoritative milestone,
+  а legacy auto-ACK остаётся backfilled и не искажает timing.
 
 ## Персональная дневная цель
 
@@ -334,6 +336,12 @@ WHERE handoff_required
 
 Только после этого разрешён rollback на старый binary. Pending result, уже
 созданный capable-клиентом, требует capable-клиента для подтверждения.
+
+V11 связывает первый успешный `NULL → acknowledged_at` с
+`FIRST_EVENT_RESULT_ACKNOWLEDGED`. Explicit durable ACK участвует в
+first-journey p50/p90; legacy auto-ACK и migration evidence видны только как
+`BACKFILLED` conversion. Установленное время ACK неизменяемо, а exact replay не
+выполняет повторный physical update.
 
 ## Что сохраняется
 

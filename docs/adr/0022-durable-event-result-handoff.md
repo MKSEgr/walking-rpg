@@ -260,3 +260,7 @@ fields. Existing account deletion удаляет rows вместе с остал
 - persist-before-send/restart replay ACK в GAMEPLAY outbox;
 - first-journey finish, который подтверждает receipt перед переходом в основной
   shell.
+
+Server-authoritative наблюдаемость первого ACK и отделение explicit delivery от
+legacy auto-ACK определены в
+[ADR 0023](0023-acknowledged-first-journey-result.md).

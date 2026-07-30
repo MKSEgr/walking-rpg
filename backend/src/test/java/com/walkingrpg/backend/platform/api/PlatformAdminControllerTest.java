@@ -242,16 +242,31 @@ class PlatformAdminControllerTest {
                         10,
                         2,
                         10.0 / 12.0,
-                        List.of(new FirstJourneyStageMetric(
-                                FirstJourneyMilestone.FIRST_ENERGY,
-                                8,
-                                2,
-                                8,
-                                8,
-                                0.8,
-                                45L,
-                                90L
-                        )),
+                        List.of(
+                                new FirstJourneyStageMetric(
+                                        FirstJourneyMilestone.FIRST_ENERGY,
+                                        8,
+                                        2,
+                                        8,
+                                        8,
+                                        0.8,
+                                        0.8,
+                                        45L,
+                                        90L
+                                ),
+                                new FirstJourneyStageMetric(
+                                        FirstJourneyMilestone
+                                                .FIRST_EVENT_RESULT_ACKNOWLEDGED,
+                                        6,
+                                        4,
+                                        6,
+                                        6,
+                                        0.6,
+                                        0.6,
+                                        180L,
+                                        300L
+                                )
+                        ),
                         new FirstJourneyDataQuality(18, 0),
                         Instant.parse("2026-07-29T17:00:00Z")
                 )
@@ -265,6 +280,12 @@ class PlatformAdminControllerTest {
                 .andExpect(jsonPath("$.startedUsers").value(10))
                 .andExpect(jsonPath("$.stages[0].milestone").value("FIRST_ENERGY"))
                 .andExpect(jsonPath("$.stages[0].medianSecondsFromStart").value(45))
+                .andExpect(jsonPath("$.stages[1].milestone")
+                        .value("FIRST_EVENT_RESULT_ACKNOWLEDGED"))
+                .andExpect(jsonPath("$.stages[1].conversionFromStarted").value(0.6))
+                .andExpect(jsonPath(
+                        "$.stages[1].authoritativeConversionFromStarted"
+                ).value(0.6))
                 .andExpect(jsonPath("$.dataQuality.backfilledMilestoneRecords").value(0));
 
         verify(firstJourneyAnalyticsService).summary("alpha-1");

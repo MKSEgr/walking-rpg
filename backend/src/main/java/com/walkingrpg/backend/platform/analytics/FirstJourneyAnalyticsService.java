@@ -106,6 +106,12 @@ public class FirstJourneyAnalyticsService {
                            WHERE started.source = 'AUTHORITATIVE'
                              AND target.source = 'AUTHORITATIVE'
                              AND target.occurred_at >= started.occurred_at
+                             AND (
+                                 target.milestone
+                                     <> 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                                 OR target.attributes @>
+                                     '{"handoffRequired":true}'::jsonb
+                             )
                        ) AS timed_users,
                        percentile_cont(0.5) WITHIN GROUP (
                            ORDER BY extract(
@@ -115,6 +121,12 @@ public class FirstJourneyAnalyticsService {
                            WHERE started.source = 'AUTHORITATIVE'
                              AND target.source = 'AUTHORITATIVE'
                              AND target.occurred_at >= started.occurred_at
+                             AND (
+                                 target.milestone
+                                     <> 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                                 OR target.attributes @>
+                                     '{"handoffRequired":true}'::jsonb
+                             )
                        ) AS median_seconds,
                        percentile_cont(0.9) WITHIN GROUP (
                            ORDER BY extract(
@@ -124,6 +136,12 @@ public class FirstJourneyAnalyticsService {
                            WHERE started.source = 'AUTHORITATIVE'
                              AND target.source = 'AUTHORITATIVE'
                              AND target.occurred_at >= started.occurred_at
+                             AND (
+                                 target.milestone
+                                     <> 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                                 OR target.attributes @>
+                                     '{"handoffRequired":true}'::jsonb
+                             )
                        ) AS p90_seconds
                 FROM started
                 LEFT JOIN first_journey_milestone target
@@ -147,6 +165,7 @@ public class FirstJourneyAnalyticsService {
                 row.authoritativeReachedUsers(),
                 row.timedUsers(),
                 ratio(row.reachedUsers(), startedUsers),
+                ratio(row.authoritativeReachedUsers(), startedUsers),
                 row.medianSeconds(),
                 row.p90Seconds()
         );

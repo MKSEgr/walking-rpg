@@ -41,6 +41,13 @@ class FirstJourneyObservabilityMigrationTest {
                     WHERE user_id = 'legacy-journey-user'
                       AND source = 'BACKFILLED'
                     """));
+            assertEquals(0, scalarLong(statement, """
+                    SELECT count(*)
+                    FROM first_journey_milestone
+                    WHERE user_id = 'legacy-journey-user'
+                      AND milestone =
+                          'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                    """));
 
             statement.executeUpdate("""
                     INSERT INTO app_user (

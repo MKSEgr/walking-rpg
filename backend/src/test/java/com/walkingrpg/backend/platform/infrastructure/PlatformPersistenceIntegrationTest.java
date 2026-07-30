@@ -22,6 +22,7 @@ import com.walkingrpg.backend.activity.domain.ActivityBucket;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
 import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.economy.application.EconomyService;
+import com.walkingrpg.backend.expedition.application.EventResultAcknowledgementService;
 import com.walkingrpg.backend.expedition.application.EventResolutionService;
 import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
@@ -86,6 +87,9 @@ class PlatformPersistenceIntegrationTest {
 
     @Autowired
     private EventResolutionService eventResolutionService;
+
+    @Autowired
+    private EventResultAcknowledgementService acknowledgementService;
 
     @Autowired
     private PlatformRepository platformRepository;
@@ -198,7 +202,7 @@ class PlatformPersistenceIntegrationTest {
                 "journey-first-advance"
         ));
         completeStep(userId, "first-expedition");
-        eventResolutionService.resolve(new EventResolutionCommand(
+        var event = eventResolutionService.resolve(new EventResolutionCommand(
                 userId,
                 StarterExpeditionContent.FIRST_EVENT_ID,
                 "analyze-signal",
@@ -221,11 +225,46 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(1, milestoneCount(userId, "FIRST_NODE_REACHED"));
         assertEquals(1, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
         assertEquals(1, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+        assertEquals(0, milestoneCount(
+                userId,
+                "FIRST_EVENT_RESULT_ACKNOWLEDGED"
+        ));
         assertEquals("moss-v1", jdbcTemplate.queryForObject("""
                 SELECT attributes ->> 'petId'
                 FROM first_journey_milestone
                 WHERE user_id = ?
                   AND milestone = 'PET_SELECTED'
+                """, String.class, userId));
+
+        var acknowledgement = acknowledgementService.acknowledge(
+                userId,
+                event.receiptId()
+        );
+        var replayedAcknowledgement = acknowledgementService.acknowledge(
+                userId,
+                event.receiptId()
+        );
+
+        assertEquals(acknowledgement, replayedAcknowledgement);
+        assertEquals(1, milestoneCount(
+                userId,
+                "FIRST_EVENT_RESULT_ACKNOWLEDGED"
+        ));
+        assertEquals(
+                acknowledgement.acknowledgedAt(),
+                jdbcTemplate.queryForObject("""
+                        SELECT occurred_at
+                        FROM first_journey_milestone
+                        WHERE user_id = ?
+                          AND milestone =
+                              'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                        """, Timestamp.class, userId).toInstant()
+        );
+        assertEquals("AUTHORITATIVE", jdbcTemplate.queryForObject("""
+                SELECT source
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
                 """, String.class, userId));
         assertEquals("AUTHORITATIVE", jdbcTemplate.queryForObject("""
                 SELECT source
@@ -287,6 +326,10 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(1, milestoneCount(userId, "FIRST_NODE_REACHED"));
         assertEquals(1, milestoneCount(userId, "FIRST_EVENT_RESOLVED"));
         assertEquals(1, milestoneCount(userId, "ONBOARDING_COMPLETED"));
+        assertEquals(0, milestoneCount(
+                userId,
+                "FIRST_EVENT_RESULT_ACKNOWLEDGED"
+        ));
         assertEquals(6, jdbcTemplate.queryForObject("""
                 SELECT count(*)
                 FROM processed_roadmap_command

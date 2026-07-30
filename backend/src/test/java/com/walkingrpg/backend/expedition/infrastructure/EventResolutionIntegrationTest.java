@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.expedition.infrastructure;
 
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -338,6 +340,46 @@ class EventResolutionIntegrationTest {
     }
 
     @Test
+    void shouldRecordLegacyAutoAcknowledgementWithoutInventingTiming() {
+        String userId = "legacy-auto-ack-user";
+        prepareFirstEvent(userId);
+
+        EventResolutionResult event = eventResolutionService.resolve(
+                command(
+                        userId,
+                        StarterExpeditionContent.FIRST_EVENT_ID,
+                        "analyze-signal",
+                        "legacy-auto-ack-event"
+                ),
+                false
+        );
+
+        assertEquals(false, event.handoffRequired());
+        assertEquals(1, milestoneCount(
+                userId,
+                "FIRST_EVENT_RESULT_ACKNOWLEDGED"
+        ));
+        assertEquals(event.serverTime(), jdbcTemplate.queryForObject("""
+                SELECT occurred_at
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                """, Timestamp.class, userId).toInstant());
+        assertEquals("BACKFILLED", jdbcTemplate.queryForObject("""
+                SELECT source
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                """, String.class, userId));
+        assertEquals("LEGACY_AUTO_ACK", jdbcTemplate.queryForObject("""
+                SELECT attributes ->> 'deliveryMode'
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                """, String.class, userId));
+    }
+
+    @Test
     void shouldSerializeConcurrentAcknowledgementsAndAvoidReplayUpdate()
             throws Exception {
         String userId = "concurrent-ack-user";
@@ -347,6 +389,10 @@ class EventResolutionIntegrationTest {
                 StarterExpeditionContent.FIRST_EVENT_ID,
                 "analyze-signal",
                 "concurrent-ack-event"
+        ));
+        assertEquals(0, milestoneCount(
+                userId,
+                "FIRST_EVENT_RESULT_ACKNOWLEDGED"
         ));
         EventResultAcknowledgementService firstService =
                 new EventResultAcknowledgementService(
@@ -394,6 +440,30 @@ class EventResolutionIntegrationTest {
             assertNotNull(firstResult);
             assertNotNull(secondResult);
             assertEquals(firstResult, secondResult);
+            assertEquals(1, milestoneCount(
+                    userId,
+                    "FIRST_EVENT_RESULT_ACKNOWLEDGED"
+            ));
+            assertEquals(firstResult.acknowledgedAt(),
+                    jdbcTemplate.queryForObject("""
+                            SELECT occurred_at
+                            FROM first_journey_milestone
+                            WHERE user_id = ?
+                              AND milestone =
+                                  'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                            """, Timestamp.class, userId).toInstant());
+            assertEquals("AUTHORITATIVE", jdbcTemplate.queryForObject("""
+                    SELECT source
+                    FROM first_journey_milestone
+                    WHERE user_id = ?
+                      AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                    """, String.class, userId));
+            assertEquals("DURABLE_ACK", jdbcTemplate.queryForObject("""
+                    SELECT attributes ->> 'deliveryMode'
+                    FROM first_journey_milestone
+                    WHERE user_id = ?
+                      AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                    """, String.class, userId));
 
             String rowVersionBeforeReplay = jdbcTemplate.queryForObject("""
                     SELECT xmin::text
@@ -412,10 +482,59 @@ class EventResolutionIntegrationTest {
 
             assertEquals(firstResult, replayed);
             assertEquals(rowVersionBeforeReplay, rowVersionAfterReplay);
+            assertEquals(1, milestoneCount(
+                    userId,
+                    "FIRST_EVENT_RESULT_ACKNOWLEDGED"
+            ));
+            assertThrows(DataIntegrityViolationException.class, () ->
+                    jdbcTemplate.update("""
+                            UPDATE processed_event_resolution
+                            SET acknowledged_at =
+                                acknowledged_at + interval '1 second'
+                            WHERE user_id = ?
+                              AND receipt_id = ?
+                            """, userId, event.receiptId())
+            );
+            assertThrows(DataIntegrityViolationException.class, () ->
+                    jdbcTemplate.update("""
+                            UPDATE processed_event_resolution
+                            SET handoff_required = false
+                            WHERE user_id = ?
+                              AND receipt_id = ?
+                            """, userId, event.receiptId())
+            );
         } finally {
             start.countDown();
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    void shouldRollbackAcknowledgementMilestoneWithReceiptUpdate() {
+        String userId = "rollback-ack-user";
+        prepareFirstEvent(userId);
+        EventResolutionResult event = eventResolutionService.resolve(command(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "rollback-ack-event"
+        ));
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            acknowledgementService.acknowledge(userId, event.receiptId());
+            status.setRollbackOnly();
+        });
+
+        assertEquals(0, milestoneCount(
+                userId,
+                "FIRST_EVENT_RESULT_ACKNOWLEDGED"
+        ));
+        assertNull(jdbcTemplate.queryForObject("""
+                SELECT acknowledged_at
+                FROM processed_event_resolution
+                WHERE user_id = ?
+                  AND receipt_id = ?
+                """, Timestamp.class, userId, event.receiptId()));
     }
 
     @Test

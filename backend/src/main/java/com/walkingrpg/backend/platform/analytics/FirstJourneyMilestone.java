@@ -9,7 +9,8 @@ public enum FirstJourneyMilestone {
     FIRST_ENERGY,
     FIRST_NODE_REACHED,
     FIRST_EVENT_RESOLVED,
-    ONBOARDING_COMPLETED;
+    ONBOARDING_COMPLETED,
+    FIRST_EVENT_RESULT_ACKNOWLEDGED;
 
     public static List<FirstJourneyMilestone> measuredStages() {
         return List.of(
@@ -18,7 +19,8 @@ public enum FirstJourneyMilestone {
                 PET_SELECTED,
                 FIRST_NODE_REACHED,
                 FIRST_EVENT_RESOLVED,
-                ONBOARDING_COMPLETED
+                ONBOARDING_COMPLETED,
+                FIRST_EVENT_RESULT_ACKNOWLEDGED
         );
     }
 }

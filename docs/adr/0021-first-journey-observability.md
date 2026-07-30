@@ -59,3 +59,7 @@ p50/p90 в alpha cohort.
   backfilled и не искажают latency percentiles.
 - Read model не заменяет физическую device validation или качественную оценку
   permission UX и эмоциональной ценности питомца.
+
+Durable delivery результата, добавленная позже, расширяет эту модель отдельным
+ACK milestone без изменения исторического смысла `ONBOARDING_COMPLETED`.
+См. [ADR 0023](0023-acknowledged-first-journey-result.md).

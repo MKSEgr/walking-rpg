@@ -140,8 +140,11 @@ reload.
 `first_journey_milestone`. PostgreSQL triggers фиксируют первый успешный
 activity sync, ENERGY из activity ledger, выбор питомца, узел, событие и
 завершение onboarding в тех же транзакциях, что и source-of-truth операции.
-Unique `(user_id, milestone)` делает replay безопасным. Legacy backfill помечен
-отдельным source и исключается из time-to-value percentiles.
+V11 дополнительно фиксирует первый `NULL → acknowledged_at` как
+`FIRST_EVENT_RESULT_ACKNOWLEDGED` в транзакции ACK. Unique
+`(user_id, milestone)` делает replay безопасным. Explicit durable ACK имеет
+`AUTHORITATIVE` source; legacy auto-ACK и migration evidence помечены
+`BACKFILLED` и исключаются из time-to-value percentiles.
 
 `roadmap_user_state.activePetId` — источник выбора питомца. Общий
 `ActivePetProvider` связывает platform state с home/progression: event reward
@@ -185,6 +188,11 @@ V10 расширяет event resolution receipt/delivery-mode/next-node/ACK stat
 исторические результаты получают receipt, но backfill-ятся acknowledged, чтобы
 не показывать старые награды повторно. Defaults и `BEFORE INSERT` trigger
 также auto-acknowledge старый backend writer при rolling upgrade.
+V11 добавляет ACK milestone и запрещает менять уже установленный
+`acknowledged_at`; state-only legacy completion без receipt не превращается в
+ложный ACK. Новый durable row обязан начинаться с
+`handoff_required = true, acknowledged_at = NULL`; pre-acknowledged INSERT
+отклоняется, а delivery mode после INSERT неизменяем.
 
 ## 8. Конкурентность и транзакции
 
@@ -196,7 +204,8 @@ V10 расширяет event resolution receipt/delivery-mode/next-node/ACK stat
 - capable pending result проверяется под тем же user+expedition serialization
   boundary до advance/resolution;
 - ACK заполняет `acknowledged_at` условным `UPDATE`, только пока поле `NULL`;
-  replay читает сохранённое время первого ACK без повторной мутации;
+  тот же commit создаёт ACK milestone, replay читает сохранённое время без
+  повторной мутации, а БД запрещает последующую правку timestamp;
 - read endpoints не создают zero-state.
 
 ## 9. Ключевые инварианты
@@ -222,6 +231,9 @@ V10 расширяет event resolution receipt/delivery-mode/next-node/ACK stat
     `acknowledgedAt/serverTime`.
 16. Capability не входит в idempotency fingerprint; exact replay возвращает
     delivery mode первого commit.
+17. `ONBOARDING_COMPLETED` сохраняет V9-семантику; доказательством доставки
+    первого результата является отдельный
+    `FIRST_EVENT_RESULT_ACKNOWLEDGED`.
 
 ## 10. Identity и authorization boundary
 

@@ -34,7 +34,8 @@
 - production `GET /api/v1/home`;
 - content-driven первая глава `chapter-1-v1` с 18 узлами и событиями;
 - guided «Первый путь» от разрешения шагов до первого решения;
-- server-authoritative funnel и time-to-value первого пути для alpha cohort;
+- server-authoritative funnel и time-to-value первого пути для alpha cohort,
+  включая отдельное подтверждение показа первого результата;
 - три питомца с реальным active selection и независимым progression;
 - material inventory с append-only ledger и защитой от повторной выдачи;
 - durable event-result receipt, который восстанавливается через `GET /home`
@@ -116,7 +117,8 @@ rollback gate сначала выключается и число pending receip
 Если capable-клиент уже создал pending receipt, старый клиент того же аккаунта
 должен быть обновлён или результат нужно подтвердить на capable-клиенте.
 Подробности:
-[ADR 0022](docs/adr/0022-durable-event-result-handoff.md).
+[ADR 0022](docs/adr/0022-durable-event-result-handoff.md) и
+[ADR 0023](docs/adr/0023-acknowledged-first-journey-result.md).
 
 ## Структура
 
@@ -234,7 +236,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V10 + PostgreSQL Testcontainers tests
+Flyway V1–V11 + PostgreSQL Testcontainers tests
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build
