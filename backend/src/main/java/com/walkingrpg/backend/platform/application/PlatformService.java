@@ -84,7 +84,7 @@ public class PlatformService {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("contentVersion", repository.activeContentVersion());
         response.put("content", content.publicCatalog());
-        response.put("remoteConfig", repository.activeRemoteConfig());
+        response.put("remoteConfig", effectiveRemoteConfig());
         response.put("serverTime", now());
         return response;
     }
@@ -114,8 +114,9 @@ public class PlatformService {
             if (!processed.requestFingerprint().equals(fingerprint)) {
                 throw new PlatformIdempotencyConflictException();
             }
-            return readResponse(processed.responseJson());
+            return withEffectiveRemoteConfig(readResponse(processed.responseJson()));
         }
+        requireProviderAvailability(commandType);
 
         PlatformProgressFacts factsBefore = progressFactsProvider.factsFor(normalizedUserId);
         PlatformUserState current = repository.lockOrCreateState(
@@ -447,9 +448,6 @@ public class PlatformService {
             PlatformCommandScope scope,
             Instant occurredAt
     ) {
-        if (!featureEnabled("sandboxPaymentsEnabled")) {
-            throw new PlatformStateConflictException("Sandbox-платежи отключены конфигурацией");
-        }
         String cosmeticId = payloadText(payload, "cosmeticId");
         PlatformContentCatalog.CosmeticDefinition cosmetic = content.requireCosmetic(cosmeticId);
         if (state.ownedCosmetics().contains(cosmeticId)) {
@@ -706,7 +704,7 @@ public class PlatformService {
                 state.version(),
                 userState,
                 content.publicCatalog(),
-                repository.activeRemoteConfig(),
+                effectiveRemoteConfig(),
                 serverTime
         );
     }
@@ -779,17 +777,87 @@ public class PlatformService {
     }
 
     private boolean featureEnabled(String key) {
-        Object value = repository.activeRemoteConfig().get(key);
+        Object value = effectiveRemoteConfig().get(key);
         return !(value instanceof Boolean enabled) || enabled;
     }
 
     private int configInt(String key, int defaultValue, int min, int max) {
-        Object value = repository.activeRemoteConfig().get(key);
+        Object value = effectiveRemoteConfig().get(key);
         if (!(value instanceof Number number)) {
             return defaultValue;
         }
         long raw = number.longValue();
         return raw < min || raw > max ? defaultValue : (int) raw;
+    }
+
+    private void requireProviderAvailability(String commandType) {
+        if (!isPurchaseCommand(commandType)) {
+            return;
+        }
+        if (!paymentProvider.isAvailable()
+                || !featureEnabled("sandboxPaymentsEnabled")) {
+            throw new PlatformStateConflictException(
+                    "Покупки недоступны в текущей конфигурации"
+            );
+        }
+    }
+
+    private boolean isPurchaseCommand(String commandType) {
+        return "PURCHASE_COSMETIC".equals(commandType)
+                || "BUY_COSMETIC".equals(commandType);
+    }
+
+    private Map<String, Object> effectiveRemoteConfig() {
+        Map<String, Object> activeConfig = repository.activeRemoteConfig();
+        return withEffectiveProviderCapabilities(activeConfig, activeConfig);
+    }
+
+    private Map<String, Object> withEffectiveProviderCapabilities(
+            Map<String, Object> responseConfig,
+            Map<String, Object> activeConfig
+    ) {
+        Map<String, Object> config = new LinkedHashMap<>();
+        if (responseConfig != null) {
+            responseConfig.forEach((key, value) -> {
+                if (key != null && value != null) {
+                    config.put(key, value);
+                }
+            });
+        }
+        config.put(
+                "sandboxPaymentsEnabled",
+                paymentProvider.isAvailable()
+                        && activeConfig != null
+                        && Boolean.TRUE.equals(activeConfig.get("sandboxPaymentsEnabled"))
+        );
+        config.put("backgroundHealthSyncEnabled", false);
+        return Map.copyOf(config);
+    }
+
+    private PlatformCommandResponse withEffectiveRemoteConfig(
+            PlatformCommandResponse response
+    ) {
+        PlatformSnapshotResponse original = response.snapshot();
+        Map<String, Object> activeConfig = repository.activeRemoteConfig();
+        PlatformSnapshotResponse snapshot = new PlatformSnapshotResponse(
+                original.contentVersion(),
+                original.stateVersion(),
+                original.userState(),
+                original.content(),
+                withEffectiveProviderCapabilities(
+                        original.remoteConfig(),
+                        activeConfig
+                ),
+                original.serverTime()
+        );
+        return new PlatformCommandResponse(
+                response.commandType(),
+                response.idempotencyKey(),
+                response.message(),
+                response.stateVersion(),
+                snapshot,
+                response.serverTime()
+        );
     }
 
     private PlatformCommandResponse readResponse(String json) {

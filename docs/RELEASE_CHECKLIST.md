@@ -29,6 +29,24 @@ CI создаёт технические release candidates. Подпись и �
 - [ ] Mobile Authorization Code + PKCE, refresh, expiry и logout пройдены end-to-end.
 - [ ] Logout/account switch очищает локальную session, read cache и command outbox по согласованной политике.
 
+## Environment и provider gate
+
+- [ ] Backend запущен ровно с одним защищённым профилем `stage` или `prod`;
+      `local`/`test` не активны.
+- [ ] Datasource URL, username и password переданы защищённой средой; JDBC URL
+      использует канонический DNS host и `sslmode=verify-full`, а DNS/TLS
+      соединение с реальной БД подтверждено.
+- [ ] `walking-rpg.providers.payment=disabled` и
+      `walking-rpg.providers.push=disabled`; попытки отклоняются до новой state
+      mutation.
+- [ ] Production-like platform snapshot возвращает effective
+      `sandboxPaymentsEnabled=false`; release mobile не показывает purchase UI
+      ни для него, ни для cached snapshot.
+- [ ] `backgroundHealthSyncEnabled=false`; foreground/resume fallback не
+      описан как гарантированная background delivery.
+- [ ] Если production billing или push ещё не подключены, соответствующие
+      функции и store promises остаются выключены.
+
 ## Protected signing environment
 
 - [ ] Android AAB подписан production upload key вне source tree.
@@ -58,3 +76,13 @@ CI создаёт технические release candidates. Подпись и �
 - [ ] Определены beta cohort, stop conditions и rollback plan.
 - [ ] Durable result activation выполняется только после drain старых backend
       instances; rollback проверяет disabled gate и ноль pending receipts.
+
+## Operations
+
+- [ ] Liveness/readiness и защищённый metrics endpoint проверены в фактическом
+      deployment.
+- [ ] Настроены alerting, log retention и redaction без secrets/tokens.
+- [ ] Назначены владельцы rollback и инцидента, procedure проверена.
+- [ ] Backup создан фактическим production-процессом; restore drill выполнен в
+      изолированной среде, проверены версия схемы и контрольные данные.
+- [ ] Production secrets rotation и least-privilege DB role подтверждены.

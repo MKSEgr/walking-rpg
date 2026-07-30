@@ -16,11 +16,26 @@ Foreground durable outbox и resume fallback — `CODE_COMPLETE`. Гаранти
 
 ## Push
 
-Provider boundary и development implementation — `CODE_COMPLETE`; APNs/FCM credentials, token rotation и delivery evidence — `EXTERNAL_VALIDATION_REQUIRED`.
+Provider boundary, явная local/test-регистрация и fail-closed disabled
+provider для `stage`/`prod` — `CODE_COMPLETE`; APNs/FCM provider, credentials,
+token rotation и delivery evidence — `EXTERNAL_VALIDATION_REQUIRED`.
 
 ## Payments
 
-Provider boundary и sandbox — `CODE_COMPLETE`; App Store/Google Play billing, server verification, restore, refunds и revocations — `EXTERNAL_VALIDATION_REQUIRED`.
+Provider boundary, явная local/test-регистрация sandbox и запрет
+sandbox-покупок в `stage`/`prod` backend profiles и release mobile build —
+`CODE_COMPLETE`; App Store/Google Play billing, server verification, restore,
+refunds и revocations — `EXTERNAL_VALIDATION_REQUIRED`.
+
+## Production environment и database
+
+Protected `stage`/`prod` profiles, fail-closed startup guards и статические
+release checks — `CODE_COMPLETE`.
+
+Production OIDC/database secrets, реальный TLS endpoint, least-privilege DB
+role, deployment, monitoring/alerting, backup policy и датированный restore
+drill — `EXTERNAL_VALIDATION_REQUIRED`. Наличие Flyway V12 или успешный CI
+startup не является доказательством production deployment/restore.
 
 ## Signing и публикация
 

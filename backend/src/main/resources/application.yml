@@ -31,6 +31,10 @@ info:
     version: 0.1.0-SNAPSHOT
 
 walking-rpg:
+  providers:
+    payment: ${PAYMENT_PROVIDER:disabled}
+    push: ${PUSH_PROVIDER:disabled}
+
   daily-goal:
     policy-version: ${DAILY_GOAL_POLICY_VERSION:adaptive-median-v1}
     lookback-days: ${DAILY_GOAL_LOOKBACK_DAYS:7}

@@ -231,6 +231,10 @@ V11 добавляет ACK milestone и запрещает менять уже �
 ложный ACK. Новый durable row обязан начинаться с
 `handoff_required = true, acknowledged_at = NULL`; pre-acknowledged INSERT
 отклоняется, а delivery mode после INSERT неизменяем.
+V12 выключает `sandboxPaymentsEnabled` и `backgroundHealthSyncEnabled` во всех
+существующих remote-config snapshots. Это migration-safe default, а не
+authorization boundary: доступность покупки дополнительно ограничена backend
+provider mode.
 
 ## 8. Конкурентность и транзакции
 
@@ -277,6 +281,13 @@ V11 добавляет ACK milestone и запрещает менять уже �
 19. Telemetry failure не удерживает ACTIVITY или GAMEPLAY lane.
 20. Recovery presentation не раскрывает command payload, idempotency key,
     receipt, raw error или локальный путь.
+21. `stage`/`prod` нельзя совмещать с `local`/`test`.
+22. Protected runtime не регистрирует sandbox payment или development push.
+23. Remote config не может включить отсутствующую backend/mobile capability.
+24. Новая недоступная покупка отклоняется до state mutation.
+25. Replay сохранённой покупки возвращает прежний command outcome/user state
+    без нового provider call или mutation; capability fields заново
+    проецируются из текущего deployment и после disable могут стать `false`.
 
 ## 10. Identity и authorization boundary
 
@@ -299,7 +310,40 @@ Mobile Authorization Code + PKCE, secure token storage, refresh и logout
 device-validation остаются внешними gates. Подробности:
 `docs/adr/0018-mobile-oidc-session.md`.
 
-## 11. Health boundary
+## 11. Protected runtime и provider boundary
+
+```text
+local|test + explicit opt-in
+├── SandboxPaymentProvider
+└── DevelopmentPushDeliveryProvider
+
+stage|prod
+├── explicit verified-TLS PostgreSQL datasource
+├── JWT + demo disabled
+├── DisabledPaymentProvider
+└── DisabledPushDeliveryProvider
+```
+
+`ProductionRuntimeGuard` отклоняет смешанные profile sets, local/default
+datasource credentials и небезопасный или неоднозначный PostgreSQL `sslmode`.
+Тонкий `ProductionEnvironmentPostProcessor` вызывает ту же datasource-проверку
+до создания context/DataSource/Flyway. Development providers требуют
+одновременно явный property opt-in и активный `local`/`test`; одного property
+недостаточно.
+
+Backend возвращает effective `sandboxPaymentsEnabled`: remote flag считается
+включённым только при доступном payment provider. Mobile строит purchase action
+только вне release build и для свежего snapshot с effective value `true`;
+cached snapshot остаётся read-only и не показывает эту action.
+`backgroundHealthSyncEnabled` также принудительно возвращается как `false`:
+этот срез не выдаёт foreground/resume fallback за production background
+delivery.
+
+Этот boundary не реализует production payment/push. Реальные store billing,
+server verification, restore/refunds, APNs/FCM, production secrets,
+deployment и delivery evidence остаются внешними gates. См. ADR 0025.
+
+## 12. Health boundary
 
 ```text
 StepSource
@@ -312,7 +356,7 @@ StepSource
 
 Только `STEPS READ`, local midnight → now, IANA timezone и foreground/manual sync. Resume fallback не выдаётся за гарантированную background delivery. Физическая матрица описана в `DEVICE_VALIDATION_PROTOCOL.md`.
 
-## 12. Offline read model
+## 13. Offline read model
 
 ```text
 server GET /home|platform success
@@ -335,7 +379,7 @@ Terminal `4xx` не скрываются fallback-ом. Cached ENERGY не ра�
 Подробности: `docs/adr/0016-offline-read-cache.md` и
 `docs/adr/0022-durable-event-result-handoff.md`.
 
-## 13. Release-quality model
+## 14. Release-quality model
 
 ```text
 Standard CI
@@ -357,9 +401,13 @@ Protected external environment
 → store submission
 ```
 
-CI не хранит signing material и не выдаёт неподписанный candidate за публикуемый build. Device, push, payment, beta и store gates получают статус `VALIDATED` только после evidence.
+CI не хранит signing material и не выдаёт неподписанный candidate за
+публикуемый build. Protected profile/provider tests подтверждают только
+code-level isolation; production database, secrets, deployment, restore drill,
+device, push, payment, beta и store gates получают статус `VALIDATED` только
+после evidence.
 
-## 14. Branch protection
+## 15. Branch protection
 
 Feature-ветки обновляет `serbin70`; `master` защищён ruleset и CODEOWNERS. Merge выполняет `MKSEgr` после CI/review через `Squash and merge`. Подробности: `BRANCH_PROTECTION.md`.
 

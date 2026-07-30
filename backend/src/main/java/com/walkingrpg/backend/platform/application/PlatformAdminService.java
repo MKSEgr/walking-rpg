@@ -18,6 +18,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.activity.retention.ActivityRetentionService;
+import com.walkingrpg.backend.platform.payment.PaymentProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -38,6 +39,7 @@ public class PlatformAdminService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final PaymentProvider paymentProvider;
     private final PushDeliveryProvider pushDeliveryProvider;
     private final ActivityRetentionService retentionService;
     private final AccountDeletionRegistry accountDeletionRegistry;
@@ -46,6 +48,7 @@ public class PlatformAdminService {
     public PlatformAdminService(
             JdbcTemplate jdbcTemplate,
             ObjectMapper objectMapper,
+            PaymentProvider paymentProvider,
             PushDeliveryProvider pushDeliveryProvider,
             ActivityRetentionService retentionService,
             AccountDeletionRegistry accountDeletionRegistry,
@@ -53,6 +56,7 @@ public class PlatformAdminService {
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
+        this.paymentProvider = paymentProvider;
         this.pushDeliveryProvider = pushDeliveryProvider;
         this.retentionService = retentionService;
         this.accountDeletionRegistry = accountDeletionRegistry;
@@ -295,12 +299,19 @@ public class PlatformAdminService {
     @Transactional
     public PushDeliveryResult sendTestPush(String userId, String title, String body) {
         String normalizedUser = requireText(userId, "userId");
+        String normalizedTitle = requireText(title, "title");
+        String normalizedBody = requireText(body, "body");
+        if (!pushDeliveryProvider.isAvailable()) {
+            throw new PlatformStateConflictException(
+                    "Push-отправка недоступна в текущей конфигурации"
+            );
+        }
         Instant timestamp = now();
         ensureUser(normalizedUser, timestamp);
         PushDeliveryResult result = pushDeliveryProvider.send(
                 normalizedUser,
-                requireText(title, "title"),
-                requireText(body, "body")
+                normalizedTitle,
+                normalizedBody
         );
         recordEvent(normalizedUser, "push_test_sent", timestamp, Map.of(
                 "provider", result.provider(),
@@ -680,7 +691,7 @@ public class PlatformAdminService {
     }
 
     private void validateRemoteConfig(Map<String, Object> config) {
-        if (config == null || !config.keySet().containsAll(REQUIRED_CONFIG_KEYS)) {
+        if (config == null || !config.keySet().equals(REQUIRED_CONFIG_KEYS)) {
             throw new PlatformValidationException(
                     "config должен содержать полный обязательный набор полей",
                     "config"
@@ -689,6 +700,19 @@ public class PlatformAdminService {
         requireBoolean(config, "backgroundHealthSyncEnabled");
         requireBoolean(config, "sandboxPaymentsEnabled");
         requireBoolean(config, "weeklyRouteEnabled");
+        if (Boolean.TRUE.equals(config.get("backgroundHealthSyncEnabled"))) {
+            throw new PlatformValidationException(
+                    "backgroundHealthSyncEnabled пока не поддерживается",
+                    "config.backgroundHealthSyncEnabled"
+            );
+        }
+        if (Boolean.TRUE.equals(config.get("sandboxPaymentsEnabled"))
+                && !paymentProvider.isAvailable()) {
+            throw new PlatformValidationException(
+                    "sandboxPaymentsEnabled нельзя включить без payment provider",
+                    "config.sandboxPaymentsEnabled"
+            );
+        }
         requireNumber(config, "activityRetentionDays", 1, 3650);
         requireNumber(config, "weeklyRouteEnergy", 10, 10_000);
         Object seasonId = config.get("seasonId");

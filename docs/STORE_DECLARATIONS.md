@@ -34,7 +34,16 @@ Walking RPG превращает агрегированное количеств
 
 ## Payments и push
 
-Текущий build содержит sandbox payment provider и development push provider. До подключения store billing/APNs/FCM эти возможности не декларируются как production-интеграции.
+Sandbox payment и development push существуют только в явно включённом
+`local`/`test` окружении. Protected `stage`/`prod` backend использует
+fail-closed disabled providers и возвращает effective sandbox capability
+`false`. Mobile не показывает purchase UI в release build, при `false` или для
+cached snapshot.
+
+Production store billing и APNs/FCM не подключены. До появления реальных
+provider implementations, server-side verification/lifecycle и physical
+delivery evidence эти возможности не декларируются как production-интеграции
+и не обещаются в карточке приложения.
 
 ## Обязательные публичные ссылки
 

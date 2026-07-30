@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class SecurityModeGuard implements InitializingBean {
 
     private static final Set<String> DEVELOPMENT_PROFILES = Set.of("local", "test");
+    private static final Set<String> PROTECTED_PROFILES = Set.of("prod", "stage");
     private static final Duration MAXIMUM_ACCOUNT_DELETION_AUTHENTICATION_AGE =
             Duration.ofMinutes(15);
 
@@ -34,14 +35,23 @@ public class SecurityModeGuard implements InitializingBean {
     }
 
     void validate() {
-        Set<String> profiles = Arrays.stream(environment.getActiveProfiles())
+        String[] active = environment.getActiveProfiles();
+        String[] selectedProfiles = active.length == 0
+                ? environment.getDefaultProfiles()
+                : active;
+        Set<String> profiles = Arrays.stream(selectedProfiles)
                 .map(profile -> profile.trim().toLowerCase(Locale.ROOT))
                 .collect(Collectors.toUnmodifiableSet());
-        boolean productionProfile = profiles.contains("prod");
+        long protectedProfileCount = profiles.stream()
+                .filter(PROTECTED_PROFILES::contains)
+                .count();
+        boolean protectedProfile = protectedProfileCount > 0;
         boolean developmentProfile = profiles.stream().anyMatch(DEVELOPMENT_PROFILES::contains);
 
-        if (productionProfile && developmentProfile) {
-            throw invalid("Профиль prod нельзя совмещать с local или test");
+        if (protectedProfileCount > 1 || protectedProfile && developmentProfile) {
+            throw invalid(
+                    "prod/stage нельзя совмещать друг с другом или с local/test"
+            );
         }
         if (properties.getMode() == null) {
             throw invalid("Режим аутентификации не задан");
@@ -53,12 +63,12 @@ public class SecurityModeGuard implements InitializingBean {
         if (properties.isDemoEndpointsEnabled() && !developmentProfile) {
             throw invalid("Demo endpoint разрешён только в профилях local или test");
         }
-        if (productionProfile
+        if (protectedProfile
                 && properties.getMode() != WalkingRpgSecurityProperties.Mode.JWT) {
-            throw invalid("Профиль prod обязан использовать JWT");
+            throw invalid("Профили prod/stage обязаны использовать JWT");
         }
-        if (productionProfile && properties.isDemoEndpointsEnabled()) {
-            throw invalid("Профиль prod не может включать demo endpoint");
+        if (protectedProfile && properties.isDemoEndpointsEnabled()) {
+            throw invalid("Профили prod/stage не могут включать demo endpoint");
         }
 
         requireText(properties.getDeviceClaim(), "OIDC device claim");

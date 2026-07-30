@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
@@ -17,6 +18,8 @@ const Map<String, String> _onboardingNames = <String, String>{
   'first-expedition': 'Начать первую экспедицию',
   'first-event': 'Принять первое решение',
 };
+
+const String _sandboxPurchaseCommand = 'BUY_COSMETIC';
 
 typedef PlatformSnapshotLoader = Future<PlatformSnapshot> Function();
 typedef PlatformHomeLoader = Future<HomeSnapshot> Function();
@@ -43,6 +46,7 @@ class PlatformScreen extends StatefulWidget {
     this.recoveryUnavailable = false,
     this.recordExperimentExposures = true,
     this.authoritativeRefreshGeneration = 0,
+    this.sandboxPaymentsSupported = !kReleaseMode,
   });
 
   final PlatformSnapshotLoader? loader;
@@ -57,6 +61,7 @@ class PlatformScreen extends StatefulWidget {
   final bool recoveryUnavailable;
   final bool recordExperimentExposures;
   final int authoritativeRefreshGeneration;
+  final bool sandboxPaymentsSupported;
 
   @override
   State<PlatformScreen> createState() => _PlatformScreenState();
@@ -69,6 +74,8 @@ class _PlatformScreenState extends State<PlatformScreen> {
 
   late Future<_PlatformViewData> _dataFuture;
   String? _busyCommand;
+  bool _sandboxPaymentsAvailable = false;
+  int _loadGeneration = 0;
 
   @override
   void initState() {
@@ -83,6 +90,7 @@ class _PlatformScreenState extends State<PlatformScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.loader != widget.loader ||
         oldWidget.homeLoader != widget.homeLoader ||
+        oldWidget.sandboxPaymentsSupported != widget.sandboxPaymentsSupported ||
         oldWidget.authoritativeRefreshGeneration !=
             widget.authoritativeRefreshGeneration) {
       _dataFuture = _loadData();
@@ -156,6 +164,7 @@ class _PlatformScreenState extends State<PlatformScreen> {
                   onCommand: _executeCommand,
                   onRefresh: _reload,
                   onResumeFirstJourney: widget.onResumeFirstJourney,
+                  sandboxPaymentsAvailable: _sandboxPaymentsAvailable,
                 );
               },
         ),
@@ -164,6 +173,8 @@ class _PlatformScreenState extends State<PlatformScreen> {
   }
 
   Future<_PlatformViewData> _loadData() async {
+    final int generation = ++_loadGeneration;
+    _sandboxPaymentsAvailable = false;
     final PlatformSnapshotLoader platformLoader =
         widget.loader ?? PlatformApiClient.fromEnvironment().fetchSnapshot;
     final PlatformHomeLoader homeLoader =
@@ -182,6 +193,9 @@ class _PlatformScreenState extends State<PlatformScreen> {
       economyVersion = null;
     }
     final PlatformSnapshot platform = await platformFuture;
+    if (generation == _loadGeneration) {
+      _sandboxPaymentsAvailable = _canUseSandboxPayments(platform);
+    }
     _scheduleExperimentExposures(platform);
     return _PlatformViewData(
       platform: platform,
@@ -194,7 +208,10 @@ class _PlatformScreenState extends State<PlatformScreen> {
     String commandType,
     Map<String, Object?> payload,
   ) async {
-    if (_busyCommand != null) {
+    final String normalizedCommandType = commandType.trim().toUpperCase();
+    if (_busyCommand != null ||
+        (normalizedCommandType == _sandboxPurchaseCommand &&
+            !_sandboxPaymentsAvailable)) {
       return;
     }
     final PlatformCommandExecutor executor =
@@ -224,6 +241,8 @@ class _PlatformScreenState extends State<PlatformScreen> {
       if (!mounted) {
         return;
       }
+      _loadGeneration += 1;
+      _sandboxPaymentsAvailable = _canUseSandboxPayments(result.snapshot);
       if (commandType == 'CREATE_SQUAD') {
         _squadNameController.clear();
       } else if (commandType == 'JOIN_SQUAD') {
@@ -309,6 +328,12 @@ class _PlatformScreenState extends State<PlatformScreen> {
             '${DateTime.now().toUtc().microsecondsSinceEpoch}';
   }
 
+  bool _canUseSandboxPayments(PlatformSnapshot snapshot) {
+    return widget.sandboxPaymentsSupported &&
+        !snapshot.isCached &&
+        snapshot.remoteConfig.sandboxPaymentsEnabled;
+  }
+
   void _reload() {
     if (_busyCommand != null) {
       return;
@@ -340,6 +365,7 @@ class _PlatformBody extends StatelessWidget {
     required this.onCommand,
     required this.onRefresh,
     required this.onResumeFirstJourney,
+    required this.sandboxPaymentsAvailable,
   });
 
   final _PlatformViewData data;
@@ -349,6 +375,7 @@ class _PlatformBody extends StatelessWidget {
   final void Function(String, Map<String, Object?>) onCommand;
   final VoidCallback onRefresh;
   final VoidCallback? onResumeFirstJourney;
+  final bool sandboxPaymentsAvailable;
 
   bool get _busy => busyCommand != null;
 
@@ -471,9 +498,9 @@ class _PlatformBody extends StatelessWidget {
           const SizedBox(height: 12),
           _SectionTitle(
             title: 'Косметика',
-            subtitle: snapshot.remoteConfig.sandboxPaymentsEnabled
+            subtitle: sandboxPaymentsAvailable
                 ? 'Покупки работают через sandbox-провайдер.'
-                : 'Sandbox-покупки отключены конфигурацией.',
+                : 'Покупки сейчас недоступны.',
           ),
           ...snapshot.content.cosmetics.map(
             (PlatformCosmetic cosmetic) => _CosmeticCard(
@@ -483,7 +510,7 @@ class _PlatformBody extends StatelessWidget {
               ),
               active:
                   snapshot.userState.activeCosmeticId == cosmetic.cosmeticId,
-              paymentsEnabled: snapshot.remoteConfig.sandboxPaymentsEnabled,
+              paymentsEnabled: sandboxPaymentsAvailable,
               busy: blocked,
               onBuy: () => onCommand('BUY_COSMETIC', <String, Object?>{
                 'cosmeticId': cosmetic.cosmeticId,
@@ -958,8 +985,10 @@ class _CosmeticCard extends StatelessWidget {
         leading: const CircleAvatar(child: Icon(Icons.auto_awesome_outlined)),
         title: Text(cosmetic.name),
         subtitle: Text(
-          '${cosmetic.slot} · '
-          '${cosmetic.sandboxPrice == 0 ? 'базовая' : '${cosmetic.sandboxPrice} sandbox-кредитов'}',
+          paymentsEnabled
+              ? '${cosmetic.slot} · '
+                    '${cosmetic.sandboxPrice == 0 ? 'базовая' : '${cosmetic.sandboxPrice} sandbox-кредитов'}'
+              : cosmetic.slot,
         ),
         trailing: active
             ? const Chip(label: Text('Активно'))
@@ -969,11 +998,13 @@ class _CosmeticCard extends StatelessWidget {
                 onPressed: busy ? null : onEquip,
                 child: const Text('Надеть'),
               )
-            : FilledButton.tonal(
+            : paymentsEnabled
+            ? FilledButton.tonal(
                 key: Key('platform-buy-cosmetic-${cosmetic.cosmeticId}'),
-                onPressed: busy || !paymentsEnabled ? null : onBuy,
+                onPressed: busy ? null : onBuy,
                 child: const Text('Купить'),
-              ),
+              )
+            : null,
       ),
     );
   }

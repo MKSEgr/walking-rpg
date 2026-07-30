@@ -16,6 +16,8 @@ import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
 import com.walkingrpg.backend.platform.infrastructure.InMemoryPlatformRepository;
+import com.walkingrpg.backend.platform.payment.DisabledPaymentProvider;
+import com.walkingrpg.backend.platform.payment.PaymentProvider;
 import com.walkingrpg.backend.platform.payment.SandboxPaymentProvider;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
@@ -26,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,12 +49,16 @@ class PlatformServiceTest {
         economyRepository = new InMemoryEconomyRepository();
         economyService = new EconomyService(economyRepository);
         factsProvider = new MutableFactsProvider();
-        service = new PlatformService(
+        service = service(new SandboxPaymentProvider());
+    }
+
+    private PlatformService service(PaymentProvider paymentProvider) {
+        return new PlatformService(
                 platformRepository,
                 new PlatformContentCatalog(),
                 factsProvider,
                 economyService,
-                new SandboxPaymentProvider(),
+                paymentProvider,
                 JsonMapper.builder().findAndAddModules().build(),
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 new ProgressionService(
@@ -228,6 +235,8 @@ class PlatformServiceTest {
 
     @Test
     void shouldPurchaseAndEquipSandboxCosmetic() {
+        platformRepository.setRemoteConfig(remoteConfig(true, false));
+
         PlatformCommandResponse purchased = service.execute("user-1", command(
                 "BUY_COSMETIC",
                 "buy-spark-halo",
@@ -245,6 +254,83 @@ class PlatformServiceTest {
                 .contains("first-cosmetic"));
         assertEquals("spark-halo", equipped.snapshot().userState().get("activeCosmeticId"));
         assertEquals(1, platformRepository.paymentCount());
+    }
+
+    @Test
+    void shouldRejectUnavailablePurchaseBeforeStateOrAnyOtherWrite() {
+        platformRepository.setRemoteConfig(remoteConfig(true, true));
+        PlatformService disabledService = service(new DisabledPaymentProvider());
+
+        assertThrows(PlatformStateConflictException.class, () ->
+                disabledService.execute("provider-user", command(
+                        "BUY_COSMETIC",
+                        "disabled-purchase",
+                        Map.of("cosmeticId", "spark-halo")
+                ))
+        );
+
+        assertTrue(platformRepository.findState("provider-user").isEmpty());
+        assertEquals(0, platformRepository.paymentCount());
+        assertEquals(0, platformRepository.processedCommandCount());
+        assertEquals(0, platformRepository.eventCount());
+        assertEquals(0, factsProvider.calls());
+
+        Map<String, Object> bootstrap = map(
+                disabledService.getContentBootstrap().get("remoteConfig")
+        );
+        assertEquals(false, bootstrap.get("sandboxPaymentsEnabled"));
+        assertEquals(false, bootstrap.get("backgroundHealthSyncEnabled"));
+    }
+
+    @Test
+    void shouldReplayCompletedPurchaseAfterProviderIsDisabled() {
+        platformRepository.setRemoteConfig(remoteConfig(true, false));
+        PlatformCommandRequest request = command(
+                "PURCHASE_COSMETIC",
+                "provider-transition-purchase",
+                Map.of("cosmeticId", "spark-halo")
+        );
+        PlatformCommandResponse completed = service.execute("provider-user", request);
+
+        platformRepository.setRemoteConfig(remoteConfig(false, false));
+        PlatformService disabledService = service(new DisabledPaymentProvider());
+        PlatformCommandResponse replayed = disabledService.execute("provider-user", request);
+
+        assertEquals(completed.commandType(), replayed.commandType());
+        assertEquals(completed.idempotencyKey(), replayed.idempotencyKey());
+        assertEquals(completed.message(), replayed.message());
+        assertEquals(completed.stateVersion(), replayed.stateVersion());
+        assertEquals(completed.serverTime(), replayed.serverTime());
+        assertEquals(
+                completed.snapshot().userState(),
+                replayed.snapshot().userState()
+        );
+        assertEquals(completed.snapshot().content(), replayed.snapshot().content());
+        assertFalse((Boolean) replayed.snapshot().remoteConfig()
+                .get("sandboxPaymentsEnabled"));
+        assertFalse((Boolean) replayed.snapshot().remoteConfig()
+                .get("backgroundHealthSyncEnabled"));
+        assertEquals(1, platformRepository.paymentCount());
+        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(1, platformRepository.eventCount());
+        assertThrows(PlatformIdempotencyConflictException.class, () ->
+                disabledService.execute("provider-user", command(
+                        "PURCHASE_COSMETIC",
+                        "provider-transition-purchase",
+                        Map.of("cosmeticId", "trail-banner")
+                ))
+        );
+    }
+
+    @Test
+    void shouldProjectOnlyEffectiveProviderCapabilities() {
+        platformRepository.setRemoteConfig(remoteConfig(true, true));
+        PlatformService disabledService = service(new DisabledPaymentProvider());
+
+        PlatformSnapshotResponse snapshot = disabledService.getSnapshot("provider-user");
+        assertFalse((Boolean) snapshot.remoteConfig().get("sandboxPaymentsEnabled"));
+        assertFalse((Boolean) snapshot.remoteConfig().get("backgroundHealthSyncEnabled"));
+        assertTrue(platformRepository.findState("provider-user").isEmpty());
     }
 
     @Test
@@ -334,6 +420,20 @@ class PlatformServiceTest {
         return new PlatformCommandRequest(commandType, idempotencyKey, payload);
     }
 
+    private Map<String, Object> remoteConfig(
+            boolean sandboxPaymentsEnabled,
+            boolean backgroundHealthSyncEnabled
+    ) {
+        return Map.of(
+                "backgroundHealthSyncEnabled", backgroundHealthSyncEnabled,
+                "activityRetentionDays", 30,
+                "seasonId", "season-1",
+                "weeklyRouteEnergy", 120,
+                "sandboxPaymentsEnabled", sandboxPaymentsEnabled,
+                "weeklyRouteEnabled", true
+        );
+    }
+
     @SuppressWarnings("unchecked")
     private static Collection<Object> collection(Map<String, Object> map, String key) {
         return (Collection<Object>) map.get(key);
@@ -360,14 +460,20 @@ class PlatformServiceTest {
 
     private static final class MutableFactsProvider implements PlatformProgressFactsProvider {
         private final Map<String, PlatformProgressFacts> values = new HashMap<>();
+        private int calls;
 
         @Override
         public PlatformProgressFacts factsFor(String userId) {
+            calls++;
             return values.getOrDefault(userId, PlatformProgressFacts.empty());
         }
 
         private void set(String userId, PlatformProgressFacts value) {
             values.put(userId, value);
+        }
+
+        private int calls() {
+            return calls;
         }
     }
 }

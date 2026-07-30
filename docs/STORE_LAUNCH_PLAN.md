@@ -1,6 +1,6 @@
 # Walking RPG — план до первой публикации в App Store и Google Play
 
-Статус на 29 июля 2026 года. Документ отделяет:
+Статус на 30 июля 2026 года. Документ отделяет:
 
 - техническую готовность к сборке;
 - готовность к загрузке в TestFlight / Play Console;
@@ -26,6 +26,10 @@
   receipt;
 - backend account deletion registry, блокирующий stale Bearer token;
 - backend OIDC/JWT resource-server boundary с `sub`, `ROLE_USER`/`ROLE_ADMIN` и fail-closed production profile;
+- защищённые `stage`/`prod` profiles, verified-TLS datasource guard и
+  local/test-only sandbox payment/development push;
+- effective sandbox capability и mobile UI, скрывающий purchase action при
+  release/disabled/cached state;
 - backend JAR, Android release AAB candidate и iOS release no-codesign candidate;
 - deterministic build metadata, privacy/store declaration drafts, release checklist и device validation protocol.
 
@@ -34,7 +38,8 @@
 - guided первый путь от Health sync до первого события с реальным выбором
   активного питомца;
 - exact-once milestones и cohort funnel/time-to-value read model для alpha;
-- account export/delete с fresh OIDC authentication и локальной очисткой.
+- account export/delete с fresh OIDC authentication и локальной очисткой;
+- A4a profile/provider isolation с Flyway V12 и effective-capability UI gate.
 
 ## 2. Gate A — завершить store-candidate software
 
@@ -100,19 +105,41 @@ Account data controls — `CODE_COMPLETE`:
 
 ### A4. Production configuration и backend operations
 
+#### A4a. Profile/provider isolation — `CODE_COMPLETE`
+
+- явное разделение development `local`/`test` и protected `stage`/`prod`;
+- запрет смешанного profile set и fail-closed проверка JWT/demo settings;
+- обязательная явная PostgreSQL configuration с verified TLS в protected
+  profile;
+- sandbox payment и development push доступны только при explicit opt-in в
+  `local`/`test`;
+- disabled providers в `stage`/`prod`, отказ до новой state mutation;
+- Flyway V12 выключает sandbox-payment/background-health flags во всех
+  существующих remote-config snapshots;
+- backend маскирует sandbox capability при disabled provider;
+- mobile скрывает purchase action в release build, при effective `false` и для
+  cached snapshot.
+
+#### A4b. Operations hardening — `CODE_PENDING`
+
 - production API base URL только по TLS;
-- production database, backup policy и фактический restore drill;
-- secrets только в protected environments / secret store;
-- rate limits, request/body limits, timeouts и health checks;
+- rate limits, request/body limits, timeouts и разделённые health/metrics
+  endpoints;
 - error/crash alerting и latency monitoring;
-- production remote config и content release;
-- отключение demo user/device и sandbox-only возможностей;
-- явное разделение `dev`, `stage`, `production`;
+- проверяемый backup/restore-drill pack без production secret;
 - rollback backend/content/config без публикации новой mobile-версии;
 - durable result handoff активируется только после drain старых backend
   instances; rollback сначала выключает activation gate и дренирует pending
   receipts до нуля;
 - support/admin runbook для удаления аккаунта, инцидентов и восстановления.
+
+#### A4 external gates — `EXTERNAL_VALIDATION_REQUIRED`
+
+- secrets только из фактического protected environment / secret store;
+- production database, least-privilege role и реальный TLS endpoint;
+- production remote config и content release;
+- deployment, monitoring/alerting и rollback drill;
+- backup policy и датированный фактический restore drill.
 
 ## 3. Gate B — физическая Health-валидация
 
@@ -275,9 +302,10 @@ Account data controls — `CODE_COMPLETE`:
 8. `signed TestFlight / Play internal and closed-beta candidates`;
 9. `submission fixes`.
 
-Пункты 1–3 имеют автономную реализацию в коде. Для пункта 3 до загрузки в
-магазины остаются end-to-end проверка с production IdP и решение о судьбе
-внешней identity-provider учётной записи.
+Пункты 1–3 и A4a имеют автономную реализацию в коде. Для пункта 3 до загрузки
+в магазины остаются end-to-end проверка с production IdP и решение о судьбе
+внешней identity-provider учётной записи. A4b и все A4 external gates не
+считаются завершёнными из-за наличия profile guard.
 
 Параллельно с PR 2–5 владелец продукта должен начать создание и верификацию developer accounts, подготовку публичных URL и набор beta-тестировщиков: эти процессы имеют внешнее время ожидания и не ускоряются кодом.
 

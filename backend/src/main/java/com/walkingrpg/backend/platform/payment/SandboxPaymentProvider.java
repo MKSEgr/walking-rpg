@@ -4,10 +4,23 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile({"local", "test"})
+@ConditionalOnProperty(
+        prefix = "walking-rpg.providers",
+        name = "payment",
+        havingValue = "sandbox"
+)
 public class SandboxPaymentProvider implements PaymentProvider {
+
+    @Override
+    public boolean isAvailable() {
+        return true;
+    }
 
     @Override
     public PaymentReceipt purchase(

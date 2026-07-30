@@ -51,7 +51,29 @@ class SecurityModeGuardTest {
         );
         assertThrows(
                 IllegalStateException.class,
+                () -> guard(properties, "stage").afterPropertiesSet()
+        );
+        assertThrows(
+                IllegalStateException.class,
                 () -> guard(new WalkingRpgSecurityProperties(), "prod", "local")
+                        .afterPropertiesSet()
+        );
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(new WalkingRpgSecurityProperties(), "stage", "test")
+                        .afterPropertiesSet()
+        );
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(new WalkingRpgSecurityProperties(), "prod", "stage")
+                        .afterPropertiesSet()
+        );
+
+        MockEnvironment defaultProd = new MockEnvironment()
+                .withProperty("spring.profiles.default", "prod");
+        assertThrows(
+                IllegalStateException.class,
+                () -> new SecurityModeGuard(properties, defaultProd)
                         .afterPropertiesSet()
         );
     }

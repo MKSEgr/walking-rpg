@@ -126,6 +126,41 @@ Roadmap отражает снижение рисков. Статусы:
 - [ ] Проверить тексты, темп и эмоциональную ценность выбора питомца на alpha
       cohort
 
+## Milestone 8 — Production environment/config/operations hardening
+
+### A4a — CODE_COMPLETE
+
+- [x] `local`/`test` отделены от защищённых `stage`/`prod`; смешанные профили
+      и небезопасная datasource configuration отклоняются fail-closed
+- [x] `stage`/`prod` требуют явную PostgreSQL configuration с проверяемым TLS
+- [x] Sandbox payment и development push регистрируются только при явном
+      opt-in в `local`/`test`; защищённые профили используют disabled
+      providers
+- [x] Новая недоступная покупка отклоняется до state mutation; replay
+      сохранённой команды сохраняет outcome/state без provider call, но
+      capability fields заново проецируются из текущего deployment
+- [x] Flyway V12 выключает sandbox-payment/background-health flags во всех
+      существующих remote-config snapshots
+- [x] Platform snapshot маскирует sandbox flag при disabled provider; mobile
+      не показывает purchase action в release build, при `false` или cached
+      state
+- [x] Release-quality checks закрепляют provider/effective-capability boundary
+
+### A4b — CODE_PENDING
+
+- [ ] Ограничить публичный diagnostics/telemetry ingress и проверить abuse
+      policy
+- [ ] Разделить liveness/readiness/metrics exposure и закрепить operational
+      timeouts
+- [ ] Добавить проверяемый backup/restore-drill pack без production secrets
+
+### EXTERNAL_VALIDATION_REQUIRED
+
+- [ ] Передать production OIDC/database secrets через protected environment и
+      проверить least-privilege role на реальном TLS endpoint
+- [ ] Выполнить фактический deployment, monitoring/alerting и rollback drill
+- [ ] Выполнить датированный backup/restore drill в изолированной среде
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

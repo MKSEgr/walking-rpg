@@ -65,6 +65,35 @@ POSTGRES_PASSWORD=walking_rpg_local
 
 Flyway автоматически применяет миграции из `src/main/resources/db/migration`.
 
+Sandbox payment и development push включаются только сочетанием профиля
+`local|test` и явного provider mode:
+
+```text
+PAYMENT_PROVIDER=sandbox
+PUSH_PROVIDER=development
+```
+
+Без этого backend регистрирует fail-closed providers. Профили `prod` и `stage`
+запрещают development providers независимо от внешнего override.
+
+## Production/stage configuration
+
+Пример обязательных переменных находится в `.env.production.example`.
+Защищённые профили проверяются до создания `DataSource` и запуска Flyway:
+
+- одновременно активен ровно один из `prod|stage`, без `local|test`;
+- `spring.datasource.url` использует один канонический DNS host и единственный
+  raw query `sslmode=verify-full`;
+- JDBC URL не содержит credentials, alias/encoded/duplicate parameters или
+  multi-host transport;
+- Hikari/Flyway не переопределяют URL, credentials, driver, JDBC properties
+  или внешний Hikari configuration file;
+- production database user не является локальным/default superuser;
+- payment и push provider modes равны `disabled`.
+
+Небезопасная конфигурация останавливает процесс на environment-preparation
+этапе, до сетевого подключения к БД или применения миграций.
+
 ## Тесты
 
 ```bash
@@ -93,6 +122,9 @@ PostgreSQL Testcontainers tests проверяют:
   остаются pending;
 - Flyway V11: explicit ACK атомарно создаёт immutable authoritative milestone,
   а legacy auto-ACK остаётся backfilled и не искажает timing.
+- Flyway V12 отключает development capabilities во всех сохранённых remote
+  configs; provider/profile guards и exact idempotency replay проверяются
+  отдельными unit/integration tests.
 
 ## Персональная дневная цель
 
