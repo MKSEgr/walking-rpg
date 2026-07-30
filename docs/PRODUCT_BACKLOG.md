@@ -186,6 +186,31 @@ validation из US-001/US-008.
 реализованы. Foreground/restart поведение на физических устройствах остаётся
 частью alpha validation из US-001/US-008.
 
+### US-011. Не попасть в development provider из protected runtime
+
+Как владелец релиза, я хочу, чтобы защищённые окружения физически не могли
+выполнить sandbox payment или development push, даже при ошибочном remote
+config.
+
+Критерии:
+
+- `stage`/`prod` несовместимы с `local`/`test`;
+- protected backend требует явную PostgreSQL configuration с проверяемым TLS;
+- development providers создаются только при explicit opt-in в `local`/`test`;
+- в остальных окружениях disabled providers отклоняют новые операции;
+- недоступная новая покупка не создаёт user/payment state;
+- replay завершённой покупки сохраняет command outcome/user state без нового
+  provider call или mutation, но capability fields заново проецируются из
+  текущего deployment и после disable могут стать `false`;
+- backend возвращает effective sandbox capability с учётом provider, а mobile
+  скрывает purchase UI в release build, при `false` и для cached state;
+- migration выключает sandbox-payment/background-health flags во всех
+  существующих snapshots, но не считается единственной security boundary.
+
+**Статус:** A4a backend/mobile guards, Flyway V12, tests и release-policy checks
+реализованы. Production billing/APNs/FCM, secrets, реальный deployment и
+physical evidence не реализованы и остаются external gates.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -193,7 +218,7 @@ validation из US-001/US-008.
 - первая глава из 18 последовательных узлов;
 - три питомца, active selection, эволюция и навыки;
 - onboarding, задания и достижения;
-- development push provider boundary;
+- development push provider boundary с local/test-only registration;
 - product analytics и experiment exposure;
 - read-only offline cache валидированных `home` / `platform` snapshots.
 
@@ -207,7 +232,9 @@ validation из US-001/US-008.
 
 ## P2 — soft-launch capabilities
 
-Технически реализованы season, weekly route, squads, cosmetics, sandbox payment boundary, risk/admin read models и базовый content/remote-config admin API.
+Технически реализованы season, weekly route, squads, cosmetics, sandbox
+payment boundary с local/test-only registration, effective-capability UI gate,
+risk/admin read models и базовый content/remote-config admin API.
 
 До включения этих функций в публичный релиз остаются:
 

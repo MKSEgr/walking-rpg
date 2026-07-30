@@ -377,7 +377,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
         config.put("activityRetentionDays", 30);
         config.put("seasonId", "season-1");
         config.put("weeklyRouteEnergy", 120);
-        config.put("sandboxPaymentsEnabled", true);
+        config.put("sandboxPaymentsEnabled", false);
         config.put("weeklyRouteEnabled", true);
         return Map.copyOf(config);
     }

@@ -304,6 +304,11 @@ class AccountDeletionIntegrationTest {
         }
 
         @Override
+        public boolean isAvailable() {
+            return true;
+        }
+
+        @Override
         public PushDeliveryResult send(String userId, String title, String body) {
             CountDownLatch started = sendStarted;
             CountDownLatch release = sendRelease;

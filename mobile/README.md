@@ -174,6 +174,14 @@ A/B assignments и remote config diagnostics
 проходят через restart-safe GAMEPLAY lane, поэтому payload и idempotency key
 сохраняются до подтверждённого ответа backend.
 
+Sandbox-покупка показывается только для свежего authoritative snapshot, когда
+effective remote config возвращает `sandboxPaymentsEnabled=true`, и только в
+non-release Flutter build. Cached snapshot, отключённый backend provider или
+release build скрывают кнопку, sandbox-цену и sandbox-текст; устаревший callback
+также не отправляет команду. Опоздавшая загрузка не может вернуть capability
+после принятого command snapshot. Уже полученная косметика и остальные
+неплатёжные действия журнала продолжают работать по обычным правилам.
+
 Назначенные A/B-варианты регистрируются отдельной идемпотентной командой `RECORD_EXPERIMENT_EXPOSURE`. Ключ включает content version, experiment id и variant, поэтому повторный запуск приложения не создаёт дублирующий exposure event.
 Exposure сохраняется тем же outbox, но выполняется в отдельной `TELEMETRY`
 lane и не задерживает игровой handoff.
@@ -407,6 +415,8 @@ Unit/widget tests покрывают:
 - parsing/validation `dailyGoalPolicy` и отображение default/adaptive explanation;
 - mapping platform snapshot и platform command response;
 - onboarding/pet/skill/quest/season/squad/cosmetic widget flows;
+- fail-closed sandbox purchase UI для cached/disabled/release состояний без
+  блокировки уже полученной косметики;
 - restart-safe replay platform-команд и канонизацию payload независимо от порядка ключей;
 - навигацию между экспедицией и путевым журналом.
 

@@ -1,4 +1,8 @@
 walking-rpg:
+  providers:
+    payment: ${PAYMENT_PROVIDER:sandbox}
+    push: ${PUSH_PROVIDER:development}
+
   security:
     mode: dev-header
     demo-endpoints-enabled: true

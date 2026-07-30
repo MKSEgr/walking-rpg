@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 
 public record RemoteConfigUpdateRequest(
         @NotBlank @Size(max = 64) String version,
-        @NotNull Map<String, Object> config
+        @NotNull @Size(min = 6, max = 6) Map<String, Object> config
 ) {
     public RemoteConfigUpdateRequest {
         config = config == null ? Map.of() : Map.copyOf(config);

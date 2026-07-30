@@ -16,6 +16,7 @@ Map<String, dynamic> platformSnapshotJson({
   int resolvedEventCount = 2,
   int totalAcceptedSteps = 6842,
   bool? hasSuccessfulActivitySync,
+  bool sandboxPaymentsEnabled = true,
   CachedReadMetadata? cacheMetadata,
 }) {
   const List<String> onboardingSteps = <String>[
@@ -187,7 +188,7 @@ Map<String, dynamic> platformSnapshotJson({
       'activityRetentionDays': 30,
       'seasonId': 'signal-season-1',
       'weeklyRouteEnergy': weeklyRouteRequiredEnergy,
-      'sandboxPaymentsEnabled': true,
+      'sandboxPaymentsEnabled': sandboxPaymentsEnabled,
       'weeklyRouteEnabled': true,
     },
     'serverTime': '2026-07-27T10:00:00Z',
@@ -207,6 +208,7 @@ PlatformSnapshot platformSnapshot({
   int resolvedEventCount = 2,
   int totalAcceptedSteps = 6842,
   bool? hasSuccessfulActivitySync,
+  bool sandboxPaymentsEnabled = true,
   CachedReadMetadata? cacheMetadata,
 }) {
   return PlatformSnapshot.fromJson(
@@ -223,6 +225,7 @@ PlatformSnapshot platformSnapshot({
       resolvedEventCount: resolvedEventCount,
       totalAcceptedSteps: totalAcceptedSteps,
       hasSuccessfulActivitySync: hasSuccessfulActivitySync,
+      sandboxPaymentsEnabled: sandboxPaymentsEnabled,
     ),
     cacheMetadata: cacheMetadata,
   );

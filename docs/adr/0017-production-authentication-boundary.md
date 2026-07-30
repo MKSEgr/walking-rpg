@@ -23,16 +23,24 @@
 - `jwt` — production resource server;
 - `dev-header` — явно включаемый локальный/test режим.
 
-Базовая конфигурация использует `jwt` и отключает demo endpoint. `application-local.yml` и `application-test.yml` включают `dev-header`; `application-prod.yml` оставляет `jwt` и `demo-endpoints-enabled=false`.
+Базовая конфигурация использует `jwt` и отключает demo endpoint.
+`application-local.yml` и test configuration включают `dev-header`;
+`application-stage.yml` и `application-prod.yml` оставляют `jwt` и
+`demo-endpoints-enabled=false`.
 
 Одних YAML-значений недостаточно, потому что переменные окружения имеют более высокий приоритет. Поэтому `SecurityModeGuard` проверяет итоговую конфигурацию при старте приложения:
 
 - `dev-header` и demo endpoint разрешены только с профилем `local` или `test`;
-- `prod` нельзя совмещать с `local`/`test`;
-- профиль `prod` обязан работать в `jwt` и без demo endpoint;
+- защищённые `stage`/`prod` нельзя совмещать с `local`/`test`;
+- профили `stage`/`prod` обязаны работать в `jwt` и без demo endpoint;
 - device claim и user/admin authority mappings должны быть заданы и не должны совпадать.
 
 Некорректная комбинация завершает startup до открытия HTTP-порта. Запуск без local/test profile не откатывается молча к небезопасным заголовкам даже при ошибочной переменной окружения.
+
+Datasource и development-provider инварианты защищённых профилей собраны в
+`ProductionRuntimeGuard`; тонкий `ProductionEnvironmentPostProcessor` запускает
+datasource-часть до создания context/DataSource. Они расширяют runtime
+boundary, но не меняют JWT-контракт этого ADR; см. ADR 0025.
 
 ### JWT validation
 
@@ -93,7 +101,7 @@ Identity provider принимает только ожидаемые principal-�
 - подмена `X-User-Id` в production не меняет subject;
 - межпользовательская изоляция строится от подписанного `sub`;
 - административные endpoint-ы имеют отдельную authority;
-- production-профиль не включает demo/dev identity;
+- protected `stage`/`prod` profiles не включают demo/dev identity;
 - ошибочный runtime override небезопасного режима останавливает приложение;
 - стабильная device identity не меняется вместе с OIDC-сессией;
 - 401/403 имеют единый JSON-контракт `code/message/details/traceId`.

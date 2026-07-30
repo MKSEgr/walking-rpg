@@ -193,7 +193,7 @@ public class InMemoryPlatformRepository implements PlatformRepository {
                 "activityRetentionDays", 30,
                 "seasonId", "season-1",
                 "weeklyRouteEnergy", 120,
-                "sandboxPaymentsEnabled", true,
+                "sandboxPaymentsEnabled", false,
                 "weeklyRouteEnabled", true
         );
     }

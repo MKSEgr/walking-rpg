@@ -42,6 +42,11 @@
   после потери ответа или restart;
 - foreground durable outbox для activity, gameplay, platform и telemetry
   команд с owner-scoped recovery center;
+- protected `stage`/`prod` backend profiles с fail-closed datasource и
+  отключёнными sandbox payment/development push providers;
+- effective sandbox-payment capability, учитывающая backend provider
+  availability; mobile скрывает purchase UI в release build, при `false` и
+  для cached snapshot;
 - GitHub Actions для backend, Flutter, Android APK и iOS Simulator build.
 
 ## Платформенные шаги
@@ -177,6 +182,17 @@ cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
+Локальный профиль явно включает development providers:
+`walking-rpg.providers.payment=sandbox` и
+`walking-rpg.providers.push=development`. Базовая конфигурация, `stage` и
+`prod` используют `disabled`. Protected startup также требует явные
+PostgreSQL credentials и verified-TLS JDBC URL; пример переменных без секретов
+находится в `backend/.env.production.example`.
+
+Наличие этих guard-ов не означает, что production database/IdP или реальные
+payment/push providers уже настроены. Deployment, monitoring и фактический
+backup/restore drill остаются отдельными gates.
+
 Основные endpoint-ы:
 
 ```text
@@ -254,7 +270,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V11 + PostgreSQL Testcontainers tests
+Flyway V1–V12 + PostgreSQL Testcontainers tests
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build
@@ -274,6 +290,8 @@ iOS Simulator debug build
 
 - проверка на физических iPhone/Android и связках телефон + часы;
 - production IdP, APNs/FCM, store billing, signing и submission;
+- production database/deployment, monitoring/alerting и фактический
+  backup/restore drill;
 - гарантированная background health/command delivery;
 - enforcement anti-fraud по источникам (текущий риск-контур работает в shadow
   mode);

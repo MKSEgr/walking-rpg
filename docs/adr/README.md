@@ -41,3 +41,4 @@ NNNN-short-title.md
 - [0022 — durable event-result handoff](0022-durable-event-result-handoff.md)
 - [0023 — acknowledged first-journey result](0023-acknowledged-first-journey-result.md)
 - [0024 — mobile command recovery и telemetry isolation](0024-mobile-command-recovery-and-telemetry-isolation.md)
+- [0025 — production provider isolation](0025-production-provider-isolation.md)

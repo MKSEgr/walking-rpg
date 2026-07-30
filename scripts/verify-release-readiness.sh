@@ -26,11 +26,28 @@ for file in \
   docs/adr/0018-mobile-oidc-session.md \
   docs/adr/0021-first-journey-observability.md \
   docs/adr/0022-durable-event-result-handoff.md \
+  docs/adr/0025-production-provider-isolation.md \
+  backend/.env.production.example \
+  backend/src/main/java/com/walkingrpg/backend/operations/ProductionEnvironmentPostProcessor.java \
+  backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java \
+  backend/src/main/java/com/walkingrpg/backend/platform/config/PlatformProviderProperties.java \
+  backend/src/main/java/com/walkingrpg/backend/platform/payment/DisabledPaymentProvider.java \
+  backend/src/main/java/com/walkingrpg/backend/platform/payment/SandboxPaymentProvider.java \
+  backend/src/main/java/com/walkingrpg/backend/platform/push/DisabledPushDeliveryProvider.java \
+  backend/src/main/java/com/walkingrpg/backend/platform/push/DevelopmentPushDeliveryProvider.java \
   backend/src/main/java/com/walkingrpg/backend/security/SecurityModeGuard.java \
+  backend/src/main/resources/META-INF/spring.factories \
   mobile/lib/core/auth/auth_session_controller.dart \
   mobile/lib/features/home/data/auth_home_transports.dart \
+  mobile/lib/features/platform/presentation/platform_screen.dart \
   backend/src/main/resources/application-local.yml \
+  backend/src/main/resources/application-stage.yml \
   backend/src/main/resources/application-prod.yml \
+  backend/src/main/resources/db/migration/V12__disable_development_providers.sql \
+  backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
+  backend/src/test/java/com/walkingrpg/backend/platform/config/PlatformProviderConfigurationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformAdminServiceProviderTest.java \
+  backend/src/test/java/com/walkingrpg/backend/migration/ProductionProviderIsolationMigrationTest.java \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh; do
   [ -f "$file" ] || fail "missing $file"
@@ -48,6 +65,8 @@ grep -Fq 'account-deletion-max-authentication-age: ${ACCOUNT_DELETION_MAX_AUTH_A
 grep -Fq 'enabled: ${DURABLE_EVENT_RESULT_HANDOFF_ENABLED:false}' backend/src/main/resources/application.yml || fail 'durable event-result handoff must require explicit cluster activation'
 grep -Fq 'private Mode mode = Mode.JWT;' backend/src/main/java/com/walkingrpg/backend/security/WalkingRpgSecurityProperties.java || fail 'security properties must fail closed as jwt'
 grep -Fq 'private String deviceClaim = "device_id";' backend/src/main/java/com/walkingrpg/backend/security/WalkingRpgSecurityProperties.java || fail 'security properties must default to stable device_id'
+grep -Eq '^[[:space:]]+mode: jwt$' backend/src/main/resources/application-stage.yml || fail 'stage profile must use jwt mode'
+grep -Eq '^[[:space:]]+demo-endpoints-enabled: false$' backend/src/main/resources/application-stage.yml || fail 'stage profile must disable demo endpoints'
 grep -Eq '^[[:space:]]+mode: jwt$' backend/src/main/resources/application-prod.yml || fail 'production profile must use jwt mode'
 grep -Eq '^[[:space:]]+demo-endpoints-enabled: false$' backend/src/main/resources/application-prod.yml || fail 'production profile must disable demo endpoints'
 grep -Eq '^[[:space:]]+mode: dev-header$' backend/src/main/resources/application-local.yml || fail 'local profile must explicitly opt into dev-header mode'
@@ -62,6 +81,66 @@ if [ -n "$IDENTITY_HEADER_OUTSIDE_FILTER" ]; then
   printf '%s\n' "$IDENTITY_HEADER_OUTSIDE_FILTER" >&2
   fail 'identity headers are allowed only inside the explicit dev filter'
 fi
+
+printf '%s\n' 'Checking protected runtime and provider isolation...'
+grep -Fq 'payment: ${PAYMENT_PROVIDER:disabled}' backend/src/main/resources/application.yml || fail 'base payment provider must fail closed as disabled'
+grep -Fq 'push: ${PUSH_PROVIDER:disabled}' backend/src/main/resources/application.yml || fail 'base push provider must fail closed as disabled'
+grep -Fq 'SPRING_PROFILES_ACTIVE=prod' backend/.env.production.example || fail 'production environment example must select prod'
+grep -Fq 'sslmode=verify-full' backend/.env.production.example || fail 'production environment example must require verified TLS'
+grep -Fq 'WALKING_RPG_PROVIDERS_PAYMENT=disabled' backend/.env.production.example || fail 'production environment example must disable payment provider'
+grep -Fq 'WALKING_RPG_PROVIDERS_PUSH=disabled' backend/.env.production.example || fail 'production environment example must disable push provider'
+grep -Fq 'payment: ${PAYMENT_PROVIDER:sandbox}' backend/src/main/resources/application-local.yml || fail 'local profile must explicitly opt into sandbox payment'
+grep -Fq 'push: ${PUSH_PROVIDER:development}' backend/src/main/resources/application-local.yml || fail 'local profile must explicitly opt into development push'
+for profile in stage prod; do
+  config="backend/src/main/resources/application-$profile.yml"
+  grep -Eq '^[[:space:]]+payment: disabled$' "$config" || fail "$profile profile must disable payment provider"
+  grep -Eq '^[[:space:]]+push: disabled$' "$config" || fail "$profile profile must disable push provider"
+done
+grep -Fq 'private String payment = "disabled";' backend/src/main/java/com/walkingrpg/backend/platform/config/PlatformProviderProperties.java || fail 'payment provider properties must fail closed'
+grep -Fq 'private String push = "disabled";' backend/src/main/java/com/walkingrpg/backend/platform/config/PlatformProviderProperties.java || fail 'push provider properties must fail closed'
+grep -Fq '@Profile({"local", "test"})' backend/src/main/java/com/walkingrpg/backend/platform/payment/SandboxPaymentProvider.java || fail 'sandbox payment must be profile guarded'
+grep -Fq 'havingValue = "sandbox"' backend/src/main/java/com/walkingrpg/backend/platform/payment/SandboxPaymentProvider.java || fail 'sandbox payment must require explicit provider mode'
+grep -Fq '@Profile({"local", "test"})' backend/src/main/java/com/walkingrpg/backend/platform/push/DevelopmentPushDeliveryProvider.java || fail 'development push must be profile guarded'
+grep -Fq 'havingValue = "development"' backend/src/main/java/com/walkingrpg/backend/platform/push/DevelopmentPushDeliveryProvider.java || fail 'development push must require explicit provider mode'
+grep -Fq 'havingValue = "disabled"' backend/src/main/java/com/walkingrpg/backend/platform/payment/DisabledPaymentProvider.java || fail 'disabled payment provider must be selectable'
+grep -Fq 'matchIfMissing = true' backend/src/main/java/com/walkingrpg/backend/platform/payment/DisabledPaymentProvider.java || fail 'missing payment mode must fail closed'
+grep -Fq 'havingValue = "disabled"' backend/src/main/java/com/walkingrpg/backend/platform/push/DisabledPushDeliveryProvider.java || fail 'disabled push provider must be selectable'
+grep -Fq 'matchIfMissing = true' backend/src/main/java/com/walkingrpg/backend/platform/push/DisabledPushDeliveryProvider.java || fail 'missing push mode must fail closed'
+grep -Fq 'PROTECTED_PROFILES = Set.of("prod", "stage")' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'prod and stage must share the provider guard'
+grep -Fq 'prod/stage обязаны отключать payment и push providers' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected profiles must reject development providers at runtime'
+grep -Fq 'ProductionEnvironmentPostProcessor' backend/src/main/resources/META-INF/spring.factories || fail 'datasource guard must run before application context creation'
+grep -Fq 'ProductionRuntimeGuard.validateProtectedEnvironment(environment);' backend/src/main/java/com/walkingrpg/backend/operations/ProductionEnvironmentPostProcessor.java || fail 'environment post-processor must delegate to the canonical runtime guard'
+grep -Fq 'POSTGRESQL_JDBC_PREFIX' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must require PostgreSQL JDBC'
+grep -Fq 'sslmode=verify-full' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must require verified TLS'
+grep -Fq 'канонический DNS host' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject legacy numeric host aliases'
+grep -Fq 'multi-host spring.datasource.url запрещён' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject multi-host URL bypasses'
+grep -Fq 'duplicate JDBC parameters запрещены' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject duplicate JDBC parameters'
+grep -Fq 'ALLOWED_JDBC_PARAMETERS = Set.of("sslmode")' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource URL must allow only canonical sslmode'
+grep -Fq 'environment.getDefaultProfiles()' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected runtime guard must honor the effective default profile'
+grep -Fq '"spring.datasource.hikari.jdbc-url"' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject alternate Hikari URL'
+grep -Fq 'HIKARI_DATA_SOURCE_PROPERTIES_PREFIX' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject Hikari driver property overrides'
+grep -Fq 'HIKARI_CONNECTION_PROPERTY_SUFFIXES' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject relaxed Hikari connection aliases'
+grep -Fq 'HIKARI_CONFIGURATION_FILE_PROPERTY' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject external Hikari configuration files'
+grep -Fq '"spring.flyway.url"' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject alternate Flyway connection settings'
+grep -Fq 'FLYWAY_JDBC_PROPERTIES_PREFIX' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject Flyway driver property overrides'
+grep -Fq 'walking_rpg_local' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject the local password'
+grep -Fq 'requireProviderAvailability(commandType);' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'purchase availability must be checked before new state mutation'
+grep -Fq 'withEffectiveRemoteConfig(readResponse(processed.responseJson()))' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'idempotent replay must re-project current provider capabilities'
+grep -Fq 'paymentProvider.isAvailable()' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'effective sandbox capability must include provider availability'
+grep -Fq 'config.put("backgroundHealthSyncEnabled", false);' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'background health must remain disabled'
+grep -Fq 'sandboxPaymentsEnabled нельзя включить без payment provider' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformAdminService.java || fail 'admin config must not enable unavailable sandbox payment'
+grep -Fq 'if (!pushDeliveryProvider.isAvailable())' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformAdminService.java || fail 'disabled push must be rejected before new state mutation'
+grep -Fq 'this.sandboxPaymentsSupported = !kReleaseMode' mobile/lib/features/platform/presentation/platform_screen.dart || fail 'release mobile must disable sandbox payments'
+grep -Fq '!snapshot.isCached' mobile/lib/features/platform/presentation/platform_screen.dart || fail 'cached platform snapshots must not expose sandbox purchase'
+grep -Fq 'snapshot.remoteConfig.sandboxPaymentsEnabled' mobile/lib/features/platform/presentation/platform_screen.dart || fail 'mobile purchase UI must follow effective remote capability'
+grep -Fq "'{sandboxPaymentsEnabled}'" backend/src/main/resources/db/migration/V12__disable_development_providers.sql || fail 'V12 must disable sandbox payments'
+grep -Fq "'{backgroundHealthSyncEnabled}'" backend/src/main/resources/db/migration/V12__disable_development_providers.sql || fail 'V12 must disable background health'
+V12_FALSE_VALUES=$(grep -Fc "'false'::jsonb" backend/src/main/resources/db/migration/V12__disable_development_providers.sql || true)
+[ "$V12_FALSE_VALUES" -ge 2 ] || fail 'V12 development capability values must be false'
+grep -Fq 'ProductionRuntimeGuardTest' .github/workflows/ci.yml || fail 'production runtime guard tests must run in CI'
+grep -Fq 'PlatformProviderConfigurationTest' .github/workflows/ci.yml || fail 'provider configuration tests must run in CI'
+grep -Fq 'PlatformAdminServiceProviderTest' .github/workflows/ci.yml || fail 'admin provider tests must run in CI'
+grep -Fq 'ProductionProviderIsolationMigrationTest' .github/workflows/ci.yml || fail 'provider isolation migration test must run in CI'
 
 printf '%s\n' 'Checking temporary transport files...'
 if find .github -type f \( -name '*overlay*' -o -name 'export-*-source.yml' -o -name 'apply-*.yml' -o -name '*ci-trigger*' \) -print | grep -q .; then
@@ -81,8 +160,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 6:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V6: {versions}')
+if versions != expected or not versions or versions[-1] < 12:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V12: {versions}')
 print('Flyway versions:', versions)
 PY
 

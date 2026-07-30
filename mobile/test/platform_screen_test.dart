@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
+import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/presentation/platform_screen.dart';
 
@@ -253,6 +256,17 @@ void main() {
     expect(find.text('Баланс ENERGY сейчас недоступен'), findsOneWidget);
     expect(commands, 0);
 
+    await tester.scrollUntilVisible(
+      find.text('Косметика'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.byKey(const Key('platform-buy-cosmetic-spark-halo')),
+      findsNothing,
+    );
+    expect(_sandboxText(), findsNothing);
+
     final Finder refreshFinder = find.widgetWithText(
       OutlinedButton,
       'Обновить журнал',
@@ -307,4 +321,311 @@ void main() {
     expect(find.text('Потратить 10 ENERGY'), findsNothing);
     expect(commands, 0);
   });
+
+  testWidgets('fresh enabled journal submits sandbox purchase', (
+    WidgetTester tester,
+  ) async {
+    final List<String> commands = <String>[];
+    final PlatformSnapshot snapshot = platformSnapshot();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PlatformScreen(
+          loader: () async => snapshot,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+          sandboxPaymentsSupported: true,
+          commandExecutor:
+              ({
+                required String commandType,
+                required Map<String, Object?> payload,
+                required String idempotencyKey,
+              }) async {
+                commands.add(commandType);
+                return platformCommandResult(
+                  commandType: commandType,
+                  idempotencyKey: idempotencyKey,
+                  snapshot: snapshot,
+                );
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder buy = find.byKey(
+      const Key('platform-buy-cosmetic-spark-halo'),
+    );
+    await tester.scrollUntilVisible(
+      buy,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    expect(_sandboxText(), findsWidgets);
+    await tester.tap(buy);
+    await tester.pumpAndSettle();
+
+    expect(commands, <String>['BUY_COSMETIC']);
+  });
+
+  testWidgets(
+    'accepted command snapshot keeps sandbox disabled after a stale reload',
+    (WidgetTester tester) async {
+      final PlatformSnapshot initial = platformSnapshot(stateVersion: 40);
+      final PlatformSnapshot staleEnabled = platformSnapshot(stateVersion: 41);
+      final PlatformSnapshot acceptedDisabled = platformSnapshot(
+        stateVersion: 42,
+        sandboxPaymentsEnabled: false,
+      );
+      final Completer<PlatformSnapshot> staleLoad =
+          Completer<PlatformSnapshot>();
+      final Completer<PlatformCommandResult> acceptedCommand =
+          Completer<PlatformCommandResult>();
+      final List<String> commands = <String>[];
+      int generation = 0;
+      int loads = 0;
+      late StateSetter setHostState;
+
+      Future<PlatformSnapshot> loader() {
+        loads += 1;
+        return loads == 1
+            ? Future<PlatformSnapshot>.value(initial)
+            : staleLoad.future;
+      }
+
+      Future<HomeSnapshot> homeLoader() async => HomeSnapshot.demo;
+
+      Future<PlatformCommandResult> commandExecutor({
+        required String commandType,
+        required Map<String, Object?> payload,
+        required String idempotencyKey,
+      }) {
+        commands.add(commandType);
+        if (commands.length == 1) {
+          return acceptedCommand.future;
+        }
+        return Future<PlatformCommandResult>.value(
+          platformCommandResult(
+            commandType: commandType,
+            idempotencyKey: idempotencyKey,
+            snapshot: acceptedDisabled,
+          ),
+        );
+      }
+
+      final PlatformSnapshotLoader stableLoader = loader;
+      final PlatformHomeLoader stableHomeLoader = homeLoader;
+      final PlatformCommandExecutor stableCommandExecutor = commandExecutor;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              setHostState = setState;
+              return PlatformScreen(
+                loader: stableLoader,
+                homeLoader: stableHomeLoader,
+                recordExperimentExposures: false,
+                authoritativeRefreshGeneration: generation,
+                sandboxPaymentsSupported: true,
+                commandExecutor: stableCommandExecutor,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder buy = find.byKey(
+        const Key('platform-buy-cosmetic-spark-halo'),
+      );
+      await tester.scrollUntilVisible(
+        buy,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final VoidCallback retainedPurchaseCallback = tester
+          .widget<FilledButton>(buy)
+          .onPressed!;
+
+      retainedPurchaseCallback();
+      await tester.pump();
+      expect(commands, <String>['BUY_COSMETIC']);
+
+      setHostState(() {
+        generation += 1;
+      });
+      await tester.pump();
+      expect(loads, 2);
+
+      acceptedCommand.complete(
+        platformCommandResult(
+          commandType: 'BUY_COSMETIC',
+          idempotencyKey: 'accepted-command',
+          snapshot: acceptedDisabled,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      staleLoad.complete(staleEnabled);
+      await tester.pump();
+      setHostState(() {});
+      await tester.pumpAndSettle();
+
+      expect(loads, 2);
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .jumpTo(0);
+      await tester.pump();
+      expect(find.text('Глава из 18 узлов · состояние 42'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Косметика'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        find.byKey(const Key('platform-buy-cosmetic-spark-halo')),
+        findsNothing,
+      );
+      expect(_sandboxText(), findsNothing);
+
+      retainedPurchaseCallback();
+      await tester.pumpAndSettle();
+      expect(commands, <String>['BUY_COSMETIC']);
+    },
+  );
+
+  testWidgets(
+    'sandbox-disabled journal hides purchase UI but keeps owned equip action',
+    (WidgetTester tester) async {
+      final List<String> commands = <String>[];
+      final PlatformSnapshot snapshot = platformSnapshot(
+        ownedCosmetics: const <String>['pilot-scarf', 'spark-halo'],
+        sandboxPaymentsEnabled: false,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlatformScreen(
+            loader: () async => snapshot,
+            homeLoader: () async => HomeSnapshot.demo,
+            recordExperimentExposures: false,
+            sandboxPaymentsSupported: true,
+            commandExecutor:
+                ({
+                  required String commandType,
+                  required Map<String, Object?> payload,
+                  required String idempotencyKey,
+                }) async {
+                  commands.add(commandType);
+                  return platformCommandResult(
+                    commandType: commandType,
+                    idempotencyKey: idempotencyKey,
+                    snapshot: snapshot,
+                  );
+                },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder equip = find.byKey(
+        const Key('platform-equip-cosmetic-spark-halo'),
+      );
+      await tester.scrollUntilVisible(
+        equip,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Покупки сейчас недоступны.'), findsOneWidget);
+      expect(_sandboxText(), findsNothing);
+      expect(find.text('Купить'), findsNothing);
+      await tester.tap(equip);
+      await tester.pumpAndSettle();
+
+      expect(commands, <String>['EQUIP_COSMETIC']);
+    },
+  );
+
+  testWidgets(
+    'release capability hides purchase UI and rejects a stale callback',
+    (WidgetTester tester) async {
+      final PlatformSnapshot snapshot = platformSnapshot();
+      final List<String> commands = <String>[];
+      bool sandboxPaymentsSupported = true;
+      late StateSetter setHostState;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              setHostState = setState;
+              return PlatformScreen(
+                loader: () async => snapshot,
+                homeLoader: () async => HomeSnapshot.demo,
+                recordExperimentExposures: false,
+                sandboxPaymentsSupported: sandboxPaymentsSupported,
+                commandExecutor:
+                    ({
+                      required String commandType,
+                      required Map<String, Object?> payload,
+                      required String idempotencyKey,
+                    }) async {
+                      commands.add(commandType);
+                      return platformCommandResult(
+                        commandType: commandType,
+                        idempotencyKey: idempotencyKey,
+                        snapshot: snapshot,
+                      );
+                    },
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder buy = find.byKey(
+        const Key('platform-buy-cosmetic-spark-halo'),
+      );
+      await tester.scrollUntilVisible(
+        buy,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final VoidCallback stalePurchaseCallback = tester
+          .widget<FilledButton>(buy)
+          .onPressed!;
+
+      setHostState(() {
+        sandboxPaymentsSupported = false;
+      });
+      await tester.pumpAndSettle();
+      stalePurchaseCallback();
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Косметика'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(
+        find.byKey(const Key('platform-buy-cosmetic-spark-halo')),
+        findsNothing,
+      );
+      expect(find.text('Ореол Искры'), findsOneWidget);
+      expect(_sandboxText(), findsNothing);
+      expect(commands, isEmpty);
+    },
+  );
+}
+
+Finder _sandboxText() {
+  return find.textContaining(
+    RegExp('sandbox', caseSensitive: false),
+    findRichText: true,
+  );
 }

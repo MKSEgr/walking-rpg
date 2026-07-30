@@ -91,6 +91,18 @@
 - coarse mobile command failure categories без вывода raw payload/key/error в
   presentation;
 - ADR 0024 о безопасном recovery и изоляции telemetry;
+- явные provider modes:
+  `walking-rpg.providers.payment=sandbox|disabled` и
+  `walking-rpg.providers.push=development|disabled`;
+- disabled payment/push providers и protected-profile startup guard для
+  `stage`/`prod`;
+- отдельный `application-stage.yml` и fail-closed PostgreSQL datasource
+  validation с обязательным verified TLS;
+- Flyway V12, выключающий `sandboxPaymentsEnabled` и
+  `backgroundHealthSyncEnabled` во всех существующих remote-config snapshots;
+- effective `sandboxPaymentsEnabled`, учитывающий доступность provider, и
+  скрытие sandbox purchase UI в release build и для disabled/cached snapshot;
+- ADR 0025 о production provider isolation;
 
 ### Changed
 
@@ -135,6 +147,16 @@
 - v1 command store остаётся совместимым: telemetry lane выводится из
   сохранённого payload, а `lastFailureCategory` является optional additive
   полем.
+- sandbox payment и development push больше не регистрируются безусловно:
+  они требуют matching property и активный `local`/`test`, а `stage`/`prod`
+  принудительно используют `disabled`;
+- новая недоступная покупка отклоняется до создания user/payment state, но
+  replay сохранённой покупки возвращает прежний outcome/state без нового
+  provider call или mutation; capability fields проецируются заново и могут
+  стать `false` после disable;
+- platform snapshot не объявляет sandbox payment доступным при disabled
+  provider, а mobile не показывает purchase action в release build, для
+  `false` или cached snapshot.
 
 ## [0.1.0] — 2026-07-25
 

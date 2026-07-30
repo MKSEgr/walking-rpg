@@ -4,6 +4,8 @@ import java.time.Instant;
 
 public interface PaymentProvider {
 
+    boolean isAvailable();
+
     PaymentReceipt purchase(
             String userId,
             String productId,
