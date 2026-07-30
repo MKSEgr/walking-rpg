@@ -991,7 +991,11 @@ class ProductionOperationsGuardTest {
     private static String expectedDiagnosticProperty(String propertyName) {
         String indexedReadinessProperty =
                 "management.endpoint.health.group.readiness.include";
-        if (propertyName.startsWith(indexedReadinessProperty + "[")) {
+        if (propertyName.startsWith(indexedReadinessProperty + "[")
+                || propertyName.startsWith(
+                        "management.endpoint.health.group[readiness]"
+                                + ".include["
+                )) {
             return indexedReadinessProperty;
         }
         for (String mapPrefix : List.of(
