@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ServletRequestPathUtils;
@@ -97,7 +98,7 @@ final class PublicIngressProtectionFilter extends OncePerRequestFilter {
             );
             writeError(
                     response,
-                    HttpServletResponse.SC_TOO_MANY_REQUESTS,
+                    HttpStatus.TOO_MANY_REQUESTS.value(),
                     "RATE_LIMITED",
                     "Слишком много запросов; повторите попытку позже"
             );
