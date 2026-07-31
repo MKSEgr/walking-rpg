@@ -16,8 +16,13 @@ CI создаёт технические release candidates. Подпись и �
 - [ ] Проверены metadata и SHA-256.
 - [ ] Проверены backend JAR и SHA-256.
 - [ ] Проверены Android unsigned AAB и SHA-256.
+- [ ] Build metadata и Gradle verification подтверждают `compileSdk = 36`,
+      `targetSdk = 36` и `minSdk = 26`; manifest финального AAB отдельно
+      проверен через `bundletool`.
 - [ ] Проверены iOS no-codesign archive и SHA-256.
-- [ ] Version/build/commit совпадают с принятым PR.
+- [ ] Metadata, backend, Android и iOS candidates собраны из одного exact
+      source SHA и tree; version/build/commit/tree согласованы внутри одного
+      workflow run.
 
 ## Identity gate
 
@@ -49,10 +54,24 @@ CI создаёт технические release candidates. Подпись и �
 
 ## Protected signing environment
 
-- [ ] Android AAB подписан production upload key вне source tree.
-- [ ] iOS archive подписан Distribution identity/profile.
-- [ ] Секреты доступны только protected environment.
+- [ ] Финальные Android application ID и iOS Bundle ID согласованы с
+      store records и production OIDC redirects.
+- [ ] Android external signing properties и upload keystore находятся вне
+      source tree; release не использует debug key.
+- [ ] Android AAB подписан production upload key, signature/fingerprint и
+      SHA-256 проверены.
+- [ ] iOS archive подписан Distribution identity/profile; entitlements,
+      embedded profile и SHA-256 проверены.
+- [ ] Секреты доступны только protected environment и удалены из временного
+      runner storage после build.
+- [ ] Signed artifacts собраны из текущего post-merge `master` SHA, для
+      которого Standard CI и Release quality push checks зелёные.
+- [ ] `master` tree SHA совпадает с head tree CODEOWNER-approved PR; номер PR,
+      оба tree SHA и отдельный owner signing approval сохранены в evidence.
 - [ ] Публикация требует отдельного ручного approval владельца.
+
+Порядок и допустимое evidence:
+[PROTECTED_MOBILE_SIGNING.md](PROTECTED_MOBILE_SIGNING.md).
 
 ## Store и privacy
 

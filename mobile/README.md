@@ -259,6 +259,7 @@ bond, inventory или статуса экспедиции не выполняе
 
 ### Android
 
+- project `compileSdk = 36` and `targetSdk = 36`;
 - project `minSdk = 26`;
 - фактическая доступность Health Connect проверяется runtime;
 - `READ_STEPS`;
@@ -460,6 +461,12 @@ Release-quality builds read optional repository variables
 `.invalid` endpoints so unsigned technical artifacts remain configuration-valid
 without contacting a real identity system; production signing must provide the
 deployment values.
+
+Ordinary release-quality builds remain unsigned. Protected Android signing is
+an explicit opt-in through an external `walkingRpgSigningProperties` Gradle
+property; repository-local key files and debug-key fallback are rejected.
+Android/iOS signing prerequisites, invocation and evidence rules are documented
+in [PROTECTED_MOBILE_SIGNING.md](../docs/PROTECTED_MOBILE_SIGNING.md).
 
 Access, refresh and ID tokens are stored in Keychain/Android secure storage.
 A secure owner tombstone preserves account-switch cleanup across process restarts, and

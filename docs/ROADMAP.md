@@ -165,6 +165,33 @@ Roadmap отражает снижение рисков. Статусы:
 - [ ] Утвердить backup policy/RPO/RTO/PITR и выполнить датированный restore
       реального backup в изолированной среде
 
+## Milestone 9 — Store candidate packaging
+
+### CODE_COMPLETE
+
+- [x] Android `compileSdk` и `targetSdk` явно закреплены на API 36 при
+      сохранении `minSdk = 26`
+- [x] Release metadata и release-policy проверяют явный SDK contract, а
+      release artifacts собираются из exact PR head
+- [x] Обычный CI остаётся unsigned/no-codesign и не использует debug signing
+- [x] Android protected signing включается только явным external
+      properties-file contract; неполные, лишние и repository-local inputs
+      отклоняются fail-closed
+- [x] Synthetic signing rehearsal использует одноразовый внешний keystore, не
+      сохраняет подписанный artifact и не выдаётся за production validation
+- [x] CI selector gate закрепляет каждый backend `*Test` ровно за одним
+      штатным job, кроме отдельного synthetic restore drill
+
+### EXTERNAL_VALIDATION_REQUIRED
+
+- [ ] Утвердить окончательные Android application ID, iOS Bundle ID и
+      соответствующие production OIDC clients/redirects
+- [ ] Настроить Apple/Google developer accounts, Play App Signing, upload key,
+      Distribution identity и App Store provisioning profile
+- [ ] Собрать, проверить и установить подписанные TestFlight / Play internal
+      candidates из проверенного post-merge `master` SHA, tree которого
+      совпадает с CODEOWNER-approved PR
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

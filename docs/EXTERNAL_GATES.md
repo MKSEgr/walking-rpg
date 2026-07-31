@@ -45,7 +45,13 @@ deployment/restore.
 
 ## Signing и публикация
 
-CI создаёт Android unsigned AAB и iOS no-codesign app. Production signing, submission и store review — `EXTERNAL_VALIDATION_REQUIRED`.
+CI создаёт Android API 36 unsigned AAB и iOS no-codesign app. Android
+external-signing wiring проверяется только synthetic одноразовым ключом без
+сохраняемого signed artifact. Production signing, final application IDs,
+submission и store review — `EXTERNAL_VALIDATION_REQUIRED`.
+
+Порядок защищённой сборки и допустимое evidence:
+[PROTECTED_MOBILE_SIGNING.md](PROTECTED_MOBILE_SIGNING.md).
 
 ## Closed beta
 

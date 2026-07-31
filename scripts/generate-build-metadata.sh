@@ -5,11 +5,12 @@ ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 OUTPUT_PATH=${1:-"$ROOT_DIR/build/release/build-metadata.json"}
 
 : "${GIT_SHA:=$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || printf '%s' unknown)}"
+: "${GIT_TREE:=$(git -C "$ROOT_DIR" rev-parse 'HEAD^{tree}' 2>/dev/null || printf '%s' unknown)}"
 : "${SOURCE_DATE_EPOCH:=$(git -C "$ROOT_DIR" show -s --format=%ct HEAD 2>/dev/null || printf '%s' 0)}"
 : "${FLUTTER_VERSION:=3.44.7}"
 : "${JAVA_VERSION:=21}"
 
-export ROOT_DIR OUTPUT_PATH GIT_SHA SOURCE_DATE_EPOCH FLUTTER_VERSION JAVA_VERSION
+export ROOT_DIR OUTPUT_PATH GIT_SHA GIT_TREE SOURCE_DATE_EPOCH FLUTTER_VERSION JAVA_VERSION
 python3 - <<'PY'
 import datetime as dt
 import json
@@ -22,6 +23,9 @@ out = pathlib.Path(os.environ['OUTPUT_PATH'])
 sha = os.environ['GIT_SHA'].strip()
 if not re.fullmatch(r'(?:[0-9a-f]{40}|unknown)', sha):
     raise SystemExit('GIT_SHA must be a 40-character lowercase SHA or unknown')
+tree = os.environ['GIT_TREE'].strip()
+if not re.fullmatch(r'(?:[0-9a-f]{40}|unknown)', tree):
+    raise SystemExit('GIT_TREE must be a 40-character lowercase SHA or unknown')
 epoch = int(os.environ['SOURCE_DATE_EPOCH'])
 if epoch < 0:
     raise SystemExit('SOURCE_DATE_EPOCH must be non-negative')
@@ -40,15 +44,26 @@ content_java = (root / 'backend/src/main/java/com/walkingrpg/backend/expedition/
 content = re.search(r'CONTENT_VERSION\s*=\s*"([^"]+)"', content_java)
 gradle = (root / 'mobile/android/app/build.gradle.kts').read_text(encoding='utf-8')
 android_id = re.search(r'applicationId\s*=\s*"([^"]+)"', gradle)
+compile_sdk = re.search(r'compileSdk\s*=\s*(\d+)', gradle)
 min_sdk = re.search(r'minSdk\s*=\s*(\d+)', gradle)
-if not migrations or not content or not android_id or not min_sdk:
+target_sdk = re.search(r'targetSdk\s*=\s*(\d+)', gradle)
+if (
+    not migrations
+    or not content
+    or not android_id
+    or not compile_sdk
+    or not min_sdk
+    or not target_sdk
+):
     raise SystemExit('Unable to derive release metadata from source')
 
 metadata = {
     'android': {
         'applicationId': android_id.group(1),
+        'compileSdk': int(compile_sdk.group(1)),
         'minSdk': int(min_sdk.group(1)),
         'releaseSigning': 'external-protected-environment',
+        'targetSdk': int(target_sdk.group(1)),
     },
     'application': {
         'buildNumber': int(version.group(2)),
@@ -65,11 +80,12 @@ metadata = {
         'deploymentTarget': '14.0',
         'releaseSigning': 'external-protected-environment',
     },
-    'schemaVersion': 1,
+    'schemaVersion': 2,
     'source': {
         'commitSha': sha,
         'dateUtc': dt.datetime.fromtimestamp(epoch, tz=dt.timezone.utc).isoformat().replace('+00:00', 'Z'),
         'epoch': epoch,
+        'treeSha': tree,
     },
 }
 out.parent.mkdir(parents=True, exist_ok=True)
