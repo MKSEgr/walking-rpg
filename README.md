@@ -44,6 +44,8 @@
   команд с owner-scoped recovery center;
 - protected `stage`/`prod` backend profiles с fail-closed datasource и
   отключёнными sandbox payment/development push providers;
+- explicit Android API 36 target и fail-closed external protected-signing
+  contract при unsigned/no-codesign обычном CI;
 - effective sandbox-payment capability, учитывающая backend provider
   availability; mobile скрывает purchase UI в release build, при `false` и
   для cached snapshot;
@@ -279,6 +281,7 @@ Synthetic PostgreSQL backup/restore drill + sanitized evidence
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build
+Android API 36 / external-signing scaffold rehearsal
 iOS Simulator debug build
 ```
 
@@ -304,3 +307,6 @@ iOS Simulator debug build
 - подтверждение темпа первого пути и первой недели на реальной alpha cohort.
 
 Дальнейший порядок работ: [docs/ROADMAP.md](docs/ROADMAP.md).
+
+Protected signing не использует repository-local key files и описан отдельно:
+[docs/PROTECTED_MOBILE_SIGNING.md](docs/PROTECTED_MOBILE_SIGNING.md).

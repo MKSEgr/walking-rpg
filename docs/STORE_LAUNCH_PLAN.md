@@ -311,13 +311,19 @@ restore evidence.
 2. `production identity/authentication boundary`;
 3. `account settings + export/delete UI + local cleanup`;
 4. `production environment/config/operations hardening`;
-5. `target API 36 + production signing scaffolding`;
+5. `target API 36 + production signing scaffolding` — `CODE_COMPLETE`;
 6. `device-validation fixes`;
 7. `store metadata/declarations pack`;
 8. `signed TestFlight / Play internal and closed-beta candidates`;
 9. `submission fixes`.
 
-Пункты 1–3 и A4a–A4b имеют автономную реализацию в коде. Для пункта 3 до загрузки
+Пункты 1–3, A4a–A4b и code-level часть пункта 5 имеют автономную реализацию в
+коде. Пункт 5 закрепляет API 36, exact-source unsigned/no-codesign candidates и
+fail-closed Android external signing contract, но synthetic rehearsal не
+является production signing. Подробности:
+[PROTECTED_MOBILE_SIGNING.md](PROTECTED_MOBILE_SIGNING.md).
+
+Для пункта 3 до загрузки
 в магазины остаются end-to-end проверка с production IdP и решение о судьбе
 внешней identity-provider учётной записи. A4b не закрывает и не валидирует
 никакой A4 external gate.

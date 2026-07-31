@@ -17,6 +17,7 @@ for file in \
   docs/ROADMAP.md \
   docs/RELEASE_CHECKLIST.md \
   docs/EXTERNAL_GATES.md \
+  docs/PROTECTED_MOBILE_SIGNING.md \
   docs/DEVICE_VALIDATION_PROTOCOL.md \
   docs/evidence/health-device-validation-template.md \
   docs/STORE_DECLARATIONS.md \
@@ -29,6 +30,7 @@ for file in \
   docs/adr/0022-durable-event-result-handoff.md \
   docs/adr/0025-production-provider-isolation.md \
   docs/adr/0026-production-operational-controls.md \
+  docs/adr/0027-api-36-and-protected-mobile-signing.md \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
@@ -65,6 +67,8 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/migration/ProductionProviderIsolationMigrationTest.java \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
+  scripts/ci/verify-android-release-config.sh \
+  scripts/ci/verify_backend_test_selection.py \
   scripts/ci/wait_for_required_checks.py \
   scripts/ci/test_wait_for_required_checks.py \
   scripts/operations/run-synthetic-backup-restore-drill.sh \
@@ -266,8 +270,13 @@ if grep -Fq 'timeout --foreground' scripts/operations/run-synthetic-backup-resto
   fail 'foreground timeout would leave forked test processes outside the hard budget'
 fi
 grep -Fq '      clean \' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill must discard stale Maven build output'
-grep -Fq 'ref: ${{ github.event.pull_request.head.sha || github.sha }}' .github/workflows/release-quality.yml || fail 'backup drill checkout must bind to the exact PR head'
+RELEASE_CHECKOUT_COUNT=$(grep -Fc 'uses: actions/checkout@v4' .github/workflows/release-quality.yml)
+EXACT_RELEASE_CHECKOUT_COUNT=$(grep -Fc 'ref: ${{ github.event.pull_request.head.sha || github.sha }}' .github/workflows/release-quality.yml)
+[ "$RELEASE_CHECKOUT_COUNT" -eq 5 ] || fail 'Release quality must keep exactly five source checkout steps'
+[ "$EXACT_RELEASE_CHECKOUT_COUNT" -eq "$RELEASE_CHECKOUT_COUNT" ] || fail 'every Release quality checkout must bind to the exact workflow source SHA'
 grep -Fq 'EXPECTED_SOURCE_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}' .github/workflows/release-quality.yml || fail 'backup drill evidence must bind to the exact tested SHA'
+grep -Fq "export GIT_TREE=\"\$(git rev-parse 'HEAD^{tree}')\"" .github/workflows/release-quality.yml || fail 'release metadata must record the exact workflow source tree'
+grep -Fq "'treeSha': tree" scripts/generate-build-metadata.sh || fail 'release metadata must include the exact Git tree'
 grep -Fq 'steps.upload-evidence.outputs.artifact-digest' .github/workflows/release-quality.yml || fail 'retained evidence provenance must record the artifact digest'
 if grep -Fq 'walking-rpg-synthetic.dump' .github/workflows/release-quality.yml; then
   fail 'backup archive or row payload must not be uploaded as a CI artifact'
@@ -299,12 +308,11 @@ print('Flyway versions:', versions)
 PY
 
 printf '%s\n' 'Checking mobile release configuration...'
-grep -Fq 'minSdk = 26' mobile/android/app/build.gradle.kts || fail 'Android minSdk must remain 26'
-grep -Fq 'signingConfig = null' mobile/android/app/build.gradle.kts || fail 'Android CI release candidate must be unsigned'
-if grep -Fq 'signingConfigs.getByName("debug")' mobile/android/app/build.gradle.kts; then
-  fail 'Android release must never use the debug signing key'
-fi
+bash scripts/ci/verify-android-release-config.sh --static
 grep -Fq "platform :ios, '14.0'" mobile/ios/Podfile || fail 'Podfile deployment target must be iOS 14.0'
+
+printf '%s\n' 'Checking backend CI test selection...'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_backend_test_selection.py
 
 printf '%s\n' 'Checking mobile authentication boundary...'
 grep -Fq 'flutter_appauth: 12.0.2' mobile/pubspec.yaml || fail 'flutter_appauth must be pinned'
@@ -347,12 +355,45 @@ TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 for output in one two; do
   GIT_SHA=0000000000000000000000000000000000000000 \
+  GIT_TREE=1111111111111111111111111111111111111111 \
   SOURCE_DATE_EPOCH=1785139200 \
   FLUTTER_VERSION=3.44.7 \
   JAVA_VERSION=21 \
     sh scripts/generate-build-metadata.sh "$TMP_DIR/$output.json" >/dev/null
 done
 cmp "$TMP_DIR/one.json" "$TMP_DIR/two.json" || fail 'build metadata is not reproducible'
+PYTHONDONTWRITEBYTECODE=1 python3 - "$TMP_DIR/one.json" <<'PY'
+import json
+import pathlib
+import sys
+
+metadata = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+if metadata.get("schemaVersion") != 2:
+    raise SystemExit("build metadata schemaVersion must be 2")
+android = metadata.get("android")
+if not isinstance(android, dict):
+    raise SystemExit("build metadata must contain an Android object")
+expected = {
+    "compileSdk": 36,
+    "minSdk": 26,
+    "releaseSigning": "external-protected-environment",
+    "targetSdk": 36,
+}
+for key, value in expected.items():
+    if android.get(key) != value:
+        raise SystemExit(
+            f"build metadata Android {key} must be {value!r}, got {android.get(key)!r}"
+        )
+print("Build metadata Android release contract:", expected)
+source = metadata.get("source")
+if not isinstance(source, dict):
+    raise SystemExit("build metadata must contain a source object")
+if source.get("commitSha") != "0" * 40:
+    raise SystemExit("build metadata commitSha must match the exact source commit")
+if source.get("treeSha") != "1" * 40:
+    raise SystemExit("build metadata treeSha must match the exact source tree")
+print("Build metadata source provenance:", source["commitSha"], source["treeSha"])
+PY
 
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git diff --check

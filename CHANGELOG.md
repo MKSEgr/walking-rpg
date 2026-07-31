@@ -103,6 +103,13 @@
 - effective `sandboxPaymentsEnabled`, учитывающий доступность provider, и
   скрытие sandbox purchase UI в release build и для disabled/cached snapshot;
 - ADR 0025 о production provider isolation;
+- явный Android `compileSdk` / `targetSdk` API 36 contract при сохранении
+  `minSdk = 26`;
+- fail-closed Android protected-signing boundary с внешними properties и
+  upload keystore без repository-local или debug-key fallback;
+- synthetic signing rehearsal без сохраняемого signed artifact и runbook для
+  Android/iOS protected signing;
+- ADR 0027 об API 36 и protected mobile signing;
 
 ### Changed
 
@@ -157,6 +164,10 @@
 - platform snapshot не объявляет sandbox payment доступным при disabled
   provider, а mobile не показывает purchase action в release build, для
   `false` или cached snapshot.
+- release metadata и backend/Android/iOS candidates привязаны к одному exact
+  source SHA/tree; protected signing связывает post-merge `master` с
+  CODEOWNER-approved PR по tree SHA, а backend CI selector gate предотвращает
+  пропуск новых тестов.
 
 ## [0.1.0] — 2026-07-25
 

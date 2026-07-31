@@ -45,6 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           export GIT_SHA="$(git rev-parse HEAD)"
+          export GIT_TREE="$(git rev-parse 'HEAD^{tree}')"
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
           bash scripts/generate-build-metadata.sh build/release/build-metadata.json
           bash scripts/generate-build-metadata.sh build/release/build-metadata-copy.json
@@ -72,6 +73,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -177,6 +181,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -205,12 +212,20 @@ jobs:
             "--dart-define=OIDC_REDIRECT_URI=$RELEASE_CANDIDATE_OIDC_REDIRECT_URI" \
             "--dart-define=OIDC_POST_LOGOUT_REDIRECT_URI=$RELEASE_CANDIDATE_OIDC_POST_LOGOUT_REDIRECT_URI"
 
+      - name: Verify Android API level and signing scaffold
+        run: bash ../scripts/ci/verify-android-release-config.sh --rehearse
+
       - name: Verify and digest AAB
         shell: bash
         run: |
           set -euo pipefail
           aab=build/app/outputs/bundle/release/app-release.aab
           test -s "$aab"
+          if unzip -Z1 "$aab" \
+            | grep -Ei '^META-INF/[^/]+\.(RSA|DSA|EC|SF)$' >/dev/null; then
+            echo "Release-candidate AAB unexpectedly contains signing entries" >&2
+            exit 1
+          fi
           sha256sum "$aab" > build/app/outputs/bundle/release/app-release.aab.sha256
 
       - name: Upload Android release candidate
@@ -233,6 +248,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
