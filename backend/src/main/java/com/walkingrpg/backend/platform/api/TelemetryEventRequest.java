@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
 public record TelemetryEventRequest(
         @NotBlank @Size(max = 100) String eventName,
         Instant occurredAt,
-        Map<String, Object> attributes
+        @Size(max = 64) Map<String, Object> attributes
 ) {
     public TelemetryEventRequest {
         attributes = attributes == null ? Map.of() : Map.copyOf(attributes);

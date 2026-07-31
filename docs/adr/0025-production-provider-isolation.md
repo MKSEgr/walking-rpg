@@ -107,3 +107,5 @@ the same profile topology together with resolved provider properties.
 - Real production datasource provisioning, deployment, monitoring,
   backup/restore drill, signing, store submission and physical-device
   validation remain external gates.
+- The secret-free synthetic round-trip from ADR 0026 validates tooling only
+  and does not satisfy the real backup/restore gate above.

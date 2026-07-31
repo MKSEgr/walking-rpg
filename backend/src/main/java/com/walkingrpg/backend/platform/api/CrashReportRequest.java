@@ -9,10 +9,10 @@ import jakarta.validation.constraints.Size;
 public record CrashReportRequest(
         @NotBlank @Size(max = 32) String platform,
         @NotBlank @Size(max = 64) String appVersion,
-        @NotBlank @Size(max = 200) String errorType,
+        @NotBlank @Size(max = 160) String errorType,
         @NotBlank @Size(max = 2000) String message,
-        String stackTrace,
-        Map<String, Object> context,
+        @Size(max = 32768) String stackTrace,
+        @Size(max = 64) Map<String, Object> context,
         Instant occurredAt
 ) {
     public CrashReportRequest {

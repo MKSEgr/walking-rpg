@@ -189,14 +189,18 @@ cd backend
 PostgreSQL credentials и verified-TLS JDBC URL; пример переменных без секретов
 находится в `backend/.env.production.example`.
 
-Наличие этих guard-ов не означает, что production database/IdP или реальные
-payment/push providers уже настроены. Deployment, monitoring и фактический
-backup/restore drill остаются отдельными gates.
+Наличие этих guard-ов и synthetic backup/restore CI не означает, что
+production database/IdP или реальные payment/push providers уже настроены.
+Deployment, monitoring и датированный restore реального backup остаются
+отдельными gates.
 
 Основные endpoint-ы:
 
 ```text
-GET  /actuator/health
+GET  /livez
+GET  /readyz
+GET  127.0.0.1:8081/actuator/health/{liveness,readiness}
+GET  127.0.0.1:8081/actuator/prometheus (ROLE_ADMIN)
 GET  /api/v1/system/info
 GET  /api/v1/home?localDate=YYYY-MM-DD
 POST /api/v1/activity/sync
@@ -271,6 +275,7 @@ Pull request CI выполняет:
 Project structure
 Backend compile + unit/API tests
 Flyway V1–V12 + PostgreSQL Testcontainers tests
+Synthetic PostgreSQL backup/restore drill + sanitized evidence
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
 Android debug APK build
@@ -290,8 +295,8 @@ iOS Simulator debug build
 
 - проверка на физических iPhone/Android и связках телефон + часы;
 - production IdP, APNs/FCM, store billing, signing и submission;
-- production database/deployment, monitoring/alerting и фактический
-  backup/restore drill;
+- production database/deployment, management network, monitoring/alerting,
+  backup policy/PITR и датированный restore реального backup;
 - гарантированная background health/command delivery;
 - enforcement anti-fraud по источникам (текущий риск-контур работает в shadow
   mode);

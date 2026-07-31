@@ -12,6 +12,7 @@ import com.walkingrpg.backend.expedition.domain.ExpeditionIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionAdvance;
+import com.walkingrpg.backend.operations.JdbcStatementTimeouts;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -38,6 +39,7 @@ public class JdbcExpeditionRepository implements ExpeditionRepository {
                 + expeditionId;
         jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(LOCK_SQL)) {
+                JdbcStatementTimeouts.apply(jdbcTemplate, statement);
                 statement.setString(1, lockKey);
                 statement.execute();
             }

@@ -73,11 +73,18 @@ public class SecurityConfiguration {
                     authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     authorize.requestMatchers(
                             HttpMethod.GET,
-                            "/actuator/health",
-                            "/actuator/health/**",
+                            "/livez",
+                            "/readyz",
+                            "/actuator/health/liveness",
+                            "/actuator/health/readiness",
                             "/api/v1/system/info",
                             "/api/v1/content/bootstrap"
                     ).permitAll();
+                    authorize.requestMatchers(
+                            HttpMethod.GET,
+                            "/actuator/prometheus"
+                    ).hasRole("ADMIN");
+                    authorize.requestMatchers("/actuator/**").denyAll();
                     authorize.requestMatchers(
                             HttpMethod.POST,
                             "/api/v1/telemetry/events",

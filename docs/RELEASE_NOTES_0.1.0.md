@@ -1,6 +1,8 @@
 # Release notes — 0.1.0 technical candidate
 
-Этот candidate объединяет первый playable, 18-узловую главу, platform journal, durable mobile commands, server-authoritative economy/progression, risk shadow mode и release-quality pipeline.
+Этот candidate объединяет первый playable, 18-узловую главу, platform journal,
+durable mobile commands, server-authoritative economy/progression, risk shadow
+mode, bounded operational surface и release-quality pipeline.
 
 ## Проверяемые артефакты
 
@@ -10,4 +12,11 @@
 - deterministic build metadata;
 - SHA-256 для каждого candidate artifact.
 
-Артефакты не предназначены для прямой публикации: signing, store credentials, device evidence и beta rollout остаются внешними gates.
+CI дополнительно выполняет secret-free synthetic PostgreSQL backup/restore
+round-trip. Его evidence имеет `scope=SYNTHETIC_CI` и
+`productionValidated=false` и не является production artifact или датированным
+restore evidence.
+
+Артефакты не предназначены для прямой публикации: signing, store credentials,
+production DNS/TLS/deployment, management network/WAF, alerts, реальный
+backup/restore, device evidence и beta rollout остаются внешними gates.

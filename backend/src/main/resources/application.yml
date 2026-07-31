@@ -1,29 +1,121 @@
 spring:
   application:
     name: walking-rpg-backend
+    admin:
+      enabled: false
+  autoconfigure:
+    exclude: []
+  boot:
+    enableautoconfiguration: true
+  jmx:
+    enabled: false
+  lifecycle:
+    timeout-per-shutdown-phase: ${SHUTDOWN_PHASE_TIMEOUT:20s}
+  main:
+    lazy-initialization: false
+    register-shutdown-hook: true
+    web-application-type: servlet
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:walking_rpg}
     username: ${POSTGRES_USER:walking_rpg}
     password: ${POSTGRES_PASSWORD:walking_rpg_local}
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:5000}
+      register-mbeans: false
+      validation-timeout: ${DB_VALIDATION_TIMEOUT_MS:3000}
   flyway:
     enabled: true
     locations: classpath:db/migration
+  jdbc:
+    template:
+      query-timeout: ${DB_QUERY_TIMEOUT:10s}
+  mvc:
+    async:
+      request-timeout: ${HTTP_ASYNC_REQUEST_TIMEOUT:10s}
+    pathmatch:
+      matching-strategy: path-pattern-parser
+    servlet:
+      path: /
+  security:
+    filter:
+      dispatcher-types: async,error,forward,include,request
+  transaction:
+    default-timeout: ${DB_TRANSACTION_TIMEOUT:15s}
 
 server:
   port: ${BACKEND_PORT:8080}
   shutdown: graceful
+  forward-headers-strategy: none
+  max-http-request-header-size: ${HTTP_MAX_REQUEST_HEADER_SIZE:16KB}
+  servlet:
+    context-path: /
+  tomcat:
+    connection-timeout: ${HTTP_CONNECTION_TIMEOUT:5s}
+    keep-alive-timeout: ${HTTP_KEEP_ALIVE_TIMEOUT:15s}
+    mbeanregistry:
+      enabled: false
+    max-keep-alive-requests: ${HTTP_MAX_KEEP_ALIVE_REQUESTS:100}
+    max-parameter-count: ${HTTP_MAX_PARAMETER_COUNT:100}
+    max-swallow-size: ${HTTP_MAX_SWALLOW_SIZE:256KB}
 
 management:
+  server:
+    ssl:
+      enabled: false
+  observations:
+    http:
+      server:
+        requests:
+          name: http.server.requests
   endpoints:
+    access:
+      default: none
+      max-permitted: read-only
     web:
+      discovery:
+        enabled: false
       exposure:
-        include: health,info
+        include: health,prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        pushgateway:
+          enabled: false
   endpoint:
     health:
+      access: read-only
+      cache:
+        time-to-live: 0ms
       probes:
         enabled: true
+        add-additional-paths: true
+      show-components: never
+      show-details: never
+      status:
+        order: down,out-of-service,unknown,up
+        http-mapping:
+          down: 503
+          out-of-service: 503
+          unknown: 503
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
+    prometheus:
+      access: read-only
+      cache:
+        time-to-live: 0ms
+  metrics:
+    observations:
+      ignored-meters: []
+    tags:
+      application: ${spring.application.name}
+    web:
+      server:
+        max-uri-tags: 100
 
 info:
   app:
@@ -31,6 +123,23 @@ info:
     version: 0.1.0-SNAPSHOT
 
 walking-rpg:
+  operations:
+    public-ingress:
+      max-tracked-clients: ${PUBLIC_INGRESS_MAX_TRACKED_CLIENTS:10000}
+      client-idle-ttl: ${PUBLIC_INGRESS_CLIENT_IDLE_TTL:PT10M}
+      telemetry:
+        max-body-bytes: ${TELEMETRY_MAX_BODY_BYTES:16384}
+        client-requests-per-minute: ${TELEMETRY_CLIENT_REQUESTS_PER_MINUTE:60}
+        client-burst-capacity: ${TELEMETRY_CLIENT_BURST_CAPACITY:20}
+        global-requests-per-minute: ${TELEMETRY_GLOBAL_REQUESTS_PER_MINUTE:6000}
+        global-burst-capacity: ${TELEMETRY_GLOBAL_BURST_CAPACITY:1000}
+      crash:
+        max-body-bytes: ${CRASH_MAX_BODY_BYTES:65536}
+        client-requests-per-minute: ${CRASH_CLIENT_REQUESTS_PER_MINUTE:6}
+        client-burst-capacity: ${CRASH_CLIENT_BURST_CAPACITY:3}
+        global-requests-per-minute: ${CRASH_GLOBAL_REQUESTS_PER_MINUTE:600}
+        global-burst-capacity: ${CRASH_GLOBAL_BURST_CAPACITY:100}
+
   providers:
     payment: ${PAYMENT_PROVIDER:disabled}
     push: ${PUSH_PROVIDER:disabled}

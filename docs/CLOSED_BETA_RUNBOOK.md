@@ -8,6 +8,12 @@
 - crash ingestion и retention read model доступны;
 - определены owner, support channel и incident window.
 
+Backend operational topology, ingress limits, timeouts и synthetic
+backup/restore procedure описаны в
+[`PRODUCTION_OPERATIONS_RUNBOOK.md`](PRODUCTION_OPERATIONS_RUNBOOK.md).
+Synthetic evidence не заменяет deployed monitoring или restore реального
+backup.
+
 ## Cohorts
 
 Начинать с внутреннего cohort и расширять ступенчато. Для каждого этапа фиксируются build, число приглашённых и активных, дата старта и stop conditions.
@@ -68,6 +74,8 @@ mutation.
 
 - потеря или дублирование экономики;
 - массовый crash или невозможность старта;
+- устойчивый рост `413/429`, saturation readiness или недоступность
+  management probes;
 - неверная обработка health totals/permissions;
 - риск утечки данных;
 - рост `BLOCK/REVIEW` без подтверждённого fraud;

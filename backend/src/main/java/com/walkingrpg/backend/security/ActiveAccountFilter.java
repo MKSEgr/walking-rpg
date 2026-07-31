@@ -8,16 +8,30 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.server.PathContainer;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ServletRequestPathUtils;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 public class ActiveAccountFilter extends OncePerRequestFilter {
 
     private static final String ACCOUNT_DELETION_PATH =
             "/api/v1/account/deletion-requests";
+    private static final PathPattern LIVE_PATH =
+            pattern("/livez");
+    private static final PathPattern READY_PATH =
+            pattern("/readyz");
+    private static final PathPattern ACTUATOR_ROOT_PATH =
+            pattern("/actuator");
+    private static final PathPattern ACTUATOR_SUBPATH =
+            pattern("/actuator/**");
+    private static final PathPattern ACCOUNT_DELETION_REQUEST_PATH =
+            pattern(ACCOUNT_DELETION_PATH);
 
     private final RequestIdentityProvider identityProvider;
     private final JsonSecurityErrorWriter errorWriter;
@@ -58,14 +72,19 @@ public class ActiveAccountFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        if (!HttpMethod.POST.matches(request.getMethod())) {
-            return false;
+        PathContainer path = ServletRequestPathUtils.parseAndCache(request)
+                .pathWithinApplication();
+        if (LIVE_PATH.matches(path)
+                || READY_PATH.matches(path)
+                || ACTUATOR_ROOT_PATH.matches(path)
+                || ACTUATOR_SUBPATH.matches(path)) {
+            return true;
         }
-        String requestUri = request.getRequestURI();
-        String contextPath = request.getContextPath();
-        String path = contextPath.isEmpty()
-                ? requestUri
-                : requestUri.substring(contextPath.length());
-        return ACCOUNT_DELETION_PATH.equals(path);
+        return HttpMethod.POST.matches(request.getMethod())
+                && ACCOUNT_DELETION_REQUEST_PATH.matches(path);
+    }
+
+    private static PathPattern pattern(String path) {
+        return PathPatternParser.defaultInstance.parse(path);
     }
 }

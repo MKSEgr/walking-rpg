@@ -146,20 +146,24 @@ Roadmap отражает снижение рисков. Статусы:
       state
 - [x] Release-quality checks закрепляют provider/effective-capability boundary
 
-### A4b — CODE_PENDING
+### A4b — CODE_COMPLETE
 
-- [ ] Ограничить публичный diagnostics/telemetry ingress и проверить abuse
-      policy
-- [ ] Разделить liveness/readiness/metrics exposure и закрепить operational
-      timeouts
-- [ ] Добавить проверяемый backup/restore-drill pack без production secrets
+- [x] Ограничить публичный diagnostics/telemetry ingress проверяемыми
+      per-process client/global rate и body/DTO limits; distributed ingress
+      policy остаётся внешней
+- [x] Разделить liveness/readiness/metrics exposure, изолировать management
+      listener защищённых профилей и закрепить operational timeouts
+- [x] Добавить проверяемый synthetic backup/restore-drill pack без production
+      данных или secrets и с machine-verifiable evidence
 
 ### EXTERNAL_VALIDATION_REQUIRED
 
 - [ ] Передать production OIDC/database secrets через protected environment и
       проверить least-privilege role на реальном TLS endpoint
-- [ ] Выполнить фактический deployment, monitoring/alerting и rollback drill
-- [ ] Выполнить датированный backup/restore drill в изолированной среде
+- [ ] Выполнить фактический deployment, management network isolation,
+      WAF/distributed abuse controls, monitoring/alerting и rollback drill
+- [ ] Утвердить backup policy/RPO/RTO/PITR и выполнить датированный restore
+      реального backup в изолированной среде
 
 ## Exit criteria autonomous scope
 

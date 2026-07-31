@@ -30,12 +30,18 @@ refunds и revocations — `EXTERNAL_VALIDATION_REQUIRED`.
 ## Production environment и database
 
 Protected `stage`/`prod` profiles, fail-closed startup guards и статические
-release checks — `CODE_COMPLETE`.
+release checks — `CODE_COMPLETE`. A4b также даёт bounded per-process
+diagnostics/telemetry ingress, отдельный loopback management listener,
+защищённые metrics, конечные operational timeouts и synthetic PostgreSQL
+backup/restore round-trip — `CODE_COMPLETE`.
 
 Production OIDC/database secrets, реальный TLS endpoint, least-privilege DB
-role, deployment, monitoring/alerting, backup policy и датированный restore
-drill — `EXTERNAL_VALIDATION_REQUIRED`. Наличие Flyway V12 или успешный CI
-startup не является доказательством production deployment/restore.
+role, deployment, management network isolation, WAF/distributed limiter,
+monitoring/alerting, backup scheduling/encryption/retention, PITR/RPO/RTO
+policy и датированный restore реального backup —
+`EXTERNAL_VALIDATION_REQUIRED`. Наличие Flyway V12, успешный CI startup или
+`scope=SYNTHETIC_CI` не является доказательством production
+deployment/restore.
 
 ## Signing и публикация
 

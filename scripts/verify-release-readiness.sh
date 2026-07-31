@@ -12,6 +12,7 @@ fail() {
 printf '%s\n' 'Checking required release files...'
 for file in \
   .github/CODEOWNERS \
+  .github/workflows/release-pr-finalizer.yml \
   .github/workflows/release-quality.yml \
   docs/ROADMAP.md \
   docs/RELEASE_CHECKLIST.md \
@@ -27,9 +28,17 @@ for file in \
   docs/adr/0021-first-journey-observability.md \
   docs/adr/0022-durable-event-result-handoff.md \
   docs/adr/0025-production-provider-isolation.md \
+  docs/adr/0026-production-operational-controls.md \
+  docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
+  docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
+  backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java \
   backend/src/main/java/com/walkingrpg/backend/operations/ProductionEnvironmentPostProcessor.java \
+  backend/src/main/java/com/walkingrpg/backend/operations/JdbcStatementTimeouts.java \
+  backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java \
   backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java \
+  backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressProtectionFilter.java \
+  backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressRateLimiter.java \
   backend/src/main/java/com/walkingrpg/backend/platform/config/PlatformProviderProperties.java \
   backend/src/main/java/com/walkingrpg/backend/platform/payment/DisabledPaymentProvider.java \
   backend/src/main/java/com/walkingrpg/backend/platform/payment/SandboxPaymentProvider.java \
@@ -45,11 +54,22 @@ for file in \
   backend/src/main/resources/application-prod.yml \
   backend/src/main/resources/db/migration/V12__disable_development_providers.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/OperationalEndpointsIntegrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/PostgresDrillManifest.java \
+  backend/src/test/java/com/walkingrpg/backend/operations/PostgresDrillManifestTest.java \
   backend/src/test/java/com/walkingrpg/backend/platform/config/PlatformProviderConfigurationTest.java \
   backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformAdminServiceProviderTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ProductionProviderIsolationMigrationTest.java \
   privacy/privacy-policy.md \
-  scripts/generate-build-metadata.sh; do
+  scripts/generate-build-metadata.sh \
+  scripts/ci/wait_for_required_checks.py \
+  scripts/ci/test_wait_for_required_checks.py \
+  scripts/operations/run-synthetic-backup-restore-drill.sh \
+  scripts/operations/verify-backup-restore-evidence.py \
+  scripts/operations/test_verify_backup_restore_evidence.py; do
   [ -f "$file" ] || fail "missing $file"
 done
 
@@ -141,6 +161,119 @@ grep -Fq 'ProductionRuntimeGuardTest' .github/workflows/ci.yml || fail 'producti
 grep -Fq 'PlatformProviderConfigurationTest' .github/workflows/ci.yml || fail 'provider configuration tests must run in CI'
 grep -Fq 'PlatformAdminServiceProviderTest' .github/workflows/ci.yml || fail 'admin provider tests must run in CI'
 grep -Fq 'ProductionProviderIsolationMigrationTest' .github/workflows/ci.yml || fail 'provider isolation migration test must run in CI'
+
+printf '%s\n' 'Checking production operational controls...'
+grep -Fq 'micrometer-registry-prometheus' backend/pom.xml || fail 'Prometheus registry is required'
+grep -Fq 'ProductionOperationsGuard.validateProtectedEnvironment(environment);' backend/src/main/java/com/walkingrpg/backend/operations/ProductionEnvironmentPostProcessor.java || fail 'operations guard must run before application context creation'
+grep -Fq 'management.server.port обязан отличаться от server.port' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'protected management port isolation is required'
+grep -Fq 'management.server.ssl.enabled' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'management scrape scheme must remain loopback HTTP'
+grep -Fq 'server.servlet.context-parameters' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'late servlet-context property overrides must be forbidden'
+grep -Fq 'spring.autoconfigure.exclude' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'protected auto-configuration must not be removed'
+grep -Fq 'spring.boot.enableautoconfiguration' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'protected auto-configuration must remain globally enabled'
+grep -Fq 'spring.main.lazy-initialization' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'protected security/config guards must initialize eagerly'
+grep -Fq 'spring.main.web-application-type' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'protected runtime must remain a servlet application'
+grep -Fq 'spring.main.register-shutdown-hook' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'graceful shutdown must remain connected to JVM termination'
+grep -Fq 'server.servlet.context-path' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'main-server probe paths must stay at the canonical root'
+grep -Fq 'spring.mvc.servlet.path' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'MVC routing must stay at the canonical root'
+grep -Fq 'path-pattern-parser' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'ingress protection and MVC must use identical path semantics'
+grep -Fq 'spring.security.filter.dispatcher-types' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'REQUEST dispatches must always traverse the security filter chain'
+grep -Fq 'walking-rpg.operations.public-ingress.telemetry.' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'protected ingress ceilings are required'
+grep -Fq 'add-additional-paths: true' backend/src/main/resources/application.yml || fail 'main-port liveness/readiness aliases are required'
+grep -Fq 'time-to-live: 0ms' backend/src/main/resources/application.yml || fail 'health responses must not mask readiness changes through caching'
+grep -Fq 'order: down,out-of-service,unknown,up' backend/src/main/resources/application.yml || fail 'health aggregation order must be explicit and fail closed'
+grep -Fq 'unknown: 503' backend/src/main/resources/application.yml || fail 'UNKNOWN readiness must remove the instance from traffic'
+grep -Fq 'forward-headers-strategy: none' backend/src/main/resources/application.yml || fail 'untrusted forwarded client identity must remain disabled'
+grep -Fq 'requireBoolean(environment, "spring.jmx.enabled", false);' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'protected JMX endpoint export must remain disabled'
+grep -Fq 'spring.application.admin.enabled' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'SpringApplicationAdminMXBean must remain disabled'
+grep -Fq 'server.tomcat.mbeanregistry.enabled' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'Tomcat MBean registry must remain disabled'
+grep -Fq 'spring.datasource.hikari.register-mbeans' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'Hikari management MBeans must remain disabled'
+grep -Fq 'jmx:' backend/src/main/resources/application.yml || fail 'canonical configuration must declare the JMX policy'
+grep -Fq 'spring.application.name' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'application metric identity must remain guarded'
+grep -Fq 'management.metrics.tags' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'unreviewed metric common tags must be rejected'
+grep -Fq 'management.metrics.enable' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'meter deny filters must not disable required operational metrics'
+grep -Fq 'management.metrics.observations.ignored-meters' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'observation-backed meters must not be silently ignored'
+grep -Fq 'management.metrics.web.server.max-uri-tags' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'HTTP metric route cardinality must stay bounded'
+grep -Fq 'management.observations.key-values' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'unreviewed observation common tags must be rejected'
+grep -Fq 'management.observations.enable' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'observation deny filters must not disable required HTTP metrics'
+grep -Fq 'management.observations.http.server.requests.name' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'the required HTTP server metric name must remain stable'
+grep -Fq 'management.prometheus.metrics.export.pushgateway' backend/src/main/java/com/walkingrpg/backend/operations/ProductionOperationsGuard.java || fail 'Prometheus must remain pull-only in protected profiles'
+grep -Fq 'include: health,prometheus' backend/src/main/resources/application.yml || fail 'only health and Prometheus may be exposed through Actuator'
+grep -Fq '"/livez"' backend/src/main/java/com/walkingrpg/backend/security/SecurityConfiguration.java || fail 'liveness alias must be public'
+grep -Fq '"/readyz"' backend/src/main/java/com/walkingrpg/backend/security/SecurityConfiguration.java || fail 'readiness alias must be public'
+grep -Fq '"/actuator/prometheus"' backend/src/main/java/com/walkingrpg/backend/security/SecurityConfiguration.java || fail 'Prometheus must have an explicit authorization rule'
+grep -Fq ').hasRole("ADMIN");' backend/src/main/java/com/walkingrpg/backend/security/SecurityConfiguration.java || fail 'Prometheus must require admin authority'
+for profile in stage prod; do
+  config="backend/src/main/resources/application-$profile.yml"
+  grep -Fq 'port: ${MANAGEMENT_PORT:8081}' "$config" || fail "$profile management port must be separate"
+  grep -Fq 'address: ${MANAGEMENT_ADDRESS:127.0.0.1}' "$config" || fail "$profile management address must default to loopback"
+done
+grep -Fq 'registration.addUrlPatterns("/*");' backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressConfiguration.java || fail 'ingress protection must inspect encoded and matrix path variants'
+grep -Fq 'ServletRequestPathUtils.parseAndCache(request)' backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressProtectionFilter.java || fail 'ingress protection must use the same parsed path semantics as Spring MVC'
+grep -Fq 'ServletRequestPathUtils.parseAndCache(request)' backend/src/main/java/com/walkingrpg/backend/security/ActiveAccountFilter.java || fail 'operational endpoints must remain independent from account storage for MVC-equivalent paths'
+grep -Fq 'readNBytes(maxBodyBytes + 1)' backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressProtectionFilter.java || fail 'chunked ingress bodies must be bounded'
+grep -Fq '"PAYLOAD_TOO_LARGE"' backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressProtectionFilter.java || fail 'oversized ingress must return the stable API code'
+grep -Fq '"RATE_LIMITED"' backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressProtectionFilter.java || fail 'rate-limited ingress must return the stable API code'
+grep -Fq 'overflowClient' backend/src/main/java/com/walkingrpg/backend/operations/ingress/PublicIngressRateLimiter.java || fail 'client limiter state must remain bounded'
+grep -Fq '@Size(max = 160) String errorType' backend/src/main/java/com/walkingrpg/backend/platform/api/CrashReportRequest.java || fail 'crash error type must fit the database schema'
+grep -Fq '@Size(max = 32768) String stackTrace' backend/src/main/java/com/walkingrpg/backend/platform/api/CrashReportRequest.java || fail 'crash stack trace must be bounded'
+grep -Fq '@Size(max = 64) Map<String, Object> attributes' backend/src/main/java/com/walkingrpg/backend/platform/api/TelemetryEventRequest.java || fail 'telemetry attributes must be bounded'
+grep -Fq '@Component("dbHealthContributor")' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'bounded database readiness must keep the canonical db contributor id'
+grep -Fq 'connection.isValid(VALIDATION_TIMEOUT_SECONDS)' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'database readiness validation must use a non-zero bounded timeout'
+MANUAL_TIMEOUTS=$(grep -RFl 'JdbcStatementTimeouts.apply(jdbcTemplate, statement);' backend/src/main/java | wc -l | tr -d ' ')
+[ "$MANUAL_TIMEOUTS" -eq 4 ] || fail 'all four manual advisory-lock statements must inherit the JDBC timeout'
+for test_name in \
+  ProductionOperationsGuardTest \
+  PublicIngressPropertiesTest \
+  PublicIngressRateLimiterTest \
+  PublicIngressProtectionFilterTest \
+  JdbcStatementTimeoutsTest \
+  BoundedDataSourceHealthIndicatorTest \
+  ActiveAccountFilterTest \
+  OperationalEndpointsIntegrationTest; do
+  grep -Fq "$test_name" .github/workflows/ci.yml || fail "$test_name must run in CI"
+done
+
+printf '%s\n' 'Checking synthetic backup/restore drill...'
+grep -Fq 'postgres:17.10-alpine3.24' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'backup drill PostgreSQL tag must be pinned'
+grep -Fq 'sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'backup drill PostgreSQL digest must be pinned'
+grep -Fq '"productionValidated", false' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'synthetic evidence must never claim production validation'
+grep -Fq 'evidence.put("sourceGitSha", sourceGitSha);' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'synthetic evidence must record the exact tested commit'
+grep -Fq 'evidence.put("sourceTreeClean", true);' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'synthetic evidence must assert a clean source tree'
+grep -Fq '"--single-transaction"' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'restore must be atomic'
+grep -Fq '"--exit-on-error"' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'restore must fail on the first error'
+if grep -Fq '"--clean"' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java \
+    || grep -Fq '"--create"' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java; then
+  fail 'destructive backup drill restore flags are forbidden'
+fi
+grep -Fq 'Release quality · synthetic backup/restore drill' .github/workflows/release-quality.yml || fail 'synthetic restore drill must have a dedicated release check'
+grep -Fq 'Release quality · synthetic backup/restore drill' scripts/ci/wait_for_required_checks.py || fail 'release finalizer must require the synthetic restore drill'
+grep -Fq 'scripts/ci/wait_for_required_checks.py' .github/workflows/release-pr-finalizer.yml || fail 'release finalizer must use the tested strict check evaluator'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_wait_for_required_checks.py
+grep -Fq 'object_pairs_hook=reject_duplicate_keys' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must reject duplicate JSON keys'
+grep -Fq 'require_exact_keys(evidence, TOP_LEVEL_KEYS, "$")' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must reject unknown top-level fields'
+grep -Fq 'require_exact_keys(postgres, POSTGRES_KEYS, "postgres")' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must reject unknown nested fields'
+grep -Fq '{"full", "receipt"}' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must distinguish full and retained receipt modes'
+grep -Fq 'EXPECTED_SOURCE_GIT_SHA=$2' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill must require the expected tested commit'
+grep -Fq 'OUTPUT_DIRECTORY must be outside the repository' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill evidence must not be written into source directories'
+grep -Fq 'require_exact_clean_source()' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill must define an exact clean-source check'
+SOURCE_CHECK_COUNT=$(grep -Fc 'require_exact_clean_source' scripts/operations/run-synthetic-backup-restore-drill.sh)
+[ "$SOURCE_CHECK_COUNT" -eq 4 ] || fail 'backup drill must check exact clean source before, after and after verification'
+grep -Fq -- '--no-ext-diff' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill clean-source checks must ignore external diff helpers'
+grep -Fq -- '--ignore-submodules=none' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill clean-source checks must include submodules'
+grep -Fq 'ls-files --others --exclude-standard' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill must reject untracked source files'
+grep -Fq 'timeout --kill-after=30s 15m' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill must have a hard process-group kill budget'
+if grep -Fq 'timeout --foreground' scripts/operations/run-synthetic-backup-restore-drill.sh; then
+  fail 'foreground timeout would leave forked test processes outside the hard budget'
+fi
+grep -Fq '      clean \' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill must discard stale Maven build output'
+grep -Fq 'ref: ${{ github.event.pull_request.head.sha || github.sha }}' .github/workflows/release-quality.yml || fail 'backup drill checkout must bind to the exact PR head'
+grep -Fq 'EXPECTED_SOURCE_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}' .github/workflows/release-quality.yml || fail 'backup drill evidence must bind to the exact tested SHA'
+grep -Fq 'steps.upload-evidence.outputs.artifact-digest' .github/workflows/release-quality.yml || fail 'retained evidence provenance must record the artifact digest'
+if grep -Fq 'walking-rpg-synthetic.dump' .github/workflows/release-quality.yml; then
+  fail 'backup archive or row payload must not be uploaded as a CI artifact'
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+  scripts/operations/test_verify_backup_restore_evidence.py
 
 printf '%s\n' 'Checking temporary transport files...'
 if find .github -type f \( -name '*overlay*' -o -name 'export-*-source.yml' -o -name 'apply-*.yml' -o -name '*ci-trigger*' \) -print | grep -q .; then

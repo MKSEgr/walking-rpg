@@ -173,6 +173,43 @@ class JwtSecurityIntegrationTest {
                 .andExpect(jsonPath("$.public").value(true));
     }
 
+    @Test
+    void shouldKeepMainPortProbeAliasesPublic() throws Exception {
+        mockMvc.perform(get("/livez"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/readyz"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldProtectPrometheusWithAdminAuthority() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .with(jwt()
+                                .jwt(token -> token.subject("user-1"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .with(jwt()
+                                .jwt(token -> token.subject("admin-1"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldDenyUndeclaredActuatorSurface() throws Exception {
+        mockMvc.perform(get("/actuator"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/actuator/env")
+                        .with(jwt()
+                                .jwt(token -> token.subject("admin-1"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isForbidden());
+    }
+
     @Configuration
     @EnableWebMvc
     static class TestConfiguration {

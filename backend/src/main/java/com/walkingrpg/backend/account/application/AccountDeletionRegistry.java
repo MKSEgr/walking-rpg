@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.PreparedStatement;
 import java.util.HexFormat;
 
+import com.walkingrpg.backend.operations.JdbcStatementTimeouts;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ public class AccountDeletionRegistry {
         String normalized = requireUserId(userId);
         jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(ACCOUNT_LOCK_SQL)) {
+                JdbcStatementTimeouts.apply(jdbcTemplate, statement);
                 statement.setString(1, normalized.length() + ":" + normalized);
                 statement.execute();
             }

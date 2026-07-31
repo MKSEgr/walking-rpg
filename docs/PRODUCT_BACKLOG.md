@@ -211,6 +211,34 @@ config.
 реализованы. Production billing/APNs/FCM, secrets, реальный deployment и
 physical evidence не реализованы и остаются external gates.
 
+### US-012. Ограничить production operational surface
+
+Как владелец релиза, я хочу иметь проверяемые operational boundaries без
+production credential, чтобы code candidate не зависел от небезопасных
+framework defaults и не выдавал synthetic CI за реальный deployment.
+
+Критерии:
+
+- anonymous telemetry/crash ingress имеет raw-body, DTO, per-process client и
+  global limits; `413/429` не создают database state и не отражают raw payload;
+- forwarded headers не становятся доверенной limiter identity;
+- client buckets ограничены по количеству и idle TTL, а raw client/IP не
+  персистируется и не используется как metric label;
+- liveness, readiness и Prometheus имеют разные endpoint semantics;
+- protected management listener по умолчанию отделён и привязан к loopback,
+  health details скрыты, metrics требуют admin authorization;
+- HTTP, datasource, query, transaction и graceful-shutdown waits имеют
+  конечные fail-closed bounds;
+- synthetic PostgreSQL 17 backup/restore drill применяет Flyway V1–latest,
+  проверяет checksum до restore и exact schema/data/sequence manifests после;
+- synthetic evidence явно содержит `scope=SYNTHETIC_CI` и
+  `productionValidated=false`.
+
+**Статус:** A4b code/config/tests, operational ADR/runbook и synthetic drill
+pack реализованы. Production secrets, DNS/TLS endpoint, WAF/distributed
+limiter, deployed management network, alerts, backup policy, PITR/RPO/RTO и
+датированный restore реального backup остаются external gates.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
