@@ -57,6 +57,8 @@ final class AuthSessionController extends ChangeNotifier
 
   AuthIdentity? get identity => _identity;
 
+  int get sessionRevision => _generation;
+
   String? get message => _message;
 
   String? get notice => _notice;

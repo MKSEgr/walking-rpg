@@ -110,6 +110,12 @@
 - synthetic signing rehearsal без сохраняемого signed artifact и runbook для
   Android/iOS protected signing;
 - ADR 0027 об API 36 и protected mobile signing;
+- internal-only `ValidationCenterScreen` с явным compile-time flag,
+  fail-closed запретом в release и exact source/app/build metadata;
+- owner/session-bound in-memory journal provider/permission/read/sync/
+  authoritative checkpoints, ограниченный одним запуском и 64 записями;
+- redacted `walking-rpg-device-validation-evidence-v1` export до 64 KiB с
+  SHA-256 checksum, временным JSON share/delete и ADR 0028;
 
 ### Changed
 

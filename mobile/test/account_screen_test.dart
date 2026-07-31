@@ -259,6 +259,67 @@ void main() {
     await runtime.close();
     controller.dispose();
   });
+
+  testWidgets('validation entry exists only when shell supplies its route', (
+    WidgetTester tester,
+  ) async {
+    final AuthSessionController controller = AuthSessionController(
+      configuration: MobileAuthConfiguration(
+        mode: MobileAuthMode.development,
+        apiBaseUri: Uri.parse('https://api.example'),
+        refreshSkew: const Duration(seconds: 60),
+        developmentUserId: 'validation-owner',
+        developmentDeviceId: 'validation-device',
+      ),
+      sessionStore: _MemoryStore(
+        _session(_oidc(), subject: 'unused', suffix: 'unused'),
+      ),
+      oidcClient: _FakeOidcClient(
+        authorizeResponse: _response(
+          _oidc(),
+          subject: 'unused',
+          suffix: 'unused',
+        ),
+      ),
+      localStateCleaner: _NoopCleaner(),
+    );
+    await controller.initialize();
+
+    Widget account({Future<void> Function()? onOpenValidation}) {
+      return MaterialApp(
+        home: AccountScreen(
+          controller: controller,
+          identity: controller.identity!,
+          apiClient: AccountApiClient(
+            baseUri: Uri.parse('https://api.example'),
+            transport: _AccountTransport(),
+          ),
+          onOpenValidation: onOpenValidation,
+        ),
+      );
+    }
+
+    await tester.pumpWidget(account());
+    expect(find.byKey(const Key('account-validation-center')), findsNothing);
+
+    bool opened = false;
+    await tester.pumpWidget(
+      account(
+        onOpenValidation: () async {
+          opened = true;
+        },
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('account-validation-center')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('account-validation-center')));
+    await tester.pump();
+    expect(opened, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    controller.dispose();
+  });
 }
 
 final class _TransientCommandStore implements MobileCommandStore {

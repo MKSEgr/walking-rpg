@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/features/activity/application/activity_sync_coordinator.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
@@ -84,6 +86,102 @@ void main() {
 
     expect(keys, <String>['key-1', 'key-2']);
   });
+
+  test('explicit reading sync does not read the health source again', () async {
+    final StepReading reading = StepReading(
+      authoritativeTotal: 750,
+      localDate: DateTime(2026, 7, 26),
+      timeZone: 'Europe/Berlin',
+      syncCursor: 'cursor-safe-in-memory-only',
+    );
+    final _MutableStepSource source = _MutableStepSource(reading);
+    final ActivitySyncCoordinator coordinator = ActivitySyncCoordinator(
+      stepSource: source,
+      idempotencyKeyFactory: (StepReading value) => 'validation-key',
+      sender:
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async => _result(reading.authoritativeTotal),
+    );
+
+    final ActivitySyncResult result = await coordinator.synchronizeReading(
+      reading,
+    );
+
+    expect(result.acceptedTotal, 750);
+    expect(source.readCalls, 0);
+  });
+
+  test('overlapping syncs are serialized and preserve a failed key', () async {
+    final StepReading firstReading = StepReading(
+      authoritativeTotal: 100,
+      localDate: DateTime(2026, 7, 26),
+      timeZone: 'UTC',
+    );
+    final StepReading secondReading = StepReading(
+      authoritativeTotal: 200,
+      localDate: DateTime(2026, 7, 26),
+      timeZone: 'UTC',
+    );
+    final Completer<void> firstSendGate = Completer<void>();
+    final List<String> keys = <String>[];
+    int keySequence = 0;
+    int sendSequence = 0;
+    int activeSenders = 0;
+    int maximumActiveSenders = 0;
+    final ActivitySyncCoordinator coordinator = ActivitySyncCoordinator(
+      stepSource: _MutableStepSource(firstReading),
+      idempotencyKeyFactory: (StepReading reading) => 'key-${++keySequence}',
+      sender:
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async {
+            sendSequence += 1;
+            final int currentSend = sendSequence;
+            keys.add(idempotencyKey);
+            activeSenders += 1;
+            maximumActiveSenders = maximumActiveSenders < activeSenders
+                ? activeSenders
+                : maximumActiveSenders;
+            try {
+              if (currentSend == 1) {
+                await firstSendGate.future;
+              } else if (currentSend == 2) {
+                throw StateError('ambiguous network failure');
+              }
+              return _result(reading.authoritativeTotal);
+            } finally {
+              activeSenders -= 1;
+            }
+          },
+    );
+
+    final Future<ActivitySyncResult> first = coordinator.synchronizeReading(
+      firstReading,
+    );
+    final Future<ActivitySyncResult> second = coordinator.synchronizeReading(
+      secondReading,
+    );
+    final Future<void> secondExpectation = expectLater(
+      second,
+      throwsStateError,
+    );
+
+    await Future<void>.delayed(Duration.zero);
+    expect(keys, <String>['key-1']);
+    firstSendGate.complete();
+    expect((await first).acceptedTotal, 100);
+    await secondExpectation;
+    expect(
+      (await coordinator.synchronizeReading(secondReading)).acceptedTotal,
+      200,
+    );
+
+    expect(maximumActiveSenders, 1);
+    expect(keys, <String>['key-1', 'key-2', 'key-2']);
+  });
 }
 
 ActivitySyncResult _result(int total) {
@@ -103,7 +201,11 @@ class _MutableStepSource implements StepSource {
   _MutableStepSource(this.reading);
 
   StepReading reading;
+  int readCalls = 0;
 
   @override
-  Future<StepReading> read() async => reading;
+  Future<StepReading> read() async {
+    readCalls += 1;
+    return reading;
+  }
 }

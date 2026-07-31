@@ -332,6 +332,57 @@ flutter run \
 
 При включённом флаге UI явно пишет **«Синхронизировать тестовые шаги»**. Без флага platform source используется по умолчанию на Android/iOS.
 
+## Internal Validation Center
+
+`ValidationCenterScreen` предназначен только для сбора evidence во время
+ручного physical-device прогона. Он по умолчанию отсутствует и включается
+явным compile-time flag только в non-release build:
+
+```bash
+SOURCE_GIT_SHA=$(git rev-parse HEAD)
+flutter run \
+  --dart-define=MOBILE_AUTH_MODE=development \
+  --dart-define=API_BASE_URL=http://192.168.1.10:8080 \
+  --dart-define=DEMO_USER_ID=validation-owner \
+  --dart-define=DEMO_DEVICE_ID=validation-device \
+  --dart-define=ENABLE_VALIDATION_CENTER=true \
+  --dart-define=VALIDATION_SOURCE_GIT_SHA="$SOURCE_GIT_SHA"
+```
+
+App version и build number читаются из фактически установленного native package
+через `PackageInfo`, а source SHA передаётся из clean checkout. При
+`kReleaseMode`, невалидном SHA или недоступной app/build metadata конфигурация
+отклоняется fail-closed. Флаг нельзя
+использовать для production diagnostics или включать в store candidate.
+
+Центр хранит не более 64 ordered checkpoints только в памяти одного
+authenticated owner и одной ревизии auth-сессии. Он фиксирует
+platform/OS/app/build и coarse permission, provider, aggregated read, sync и
+authoritative reload outcomes. Live owner/session повторно проверяются после
+async boundaries. Logout, новая сессия, account switch, controller disposal или
+process termination удаляет journal; owner/revision нужны для runtime-изоляции,
+но не экспортируются.
+Permission state `request_succeeded` означает успешное завершение platform
+request, а не гарантированный read grant: HealthKit не всегда раскрывает
+приложению фактический статус разрешения.
+
+Явный export создаёт redacted
+`walking-rpg-device-validation-evidence-v1` JSON размером не более 64 KiB с
+policy `walking-rpg-evidence-redaction-v1`, exact source SHA и SHA-256 checksum.
+Temporary-файл передаётся platform share sheet и удаляется в `finally` после
+возврата или ошибки share. Уже переданная копия остаётся в выбранном
+тестировщиком хранилище.
+
+Journal/export не содержит raw health samples, tokens, account/device/command
+identifiers, idempotency keys, provider record IDs, endpoints, request/response
+bodies, filesystem paths или raw errors. Unknown/free-form facts не копируются
+в schema-v1. Полный workflow, checksum review и ручной шаблон описаны в
+[`DEVICE_VALIDATION_PROTOCOL.md`](../docs/DEVICE_VALIDATION_PROTOCOL.md).
+
+Готовый экран и зелёные tests не закрывают physical gate: iPhone/Android,
+provider/watch, permission revoke, timezone/midnight и battery scenarios
+остаются `EXTERNAL_VALIDATION_REQUIRED` до датированного review evidence.
+
 ## Ошибки, различимые в текущем spike
 
 - неподдерживаемая платформа;
@@ -407,6 +458,8 @@ Unit/widget tests покрывают:
 - manual replay `PENDING`, запрет его удаления и dismiss только `FAILED`;
 - fail-closed recovery UI при corruption;
 - legacy v1 exposure → TELEMETRY без schema migration;
+- fail-closed Validation Center policy, exact source/build metadata, bounded
+  per-launch journal, schema-v1 redaction/checksum и temporary share cleanup;
 - `sync → reload authoritative home`;
 - переход первого события на второй узел;
 - resolution второго события, material preview/result и inventory rendering;

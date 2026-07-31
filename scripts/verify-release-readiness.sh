@@ -31,6 +31,7 @@ for file in \
   docs/adr/0025-production-provider-isolation.md \
   docs/adr/0026-production-operational-controls.md \
   docs/adr/0027-api-36-and-protected-mobile-signing.md \
+  docs/adr/0028-internal-device-validation-center.md \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
@@ -51,6 +52,10 @@ for file in \
   mobile/lib/core/auth/auth_session_controller.dart \
   mobile/lib/features/home/data/auth_home_transports.dart \
   mobile/lib/features/platform/presentation/platform_screen.dart \
+  mobile/lib/features/validation/application/validation_evidence_controller.dart \
+  mobile/lib/features/validation/application/validation_evidence_exporter.dart \
+  mobile/lib/features/validation/domain/device_validation_evidence.dart \
+  mobile/lib/features/validation/validation_center_policy.dart \
   backend/src/main/resources/application-local.yml \
   backend/src/main/resources/application-stage.yml \
   backend/src/main/resources/application-prod.yml \
@@ -317,6 +322,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_backend_test_selection.py
 printf '%s\n' 'Checking mobile authentication boundary...'
 grep -Fq 'flutter_appauth: 12.0.2' mobile/pubspec.yaml || fail 'flutter_appauth must be pinned'
 grep -Fq 'flutter_secure_storage: 10.3.1' mobile/pubspec.yaml || fail 'secure token storage must be pinned'
+grep -Fq 'device_info_plus: 12.4.0' mobile/pubspec.yaml || fail 'validation OS metadata provider must be pinned'
+grep -Fq 'package_info_plus: 9.0.1' mobile/pubspec.yaml || fail 'runtime package metadata provider must be pinned'
 grep -Fq "defaultValue: 'oidc'" mobile/lib/core/config/app_environment.dart || fail 'mobile auth must fail closed as oidc'
 grep -Fq 'Development-аутентификация запрещена в production build' mobile/lib/core/auth/auth_models.dart || fail 'release builds must reject development auth'
 grep -Fq '"appAuthRedirectScheme" to "com.walkingrpg.app"' mobile/android/app/build.gradle.kts || fail 'Android AppAuth redirect scheme is missing'
@@ -335,6 +342,28 @@ MOBILE_IDENTITY_OUTSIDE_DEV=$(printf '%s\n' "$MOBILE_IDENTITY_HEADERS" | grep -v
 if [ -n "$MOBILE_IDENTITY_OUTSIDE_DEV" ]; then
   printf '%s\n' "$MOBILE_IDENTITY_OUTSIDE_DEV" >&2
   fail 'mobile identity headers are allowed only inside the explicit development transport'
+fi
+
+printf '%s\n' 'Checking internal device-validation boundary...'
+grep -Fq "'ENABLE_VALIDATION_CENTER'," mobile/lib/core/config/app_environment.dart || fail 'validation center must require an explicit build flag'
+grep -A1 -F "'ENABLE_VALIDATION_CENTER'," mobile/lib/core/config/app_environment.dart | grep -Fq 'defaultValue: false' || fail 'validation center must be disabled by default'
+grep -Fq 'return requested && !releaseMode;' mobile/lib/features/validation/validation_center_policy.dart || fail 'release builds must never enable validation center'
+grep -Fq 'Validation Center запрещён в production build' mobile/lib/features/validation/validation_center_policy.dart || fail 'release validation flag must fail closed at startup'
+grep -Fq 'ValidationCenterPolicy.enabled' mobile/lib/app/auth_gate.dart || fail 'validation route must remain behind the non-release policy'
+grep -Fq 'PackageInfo.fromPlatform()' mobile/lib/app/auth_gate.dart || fail 'validation app/build metadata must come from the installed package'
+grep -Fq 'DeviceInfoPlugin()' mobile/lib/app/auth_gate.dart || fail 'validation OS metadata must come from the device platform API'
+grep -Fq 'activeSessionRevisionProvider' mobile/lib/app/auth_gate.dart || fail 'validation actions must re-check the live auth session'
+grep -Fq 'Stopwatch()..start()' mobile/lib/features/validation/application/validation_evidence_controller.dart || fail 'validation durations must use a monotonic clock'
+grep -Fq 'EvidenceErrorCategory.journalLimitReached' mobile/lib/features/validation/application/validation_evidence_controller.dart || fail 'validation journal overflow must remain visible in evidence'
+grep -Fq 'walking-rpg-device-validation-evidence-v1' mobile/lib/features/validation/domain/device_validation_evidence.dart || fail 'validation evidence schema must be versioned'
+grep -Fq 'walking-rpg-evidence-redaction-v1' mobile/lib/features/validation/domain/device_validation_evidence.dart || fail 'validation evidence redaction policy must be versioned'
+grep -Fq 'static const int maxJournalEntries = 64;' mobile/lib/features/validation/domain/device_validation_evidence.dart || fail 'validation journal must remain bounded'
+grep -Fq 'static const int maxEncodedBytes = 64 * 1024;' mobile/lib/features/validation/domain/device_validation_evidence.dart || fail 'validation evidence must remain bounded to 64 KiB'
+grep -Fq '_validateSnapshotSemantics(' mobile/lib/features/validation/domain/device_validation_evidence.dart || fail 'validation evidence must enforce cross-field semantics'
+grep -Fq 'DeviceValidationEvidenceCodec.verify(json)' mobile/lib/features/validation/application/validation_evidence_exporter.dart || fail 'validation export must verify schema, redaction and checksum before sharing'
+grep -Fq 'await file.delete();' mobile/lib/features/validation/application/validation_evidence_exporter.dart || fail 'temporary validation evidence must be deleted after sharing'
+if grep -RInE 'ENABLE_VALIDATION_CENTER[=:][[:space:]]*true' .github 2>/dev/null | grep -q .; then
+  fail 'CI and release workflows must not enable validation center'
 fi
 
 printf '%s\n' 'Checking tracked credentials and signing material...'

@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/commands/file_mobile_command_store.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/features/validation/validation_center_policy.dart';
 
 class WalkingRpgApp extends StatefulWidget {
   const WalkingRpgApp({super.key});
@@ -30,6 +31,7 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
   void initState() {
     super.initState();
     try {
+      ValidationCenterPolicy.validateEnvironment();
       final MobileAuthConfiguration configuration =
           MobileAuthConfiguration.fromEnvironment();
       final ReadSnapshotCache cache = FileReadSnapshotCache.fromEnvironment();

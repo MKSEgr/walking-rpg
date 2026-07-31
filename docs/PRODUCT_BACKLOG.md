@@ -25,6 +25,38 @@
 
 **Статус:** реализовано с PostgreSQL, wallet/ledger, multi-device lock, Flutter client, platform source, foreground durable outbox, retention и shadow-mode risk/attestation signals.
 
+### US-013. Собрать обезличенное evidence физической проверки
+
+Как внутренний тестировщик, я хочу получить ограниченный журнал provider →
+permission → read → sync → authoritative reload, чтобы связать физический прогон
+с точной версией кода и проверить его без небезопасных логов.
+
+Критерии:
+
+- Validation Center требует явный `ENABLE_VALIDATION_CENTER=true`, доступен
+  только в non-release build и отклоняет release-конфигурацию fail-closed;
+- build передаёт exact 40-символьный lowercase
+  `VALIDATION_SOURCE_GIT_SHA`, а app version и build number читаются из
+  фактически установленного native package;
+- журнал живёт только в памяти одного authenticated owner и одной ревизии
+  auth-сессии, не персистируется и не объединяется после logout/new session/
+  account switch;
+- фиксируются platform/OS/app/build и typed permission/provider/read/sync/
+  authoritative checkpoints;
+- в evidence отсутствуют raw samples, tokens, identifiers, endpoints, paths,
+  request/response body и raw errors;
+- export использует `walking-rpg-device-validation-evidence-v1`, redaction
+  policy `walking-rpg-evidence-redaction-v1` и проверяемый SHA-256 checksum;
+- journal ограничен 64 entries, JSON — 64 KiB; переполнение не маскируется
+  как полный успешный прогон;
+- share использует temporary JSON и пытается удалить его после возврата или
+  ошибки platform share flow.
+
+**Статус:** код, автоматические tests, ADR, protocol и evidence template
+реализованы. Реальные прогоны iPhone/Android, provider/watch matrix,
+midnight/timezone, permission revoke и battery evidence не выполнены и остаются
+`EXTERNAL_VALIDATION_REQUIRED` в US-001/Roadmap Milestone 1.
+
 ## P0 — first playable loop
 
 ### US-003. Получить ENERGY
