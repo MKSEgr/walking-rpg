@@ -24,6 +24,10 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Только `STEPS READ`, IANA timezone и aggregated total
 - [x] Durable foreground outbox и safe resume fallback
 - [x] Device validation protocol и evidence template
+- [x] Internal-only `ValidationCenterScreen`: fail-closed release policy,
+      owner-bound in-memory per-launch journal и exact source/build metadata
+- [x] Redacted `walking-rpg-device-validation-evidence-v1` JSON export с
+      checksum, temporary share/delete и границами 64 entries / 64 KiB
 
 ### EXTERNAL_VALIDATION_REQUIRED
 
@@ -33,6 +37,9 @@ Roadmap отражает снижение рисков. Статусы:
 - [ ] Ручной ввод, удаление/коррекция и отзыв разрешения
 - [ ] Timezone/midnight
 - [ ] Battery/background evidence
+- [ ] Проверить schema-v1 JSON, redaction и checksum для каждого фактического
+      прогона; готовность Validation Center сама по себе не является device
+      evidence
 
 ## Milestone 2 — Activity sync vertical slice
 

@@ -24,6 +24,7 @@ class AccountScreen extends StatefulWidget {
     this.idempotencyKeyFactory,
     this.commandRuntime,
     this.onOpenRecovery,
+    this.onOpenValidation,
     this.recoveryCount = 0,
     this.recoveryUnavailable = false,
   });
@@ -35,6 +36,7 @@ class AccountScreen extends StatefulWidget {
   final String Function()? idempotencyKeyFactory;
   final MobileCommandRuntime? commandRuntime;
   final Future<void> Function()? onOpenRecovery;
+  final Future<void> Function()? onOpenValidation;
   final int recoveryCount;
   final bool recoveryUnavailable;
 
@@ -106,6 +108,24 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
             ),
+            if (widget.onOpenValidation != null) ...<Widget>[
+              const SizedBox(height: 12),
+              Card(
+                color: Theme.of(context).colorScheme.tertiaryContainer,
+                child: ListTile(
+                  key: const Key('account-validation-center'),
+                  leading: const Icon(Icons.science_outlined),
+                  title: const Text('Validation Center'),
+                  subtitle: const Text(
+                    'Внутренний журнал physical-device проверки',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    unawaited(widget.onOpenValidation!());
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Card(
               child: ListTile(

@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
@@ -11,6 +14,7 @@ import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart
 import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
 import 'package:walking_rpg_mobile/features/activity/application/activity_sync_coordinator.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
+import 'package:walking_rpg_mobile/features/activity/data/platform_health_step_source.dart';
 import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
@@ -21,6 +25,9 @@ import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
 import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_screen.dart';
+import 'package:walking_rpg_mobile/features/validation/application/validation_evidence_controller.dart';
+import 'package:walking_rpg_mobile/features/validation/presentation/validation_center_screen.dart';
+import 'package:walking_rpg_mobile/features/validation/validation_center_policy.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({
@@ -147,6 +154,9 @@ class _AuthenticatedApplicationShellState
   late final FirstJourneyHomeLoader _homeLoader;
   late final FirstJourneyPlatformLoader _platformLoader;
   late final FirstJourneyActivitySynchronizer? _synchronizer;
+  ValidationEvidenceController? _validationController;
+  bool _validationMetadataFailed = false;
+  bool _validationMetadataReady = !ValidationCenterPolicy.enabled;
   late final RuntimeStopper _runtimeStopper;
   StreamSubscription<void>? _commandChangesSubscription;
   int _recoveryCount = 0;
@@ -219,6 +229,9 @@ class _AuthenticatedApplicationShellState
     _homeLoader = () => _homeClient.fetchHome(DateTime.now());
     _platformLoader = _platformClient.fetchSnapshot;
     _synchronizer = _coordinator?.synchronize;
+    if (ValidationCenterPolicy.enabled) {
+      unawaited(_initializeValidationController(configuration));
+    }
     _runtimeStopper = _runtime.close;
     widget.controller.registerRuntimeStopper(_runtimeStopper);
     _commandChangesSubscription = _runtime.changes.listen((void _) {
@@ -230,6 +243,7 @@ class _AuthenticatedApplicationShellState
   @override
   void dispose() {
     widget.controller.unregisterRuntimeStopper(_runtimeStopper);
+    _validationController?.dispose();
     unawaited(_commandChangesSubscription?.cancel());
     unawaited(_runtime.close());
     super.dispose();
@@ -237,6 +251,12 @@ class _AuthenticatedApplicationShellState
 
   @override
   Widget build(BuildContext context) {
+    if (!_validationMetadataReady) {
+      return const _ValidationMetadataProgressScreen();
+    }
+    if (_validationMetadataFailed) {
+      return const _ValidationMetadataErrorScreen();
+    }
     return FirstJourneyGate(
       homeLoader: _homeLoader,
       platformLoader: _platformLoader,
@@ -266,6 +286,72 @@ class _AuthenticatedApplicationShellState
     );
   }
 
+  Future<void> _initializeValidationController(
+    MobileAuthConfiguration configuration,
+  ) async {
+    final int sessionRevision = widget.controller.sessionRevision;
+    try {
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      final String operatingSystemVersion = await _loadOperatingSystemVersion();
+      ValidationCenterPolicy.validateRuntimePackage(
+        appVersion: packageInfo.version,
+        buildNumber: packageInfo.buildNumber,
+      );
+      final Object? validationStepSource = _coordinator?.stepSource;
+      final ValidationEvidenceController controller =
+          ValidationEvidenceController(
+            ownerId: widget.identity.ownerId,
+            activeOwnerProvider: () => widget.controller.identity?.ownerId,
+            sessionRevision: sessionRevision,
+            activeSessionRevisionProvider: () =>
+                widget.controller.sessionRevision,
+            launch: createValidationLaunchMetadata(
+              authenticationMode: configuration.mode.name,
+              appVersion: packageInfo.version,
+              buildNumber: packageInfo.buildNumber,
+              operatingSystemVersion: operatingSystemVersion,
+            ),
+            stepReader: _coordinator?.stepSource.read,
+            synchronizer: _coordinator?.synchronizeReading,
+            homeLoader: _homeLoader,
+            platformLoader: _platformLoader,
+            includeManualEntries:
+                validationStepSource is PlatformHealthStepSource &&
+                validationStepSource.includeManualEntries,
+          );
+      if (!mounted ||
+          widget.controller.state != AuthLifecycleState.authenticated ||
+          widget.controller.identity?.ownerId != widget.identity.ownerId ||
+          widget.controller.sessionRevision != sessionRevision) {
+        controller.dispose();
+        return;
+      }
+      setState(() {
+        _validationController = controller;
+        _validationMetadataReady = true;
+      });
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _validationMetadataFailed = true;
+        _validationMetadataReady = true;
+      });
+    }
+  }
+
+  Future<String> _loadOperatingSystemVersion() async {
+    final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    if (Platform.isAndroid) {
+      return (await deviceInfo.androidInfo).version.release;
+    }
+    if (Platform.isIOS) {
+      return (await deviceInfo.iosInfo).systemVersion;
+    }
+    return Platform.operatingSystemVersion;
+  }
+
   void _openAccount() {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -275,8 +361,26 @@ class _AuthenticatedApplicationShellState
           apiClient: _accountClient,
           commandRuntime: _runtime,
           onOpenRecovery: _openRecovery,
+          onOpenValidation: _validationController == null
+              ? null
+              : _openValidation,
           recoveryCount: _recoveryCount,
           recoveryUnavailable: _recoveryUnavailable,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openValidation() async {
+    final ValidationEvidenceController? controller = _validationController;
+    if (controller == null || !mounted) {
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => ValidationCenterScreen(
+          controller: controller,
+          activeOwnerProvider: () => widget.controller.identity?.ownerId,
         ),
       ),
     );
@@ -325,6 +429,37 @@ class _AuthenticatedApplicationShellState
         _recoveryUnavailable = true;
       });
     }
+  }
+}
+
+class _ValidationMetadataProgressScreen extends StatelessWidget {
+  const _ValidationMetadataProgressScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+}
+
+class _ValidationMetadataErrorScreen extends StatelessWidget {
+  const _ValidationMetadataErrorScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Validation Center не запущен: runtime app/build metadata '
+              'недоступны или некорректны.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

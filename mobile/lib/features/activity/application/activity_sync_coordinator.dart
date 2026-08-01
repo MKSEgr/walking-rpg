@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/data/development_step_source.dart';
@@ -57,9 +59,27 @@ class ActivitySyncCoordinator {
 
   StepReading? _pendingReading;
   String? _pendingKey;
+  Future<void> _syncTail = Future<void>.value();
 
   Future<ActivitySyncResult> synchronize() async {
     final StepReading reading = await stepSource.read();
+    return synchronizeReading(reading);
+  }
+
+  Future<ActivitySyncResult> synchronizeReading(StepReading reading) {
+    final Completer<ActivitySyncResult> result =
+        Completer<ActivitySyncResult>();
+    _syncTail = _syncTail.then((_) async {
+      try {
+        result.complete(await _synchronizeReading(reading));
+      } on Object catch (error, stackTrace) {
+        result.completeError(error, stackTrace);
+      }
+    });
+    return result.future;
+  }
+
+  Future<ActivitySyncResult> _synchronizeReading(StepReading reading) async {
     if (_pendingReading != reading || _pendingKey == null) {
       _pendingReading = reading;
       _pendingKey = _idempotencyKeyFactory(reading);

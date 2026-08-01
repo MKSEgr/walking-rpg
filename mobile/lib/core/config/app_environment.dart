@@ -64,4 +64,13 @@ abstract final class AppEnvironment {
     'ACTIVITY_TIME_ZONE',
     defaultValue: 'UTC',
   );
+
+  static const bool enableValidationCenter = bool.fromEnvironment(
+    'ENABLE_VALIDATION_CENTER',
+    defaultValue: false,
+  );
+
+  static const String validationSourceGitSha = String.fromEnvironment(
+    'VALIDATION_SOURCE_GIT_SHA',
+  );
 }

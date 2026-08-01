@@ -44,3 +44,4 @@ NNNN-short-title.md
 - [0025 — production provider isolation](0025-production-provider-isolation.md)
 - [0026 — production operational controls](0026-production-operational-controls.md)
 - [0027 — API 36 и protected mobile signing](0027-api-36-and-protected-mobile-signing.md)
+- [0028 — внутренний physical-device Validation Center](0028-internal-device-validation-center.md)
