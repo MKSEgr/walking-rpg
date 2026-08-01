@@ -71,13 +71,32 @@ same semantic accents. Text scaling, screen-reader labels and platform reduced
 motion remain part of every screen review. Decorative painting must not add
 semantics or intercept gestures.
 
+## Journal composition
+
+The path journal extends the expedition language without becoming a second
+Home screen:
+
+- the season hero identifies the authoritative chapter, state version, active
+  companion, XP and currently known ENERGY balance;
+- first-journey progress remains the first resumable task;
+- the weekly route is the single headline progression measure and therefore
+  owns the ENERGY progress ring;
+- companions, pilot skills, quests, squad, cosmetics and achievements use
+  domain-toned field panels while preserving their existing command keys;
+- experiment assignments and remote configuration remain collapsed service
+  diagnostics rather than player-facing progression.
+
+Cached journal snapshots stay read-only and never infer ENERGY from stale
+platform state. Visual badges summarize only values already present in the
+accepted read models.
+
 ## Next visual slices
 
 1. Define the world key art and the first chapter environment language.
 2. Design final silhouettes and three evolution stages for all starter pets.
 3. Turn the expedition chapter into a visual route map without adding GPS or
    real-time walking interaction.
-4. Recompose the journal into player-facing tabs and move diagnostics behind a
-   clearly secondary surface.
+4. Split the journal into player-facing tabs only when closed-beta content
+   density proves that the single expedition log no longer scans well.
 5. Produce app icon, splash, store screenshots and motion guidelines only after
    the in-game direction is approved.

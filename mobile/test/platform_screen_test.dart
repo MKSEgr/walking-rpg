@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
@@ -12,6 +14,35 @@ import 'package:walking_rpg_mobile/features/platform/presentation/platform_scree
 import 'support/platform_fixture.dart';
 
 void main() {
+  testWidgets('uses the shared expedition language for the journal', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ExpeditionBackdrop), findsOneWidget);
+    expect(find.byType(ExpeditionPanel), findsWidgets);
+    expect(find.byType(ExpeditionProgressRing), findsOneWidget);
+    final ExpeditionPanel hero = tester.widget<ExpeditionPanel>(
+      find.byKey(const Key('platform-journal-hero')),
+    );
+    expect(hero.tone, ExpeditionPanelTone.resonance);
+    expect(
+      tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+      Colors.transparent,
+    );
+    expect(find.text('Глава из 18 узлов · состояние 42'), findsOneWidget);
+  });
+
   testWidgets('renders platform snapshot and resumes guided first journey', (
     WidgetTester tester,
   ) async {
