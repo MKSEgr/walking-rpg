@@ -17,11 +17,12 @@ void main() {
   testWidgets('uses the shared expedition language for the journal', (
     WidgetTester tester,
   ) async {
+    final PlatformSnapshot initial = platformSnapshot();
     await tester.pumpWidget(
       MaterialApp(
         theme: WalkingRpgTheme.dark(),
         home: PlatformScreen(
-          loader: () async => platformSnapshot(),
+          loader: () async => initial,
           homeLoader: () async => HomeSnapshot.demo,
           recordExperimentExposures: false,
         ),
@@ -39,7 +40,13 @@ void main() {
       tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
       Colors.transparent,
     );
-    expect(find.text('Глава из 18 узлов · состояние 42'), findsOneWidget);
+    expect(
+      find.text(
+        'Глава из ${initial.content.chapterNodes} узлов · '
+        'состояние ${initial.stateVersion}',
+      ),
+      findsOneWidget,
+    );
 
     await tester.scrollUntilVisible(
       find.byKey(const Key('platform-advance-weekly')),
