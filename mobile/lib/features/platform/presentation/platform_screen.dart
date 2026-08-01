@@ -1004,9 +1004,7 @@ class _PetCard extends StatelessWidget {
                   onPressed: busy || !pet.canEvolve ? null : onEvolve,
                   icon: const Icon(Icons.auto_awesome_outlined),
                   label: Text(
-                    pet.canEvolve
-                        ? 'Эволюционировать'
-                        : 'Нужно больше связи',
+                    pet.canEvolve ? 'Эволюционировать' : 'Нужно больше связи',
                   ),
                 ),
             ],

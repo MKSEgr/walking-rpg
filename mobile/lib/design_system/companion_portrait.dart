@@ -47,9 +47,7 @@ class CompanionPortrait extends StatelessWidget {
         : evolutionStage > 2
         ? 2
         : evolutionStage;
-    final String activeLabel = active
-        ? ', активный спутник'
-        : '';
+    final String activeLabel = active ? ', активный спутник' : '';
 
     return Semantics(
       image: true,
@@ -146,10 +144,18 @@ class _CompanionPortraitPainter extends CustomPainter {
 
     _drawField(canvas);
     switch (identity) {
-      CompanionIdentity.spark => _drawSpark(canvas),
-      CompanionIdentity.moss => _drawMoss(canvas),
-      CompanionIdentity.rune => _drawRune(canvas),
-      CompanionIdentity.unknown => _drawUnknown(canvas),
+      case CompanionIdentity.spark:
+        _drawSpark(canvas);
+        break;
+      case CompanionIdentity.moss:
+        _drawMoss(canvas);
+        break;
+      case CompanionIdentity.rune:
+        _drawRune(canvas);
+        break;
+      case CompanionIdentity.unknown:
+        _drawUnknown(canvas);
+        break;
     }
     _drawActiveMarker(canvas);
     canvas.restore();
@@ -286,11 +292,7 @@ class _CompanionPortraitPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = stage > 0 ? 2.4 : 1.8
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      const Offset(50, 19),
-      Offset(50, stage > 0 ? 6 : 10),
-      stem,
-    );
+    canvas.drawLine(const Offset(50, 19), Offset(50, stage > 0 ? 6 : 10), stem);
     final Paint leaf = Paint()..color = accent.withValues(alpha: 0.98);
     canvas
       ..drawOval(const Rect.fromLTWH(38, 8, 13, 8), leaf)

@@ -409,9 +409,7 @@ class _PetChoice extends StatelessWidget {
       color: colors.surfaceContainerHighest.withValues(alpha: 0.64),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: colors.outlineVariant.withValues(alpha: 0.72),
-        ),
+        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.72)),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(

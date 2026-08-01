@@ -46,34 +46,29 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(
-      tester.widget<CompanionPortrait>(find.byKey(const Key('portrait-spark')))
+      tester
+          .widget<CompanionPortrait>(find.byKey(const Key('portrait-spark')))
           .identity,
       CompanionIdentity.spark,
     );
     expect(
-      tester.widget<CompanionPortrait>(find.byKey(const Key('portrait-moss')))
+      tester
+          .widget<CompanionPortrait>(find.byKey(const Key('portrait-moss')))
           .identity,
       CompanionIdentity.moss,
     );
     expect(
-      tester.widget<CompanionPortrait>(find.byKey(const Key('portrait-rune')))
+      tester
+          .widget<CompanionPortrait>(find.byKey(const Key('portrait-rune')))
           .identity,
       CompanionIdentity.rune,
     );
     expect(
-      find.bySemanticsLabel(
-        'Искра, люмин, форма 1, активный спутник',
-      ),
+      find.bySemanticsLabel('Искра, люмин, форма 1, активный спутник'),
       findsOneWidget,
     );
-    expect(
-      find.bySemanticsLabel('Мох, терра, форма 2'),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel('Руна, эхо, форма 3'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Мох, терра, форма 2'), findsOneWidget);
+    expect(find.bySemanticsLabel('Руна, эхо, форма 3'), findsOneWidget);
   });
 
   testWidgets('uses the fallback identity for future server-owned pets', (
