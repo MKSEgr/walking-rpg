@@ -109,7 +109,7 @@ class _CompanionPortraitPainter extends CustomPainter {
       )
       ..scale(scale);
 
-    final Rect frameRect = const Rect.fromLTWH(3, 3, 94, 94);
+    const Rect frameRect = Rect.fromLTWH(3, 3, 94, 94);
     final RRect frame = RRect.fromRectAndRadius(
       frameRect,
       const Radius.circular(29),
