@@ -8,6 +8,8 @@ import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.da
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
+import 'package:walking_rpg_mobile/features/equipment/data/equipment_api_client.dart';
+import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
@@ -158,6 +160,105 @@ void main() {
     expect(replayedRecipeId, 'resonance-compass-v1');
     expect(replayedKey, 'craft-original');
     expect(store.snapshot, isEmpty);
+  });
+
+  test(
+    'equipment replays the same desired state and key after restart',
+    () async {
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+      final MobileCommandRuntime firstRuntime = _runtime(
+        store: store,
+        equipmentSender:
+            ({
+              required String slotId,
+              required String action,
+              required String? itemInstanceId,
+              required String idempotencyKey,
+            }) async => throw StateError('response lost after equip'),
+      );
+
+      await expectLater(
+        firstRuntime.changeEquipment(
+          slotId: 'NAVIGATION',
+          action: 'EQUIP',
+          itemInstanceId: '33333333-3333-3333-3333-333333333333',
+          idempotencyKey: 'equip-original',
+        ),
+        throwsStateError,
+      );
+      expect(store.snapshot.single.type, MobileCommandType.equipment);
+      expect(store.snapshot.single.lane, MobileCommandLane.gameplay);
+      expect(store.snapshot.single.payload, <String, Object?>{
+        'slotId': 'NAVIGATION',
+        'action': 'EQUIP',
+        'itemInstanceId': '33333333-3333-3333-3333-333333333333',
+      });
+
+      String? replayedSlot;
+      String? replayedAction;
+      String? replayedItem;
+      String? replayedKey;
+      final MobileCommandRuntime restartedRuntime = _runtime(
+        store: store,
+        equipmentSender:
+            ({
+              required String slotId,
+              required String action,
+              required String? itemInstanceId,
+              required String idempotencyKey,
+            }) async {
+              replayedSlot = slotId;
+              replayedAction = action;
+              replayedItem = itemInstanceId;
+              replayedKey = idempotencyKey;
+              return _equipmentResult();
+            },
+      );
+
+      final MobileCommandReplayReport report = await restartedRuntime
+          .replayPending();
+
+      expect(report.succeeded, 1);
+      expect(replayedSlot, 'NAVIGATION');
+      expect(replayedAction, 'EQUIP');
+      expect(replayedItem, '33333333-3333-3333-3333-333333333333');
+      expect(replayedKey, 'equip-original');
+      expect(store.snapshot, isEmpty);
+    },
+  );
+
+  test('terminal equipment conflict is retained as rejected failure', () async {
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+    final MobileCommandRuntime runtime = _runtime(
+      store: store,
+      equipmentSender:
+          ({
+            required String slotId,
+            required String action,
+            required String? itemInstanceId,
+            required String idempotencyKey,
+          }) async => throw const EquipmentApiException(
+            statusCode: 409,
+            code: 'EQUIPMENT_ITEM_UNAVAILABLE',
+            message: 'item is unavailable',
+          ),
+    );
+
+    await expectLater(
+      runtime.changeEquipment(
+        slotId: 'NAVIGATION',
+        action: 'EQUIP',
+        itemInstanceId: '33333333-3333-3333-3333-333333333333',
+        idempotencyKey: 'equip-rejected',
+      ),
+      throwsA(isA<EquipmentApiException>()),
+    );
+
+    expect(store.snapshot.single.state, MobileCommandState.failed);
+    expect(
+      store.snapshot.single.lastFailureCategory,
+      MobileCommandFailureCategory.rejected,
+    );
   });
 
   test(
@@ -1107,6 +1208,7 @@ MobileCommandRuntime _runtime({
   EventCommandSender? eventSender,
   EventResultAcknowledgementSender? eventResultAcknowledgementSender,
   CraftingCommandSender? craftingSender,
+  EquipmentCommandSender? equipmentSender,
   PlatformCommandSender? platformSender,
 }) {
   return MobileCommandRuntime(
@@ -1140,6 +1242,14 @@ MobileCommandRuntime _runtime({
         craftingSender ??
         ({required String recipeId, required String idempotencyKey}) async =>
             _craftingResult(),
+    equipmentSender:
+        equipmentSender ??
+        ({
+          required String slotId,
+          required String action,
+          required String? itemInstanceId,
+          required String idempotencyKey,
+        }) async => _equipmentResult(),
     platformSender:
         platformSender ??
         ({
@@ -1268,6 +1378,26 @@ CraftingResult _craftingResult() {
       description: 'Уникальный прибор.',
       version: 1,
       craftedAt: '2026-07-26T10:00:00Z',
+    ),
+    serverTime: '2026-07-26T10:00:00Z',
+  );
+}
+
+EquipmentResult _equipmentResult() {
+  return const EquipmentResult(
+    contentVersion: 'equipment-v1',
+    slotId: 'NAVIGATION',
+    slotName: 'Навигационный прибор',
+    slotDescription: 'Один уникальный инструмент.',
+    action: 'EQUIP',
+    changed: true,
+    version: 1,
+    equippedItem: EquippedItem(
+      itemInstanceId: '33333333-3333-3333-3333-333333333333',
+      itemId: 'resonance-compass',
+      name: 'Резонансный компас',
+      description: 'Уникальный прибор.',
+      equippedAt: '2026-07-26T10:00:00Z',
     ),
     serverTime: '2026-07-26T10:00:00Z',
   );

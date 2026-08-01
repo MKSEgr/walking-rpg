@@ -91,6 +91,8 @@ class AccountDeletionIntegrationTest {
         assertEquals(0, rowCount("unique_inventory_item"));
         assertEquals(0, rowCount("processed_crafting_command"));
         assertEquals(0, rowCount("processed_crafting_ingredient"));
+        assertEquals(0, rowCount("equipment_slot_state"));
+        assertEquals(0, rowCount("processed_equipment_command"));
         assertEquals(1, rowCount("account_deletion_receipt"));
         assertNotEquals("delete-user", jdbcTemplate.queryForObject(
                 "SELECT subject_hash FROM account_deletion_receipt",
@@ -165,6 +167,8 @@ class AccountDeletionIntegrationTest {
                 "uniqueInventory",
                 "craftingOperations",
                 "craftingIngredients",
+                "equipment",
+                "equipmentOperations",
                 "platformState",
                 "platformCommands",
                 "firstJourneyMilestones",
@@ -183,6 +187,8 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, ((List<?>) export.get("uniqueInventory")).size());
         assertEquals(1, ((List<?>) export.get("craftingOperations")).size());
         assertEquals(1, ((List<?>) export.get("craftingIngredients")).size());
+        assertEquals(1, ((List<?>) export.get("equipment")).size());
+        assertEquals(1, ((List<?>) export.get("equipmentOperations")).size());
     }
 
     @Test
@@ -282,6 +288,32 @@ class AccountDeletionIntegrationTest {
                     '70000000-0000-0000-0000-000000000001',
                     'resonance-compass', 'Резонансный компас',
                     'Account export test item.', 1, ?, ?, ?
+                )
+                """, userId, timestamp, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO equipment_slot_state (
+                    user_id, slot_id, item_instance_id,
+                    version, equipped_at, updated_at
+                ) VALUES (
+                    ?, 'NAVIGATION',
+                    '70000000-0000-0000-0000-000000000001',
+                    1, ?, ?
+                )
+                """, userId, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO processed_equipment_command (
+                    user_id, slot_id, idempotency_key, request_fingerprint,
+                    content_version, action, changed, slot_name,
+                    slot_description, equipment_version, item_instance_id,
+                    item_id, item_name, item_description, equipped_at,
+                    server_time, created_at
+                ) VALUES (
+                    ?, 'NAVIGATION', 'account-test-equip', repeat('8', 64),
+                    'equipment-v1', 'EQUIP', true, 'Навигационный прибор',
+                    'Account export equipment slot.', 1,
+                    '70000000-0000-0000-0000-000000000001',
+                    'resonance-compass', 'Резонансный компас',
+                    'Account export test item.', ?, ?, ?
                 )
                 """, userId, timestamp, timestamp, timestamp);
         jdbcTemplate.update("""

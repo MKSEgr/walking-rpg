@@ -69,8 +69,8 @@ midnight/timezone, permission revoke и battery evidence не выполнены
 
 Как пользователь, я хочу тратить ENERGY и последовательно достигать узлов экспедиции.
 
-**Статус:** реализовано для 18 последовательных узлов
-`starter-expedition-v1` с persistent progress и idempotent debit.
+**Статус:** реализовано для 18 основных узлов `starter-expedition-v1` и
+опционального `resonance-pocket` с persistent progress и idempotent debit.
 
 ### US-005. Разрешить первое событие
 
@@ -299,21 +299,54 @@ limiter, deployed management network, alerts, backup policy, PITR/RPO/RTO и
 операционные policy checks реализованы. Ценность рецепта и стоимость material
 sink требуют beta/economy validation.
 
+### US-015. Экипировать компас и открыть скрытый маршрут
+
+Как пользователь, я хочу экипировать созданный уникальный предмет и получить
+новый вариант прохождения, чтобы crafting влиял на игру, а не только на
+коллекцию.
+
+Критерии:
+
+- `equipment-v1` содержит server-owned slot `NAVIGATION`, принимающий только
+  принадлежащий пользователю `resonance-compass`;
+- equip/unequip — desired-state команды с persistent exact replay и конфликтом
+  при повторном key с другим payload;
+- новая equipment mutation сериализуется с expedition/event/crafting и
+  account deletion, а при pending event receipt отклоняется без изменения;
+- `GET /home` возвращает slot state, item equipment metadata и availability/
+  requirement каждого gated choice;
+- `follow-resonance` в `mirror-delta-v1` недоступен без экипированного компаса,
+  а backend повторно проверяет prerequisite под expedition lock;
+- V14 stage-ит v2 inactive; Home/event/bootstrap открывают route только после
+  cluster-wide activation и полного drain старого backend pool;
+- доступный выбор ведёт в optional `resonance-pocket`, после которого маршрут
+  возвращается в `storm-archive`; основной выбор сохраняет прежний путь;
+- mobile сохраняет `EQUIPMENT` до отправки в GAMEPLAY outbox, не применяет
+  optimistic loadout и после успеха перечитывает authoritative home;
+- equipment state/processed responses входят в export, cascade deletion и
+  backup/restore manifest.
+
+**Статус:** backend/mobile/Flyway V14, staged rollout gate,
+unit/API/PostgreSQL concurrency/widget tests и release-policy checks
+реализованы. Понятность экипировки и ценность опционального маршрута требуют
+beta validation.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
-- первая глава из 18 последовательных узлов;
+- первая глава из 18 основных узлов и первой опциональной ветки;
 - три питомца, active selection, эволюция и навыки;
 - onboarding, задания и достижения;
 - development push provider boundary с local/test-only registration;
 - product analytics и experiment exposure;
 - read-only offline cache валидированных `home` / `platform` snapshots;
-- расход материалов, starter crafting recipe и persistent unique item.
+- расход материалов, starter crafting recipe, persistent unique item и
+  server-authoritative equipment slot.
 
 После физической device-validation и beta остаются продуктовые расширения:
 
-- дополнительные типы событий и нелинейные ветки;
+- дополнительные типы событий и нелинейные ветки сверх первого resonance route;
 - дополнительные recipes, rarity/upgrade mechanics и баланс material sinks;
 - production APNs / FCM;
 - background activity research с battery evidence;

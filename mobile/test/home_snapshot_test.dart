@@ -233,6 +233,67 @@ void main() {
     expect(snapshot.craftingRecipes.single.ingredients, hasLength(2));
   });
 
+  test('equipment and gated event choice are mapped additively', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['contentVersion'] = 'chapter-1-v2';
+    response['inventory'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'itemInstanceId': '33333333-3333-3333-3333-333333333333',
+        'itemId': 'resonance-compass',
+        'name': 'Резонансный компас',
+        'description': 'Уникальный навигационный прибор.',
+        'quantity': 1,
+        'version': 1,
+        'kind': 'UNIQUE',
+        'equippableSlotId': 'NAVIGATION',
+        'equippedSlotId': null,
+      },
+    ];
+    response['equipment'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'slotId': 'NAVIGATION',
+        'name': 'Навигационный прибор',
+        'description': 'Инструмент, влияющий на доступные маршруты.',
+        'status': 'EMPTY',
+        'version': 0,
+        'item': null,
+      },
+    ];
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    final Map<String, dynamic> event =
+        expedition['unlockedEvent'] as Map<String, dynamic>;
+    event['lockedChoices'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'choiceId': 'follow-resonance',
+        'title': 'Пойти по резонансу',
+        'description': 'Настроить компас на скрытое отражение.',
+        'pilotExperienceReward': 35,
+        'petBondReward': 16,
+        'availability': 'LOCKED',
+        'requirement': <String, dynamic>{
+          'type': 'EQUIPPED_ITEM',
+          'slotId': 'NAVIGATION',
+          'slotName': 'Навигационный прибор',
+          'itemId': 'resonance-compass',
+          'itemName': 'Резонансный компас',
+          'description': 'Экипируйте компас, чтобы увидеть маршрут.',
+        },
+      },
+    ];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.inventory.single.isEquippable, isTrue);
+    expect(snapshot.inventory.single.isEquipped, isFalse);
+    expect(snapshot.equipment.single.status, 'EMPTY');
+    expect(snapshot.equipment.single.item, isNull);
+    final HomeEventChoice gated = snapshot.unlockedEvent!.choices.last;
+    expect(gated.isAvailable, isFalse);
+    expect(gated.requirement?.itemId, 'resonance-compass');
+    expect(gated.requirement?.slotId, 'NAVIGATION');
+  });
+
   test('invalid nested response is rejected', () {
     expect(
       () => HomeSnapshot.fromJson(<String, dynamic>{'pilot': 'invalid'}),

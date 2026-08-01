@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class StarterHomeContent {
 
-    static final String CONTENT_VERSION = "chapter-1-v1";
+    static final String CONTENT_VERSION = "chapter-1-v2";
     private final StarterProgressionContent progressionContent;
 
     public StarterHomeContent() {

@@ -27,6 +27,7 @@ expedition     — узлы, события и прохождение
 progression    — pilot XP и pet bond
 inventory      — material stack и credit/debit ledger
 crafting       — versioned recipes, material consumption и unique items
+equipment      — persistent loadout, ownership и exact equip/unequip replay
 home           — агрегированный read model
 platform       — onboarding, pets, skills, quests, season, squads, cosmetics, experiments
 content        — versioned server-owned releases
@@ -47,6 +48,7 @@ home                 — authoritative home snapshot
 expedition           — ENERGY spend
 event                — event resolution, durable result и acknowledgement
 crafting             — server recipe command/result
+equipment            — durable equip/unequip command/result
 onboarding            — guided first journey и recovery milestones
 platform             — typed snapshot, commands и «Путевой журнал»
 recovery             — owner-scoped UI сохранённых действий
@@ -82,6 +84,7 @@ GAMEPLAY
 ├── EVENT_RESOLUTION
 ├── EVENT_RESULT_ACKNOWLEDGEMENT
 ├── CRAFTING
+├── EQUIPMENT
 └── state-changing PLATFORM_COMMAND
 
 TELEMETRY
@@ -198,12 +201,28 @@ platform-команды. Для старого раздвоенного сост
 
 ## 6. Контент
 
-Активная версия `chapter-1-v1` содержит 18 последовательных узлов от `outer-beacon` до `dawn-relay`, server-owned choices и material rewards. Stable IDs сохраняются между версиями; mutable user state отделён от definitions. `content_release` и remote config позволяют публиковать активную версию без переписывания исторических command responses.
+Активная версия `chapter-1-v2` содержит 18 основных узлов от `outer-beacon` до
+`dawn-relay` и опциональный `resonance-pocket`. Обычные choices события
+`mirror-delta-v1` ведут в `storm-archive`, а `follow-resonance` требует
+экипированный `resonance-compass` и ведёт через optional node. Stable IDs
+сохраняются между версиями; mutable user state отделён от definitions.
+`content_release` и remote config позволяют публиковать активную версию без
+переписывания исторических command responses.
+V14 лишь stage-ит v2 и оставляет v1 активной. Пока оператор не активировал v2
+после полного drain старого backend pool, новый backend возвращает v1/18 nodes,
+не проецирует `follow-resonance` и отклоняет прямой переход. Exact replay
+исторического результата выполняется до release gate.
 
 Starter crafting content имеет независимую версию `crafting-v1`. Recipe
 `resonance-compass-v1` принимает только stable material item IDs и создаёт
 non-stackable `resonance-compass`. Client получает recipe projection через
 home, но не задаёт стоимость, количество или результат command-а.
+
+Equipment content имеет независимую версию `equipment-v1`: slot
+`NAVIGATION` принимает unique `resonance-compass`. Home availability является
+UX projection; locked choices вынесены в additive `lockedChoices`, чтобы
+legacy mobile видел только основной маршрут. Event service повторно проверяет
+requirement под authoritative expedition lock.
 
 ## 7. Схема данных
 
@@ -221,6 +240,7 @@ processed_event_resolution
 inventory_stack, inventory_ledger
 unique_inventory_item
 processed_crafting_command, processed_crafting_ingredient
+equipment_slot_state, processed_equipment_command
 roadmap_user_state, processed_roadmap_command
 remote_config_snapshot, content_release
 roadmap_squad, roadmap_squad_member
@@ -248,6 +268,9 @@ provider mode.
 V13 ослабляет старый reward-only inventory ledger до ненулевого credit/debit
 при обязательном неотрицательном `quantity_after`, создаёт persistent unique
 item и immutable crafting response/ingredient snapshots.
+V14 добавляет composite ownership FK и single-slot uniqueness equipment state,
+immutable equip/unequip responses и stage-ит inactive `chapter-1-v2`, сохраняя
+starter `chapter-1-v1` активной до отдельного cluster-wide activation step.
 
 ## 8. Конкурентность и транзакции
 
@@ -262,6 +285,12 @@ item и immutable crafting response/ingredient snapshots.
   material mutation; material rows блокируются в стабильном `itemId`-порядке;
 - все ingredient checks выполняются до debit, а material debit, ledger,
   unique item и processed response имеют один commit;
+- equipment exact replay выполняется после account/equipment lock, но до
+  expedition boundary; новая мутация получает shared expedition lock,
+  проверяет pending receipt, блокирует принадлежащий unique item и одним
+  commit сохраняет desired slot state с processed response;
+- event resolution не получает equipment advisory lock: после expedition lock
+  он читает committed loadout, поэтому lock order не образует цикл;
 - один transaction commit для связанных изменений;
 - capable pending result проверяется под тем же user+expedition serialization
   boundary до advance/resolution/new crafting mutation;
@@ -323,6 +352,13 @@ item и immutable crafting response/ingredient snapshots.
     отрицателен.
 32. Один unique item создаётся не более одного раза на user+item/recipe; exact
     replay возвращает исходный instance и snapshots.
+33. Equipment slot может ссылаться только на unique item того же user; один
+    instance не занимает два slot.
+34. Home choice availability не заменяет server-side prerequisite check.
+35. Exact equipment replay доступен при pending event receipt, но новая
+    equip/unequip mutation до ACK запрещена.
+36. Обычный выбор `mirror-delta-v1` не попадает в optional route; только
+    `follow-resonance` с экипированным компасом ведёт в `resonance-pocket`.
 
 ## 10. Identity и authorization boundary
 

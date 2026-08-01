@@ -6,8 +6,30 @@ public record ExpeditionEventChoiceSnapshot(
         String description,
         int pilotExperienceReward,
         int petBondReward,
-        MaterialRewardPreviewSnapshot materialReward
+        MaterialRewardPreviewSnapshot materialReward,
+        String availability,
+        ExpeditionChoiceRequirementSnapshot requirement
 ) {
+    public ExpeditionEventChoiceSnapshot(
+            String choiceId,
+            String title,
+            String description,
+            int pilotExperienceReward,
+            int petBondReward,
+            MaterialRewardPreviewSnapshot materialReward
+    ) {
+        this(
+                choiceId,
+                title,
+                description,
+                pilotExperienceReward,
+                petBondReward,
+                materialReward,
+                "AVAILABLE",
+                null
+        );
+    }
+
     public ExpeditionEventChoiceSnapshot(
             String choiceId,
             String title,
@@ -21,6 +43,8 @@ public record ExpeditionEventChoiceSnapshot(
                 description,
                 pilotExperienceReward,
                 petBondReward,
+                null,
+                "AVAILABLE",
                 null
         );
     }

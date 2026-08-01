@@ -126,6 +126,20 @@
   **«Мастерская»** и restart-safe `CRAFTING` в GAMEPLAY outbox;
 - account export/delete и synthetic backup/restore coverage для crafting state;
 - ADR 0029 о server-authoritative crafting и unique inventory;
+- versioned `equipment-v1`, persistent slot `NAVIGATION` и desired-state
+  `POST /api/v1/equipment/slots/{slotId}/equip|unequip` с exact replay;
+- owned-item FK, single-slot uniqueness, immutable
+  `processed_equipment_command` и Flyway V14;
+- additive equipment/item/choice-requirement projection в `GET /home`, Flutter
+  **«Снаряжение»** и restart-safe `EQUIPMENT` в GAMEPLAY outbox;
+- `chapter-1-v2` с 18 основными узлами и optional `resonance-pocket`, который
+  открывается из `mirror-delta-v1` только экипированным
+  `resonance-compass`;
+- staged `content_release` activation: V14 оставляет v1 активной, а новый
+  Home/event/bootstrap открывает v2 только после cluster-wide drain;
+- account export/delete, synthetic backup/restore, unit/API/PostgreSQL race и
+  widget coverage для equipment/optional route;
+- ADR 0030 о server-authoritative equipment и gated routes;
 
 ### Changed
 
@@ -191,6 +205,13 @@
 - новая crafting mutation разделяет expedition serialization boundary с
   advance/event resolution и блокируется pending event receipt; exact replay
   уже выполненной craft-команды остаётся доступен до ACK.
+- новая equipment mutation использует тот же pending-receipt/expedition
+  boundary после exact replay; event prerequisite проверяется backend после
+  expedition lock, а mobile availability остаётся только UX projection.
+- locked gated choices проецируются отдельно в additive `lockedChoices`, чтобы
+  legacy mobile видел только рабочий основной маршрут; новый client объединяет
+  их с `choices`, а подтверждённые equipment 4xx становятся terminal recovery
+  records и не блокируют GAMEPLAY lane бесконечно.
 
 ## [0.1.0] — 2026-07-25
 

@@ -32,6 +32,8 @@ authoritative step total
 → следующие content-driven узлы
 → persistent pilot XP + active-pet bond + material inventory
 → atomic material debit + persistent unique item
+→ persistent equipment slot + exact equip/unequip replay
+→ equipment-gated optional route
 → chapter completion
 ```
 
@@ -132,6 +134,10 @@ PostgreSQL Testcontainers tests проверяют:
 - Flyway V13 разрешает audited material debit при неотрицательном остатке,
   создаёт unique inventory/crafting response tables и проверяется upgrade- и
   concurrency-тестами.
+- Flyway V14 создаёт owned equipment slot/processed response, single-slot
+  uniqueness и staged inactive `chapter-1-v2`; upgrade, release activation,
+  event prerequisite и account/event concurrency проверяются отдельными
+  PostgreSQL tests.
 - operational integration проверяет main-port `/livez`/`readyz`, PostgreSQL в
   readiness, скрытые health details и admin-only Prometheus;
 - synthetic PostgreSQL 17.10 backup/restore drill сверяет archive checksum,
@@ -180,6 +186,8 @@ POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
 POST /api/v1/event-results/{receiptId}/acknowledge
 POST /api/v1/crafting/recipes/{recipeId}/craft
+POST /api/v1/equipment/slots/{slotId}/equip
+POST /api/v1/equipment/slots/{slotId}/unequip
 GET  /api/v1/platform
 POST /api/v1/platform/commands
 GET  /api/v1/admin/platform/analytics/first-journey?cohortCode=alpha-1
@@ -237,7 +245,7 @@ curl -X POST http://localhost:8080/api/v1/activity/sync \
 
 ### Первая глава стартовой экспедиции
 
-Один и тот же endpoint используется для всех 18 узлов:
+Один и тот же endpoint используется для 18 основных узлов и опционального:
 
 ```bash
 curl -X POST \
@@ -250,7 +258,7 @@ curl -X POST \
   }'
 ```
 
-Начало `chapter-1-v1`:
+Начало `chapter-1-v2`:
 
 ```text
 outer-beacon   — 30 ENERGY → signal-source-v1
@@ -299,7 +307,7 @@ curl -X POST \
 ```json
 {
   "receiptId": "22222222-2222-2222-2222-222222222222",
-  "contentVersion": "chapter-1-v1",
+  "contentVersion": "chapter-1-v2",
   "expeditionStatus": "IN_PROGRESS",
   "eventId": "echo-vault-v1",
   "choiceId": "stabilize-core",
@@ -391,6 +399,40 @@ first-journey p50/p90; legacy auto-ACK и migration evidence видны толь
 `BACKFILLED` conversion. Установленное время ACK неизменяемо, а exact replay не
 выполняет повторный physical update.
 
+### Crafting, equipment и resonance route
+
+Recipe `resonance-compass-v1` атомарно списывает `2 × lumen-shard` и
+`1 × echo-thread`, создаёт unique item instance и сохраняет exact response.
+После этого item можно поместить в единственный starter slot `NAVIGATION`:
+
+```bash
+curl -X POST \
+  http://localhost:8080/api/v1/equipment/slots/NAVIGATION/equip \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-Id: demo-user-1' \
+  -d '{
+    "itemInstanceId": "33333333-3333-3333-3333-333333333333",
+    "idempotencyKey": "equip-navigation-1"
+  }'
+```
+
+Unequip использует тот же request contract с `itemInstanceId: null` и новым
+key. Обе операции имеют desired-state semantics: повтор exact command
+возвращает исходный response, а новый key для уже достигнутого состояния
+возвращает `changed = false`. Item должен принадлежать authenticated user,
+соответствовать slot content и не может занимать два slot.
+
+Новая equipment mutation получает account/equipment locks, сохраняет exact
+replay доступным, затем входит в общий expedition serialization boundary и
+проверяет pending event receipt. В `mirror-delta-v1` backend под тем же
+expedition lock читает committed equipment: `follow-resonance` требует
+`resonance-compass` в `NAVIGATION` и ведёт в `resonance-pocket`; обычный choice
+сохраняет переход в `storm-archive`. Optional node после resolution также
+возвращается в `storm-archive`.
+До отдельной admin-активации v2 после drain старого backend pool Home не
+проецирует gated choice, а event API отклоняет прямую новую resolution; exact
+replay остаётся перед release gate.
+
 ## Что сохраняется
 
 ```text
@@ -410,6 +452,8 @@ inventory_ledger                — append-only material credit/debit journal
 unique_inventory_item           — persistent non-stackable crafted item
 processed_crafting_command      — immutable exact crafting response
 processed_crafting_ingredient   — immutable consumed-stack snapshots
+equipment_slot_state            — persistent owned equipment loadout
+processed_equipment_command     — immutable exact equip/unequip response
 ```
 
 ## Инварианты
@@ -421,14 +465,18 @@ processed_crafting_ingredient   — immutable consumed-stack snapshots
 - один command key не создаёт повторное изменение состояния;
 - key с другим payload возвращает `IDEMPOTENCY_CONFLICT`;
 - event разрешается только из `EVENT_READY`;
-- pending capable event receipt блокирует следующий advance/resolution и новую
-  crafting mutation до явного ACK; exact crafting replay остаётся доступен,
-  legacy delivery auto-acknowledged;
+- pending capable event receipt блокирует следующий advance/resolution и новые
+  crafting/equipment mutations до явного ACK; exact replay уже выполненных
+  команд остаётся доступен, legacy delivery auto-acknowledged;
 - acknowledgement scoped только authenticated user + `receiptId`, не имеет
   request body и возвращает стабильное время первого ACK;
 - progression, inventory reward и expedition transition/completion фиксируются одной транзакцией;
 - crafting списывает все ingredients, пишет debit audit, создаёт unique item и
   processed response одной транзакцией;
+- equipment slot ссылается только на unique item того же user, один item не
+  занимает два slot, а state и processed response фиксируются одним commit;
+- gated choice повторно проверяет equipment под expedition lock; home
+  availability является только read projection;
 - material quantity и `quantity_after` не становятся отрицательными;
 - `GET /home` не создаёт данные или goal snapshots;
 - текущий локальный день не участвует в собственной daily goal.
@@ -437,7 +485,8 @@ processed_crafting_ingredient   — immutable consumed-stack snapshots
 
 - production IdP ещё требует client/redirect/issuer configuration;
 - attestation/risk работает в shadow mode без blocking enforcement;
-- одна последовательная глава без нелинейных веток;
+- первая глава имеет одну equipment-gated optional ветку; другие nonlinear
+  routes пока отсутствуют;
 - content definitions поставляются с backend, а release/config управляются
   versioned platform state;
 - starter crafting ограничен одним versioned recipe/unique item; rarity,

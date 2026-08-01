@@ -32,6 +32,7 @@ class HomeSnapshot {
     this.petBond = 0,
     this.dailyGoalPolicy = const DailyGoalPolicy.legacy(),
     this.inventory = const <HomeInventoryItem>[],
+    this.equipment = const <HomeEquipmentSlot>[],
     this.craftingRecipes = const <HomeCraftingRecipe>[],
     this.pendingEventResult,
     this.cacheMetadata,
@@ -86,6 +87,7 @@ class HomeSnapshot {
       petLevel: _readInt(pet, 'level'),
       petBond: _readInt(pet, 'bond'),
       inventory: _readInventory(json['inventory']),
+      equipment: _readEquipment(json['equipment']),
       craftingRecipes: _readCraftingRecipes(json['craftingRecipes']),
       pendingEventResult: pendingEventResultJson == null
           ? null
@@ -124,6 +126,7 @@ class HomeSnapshot {
   final int petLevel;
   final int petBond;
   final List<HomeInventoryItem> inventory;
+  final List<HomeEquipmentSlot> equipment;
   final List<HomeCraftingRecipe> craftingRecipes;
   final PendingEventResult? pendingEventResult;
   final CachedReadMetadata? cacheMetadata;
@@ -181,7 +184,7 @@ class HomeSnapshot {
     economyVersion: 0,
     lastActivitySyncAt: null,
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'chapter-1-v1',
+    contentVersion: 'chapter-1-v2',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'outer-beacon',
@@ -226,6 +229,21 @@ class HomeSnapshot {
         .map(
           (Object? value) =>
               HomeCraftingRecipe.fromJson(_asMap(value, 'craftingRecipes[]')),
+        )
+        .toList(growable: false);
+  }
+
+  static List<HomeEquipmentSlot> _readEquipment(Object? raw) {
+    if (raw == null) {
+      return const <HomeEquipmentSlot>[];
+    }
+    if (raw is! List<dynamic>) {
+      throw const FormatException('equipment должен быть JSON-массивом');
+    }
+    return raw
+        .map(
+          (Object? value) =>
+              HomeEquipmentSlot.fromJson(_asMap(value, 'equipment[]')),
         )
         .toList(growable: false);
   }
@@ -283,20 +301,14 @@ class HomeExpeditionEvent {
   });
 
   factory HomeExpeditionEvent.fromJson(Map<String, dynamic> json) {
-    final Object? rawChoices = json['choices'];
-    final List<HomeEventChoice> choices;
-    if (rawChoices == null) {
-      choices = const <HomeEventChoice>[];
-    } else if (rawChoices is List<dynamic>) {
-      choices = rawChoices
-          .map(
-            (Object? value) =>
-                HomeEventChoice.fromJson(_asMap(value, 'choices[]')),
-          )
-          .toList(growable: false);
-    } else {
-      throw const FormatException('choices должен быть JSON-массивом');
-    }
+    final List<HomeEventChoice> availableChoices = _readChoices(
+      json['choices'],
+      'choices',
+    );
+    final List<HomeEventChoice> lockedChoices = _readChoices(
+      json['lockedChoices'],
+      'lockedChoices',
+    );
     final Object? materialJson = json['materialReward'];
 
     return HomeExpeditionEvent(
@@ -304,7 +316,7 @@ class HomeExpeditionEvent {
       title: HomeSnapshot._readString(json, 'title'),
       summary: HomeSnapshot._readString(json, 'summary'),
       status: HomeSnapshot._readString(json, 'status'),
-      choices: choices,
+      choices: <HomeEventChoice>[...availableChoices, ...lockedChoices],
       selectedChoiceId: HomeSnapshot._readNullableString(
         json,
         'selectedChoiceId',
@@ -333,6 +345,21 @@ class HomeExpeditionEvent {
   final HomeMaterialReward? materialReward;
 
   bool get isResolved => status == 'RESOLVED';
+
+  static List<HomeEventChoice> _readChoices(Object? raw, String field) {
+    if (raw == null) {
+      return const <HomeEventChoice>[];
+    }
+    if (raw is! List<dynamic>) {
+      throw FormatException('$field должен быть JSON-массивом');
+    }
+    return raw
+        .map(
+          (Object? value) =>
+              HomeEventChoice.fromJson(_asMap(value, '$field[]')),
+        )
+        .toList(growable: false);
+  }
 }
 
 class HomeEventChoice {
@@ -343,10 +370,19 @@ class HomeEventChoice {
     required this.pilotExperienceReward,
     required this.petBondReward,
     this.materialReward,
+    this.availability = 'AVAILABLE',
+    this.requirement,
   });
 
   factory HomeEventChoice.fromJson(Map<String, dynamic> json) {
     final Object? materialJson = json['materialReward'];
+    final String availability = json['availability'] == null
+        ? 'AVAILABLE'
+        : HomeSnapshot._readString(json, 'availability');
+    if (availability != 'AVAILABLE' && availability != 'LOCKED') {
+      throw FormatException('Неизвестная доступность choice: $availability');
+    }
+    final Object? requirementJson = json['requirement'];
     return HomeEventChoice(
       choiceId: HomeSnapshot._readString(json, 'choiceId'),
       title: HomeSnapshot._readString(json, 'title'),
@@ -361,6 +397,12 @@ class HomeEventChoice {
           : HomeMaterialRewardPreview.fromJson(
               _asMap(materialJson, 'materialReward'),
             ),
+      availability: availability,
+      requirement: requirementJson == null
+          ? null
+          : HomeChoiceRequirement.fromJson(
+              _asMap(requirementJson, 'choice.requirement'),
+            ),
     );
   }
 
@@ -370,6 +412,39 @@ class HomeEventChoice {
   final int pilotExperienceReward;
   final int petBondReward;
   final HomeMaterialRewardPreview? materialReward;
+  final String availability;
+  final HomeChoiceRequirement? requirement;
+
+  bool get isAvailable => availability == 'AVAILABLE';
+}
+
+class HomeChoiceRequirement {
+  const HomeChoiceRequirement({
+    required this.type,
+    required this.slotId,
+    required this.slotName,
+    required this.itemId,
+    required this.itemName,
+    required this.description,
+  });
+
+  factory HomeChoiceRequirement.fromJson(Map<String, dynamic> json) {
+    return HomeChoiceRequirement(
+      type: HomeSnapshot._readString(json, 'type'),
+      slotId: HomeSnapshot._readString(json, 'slotId'),
+      slotName: HomeSnapshot._readString(json, 'slotName'),
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      itemName: HomeSnapshot._readString(json, 'itemName'),
+      description: HomeSnapshot._readString(json, 'description'),
+    );
+  }
+
+  final String type;
+  final String slotId;
+  final String slotName;
+  final String itemId;
+  final String itemName;
+  final String description;
 }
 
 class HomeMaterialRewardPreview {
@@ -429,6 +504,9 @@ class HomeInventoryItem {
     required this.quantity,
     required this.version,
     this.kind = 'MATERIAL',
+    this.itemInstanceId,
+    this.equippableSlotId,
+    this.equippedSlotId,
   });
 
   factory HomeInventoryItem.fromJson(Map<String, dynamic> json) {
@@ -441,6 +519,12 @@ class HomeInventoryItem {
       kind: json['kind'] == null
           ? 'MATERIAL'
           : HomeSnapshot._readString(json, 'kind'),
+      itemInstanceId: HomeSnapshot._readNullableString(json, 'itemInstanceId'),
+      equippableSlotId: HomeSnapshot._readNullableString(
+        json,
+        'equippableSlotId',
+      ),
+      equippedSlotId: HomeSnapshot._readNullableString(json, 'equippedSlotId'),
     );
   }
 
@@ -450,8 +534,80 @@ class HomeInventoryItem {
   final int quantity;
   final int version;
   final String kind;
+  final String? itemInstanceId;
+  final String? equippableSlotId;
+  final String? equippedSlotId;
 
   bool get isUnique => kind == 'UNIQUE';
+  bool get isEquippable => itemInstanceId != null && equippableSlotId != null;
+  bool get isEquipped => equippedSlotId != null;
+}
+
+class HomeEquipmentSlot {
+  const HomeEquipmentSlot({
+    required this.slotId,
+    required this.name,
+    required this.description,
+    required this.status,
+    required this.version,
+    this.item,
+  });
+
+  factory HomeEquipmentSlot.fromJson(Map<String, dynamic> json) {
+    final String status = HomeSnapshot._readString(json, 'status');
+    if (status != 'EMPTY' && status != 'EQUIPPED') {
+      throw FormatException('Неизвестный equipment status: $status');
+    }
+    final Object? itemJson = json['item'];
+    final HomeEquipmentItem? item = itemJson == null
+        ? null
+        : HomeEquipmentItem.fromJson(_asMap(itemJson, 'equipment[].item'));
+    if ((status == 'EQUIPPED') != (item != null)) {
+      throw const FormatException(
+        'Equipment status и item должны быть согласованы',
+      );
+    }
+    return HomeEquipmentSlot(
+      slotId: HomeSnapshot._readString(json, 'slotId'),
+      name: HomeSnapshot._readString(json, 'name'),
+      description: HomeSnapshot._readString(json, 'description'),
+      status: status,
+      version: HomeSnapshot._readInt(json, 'version'),
+      item: item,
+    );
+  }
+
+  final String slotId;
+  final String name;
+  final String description;
+  final String status;
+  final int version;
+  final HomeEquipmentItem? item;
+
+  bool get isEquipped => status == 'EQUIPPED';
+}
+
+class HomeEquipmentItem {
+  const HomeEquipmentItem({
+    required this.itemInstanceId,
+    required this.itemId,
+    required this.name,
+    required this.description,
+  });
+
+  factory HomeEquipmentItem.fromJson(Map<String, dynamic> json) {
+    return HomeEquipmentItem(
+      itemInstanceId: HomeSnapshot._readString(json, 'itemInstanceId'),
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      name: HomeSnapshot._readString(json, 'name'),
+      description: HomeSnapshot._readString(json, 'description'),
+    );
+  }
+
+  final String itemInstanceId;
+  final String itemId;
+  final String name;
+  final String description;
 }
 
 class HomeCraftingRecipe {

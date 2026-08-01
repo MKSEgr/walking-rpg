@@ -175,6 +175,38 @@ class EventResolutionControllerTest {
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
     }
 
+    @Test
+    void shouldRejectGatedChoiceWithoutEquippedItem() throws Exception {
+        MockMvc mirrorEventMockMvc = createMockMvc(new ExpeditionProgressState(
+                95,
+                95,
+                ExpeditionProgressStatus.EVENT_READY,
+                StarterExpeditionContent.MIRROR_DELTA_NODE_ID,
+                StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                20
+        ), true);
+
+        mirrorEventMockMvc.perform(post(
+                        "/api/v1/events/mirror-delta-v1/resolve"
+                )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "choiceId": "follow-resonance",
+                                  "idempotencyKey": "locked-resonance-route"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code")
+                        .value("EVENT_CHOICE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.details.choiceId")
+                        .value("follow-resonance"))
+                .andExpect(jsonPath("$.details.slotId")
+                        .value("NAVIGATION"))
+                .andExpect(jsonPath("$.details.requiredItemId")
+                        .value("resonance-compass"));
+    }
+
     private MockMvc createMockMvc(
             ExpeditionProgressState state,
             boolean handoffEnabled

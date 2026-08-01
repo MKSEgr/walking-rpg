@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import com.walkingrpg.backend.progression.domain.PetDefinition;
 import org.junit.jupiter.api.Test;
@@ -18,10 +19,12 @@ class PlatformContentCatalogTest {
 
     @Test
     void shouldExposeCompleteVersionedChapterCatalog() {
-        Map<String, Object> publicCatalog = catalog.publicCatalog();
+        Map<String, Object> publicCatalog = catalog.publicCatalog(
+                StarterExpeditionContent.CONTENT_VERSION
+        );
 
-        assertEquals("chapter-1-v1", publicCatalog.get("contentVersion"));
-        assertEquals(18, publicCatalog.get("chapterNodes"));
+        assertEquals("chapter-1-v2", publicCatalog.get("contentVersion"));
+        assertEquals(19, publicCatalog.get("chapterNodes"));
         assertEquals(3, catalog.pets().size());
         assertEquals(4, catalog.skills().size());
         assertEquals(5, catalog.quests().size());
@@ -30,6 +33,16 @@ class PlatformContentCatalogTest {
         assertEquals(6, catalog.onboardingSteps().size());
         assertEquals(6, list(publicCatalog, "materials").size());
         assertEquals(64, String.valueOf(publicCatalog.get("catalogDigest")).length());
+    }
+
+    @Test
+    void shouldKeepOptionalRouteOutOfLegacyCatalog() {
+        Map<String, Object> publicCatalog = catalog.publicCatalog(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v1", publicCatalog.get("contentVersion"));
+        assertEquals(18, publicCatalog.get("chapterNodes"));
     }
 
     @Test

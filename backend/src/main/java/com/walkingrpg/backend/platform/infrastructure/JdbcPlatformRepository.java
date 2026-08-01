@@ -12,6 +12,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.operations.JdbcStatementTimeouts;
 import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
 import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
@@ -164,7 +165,9 @@ public class JdbcPlatformRepository implements PlatformRepository {
                 ORDER BY created_at DESC
                 LIMIT 1
                 """, (resultSet, rowNumber) -> resultSet.getString(1));
-        return versions.stream().findFirst().orElse("chapter-1-v1");
+        return versions.stream().findFirst().orElse(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION
+        );
     }
 
     @Override

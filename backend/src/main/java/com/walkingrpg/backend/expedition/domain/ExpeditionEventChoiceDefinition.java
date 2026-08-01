@@ -12,7 +12,8 @@ public record ExpeditionEventChoiceDefinition(
         String outcomeSummary,
         int pilotExperienceReward,
         int petBondReward,
-        InventoryRewardDefinition materialReward
+        InventoryRewardDefinition materialReward,
+        ExpeditionChoiceEquipmentRequirement equipmentRequirement
 ) {
     public ExpeditionEventChoiceDefinition {
         choiceId = requireText(choiceId, "choiceId");
@@ -35,6 +36,29 @@ public record ExpeditionEventChoiceDefinition(
             String outcomeTitle,
             String outcomeSummary,
             int pilotExperienceReward,
+            int petBondReward,
+            InventoryRewardDefinition materialReward
+    ) {
+        this(
+                choiceId,
+                title,
+                description,
+                outcomeTitle,
+                outcomeSummary,
+                pilotExperienceReward,
+                petBondReward,
+                materialReward,
+                null
+        );
+    }
+
+    public ExpeditionEventChoiceDefinition(
+            String choiceId,
+            String title,
+            String description,
+            String outcomeTitle,
+            String outcomeSummary,
+            int pilotExperienceReward,
             int petBondReward
     ) {
         this(
@@ -45,6 +69,7 @@ public record ExpeditionEventChoiceDefinition(
                 outcomeSummary,
                 pilotExperienceReward,
                 petBondReward,
+                null,
                 null
         );
     }

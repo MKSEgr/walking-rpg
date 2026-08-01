@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.walkingrpg.backend.equipment.application.StarterEquipmentContent;
+import com.walkingrpg.backend.expedition.domain.ExpeditionChoiceEquipmentRequirement;
 import com.walkingrpg.backend.expedition.domain.ExpeditionDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventChoiceDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventDefinition;
@@ -17,8 +19,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class StarterExpeditionContent {
 
-    public static final String CONTENT_VERSION = "chapter-1-v1";
+    public static final String LEGACY_CONTENT_VERSION = "chapter-1-v1";
+    public static final String CONTENT_VERSION = "chapter-1-v2";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
+    public static final int LEGACY_NODE_COUNT = 18;
+    public static final int NODE_COUNT = 19;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -28,6 +33,12 @@ public class StarterExpeditionContent {
     public static final String SECOND_NODE_ID = "lumen-gate";
     public static final String SECOND_EVENT_ID = "echo-vault-v1";
     public static final String THIRD_NODE_ID = "ash-orbit";
+    public static final String MIRROR_DELTA_NODE_ID = "mirror-delta";
+    public static final String MIRROR_DELTA_EVENT_ID = "mirror-delta-v1";
+    public static final String RESONANCE_ROUTE_CHOICE_ID = "follow-resonance";
+    public static final String RESONANCE_ROUTE_NODE_ID = "resonance-pocket";
+    public static final String RESONANCE_ROUTE_EVENT_ID = "resonance-pocket-v1";
+    public static final String STORM_ARCHIVE_NODE_ID = "storm-archive";
     public static final String FINAL_NODE_ID = "dawn-relay";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
@@ -36,6 +47,8 @@ public class StarterExpeditionContent {
     private final Map<String, ExpeditionDefinition> nodeById;
     private final Map<String, ExpeditionDefinition> nodeByEventId;
     private final Map<String, List<ExpeditionEventChoiceDefinition>> choicesByEventId;
+    private final Map<String, ExpeditionDefinition> defaultNextNodeByEventId;
+    private final Map<EventChoiceKey, ExpeditionDefinition> choiceNextNode;
 
     public StarterExpeditionContent() {
         this(new StarterInventoryContent());
@@ -67,9 +80,11 @@ public class StarterExpeditionContent {
                         "Переправа реагирует на свет питомца и вес экипировки."),
                 new NodeSpec("pulse-foundry", "Импульсная литейная", 90, "pulse-foundry-v1",
                         "Пульс формы", "Старые формы могут создать ключ к следующему сектору."),
-                new NodeSpec("mirror-delta", "Зеркальная дельта", 95, "mirror-delta-v1",
+                new NodeSpec(MIRROR_DELTA_NODE_ID, "Зеркальная дельта", 95,
+                        MIRROR_DELTA_EVENT_ID,
                         "Раздвоенный сигнал", "Два одинаковых сигнала ведут к разным берегам."),
-                new NodeSpec("storm-archive", "Грозовой архив", 100, "storm-archive-v1",
+                new NodeSpec(STORM_ARCHIVE_NODE_ID, "Грозовой архив", 100,
+                        "storm-archive-v1",
                         "Память грозы", "Архив сохраняет маршруты внутри коротких разрядов."),
                 new NodeSpec("ember-station", "Угольная станция", 105, "ember-station-v1",
                         "Последний жар", "Станция почти остыла, но её ядро ещё можно запустить."),
@@ -89,6 +104,8 @@ public class StarterExpeditionContent {
         Map<String, ExpeditionDefinition> byId = new LinkedHashMap<>();
         Map<String, ExpeditionDefinition> byEvent = new LinkedHashMap<>();
         Map<String, List<ExpeditionEventChoiceDefinition>> choices = new LinkedHashMap<>();
+        Map<String, ExpeditionDefinition> defaultNext = new LinkedHashMap<>();
+        Map<EventChoiceKey, ExpeditionDefinition> choiceNext = new LinkedHashMap<>();
 
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
@@ -111,10 +128,51 @@ public class StarterExpeditionContent {
             choices.put(spec.eventId(), choicesFor(index, spec, inventoryContent));
         }
 
+        for (int index = 0; index + 1 < specs.size(); index++) {
+            defaultNext.put(
+                    specs.get(index).eventId(),
+                    byId.get(specs.get(index + 1).nodeId())
+            );
+        }
+
+        NodeSpec resonanceSpec = new NodeSpec(
+                RESONANCE_ROUTE_NODE_ID,
+                "Резонансный карман",
+                35,
+                RESONANCE_ROUTE_EVENT_ID,
+                "Карта скрытого течения",
+                "Компас удерживает проход в карман пространства, где сходятся забытые маршруты."
+        );
+        ExpeditionDefinition resonanceDefinition = definition(resonanceSpec);
+        definitions.add(resonanceDefinition);
+        byId.put(resonanceDefinition.currentNodeId(), resonanceDefinition);
+        byEvent.put(resonanceDefinition.event().eventId(), resonanceDefinition);
+        choices.put(
+                RESONANCE_ROUTE_EVENT_ID,
+                resonanceRouteChoices(inventoryContent)
+        );
+
+        ExpeditionDefinition stormArchive = byId.get(STORM_ARCHIVE_NODE_ID);
+        defaultNext.put(RESONANCE_ROUTE_EVENT_ID, stormArchive);
+        choiceNext.put(
+                new EventChoiceKey(
+                        MIRROR_DELTA_EVENT_ID,
+                        RESONANCE_ROUTE_CHOICE_ID
+                ),
+                resonanceDefinition
+        );
+        List<ExpeditionEventChoiceDefinition> mirrorChoices = new ArrayList<>(
+                choices.get(MIRROR_DELTA_EVENT_ID)
+        );
+        mirrorChoices.add(resonanceRouteChoice(inventoryContent));
+        choices.put(MIRROR_DELTA_EVENT_ID, List.copyOf(mirrorChoices));
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
         this.choicesByEventId = Map.copyOf(choices);
+        this.defaultNextNodeByEventId = Map.copyOf(defaultNext);
+        this.choiceNextNode = Map.copyOf(choiceNext);
     }
 
     public ExpeditionDefinition require(String expeditionId) {
@@ -143,18 +201,44 @@ public class StarterExpeditionContent {
     }
 
     public Optional<ExpeditionDefinition> nextNodeAfterEvent(String eventId) {
-        ExpeditionDefinition current = requireEvent(eventId);
-        int index = nodes.indexOf(current);
-        return index >= 0 && index + 1 < nodes.size()
-                ? Optional.of(nodes.get(index + 1))
-                : Optional.empty();
+        requireEvent(eventId);
+        return Optional.ofNullable(defaultNextNodeByEventId.get(eventId));
+    }
+
+    public Optional<ExpeditionDefinition> nextNodeAfterEvent(
+            String eventId,
+            String choiceId
+    ) {
+        return nextNodeAfterEvent(eventId, choiceId, true);
+    }
+
+    public Optional<ExpeditionDefinition> nextNodeAfterEvent(
+            String eventId,
+            String choiceId,
+            boolean resonanceRouteActive
+    ) {
+        requireChoice(eventId, choiceId, resonanceRouteActive);
+        ExpeditionDefinition explicit = choiceNextNode.get(
+                new EventChoiceKey(eventId, choiceId)
+        );
+        return explicit == null
+                ? nextNodeAfterEvent(eventId)
+                : Optional.of(explicit);
     }
 
     public ExpeditionEventChoiceDefinition requireChoice(
             String eventId,
             String choiceId
     ) {
-        return eventChoices(eventId).stream()
+        return requireChoice(eventId, choiceId, true);
+    }
+
+    public ExpeditionEventChoiceDefinition requireChoice(
+            String eventId,
+            String choiceId,
+            boolean resonanceRouteActive
+    ) {
+        return eventChoices(eventId, resonanceRouteActive).stream()
                 .filter(choice -> choice.choiceId().equals(choiceId))
                 .findFirst()
                 .orElseThrow(() -> new EventResolutionValidationException(
@@ -164,8 +248,23 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
+        return eventChoices(eventId, true);
+    }
+
+    public List<ExpeditionEventChoiceDefinition> eventChoices(
+            String eventId,
+            boolean resonanceRouteActive
+    ) {
         requireEvent(eventId);
-        return choicesByEventId.get(eventId);
+        List<ExpeditionEventChoiceDefinition> choices = choicesByEventId.get(eventId);
+        if (resonanceRouteActive || !MIRROR_DELTA_EVENT_ID.equals(eventId)) {
+            return choices;
+        }
+        return choices.stream()
+                .filter(choice -> !RESONANCE_ROUTE_CHOICE_ID.equals(
+                        choice.choiceId()
+                ))
+                .toList();
     }
 
     public ExpeditionDefinition definition() {
@@ -182,6 +281,88 @@ public class StarterExpeditionContent {
 
     public String contentVersion() {
         return CONTENT_VERSION;
+    }
+
+    public String contentVersion(boolean resonanceRouteActive) {
+        return resonanceRouteActive ? CONTENT_VERSION : LEGACY_CONTENT_VERSION;
+    }
+
+    private ExpeditionDefinition definition(NodeSpec spec) {
+        return new ExpeditionDefinition(
+                CONTENT_VERSION,
+                EXPEDITION_ID,
+                EXPEDITION_NAME,
+                spec.nodeId(),
+                spec.nodeName(),
+                spec.requiredEnergy(),
+                new ExpeditionEventDefinition(
+                        spec.eventId(),
+                        spec.eventTitle(),
+                        spec.eventSummary()
+                )
+        );
+    }
+
+    private ExpeditionEventChoiceDefinition resonanceRouteChoice(
+            StarterInventoryContent inventoryContent
+    ) {
+        return new ExpeditionEventChoiceDefinition(
+                RESONANCE_ROUTE_CHOICE_ID,
+                "Пойти по резонансу",
+                "Настроить экипированный компас на скрытое отражение дельты.",
+                "Скрытый маршрут",
+                "Компас отделил настоящий импульс от отражений и открыл проход в резонансный карман.",
+                35,
+                16,
+                reward(
+                        inventoryContent,
+                        StarterInventoryContent.DAWN_FRAGMENT_ID,
+                        1
+                ),
+                new ExpeditionChoiceEquipmentRequirement(
+                        StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                        "Навигационный прибор",
+                        inventoryContent.require(
+                                StarterInventoryContent.RESONANCE_COMPASS_ID
+                        ),
+                        "Экипируйте резонансный компас, чтобы увидеть скрытый маршрут."
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> resonanceRouteChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        "map-hidden-current",
+                        "Нанести течение на карту",
+                        "Зафиксировать устойчивые точки кармана для следующих экспедиций.",
+                        "Карта резонанса",
+                        "Навигатор сохранил скрытую геометрию и собрал призматическую пыль с границ прохода.",
+                        38,
+                        12,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.PRISM_DUST_ID,
+                                2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        "follow-compass-pulse",
+                        "Следовать за импульсом",
+                        "Доверить компас питомцу и пройти к самому яркому отклику.",
+                        "Осколок будущего",
+                        "Питомец удержал проход, пока компас извлёк фрагмент света из ещё не открытого рассвета.",
+                        28,
+                        20,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                1
+                        )
+                )
+        );
     }
 
     private List<ExpeditionEventChoiceDefinition> choicesFor(
@@ -288,5 +469,8 @@ public class StarterExpeditionContent {
             String eventTitle,
             String eventSummary
     ) {
+    }
+
+    private record EventChoiceKey(String eventId, String choiceId) {
     }
 }

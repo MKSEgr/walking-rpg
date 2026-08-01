@@ -95,6 +95,8 @@ CI создаёт технические release candidates. Подпись и �
 - [ ] Определены beta cohort, stop conditions и rollback plan.
 - [ ] Durable result activation выполняется только после drain старых backend
       instances; rollback проверяет disabled gate и ноль pending receipts.
+- [ ] V14 оставила `chapter-1-v1` активной; `chapter-1-v2` опубликована только
+      после полного drain старого backend pool и проверки нулевых route rows.
 
 ## Operations
 

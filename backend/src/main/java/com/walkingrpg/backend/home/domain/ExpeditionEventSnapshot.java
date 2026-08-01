@@ -8,6 +8,7 @@ public record ExpeditionEventSnapshot(
         String summary,
         String status,
         List<ExpeditionEventChoiceSnapshot> choices,
+        List<ExpeditionEventChoiceSnapshot> lockedChoices,
         String selectedChoiceId,
         String selectedChoiceTitle,
         String outcomeTitle,
@@ -16,6 +17,36 @@ public record ExpeditionEventSnapshot(
 ) {
     public ExpeditionEventSnapshot {
         choices = choices == null ? List.of() : List.copyOf(choices);
+        lockedChoices = lockedChoices == null
+                ? List.of()
+                : List.copyOf(lockedChoices);
+    }
+
+    public ExpeditionEventSnapshot(
+            String eventId,
+            String title,
+            String summary,
+            String status,
+            List<ExpeditionEventChoiceSnapshot> choices,
+            String selectedChoiceId,
+            String selectedChoiceTitle,
+            String outcomeTitle,
+            String outcomeSummary,
+            MaterialRewardSnapshot materialReward
+    ) {
+        this(
+                eventId,
+                title,
+                summary,
+                status,
+                choices,
+                List.of(),
+                selectedChoiceId,
+                selectedChoiceTitle,
+                outcomeTitle,
+                outcomeSummary,
+                materialReward
+        );
     }
 
     public ExpeditionEventSnapshot(
@@ -35,6 +66,7 @@ public record ExpeditionEventSnapshot(
                 summary,
                 status,
                 choices,
+                List.of(),
                 selectedChoiceId,
                 selectedChoiceTitle,
                 outcomeTitle,

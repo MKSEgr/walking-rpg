@@ -19,6 +19,8 @@
 → постоянные XP пилота, bond питомца и материалы
 → persistent inventory
 → server-authoritative crafting и уникальный предмет
+→ server-authoritative экипировка компаса
+→ опциональный резонансный маршрут
 → durable карточка результата и явное подтверждение продолжения
 → завершённое состояние экспедиции
 ```
@@ -35,13 +37,14 @@
   schema-v1 JSON evidence, недоступный в release build;
 - server-authoritative ENERGY economy;
 - production `GET /api/v1/home`;
-- content-driven первая глава `chapter-1-v1` с 18 узлами и событиями;
+- content-driven первая глава `chapter-1-v2` с 18 основными узлами,
+  опциональным `resonance-pocket` и server-owned choices;
 - guided «Первый путь» от разрешения шагов до первого решения;
 - server-authoritative funnel и time-to-value первого пути для alpha cohort,
   включая отдельное подтверждение показа первого результата;
 - три питомца с реальным active selection и независимым progression;
 - material inventory с append-only credit/debit ledger, server-authoritative
-  crafting и persistent unique item;
+  crafting, persistent unique item и equipment slot `NAVIGATION`;
 - durable event-result receipt, который восстанавливается через `GET /home`
   после потери ответа или restart;
 - foreground durable outbox для activity, gameplay, platform и telemetry
@@ -84,7 +87,8 @@ evidence физического прогона. Проверка чтения р
 ## Надёжная отправка команд
 
 Перед первой сетевой попыткой mobile сохраняет полный payload и idempotency key
-для activity sync, продвижения экспедиции, решения события и crafting. Для
+для activity sync, продвижения экспедиции, решения события, crafting и
+equipment. Для
 подтверждения результата outbox сохраняет `receiptId`: он же является единственным
 server-side idempotency scope bodyless ACK-запроса. После потери ответа или
 завершения процесса следующий запуск повторяет исходную команду. Успешно
@@ -112,10 +116,10 @@ authenticated-сессии закрывает owner-scoped recovery/account rout
 [ADR 0012](docs/adr/0012-foreground-durable-mobile-command-outbox.md) и
 [ADR 0024](docs/adr/0024-mobile-command-recovery-and-telemetry-isolation.md).
 
-## Первая глава, инвентарь и crafting
+## Первая глава, инвентарь, crafting и equipment
 
-`chapter-1-v1` содержит 18 последовательных узлов от `outer-beacon` до
-`dawn-relay`. После первого события backend переводит пользователя на
+`chapter-1-v2` содержит 18 основных узлов от `outer-beacon` до `dawn-relay` и
+опциональный `resonance-pocket`. После первого события backend переводит пользователя на
 `lumen-gate`, для которого требуется ещё 45 ENERGY. Второе событие
 `echo-vault-v1` выдаёт XP, bond активному питомцу и одну из материальных наград:
 
@@ -138,6 +142,17 @@ commit. Flutter показывает server-owned статус рецепта в
 сохраняет `CRAFTING` в GAMEPLAY outbox и после успеха перечитывает `GET /home`.
 Cached state и неподтверждённый результат события остаются read-only.
 Подробности: [ADR 0029](docs/adr/0029-server-authoritative-crafting.md).
+
+Созданный компас можно экипировать в server-owned slot `NAVIGATION` через
+restart-safe `EQUIPMENT` command. Home показывает authoritative loadout и
+причину недоступности gated choice. В событии `mirror-delta-v1` выбор
+`follow-resonance` повторно проверяется backend под expedition lock: только
+экипированный компас открывает `resonance-pocket`, после которого путь
+возвращается в `storm-archive`; обычный выбор продолжает основной маршрут.
+V14 stage-ит v2 inactive: маршрут появляется только после отдельной
+cluster-wide активации и полного drain старого backend pool.
+Mobile не меняет slot или availability оптимистично. Подробности:
+[ADR 0030](docs/adr/0030-equipment-and-gated-routes.md).
 
 Новый mobile объявляет capability
 `X-Walking-RPG-Capabilities: durable-event-result-v1`. После cluster-wide
@@ -231,6 +246,8 @@ POST /api/v1/events/signal-source-v1/resolve
 POST /api/v1/events/echo-vault-v1/resolve
 POST /api/v1/event-results/{receiptId}/acknowledge
 POST /api/v1/crafting/recipes/{recipeId}/craft
+POST /api/v1/equipment/slots/{slotId}/equip
+POST /api/v1/equipment/slots/{slotId}/unequip
 ```
 
 Подробности: [backend/README.md](backend/README.md).
@@ -297,7 +314,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V13 + PostgreSQL Testcontainers tests
+Flyway V1–V14 + PostgreSQL Testcontainers tests
 Synthetic PostgreSQL backup/restore drill + sanitized evidence
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
@@ -324,7 +341,7 @@ iOS Simulator debug build
 - гарантированная background health/command delivery;
 - enforcement anti-fraud по источникам (текущий риск-контур работает в shadow
   mode);
-- нелинейные события, дополнительные recipes, rarity/upgrades и
+- дополнительные нелинейные события, recipes, rarity/upgrades и
   проверенный по beta-данным баланс material sinks;
 - подтверждение темпа первого пути и первой недели на реальной alpha cohort.
 

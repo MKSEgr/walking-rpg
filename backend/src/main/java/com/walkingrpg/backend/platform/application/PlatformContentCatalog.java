@@ -233,10 +233,18 @@ public class PlatformContentCatalog {
         }
     }
 
-    public Map<String, Object> publicCatalog() {
+    public Map<String, Object> publicCatalog(String activeContentVersion) {
+        boolean resonanceRouteActive = StarterExpeditionContent.CONTENT_VERSION.equals(
+                activeContentVersion
+        );
         Map<String, Object> catalog = new LinkedHashMap<>();
-        catalog.put("contentVersion", StarterExpeditionContent.CONTENT_VERSION);
-        catalog.put("chapterNodes", 18);
+        catalog.put("contentVersion", activeContentVersion);
+        catalog.put(
+                "chapterNodes",
+                resonanceRouteActive
+                        ? StarterExpeditionContent.NODE_COUNT
+                        : StarterExpeditionContent.LEGACY_NODE_COUNT
+        );
         catalog.put("onboardingSteps", onboardingSteps);
         catalog.put("pets", pets);
         catalog.put("skills", skills);

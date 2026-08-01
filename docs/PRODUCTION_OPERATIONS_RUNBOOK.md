@@ -173,7 +173,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V13 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V14 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -220,6 +220,65 @@ The dated evidence must cover:
 - incident/rollback owner approval.
 
 Production credentials, dumps and connection strings must never be committed.
+
+## `chapter-1-v2` activation
+
+Flyway V14 must finish with exactly one active `chapter-1-v1` row and one
+inactive staged `chapter-1-v2` row. Do not activate v2 as part of migration or
+while any backend binary that does not know `resonance-pocket` can receive
+traffic.
+
+Activation sequence:
+
+1. deploy V14 and the new backend while v1 remains active;
+2. verify bootstrap reports v1 with 18 nodes and Home exposes no
+   `follow-resonance`, including in `lockedChoices`;
+3. remove every old backend instance from traffic and wait for its graceful
+   drain to finish;
+4. verify service discovery/load-balancer state contains only the reviewed new
+   binary;
+5. publish `chapter-1-v2` through
+   `POST /api/v1/admin/platform/content-releases` with the reviewed release
+   notes and staged content payload;
+6. verify bootstrap reports v2 in both version fields with 19 nodes, then use a
+   non-production validation account at `mirror-delta-v1` to confirm locked and
+   equipped projections;
+7. monitor unknown-choice responses, event-resolution failures and Home 5xx
+   before expanding the cohort.
+
+The activation request content must match the staged V14 definition:
+
+```json
+{
+  "contentVersion": "chapter-1-v2",
+  "releaseNotes": "Первая глава: 18 основных узлов и опциональный резонансный маршрут.",
+  "content": {
+    "contentVersion": "chapter-1-v2",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 19,
+    "topology": "resonance-route-v1"
+  }
+}
+```
+
+Before considering a rollback, drain writes and record both counts:
+
+```sql
+SELECT
+    (SELECT count(*)
+     FROM expedition_progress
+     WHERE current_node_id = 'resonance-pocket') AS active_route_states,
+    (SELECT count(*)
+     FROM processed_event_resolution
+     WHERE event_id = 'mirror-delta-v1'
+       AND choice_id = 'follow-resonance') AS persisted_route_results;
+```
+
+Rollback to an old binary is allowed only if activation has been stopped and
+both counts are zero. Once any route result is persisted, reactivating v1 or
+deploying a binary unaware of the optional node is prohibited; use a forward
+fix. Exact replay remains available on the new binary even if activation is
+stopped.
 
 ## Rollback
 

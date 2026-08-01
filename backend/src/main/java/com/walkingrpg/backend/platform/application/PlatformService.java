@@ -81,9 +81,10 @@ public class PlatformService {
     }
 
     public Map<String, Object> getContentBootstrap() {
+        String activeContentVersion = repository.activeContentVersion();
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("contentVersion", repository.activeContentVersion());
-        response.put("content", content.publicCatalog());
+        response.put("contentVersion", activeContentVersion);
+        response.put("content", content.publicCatalog(activeContentVersion));
         response.put("remoteConfig", effectiveRemoteConfig());
         response.put("serverTime", now());
         return response;
@@ -699,11 +700,12 @@ public class PlatformService {
                 facts.hasSuccessfulActivitySync()
         );
 
+        String activeContentVersion = repository.activeContentVersion();
         return new PlatformSnapshotResponse(
-                repository.activeContentVersion(),
+                activeContentVersion,
                 state.version(),
                 userState,
-                content.publicCatalog(),
+                content.publicCatalog(activeContentVersion),
                 effectiveRemoteConfig(),
                 serverTime
         );
