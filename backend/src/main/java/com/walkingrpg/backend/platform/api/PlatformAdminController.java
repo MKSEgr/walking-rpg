@@ -7,6 +7,8 @@ import com.walkingrpg.backend.platform.application.PlatformAdminService;
 import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
 import com.walkingrpg.backend.platform.analytics.FirstJourneyAnalyticsService;
 import com.walkingrpg.backend.platform.analytics.FirstJourneyAnalyticsSnapshot;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyAnalyticsService;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyAnalyticsSnapshot;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import com.walkingrpg.backend.security.RequestIdentityProvider;
 import jakarta.validation.Valid;
@@ -27,15 +29,18 @@ public class PlatformAdminController {
 
     private final PlatformAdminService service;
     private final FirstJourneyAnalyticsService firstJourneyAnalyticsService;
+    private final CompassJourneyAnalyticsService compassJourneyAnalyticsService;
     private final RequestIdentityProvider identityProvider;
 
     public PlatformAdminController(
             PlatformAdminService service,
             FirstJourneyAnalyticsService firstJourneyAnalyticsService,
+            CompassJourneyAnalyticsService compassJourneyAnalyticsService,
             RequestIdentityProvider identityProvider
     ) {
         this.service = service;
         this.firstJourneyAnalyticsService = firstJourneyAnalyticsService;
+        this.compassJourneyAnalyticsService = compassJourneyAnalyticsService;
         this.identityProvider = identityProvider;
     }
 
@@ -126,6 +131,13 @@ public class PlatformAdminController {
             @RequestParam(required = false) String cohortCode
     ) {
         return firstJourneyAnalyticsService.summary(cohortCode);
+    }
+
+    @GetMapping("/admin/platform/analytics/compass-journey")
+    public CompassJourneyAnalyticsSnapshot compassJourney(
+            @RequestParam(required = false) String cohortCode
+    ) {
+        return compassJourneyAnalyticsService.summary(cohortCode);
     }
 
     @GetMapping("/admin/platform/diagnostics/crashes")

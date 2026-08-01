@@ -122,6 +122,8 @@ PostgreSQL Testcontainers tests проверяют:
 - default/adaptive daily goal, окно предыдущих дней и исключение текущего дня;
 - V9 exact-once milestones первого пути, migration backfill и cascade deletion;
 - cohort-filtered first-journey conversion и authoritative p50/p90 timing;
+- cohort-filtered compass funnel, server-authoritative gameplay stages,
+  out-of-order quality counters и repeatable-read snapshot isolation;
 - capability-gated durable event receipt, `pendingEventResult`, owner-scoped
   idempotent acknowledgement и gameplay gate до ACK;
 - Flyway V10: legacy/backfilled writers auto-acknowledged, а capable results
@@ -138,6 +140,11 @@ PostgreSQL Testcontainers tests проверяют:
   uniqueness и staged inactive `chapter-1-v2`; upgrade, release activation,
   event prerequisite и account/event concurrency проверяются отдельными
   PostgreSQL tests.
+- Flyway V15 отделяет immutable время первой активации content version от
+  mutable времени публикации; DB trigger, upgrade test и analytics regression
+  запрещают republish сдвигать route baseline. Если v2 уже публиковалась на
+  V14, upgrade fail-closed требует явно восстановить первую активацию из
+  rollout/audit evidence и не принимает mutable `created_at` как источник.
 - operational integration проверяет main-port `/livez`/`readyz`, PostgreSQL в
   readiness, скрытые health details и admin-only Prometheus;
 - synthetic PostgreSQL 17.10 backup/restore drill сверяет archive checksum,
@@ -191,6 +198,7 @@ POST /api/v1/equipment/slots/{slotId}/unequip
 GET  /api/v1/platform
 POST /api/v1/platform/commands
 GET  /api/v1/admin/platform/analytics/first-journey?cohortCode=alpha-1
+GET  /api/v1/admin/platform/analytics/compass-journey?cohortCode=compass-beta
 ```
 
 ## Authentication
@@ -398,6 +406,30 @@ V11 связывает первый успешный `NULL → acknowledged_at` 
 first-journey p50/p90; legacy auto-ACK и migration evidence видны только как
 `BACKFILLED` conversion. Установленное время ACK неизменяемо, а exact replay не
 выполняет повторный physical update.
+
+### Compass beta analytics
+
+Network Home регистрирует recipe/route state командой
+`RECORD_COMPASS_IMPRESSION`. Backend принимает только известный enum,
+канонизирует content IDs и сохраняет server receive time; route telemetry
+допустима только после cluster-wide активации `chapter-1-v2`. Exact replay не
+создаёт второе событие. Команда обходит reconciliation/persistence platform
+state, не материализует новые progress facts и не меняет `stateVersion`.
+Cached/off-viewport/covered/background Home ничего не отправляет, а mobile
+обрабатывает команду в cache-neutral `TELEMETRY` lane отдельно от gameplay.
+
+Admin endpoint `/api/v1/admin/platform/analytics/compass-journey` объединяет
+эти client-reported показы с фактами существующих
+`unique_inventory_item`/`processed_*` rows. `CRAFTED`, `EQUIPPED`, достижение
+mirror event, выбор и завершение route никогда не выводятся из telemetry.
+Route baseline существует только при активной `chapter-1-v2`: ожидавший на
+Mirror Delta пользователь стартует в `content_release.activated_at`, достигший
+позже — в receipt time, а resolved до активации legacy event исключается.
+Опциональный `cohortCode` ограничивает eligible users; весь ответ строится в
+одном `REPEATABLE_READ` snapshot. Conversion включает достигнутые
+out-of-order пары, но p50/p90 считает только target не раньше baseline; обе
+аномалии и target без baseline возвращаются как data-quality counters.
+Code-complete endpoint не заменяет реальный beta evidence.
 
 ### Crafting, equipment и resonance route
 

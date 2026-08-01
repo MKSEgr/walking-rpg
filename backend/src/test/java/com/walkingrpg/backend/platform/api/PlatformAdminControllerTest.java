@@ -7,6 +7,14 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyAnalyticsService;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyAnalyticsSnapshot;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyDataQuality;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyFunnel;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyFunnelId;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyStage;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyStageMetric;
+import com.walkingrpg.backend.platform.analytics.CompassJourneyStageSource;
 import com.walkingrpg.backend.platform.analytics.FirstJourneyAnalyticsService;
 import com.walkingrpg.backend.platform.analytics.FirstJourneyAnalyticsSnapshot;
 import com.walkingrpg.backend.platform.analytics.FirstJourneyDataQuality;
@@ -14,6 +22,7 @@ import com.walkingrpg.backend.platform.analytics.FirstJourneyMilestone;
 import com.walkingrpg.backend.platform.analytics.FirstJourneyStageMetric;
 import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
+import com.walkingrpg.backend.platform.application.PlatformValidationException;
 import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
 import com.walkingrpg.backend.security.FreshAuthenticationRequiredException;
 import com.walkingrpg.backend.security.RequestIdentityProvider;
@@ -27,6 +36,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,11 +50,13 @@ class PlatformAdminControllerTest {
 
     private PlatformAdminService service;
     private FirstJourneyAnalyticsService firstJourneyAnalyticsService;
+    private CompassJourneyAnalyticsService compassJourneyAnalyticsService;
 
     @BeforeEach
     void setUp() {
         service = mock(PlatformAdminService.class);
         firstJourneyAnalyticsService = mock(FirstJourneyAnalyticsService.class);
+        compassJourneyAnalyticsService = mock(CompassJourneyAnalyticsService.class);
     }
 
     @Test
@@ -91,6 +103,35 @@ class PlatformAdminControllerTest {
                 isNull(),
                 eq(Map.of())
         );
+    }
+
+    @Test
+    void shouldRejectServerReservedCompassEventAtPublicIngress() throws Exception {
+        MockMvc mockMvc = mockMvc(FixedRequestIdentityProvider.anonymous());
+        doThrow(new PlatformValidationException(
+                "Имя события зарезервировано server-owned telemetry",
+                "eventName"
+        ))
+                .when(service)
+                .recordEvent(
+                        isNull(),
+                        eq("compass_route_impression"),
+                        eq(Instant.parse("2026-07-28T06:00:00Z")),
+                        eq(Map.of("availability", "AVAILABLE"))
+                );
+
+        mockMvc.perform(post("/api/v1/telemetry/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "eventName": "compass_route_impression",
+                                  "occurredAt": "2026-07-28T06:00:00Z",
+                                  "attributes": {"availability": "AVAILABLE"}
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.details.field").value("eventName"));
     }
 
     @Test
@@ -292,6 +333,68 @@ class PlatformAdminControllerTest {
     }
 
     @Test
+    void shouldReturnCompassJourneyAnalyticsForSelectedCohort() throws Exception {
+        MockMvc mockMvc = mockMvc(FixedRequestIdentityProvider.admin(
+                "admin-subject",
+                "analytics-operator"
+        ));
+        when(compassJourneyAnalyticsService.summary("beta-compass")).thenReturn(
+                new CompassJourneyAnalyticsSnapshot(
+                        "beta-compass",
+                        12,
+                        9,
+                        0.75,
+                        List.of(new CompassJourneyFunnel(
+                                CompassJourneyFunnelId.CRAFTING_EQUIPMENT,
+                                CompassJourneyStage.RECIPE_SEEN,
+                                CompassJourneyStageSource.CLIENT_REPORTED,
+                                8,
+                                4,
+                                2.0 / 3.0,
+                                List.of(new CompassJourneyStageMetric(
+                                        CompassJourneyStage.COMPASS_EQUIPPED,
+                                        CompassJourneyStageSource.AUTHORITATIVE,
+                                        5,
+                                        3,
+                                        4,
+                                        1,
+                                        0.625,
+                                        0.5,
+                                        180L,
+                                        420L
+                                ))
+                        )),
+                        new CompassJourneyDataQuality(11, 7, 1, 2, 3),
+                        Instant.parse("2026-07-30T17:00:00Z")
+                )
+        );
+
+        mockMvc.perform(get("/api/v1/admin/platform/analytics/compass-journey")
+                        .param("cohortCode", "beta-compass"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cohortCode").value("beta-compass"))
+                .andExpect(jsonPath("$.eligibleUsers").value(12))
+                .andExpect(jsonPath("$.instrumentedUsers").value(9))
+                .andExpect(jsonPath("$.instrumentationRate").value(0.75))
+                .andExpect(jsonPath("$.funnels[0].funnel")
+                        .value("CRAFTING_EQUIPMENT"))
+                .andExpect(jsonPath("$.funnels[0].startStage")
+                        .value("RECIPE_SEEN"))
+                .andExpect(jsonPath("$.funnels[0].startSource")
+                        .value("CLIENT_REPORTED"))
+                .andExpect(jsonPath("$.funnels[0].stages[0].stage")
+                        .value("COMPASS_EQUIPPED"))
+                .andExpect(jsonPath("$.funnels[0].stages[0].source")
+                        .value("AUTHORITATIVE"))
+                .andExpect(jsonPath("$.funnels[0].stages[0].outOfOrderUsers")
+                        .value(1))
+                .andExpect(jsonPath("$.dataQuality.routeTargetsWithoutStartUsers")
+                        .value(3));
+
+        verify(compassJourneyAnalyticsService).summary("beta-compass");
+    }
+
+    @Test
     void shouldReturnAuthenticationErrorWhenIdentityIsMissingFromProtectedOperation()
             throws Exception {
         MockMvc mockMvc = mockMvc(FixedRequestIdentityProvider.anonymous());
@@ -317,6 +420,7 @@ class PlatformAdminControllerTest {
                         new PlatformAdminController(
                                 service,
                                 firstJourneyAnalyticsService,
+                                compassJourneyAnalyticsService,
                                 identityProvider
                         )
                 )

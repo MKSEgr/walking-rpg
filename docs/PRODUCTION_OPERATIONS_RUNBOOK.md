@@ -173,7 +173,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V14 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V15 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -226,11 +226,40 @@ Production credentials, dumps and connection strings must never be committed.
 Flyway V14 must finish with exactly one active `chapter-1-v1` row and one
 inactive staged `chapter-1-v2` row. Do not activate v2 as part of migration or
 while any backend binary that does not know `resonance-pocket` can receive
-traffic.
+traffic. V15 then backfills `activated_at` for the already-active v1 row and
+leaves staged v2 `NULL`; its first explicit publish sets the timestamp once.
+
+Before applying V15, inspect the v2 row:
+
+```sql
+SELECT content_version, is_active, created_by, created_at
+FROM content_release
+WHERE content_version = 'chapter-1-v2';
+```
+
+The expected untouched state is `is_active = false` and
+`created_by = 'flyway'`. If v2 was already activated or published by a V14
+backend, `created_at` is only the latest publish time and must not be used as
+the first-activation baseline. Recover the original UTC timestamp from
+immutable rollout/audit evidence and seed it explicitly before Flyway:
+
+```sql
+BEGIN;
+ALTER TABLE content_release
+    ADD COLUMN IF NOT EXISTS activated_at timestamptz;
+UPDATE content_release
+SET activated_at = TIMESTAMPTZ '<verified-first-activation-utc>'
+WHERE content_version = 'chapter-1-v2'
+  AND activated_at IS NULL;
+COMMIT;
+```
+
+Without that explicit history V15 intentionally fails. Do not satisfy the
+preflight by copying mutable `created_at`.
 
 Activation sequence:
 
-1. deploy V14 and the new backend while v1 remains active;
+1. apply Flyway through V15 and deploy the new backend while v1 remains active;
 2. verify bootstrap reports v1 with 18 nodes and Home exposes no
    `follow-resonance`, including in `lockedChoices`;
 3. remove every old backend instance from traffic and wait for its graceful
@@ -239,7 +268,8 @@ Activation sequence:
    binary;
 5. publish `chapter-1-v2` through
    `POST /api/v1/admin/platform/content-releases` with the reviewed release
-   notes and staged content payload;
+   notes and staged content payload; record returned `activatedAt` and verify a
+   same-version republish preserves it;
 6. verify bootstrap reports v2 in both version fields with 19 nodes, then use a
    non-production validation account at `mirror-delta-v1` to confirm locked and
    equipped projections;

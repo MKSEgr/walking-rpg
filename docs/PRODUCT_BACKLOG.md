@@ -331,6 +331,39 @@ unit/API/PostgreSQL concurrency/widget tests и release-policy checks
 реализованы. Понятность экипировки и ценность опционального маршрута требуют
 beta validation.
 
+### US-016. Измерить путь от рецепта до скрытого маршрута
+
+Как владелец закрытой beta, я хочу видеть cohort funnel первого уникального
+предмета и связанной ветки, чтобы менять UX и баланс по наблюдаемым фактам, а
+не по synthetic предположениям.
+
+Критерии:
+
+- Home отправляет только показы свежего network snapshot; cached/offline
+  snapshot не создаёт telemetry;
+- recipe и route impression имеют server-canonical IDs/enum values, server
+  receive time и exact idempotent replay;
+- route impression до cluster-wide активации `chapter-1-v2` отклоняется;
+- telemetry использует независимую mobile lane, не инвалидирует read cache и
+  не задерживает gameplay recovery;
+- `COMPASS_CRAFTED`, `COMPASS_EQUIPPED`, `MIRROR_DELTA_REACHED`,
+  `RESONANCE_ROUTE_CHOSEN` и `RESONANCE_ROUTE_COMPLETED` выводятся только из
+  persistent gameplay tables, не из client payload;
+- route baseline начинается не раньше фактической активации `chapter-1-v2` и
+  исключает пользователей, resolved Mirror Delta в legacy content; V15
+  immutable activation timestamp переживает same-version republish;
+- admin endpoint возвращает агрегаты без user IDs, поддерживает
+  `cohortCode`, один repeatable-read snapshot и явно различает
+  `CLIENT_REPORTED`/`AUTHORITATIVE`;
+- conversion считает достигнутую стадию, а timing — только пары, где target
+  не раньше baseline; out-of-order и target-without-start видны отдельно;
+- низкая instrumentation rate, client-reported показы или code-complete
+  endpoint не закрывают beta gate без фактического cohort evidence.
+
+**Статус:** backend/mobile instrumentation, cohort read model, V15 activation
+metadata и unit/API/PostgreSQL/migration/widget/cache/outbox tests реализованы.
+Пороговые значения и продуктовые выводы остаются внешней beta validation.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -340,6 +373,7 @@ beta validation.
 - onboarding, задания и достижения;
 - development push provider boundary с local/test-only registration;
 - product analytics и experiment exposure;
+- cohort funnel crafting/equipment/resonance с authoritative gameplay stages;
 - read-only offline cache валидированных `home` / `platform` snapshots;
 - расход материалов, starter crafting recipe, persistent unique item и
   server-authoritative equipment slot.

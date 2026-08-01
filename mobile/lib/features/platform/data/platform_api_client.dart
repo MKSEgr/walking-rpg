@@ -52,7 +52,10 @@ class PlatformApiClient {
 
   static const Duration cacheTtl = Duration(days: 7);
   static const String cacheVariant = 'current';
-  static const String _experimentExposureCommand = 'RECORD_EXPERIMENT_EXPOSURE';
+  static const Set<String> _telemetryOnlyCommands = <String>{
+    'RECORD_EXPERIMENT_EXPOSURE',
+    'RECORD_COMPASS_IMPRESSION',
+  };
   static final Map<String, int> _stateVersionHighWaterMarks = <String, int>{};
 
   final Uri baseUri;
@@ -104,13 +107,14 @@ class PlatformApiClient {
       'commandType',
     ).toUpperCase();
     final String normalizedKey = _requireText(idempotencyKey, 'idempotencyKey');
-    final bool recordsExposure =
-        normalizedCommandType == _experimentExposureCommand;
-    final int? minimumStateVersion = recordsExposure
+    final bool telemetryOnly = _telemetryOnlyCommands.contains(
+      normalizedCommandType,
+    );
+    final int? minimumStateVersion = telemetryOnly
         ? null
         : await _minimumKnownStateVersion();
     ReadSnapshotGenerationToken? cacheWriteToken;
-    if (!recordsExposure) {
+    if (!telemetryOnly) {
       await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
       cacheWriteToken = captureReadSnapshotGeneration(userId);
     }
@@ -140,7 +144,7 @@ class PlatformApiClient {
       json['snapshot'],
       'Platform command snapshot',
     );
-    if (!recordsExposure && cacheWriteToken != null) {
+    if (!telemetryOnly && cacheWriteToken != null) {
       await _writePlatformBestEffort(
         payload: jsonEncode(snapshotJson),
         stateVersion: result.snapshot.stateVersion,

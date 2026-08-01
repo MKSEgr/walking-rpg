@@ -49,6 +49,49 @@ void main() {
     expect(await _cachedPlatformVersion(cache, 'review-user-exposure'), 12);
   });
 
+  test('compass impression preserves home and newer platform cache', () async {
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache();
+    await _seedHome(cache, ownerId: 'review-user-compass-impression');
+    await _seedPlatform(
+      cache,
+      ownerId: 'review-user-compass-impression',
+      stateVersion: 12,
+    );
+    final PlatformApiClient client = PlatformApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: 'review-user-compass-impression',
+      transport: _CommandTransport(
+        HomeTransportResponse(
+          statusCode: 200,
+          body: jsonEncode(
+            _commandResponse(
+              commandType: 'RECORD_COMPASS_IMPRESSION',
+              idempotencyKey: 'compass-impression-v2',
+              stateVersion: 4,
+            ),
+          ),
+        ),
+      ),
+      cache: cache,
+    );
+
+    await client.execute(
+      commandType: 'RECORD_COMPASS_IMPRESSION',
+      payload: const <String, Object?>{
+        'impression': 'ROUTE_AVAILABLE',
+        'contentVersion': 'chapter-1-v2',
+      },
+      idempotencyKey: 'compass-impression-v2',
+    );
+
+    expect(cache.invalidations, 0);
+    expect(await _readHome(cache, 'review-user-compass-impression'), isNotNull);
+    expect(
+      await _cachedPlatformVersion(cache, 'review-user-compass-impression'),
+      12,
+    );
+  });
+
   test(
     'older replayed command snapshot is rejected after invalidation',
     () async {

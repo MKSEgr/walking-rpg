@@ -153,6 +153,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         eventResultAcknowledger: runtime?.acknowledgeEventResult,
         crafter: runtime?.craft,
         equipmentExecutor: runtime?.changeEquipment,
+        impressionRecorder: runtime?.executePlatform,
         onOpenAccount: widget.onOpenAccount,
         onOpenRecovery: widget.onOpenRecovery,
         recoveryCount: widget.recoveryCount,

@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import tools.jackson.databind.json.JsonMapper;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -112,6 +114,37 @@ class PlatformAdminServiceProviderTest {
 
         assertFalse(exception.getMessage().isBlank());
         verifyNoInteractions(jdbcTemplate);
+    }
+
+    @Test
+    void serverOwnedCompassEventsCannotEnterThroughPublicTelemetry() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        AccountDeletionRegistry deletionRegistry = mock(AccountDeletionRegistry.class);
+        PlatformAdminService service = service(
+                jdbcTemplate,
+                new SandboxPaymentProvider(),
+                new DisabledPushDeliveryProvider(),
+                deletionRegistry
+        );
+
+        for (String eventName : List.of(
+                "compass_recipe_impression",
+                "compass_route_impression"
+        )) {
+            PlatformValidationException exception = assertThrows(
+                    PlatformValidationException.class,
+                    () -> service.recordEvent(
+                            "telemetry-user",
+                            eventName,
+                            NOW.minusSeconds(3_600),
+                            Map.of("status", "forged")
+                    )
+            );
+            assertEquals("eventName", exception.field());
+            assertFalse(exception.getMessage().isBlank());
+        }
+
+        verifyNoInteractions(jdbcTemplate, deletionRegistry);
     }
 
     private PlatformAdminService service(

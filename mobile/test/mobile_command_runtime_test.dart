@@ -867,64 +867,66 @@ void main() {
     expect(store.snapshot, <MobileCommand>[replacement]);
   });
 
-  test('experiment exposure cannot block gameplay recovery', () async {
-    final MobileCommand exposure = MobileCommand.pending(
-      ownerId: 'user-1',
-      type: MobileCommandType.platformCommand,
-      idempotencyKey: 'exposure-key',
-      fingerprint: 'exposure-fingerprint',
-      payload: <String, Object?>{
-        'commandType': 'RECORD_EXPERIMENT_EXPOSURE',
-        'payload': <String, Object?>{
-          'experimentId': 'first-journey-copy',
-          'variant': 'b',
+  test('telemetry platform commands cannot block gameplay recovery', () async {
+    for (final String commandType in <String>[
+      'RECORD_EXPERIMENT_EXPOSURE',
+      'RECORD_COMPASS_IMPRESSION',
+    ]) {
+      final MobileCommand telemetry = MobileCommand.pending(
+        ownerId: 'user-1',
+        type: MobileCommandType.platformCommand,
+        idempotencyKey: '$commandType-key',
+        fingerprint: '$commandType-fingerprint',
+        payload: <String, Object?>{
+          'commandType': commandType,
+          'payload': <String, Object?>{'marker': commandType},
         },
-      },
-      now: DateTime.utc(2026, 7, 26, 9),
-    );
-    final MobileCommand event = MobileCommand.pending(
-      ownerId: 'user-1',
-      type: MobileCommandType.eventResolution,
-      idempotencyKey: 'event-key',
-      fingerprint: 'event-fingerprint',
-      payload: <String, Object?>{
-        'eventId': 'signal-source-v1',
-        'choiceId': 'trust-spark',
-      },
-      now: DateTime.utc(2026, 7, 26, 9, 1),
-    );
-    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
-      <MobileCommand>[exposure, event],
-    );
-    int eventCalls = 0;
-    final MobileCommandRuntime runtime = _runtime(
-      store: store,
-      platformSender:
-          ({
-            required String commandType,
-            required Map<String, Object?> payload,
-            required String idempotencyKey,
-          }) async => throw StateError('telemetry offline'),
-      eventSender:
-          ({
-            required String eventId,
-            required String choiceId,
-            required String idempotencyKey,
-          }) async {
-            eventCalls += 1;
-            return _eventResult();
-          },
-    );
+        now: DateTime.utc(2026, 7, 26, 9),
+      );
+      final MobileCommand event = MobileCommand.pending(
+        ownerId: 'user-1',
+        type: MobileCommandType.eventResolution,
+        idempotencyKey: 'event-key',
+        fingerprint: 'event-fingerprint',
+        payload: <String, Object?>{
+          'eventId': 'signal-source-v1',
+          'choiceId': 'trust-spark',
+        },
+        now: DateTime.utc(2026, 7, 26, 9, 1),
+      );
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore(
+        <MobileCommand>[telemetry, event],
+      );
+      int eventCalls = 0;
+      final MobileCommandRuntime runtime = _runtime(
+        store: store,
+        platformSender:
+            ({
+              required String commandType,
+              required Map<String, Object?> payload,
+              required String idempotencyKey,
+            }) async => throw StateError('telemetry offline'),
+        eventSender:
+            ({
+              required String eventId,
+              required String choiceId,
+              required String idempotencyKey,
+            }) async {
+              eventCalls += 1;
+              return _eventResult();
+            },
+      );
 
-    final MobileCommandReplayReport report = await runtime.replayPending();
-    await runtime.close();
+      final MobileCommandReplayReport report = await runtime.replayPending();
+      await runtime.close();
 
-    expect(exposure.lane, MobileCommandLane.telemetry);
-    expect(report.retryableFailures, 1);
-    expect(report.succeeded, 1);
-    expect(eventCalls, 1);
-    expect(store.snapshot.single.commandId, exposure.commandId);
-    expect(store.snapshot.single.state, MobileCommandState.pending);
+      expect(telemetry.lane, MobileCommandLane.telemetry);
+      expect(report.retryableFailures, 1);
+      expect(report.succeeded, 1);
+      expect(eventCalls, 1);
+      expect(store.snapshot.single.commandId, telemetry.commandId);
+      expect(store.snapshot.single.state, MobileCommandState.pending);
+    }
   });
 
   test(

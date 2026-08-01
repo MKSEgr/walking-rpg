@@ -45,3 +45,6 @@ NNNN-short-title.md
 - [0026 — production operational controls](0026-production-operational-controls.md)
 - [0027 — API 36 и protected mobile signing](0027-api-36-and-protected-mobile-signing.md)
 - [0028 — внутренний physical-device Validation Center](0028-internal-device-validation-center.md)
+- [0029 — server-authoritative crafting](0029-server-authoritative-crafting.md)
+- [0030 — server-authoritative equipment и gated routes](0030-equipment-and-gated-routes.md)
+- [0031 — compass beta funnel и authoritative gameplay stages](0031-compass-beta-funnel.md)

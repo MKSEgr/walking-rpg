@@ -32,6 +32,11 @@ backup.
 - crash-free sessions/users;
 - risk decision distribution и false positives;
 - weekly route/quest completion;
+- resonance compass recipe-seen → ready → crafted → equipped conversion;
+- mirror-delta reached → route locked/available → chosen → completed
+  conversion;
+- compass instrumentation rate, out-of-order pairs и authoritative targets
+  без instrumented baseline;
 - support incidents.
 
 Срез доступен через
@@ -43,6 +48,50 @@ delivery-completion используется stage
 auto-ACK виден в `conversionFromStarted` как continuity `BACKFILLED`, но не
 входит в `authoritativeConversionFromStarted` и p50/p90. Для explicit alpha
 ACK rate используется именно authoritative conversion.
+
+Compass-срез доступен через
+`GET /api/v1/admin/platform/analytics/compass-journey?cohortCode=...`.
+Для beta-решения `cohortCode` обязателен организационно, даже если endpoint
+разрешает общий диагностический срез. Вместе с JSON фиксируются exact build,
+период наблюдения, число приглашённых/активных и время `generatedAt`.
+
+## Как читать compass funnel
+
+`RECIPE_SEEN`, `RECIPE_READY_SEEN`, `ROUTE_LOCKED_SEEN` и
+`ROUTE_AVAILABLE_SEEN` — client-reported viewport exposure card из свежего
+network Home при текущей foreground route. Они помечены `CLIENT_REPORTED` и
+доказывают доставку canonical telemetry, но не самостоятельный игровой
+результат или точный render timestamp. Остальные stages выводятся из immutable
+craft/equipment/expedition/event receipts и имеют source `AUTHORITATIVE`.
+
+Route baseline дополнительно привязан к фактическому
+immutable `content_release.activated_at` активной `chapter-1-v2`: ожидавшие на Mirror Delta
+стартуют в момент активации, достигшие позже — в момент receipt, а resolved до
+активации legacy events исключены. Перед сравнением route conversion
+зафиксируйте activation timestamp вместе с build/period. Повторный publish той
+же версии меняет `created_at`, но не начинает funnel заново.
+
+Порядок чтения среза:
+
+1. проверить `instrumentationRate`; низкое покрытие не позволяет сравнивать
+   conversion между build-ами;
+2. проверить `*TargetsWithoutStartUsers`: это признак старого клиента,
+   существующего до instrumentation progress или неполной доставки telemetry;
+3. проверить `outOfOrderPairs`: offline delivery или пользователь, уже
+   прошедший stage до первого instrumented Home, учитывается в conversion, но
+   исключается из latency;
+4. сравнивать `conversionFromStarted` и `orderedConversionFromStarted`, не
+   смешивая их смысл;
+5. для продуктовых решений использовать прежде всего authoritative
+   `COMPASS_CRAFTED`, `COMPASS_EQUIPPED`, `RESONANCE_ROUTE_CHOSEN` и
+   `RESONANCE_ROUTE_COMPLETED`, а причину разрыва подтверждать support/
+   interview evidence.
+
+Endpoint возвращает cumulative first-user-stage snapshot, а не временной
+ряд. Для сравнения build-ов нужны раздельные cohorts или заранее
+зафиксированные периоды; один поздний cumulative срез нельзя выдавать за A/B
+результат. Реализация analytics не закрывает Milestone 10–13 beta gates без
+реальных данных и принятого owner-ом evidence.
 
 ## Поддержка сохранённых действий
 
@@ -79,6 +128,7 @@ mutation.
 - неверная обработка health totals/permissions;
 - риск утечки данных;
 - рост `BLOCK/REVIEW` без подтверждённого fraud;
+- резкое падение compass `instrumentationRate` после rollout;
 - невозможность экспортировать или удалить аккаунт.
 
 ## Rollback

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
@@ -85,6 +88,447 @@ void main() {
 
     expect(loads, 2);
     expect(find.text('Walking RPG'), findsOneWidget);
+  });
+
+  testWidgets('network home records recipe once after card enters viewport', (
+    WidgetTester tester,
+  ) async {
+    int generation = 0;
+    late StateSetter setHostState;
+    final List<Map<String, Object?>> payloads = <Map<String, Object?>>[];
+    final List<String> keys = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            setHostState = setState;
+            return HomeScreen(
+              loader: () async => _craftingReady(),
+              authoritativeRefreshGeneration: generation,
+              impressionRecorder:
+                  ({
+                    required String commandType,
+                    required Map<String, Object?> payload,
+                    required String idempotencyKey,
+                  }) async {
+                    expect(commandType, 'RECORD_COMPASS_IMPRESSION');
+                    payloads.add(payload);
+                    keys.add(idempotencyKey);
+                    return null;
+                  },
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(payloads, isEmpty);
+
+    await _scrollAboveStickyAction(
+      tester,
+      find.byKey(const Key('craft-resonance-compass-v1')),
+    );
+
+    setHostState(() {
+      generation += 1;
+    });
+    await tester.pumpAndSettle();
+
+    expect(payloads, <Map<String, Object?>>[
+      <String, Object?>{
+        'impression': 'RECIPE_READY',
+        'contentVersion': 'chapter-1-v1',
+      },
+    ]);
+    expect(keys, <String>[
+      'compass-impression-chapter-1-v1-'
+          'recipe-resonance-compass-v1-1-RECIPE_READY',
+    ]);
+  });
+
+  testWidgets(
+    'recipe behind sticky action is not counted until it is unobscured',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(600, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final List<String> impressions = <String>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            loader: () async => _craftingReady(),
+            impressionRecorder:
+                ({
+                  required String commandType,
+                  required Map<String, Object?> payload,
+                  required String idempotencyKey,
+                }) async {
+                  impressions.add(payload['impression']! as String);
+                  return null;
+                },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(impressions, isEmpty);
+
+      final Finder recipeViewport = find.byKey(
+        const Key('home-recipe-viewport-resonance-compass-v1'),
+      );
+      final Finder stickyAction = find.byKey(
+        const Key('home-sticky-action-panel'),
+      );
+      final ScrollPosition position = tester
+          .state<ScrollableState>(find.byType(Scrollable))
+          .position;
+      final double coveredOffset =
+          (position.pixels +
+                  tester.getTopLeft(recipeViewport).dy -
+                  tester.getTopLeft(stickyAction).dy -
+                  1)
+              .clamp(position.minScrollExtent, position.maxScrollExtent)
+              .toDouble();
+
+      position.jumpTo(coveredOffset);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(recipeViewport).dy,
+        greaterThanOrEqualTo(tester.getTopLeft(stickyAction).dy),
+      );
+      expect(impressions, isEmpty);
+
+      const double visibleExtent = 24;
+      position.jumpTo(
+        (position.pixels +
+                tester.getTopLeft(recipeViewport).dy -
+                tester.getTopLeft(stickyAction).dy +
+                visibleExtent)
+            .clamp(position.minScrollExtent, position.maxScrollExtent)
+            .toDouble(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(recipeViewport).dy,
+        lessThan(tester.getTopLeft(stickyAction).dy),
+      );
+      expect(impressions, <String>['RECIPE_READY']);
+    },
+  );
+
+  testWidgets('failed recipe impression retries on authoritative reload', (
+    WidgetTester tester,
+  ) async {
+    int generation = 0;
+    int attempts = 0;
+    late StateSetter setHostState;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            setHostState = setState;
+            return HomeScreen(
+              loader: () async => _craftingReady(),
+              authoritativeRefreshGeneration: generation,
+              impressionRecorder:
+                  ({
+                    required String commandType,
+                    required Map<String, Object?> payload,
+                    required String idempotencyKey,
+                  }) async {
+                    attempts += 1;
+                    if (attempts == 1) {
+                      throw StateError('temporary telemetry failure');
+                    }
+                    return null;
+                  },
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(attempts, 0);
+
+    await _scrollAboveStickyAction(
+      tester,
+      find.byKey(const Key('craft-resonance-compass-v1')),
+    );
+    expect(attempts, 1);
+
+    setHostState(() {
+      generation += 1;
+    });
+    await tester.pumpAndSettle();
+    await _scrollAboveStickyAction(
+      tester,
+      find.byKey(const Key('craft-resonance-compass-v1')),
+    );
+
+    expect(attempts, 2);
+  });
+
+  testWidgets(
+    'failed impression from an older request retries the accepted snapshot',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      int generation = 0;
+      int attempts = 0;
+      late StateSetter setHostState;
+      final Completer<Object?> firstAttempt = Completer<Object?>();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              setHostState = setState;
+              return HomeScreen(
+                loader: () async => _craftingReady(),
+                authoritativeRefreshGeneration: generation,
+                impressionRecorder:
+                    ({
+                      required String commandType,
+                      required Map<String, Object?> payload,
+                      required String idempotencyKey,
+                    }) {
+                      attempts += 1;
+                      if (attempts == 1) {
+                        return firstAttempt.future;
+                      }
+                      return Future<Object?>.value();
+                    },
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(attempts, 1);
+
+      setHostState(() {
+        generation += 1;
+      });
+      await tester.pumpAndSettle();
+      expect(attempts, 1);
+
+      firstAttempt.completeError(StateError('old telemetry request failed'));
+      await tester.pumpAndSettle();
+
+      expect(attempts, 2);
+    },
+  );
+
+  testWidgets('superseded home request never records an impression', (
+    WidgetTester tester,
+  ) async {
+    int generation = 0;
+    int loads = 0;
+    late StateSetter setHostState;
+    final Completer<HomeSnapshot> stale = Completer<HomeSnapshot>();
+    final Completer<HomeSnapshot> current = Completer<HomeSnapshot>();
+    final List<String> impressions = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            setHostState = setState;
+            return HomeScreen(
+              loader: () {
+                loads += 1;
+                return loads == 1 ? stale.future : current.future;
+              },
+              authoritativeRefreshGeneration: generation,
+              impressionRecorder:
+                  ({
+                    required String commandType,
+                    required Map<String, Object?> payload,
+                    required String idempotencyKey,
+                  }) async {
+                    impressions.add(payload['impression']! as String);
+                    return null;
+                  },
+            );
+          },
+        ),
+      ),
+    );
+    expect(loads, 1);
+
+    setHostState(() {
+      generation += 1;
+    });
+    await tester.pump();
+    expect(loads, 2);
+
+    stale.complete(_craftingReady());
+    await tester.pump();
+    expect(impressions, isEmpty);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    current.complete(_craftingCompleted());
+    await tester.pumpAndSettle();
+    expect(impressions, isEmpty);
+
+    await _scrollAboveStickyAction(
+      tester,
+      find.byKey(const Key('craft-resonance-compass-v1')),
+    );
+
+    expect(impressions, <String>['RECIPE_CRAFTED']);
+  });
+
+  testWidgets('hidden home records an accepted snapshot only when visible', (
+    WidgetTester tester,
+  ) async {
+    final Completer<HomeSnapshot> response = Completer<HomeSnapshot>();
+    final List<String> impressions = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MainNavigationShell(
+          home: HomeScreen(
+            loader: () => response.future,
+            impressionRecorder:
+                ({
+                  required String commandType,
+                  required Map<String, Object?> payload,
+                  required String idempotencyKey,
+                }) async {
+                  impressions.add(payload['impression']! as String);
+                  return null;
+                },
+          ),
+          platform: const Scaffold(body: Text('journal-content')),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('navigation-platform')));
+    await tester.pump();
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 1);
+    response.complete(_craftingReady());
+    await tester.pumpAndSettle();
+
+    expect(impressions, isEmpty);
+    expect(find.text('journal-content'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('navigation-home')));
+    await tester.pumpAndSettle();
+    expect(impressions, isEmpty);
+
+    await _scrollAboveStickyAction(
+      tester,
+      find.byKey(const Key('craft-resonance-compass-v1')),
+    );
+
+    expect(impressions, <String>['RECIPE_READY']);
+  });
+
+  testWidgets('covering route defers a visible recipe impression until pop', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final Completer<HomeSnapshot> response = Completer<HomeSnapshot>();
+    final List<String> impressions = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext context) {
+            return HomeScreen(
+              loader: () => response.future,
+              onOpenAccount: () {
+                unawaited(
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (BuildContext context) => Scaffold(
+                        body: Center(
+                          child: FilledButton(
+                            key: const Key('close-covering-route'),
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Закрыть аккаунт'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              impressionRecorder:
+                  ({
+                    required String commandType,
+                    required Map<String, Object?> payload,
+                    required String idempotencyKey,
+                  }) async {
+                    impressions.add(payload['impression']! as String);
+                    return null;
+                  },
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.byTooltip('Аккаунт'));
+    await tester.pumpAndSettle();
+    expect(find.text('Закрыть аккаунт'), findsOneWidget);
+
+    response.complete(_craftingReady());
+    await tester.pumpAndSettle();
+    expect(impressions, isEmpty);
+
+    await tester.tap(find.byKey(const Key('close-covering-route')));
+    await tester.pumpAndSettle();
+
+    expect(impressions, <String>['RECIPE_READY']);
+  });
+
+  testWidgets('backgrounded home defers a visible recipe until resume', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    addTearDown(
+      () => tester.binding.handleAppLifecycleStateChanged(
+        AppLifecycleState.resumed,
+      ),
+    );
+    final Completer<HomeSnapshot> response = Completer<HomeSnapshot>();
+    final List<String> impressions = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () => response.future,
+          impressionRecorder:
+              ({
+                required String commandType,
+                required Map<String, Object?> payload,
+                required String idempotencyKey,
+              }) async {
+                impressions.add(payload['impression']! as String);
+                return null;
+              },
+        ),
+      ),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+
+    response.complete(_craftingReady());
+    await tester.pumpAndSettle();
+    expect(impressions, isEmpty);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(impressions, <String>['RECIPE_READY']);
   });
 
   testWidgets('home screen spends energy and reloads unlocked event', (
@@ -225,6 +669,7 @@ void main() {
     WidgetTester tester,
   ) async {
     int craftCalls = 0;
+    int impressionCalls = 0;
     await tester.pumpWidget(
       MaterialApp(
         home: HomeScreen(
@@ -241,6 +686,15 @@ void main() {
               }) async {
                 craftCalls += 1;
                 return _craftingResult();
+              },
+          impressionRecorder:
+              ({
+                required String commandType,
+                required Map<String, Object?> payload,
+                required String idempotencyKey,
+              }) async {
+                impressionCalls += 1;
+                return null;
               },
         ),
       ),
@@ -260,6 +714,7 @@ void main() {
     expect(tester.widget<FilledButton>(craftButton).onPressed, isNull);
     expect(find.text('Создание недоступно офлайн'), findsOneWidget);
     expect(craftCalls, 0);
+    expect(impressionCalls, 0);
   });
 
   testWidgets('equipment unlocks and unequip locks resonance route', (
@@ -270,6 +725,8 @@ void main() {
     final List<String> actions = <String>[];
     final List<String?> itemInstanceIds = <String?>[];
     final List<String> idempotencyKeys = <String>[];
+    final List<String> impressions = <String>[];
+    final List<String> impressionKeys = <String>[];
 
     await tester.pumpWidget(
       MaterialApp(
@@ -291,21 +748,29 @@ void main() {
                 idempotencyKeys.add(idempotencyKey);
                 return _equipmentResult(action: action);
               },
+          impressionRecorder:
+              ({
+                required String commandType,
+                required Map<String, Object?> payload,
+                required String idempotencyKey,
+              }) async {
+                expect(commandType, 'RECORD_COMPASS_IMPRESSION');
+                impressions.add(payload['impression']! as String);
+                impressionKeys.add(idempotencyKey);
+                return null;
+              },
         ),
       ),
     );
     await tester.pumpAndSettle();
+    expect(impressions, isEmpty);
 
     final Finder routeChoice = find.byKey(
       const Key('home-event-choice-follow-resonance'),
     );
-    await tester.scrollUntilVisible(
-      routeChoice,
-      200,
-      scrollable: find.byType(Scrollable),
-    );
-    await tester.pumpAndSettle();
+    await _scrollAboveStickyAction(tester, routeChoice);
     expect(tester.widget<FilledButton>(routeChoice).onPressed, isNull);
+    expect(impressions, <String>['ROUTE_LOCKED']);
     expect(
       find.byKey(const Key('home-choice-locked-follow-resonance')),
       findsOneWidget,
@@ -327,13 +792,9 @@ void main() {
     expect(itemInstanceIds, <String?>['33333333-3333-3333-3333-333333333333']);
     expect(idempotencyKeys, <String>['equipment-key-1']);
     expect(loads, 2);
-    await tester.scrollUntilVisible(
-      routeChoice,
-      200,
-      scrollable: find.byType(Scrollable),
-    );
-    await tester.pumpAndSettle();
+    await _scrollAboveStickyAction(tester, routeChoice);
     expect(tester.widget<FilledButton>(routeChoice).onPressed, isNotNull);
+    expect(impressions, <String>['ROUTE_LOCKED', 'ROUTE_AVAILABLE']);
 
     final Finder unequip = find.byKey(
       const Key('equipment-unequip-NAVIGATION'),
@@ -354,13 +815,15 @@ void main() {
     ]);
     expect(idempotencyKeys, <String>['equipment-key-1', 'equipment-key-2']);
     expect(loads, 3);
-    await tester.scrollUntilVisible(
-      routeChoice,
-      200,
-      scrollable: find.byType(Scrollable),
-    );
-    await tester.pumpAndSettle();
+    await _scrollAboveStickyAction(tester, routeChoice);
     expect(tester.widget<FilledButton>(routeChoice).onPressed, isNull);
+    expect(impressions, <String>['ROUTE_LOCKED', 'ROUTE_AVAILABLE']);
+    expect(impressionKeys, <String>[
+      'compass-impression-chapter-1-v2-'
+          'route-mirror-delta-v1-follow-resonance-ROUTE_LOCKED',
+      'compass-impression-chapter-1-v2-'
+          'route-mirror-delta-v1-follow-resonance-ROUTE_AVAILABLE',
+    ]);
   });
 
   testWidgets(
@@ -645,6 +1108,36 @@ void main() {
       expect(acknowledgementCalls, 0);
     },
   );
+}
+
+Future<void> _scrollAboveStickyAction(
+  WidgetTester tester,
+  Finder target,
+) async {
+  await tester.scrollUntilVisible(
+    target,
+    200,
+    scrollable: find.byType(Scrollable),
+  );
+  await tester.pumpAndSettle();
+
+  final Finder stickyAction = find.byKey(const Key('home-sticky-action-panel'));
+  final double targetTop = tester.getTopLeft(target).dy;
+  final double stickyTop = tester.getTopLeft(stickyAction).dy;
+  const double visibleExtent = 24;
+  if (targetTop < stickyTop - visibleExtent) {
+    return;
+  }
+
+  final ScrollPosition position = tester
+      .state<ScrollableState>(find.byType(Scrollable))
+      .position;
+  position.jumpTo(
+    (position.pixels + targetTop - stickyTop + visibleExtent)
+        .clamp(position.minScrollExtent, position.maxScrollExtent)
+        .toDouble(),
+  );
+  await tester.pumpAndSettle();
 }
 
 const DailyGoalPolicy _adaptiveGoalPolicy = DailyGoalPolicy(

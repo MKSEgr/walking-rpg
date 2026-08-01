@@ -179,6 +179,10 @@ public class InMemoryPlatformRepository implements PlatformRepository {
         return events.size();
     }
 
+    public synchronized List<Map<String, Object>> events() {
+        return events.stream().map(Map::copyOf).toList();
+    }
+
     public synchronized void setRemoteConfig(Map<String, Object> value) {
         remoteConfig = new LinkedHashMap<>(value);
     }

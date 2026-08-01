@@ -15,7 +15,9 @@ import java.util.UUID;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import com.walkingrpg.backend.crafting.application.StarterCraftingContent;
 import com.walkingrpg.backend.economy.application.EconomyService;
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
@@ -117,6 +119,16 @@ public class PlatformService {
             }
             return withEffectiveRemoteConfig(readResponse(processed.responseJson()));
         }
+        if ("RECORD_COMPASS_IMPRESSION".equals(commandType)) {
+            return executeCompassImpression(
+                    normalizedUserId,
+                    commandType,
+                    request.payload(),
+                    scope,
+                    fingerprint,
+                    serverTime
+            );
+        }
         requireProviderAvailability(commandType);
 
         PlatformProgressFacts factsBefore = progressFactsProvider.factsFor(normalizedUserId);
@@ -201,6 +213,46 @@ public class PlatformService {
                     "Неизвестный commandType", "commandType"
             );
         };
+    }
+
+    private PlatformCommandResponse executeCompassImpression(
+            String userId,
+            String commandType,
+            Map<String, Object> payload,
+            PlatformCommandScope scope,
+            String fingerprint,
+            Instant serverTime
+    ) {
+        PlatformProgressFacts facts = progressFactsProvider.factsFor(userId);
+        PlatformUserState state = repository.findState(userId)
+                .orElseGet(() -> initialState(userId, facts));
+        recordCompassImpression(userId, payload, serverTime);
+        repository.recordEvent(
+                userId,
+                "platform_command_completed",
+                serverTime,
+                Map.of(
+                        "commandType", commandType,
+                        "stateVersion", state.version()
+                )
+        );
+
+        PlatformCommandResponse response = new PlatformCommandResponse(
+                commandType,
+                scope.idempotencyKey(),
+                "Показ компаса зарегистрирован",
+                state.version(),
+                snapshot(userId, state, facts, serverTime),
+                serverTime
+        );
+        String responseJson = writeResponse(response);
+        PlatformCommandResponse canonicalResponse = readResponse(responseJson);
+        repository.saveProcessed(
+                scope,
+                new ProcessedPlatformCommand(fingerprint, responseJson),
+                serverTime
+        );
+        return canonicalResponse;
     }
 
     private Mutation completeOnboarding(
@@ -535,6 +587,62 @@ public class PlatformService {
                 "variant", variant
         ));
         return new Mutation(state, "Exposure зарегистрирован");
+    }
+
+    private void recordCompassImpression(
+            String userId,
+            Map<String, Object> payload,
+            Instant occurredAt
+    ) {
+        String impression = payloadText(payload, "impression").toUpperCase();
+        String contentVersion = payloadText(payload, "contentVersion");
+        if (!StarterExpeditionContent.LEGACY_CONTENT_VERSION.equals(contentVersion)
+                && !StarterExpeditionContent.CONTENT_VERSION.equals(contentVersion)) {
+            throw new PlatformValidationException(
+                    "Неизвестная версия контента для impression",
+                    "contentVersion"
+            );
+        }
+
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("contractVersion", "compass-beta-funnel-v1");
+        attributes.put("contentVersion", contentVersion);
+        String eventName;
+        switch (impression) {
+            case "RECIPE_MISSING_MATERIALS", "RECIPE_READY", "RECIPE_CRAFTED" -> {
+                eventName = "compass_recipe_impression";
+                attributes.put(
+                        "recipeId",
+                        StarterCraftingContent.RESONANCE_COMPASS_RECIPE_ID
+                );
+                attributes.put("status", impression.substring("RECIPE_".length()));
+            }
+            case "ROUTE_LOCKED", "ROUTE_AVAILABLE" -> {
+                if (!StarterExpeditionContent.CONTENT_VERSION.equals(contentVersion)) {
+                    throw new PlatformValidationException(
+                            "Резонансный маршрут отсутствует в этой версии контента",
+                            "contentVersion"
+                    );
+                }
+                if (!StarterExpeditionContent.CONTENT_VERSION.equals(
+                        repository.activeContentVersion()
+                )) {
+                    throw new PlatformValidationException(
+                            "Резонансный маршрут ещё не активирован",
+                            "contentVersion"
+                    );
+                }
+                eventName = "compass_route_impression";
+                attributes.put("eventId", StarterExpeditionContent.MIRROR_DELTA_EVENT_ID);
+                attributes.put("choiceId", StarterExpeditionContent.RESONANCE_ROUTE_CHOICE_ID);
+                attributes.put("availability", impression.substring("ROUTE_".length()));
+            }
+            default -> throw new PlatformValidationException(
+                    "Неизвестный compass impression",
+                    "impression"
+            );
+        }
+        repository.recordEvent(userId, eventName, occurredAt, Map.copyOf(attributes));
     }
 
     private PlatformUserState withDerivedAchievements(PlatformUserState state) {

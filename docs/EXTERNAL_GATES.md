@@ -58,4 +58,12 @@ submission и store review — `EXTERNAL_VALIDATION_REQUIRED`.
 
 ## Closed beta
 
-Tester cohort/admin support — `CODE_COMPLETE`; 50–500 реальных участников и подтверждённые D1/D7/D30 — `EXTERNAL_VALIDATION_REQUIRED`.
+Tester cohort/admin support, first-journey analytics и compass
+recipe→craft→equip→route funnel — `CODE_COMPLETE`. Compass impressions явно
+client-reported, gameplay stages server-authoritative, а coverage/order gaps
+возвращаются как data-quality counters.
+
+50–500 реальных участников, достаточная instrumentation rate, подтверждённые
+D1/D7/D30, понятность craft/equip и ценность resonance route —
+`EXTERNAL_VALIDATION_REQUIRED`. Наличие endpoint-а или synthetic fixture не
+является validation evidence.

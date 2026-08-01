@@ -140,6 +140,20 @@
 - account export/delete, synthetic backup/restore, unit/API/PostgreSQL race и
   widget coverage для equipment/optional route;
 - ADR 0030 о server-authoritative equipment и gated routes;
+- idempotent `RECORD_COMPASS_IMPRESSION` с canonical recipe/route attributes,
+  network-only Home instrumentation и release-gated route telemetry;
+- server-reserved compass event names, которые public telemetry ingress
+  отклоняет до user/event mutation;
+- admin-only cohort endpoint
+  `GET /api/v1/admin/platform/analytics/compass-journey` с раздельными
+  client-reported показами и authoritative craft/equip/route stages;
+- repeatable-read compass funnel с activation-bounded route baseline, ordered
+  p50/p90, instrumentation/out-of-order/target-without-start quality counters и
+  PostgreSQL/widget/outbox/cache tests;
+- Flyway V15 `content_release.activated_at` с first-write timestamp, DB-level
+  immutability, fail-closed explicit history для pre-V15 v2 republish и stable
+  route baseline при same-version republish;
+- ADR 0031 о границе client impressions и authoritative gameplay stages;
 
 ### Changed
 
@@ -175,9 +189,10 @@
 - `acknowledged_at` становится immutable после первого успешного ACK, а
   `ONBOARDING_COMPLETED` сохраняет исходную V9-семантику отдельно от delivery.
 - mobile outbox использует отдельную `TELEMETRY` lane для
-  `RECORD_EXPERIMENT_EXPOSURE`, сохраняет `ACTIVITY → GAMEPLAY`, replay-ит
-  close-tracked telemetry параллельно с этой цепочкой без задержки startup
-  result и выполняет startup replay один раз в authenticated shell;
+  `RECORD_EXPERIMENT_EXPOSURE` и `RECORD_COMPASS_IMPRESSION`, сохраняет
+  `ACTIVITY → GAMEPLAY`, replay-ит close-tracked telemetry параллельно с этой
+  цепочкой без задержки startup result и выполняет startup replay один раз в
+  authenticated shell;
 - retryable ACTIVITY удерживает зависимую GAMEPLAY в `PENDING`, а успешный
   manual recovery перечитывает authoritative state без перемонтирования main
   shell; auth boundary закрывает owner-scoped overlay routes;
