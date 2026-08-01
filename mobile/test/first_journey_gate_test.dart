@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
@@ -154,6 +155,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byType(ChapterVista), findsOneWidget);
+    expect(
+      find.byKey(const Key('first-journey-chapter-vista')),
+      findsOneWidget,
+    );
     await _tap(tester, const Key('first-journey-start'));
     expect(find.byKey(const Key('first-journey-sync')), findsOneWidget);
 
@@ -169,6 +175,10 @@ void main() {
     );
     await _tap(tester, const Key('first-journey-select-moss-v1'));
     expect(activePetId, 'moss-v1');
+    expect(
+      find.byKey(const Key('first-journey-expedition-vista')),
+      findsOneWidget,
+    );
 
     await _tap(tester, const Key('first-journey-advance'));
     expect(find.text('Источник сигнала'), findsOneWidget);

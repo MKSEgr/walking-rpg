@@ -91,6 +91,24 @@ pair the active marker with text elsewhere in the card. The first journey and
 the journal share the same portrait; adopting it on Home remains a separate
 slice so Home lifecycle and visibility telemetry can change independently.
 
+## First chapter environment
+
+`ChapterVista` defines the code-native key art for the first chapter: layered
+mist, quiet ridges, a distant signal tower and a sparse lumen trail. The scene
+keeps the same calm frontier tone in light and dark themes and avoids assets
+that could drift away from the application palette.
+
+The vista is deliberately not a route map. Its waypoints are atmospheric, do
+not represent the server's node topology and are never interactive. When the
+first journey supplies authoritative expedition progress, only the signal
+trail illumination changes; the journal uses the scene without a progress
+value. The painter is static, isolated by a repaint boundary, ignores input and
+exposes one concise image semantic instead of decorative child semantics.
+
+The first journey and journal may use this environment independently from
+Home. Carrying it into the expedition hero remains deferred until Home's
+lifecycle and viewport telemetry work has landed.
+
 ## Journal composition
 
 The path journal extends the expedition language without becoming a second
@@ -112,12 +130,12 @@ accepted read models.
 
 ## Next visual slices
 
-1. Define the world key art and the first chapter environment language.
-2. Carry the shared companion portraits into the expedition hero after its
-   lifecycle and visibility work lands.
-3. Turn the expedition chapter into a visual route map without adding GPS or
-   real-time walking interaction.
-4. Split the journal into player-facing tabs only when closed-beta content
+1. Carry the shared companion portraits and chapter vista into the expedition
+   hero after its lifecycle and visibility work lands.
+2. Turn the expedition chapter into a visual route map only from an
+   authoritative topology/read model, without adding GPS or real-time walking
+   interaction.
+3. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
-5. Produce app icon, splash, store screenshots and motion guidelines only after
+4. Produce app icon, splash, store screenshots and motion guidelines only after
    the in-game direction is approved.

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -33,6 +34,8 @@ void main() {
 
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byType(ExpeditionPanel), findsWidgets);
+    expect(find.byType(ChapterVista), findsOneWidget);
+    expect(find.byKey(const Key('platform-chapter-vista')), findsOneWidget);
     final ExpeditionPanel hero = tester.widget<ExpeditionPanel>(
       find.byKey(const Key('platform-journal-hero')),
     );
@@ -91,6 +94,7 @@ void main() {
     final Finder resume = find.byKey(
       const Key('platform-resume-first-journey'),
     );
+    await _bringIntoView(tester, resume);
     await tester.tap(resume);
     await tester.pumpAndSettle();
 
@@ -239,11 +243,7 @@ void main() {
     final Finder selectPet = find.byKey(
       const Key('platform-select-pet-moss-v1'),
     );
-    await tester.scrollUntilVisible(
-      selectPet,
-      300,
-      scrollable: find.byType(Scrollable),
-    );
+    await _bringIntoView(tester, selectPet);
     await tester.tap(selectPet);
     await tester.pumpAndSettle();
 
@@ -292,6 +292,7 @@ void main() {
     final Finder resume = find.byKey(
       const Key('platform-resume-first-journey'),
     );
+    await _bringIntoView(tester, resume);
     final FilledButton resumeButton = tester.widget<FilledButton>(resume);
     expect(resumeButton.onPressed, isNull);
 
@@ -406,11 +407,7 @@ void main() {
     final Finder buy = find.byKey(
       const Key('platform-buy-cosmetic-spark-halo'),
     );
-    await tester.scrollUntilVisible(
-      buy,
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await _bringIntoView(tester, buy);
 
     expect(_sandboxText(), findsWidgets);
     await tester.tap(buy);
@@ -581,18 +578,20 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final Finder unavailable = find.text('Покупки сейчас недоступны.');
+      await _bringIntoView(tester, unavailable);
+      expect(unavailable, findsOneWidget);
+      expect(_sandboxText(), findsNothing);
+
       final Finder equip = find.byKey(
         const Key('platform-equip-cosmetic-spark-halo'),
       );
-      await tester.scrollUntilVisible(
-        equip,
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await _bringIntoView(tester, equip);
 
-      expect(find.text('Покупки сейчас недоступны.'), findsOneWidget);
-      expect(_sandboxText(), findsNothing);
-      expect(find.text('Купить'), findsNothing);
+      expect(
+        find.byKey(const Key('platform-buy-cosmetic-spark-halo')),
+        findsNothing,
+      );
       await tester.tap(equip);
       await tester.pumpAndSettle();
 
@@ -678,4 +677,14 @@ Finder _sandboxText() {
     RegExp('sandbox', caseSensitive: false),
     findRichText: true,
   );
+}
+
+Future<void> _bringIntoView(WidgetTester tester, Finder target) async {
+  await tester.scrollUntilVisible(
+    target,
+    300,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
 }
