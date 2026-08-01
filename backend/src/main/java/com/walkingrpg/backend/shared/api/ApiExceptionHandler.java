@@ -13,6 +13,11 @@ import com.walkingrpg.backend.crafting.application.CraftingStateConflictExceptio
 import com.walkingrpg.backend.crafting.application.CraftingValidationException;
 import com.walkingrpg.backend.crafting.application.InsufficientCraftingMaterialsException;
 import com.walkingrpg.backend.economy.domain.InsufficientEnergyException;
+import com.walkingrpg.backend.equipment.application.EquipmentIdempotencyConflictException;
+import com.walkingrpg.backend.equipment.application.EquipmentItemUnavailableException;
+import com.walkingrpg.backend.equipment.application.EquipmentSlotNotFoundException;
+import com.walkingrpg.backend.equipment.application.EquipmentValidationException;
+import com.walkingrpg.backend.expedition.application.EventChoiceUnavailableException;
 import com.walkingrpg.backend.expedition.application.EventNotFoundException;
 import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.EventResolutionValidationException;
@@ -92,6 +97,13 @@ public class ApiExceptionHandler {
         return fieldValidation(exception.getMessage(), exception.field());
     }
 
+    @ExceptionHandler(EquipmentValidationException.class)
+    ResponseEntity<ApiErrorResponse> handleEquipmentValidation(
+            EquipmentValidationException exception
+    ) {
+        return fieldValidation(exception.getMessage(), exception.field());
+    }
+
     @ExceptionHandler(PlatformValidationException.class)
     ResponseEntity<ApiErrorResponse> handlePlatformValidation(
             PlatformValidationException exception
@@ -123,6 +135,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(CraftingIdempotencyConflictException.class)
     ResponseEntity<ApiErrorResponse> handleCraftingIdempotencyConflict(
             CraftingIdempotencyConflictException exception
+    ) {
+        return idempotencyConflict(exception.getMessage());
+    }
+
+    @ExceptionHandler(EquipmentIdempotencyConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleEquipmentIdempotencyConflict(
+            EquipmentIdempotencyConflictException exception
     ) {
         return idempotencyConflict(exception.getMessage());
     }
@@ -167,6 +186,18 @@ public class ApiExceptionHandler {
                 "CRAFTING_RECIPE_NOT_FOUND",
                 exception.getMessage(),
                 Map.of("recipeId", exception.recipeId())
+        );
+    }
+
+    @ExceptionHandler(EquipmentSlotNotFoundException.class)
+    ResponseEntity<ApiErrorResponse> handleEquipmentSlotNotFound(
+            EquipmentSlotNotFoundException exception
+    ) {
+        return error(
+                HttpStatus.NOT_FOUND,
+                "EQUIPMENT_SLOT_NOT_FOUND",
+                exception.getMessage(),
+                Map.of("slotId", exception.slotId())
         );
     }
 
@@ -221,6 +252,22 @@ public class ApiExceptionHandler {
                 "EVENT_STATE_CONFLICT",
                 exception.getMessage(),
                 Map.of("status", exception.status())
+        );
+    }
+
+    @ExceptionHandler(EventChoiceUnavailableException.class)
+    ResponseEntity<ApiErrorResponse> handleEventChoiceUnavailable(
+            EventChoiceUnavailableException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "EVENT_CHOICE_UNAVAILABLE",
+                exception.getMessage(),
+                Map.of(
+                        "choiceId", exception.choiceId(),
+                        "slotId", exception.slotId(),
+                        "requiredItemId", exception.requiredItemId()
+                )
         );
     }
 
@@ -298,6 +345,18 @@ public class ApiExceptionHandler {
                         "recipeId", exception.recipeId(),
                         "itemId", exception.itemId()
                 )
+        );
+    }
+
+    @ExceptionHandler(EquipmentItemUnavailableException.class)
+    ResponseEntity<ApiErrorResponse> handleEquipmentItemUnavailable(
+            EquipmentItemUnavailableException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "EQUIPMENT_ITEM_UNAVAILABLE",
+                exception.getMessage(),
+                Map.of("itemReference", exception.itemReference())
         );
     }
 

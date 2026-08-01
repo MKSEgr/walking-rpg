@@ -33,6 +33,7 @@ for file in \
   docs/adr/0027-api-36-and-protected-mobile-signing.md \
   docs/adr/0028-internal-device-validation-center.md \
   docs/adr/0029-server-authoritative-crafting.md \
+  docs/adr/0030-equipment-and-gated-routes.md \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
@@ -62,6 +63,7 @@ for file in \
   backend/src/main/resources/application-prod.yml \
   backend/src/main/resources/db/migration/V12__disable_development_providers.sql \
   backend/src/main/resources/db/migration/V13__server_authoritative_crafting.sql \
+  backend/src/main/resources/db/migration/V14__equipment_and_resonance_route.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -73,6 +75,7 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformAdminServiceProviderTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ProductionProviderIsolationMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ServerAuthoritativeCraftingMigrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/migration/EquipmentAndResonanceRouteMigrationTest.java \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
   scripts/ci/verify-android-release-config.sh \
@@ -177,6 +180,12 @@ grep -Fq 'quantity_delta <> 0' backend/src/main/resources/db/migration/V13__serv
 grep -Fq 'quantity_after >= 0' backend/src/main/resources/db/migration/V13__server_authoritative_crafting.sql || fail 'V13 inventory ledger must reject negative balances'
 grep -Fq 'CraftingIntegrationTest' .github/workflows/ci.yml || fail 'crafting integration test must run in CI'
 grep -Fq 'ServerAuthoritativeCraftingMigrationTest' .github/workflows/ci.yml || fail 'crafting migration test must run in CI'
+grep -Fq 'FOREIGN KEY (user_id, item_instance_id)' backend/src/main/resources/db/migration/V14__equipment_and_resonance_route.sql || fail 'V14 equipment state must enforce same-owner item references'
+grep -Fq 'CREATE UNIQUE INDEX uq_equipment_item_single_slot' backend/src/main/resources/db/migration/V14__equipment_and_resonance_route.sql || fail 'V14 must prevent one item from occupying multiple slots'
+grep -Fq 'EquipmentServiceTest' .github/workflows/ci.yml || fail 'equipment service tests must run in CI'
+grep -Fq 'EquipmentControllerTest' .github/workflows/ci.yml || fail 'equipment API tests must run in CI'
+grep -Fq 'EquipmentIntegrationTest' .github/workflows/ci.yml || fail 'equipment PostgreSQL tests must run in CI'
+grep -Fq 'EquipmentAndResonanceRouteMigrationTest' .github/workflows/ci.yml || fail 'equipment migration test must run in CI'
 
 printf '%s\n' 'Checking production operational controls...'
 grep -Fq 'micrometer-registry-prometheus' backend/pom.xml || fail 'Prometheus registry is required'
@@ -236,7 +245,7 @@ grep -Fq '@Size(max = 64) Map<String, Object> attributes' backend/src/main/java/
 grep -Fq '@Component("dbHealthContributor")' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'bounded database readiness must keep the canonical db contributor id'
 grep -Fq 'connection.isValid(VALIDATION_TIMEOUT_SECONDS)' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'database readiness validation must use a non-zero bounded timeout'
 MANUAL_TIMEOUTS=$(grep -RFl 'JdbcStatementTimeouts.apply(jdbcTemplate, statement);' backend/src/main/java | wc -l | tr -d ' ')
-[ "$MANUAL_TIMEOUTS" -eq 5 ] || fail 'all five manual advisory-lock statements must inherit the JDBC timeout'
+[ "$MANUAL_TIMEOUTS" -eq 6 ] || fail 'all six manual advisory-lock statements must inherit the JDBC timeout'
 for test_name in \
   ProductionOperationsGuardTest \
   PublicIngressPropertiesTest \
@@ -314,8 +323,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 13:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V13: {versions}')
+if versions != expected or not versions or versions[-1] < 14:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V14: {versions}')
 print('Flyway versions:', versions)
 PY
 

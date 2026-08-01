@@ -71,6 +71,8 @@ POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
 POST /api/v1/event-results/{receiptId}/acknowledge
 POST /api/v1/crafting/recipes/{recipeId}/craft
+POST /api/v1/equipment/slots/{slotId}/equip
+POST /api/v1/equipment/slots/{slotId}/unequip
 POST /api/v1/platform/commands
 ```
 
@@ -80,8 +82,8 @@ Versioned JSON store находится в application-support directory. Зап
 
 ```text
 ACTIVITY — синхронизация шагов
-GAMEPLAY — продвижение экспедиции, решение/подтверждение события, crafting и
-           изменяющие state platform-команды
+GAMEPLAY — продвижение экспедиции, решение/подтверждение события, crafting,
+           equipment и изменяющие state platform-команды
 TELEMETRY — RECORD_EXPERIMENT_EXPOSURE
 ```
 
@@ -226,10 +228,11 @@ handoff на capable-устройстве.
 получает bond за события. Вибрация и анимация являются только feedback и не
 блокируют server reload.
 
-## Первая глава и persistent inventory
+## Первая глава, persistent inventory и equipment
 
-Главный экран читает `chapter-1-v1` через `GET /api/v1/home` и не хранит
-локальную копию игрового прогресса. Глава содержит 18 узлов. После первого
+Главный экран читает `chapter-1-v2` через `GET /api/v1/home` и не хранит
+локальную копию игрового прогресса. Глава содержит 18 основных узлов и
+опциональный `resonance-pocket`. После первого
 события authoritative reload показывает второй узел `lumen-gate`; после его
 события маршрут продолжается на `ash-orbit`.
 
@@ -269,6 +272,21 @@ Home дополнительно возвращает versioned `craftingRecipes`
 outbox. Успешный response не применяется оптимистично: mobile инвалидирует
 read cache и перечитывает home, где materials уже списаны, unique item добавлен,
 а recipe имеет статус `CRAFTED`. Cached snapshot показывает recipe read-only.
+
+Карточка **«Снаряжение»** показывает authoritative slot `NAVIGATION` и
+позволяет экипировать/снять созданный `resonance-compass`. `EQUIPMENT`
+сохраняет `slotId`, action, nullable `itemInstanceId` и исходный key до первой
+отправки. После успеха client инвалидирует read cache и перечитывает home;
+локального optimistic loadout нет.
+
+В событии `mirror-delta-v1` home помечает `follow-resonance` как доступный
+только при экипированном компасе и возвращает пользовательскую причину lock.
+Недоступный choice нельзя отправить из UI, но backend всё равно повторно
+проверяет prerequisite. Доступный choice ведёт через `resonance-pocket` и
+возвращает экспедицию в `storm-archive`; основной маршрут не меняется.
+Для rolling compatibility backend оставляет в legacy `choices` только
+доступные варианты, а locked варианты возвращает в additive `lockedChoices`:
+новый mobile объединяет их для UI, старый остаётся на основном маршруте.
 
 ## Минимальные платформенные настройки
 
@@ -467,6 +485,7 @@ Unit/widget tests покрывают:
   activity/expedition/event/platform;
 - persist-before-send/restart replay receipt для bodyless event-result ACK;
 - persist-before-send/restart replay crafting recipe с исходным key;
+- persist-before-send/restart replay equip/unequip с исходным payload/key;
 - FIFO внутри lanes, порядок ACTIVITY → GAMEPLAY и параллельная TELEMETRY;
 - temporary/backup/corruption recovery файлового store;
 - единственный startup replay → reload authoritative home;
@@ -481,6 +500,8 @@ Unit/widget tests покрывают:
 - resolution второго события, material preview/result и inventory rendering;
 - parsing/UI/API error mapping crafting recipe, unique item и authoritative
   reload; read-only cached crafting;
+- полный widget flow locked choice → equip → unlocked choice → unequip →
+  locked choice без optimistic state;
 - parsing и restart-visible rendering top-level `pendingEventResult`;
 - ACK result card, authoritative reload и read-only cached card;
 - restart-safe replay второго события с исходным payload/key;

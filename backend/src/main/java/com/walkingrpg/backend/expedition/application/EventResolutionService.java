@@ -6,6 +6,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.walkingrpg.backend.equipment.application.EquipmentService;
+import com.walkingrpg.backend.equipment.application.StarterEquipmentContent;
+import com.walkingrpg.backend.equipment.infrastructure.InMemoryEquipmentRepository;
+import com.walkingrpg.backend.expedition.domain.ExpeditionChoiceEquipmentRequirement;
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventNextNodeResult;
@@ -26,6 +30,7 @@ import com.walkingrpg.backend.inventory.application.InventoryService;
 import com.walkingrpg.backend.inventory.domain.InventoryRewardResult;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.domain.ProgressionRewardResult;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +42,51 @@ public class EventResolutionService {
     private final ProgressionService progressionService;
     private final InventoryService inventoryService;
     private final StarterExpeditionContent content;
+    private final EquipmentService equipmentService;
+    private final ExpeditionContentActivation contentActivation;
     private final Clock clock;
+
+    @Autowired
+    public EventResolutionService(
+            ExpeditionRepository expeditionRepository,
+            EventResolutionRepository eventRepository,
+            ProgressionService progressionService,
+            InventoryService inventoryService,
+            StarterExpeditionContent content,
+            EquipmentService equipmentService,
+            ExpeditionContentActivation contentActivation,
+            Clock clock
+    ) {
+        this.expeditionRepository = expeditionRepository;
+        this.eventRepository = eventRepository;
+        this.progressionService = progressionService;
+        this.inventoryService = inventoryService;
+        this.content = content;
+        this.equipmentService = equipmentService;
+        this.contentActivation = contentActivation;
+        this.clock = clock;
+    }
+
+    public EventResolutionService(
+            ExpeditionRepository expeditionRepository,
+            EventResolutionRepository eventRepository,
+            ProgressionService progressionService,
+            InventoryService inventoryService,
+            StarterExpeditionContent content,
+            EquipmentService equipmentService,
+            Clock clock
+    ) {
+        this(
+                expeditionRepository,
+                eventRepository,
+                progressionService,
+                inventoryService,
+                content,
+                equipmentService,
+                ignored -> true,
+                clock
+        );
+    }
 
     public EventResolutionService(
             ExpeditionRepository expeditionRepository,
@@ -47,12 +96,22 @@ public class EventResolutionService {
             StarterExpeditionContent content,
             Clock clock
     ) {
-        this.expeditionRepository = expeditionRepository;
-        this.eventRepository = eventRepository;
-        this.progressionService = progressionService;
-        this.inventoryService = inventoryService;
-        this.content = content;
-        this.clock = clock;
+        this(
+                expeditionRepository,
+                eventRepository,
+                progressionService,
+                inventoryService,
+                content,
+                new EquipmentService(
+                        new InMemoryEquipmentRepository(),
+                        new StarterEquipmentContent(),
+                        expeditionRepository,
+                        eventRepository,
+                        clock
+                ),
+                ignored -> true,
+                clock
+        );
     }
 
     @Transactional
@@ -87,6 +146,9 @@ public class EventResolutionService {
             return processed.result();
         }
         requireNoPendingResult(command.userId(), definition.expeditionId());
+        boolean resonanceRouteActive = contentActivation.isActive(
+                StarterExpeditionContent.CONTENT_VERSION
+        );
 
         ExpeditionProgressState current = expeditionRepository.findState(
                 command.userId(),
@@ -98,8 +160,10 @@ public class EventResolutionService {
         validateOpenEvent(current, command.eventId());
         ExpeditionEventChoiceDefinition choice = content.requireChoice(
                 command.eventId(),
-                command.choiceId()
+                command.choiceId(),
+                resonanceRouteActive
         );
+        requireEquipment(command.userId(), choice);
 
         ProgressionRewardResult progression = progressionService.rewardEvent(
                 command.userId(),
@@ -114,7 +178,9 @@ public class EventResolutionService {
                 serverTime
         );
         Optional<ExpeditionDefinition> nextNode = content.nextNodeAfterEvent(
-                command.eventId()
+                command.eventId(),
+                choice.choiceId(),
+                resonanceRouteActive
         );
         ExpeditionProgressState updated = nextNode
                 .map(node -> current.resolveAndContinue(command.eventId(), node))
@@ -122,7 +188,7 @@ public class EventResolutionService {
 
         EventResolutionResult result = new EventResolutionResult(
                 UUID.randomUUID(),
-                content.contentVersion(),
+                content.contentVersion(resonanceRouteActive),
                 definition.expeditionId(),
                 updated.status(),
                 updated.version(),
@@ -221,6 +287,28 @@ public class EventResolutionService {
             throw new EventStateConflictException(
                     "Запрошенное событие не открыто для пользователя",
                     state.status().name()
+            );
+        }
+    }
+
+    private void requireEquipment(
+            String userId,
+            ExpeditionEventChoiceDefinition choice
+    ) {
+        ExpeditionChoiceEquipmentRequirement requirement =
+                choice.equipmentRequirement();
+        if (requirement == null) {
+            return;
+        }
+        if (!equipmentService.isEquipped(
+                userId,
+                requirement.slotId(),
+                requirement.item().itemId()
+        )) {
+            throw new EventChoiceUnavailableException(
+                    choice.choiceId(),
+                    requirement.slotId(),
+                    requirement.item().itemId()
             );
         }
     }

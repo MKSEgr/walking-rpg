@@ -57,6 +57,7 @@ EXPECTED_TABLES = {
     "content_release",
     "economy_ledger",
     "economy_wallet",
+    "equipment_slot_state",
     "expedition_progress",
     "first_journey_milestone",
     "flyway_schema_history",
@@ -70,6 +71,7 @@ EXPECTED_TABLES = {
     "processed_activity_sync",
     "processed_crafting_command",
     "processed_crafting_ingredient",
+    "processed_equipment_command",
     "processed_event_resolution",
     "processed_expedition_advance",
     "processed_roadmap_command",
@@ -350,8 +352,8 @@ def validate_schema(
         for version in (latest, source_version, restored_version)
     ):
         fail("Flyway versions must be numeric strings")
-    if latest != "13" or source_version != latest or restored_version != latest:
-        fail("Flyway source/restore versions must match repository V13")
+    if latest != "14" or source_version != latest or restored_version != latest:
+        fail("Flyway source/restore versions must match repository V14")
     require_bool(
         flyway.get("validationSuccessful"),
         True,
@@ -361,15 +363,15 @@ def validate_schema(
     manifests = require_dict(evidence.get("manifests"), "manifests")
     require_exact_keys(manifests, MANIFEST_KEYS, "manifests")
     if manifests.get("tableCount") != len(EXPECTED_TABLES):
-        fail("manifests.tableCount must match the exact V13 schema")
+        fail("manifests.tableCount must match the exact V14 schema")
     if manifests.get("applicationTableCount") != len(EXPECTED_TABLES) - 1:
-        fail("manifests.applicationTableCount must match the exact V13 schema")
+        fail("manifests.applicationTableCount must match the exact V14 schema")
     if manifests.get("fixtureCoveredApplicationTableCount") != len(
         EXPECTED_TABLES
     ) - 1:
-        fail("the synthetic fixture must cover every V13 application table")
+        fail("the synthetic fixture must cover every V14 application table")
     if manifests.get("sequenceCount") != 3:
-        fail("manifests.sequenceCount must match the exact V13 schema")
+        fail("manifests.sequenceCount must match the exact V14 schema")
 
     row_counts = require_dict(
         manifests.get("tableRowCounts"),

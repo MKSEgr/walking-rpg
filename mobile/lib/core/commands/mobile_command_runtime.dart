@@ -13,6 +13,8 @@ import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
+import 'package:walking_rpg_mobile/features/equipment/data/equipment_api_client.dart';
+import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
@@ -47,6 +49,13 @@ typedef CraftingCommandSender =
       required String recipeId,
       required String idempotencyKey,
     });
+typedef EquipmentCommandSender =
+    Future<EquipmentResult> Function({
+      required String slotId,
+      required String action,
+      required String? itemInstanceId,
+      required String idempotencyKey,
+    });
 typedef PlatformCommandSender =
     Future<PlatformCommandResult> Function({
       required String commandType,
@@ -63,6 +72,7 @@ final class MobileCommandRuntime {
     required EventCommandSender eventSender,
     EventResultAcknowledgementSender? eventResultAcknowledgementSender,
     CraftingCommandSender? craftingSender,
+    EquipmentCommandSender? equipmentSender,
     PlatformCommandSender? platformSender,
     MobileCommandClock? clock,
     MobileCommandKeyFactory? keyFactory,
@@ -73,6 +83,7 @@ final class MobileCommandRuntime {
        _eventSender = eventSender,
        _eventResultAcknowledgementSender = eventResultAcknowledgementSender,
        _craftingSender = craftingSender,
+       _equipmentSender = equipmentSender,
        _platformSender = platformSender,
        _clock = clock ?? DateTime.now,
        _keyFactory = keyFactory ?? _defaultKey;
@@ -85,6 +96,8 @@ final class MobileCommandRuntime {
     final EventApiClient eventClient = EventApiClient.fromEnvironment();
     final CraftingApiClient craftingClient =
         CraftingApiClient.fromEnvironment();
+    final EquipmentApiClient equipmentClient =
+        EquipmentApiClient.fromEnvironment();
     final PlatformApiClient platformClient =
         PlatformApiClient.fromEnvironment();
     return MobileCommandRuntime(
@@ -95,6 +108,7 @@ final class MobileCommandRuntime {
       eventSender: eventClient.resolve,
       eventResultAcknowledgementSender: eventClient.acknowledge,
       craftingSender: craftingClient.craft,
+      equipmentSender: equipmentClient.change,
       platformSender: platformClient.execute,
     );
   }
@@ -106,6 +120,7 @@ final class MobileCommandRuntime {
   final EventCommandSender _eventSender;
   final EventResultAcknowledgementSender? _eventResultAcknowledgementSender;
   final CraftingCommandSender? _craftingSender;
+  final EquipmentCommandSender? _equipmentSender;
   final PlatformCommandSender? _platformSender;
   final MobileCommandClock _clock;
   final MobileCommandKeyFactory _keyFactory;
@@ -235,6 +250,53 @@ final class MobileCommandRuntime {
           normalizedRecipeId,
         ]),
         payload: <String, Object?>{'recipeId': normalizedRecipeId},
+      ),
+    );
+  }
+
+  Future<EquipmentResult> changeEquipment({
+    required String slotId,
+    required String action,
+    required String? itemInstanceId,
+    required String idempotencyKey,
+  }) {
+    final String normalizedSlotId = _requireText(slotId, 'slotId');
+    final String normalizedAction = _requireText(
+      action,
+      'action',
+    ).toUpperCase();
+    final String? normalizedItem = itemInstanceId?.trim();
+    if (normalizedAction != 'EQUIP' && normalizedAction != 'UNEQUIP') {
+      throw ArgumentError.value(
+        action,
+        'action',
+        'Ожидается EQUIP или UNEQUIP',
+      );
+    }
+    if (normalizedAction == 'EQUIP' &&
+        (normalizedItem == null || normalizedItem.isEmpty)) {
+      throw ArgumentError('EQUIP требует itemInstanceId');
+    }
+    if (normalizedAction == 'UNEQUIP' &&
+        normalizedItem != null &&
+        normalizedItem.isNotEmpty) {
+      throw ArgumentError('UNEQUIP не принимает itemInstanceId');
+    }
+    return _runOpenOperation<EquipmentResult>(
+      () => _submit<EquipmentResult>(
+        type: MobileCommandType.equipment,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.equipment.wireName,
+          normalizedSlotId,
+          normalizedAction,
+          normalizedItem,
+        ]),
+        payload: <String, Object?>{
+          'slotId': normalizedSlotId,
+          'action': normalizedAction,
+          'itemInstanceId': normalizedAction == 'EQUIP' ? normalizedItem : null,
+        },
       ),
     );
   }
@@ -685,6 +747,23 @@ final class MobileCommandRuntime {
           recipeId: recipeId,
           idempotencyKey: command.idempotencyKey,
         );
+      case MobileCommandType.equipment:
+        final EquipmentCommandSender? sender = _equipmentSender;
+        if (sender == null) {
+          throw const MobileCommandPayloadException();
+        }
+        final String slotId = _payloadString(command, 'slotId');
+        final String action = _payloadString(command, 'action');
+        final String? itemInstanceId = _payloadNullableString(
+          command,
+          'itemInstanceId',
+        );
+        return sender(
+          slotId: slotId,
+          action: action,
+          itemInstanceId: itemInstanceId,
+          idempotencyKey: command.idempotencyKey,
+        );
       case MobileCommandType.platformCommand:
         final PlatformCommandSender? sender = _platformSender;
         if (sender == null) {
@@ -791,6 +870,9 @@ final class MobileCommandRuntime {
     if (error is CraftingApiException) {
       return error.statusCode;
     }
+    if (error is EquipmentApiException) {
+      return error.statusCode;
+    }
     if (error is PlatformApiException) {
       return error.statusCode;
     }
@@ -833,6 +915,17 @@ final class MobileCommandRuntime {
 
   String _payloadString(MobileCommand command, String field) {
     final Object? value = command.payload[field];
+    if (value is! String || value.trim().isEmpty) {
+      throw const MobileCommandPayloadException();
+    }
+    return value;
+  }
+
+  String? _payloadNullableString(MobileCommand command, String field) {
+    final Object? value = command.payload[field];
+    if (value == null) {
+      return null;
+    }
     if (value is! String || value.trim().isEmpty) {
       throw const MobileCommandPayloadException();
     }

@@ -220,6 +220,32 @@ Roadmap отражает снижение рисков. Статусы:
 - [ ] Настроить следующие recipes и баланс material sinks по фактической
       экономике, не по synthetic данным
 
+## Milestone 11 — Equipment and resonance route
+
+### CODE_COMPLETE
+
+- [x] Versioned `equipment-v1` и persistent slot `NAVIGATION` только для
+      принадлежащего пользователю unique item
+- [x] Desired-state equip/unequip API с exact replay, fingerprint conflict и
+      атомарным slot state/processed response
+- [x] Общие account-deletion и expedition serialization boundaries; новая
+      equipment mutation запрещена при pending event receipt, exact replay
+      остаётся доступен
+- [x] Additive equipment/availability projection в `GET /home`, Flutter
+      **«Снаряжение»** и restart-safe `EQUIPMENT` в GAMEPLAY outbox
+- [x] `chapter-1-v2`: 18 основных узлов и опциональный
+      `resonance-pocket`, доступный из `mirror-delta-v1` только с
+      экипированным `resonance-compass`
+- [x] V13→V14 upgrade, ownership/uniqueness constraints, unit/API/PostgreSQL/
+      widget tests, account export/delete и synthetic backup/restore coverage
+
+### EXTERNAL_VALIDATION_REQUIRED
+
+- [ ] Проверить, что beta-пользователь понимает разницу между созданием и
+      экипировкой компаса и замечает недоступный маршрут без подсказки
+- [ ] Проверить ценность и баланс наград опционального маршрута по фактическим
+      прохождениям, не по synthetic данным
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

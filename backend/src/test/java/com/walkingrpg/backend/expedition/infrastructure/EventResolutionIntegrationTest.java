@@ -210,7 +210,10 @@ class EventResolutionIntegrationTest {
         HomeSnapshotResponse home = homeService.getSnapshot(
                 new HomeQuery("event-user", LOCAL_DATE)
         );
-        assertEquals(StarterExpeditionContent.CONTENT_VERSION, home.contentVersion());
+        assertEquals(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION,
+                home.contentVersion()
+        );
         assertEquals(90, home.pilot().currentExperience());
         assertEquals(23, home.pet().bond());
         assertEquals("IN_PROGRESS", home.expedition().status());

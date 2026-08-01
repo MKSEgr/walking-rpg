@@ -137,22 +137,39 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
 
     private List<InventoryRuntimeItem> findInventory(String userId) {
         return jdbcTemplate.query("""
-                SELECT item_id, quantity, version
+                SELECT item_id,
+                       quantity,
+                       version,
+                       item_instance_id,
+                       equipped_slot_id
                 FROM (
-                    SELECT item_id, quantity, version
+                    SELECT item_id,
+                           quantity,
+                           version,
+                           NULL::uuid AS item_instance_id,
+                           NULL::varchar AS equipped_slot_id
                     FROM inventory_stack
                     WHERE user_id = ?
                       AND quantity > 0
                     UNION ALL
-                    SELECT item_id, 1 AS quantity, version
-                    FROM unique_inventory_item
-                    WHERE user_id = ?
+                    SELECT item.item_id,
+                           1 AS quantity,
+                           item.version,
+                           item.item_instance_id,
+                           equipment.slot_id AS equipped_slot_id
+                    FROM unique_inventory_item item
+                    LEFT JOIN equipment_slot_state equipment
+                      ON equipment.user_id = item.user_id
+                     AND equipment.item_instance_id = item.item_instance_id
+                    WHERE item.user_id = ?
                 ) inventory
                 ORDER BY item_id
                 """, (resultSet, rowNumber) -> new InventoryRuntimeItem(
                 resultSet.getString("item_id"),
                 resultSet.getLong("quantity"),
-                resultSet.getLong("version")
+                resultSet.getLong("version"),
+                resultSet.getObject("item_instance_id", java.util.UUID.class),
+                resultSet.getString("equipped_slot_id")
         ), userId, userId);
     }
 }

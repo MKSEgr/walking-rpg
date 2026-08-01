@@ -100,8 +100,8 @@ class BackupRestoreDrillIntegrationTest {
         assertEquals(latestRepositoryVersion, sourceFlywayVersion);
         assertTrue(
                 MigrationVersion.fromVersion(latestRepositoryVersion)
-                        .compareTo(MigrationVersion.fromVersion("13")) >= 0,
-                "The drill must cover Flyway V1-V13 or later"
+                        .compareTo(MigrationVersion.fromVersion("14")) >= 0,
+                "The drill must cover Flyway V1-V14 or later"
         );
 
         try (Connection sourceConnection = connection(SOURCE)) {
@@ -115,8 +115,8 @@ class BackupRestoreDrillIntegrationTest {
         try (Connection sourceConnection = connection(SOURCE)) {
             sourceManifest = PostgresDrillManifest.capture(sourceConnection);
         }
-        assertTrue(sourceManifest.tables().size() >= 28);
-        assertTrue(sourceManifest.applicationTableCount() >= 27);
+        assertTrue(sourceManifest.tables().size() >= 33);
+        assertTrue(sourceManifest.applicationTableCount() >= 32);
         assertEquals(
                 sourceManifest.applicationTableCount(),
                 sourceManifest.fixtureCoveredApplicationTableCount()
@@ -451,6 +451,22 @@ class BackupRestoreDrillIntegrationTest {
                 FROM processed_crafting_ingredient
                 WHERE user_id = 'backup-drill-user'
                   AND recipe_id = 'resonance-compass-v1'
+                """));
+        assertEquals(1, scalarLong(connection, """
+                SELECT count(*)
+                FROM equipment_slot_state
+                WHERE user_id = 'backup-drill-user'
+                  AND slot_id = 'NAVIGATION'
+                  AND item_instance_id =
+                      '70000000-0000-0000-0000-000000000001'
+                """));
+        assertEquals(1, scalarLong(connection, """
+                SELECT count(*)
+                FROM processed_equipment_command
+                WHERE user_id = 'backup-drill-user'
+                  AND slot_id = 'NAVIGATION'
+                  AND action = 'EQUIP'
+                  AND item_id = 'resonance-compass'
                 """));
         assertFalse(scalarBoolean(connection, """
                 SELECT (config_json ->> 'sandboxPaymentsEnabled')::boolean

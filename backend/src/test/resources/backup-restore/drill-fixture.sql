@@ -494,6 +494,60 @@ INSERT INTO processed_crafting_ingredient (
     3
 );
 
+INSERT INTO equipment_slot_state (
+    user_id,
+    slot_id,
+    item_instance_id,
+    version,
+    equipped_at,
+    updated_at
+) VALUES (
+    'backup-drill-user',
+    'NAVIGATION',
+    '70000000-0000-0000-0000-000000000001',
+    1,
+    '2026-07-30T10:00:37Z',
+    '2026-07-30T10:00:37Z'
+);
+
+INSERT INTO processed_equipment_command (
+    user_id,
+    slot_id,
+    idempotency_key,
+    request_fingerprint,
+    content_version,
+    action,
+    changed,
+    slot_name,
+    slot_description,
+    equipment_version,
+    item_instance_id,
+    item_id,
+    item_name,
+    item_description,
+    equipped_at,
+    server_time,
+    created_at
+) VALUES (
+    'backup-drill-user',
+    'NAVIGATION',
+    'backup-drill-equip',
+    repeat('8', 64),
+    'equipment-v1',
+    'EQUIP',
+    true,
+    'Навигация',
+    'Слот навигационного снаряжения.',
+    1,
+    '70000000-0000-0000-0000-000000000001',
+    'resonance-compass',
+    'Резонансный компас',
+    'Synthetic unique crafting reward.',
+    '2026-07-30T10:00:37Z',
+    '2026-07-30T10:00:37Z',
+    '2026-07-30T10:00:37Z'
+);
+
 INSERT INTO processed_event_resolution (
     user_id,
     expedition_id,

@@ -39,9 +39,12 @@ Production OIDC/database secrets, реальный TLS endpoint, least-privilege
 role, deployment, management network isolation, WAF/distributed limiter,
 monitoring/alerting, backup scheduling/encryption/retention, PITR/RPO/RTO
 policy и датированный restore реального backup —
-`EXTERNAL_VALIDATION_REQUIRED`. Наличие Flyway V13, успешный CI startup или
+`EXTERNAL_VALIDATION_REQUIRED`. Наличие Flyway V14, успешный CI startup или
 `scope=SYNTHETIC_CI` не является доказательством production
 deployment/restore.
+Drain старого backend pool и последующая активация staged `chapter-1-v2` по
+production runbook также требуют внешнего deployment evidence; CI подтверждает
+только fail-closed исходное состояние и кодовые read/write gates.
 
 ## Signing и публикация
 

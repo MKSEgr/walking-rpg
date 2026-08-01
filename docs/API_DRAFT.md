@@ -27,7 +27,8 @@
 Экспорт включает `firstJourneyMilestones` с milestone, source, минимальными
 игровыми attributes и timestamps, а также `uniqueInventory`,
 `craftingOperations` и `craftingIngredients` без access tokens или локального
-mobile outbox.
+mobile outbox. Persistent loadout и его exact command snapshots входят в
+`equipment` и `equipmentOperations`.
 
 ```http
 Authorization: Bearer <access-token>
@@ -122,7 +123,7 @@ Authorization: Bearer <access-token>
   "economyVersion": 3,
   "lastActivitySyncAt": "2026-07-26T06:55:00Z",
   "serverTime": "2026-07-26T07:00:00Z",
-  "contentVersion": "chapter-1-v1",
+  "contentVersion": "chapter-1-v2",
   "pilot": {
     "name": "Навигатор",
     "level": 1,
@@ -144,7 +145,20 @@ Authorization: Bearer <access-token>
       "description": "Стабильный фрагмент светового ядра, пригодный для будущих улучшений.",
       "quantity": 2,
       "version": 1,
-      "kind": "MATERIAL"
+      "kind": "MATERIAL",
+      "itemInstanceId": null,
+      "equippableSlotId": null,
+      "equippedSlotId": null
+    }
+  ],
+  "equipment": [
+    {
+      "slotId": "NAVIGATION",
+      "name": "Навигационный прибор",
+      "description": "Один уникальный инструмент, влияющий на доступные маршруты.",
+      "status": "EMPTY",
+      "version": 0,
+      "item": null
     }
   ],
   "craftingRecipes": [
@@ -239,7 +253,15 @@ Authorization: Bearer <access-token>
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
 - неизвестный пользователь получает zero-state и starter content;
 - `inventory[]` содержит актуальные material stacks и unique items;
-  `kind=MATERIAL|UNIQUE`, unique item всегда имеет `quantity=1`;
+  `kind=MATERIAL|UNIQUE`, unique item всегда имеет `quantity=1`; для unique
+  item additive fields содержат persistent `itemInstanceId`, допустимый
+  `equippableSlotId` и nullable текущий `equippedSlotId`;
+- `equipment[]` — additive server-owned projection slot state; `status`
+  принимает `EMPTY|EQUIPPED`, а `item` присутствует только для `EQUIPPED`;
+- в `expedition.unlockedEvent` legacy-массив `choices` содержит только
+  доступные варианты; additive `lockedChoices` содержит недоступные gated
+  варианты с `availability=LOCKED` и server-owned `requirement`. Новый mobile
+  объединяет массивы для UI, старый mobile игнорирует locked choices;
 - `craftingRecipes[]` — additive server-owned projection; `status` принимает
   `READY`, `MISSING_MATERIALS` или `CRAFTED`, а available quantities отражают
   тот же repeatable-read snapshot, что и inventory;
@@ -326,7 +348,7 @@ Response после достижения узла:
 
 ```json
 {
-  "contentVersion": "chapter-1-v1",
+  "contentVersion": "chapter-1-v2",
   "expeditionId": "starter-expedition-v1",
   "expeditionName": "Сигнал из туманного сектора",
   "energySpent": 30,
@@ -379,7 +401,7 @@ Request:
 }
 ```
 
-Первые два события `chapter-1-v1`:
+Первые два события сохраняют stable IDs в `chapter-1-v2`:
 
 ```text
 signal-source-v1
@@ -390,14 +412,28 @@ signal-source-v1
 echo-vault-v1
   stabilize-core  → +30 pilot XP, +8 pet bond, +2 lumen-shard, переход к ash-orbit
   follow-echo     → +20 pilot XP, +18 pet bond, +1 echo-thread, переход к ash-orbit
+
+mirror-delta-v1
+  обычные choices   → переход к storm-archive
+  follow-resonance  → требует resonance-compass в NAVIGATION,
+                      +35 pilot XP, +16 pet bond, +1 dawn-fragment,
+                      переход к optional resonance-pocket
+
+resonance-pocket-v1
+  любой choice      → награда optional node и возврат к storm-archive
 ```
+
+До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses
+остаются на `chapter-1-v1`, а `follow-resonance` отсутствует и в `choices`, и в
+`lockedChoices`. Прямая новая resolution-команда с этим choice отклоняется.
+Exact replay уже сохранённого результата выполняется до проверки release gate.
 
 Response второго события:
 
 ```json
 {
   "receiptId": "22222222-2222-2222-2222-222222222222",
-  "contentVersion": "chapter-1-v1",
+  "contentVersion": "chapter-1-v2",
   "expeditionId": "starter-expedition-v1",
   "expeditionStatus": "IN_PROGRESS",
   "expeditionVersion": 4,
@@ -461,6 +497,11 @@ Response второго события:
   `409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED`, если у пользователя уже есть
   неподтверждённый capable result receipt той же экспедиции;
 - `choiceId` выбирается из server-owned definition соответствующего `eventId`;
+- gated choice повторно проверяет authoritative equipment под тем же
+  expedition lock; доступный вариант находится в `choices`, недоступный — в
+  additive `lockedChoices`. Home availability используется только для UX, а
+  прямой вызов без prerequisite возвращает
+  `409 EVENT_CHOICE_UNAVAILABLE`;
 - `receiptId`, immutable reward snapshot и `nextNode` сохраняются в той же
   транзакции, что и progression/inventory/expedition transition;
 - первый event resolution переводит progress на второй узел, второй — на
@@ -611,6 +652,70 @@ Content-Type: application/json
 - неизвестный recipe возвращает `404 CRAFTING_RECIPE_NOT_FOUND`;
 - mobile хранит `recipeId`/key в GAMEPLAY outbox и после успеха перечитывает
   authoritative `GET /home`.
+
+## Equipment
+
+### `POST /api/v1/equipment/slots/{slotId}/equip`
+
+Экипирует принадлежащий authenticated пользователю unique item в server-owned
+slot. В `equipment-v1` поддержан `slotId=NAVIGATION`, а допустимый item —
+`resonance-compass`.
+
+```json
+{
+  "itemInstanceId": "11111111-2222-3333-4444-555555555555",
+  "idempotencyKey": "equip-compass-1"
+}
+```
+
+```json
+{
+  "contentVersion": "equipment-v1",
+  "slotId": "NAVIGATION",
+  "slotName": "Навигационный прибор",
+  "slotDescription": "Один уникальный инструмент, влияющий на доступные маршруты.",
+  "action": "EQUIP",
+  "changed": true,
+  "version": 1,
+  "equippedItem": {
+    "itemInstanceId": "11111111-2222-3333-4444-555555555555",
+    "itemId": "resonance-compass",
+    "name": "Резонансный компас",
+    "description": "Уникальный прибор, собранный из люминовых осколков и нити эха.",
+    "equippedAt": "2026-08-01T08:05:00Z"
+  },
+  "serverTime": "2026-08-01T08:05:00Z"
+}
+```
+
+### `POST /api/v1/equipment/slots/{slotId}/unequip`
+
+Снимает предмет. Request содержит только key; `itemInstanceId` запрещён.
+Response имеет `action=UNEQUIP`, `equippedItem=null` и authoritative slot
+version.
+
+```json
+{
+  "idempotencyKey": "unequip-compass-1"
+}
+```
+
+Правила:
+
+- slot/item compatibility и ownership проверяет backend; чужой или
+  отсутствующий instance возвращает `409 EQUIPMENT_ITEM_UNAVAILABLE` без
+  раскрытия владельца;
+- composite database FK не позволяет связать slot с item другого user;
+- account-deletion lock предшествует equipment lock и replay lookup;
+- exact replay выполняется до pending-result guard и возвращает исходный
+  response; тот же key с другим action/item возвращает
+  `409 IDEMPOTENCY_CONFLICT`;
+- новая команда сериализуется с advance/event resolution/crafting и при
+  pending receipt возвращает `409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED`;
+- повтор уже достигнутого desired state с новым key возвращает
+  `changed=false` без увеличения version;
+- mobile хранит `EQUIPMENT` в GAMEPLAY outbox и принимает новый slot state
+  только после authoritative `GET /home`.
 
 ## `GET /api/v1/platform`
 
@@ -839,8 +944,14 @@ IDEMPOTENCY_CONFLICT
 INSUFFICIENT_ENERGY
 EXPEDITION_STATE_CONFLICT
 EVENT_STATE_CONFLICT
+EVENT_CHOICE_UNAVAILABLE
 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED
 EVENT_RESULT_NOT_FOUND
+INSUFFICIENT_MATERIALS
+CRAFT_ALREADY_COMPLETED
+CRAFTING_RECIPE_NOT_FOUND
+EQUIPMENT_ITEM_UNAVAILABLE
+EQUIPMENT_SLOT_NOT_FOUND
 INVENTORY_LEDGER_CONFLICT
 VALIDATION_ERROR
 NOT_FOUND

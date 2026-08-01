@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
+import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
@@ -259,6 +260,107 @@ void main() {
     expect(tester.widget<FilledButton>(craftButton).onPressed, isNull);
     expect(find.text('Создание недоступно офлайн'), findsOneWidget);
     expect(craftCalls, 0);
+  });
+
+  testWidgets('equipment unlocks and unequip locks resonance route', (
+    WidgetTester tester,
+  ) async {
+    int loads = 0;
+    int keys = 0;
+    final List<String> actions = <String>[];
+    final List<String?> itemInstanceIds = <String?>[];
+    final List<String> idempotencyKeys = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async {
+            loads += 1;
+            return _resonanceEventReady(equipped: loads == 2);
+          },
+          idempotencyKeyFactory: () => 'equipment-key-${++keys}',
+          equipmentExecutor:
+              ({
+                required String slotId,
+                required String action,
+                required String? itemInstanceId,
+                required String idempotencyKey,
+              }) async {
+                actions.add(action);
+                itemInstanceIds.add(itemInstanceId);
+                idempotencyKeys.add(idempotencyKey);
+                return _equipmentResult(action: action);
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder routeChoice = find.byKey(
+      const Key('home-event-choice-follow-resonance'),
+    );
+    await tester.scrollUntilVisible(
+      routeChoice,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(routeChoice).onPressed, isNull);
+    expect(
+      find.byKey(const Key('home-choice-locked-follow-resonance')),
+      findsOneWidget,
+    );
+
+    final Finder equip = find.byKey(
+      const Key('inventory-equip-resonance-compass'),
+    );
+    await tester.scrollUntilVisible(
+      equip,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(equip);
+    await tester.pumpAndSettle();
+
+    expect(actions, <String>['EQUIP']);
+    expect(itemInstanceIds, <String?>['33333333-3333-3333-3333-333333333333']);
+    expect(idempotencyKeys, <String>['equipment-key-1']);
+    expect(loads, 2);
+    await tester.scrollUntilVisible(
+      routeChoice,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(routeChoice).onPressed, isNotNull);
+
+    final Finder unequip = find.byKey(
+      const Key('equipment-unequip-NAVIGATION'),
+    );
+    await tester.scrollUntilVisible(
+      unequip,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(unequip);
+    await tester.pumpAndSettle();
+
+    expect(actions, <String>['EQUIP', 'UNEQUIP']);
+    expect(itemInstanceIds, <String?>[
+      '33333333-3333-3333-3333-333333333333',
+      null,
+    ]);
+    expect(idempotencyKeys, <String>['equipment-key-1', 'equipment-key-2']);
+    expect(loads, 3);
+    await tester.scrollUntilVisible(
+      routeChoice,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(routeChoice).onPressed, isNull);
   });
 
   testWidgets(
@@ -714,6 +816,100 @@ HomeSnapshot _craftingCompleted() {
   );
 }
 
+HomeSnapshot _resonanceEventReady({required bool equipped}) {
+  const String itemInstanceId = '33333333-3333-3333-3333-333333333333';
+  return HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 8,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v2',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'mirror-delta',
+    currentNodeName: 'Зеркальная дельта',
+    expeditionProgress: 95,
+    requiredEnergy: 95,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 20,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'mirror-delta-v1',
+      title: 'Раздвоенный сигнал',
+      summary: 'Два сигнала ведут к разным берегам.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        const HomeEventChoice(
+          choiceId: 'survey-mirror-delta',
+          title: 'Исследовать узел',
+          description: 'Сохранить обычный маршрут.',
+          pilotExperienceReward: 31,
+          petBondReward: 6,
+        ),
+        HomeEventChoice(
+          choiceId: 'follow-resonance',
+          title: 'Пойти по резонансу',
+          description: 'Настроить компас на скрытое отражение.',
+          pilotExperienceReward: 35,
+          petBondReward: 16,
+          availability: equipped ? 'AVAILABLE' : 'LOCKED',
+          requirement: const HomeChoiceRequirement(
+            type: 'EQUIPPED_ITEM',
+            slotId: 'NAVIGATION',
+            slotName: 'Навигационный прибор',
+            itemId: 'resonance-compass',
+            itemName: 'Резонансный компас',
+            description:
+                'Экипируйте резонансный компас, чтобы увидеть скрытый маршрут.',
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 2,
+    pilotCurrentExperience: 40,
+    pilotNextLevelExperience: 160,
+    petName: 'Искра',
+    petLevel: 2,
+    petBond: 40,
+    inventory: <HomeInventoryItem>[
+      HomeInventoryItem(
+        itemInstanceId: itemInstanceId,
+        itemId: 'resonance-compass',
+        name: 'Резонансный компас',
+        description: 'Уникальный навигационный прибор.',
+        quantity: 1,
+        version: 1,
+        kind: 'UNIQUE',
+        equippableSlotId: 'NAVIGATION',
+        equippedSlotId: equipped ? 'NAVIGATION' : null,
+      ),
+    ],
+    equipment: <HomeEquipmentSlot>[
+      HomeEquipmentSlot(
+        slotId: 'NAVIGATION',
+        name: 'Навигационный прибор',
+        description: 'Инструмент, влияющий на доступные маршруты.',
+        status: equipped ? 'EQUIPPED' : 'EMPTY',
+        version: equipped ? 1 : 2,
+        item: equipped
+            ? const HomeEquipmentItem(
+                itemInstanceId: itemInstanceId,
+                itemId: 'resonance-compass',
+                name: 'Резонансный компас',
+                description: 'Уникальный навигационный прибор.',
+              )
+            : null,
+      ),
+    ],
+  );
+}
+
 const HomeCraftingRecipe _readyRecipe = HomeCraftingRecipe(
   recipeId: 'resonance-compass-v1',
   recipeVersion: '1',
@@ -1048,6 +1244,28 @@ CraftingResult _craftingResult() {
       version: 1,
       craftedAt: '2026-07-26T06:00:00Z',
     ),
+    serverTime: '2026-07-26T06:00:00Z',
+  );
+}
+
+EquipmentResult _equipmentResult({required String action}) {
+  return EquipmentResult(
+    contentVersion: 'equipment-v1',
+    slotId: 'NAVIGATION',
+    slotName: 'Навигационный прибор',
+    slotDescription: 'Инструмент, влияющий на доступные маршруты.',
+    action: action,
+    changed: true,
+    version: action == 'EQUIP' ? 1 : 2,
+    equippedItem: action == 'EQUIP'
+        ? const EquippedItem(
+            itemInstanceId: '33333333-3333-3333-3333-333333333333',
+            itemId: 'resonance-compass',
+            name: 'Резонансный компас',
+            description: 'Уникальный навигационный прибор.',
+            equippedAt: '2026-07-26T06:00:00Z',
+          )
+        : null,
     serverTime: '2026-07-26T06:00:00Z',
   );
 }

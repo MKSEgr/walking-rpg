@@ -488,6 +488,20 @@ public class PlatformAdminService {
                         + "WHERE user_id = ? ORDER BY recipe_id, idempotency_key, item_id",
                 normalized
         ));
+        export.put("equipment", jdbcTemplate.queryForList(
+                "SELECT slot_id, item_instance_id, version, equipped_at, updated_at "
+                        + "FROM equipment_slot_state WHERE user_id = ? ORDER BY slot_id",
+                normalized
+        ));
+        export.put("equipmentOperations", jdbcTemplate.queryForList(
+                "SELECT slot_id, idempotency_key, content_version, action, changed, "
+                        + "slot_name, slot_description, equipment_version, "
+                        + "item_instance_id, item_id, item_name, item_description, "
+                        + "equipped_at, server_time, created_at "
+                        + "FROM processed_equipment_command "
+                        + "WHERE user_id = ? ORDER BY created_at",
+                normalized
+        ));
         export.put("platformState", jdbcTemplate.queryForList(
                 "SELECT state_json::text AS state_json, version, updated_at "
                         + "FROM roadmap_user_state WHERE user_id = ?",

@@ -9,6 +9,12 @@ import java.util.Map;
 
 import com.walkingrpg.backend.crafting.application.StarterCraftingContent;
 import com.walkingrpg.backend.crafting.domain.CraftingRecipeDefinition;
+import com.walkingrpg.backend.equipment.application.StarterEquipmentContent;
+import com.walkingrpg.backend.equipment.domain.EquipmentSlotDefinition;
+import com.walkingrpg.backend.equipment.domain.EquipmentSlotState;
+import com.walkingrpg.backend.equipment.infrastructure.EquipmentRepository;
+import com.walkingrpg.backend.equipment.infrastructure.InMemoryEquipmentRepository;
+import com.walkingrpg.backend.expedition.application.ExpeditionContentActivation;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.domain.ExpeditionDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventChoiceDefinition;
@@ -21,6 +27,9 @@ import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
 import com.walkingrpg.backend.home.domain.CraftingIngredientSnapshot;
 import com.walkingrpg.backend.home.domain.CraftingRecipeSnapshot;
 import com.walkingrpg.backend.home.domain.CraftingResultPreviewSnapshot;
+import com.walkingrpg.backend.home.domain.EquipmentItemSnapshot;
+import com.walkingrpg.backend.home.domain.EquipmentSlotSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionChoiceRequirementSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
@@ -48,6 +57,9 @@ public class HomeService {
     private final StarterExpeditionContent expeditionContent;
     private final StarterInventoryContent inventoryContent;
     private final StarterCraftingContent craftingContent;
+    private final EquipmentRepository equipmentRepository;
+    private final StarterEquipmentContent equipmentContent;
+    private final ExpeditionContentActivation contentActivation;
     private final Clock clock;
 
     @Autowired
@@ -58,6 +70,9 @@ public class HomeService {
             StarterExpeditionContent expeditionContent,
             StarterInventoryContent inventoryContent,
             StarterCraftingContent craftingContent,
+            EquipmentRepository equipmentRepository,
+            StarterEquipmentContent equipmentContent,
+            ExpeditionContentActivation contentActivation,
             Clock clock
     ) {
         this.repository = repository;
@@ -66,6 +81,9 @@ public class HomeService {
         this.expeditionContent = expeditionContent;
         this.inventoryContent = inventoryContent;
         this.craftingContent = craftingContent;
+        this.equipmentRepository = equipmentRepository;
+        this.equipmentContent = equipmentContent;
+        this.contentActivation = contentActivation;
         this.clock = clock;
     }
 
@@ -83,12 +101,40 @@ public class HomeService {
                 expeditionContent,
                 new StarterInventoryContent(),
                 new StarterCraftingContent(),
+                new InMemoryEquipmentRepository(),
+                new StarterEquipmentContent(),
+                ignored -> true,
+                clock
+        );
+    }
+
+    public HomeService(
+            HomeReadRepository repository,
+            StarterHomeContent starterContent,
+            DailyGoalService dailyGoalService,
+            StarterExpeditionContent expeditionContent,
+            ExpeditionContentActivation contentActivation,
+            Clock clock
+    ) {
+        this(
+                repository,
+                starterContent,
+                dailyGoalService,
+                expeditionContent,
+                new StarterInventoryContent(),
+                new StarterCraftingContent(),
+                new InMemoryEquipmentRepository(),
+                new StarterEquipmentContent(),
+                contentActivation,
                 clock
         );
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public HomeSnapshotResponse getSnapshot(HomeQuery query) {
+        boolean resonanceRouteActive = contentActivation.isActive(
+                StarterExpeditionContent.CONTENT_VERSION
+        );
         ExpeditionDefinition initialDefinition = expeditionContent.initialDefinition();
         DailyGoal dailyGoal = dailyGoalService.calculate(
                 query.userId(),
@@ -102,6 +148,7 @@ public class HomeService {
         ExpeditionDefinition currentDefinition = state.currentNodeId() == null
                 ? initialDefinition
                 : expeditionContent.requireNode(state.currentNodeId());
+        List<EquipmentSlotState> equipment = equipmentStates(query.userId());
 
         return new HomeSnapshotResponse(
                 query.localDate(),
@@ -114,12 +161,18 @@ public class HomeService {
                 state.economyVersion(),
                 state.lastActivitySyncAt(),
                 Instant.now(clock).truncatedTo(ChronoUnit.MICROS),
-                expeditionContent.contentVersion(),
+                expeditionContent.contentVersion(resonanceRouteActive),
                 pilotSnapshot(state),
                 petSnapshot(state),
                 inventorySnapshots(state),
+                equipmentSnapshots(equipment),
                 pendingEventResult(query.userId(), initialDefinition.expeditionId()),
-                expeditionSnapshot(currentDefinition, state),
+                expeditionSnapshot(
+                        currentDefinition,
+                        state,
+                        equipment,
+                        resonanceRouteActive
+                ),
                 craftingSnapshots(state)
         );
     }
@@ -187,7 +240,12 @@ public class HomeService {
                             item.description(),
                             runtime.quantity(),
                             runtime.version(),
-                            item.kind().name()
+                            item.kind().name(),
+                            runtime.itemInstanceId(),
+                            equipmentContent.slotForItem(item.itemId())
+                                    .map(EquipmentSlotDefinition::slotId)
+                                    .orElse(null),
+                            runtime.equippedSlotId()
                     );
                 })
                 .toList();
@@ -250,7 +308,9 @@ public class HomeService {
 
     private ExpeditionSnapshot expeditionSnapshot(
             ExpeditionDefinition definition,
-            HomeRuntimeState state
+            HomeRuntimeState state,
+            List<EquipmentSlotState> equipment,
+            boolean resonanceRouteActive
     ) {
         long requiredEnergy = state.expeditionRequiredEnergy() > 0
                 ? state.expeditionRequiredEnergy()
@@ -270,13 +330,20 @@ public class HomeService {
                 requiredEnergy,
                 status,
                 state.expeditionVersion(),
-                eventSnapshot(definition, state)
+                eventSnapshot(
+                        definition,
+                        state,
+                        equipment,
+                        resonanceRouteActive
+                )
         );
     }
 
     private ExpeditionEventSnapshot eventSnapshot(
             ExpeditionDefinition definition,
-            HomeRuntimeState state
+            HomeRuntimeState state,
+            List<EquipmentSlotState> equipment,
+            boolean resonanceRouteActive
     ) {
         if (state.unlockedEventId() == null) {
             return null;
@@ -286,10 +353,16 @@ public class HomeService {
         )) {
             return null;
         }
-        List<ExpeditionEventChoiceSnapshot> choices = expeditionContent
-                .eventChoices(state.unlockedEventId())
+        List<ExpeditionEventChoiceSnapshot> projectedChoices = expeditionContent
+                .eventChoices(state.unlockedEventId(), resonanceRouteActive)
                 .stream()
-                .map(this::choiceSnapshot)
+                .map(choice -> choiceSnapshot(choice, equipment))
+                .toList();
+        List<ExpeditionEventChoiceSnapshot> choices = projectedChoices.stream()
+                .filter(choice -> "AVAILABLE".equals(choice.availability()))
+                .toList();
+        List<ExpeditionEventChoiceSnapshot> lockedChoices = projectedChoices.stream()
+                .filter(choice -> "LOCKED".equals(choice.availability()))
                 .toList();
         return new ExpeditionEventSnapshot(
                 definition.event().eventId(),
@@ -297,6 +370,7 @@ public class HomeService {
                 definition.event().summary(),
                 "READY",
                 choices,
+                lockedChoices,
                 null,
                 null,
                 null,
@@ -306,7 +380,8 @@ public class HomeService {
     }
 
     private ExpeditionEventChoiceSnapshot choiceSnapshot(
-            ExpeditionEventChoiceDefinition choice
+            ExpeditionEventChoiceDefinition choice,
+            List<EquipmentSlotState> equipment
     ) {
         MaterialRewardPreviewSnapshot material = choice.materialReward() == null
                 ? null
@@ -315,13 +390,86 @@ public class HomeService {
                         choice.materialReward().item().name(),
                         choice.materialReward().quantity()
                 );
+        var requirement = choice.equipmentRequirement();
+        boolean available = requirement == null || equipment.stream()
+                .anyMatch(slot -> requirement.slotId().equals(slot.slotId())
+                        && requirement.item().itemId().equals(slot.itemId()));
+        ExpeditionChoiceRequirementSnapshot requirementSnapshot =
+                requirement == null
+                        ? null
+                        : new ExpeditionChoiceRequirementSnapshot(
+                                "EQUIPPED_ITEM",
+                                requirement.slotId(),
+                                requirement.slotName(),
+                                requirement.item().itemId(),
+                                requirement.item().name(),
+                                requirement.lockedReason()
+                        );
         return new ExpeditionEventChoiceSnapshot(
                 choice.choiceId(),
                 choice.title(),
                 choice.description(),
                 choice.pilotExperienceReward(),
                 choice.petBondReward(),
-                material
+                material,
+                available ? "AVAILABLE" : "LOCKED",
+                requirementSnapshot
+        );
+    }
+
+    private List<EquipmentSlotState> equipmentStates(String userId) {
+        Map<String, EquipmentSlotState> states = new HashMap<>();
+        equipmentRepository.findAll(userId).forEach(state -> states.put(
+                state.slotId(),
+                state
+        ));
+        return equipmentContent.slots().stream()
+                .map(slot -> states.getOrDefault(
+                        slot.slotId(),
+                        EquipmentSlotState.empty(slot.slotId())
+                ))
+                .toList();
+    }
+
+    private List<EquipmentSlotSnapshot> equipmentSnapshots(
+            List<EquipmentSlotState> states
+    ) {
+        Map<String, EquipmentSlotState> bySlot = new HashMap<>();
+        states.forEach(state -> bySlot.put(state.slotId(), state));
+        return equipmentContent.slots().stream()
+                .map(slot -> equipmentSnapshot(
+                        slot,
+                        bySlot.getOrDefault(
+                                slot.slotId(),
+                                EquipmentSlotState.empty(slot.slotId())
+                        )
+                ))
+                .toList();
+    }
+
+    private EquipmentSlotSnapshot equipmentSnapshot(
+            EquipmentSlotDefinition slot,
+            EquipmentSlotState state
+    ) {
+        EquipmentItemSnapshot item = null;
+        if (state.isEquipped()) {
+            InventoryItemDefinition definition = inventoryContent.findOrFallback(
+                    state.itemId()
+            );
+            item = new EquipmentItemSnapshot(
+                    state.itemInstanceId(),
+                    definition.itemId(),
+                    definition.name(),
+                    definition.description()
+            );
+        }
+        return new EquipmentSlotSnapshot(
+                slot.slotId(),
+                slot.name(),
+                slot.description(),
+                state.isEquipped() ? "EQUIPPED" : "EMPTY",
+                state.version(),
+                item
         );
     }
 

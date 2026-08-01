@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
+import 'package:walking_rpg_mobile/features/equipment/data/equipment_api_client.dart';
+import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
@@ -34,6 +36,13 @@ typedef CraftingExecutor =
       required String recipeId,
       required String idempotencyKey,
     });
+typedef EquipmentExecutor =
+    Future<EquipmentResult> Function({
+      required String slotId,
+      required String action,
+      required String? itemInstanceId,
+      required String idempotencyKey,
+    });
 typedef IdempotencyKeyFactory = String Function();
 
 class HomeScreen extends StatefulWidget {
@@ -44,6 +53,7 @@ class HomeScreen extends StatefulWidget {
     this.eventResolver,
     this.eventResultAcknowledger,
     this.crafter,
+    this.equipmentExecutor,
     this.idempotencyKeyFactory,
     this.onOpenAccount,
     this.onOpenRecovery,
@@ -57,6 +67,7 @@ class HomeScreen extends StatefulWidget {
   final EventResolver? eventResolver;
   final EventResultAcknowledger? eventResultAcknowledger;
   final CraftingExecutor? crafter;
+  final EquipmentExecutor? equipmentExecutor;
   final IdempotencyKeyFactory? idempotencyKeyFactory;
   final VoidCallback? onOpenAccount;
   final VoidCallback? onOpenRecovery;
@@ -74,9 +85,14 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isResolving = false;
   bool _isAcknowledging = false;
   bool _isCrafting = false;
+  bool _isChangingEquipment = false;
 
   bool get _isBusy =>
-      _isAdvancing || _isResolving || _isAcknowledging || _isCrafting;
+      _isAdvancing ||
+      _isResolving ||
+      _isAcknowledging ||
+      _isCrafting ||
+      _isChangingEquipment;
 
   @override
   void initState() {
@@ -150,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   isResolving: _isResolving,
                   isAcknowledging: _isAcknowledging,
                   isCrafting: _isCrafting,
+                  isChangingEquipment: _isChangingEquipment,
                   onAdvance: () => _advance(snapshot),
                   onResolve: (HomeEventChoice choice) =>
                       _resolveEvent(snapshot, choice),
@@ -157,6 +174,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       _acknowledgeEventResult(snapshot),
                   onCraft: (HomeCraftingRecipe recipe) =>
                       _craft(snapshot, recipe),
+                  onEquip: (HomeInventoryItem item) => _equip(snapshot, item),
+                  onUnequip: (HomeEquipmentSlot slot) =>
+                      _unequip(snapshot, slot),
                   onRefresh: _reload,
                 );
               },
@@ -227,7 +247,8 @@ class _HomeScreenState extends State<HomeScreen> {
         snapshot.isCached ||
         snapshot.pendingEventResult != null ||
         event == null ||
-        event.isResolved) {
+        event.isResolved ||
+        !choice.isAvailable) {
       return;
     }
 
@@ -360,6 +381,78 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _equip(HomeSnapshot snapshot, HomeInventoryItem item) async {
+    final String? slotId = item.equippableSlotId;
+    final String? itemInstanceId = item.itemInstanceId;
+    if (slotId == null || itemInstanceId == null) {
+      return;
+    }
+    await _changeEquipment(
+      snapshot,
+      slotId: slotId,
+      action: 'EQUIP',
+      itemInstanceId: itemInstanceId,
+    );
+  }
+
+  Future<void> _unequip(HomeSnapshot snapshot, HomeEquipmentSlot slot) {
+    return _changeEquipment(
+      snapshot,
+      slotId: slot.slotId,
+      action: 'UNEQUIP',
+      itemInstanceId: null,
+    );
+  }
+
+  Future<void> _changeEquipment(
+    HomeSnapshot snapshot, {
+    required String slotId,
+    required String action,
+    required String? itemInstanceId,
+  }) async {
+    if (_isBusy || snapshot.isCached || snapshot.pendingEventResult != null) {
+      return;
+    }
+    setState(() {
+      _isChangingEquipment = true;
+    });
+    try {
+      final EquipmentExecutor executor =
+          widget.equipmentExecutor ??
+          EquipmentApiClient.fromEnvironment().change;
+      final EquipmentResult result = await executor(
+        slotId: slotId,
+        action: action,
+        itemInstanceId: itemInstanceId,
+        idempotencyKey: _nextKey('equipment-$slotId-${action.toLowerCase()}'),
+      );
+      if (!mounted) {
+        return;
+      }
+      final String message = result.action == 'EQUIP'
+          ? 'Экипировано: ${result.equippedItem!.name}'
+          : 'Навигационный прибор снят';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      setState(() {
+        _snapshotFuture = _loadSnapshot();
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось изменить снаряжение: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isChangingEquipment = false;
+        });
+      }
+    }
+  }
+
   String _nextKey(String sourceId) {
     return widget.idempotencyKeyFactory?.call() ??
         '$sourceId-${DateTime.now().microsecondsSinceEpoch}';
@@ -388,10 +481,13 @@ class _HomeBody extends StatelessWidget {
     required this.isResolving,
     required this.isAcknowledging,
     required this.isCrafting,
+    required this.isChangingEquipment,
     required this.onAdvance,
     required this.onResolve,
     required this.onAcknowledgeEventResult,
     required this.onCraft,
+    required this.onEquip,
+    required this.onUnequip,
     required this.onRefresh,
   });
 
@@ -400,10 +496,13 @@ class _HomeBody extends StatelessWidget {
   final bool isResolving;
   final bool isAcknowledging;
   final bool isCrafting;
+  final bool isChangingEquipment;
   final VoidCallback onAdvance;
   final ValueChanged<HomeEventChoice> onResolve;
   final VoidCallback onAcknowledgeEventResult;
   final ValueChanged<HomeCraftingRecipe> onCraft;
+  final ValueChanged<HomeInventoryItem> onEquip;
+  final ValueChanged<HomeEquipmentSlot> onUnequip;
   final VoidCallback onRefresh;
 
   @override
@@ -498,9 +597,37 @@ class _HomeBody extends StatelessWidget {
             ),
           ],
         ),
+        if (snapshot.equipment.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 12),
+          _EquipmentCard(
+            slots: snapshot.equipment,
+            readOnly: readOnly,
+            busy:
+                isAdvancing ||
+                isResolving ||
+                isAcknowledging ||
+                isCrafting ||
+                isChangingEquipment ||
+                pendingEventResult != null,
+            changing: isChangingEquipment,
+            onUnequip: onUnequip,
+          ),
+        ],
         if (snapshot.inventory.isNotEmpty) ...<Widget>[
           const SizedBox(height: 12),
-          _InventoryCard(items: snapshot.inventory),
+          _InventoryCard(
+            items: snapshot.inventory,
+            readOnly: readOnly,
+            busy:
+                isAdvancing ||
+                isResolving ||
+                isAcknowledging ||
+                isCrafting ||
+                isChangingEquipment ||
+                pendingEventResult != null,
+            changing: isChangingEquipment,
+            onEquip: onEquip,
+          ),
         ],
         if (snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
           const SizedBox(height: 12),
@@ -512,6 +639,7 @@ class _HomeBody extends StatelessWidget {
                 isResolving ||
                 isAcknowledging ||
                 isCrafting ||
+                isChangingEquipment ||
                 pendingEventResult != null,
             crafting: isCrafting,
             onCraft: onCraft,
@@ -528,7 +656,8 @@ class _HomeBody extends StatelessWidget {
                   isAdvancing ||
                   isResolving ||
                   isAcknowledging ||
-                  isCrafting
+                  isCrafting ||
+                  isChangingEquipment
               ? null
               : onAdvance,
           icon: isAdvancing
@@ -553,7 +682,12 @@ class _HomeBody extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: isAdvancing || isResolving || isAcknowledging || isCrafting
+          onPressed:
+              isAdvancing ||
+                  isResolving ||
+                  isAcknowledging ||
+                  isCrafting ||
+                  isChangingEquipment
               ? null
               : onRefresh,
           icon: const Icon(Icons.sync),
@@ -787,7 +921,10 @@ class _EventCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.tonal(
-                    onPressed: disabled ? null : () => onChoose(choice),
+                    key: Key('home-event-choice-${choice.choiceId}'),
+                    onPressed: disabled || !choice.isAvailable
+                        ? null
+                        : () => onChoose(choice),
                     child: Column(
                       children: <Widget>[
                         Text(choice.title),
@@ -801,6 +938,17 @@ class _EventCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(choice.description),
+                if (!choice.isAvailable &&
+                    choice.requirement != null) ...<Widget>[
+                  const SizedBox(height: 4),
+                  Text(
+                    choice.requirement!.description,
+                    key: Key('home-choice-locked-${choice.choiceId}'),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
               ],
               if (isResolving) const Center(child: CircularProgressIndicator()),
@@ -821,10 +969,90 @@ class _EventCard extends StatelessWidget {
   }
 }
 
+class _EquipmentCard extends StatelessWidget {
+  const _EquipmentCard({
+    required this.slots,
+    required this.readOnly,
+    required this.busy,
+    required this.changing,
+    required this.onUnequip,
+  });
+
+  final List<HomeEquipmentSlot> slots;
+  final bool readOnly;
+  final bool busy;
+  final bool changing;
+  final ValueChanged<HomeEquipmentSlot> onUnequip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const Key('equipment-card'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Icon(Icons.explore_outlined),
+                const SizedBox(width: 8),
+                Text(
+                  'Снаряжение',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            for (final HomeEquipmentSlot slot in slots) ...<Widget>[
+              Text(slot.name, style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 2),
+              Text(slot.description),
+              const SizedBox(height: 8),
+              if (slot.item == null)
+                const Text('Слот свободен')
+              else ...<Widget>[
+                Text(
+                  slot.item!.name,
+                  key: Key('equipment-item-${slot.slotId}'),
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 6),
+                OutlinedButton.icon(
+                  key: Key('equipment-unequip-${slot.slotId}'),
+                  onPressed: readOnly || busy ? null : () => onUnequip(slot),
+                  icon: changing
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.remove_circle_outline),
+                  label: const Text('Снять'),
+                ),
+              ],
+              const SizedBox(height: 6),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _InventoryCard extends StatelessWidget {
-  const _InventoryCard({required this.items});
+  const _InventoryCard({
+    required this.items,
+    required this.readOnly,
+    required this.busy,
+    required this.changing,
+    required this.onEquip,
+  });
 
   final List<HomeInventoryItem> items;
+  final bool readOnly;
+  final bool busy;
+  final bool changing;
+  final ValueChanged<HomeInventoryItem> onEquip;
 
   @override
   Widget build(BuildContext context) {
@@ -854,6 +1082,22 @@ class _InventoryCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(item.description),
+              if (item.isEquippable) ...<Widget>[
+                const SizedBox(height: 6),
+                FilledButton.tonalIcon(
+                  key: Key('inventory-equip-${item.itemId}'),
+                  onPressed: readOnly || busy || item.isEquipped
+                      ? null
+                      : () => onEquip(item),
+                  icon: changing
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.explore_outlined),
+                  label: Text(item.isEquipped ? 'Экипировано' : 'Экипировать'),
+                ),
+              ],
               const SizedBox(height: 8),
             ],
           ],

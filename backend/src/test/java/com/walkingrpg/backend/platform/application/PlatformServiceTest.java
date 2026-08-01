@@ -12,6 +12,7 @@ import tools.jackson.databind.json.JsonMapper;
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.economy.domain.EconomyCurrency;
 import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
@@ -74,13 +75,33 @@ class PlatformServiceTest {
         PlatformSnapshotResponse second = service.getSnapshot("user-1");
 
         assertEquals(first, second);
-        assertEquals("chapter-1-v1", first.contentVersion());
+        assertEquals("chapter-1-v2", first.contentVersion());
         assertEquals(0, first.stateVersion());
         assertEquals("spark-v1", first.userState().get("activePetId"));
         assertEquals(false, first.userState().get("hasSuccessfulActivitySync"));
         assertEquals(3, list(first.userState(), "pets").size());
-        assertEquals(18, first.content().get("chapterNodes"));
+        assertEquals(19, first.content().get("chapterNodes"));
         assertTrue(platformRepository.findState("user-1").isEmpty());
+    }
+
+    @Test
+    void shouldKeepSnapshotAndBootstrapOnClusterActiveContentVersion() {
+        platformRepository.setContentVersion(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION
+        );
+
+        PlatformSnapshotResponse snapshot = service.getSnapshot("legacy-user");
+        Map<String, Object> bootstrap = service.getContentBootstrap();
+
+        assertEquals("chapter-1-v1", snapshot.contentVersion());
+        assertEquals("chapter-1-v1", snapshot.content().get("contentVersion"));
+        assertEquals(18, snapshot.content().get("chapterNodes"));
+        assertEquals("chapter-1-v1", bootstrap.get("contentVersion"));
+        assertEquals(
+                "chapter-1-v1",
+                map(bootstrap.get("content")).get("contentVersion")
+        );
+        assertEquals(18, map(bootstrap.get("content")).get("chapterNodes"));
     }
 
     @Test

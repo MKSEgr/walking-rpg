@@ -17,6 +17,7 @@ import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionAdvance;
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.ExpeditionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +28,25 @@ public class ExpeditionAdvanceService {
     private final EventResolutionRepository eventResolutionRepository;
     private final EconomyService economyService;
     private final StarterExpeditionContent content;
+    private final ExpeditionContentActivation contentActivation;
     private final Clock clock;
+
+    @Autowired
+    public ExpeditionAdvanceService(
+            ExpeditionRepository repository,
+            EventResolutionRepository eventResolutionRepository,
+            EconomyService economyService,
+            StarterExpeditionContent content,
+            ExpeditionContentActivation contentActivation,
+            Clock clock
+    ) {
+        this.repository = repository;
+        this.eventResolutionRepository = eventResolutionRepository;
+        this.economyService = economyService;
+        this.content = content;
+        this.contentActivation = contentActivation;
+        this.clock = clock;
+    }
 
     public ExpeditionAdvanceService(
             ExpeditionRepository repository,
@@ -36,11 +55,14 @@ public class ExpeditionAdvanceService {
             StarterExpeditionContent content,
             Clock clock
     ) {
-        this.repository = repository;
-        this.eventResolutionRepository = eventResolutionRepository;
-        this.economyService = economyService;
-        this.content = content;
-        this.clock = clock;
+        this(
+                repository,
+                eventResolutionRepository,
+                economyService,
+                content,
+                ignored -> true,
+                clock
+        );
     }
 
     @Transactional
@@ -60,6 +82,9 @@ public class ExpeditionAdvanceService {
             return processed.result();
         }
         requireNoPendingResult(command.userId(), command.expeditionId());
+        boolean resonanceRouteActive = contentActivation.isActive(
+                StarterExpeditionContent.CONTENT_VERSION
+        );
 
         ExpeditionProgressState current = repository.findState(
                 command.userId(),
@@ -80,7 +105,7 @@ public class ExpeditionAdvanceService {
                 node
         );
         ExpeditionAdvanceResult result = new ExpeditionAdvanceResult(
-                content.contentVersion(),
+                content.contentVersion(resonanceRouteActive),
                 node.expeditionId(),
                 node.name(),
                 command.energyToSpend(),

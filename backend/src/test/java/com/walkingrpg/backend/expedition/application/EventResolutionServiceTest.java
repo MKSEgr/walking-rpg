@@ -3,7 +3,14 @@ package com.walkingrpg.backend.expedition.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.walkingrpg.backend.equipment.application.EquipmentService;
+import com.walkingrpg.backend.equipment.application.StarterEquipmentContent;
+import com.walkingrpg.backend.equipment.domain.EquipmentAction;
+import com.walkingrpg.backend.equipment.domain.EquipmentCommand;
+import com.walkingrpg.backend.equipment.infrastructure.InMemoryEquipmentRepository;
 import com.walkingrpg.backend.expedition.domain.EventResolutionCommand;
 import com.walkingrpg.backend.expedition.domain.EventResolutionResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
@@ -11,6 +18,7 @@ import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryEventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.InMemoryExpeditionRepository;
 import com.walkingrpg.backend.inventory.application.InventoryService;
+import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.infrastructure.InMemoryInventoryRepository;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
@@ -33,6 +41,9 @@ class EventResolutionServiceTest {
     private InMemoryEventResolutionRepository eventResolutionRepository;
     private InMemoryInventoryRepository inventoryRepository;
     private StarterExpeditionContent content;
+    private InMemoryEquipmentRepository equipmentRepository;
+    private EquipmentService equipmentService;
+    private AtomicBoolean resonanceRouteActive;
     private EventResolutionService service;
 
     @BeforeEach
@@ -41,6 +52,15 @@ class EventResolutionServiceTest {
         eventResolutionRepository = new InMemoryEventResolutionRepository();
         inventoryRepository = new InMemoryInventoryRepository();
         content = new StarterExpeditionContent();
+        equipmentRepository = new InMemoryEquipmentRepository();
+        resonanceRouteActive = new AtomicBoolean(true);
+        equipmentService = new EquipmentService(
+                equipmentRepository,
+                new StarterEquipmentContent(),
+                expeditionRepository,
+                eventResolutionRepository,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
         expeditionRepository.saveState(
                 "user-1",
                 StarterExpeditionContent.EXPEDITION_ID,
@@ -56,6 +76,8 @@ class EventResolutionServiceTest {
                 ),
                 new InventoryService(inventoryRepository),
                 content,
+                equipmentService,
+                ignored -> resonanceRouteActive.get(),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -325,6 +347,166 @@ class EventResolutionServiceTest {
         );
     }
 
+    @Test
+    void shouldRequireEquippedCompassAndEnterOptionalResonanceRoute() {
+        var mirrorNode = content.requireNode(
+                StarterExpeditionContent.MIRROR_DELTA_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(mirrorNode, 20),
+                NOW
+        );
+
+        assertThrows(
+                EventChoiceUnavailableException.class,
+                () -> service.resolve(command(
+                        StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                        StarterExpeditionContent.RESONANCE_ROUTE_CHOICE_ID,
+                        "locked-route"
+                ))
+        );
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+
+        UUID itemInstanceId = UUID.fromString(
+                "11111111-2222-3333-4444-555555555555"
+        );
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                itemInstanceId,
+                StarterInventoryContent.RESONANCE_COMPASS_ID
+        );
+        equipmentService.change(new EquipmentCommand(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                EquipmentAction.EQUIP,
+                itemInstanceId,
+                "equip-compass"
+        ));
+
+        EventResolutionResult result = service.resolve(command(
+                StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                StarterExpeditionContent.RESONANCE_ROUTE_CHOICE_ID,
+                "open-route"
+        ));
+
+        assertEquals(
+                StarterExpeditionContent.RESONANCE_ROUTE_NODE_ID,
+                result.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.DAWN_FRAGMENT_ID,
+                result.material().itemId());
+        assertEquals(
+                StarterExpeditionContent.RESONANCE_ROUTE_NODE_ID,
+                expeditionRepository.findState(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().currentNodeId()
+        );
+    }
+
+    @Test
+    void shouldReplayRouteResultAfterClusterActivationChanges() {
+        var mirrorNode = content.requireNode(
+                StarterExpeditionContent.MIRROR_DELTA_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(mirrorNode, 20),
+                NOW
+        );
+        UUID itemInstanceId = UUID.fromString(
+                "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+        );
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                itemInstanceId,
+                StarterInventoryContent.RESONANCE_COMPASS_ID
+        );
+        equipmentService.change(new EquipmentCommand(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                EquipmentAction.EQUIP,
+                itemInstanceId,
+                "equip-replay-compass"
+        ));
+        EventResolutionCommand command = command(
+                StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                StarterExpeditionContent.RESONANCE_ROUTE_CHOICE_ID,
+                "activated-route-replay"
+        );
+
+        EventResolutionResult first = service.resolve(command);
+        resonanceRouteActive.set(false);
+        EventResolutionResult replayed = service.resolve(command);
+
+        assertSame(first, replayed);
+        assertEquals(
+                StarterExpeditionContent.CONTENT_VERSION,
+                replayed.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.RESONANCE_ROUTE_NODE_ID,
+                replayed.nextNode().nodeId()
+        );
+    }
+
+    @Test
+    void shouldKeepDefaultMirrorRouteAndReturnFromOptionalNodeToStormArchive() {
+        var mirrorNode = content.requireNode(
+                StarterExpeditionContent.MIRROR_DELTA_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(mirrorNode, 20),
+                NOW
+        );
+        String ordinaryChoice = content.eventChoices(
+                        StarterExpeditionContent.MIRROR_DELTA_EVENT_ID
+                )
+                .getFirst()
+                .choiceId();
+
+        EventResolutionResult ordinary = service.resolve(command(
+                StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                ordinaryChoice,
+                "ordinary-route"
+        ));
+        assertEquals(
+                StarterExpeditionContent.STORM_ARCHIVE_NODE_ID,
+                ordinary.nextNode().nodeId()
+        );
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                ordinary.receiptId(),
+                NOW
+        );
+
+        var resonanceNode = content.requireNode(
+                StarterExpeditionContent.RESONANCE_ROUTE_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(resonanceNode, 22),
+                NOW
+        );
+        EventResolutionResult branch = service.resolve(command(
+                StarterExpeditionContent.RESONANCE_ROUTE_EVENT_ID,
+                content.eventChoices(
+                        StarterExpeditionContent.RESONANCE_ROUTE_EVENT_ID
+                ).getFirst().choiceId(),
+                "branch-return"
+        ));
+        assertEquals(
+                StarterExpeditionContent.STORM_ARCHIVE_NODE_ID,
+                branch.nextNode().nodeId()
+        );
+    }
+
     private EventResolutionCommand command(
             String eventId,
             String choiceId,
@@ -351,6 +533,20 @@ class EventResolutionServiceTest {
                 ExpeditionProgressStatus.EVENT_READY,
                 StarterExpeditionContent.SECOND_NODE_ID,
                 StarterExpeditionContent.SECOND_EVENT_ID,
+                version
+        );
+    }
+
+    private ExpeditionProgressState readyState(
+            com.walkingrpg.backend.expedition.domain.ExpeditionDefinition node,
+            long version
+    ) {
+        return new ExpeditionProgressState(
+                node.requiredEnergy(),
+                node.requiredEnergy(),
+                ExpeditionProgressStatus.EVENT_READY,
+                node.currentNodeId(),
+                node.event().eventId(),
                 version
         );
     }

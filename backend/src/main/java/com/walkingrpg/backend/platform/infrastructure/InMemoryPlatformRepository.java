@@ -26,7 +26,7 @@ public class InMemoryPlatformRepository implements PlatformRepository {
     private final Map<String, PaymentReceipt> payments = new HashMap<>();
     private final List<Map<String, Object>> events = new ArrayList<>();
     private Map<String, Object> remoteConfig = defaultConfig();
-    private String contentVersion = "chapter-1-v1";
+    private String contentVersion = "chapter-1-v2";
 
     @Override
     public synchronized void acquireUserLock(String userId) {

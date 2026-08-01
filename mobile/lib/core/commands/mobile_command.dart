@@ -17,6 +17,7 @@ enum MobileCommandType {
     MobileCommandLane.gameplay,
   ),
   crafting('CRAFTING', MobileCommandLane.gameplay),
+  equipment('EQUIPMENT', MobileCommandLane.gameplay),
   platformCommand('PLATFORM_COMMAND', MobileCommandLane.gameplay);
 
   const MobileCommandType(this.wireName, this.lane);
