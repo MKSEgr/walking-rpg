@@ -8,7 +8,6 @@ void main() {
     WidgetTester tester,
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -69,6 +68,7 @@ void main() {
     );
     expect(find.bySemanticsLabel('Мох, терра, форма 2'), findsOneWidget);
     expect(find.bySemanticsLabel('Руна, эхо, форма 3'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('uses the fallback identity for future server-owned pets', (

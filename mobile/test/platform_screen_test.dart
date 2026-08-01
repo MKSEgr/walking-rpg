@@ -657,7 +657,7 @@ void main() {
       stalePurchaseCallback();
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Косметика'),
+        find.text('Ореол Искры'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
