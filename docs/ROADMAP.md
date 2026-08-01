@@ -246,6 +246,29 @@ Roadmap отражает снижение рисков. Статусы:
 - [ ] Проверить ценность и баланс наград опционального маршрута по фактическим
       прохождениям, не по synthetic данным
 
+## Milestone 12 — Visual foundation
+
+### CODE_COMPLETE
+
+- [x] Семантическая light/dark тема с lumen, ENERGY и resonance accent roles
+- [x] Общие атмосферный фон, field panel, badge, progress ring и section title
+- [x] Игровая иерархия главного экрана: путь → шаги → ENERGY → действие →
+      событие → команда → полевой комплект
+- [x] Плавающая нижняя навигация с сохранением существующего shell lifecycle
+- [x] Единый визуальный язык главной экспедиции и guided **«Первого пути»**
+- [x] Design rules, accessibility boundaries и следующие срезы зафиксированы в
+      `docs/DESIGN_SYSTEM.md`
+
+### PRODUCT_VALIDATION_REQUIRED
+
+- [ ] Утвердить art direction первой главы и трёх starter pets
+- [ ] Проверить на alpha cohort, что экран читается как RPG, а основной следующий
+      шаг находится без подсказки
+- [ ] Проверить светлую/тёмную тему, увеличенный системный шрифт и контраст на
+      физических iOS/Android устройствах
+- [ ] Утвердить motion, app icon, splash и store artwork после выбора финального
+      визуального направления
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
