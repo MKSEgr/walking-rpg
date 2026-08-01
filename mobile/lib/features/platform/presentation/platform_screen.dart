@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
+import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -580,6 +581,11 @@ class _JournalHero extends StatelessWidget {
               const Spacer(),
               Icon(Icons.public, color: palette.resonance, size: 22),
             ],
+          ),
+          const SizedBox(height: 18),
+          const ChapterVista(
+            key: Key('platform-chapter-vista'),
+            semanticLabel: 'Туманный сектор, визуальный образ первой главы',
           ),
           const SizedBox(height: 18),
           Text(

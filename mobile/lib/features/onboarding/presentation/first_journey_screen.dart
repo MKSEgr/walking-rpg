@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
@@ -253,6 +254,10 @@ class _WelcomePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _JourneyPanel(
       icon: Icons.radar,
+      visual: const ChapterVista(
+        key: Key('first-journey-chapter-vista'),
+        semanticLabel: 'Туманный сектор и внешний маяк',
+      ),
       eyebrow: 'Сигнал найден',
       title: 'Твой путь начинается с реальных шагов',
       body:
@@ -497,6 +502,11 @@ class _ExpeditionPanel extends StatelessWidget {
     final int remaining = home.remainingExpeditionEnergy;
     return _JourneyPanel(
       icon: Icons.explore_outlined,
+      visual: ChapterVista(
+        key: const Key('first-journey-expedition-vista'),
+        semanticLabel: '${home.currentNodeName}, первый узел туманного сектора',
+        progress: home.expeditionProgressValue,
+      ),
       eyebrow: 'Шаг 3 · первый узел',
       title: home.currentNodeName,
       body:
@@ -683,6 +693,7 @@ class _JourneyPanel extends StatelessWidget {
     this.highlights = const <String>[],
     this.action,
     this.child,
+    this.visual,
     this.accent = false,
   });
 
@@ -693,6 +704,7 @@ class _JourneyPanel extends StatelessWidget {
   final List<String> highlights;
   final Widget? action;
   final Widget? child;
+  final Widget? visual;
   final bool accent;
 
   @override
@@ -704,29 +716,32 @@ class _JourneyPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0.86, end: 1),
-              duration: const Duration(milliseconds: 420),
-              curve: Curves.easeOutBack,
-              builder: (BuildContext context, double scale, Widget? child) =>
-                  Transform.scale(scale: scale, child: child),
-              child: CircleAvatar(
-                radius: 30,
-                backgroundColor: accent
-                    ? colors.primary
-                    : colors.secondaryContainer,
-                child: Icon(
-                  icon,
-                  size: 31,
-                  color: accent
-                      ? colors.onPrimary
-                      : colors.onSecondaryContainer,
+          if (visual != null)
+            visual!
+          else
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.86, end: 1),
+                duration: const Duration(milliseconds: 420),
+                curve: Curves.easeOutBack,
+                builder: (BuildContext context, double scale, Widget? child) =>
+                    Transform.scale(scale: scale, child: child),
+                child: CircleAvatar(
+                  radius: 30,
+                  backgroundColor: accent
+                      ? colors.primary
+                      : colors.secondaryContainer,
+                  child: Icon(
+                    icon,
+                    size: 31,
+                    color: accent
+                        ? colors.onPrimary
+                        : colors.onSecondaryContainer,
+                  ),
                 ),
               ),
             ),
-          ),
           const SizedBox(height: 18),
           Text(
             eyebrow.toUpperCase(),
