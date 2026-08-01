@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
+import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
@@ -886,47 +887,131 @@ class _PetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final double bondProgress = (pet.bond / pet.evolutionBond)
+        .clamp(0.0, 1.0)
+        .toDouble();
     return ExpeditionPanel(
       tone: pet.active
           ? ExpeditionPanelTone.lumen
           : ExpeditionPanelTone.neutral,
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: 0.14),
-          child: const Icon(Icons.pets_outlined),
-        ),
-        title: Text('${pet.name} · уровень ${pet.level}'),
-        subtitle: Text(
-          '${pet.species} · связь ${pet.bond}/${pet.evolutionBond}'
-          '${pet.evolutionStage > 0 ? ' · эволюция ${pet.evolutionStage}' : ''}',
-        ),
-        trailing: Wrap(
-          spacing: 6,
-          children: <Widget>[
-            if (!pet.active)
-              IconButton(
-                key: Key('platform-select-pet-${pet.petId}'),
-                tooltip: 'Сделать активным',
-                onPressed: busy ? null : onSelect,
-                icon: const Icon(Icons.check_circle_outline),
-              )
-            else
-              const Icon(Icons.check_circle),
-            if (pet.evolutionStage == 0)
-              IconButton(
-                key: Key('platform-evolve-pet-${pet.petId}'),
-                tooltip: pet.canEvolve
-                    ? 'Эволюционировать'
-                    : 'Недостаточно связи',
-                onPressed: busy || !pet.canEvolve ? null : onEvolve,
-                icon: const Icon(Icons.auto_awesome_outlined),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              CompanionPortrait(
+                key: Key('platform-pet-portrait-${pet.petId}'),
+                petId: pet.petId,
+                name: pet.name,
+                species: pet.species,
+                evolutionStage: pet.evolutionStage,
+                active: pet.active,
+                size: 78,
               ),
-          ],
-        ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '${pet.name} · уровень ${pet.level}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${pet.species} · ${pet.trait}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 9),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: <Widget>[
+                        if (pet.active)
+                          const ExpeditionBadge(
+                            label: 'В отряде',
+                            icon: Icons.check_circle_outline,
+                          ),
+                        ExpeditionBadge(
+                          label: 'Форма ${pet.evolutionStage + 1}',
+                          icon: Icons.auto_awesome_outlined,
+                          tone: pet.evolutionStage > 0
+                              ? ExpeditionPanelTone.resonance
+                              : ExpeditionPanelTone.neutral,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              Text('Связь', style: Theme.of(context).textTheme.labelLarge),
+              const Spacer(),
+              Text(
+                pet.evolutionStage > 0
+                    ? '${pet.bond}'
+                    : '${pet.bond}/${pet.evolutionBond}',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: pet.canEvolve ? colors.primary : null,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          LinearProgressIndicator(
+            value: pet.evolutionStage > 0 ? 1 : bondProgress,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            pet.evolutionStage > 0
+                ? 'Новая форма закреплена в журнале.'
+                : pet.canEvolve
+                ? 'Связь готова к эволюции.'
+                : 'Решения событий укрепляют связь со спутником.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              if (!pet.active)
+                OutlinedButton.icon(
+                  key: Key('platform-select-pet-${pet.petId}'),
+                  onPressed: busy ? null : onSelect,
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Взять в отряд'),
+                )
+              else
+                const ExpeditionBadge(
+                  label: 'Активный спутник',
+                  icon: Icons.pets,
+                ),
+              if (pet.evolutionStage == 0)
+                FilledButton.tonalIcon(
+                  key: Key('platform-evolve-pet-${pet.petId}'),
+                  onPressed: busy || !pet.canEvolve ? null : onEvolve,
+                  icon: const Icon(Icons.auto_awesome_outlined),
+                  label: Text(
+                    pet.canEvolve
+                        ? 'Эволюционировать'
+                        : 'Нужно больше связи',
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -406,24 +407,32 @@ class _PetChoice extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     return Material(
       color: colors.surfaceContainerHighest.withValues(alpha: 0.64),
-      borderRadius: BorderRadius.circular(18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: colors.outlineVariant.withValues(alpha: 0.72),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         key: Key('first-journey-select-${pet.petId}'),
         onTap: busy ? null : onSelect,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              CircleAvatar(
-                radius: 25,
-                backgroundColor: colors.secondaryContainer,
-                child: Icon(
-                  _petIcon(pet.petId),
-                  color: colors.onSecondaryContainer,
-                ),
+              CompanionPortrait(
+                key: Key('first-journey-pet-portrait-${pet.petId}'),
+                petId: pet.petId,
+                name: pet.name,
+                species: pet.species,
+                evolutionStage: pet.evolutionStage,
+                active: pet.active,
+                size: 78,
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,8 +441,31 @@ class _PetChoice extends StatelessWidget {
                       pet.name,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 2),
-                    Text('${pet.species} · ${pet.trait}'),
+                    const SizedBox(height: 7),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: <Widget>[
+                        ExpeditionBadge(
+                          label: pet.species,
+                          icon: Icons.blur_circular,
+                        ),
+                        ExpeditionBadge(
+                          label: 'Форма ${pet.evolutionStage + 1}',
+                          icon: Icons.auto_awesome_outlined,
+                          tone: pet.evolutionStage > 0
+                              ? ExpeditionPanelTone.resonance
+                              : ExpeditionPanelTone.neutral,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      pet.trait,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -444,14 +476,6 @@ class _PetChoice extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _petIcon(String petId) {
-    return switch (petId) {
-      'moss-v1' => Icons.spa_outlined,
-      'rune-v1' => Icons.graphic_eq,
-      _ => Icons.flare_outlined,
-    };
   }
 }
 

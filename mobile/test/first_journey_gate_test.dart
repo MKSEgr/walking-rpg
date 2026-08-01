@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -161,6 +162,11 @@ void main() {
     await _tap(tester, const Key('first-journey-activity-continue'));
 
     expect(find.textContaining('Спокойный хранитель'), findsOneWidget);
+    expect(find.byType(CompanionPortrait), findsNWidgets(3));
+    expect(
+      find.byKey(const Key('first-journey-pet-portrait-moss-v1')),
+      findsOneWidget,
+    );
     await _tap(tester, const Key('first-journey-select-moss-v1'));
     expect(activePetId, 'moss-v1');
 
