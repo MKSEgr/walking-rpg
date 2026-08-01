@@ -44,6 +44,8 @@
 - guided «Первый путь» от разрешения шагов до первого решения;
 - server-authoritative funnel и time-to-value первого пути для alpha cohort,
   включая отдельное подтверждение показа первого результата;
+- cohort compass funnel: client-reported recipe/route impressions отдельно от
+  server-authoritative craft/equip/choice/completion facts;
 - три питомца с реальным active selection и независимым progression;
 - material inventory с append-only credit/debit ledger, server-authoritative
   crafting, persistent unique item и equipment slot `NAVIGATION`;
@@ -153,8 +155,19 @@ restart-safe `EQUIPMENT` command. Home показывает authoritative loadou
 возвращается в `storm-archive`; обычный выбор продолжает основной маршрут.
 V14 stage-ит v2 inactive: маршрут появляется только после отдельной
 cluster-wide активации и полного drain старого backend pool.
+V15 сохраняет время первой активации в immutable `activated_at`, поэтому
+повторная публикация той же content version не сдвигает beta baseline. Для
+нестандартного upgrade, где v2 уже публиковалась на V14, V15 требует явное
+подтверждённое время первой активации и fail-closed отклоняет mutable
+`created_at` как исторический источник.
 Mobile не меняет slot или availability оптимистично. Подробности:
 [ADR 0030](docs/adr/0030-equipment-and-gated-routes.md).
+
+Для закрытой beta network Home регистрирует idempotent compass impressions в
+отдельной `TELEMETRY` lane. Cohort endpoint сопоставляет их с immutable
+craft/equip/expedition/event receipts, отдельно показывает coverage и
+out-of-order gaps и не выдаёт client display за игровой факт. Подробности:
+[ADR 0031](docs/adr/0031-compass-beta-funnel.md).
 
 Новый mobile объявляет capability
 `X-Walking-RPG-Capabilities: durable-event-result-v1`. После cluster-wide
@@ -250,6 +263,9 @@ POST /api/v1/event-results/{receiptId}/acknowledge
 POST /api/v1/crafting/recipes/{recipeId}/craft
 POST /api/v1/equipment/slots/{slotId}/equip
 POST /api/v1/equipment/slots/{slotId}/unequip
+POST /api/v1/platform/commands
+GET  /api/v1/admin/platform/analytics/first-journey?cohortCode=...
+GET  /api/v1/admin/platform/analytics/compass-journey?cohortCode=...
 ```
 
 Подробности: [backend/README.md](backend/README.md).
@@ -316,7 +332,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V14 + PostgreSQL Testcontainers tests
+Flyway V1–V15 + PostgreSQL Testcontainers tests
 Synthetic PostgreSQL backup/restore drill + sanitized evidence
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
@@ -345,6 +361,8 @@ iOS Simulator debug build
   mode);
 - дополнительные нелинейные события, recipes, rarity/upgrades и
   проверенный по beta-данным баланс material sinks;
+- подтверждение по реальному beta cohort пути recipe → craft → equip и
+  обнаружения/завершения resonance route;
 - подтверждение темпа первого пути и первой недели на реальной alpha cohort.
 
 Дальнейший порядок работ: [docs/ROADMAP.md](docs/ROADMAP.md).

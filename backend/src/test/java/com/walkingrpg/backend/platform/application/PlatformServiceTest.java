@@ -16,6 +16,7 @@ import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
+import com.walkingrpg.backend.platform.domain.PlatformUserState;
 import com.walkingrpg.backend.platform.infrastructure.InMemoryPlatformRepository;
 import com.walkingrpg.backend.platform.payment.DisabledPaymentProvider;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
@@ -415,6 +416,175 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldRecordCanonicalCompassImpressionsAndReplayExactly() {
+        PlatformCommandRequest recipeRequest = command(
+                "RECORD_COMPASS_IMPRESSION",
+                "compass-recipe-ready-v2",
+                Map.of(
+                        "impression", "recipe_ready",
+                        "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                )
+        );
+
+        PlatformCommandResponse first = service.execute("user-1", recipeRequest);
+        PlatformCommandResponse replayed = service.execute("user-1", recipeRequest);
+
+        assertEquals(first, replayed);
+        assertEquals("Показ компаса зарегистрирован", first.message());
+        assertEquals(0, first.stateVersion());
+        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(2, platformRepository.eventCount());
+        assertTrue(platformRepository.findState("user-1").isEmpty());
+        assertEquals(
+                Map.of(
+                        "contractVersion", "compass-beta-funnel-v1",
+                        "contentVersion", "chapter-1-v2",
+                        "recipeId", "resonance-compass-v1",
+                        "status", "READY"
+                ),
+                map(event("compass_recipe_impression").get("attributes"))
+        );
+
+        PlatformCommandRequest routeRequest = command(
+                "RECORD_COMPASS_IMPRESSION",
+                "compass-route-available-v2",
+                Map.of(
+                        "impression", "ROUTE_AVAILABLE",
+                        "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                )
+        );
+        PlatformCommandResponse routeResponse = service.execute(
+                "user-1",
+                routeRequest
+        );
+
+        assertEquals(
+                Map.of(
+                        "contractVersion", "compass-beta-funnel-v1",
+                        "contentVersion", "chapter-1-v2",
+                        "eventId", "mirror-delta-v1",
+                        "choiceId", "follow-resonance",
+                        "availability", "AVAILABLE"
+                ),
+                map(event("compass_route_impression").get("attributes"))
+        );
+        assertEquals(4, platformRepository.eventCount());
+
+        platformRepository.setContentVersion(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION
+        );
+        assertEquals(routeResponse, service.execute("user-1", routeRequest));
+        assertEquals(4, platformRepository.eventCount());
+
+        assertThrows(PlatformIdempotencyConflictException.class, () ->
+                service.execute("user-1", command(
+                        "RECORD_COMPASS_IMPRESSION",
+                        "compass-route-available-v2",
+                        Map.of(
+                                "impression", "ROUTE_LOCKED",
+                                "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                        )
+                ))
+        );
+    }
+
+    @Test
+    void shouldKeepCompassImpressionOutOfStateReconciliation() {
+        service.execute("user-1", command(
+                "COMPLETE_ONBOARDING_STEP",
+                "telemetry-state-seed",
+                Map.of("stepId", "welcome")
+        ));
+        PlatformUserState storedBefore = platformRepository
+                .findState("user-1")
+                .orElseThrow();
+        factsProvider.set("user-1", new PlatformProgressFacts(0, 1, 60, null));
+        PlatformCommandRequest request = command(
+                "RECORD_COMPASS_IMPRESSION",
+                "telemetry-state-neutral",
+                Map.of(
+                        "impression", "RECIPE_READY",
+                        "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                )
+        );
+
+        PlatformCommandResponse first = service.execute("user-1", request);
+        PlatformCommandResponse replayed = service.execute("user-1", request);
+        int responseBond = list(first.snapshot().userState(), "pets").stream()
+                .map(PlatformServiceTest::map)
+                .filter(pet -> "spark-v1".equals(pet.get("petId")))
+                .mapToInt(pet -> number(pet, "bond"))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(first, replayed);
+        assertEquals(storedBefore.version(), first.stateVersion());
+        assertEquals(storedBefore.pets().get("spark-v1").bond(), responseBond);
+        assertEquals(
+                storedBefore,
+                platformRepository.findState("user-1").orElseThrow()
+        );
+        assertFalse(storedBefore.achievements().contains("pet-friend"));
+        assertEquals(2, platformRepository.processedCommandCount());
+        assertEquals(3, platformRepository.eventCount());
+    }
+
+    @Test
+    void shouldRejectInvalidOrInactiveCompassImpressions() {
+        PlatformValidationException unknownImpression = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("user-1", command(
+                        "RECORD_COMPASS_IMPRESSION",
+                        "compass-unknown",
+                        Map.of(
+                                "impression", "UNKNOWN",
+                                "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                        )
+                ))
+        );
+        assertEquals("impression", unknownImpression.field());
+
+        PlatformValidationException unknownVersion = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("user-1", command(
+                        "RECORD_COMPASS_IMPRESSION",
+                        "compass-unknown-version",
+                        Map.of(
+                                "impression", "RECIPE_READY",
+                                "contentVersion", "chapter-unknown"
+                        )
+                ))
+        );
+        assertEquals("contentVersion", unknownVersion.field());
+
+        platformRepository.setContentVersion(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION
+        );
+        PlatformValidationException inactiveRoute = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("user-1", command(
+                        "RECORD_COMPASS_IMPRESSION",
+                        "compass-route-before-activation",
+                        Map.of(
+                                "impression", "ROUTE_LOCKED",
+                                "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                        )
+                ))
+        );
+        assertEquals("contentVersion", inactiveRoute.field());
+
+        PlatformCommandResponse legacyRecipe = service.execute("user-1", command(
+                "RECORD_COMPASS_IMPRESSION",
+                "compass-recipe-legacy",
+                Map.of(
+                        "impression", "RECIPE_MISSING_MATERIALS",
+                        "contentVersion", StarterExpeditionContent.LEGACY_CONTENT_VERSION
+                )
+        ));
+        assertEquals("Показ компаса зарегистрирован", legacyRecipe.message());
+    }
+
+    @Test
     void shouldClaimSeasonRewardAfterCompletingWeeklyRoute() {
         economyService.creditActivityEnergy("user-1", 120, "season-seed", NOW);
         service.execute("user-1", command(
@@ -468,6 +638,13 @@ class PlatformServiceTest {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> map(Object value) {
         return (Map<String, Object>) value;
+    }
+
+    private Map<String, Object> event(String eventName) {
+        return platformRepository.events().stream()
+                .filter(event -> eventName.equals(event.get("eventName")))
+                .findFirst()
+                .orElseThrow();
     }
 
     private static int number(Map<String, Object> map, String key) {

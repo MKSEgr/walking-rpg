@@ -41,11 +41,18 @@ MobileCommandLane mobileCommandLaneFor(
   final Object? platformCommandType = payload['commandType'];
   if (type == MobileCommandType.platformCommand &&
       platformCommandType is String &&
-      platformCommandType.toUpperCase() == 'RECORD_EXPERIMENT_EXPOSURE') {
+      _telemetryPlatformCommandTypes.contains(
+        platformCommandType.toUpperCase(),
+      )) {
     return MobileCommandLane.telemetry;
   }
   return type.lane;
 }
+
+const Set<String> _telemetryPlatformCommandTypes = <String>{
+  'RECORD_EXPERIMENT_EXPOSURE',
+  'RECORD_COMPASS_IMPRESSION',
+};
 
 enum MobileCommandState {
   pending('PENDING'),

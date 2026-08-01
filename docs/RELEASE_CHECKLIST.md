@@ -93,10 +93,18 @@ CI создаёт технические release candidates. Подпись и �
 - [ ] Есть evidence для поддерживаемых iOS/Android сценариев.
 - [ ] Измерена батарея.
 - [ ] Определены beta cohort, stop conditions и rollback plan.
+- [ ] Compass funnel snapshot привязан к exact build/cohort/периоду;
+      `instrumentationRate`, out-of-order и target-without-start проверены до
+      выводов о craft/equip/route conversion.
 - [ ] Durable result activation выполняется только после drain старых backend
       instances; rollback проверяет disabled gate и ноль pending receipts.
 - [ ] V14 оставила `chapter-1-v1` активной; `chapter-1-v2` опубликована только
       после полного drain старого backend pool и проверки нулевых route rows.
+- [ ] Перед V15 проверена строка `chapter-1-v2`: для уже публиковавшейся v2
+      первая активация явно восстановлена из immutable rollout/audit evidence,
+      а не из mutable `created_at`; без evidence migration должна остановиться.
+- [ ] V15 заполнит `activated_at` только при первой активации; повторная
+      публикация той же версии сохраняет timestamp и compass route baseline.
 
 ## Operations
 

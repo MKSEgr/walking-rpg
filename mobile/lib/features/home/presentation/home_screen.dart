@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
+import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
@@ -44,6 +48,12 @@ typedef EquipmentExecutor =
       required String? itemInstanceId,
       required String idempotencyKey,
     });
+typedef HomeImpressionRecorder =
+    Future<Object?> Function({
+      required String commandType,
+      required Map<String, Object?> payload,
+      required String idempotencyKey,
+    });
 typedef IdempotencyKeyFactory = String Function();
 
 class HomeScreen extends StatefulWidget {
@@ -55,6 +65,7 @@ class HomeScreen extends StatefulWidget {
     this.eventResultAcknowledger,
     this.crafter,
     this.equipmentExecutor,
+    this.impressionRecorder,
     this.idempotencyKeyFactory,
     this.onOpenAccount,
     this.onOpenRecovery,
@@ -69,6 +80,7 @@ class HomeScreen extends StatefulWidget {
   final EventResultAcknowledger? eventResultAcknowledger;
   final CraftingExecutor? crafter;
   final EquipmentExecutor? equipmentExecutor;
+  final HomeImpressionRecorder? impressionRecorder;
   final IdempotencyKeyFactory? idempotencyKeyFactory;
   final VoidCallback? onOpenAccount;
   final VoidCallback? onOpenRecovery;
@@ -80,13 +92,34 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late Future<HomeSnapshot> _snapshotFuture;
+  late AppLifecycleState _appLifecycleState;
+  HomeSnapshot? _acceptedSnapshot;
+  int _snapshotRequestGeneration = 0;
+  bool _isDestinationVisible = false;
+  bool _isRouteCurrent = false;
   bool _isAdvancing = false;
   bool _isResolving = false;
   bool _isAcknowledging = false;
   bool _isCrafting = false;
   bool _isChangingEquipment = false;
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey<State<StatefulWidget>> _routeChoiceViewportKey =
+      GlobalKey<State<StatefulWidget>>(
+        debugLabel: 'home-resonance-route-choice-viewport',
+      );
+  final GlobalKey<State<StatefulWidget>> _recipeViewportKey =
+      GlobalKey<State<StatefulWidget>>(
+        debugLabel: 'home-resonance-compass-recipe-viewport',
+      );
+  final GlobalKey<State<StatefulWidget>> _stickyActionOcclusionKey =
+      GlobalKey<State<StatefulWidget>>(
+        debugLabel: 'home-sticky-action-occlusion',
+      );
+  final Map<String, int> _attemptedCompassImpressionGenerations =
+      <String, int>{};
+  final Set<String> _scheduledCompassImpressions = <String>{};
 
   bool get _isBusy =>
       _isAdvancing ||
@@ -95,10 +128,53 @@ class _HomeScreenState extends State<HomeScreen> {
       _isCrafting ||
       _isChangingEquipment;
 
+  bool get _canPresentCompassImpressions =>
+      _isDestinationVisible &&
+      _isRouteCurrent &&
+      _appLifecycleState == AppLifecycleState.resumed;
+
   @override
   void initState() {
     super.initState();
-    _snapshotFuture = _loadSnapshot();
+    _appLifecycleState =
+        WidgetsBinding.instance.lifecycleState ?? AppLifecycleState.resumed;
+    WidgetsBinding.instance.addObserver(this);
+    _scrollController.addListener(
+      _scheduleAcceptedCompassImpressionsAfterFrame,
+    );
+    _snapshotFuture = _startSnapshotLoad();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bool couldPresent = _canPresentCompassImpressions;
+    _isDestinationVisible = NavigationDestinationVisibility.of(context);
+    _isRouteCurrent = ModalRoute.isCurrentOf(context) ?? true;
+    if (!couldPresent && _canPresentCompassImpressions) {
+      _scheduleAcceptedCompassImpressionsAfterFrame();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final bool couldPresent = _canPresentCompassImpressions;
+    _appLifecycleState = state;
+    if (!couldPresent && _canPresentCompassImpressions) {
+      _scheduleAcceptedCompassImpressionsAfterFrame();
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    _scheduleAcceptedCompassImpressionsAfterFrame();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -107,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (oldWidget.loader != widget.loader ||
         oldWidget.authoritativeRefreshGeneration !=
             widget.authoritativeRefreshGeneration) {
-      _snapshotFuture = _loadSnapshot();
+      _snapshotFuture = _startSnapshotLoad();
     }
   }
 
@@ -163,6 +239,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
                 return _HomeBody(
                   snapshot: snapshot,
+                  scrollController: _scrollController,
+                  routeChoiceViewportKey: _routeChoiceViewportKey,
+                  recipeViewportKey: _recipeViewportKey,
+                  stickyActionOcclusionKey: _stickyActionOcclusionKey,
                   isAdvancing: _isAdvancing,
                   isResolving: _isResolving,
                   isAcknowledging: _isAcknowledging,
@@ -186,12 +266,180 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<HomeSnapshot> _loadSnapshot() {
+  Future<HomeSnapshot> _startSnapshotLoad() {
+    final int requestGeneration = ++_snapshotRequestGeneration;
+    _acceptedSnapshot = null;
+    return _loadSnapshot(requestGeneration);
+  }
+
+  Future<HomeSnapshot> _loadSnapshot(int requestGeneration) async {
     final HomeSnapshotLoader? loader = widget.loader;
-    if (loader != null) {
-      return loader();
+    final HomeSnapshot snapshot = loader != null
+        ? await loader()
+        : await HomeApiClient.fromEnvironment().fetchHome(DateTime.now());
+    if (mounted && requestGeneration == _snapshotRequestGeneration) {
+      _acceptedSnapshot = snapshot;
+      _scheduleAcceptedCompassImpressionsAfterFrame(
+        requestGeneration: requestGeneration,
+      );
     }
-    return HomeApiClient.fromEnvironment().fetchHome(DateTime.now());
+    return snapshot;
+  }
+
+  void _scheduleAcceptedCompassImpressionsAfterFrame({int? requestGeneration}) {
+    final HomeSnapshot? snapshot = _acceptedSnapshot;
+    final int acceptedGeneration =
+        requestGeneration ?? _snapshotRequestGeneration;
+    if (snapshot == null || !_canPresentCompassImpressions) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((Duration _) {
+      if (!mounted ||
+          !_canPresentCompassImpressions ||
+          acceptedGeneration != _snapshotRequestGeneration ||
+          !identical(snapshot, _acceptedSnapshot)) {
+        return;
+      }
+      _scheduleVisibleCompassImpressions(snapshot);
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  void _scheduleVisibleCompassImpressions(HomeSnapshot snapshot) {
+    if (!mounted || snapshot.isCached || widget.impressionRecorder == null) {
+      return;
+    }
+    if (_isViewportTargetVisible(_recipeViewportKey)) {
+      for (final HomeCraftingRecipe recipe in snapshot.craftingRecipes) {
+        if (recipe.recipeId != 'resonance-compass-v1') {
+          continue;
+        }
+        _scheduleCompassImpression(
+          contentVersion: snapshot.contentVersion,
+          impression: 'RECIPE_${recipe.status}',
+          identity: 'recipe-${recipe.recipeId}-${recipe.recipeVersion}',
+        );
+      }
+    }
+
+    final HomeExpeditionEvent? event = snapshot.unlockedEvent;
+    if (event == null ||
+        event.eventId != 'mirror-delta-v1' ||
+        !_isViewportTargetVisible(_routeChoiceViewportKey)) {
+      return;
+    }
+    for (final HomeEventChoice choice in event.choices) {
+      if (choice.choiceId != 'follow-resonance') {
+        continue;
+      }
+      final String availability = choice.isAvailable ? 'AVAILABLE' : 'LOCKED';
+      _scheduleCompassImpression(
+        contentVersion: snapshot.contentVersion,
+        impression: 'ROUTE_$availability',
+        identity: 'route-${event.eventId}-${choice.choiceId}',
+      );
+    }
+  }
+
+  bool _isViewportTargetVisible(GlobalKey<State<StatefulWidget>> targetKey) {
+    final RenderObject? targetObject = targetKey.currentContext
+        ?.findRenderObject();
+    if (targetObject is! RenderBox ||
+        !targetObject.attached ||
+        !targetObject.hasSize) {
+      return false;
+    }
+    final RenderAbstractViewport? abstractViewport =
+        RenderAbstractViewport.maybeOf(targetObject);
+    final RenderBox? viewport = switch (abstractViewport) {
+      final RenderBox renderBox => renderBox,
+      _ => null,
+    };
+    if (viewport == null) {
+      return false;
+    }
+    if (!viewport.attached || !viewport.hasSize) {
+      return false;
+    }
+    final Rect targetBounds =
+        targetObject.localToGlobal(Offset.zero) & targetObject.size;
+    Rect viewportBounds = viewport.localToGlobal(Offset.zero) & viewport.size;
+    final RenderObject? stickyActionObject = _stickyActionOcclusionKey
+        .currentContext
+        ?.findRenderObject();
+    if (stickyActionObject is RenderBox &&
+        stickyActionObject.attached &&
+        stickyActionObject.hasSize) {
+      final Rect stickyActionBounds =
+          stickyActionObject.localToGlobal(Offset.zero) &
+          stickyActionObject.size;
+      final Rect coveredBounds = stickyActionBounds.intersect(viewportBounds);
+      if (coveredBounds.width > 0 && coveredBounds.height > 0) {
+        // The sticky action is the highest full-width overlay. Clipping the
+        // measurable viewport at its top also excludes the extended-body
+        // navigation overlay painted below it.
+        viewportBounds = Rect.fromLTRB(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right,
+          coveredBounds.top,
+        );
+      }
+    }
+    final Rect intersection = targetBounds.intersect(viewportBounds);
+    return intersection.width > 0 && intersection.height > 0;
+  }
+
+  void _scheduleCompassImpression({
+    required String contentVersion,
+    required String impression,
+    required String identity,
+  }) {
+    final String idempotencyKey =
+        'compass-impression-$contentVersion-$identity-$impression';
+    final int attemptGeneration = _snapshotRequestGeneration;
+    if (_scheduledCompassImpressions.contains(idempotencyKey) ||
+        _attemptedCompassImpressionGenerations[idempotencyKey] ==
+            attemptGeneration) {
+      return;
+    }
+    _attemptedCompassImpressionGenerations[idempotencyKey] = attemptGeneration;
+    _scheduledCompassImpressions.add(idempotencyKey);
+    unawaited(
+      _recordCompassImpression(
+        contentVersion: contentVersion,
+        impression: impression,
+        idempotencyKey: idempotencyKey,
+        attemptGeneration: attemptGeneration,
+      ),
+    );
+  }
+
+  Future<void> _recordCompassImpression({
+    required String contentVersion,
+    required String impression,
+    required String idempotencyKey,
+    required int attemptGeneration,
+  }) async {
+    final HomeImpressionRecorder? recorder = widget.impressionRecorder;
+    if (recorder == null) {
+      return;
+    }
+    try {
+      await recorder(
+        commandType: 'RECORD_COMPASS_IMPRESSION',
+        payload: <String, Object?>{
+          'impression': impression,
+          'contentVersion': contentVersion,
+        },
+        idempotencyKey: idempotencyKey,
+      );
+    } on Object {
+      _scheduledCompassImpressions.remove(idempotencyKey);
+      if (mounted && attemptGeneration != _snapshotRequestGeneration) {
+        _scheduleAcceptedCompassImpressionsAfterFrame();
+      }
+    }
   }
 
   Future<void> _advance(HomeSnapshot snapshot) async {
@@ -222,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
       setState(() {
-        _snapshotFuture = _loadSnapshot();
+        _snapshotFuture = _startSnapshotLoad();
       });
     } catch (error) {
       if (mounted) {
@@ -280,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
       setState(() {
-        _snapshotFuture = _loadSnapshot();
+        _snapshotFuture = _startSnapshotLoad();
       });
     } catch (error) {
       if (mounted) {
@@ -321,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
       setState(() {
-        _snapshotFuture = _loadSnapshot();
+        _snapshotFuture = _startSnapshotLoad();
       });
     } catch (error) {
       if (mounted) {
@@ -365,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
         SnackBar(content: Text('Создано: ${result.craftedItem.name}')),
       );
       setState(() {
-        _snapshotFuture = _loadSnapshot();
+        _snapshotFuture = _startSnapshotLoad();
       });
     } catch (error) {
       if (mounted) {
@@ -437,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
       setState(() {
-        _snapshotFuture = _loadSnapshot();
+        _snapshotFuture = _startSnapshotLoad();
       });
     } catch (error) {
       if (mounted) {
@@ -461,6 +709,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openDemo() {
     setState(() {
+      _snapshotRequestGeneration += 1;
+      _acceptedSnapshot = null;
       _snapshotFuture = Future<HomeSnapshot>.value(HomeSnapshot.demo);
     });
   }
@@ -470,7 +720,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     setState(() {
-      _snapshotFuture = _loadSnapshot();
+      _snapshotFuture = _startSnapshotLoad();
     });
   }
 }
@@ -478,6 +728,10 @@ class _HomeScreenState extends State<HomeScreen> {
 class _HomeBody extends StatelessWidget {
   const _HomeBody({
     required this.snapshot,
+    required this.scrollController,
+    required this.routeChoiceViewportKey,
+    required this.recipeViewportKey,
+    required this.stickyActionOcclusionKey,
     required this.isAdvancing,
     required this.isResolving,
     required this.isAcknowledging,
@@ -493,6 +747,10 @@ class _HomeBody extends StatelessWidget {
   });
 
   final HomeSnapshot snapshot;
+  final ScrollController scrollController;
+  final GlobalKey<State<StatefulWidget>> routeChoiceViewportKey;
+  final GlobalKey<State<StatefulWidget>> recipeViewportKey;
+  final GlobalKey<State<StatefulWidget>> stickyActionOcclusionKey;
   final bool isAdvancing;
   final bool isResolving;
   final bool isAcknowledging;
@@ -550,6 +808,7 @@ class _HomeBody extends StatelessWidget {
       child: Stack(
         children: <Widget>[
           ListView(
+            controller: scrollController,
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 220),
             children: <Widget>[
               Column(
@@ -583,6 +842,7 @@ class _HomeBody extends StatelessWidget {
                     const SizedBox(height: 20),
                     _EventCard(
                       event: event,
+                      routeChoiceViewportKey: routeChoiceViewportKey,
                       isResolving: isResolving,
                       disabled:
                           isResolving ||
@@ -657,6 +917,7 @@ class _HomeBody extends StatelessWidget {
                     const SizedBox(height: 12),
                     _CraftingCard(
                       recipes: snapshot.craftingRecipes,
+                      recipeViewportKey: recipeViewportKey,
                       readOnly: readOnly,
                       busy: gameplayActionBlocked,
                       crafting: isCrafting,
@@ -675,20 +936,24 @@ class _HomeBody extends StatelessWidget {
             bottom: 102,
             child: SafeArea(
               top: false,
-              child: ExpeditionPanel(
-                tone: eventReady || pendingEventResult != null
-                    ? ExpeditionPanelTone.resonance
-                    : ExpeditionPanelTone.energy,
-                padding: const EdgeInsets.all(10),
-                child: FilledButton.icon(
-                  onPressed: actionDisabled ? null : onAdvance,
-                  icon: isAdvancing
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.near_me_outlined),
-                  label: Text(actionLabel),
+              child: SizedBox(
+                key: stickyActionOcclusionKey,
+                child: ExpeditionPanel(
+                  key: const Key('home-sticky-action-panel'),
+                  tone: eventReady || pendingEventResult != null
+                      ? ExpeditionPanelTone.resonance
+                      : ExpeditionPanelTone.energy,
+                  padding: const EdgeInsets.all(10),
+                  child: FilledButton.icon(
+                    onPressed: actionDisabled ? null : onAdvance,
+                    icon: isAdvancing
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.near_me_outlined),
+                    label: Text(actionLabel),
+                  ),
                 ),
               ),
             ),
@@ -1027,12 +1292,14 @@ class _RewardLine extends StatelessWidget {
 class _EventCard extends StatelessWidget {
   const _EventCard({
     required this.event,
+    required this.routeChoiceViewportKey,
     required this.isResolving,
     required this.disabled,
     required this.onChoose,
   });
 
   final HomeExpeditionEvent event;
+  final GlobalKey<State<StatefulWidget>> routeChoiceViewportKey;
   final bool isResolving;
   final bool disabled;
   final ValueChanged<HomeEventChoice> onChoose;
@@ -1079,6 +1346,9 @@ class _EventCard extends StatelessWidget {
             const SizedBox(height: 12),
             for (final HomeEventChoice choice in event.choices) ...<Widget>[
               SizedBox(
+                key: choice.choiceId == 'follow-resonance'
+                    ? routeChoiceViewportKey
+                    : null,
                 width: double.infinity,
                 child: FilledButton.tonal(
                   key: Key('home-event-choice-${choice.choiceId}'),
@@ -1251,6 +1521,7 @@ class _InventoryCard extends StatelessWidget {
 class _CraftingCard extends StatelessWidget {
   const _CraftingCard({
     required this.recipes,
+    required this.recipeViewportKey,
     required this.readOnly,
     required this.busy,
     required this.crafting,
@@ -1258,6 +1529,7 @@ class _CraftingCard extends StatelessWidget {
   });
 
   final List<HomeCraftingRecipe> recipes;
+  final GlobalKey<State<StatefulWidget>> recipeViewportKey;
   final bool readOnly;
   final bool busy;
   final bool crafting;
@@ -1278,12 +1550,18 @@ class _CraftingCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           for (int index = 0; index < recipes.length; index++) ...<Widget>[
-            _CraftingRecipeView(
-              recipe: recipes[index],
-              readOnly: readOnly,
-              busy: busy,
-              crafting: crafting,
-              onCraft: () => onCraft(recipes[index]),
+            KeyedSubtree(
+              key: Key('home-recipe-viewport-${recipes[index].recipeId}'),
+              child: _CraftingRecipeView(
+                key: recipes[index].recipeId == 'resonance-compass-v1'
+                    ? recipeViewportKey
+                    : null,
+                recipe: recipes[index],
+                readOnly: readOnly,
+                busy: busy,
+                crafting: crafting,
+                onCraft: () => onCraft(recipes[index]),
+              ),
             ),
             if (index + 1 < recipes.length) const Divider(height: 28),
           ],
@@ -1295,6 +1573,7 @@ class _CraftingCard extends StatelessWidget {
 
 class _CraftingRecipeView extends StatelessWidget {
   const _CraftingRecipeView({
+    super.key,
     required this.recipe,
     required this.readOnly,
     required this.busy,

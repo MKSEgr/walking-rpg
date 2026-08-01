@@ -269,6 +269,40 @@ Roadmap отражает снижение рисков. Статусы:
 - [ ] Утвердить motion, app icon, splash и store artwork после выбора финального
       визуального направления
 
+## Milestone 13 — Compass beta funnel
+
+### CODE_COMPLETE
+
+- [x] Idempotent `RECORD_COMPASS_IMPRESSION` с server-canonical recipe/route
+      attributes и запретом route telemetry до cluster activation v2
+- [x] Network-only viewport instrumentation для `MISSING_MATERIALS`, `READY`,
+      `CRAFTED`, locked и available states; cached/offscreen/covered/background
+      snapshot не создаёт показ
+- [x] Отдельная mobile `TELEMETRY` lane и cache-neutral platform command:
+      потеря telemetry не задерживает ACTIVITY/GAMEPLAY и не меняет UI state
+- [x] Cohort-filtered admin read model двух funnel-ов:
+      recipe → craft → equip и mirror → route choice → completion
+- [x] Craft/equip/reach/choice/completion считаются только по существующим
+      server-authoritative receipts; client impression явно помечен отдельно
+- [x] Route denominator привязан к cluster activation v2: ожидавшие стартуют
+      в immutable V15 activation time, same-version republish его не меняет,
+      а resolved legacy Mirror Delta исключены
+- [x] Repeatable-read snapshot, ordered p50/p90 и data-quality counters для
+      out-of-order пар и authoritative target без instrumented baseline
+- [x] Unit/API/PostgreSQL snapshot/widget/outbox/cache regression tests и
+      обязательный CI selector
+
+### EXTERNAL_VALIDATION_REQUIRED
+
+- [ ] Собрать funnel по реальному beta cohort/build и проверить достаточную
+      instrumentation rate до продуктовых выводов
+- [ ] Проверить фактический drop-off recipe → craft → equip и понять причину
+      каждого разрыва через интервью/support evidence
+- [ ] Проверить обнаружение, выбор и завершение resonance route; только после
+      этого принимать решение о copy, наградах и следующих recipes/routes
+- [ ] Зафиксировать cohort, build, период и принятые пороги в beta evidence;
+      code-complete analytics сама по себе не считается `VALIDATED`
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

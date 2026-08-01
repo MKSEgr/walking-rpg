@@ -173,6 +173,68 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldKeepCompassTelemetryOutOfPersistentStateReconciliation() {
+        String userId = "compass-telemetry-state-user";
+        platformService.execute(userId, new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "compass-telemetry-state-seed",
+                Map.of("stepId", "welcome")
+        ));
+        String stateBefore = scalarString("""
+                SELECT state_json::text
+                FROM roadmap_user_state
+                WHERE user_id = 'compass-telemetry-state-user'
+                """);
+        long versionBefore = scalarLong("""
+                SELECT version
+                FROM roadmap_user_state
+                WHERE user_id = 'compass-telemetry-state-user'
+                """);
+        Timestamp updatedBefore = jdbcTemplate.queryForObject("""
+                SELECT updated_at
+                FROM roadmap_user_state
+                WHERE user_id = ?
+                """, Timestamp.class, userId);
+        jdbcTemplate.update("""
+                INSERT INTO pet_progress (
+                    user_id, pet_id, level, bond, version,
+                    created_at, updated_at
+                ) VALUES (?, 'spark-v1', 1, 60, 1, ?, ?)
+                """, userId, Timestamp.from(NOW), Timestamp.from(NOW));
+        PlatformCommandRequest request = new PlatformCommandRequest(
+                "RECORD_COMPASS_IMPRESSION",
+                "compass-telemetry-state-neutral",
+                Map.of(
+                        "impression", "RECIPE_READY",
+                        "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                )
+        );
+
+        PlatformCommandResponse first = platformService.execute(userId, request);
+        PlatformCommandResponse replayed = platformService.execute(userId, request);
+
+        assertEquals(first, replayed);
+        assertEquals(versionBefore, first.stateVersion());
+        assertEquals(stateBefore, scalarString("""
+                SELECT state_json::text
+                FROM roadmap_user_state
+                WHERE user_id = 'compass-telemetry-state-user'
+                """));
+        assertEquals(versionBefore, scalarLong("""
+                SELECT version
+                FROM roadmap_user_state
+                WHERE user_id = 'compass-telemetry-state-user'
+                """));
+        assertEquals(updatedBefore, jdbcTemplate.queryForObject("""
+                SELECT updated_at
+                FROM roadmap_user_state
+                WHERE user_id = ?
+                """, Timestamp.class, userId));
+        assertEquals(2, rowCount("processed_roadmap_command"));
+        assertEquals(3, rowCount("platform_event"));
+    }
+
+    @Test
     void shouldRecordPetSelectionAndCompletedJourneyOnlyOnce() {
         String userId = "journey-user";
         completeStep(userId, "welcome");

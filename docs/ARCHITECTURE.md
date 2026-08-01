@@ -190,6 +190,33 @@ V11 дополнительно фиксирует первый `NULL → acknowl
 `AUTHORITATIVE` source; legacy auto-ACK и migration evidence помечены
 `BACKFILLED` и исключаются из time-to-value percentiles.
 
+Compass beta observability не создаёт второй gameplay source of truth.
+Network Home отправляет idempotent `RECORD_COMPASS_IMPRESSION`, только когда
+соответствующая card пересекает viewport, Home route текущая и app `resumed`;
+backend канонизирует recipe/event/choice IDs, использует server receive time и
+пишет `platform_event`. Cached/covered/background Home ничего не отправляет.
+Эта команда выполняется в отдельной mobile `TELEMETRY` lane, не инвалидирует
+read cache и не задерживает ACTIVITY/GAMEPLAY. Backend выполняет её до
+`roadmap_user_state` reconciliation:
+новые progress facts не сохраняются и `stateVersion` не меняется. Route
+impression дополнительно требует уже активную `chapter-1-v2`; exact replay
+читается до release gate.
+Публичный `/telemetry/events` отклоняет оба compass event name до любой записи,
+поэтому client-controlled `occurredAt` не может попасть в canonical funnel.
+
+`CompassJourneyAnalyticsService` объединяет client-reported первые показы с
+authoritative фактами из `unique_inventory_item`,
+`processed_equipment_command`, `processed_expedition_advance` и
+`processed_event_resolution`. Cohort-filtered admin response агрегирован без
+user IDs и строится одной `REPEATABLE_READ` транзакцией. Conversion сохраняет
+достигнутые out-of-order пары, но latency считает только неотрицательные
+интервалы; target без baseline и out-of-order видны как data-quality counters.
+Route baseline существует только для активной `chapter-1-v2`, начинается не
+раньше immutable `content_release.activated_at` и исключает Mirror Delta, resolved до
+активации; legacy receipts не входят в denominator нового выбора.
+Новая таблица не нужна: при объёме закрытой beta существующие immutable rows и
+индексы являются достаточной read boundary.
+
 `roadmap_user_state.activePetId` — источник выбора питомца. Общий
 `ActivePetProvider` связывает platform state с home/progression: event reward
 берёт тот же per-user advisory lock, что и `SELECT_PET`, затем блокирует и
@@ -212,6 +239,10 @@ V14 лишь stage-ит v2 и оставляет v1 активной. Пока �
 после полного drain старого backend pool, новый backend возвращает v1/18 nodes,
 не проецирует `follow-resonance` и отклоняет прямой переход. Exact replay
 исторического результата выполняется до release gate.
+V15 добавляет nullable `activated_at`: активная версия обязана иметь timestamp,
+первая активация staged row заполняет его, а DB trigger запрещает последующее
+изменение. `created_at` остаётся временем последней публикации и не участвует в
+накопительном route funnel.
 
 Starter crafting content имеет независимую версию `crafting-v1`. Recipe
 `resonance-compass-v1` принимает только stable material item IDs и создаёт
@@ -245,6 +276,7 @@ roadmap_user_state, processed_roadmap_command
 remote_config_snapshot, content_release
 roadmap_squad, roadmap_squad_member
 platform_event, platform_crash_report
+  └─ canonical client-reported compass impressions
 push_registration, payment_intent, tester_cohort_member
 activity_risk_assessment
 first_journey_milestone
@@ -298,6 +330,8 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
   тот же commit создаёт ACK milestone, replay читает сохранённое время без
   повторной мутации, а БД запрещает последующую правку timestamp;
 - read endpoints не создают zero-state.
+- compass analytics читает eligible users, client impressions и gameplay
+  receipts из одного repeatable-read snapshot.
 
 ## 9. Ключевые инварианты
 
@@ -359,6 +393,13 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
     equip/unequip mutation до ACK запрещена.
 36. Обычный выбор `mirror-delta-v1` не попадает в optional route; только
     `follow-resonance` с экипированным компасом ведёт в `resonance-pocket`.
+37. Cached, superseded, off-viewport, covered или background Home не создаёт
+    compass impression; network impression имеет canonical server IDs, exact
+    replay и не меняет gameplay state.
+38. Craft/equip/reach/choice/completion funnel stage не выводится из client
+    payload и подтверждается только persistent gameplay row.
+39. Отрицательный target-baseline interval не участвует в p50/p90 и остаётся
+    виден отдельным out-of-order data-quality fact.
 
 ## 10. Identity и authorization boundary
 

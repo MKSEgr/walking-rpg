@@ -34,6 +34,7 @@ for file in \
   docs/adr/0028-internal-device-validation-center.md \
   docs/adr/0029-server-authoritative-crafting.md \
   docs/adr/0030-equipment-and-gated-routes.md \
+  docs/adr/0031-compass-beta-funnel.md \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
@@ -64,6 +65,7 @@ for file in \
   backend/src/main/resources/db/migration/V12__disable_development_providers.sql \
   backend/src/main/resources/db/migration/V13__server_authoritative_crafting.sql \
   backend/src/main/resources/db/migration/V14__equipment_and_resonance_route.sql \
+  backend/src/main/resources/db/migration/V15__immutable_content_activation_time.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -73,9 +75,11 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/operations/PostgresDrillManifestTest.java \
   backend/src/test/java/com/walkingrpg/backend/platform/config/PlatformProviderConfigurationTest.java \
   backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformAdminServiceProviderTest.java \
+  backend/src/test/java/com/walkingrpg/backend/platform/analytics/CompassJourneyAnalyticsIntegrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ProductionProviderIsolationMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ServerAuthoritativeCraftingMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/EquipmentAndResonanceRouteMigrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/migration/ContentReleaseActivationHistoryMigrationTest.java \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
   scripts/ci/verify-android-release-config.sh \
@@ -186,6 +190,11 @@ grep -Fq 'EquipmentServiceTest' .github/workflows/ci.yml || fail 'equipment serv
 grep -Fq 'EquipmentControllerTest' .github/workflows/ci.yml || fail 'equipment API tests must run in CI'
 grep -Fq 'EquipmentIntegrationTest' .github/workflows/ci.yml || fail 'equipment PostgreSQL tests must run in CI'
 grep -Fq 'EquipmentAndResonanceRouteMigrationTest' .github/workflows/ci.yml || fail 'equipment migration test must run in CI'
+grep -Fq 'activated_at is immutable after first activation' backend/src/main/resources/db/migration/V15__immutable_content_activation_time.sql || fail 'V15 must reject activation timestamp rewrites'
+grep -Fq 'V15 requires explicit chapter-1-v2 first activation timestamp' backend/src/main/resources/db/migration/V15__immutable_content_activation_time.sql || fail 'V15 must fail closed when legacy v2 activation history is missing'
+grep -Fq 'shouldRequireExplicitV14HistoryAndKeepFirstActivationImmutable' backend/src/test/java/com/walkingrpg/backend/migration/ContentReleaseActivationHistoryMigrationTest.java || fail 'V15 migration test must cover explicit legacy activation history'
+grep -Fq 'ContentReleaseActivationHistoryMigrationTest' .github/workflows/ci.yml || fail 'content activation history migration test must run in CI'
+grep -Fq 'CompassJourneyAnalyticsIntegrationTest' .github/workflows/ci.yml || fail 'compass journey analytics tests must run in CI'
 
 printf '%s\n' 'Checking production operational controls...'
 grep -Fq 'micrometer-registry-prometheus' backend/pom.xml || fail 'Prometheus registry is required'
@@ -242,6 +251,7 @@ grep -Fq 'overflowClient' backend/src/main/java/com/walkingrpg/backend/operation
 grep -Fq '@Size(max = 160) String errorType' backend/src/main/java/com/walkingrpg/backend/platform/api/CrashReportRequest.java || fail 'crash error type must fit the database schema'
 grep -Fq '@Size(max = 32768) String stackTrace' backend/src/main/java/com/walkingrpg/backend/platform/api/CrashReportRequest.java || fail 'crash stack trace must be bounded'
 grep -Fq '@Size(max = 64) Map<String, Object> attributes' backend/src/main/java/com/walkingrpg/backend/platform/api/TelemetryEventRequest.java || fail 'telemetry attributes must be bounded'
+grep -Fq 'SERVER_RESERVED_EVENT_NAMES' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformAdminService.java || fail 'public telemetry must preserve server-owned event namespaces'
 grep -Fq '@Component("dbHealthContributor")' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'bounded database readiness must keep the canonical db contributor id'
 grep -Fq 'connection.isValid(VALIDATION_TIMEOUT_SECONDS)' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'database readiness validation must use a non-zero bounded timeout'
 MANUAL_TIMEOUTS=$(grep -RFl 'JdbcStatementTimeouts.apply(jdbcTemplate, statement);' backend/src/main/java | wc -l | tr -d ' ')
@@ -323,8 +333,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 14:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V14: {versions}')
+if versions != expected or not versions or versions[-1] < 15:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V15: {versions}')
 print('Flyway versions:', versions)
 PY
 

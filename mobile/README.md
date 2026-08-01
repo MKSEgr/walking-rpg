@@ -288,6 +288,23 @@ read cache и перечитывает home, где materials уже списа�
 доступные варианты, а locked варианты возвращает в additive `lockedChoices`:
 новый mobile объединяет их для UI, старый остаётся на основном маршруте.
 
+Свежий network Home дополнительно регистрирует состояния compass journey:
+recipe `MISSING_MATERIALS`/`READY`/`CRAFTED` и gated choice
+`LOCKED`/`AVAILABLE`. Impression создаётся только после входа соответствующей
+card во viewport, когда Home выбрана, её route текущая и приложение `resumed`.
+Accepted snapshot ждёт возврата из Journal, Account/Recovery или background;
+cached snapshot ничего не отправляет. Для каждого content/state используется
+детерминированный idempotency key, поэтому reload или restart не создаёт вторую
+server event; при недоставленной попытке durable outbox сохраняет исходный
+payload/key. Если Home-запрос был заменён новым до завершения, его snapshot не
+считается показанным и impression не отправляется.
+
+`RECORD_COMPASS_IMPRESSION` классифицируется как `TELEMETRY`: он не
+инвалидирует Home/Platform cache, не применяет optimistic state и не удерживает
+ACTIVITY/GAMEPLAY recovery. Эти показы остаются client-reported; craft/equip/
+route facts для beta analytics backend получает только из persistent gameplay
+receipts.
+
 ## Минимальные платформенные настройки
 
 ### Android
@@ -502,6 +519,8 @@ Unit/widget tests покрывают:
   reload; read-only cached crafting;
 - полный widget flow locked choice → equip → unlocked choice → unequip →
   locked choice без optimistic state;
+- compass widget telemetry только после viewport exposure при selected/current/
+  resumed Home; superseded, hidden, covered и background snapshots отложены;
 - parsing и restart-visible rendering top-level `pendingEventResult`;
 - ACK result card, authoritative reload и read-only cached card;
 - restart-safe replay второго события с исходным payload/key;

@@ -772,6 +772,46 @@ push-регистрации устройства.
   служебные milestones;
 - активный питомец затем возвращается в `GET /home` и получает event bond.
 
+### `commandType=RECORD_COMPASS_IMPRESSION`
+
+Authenticated mobile регистрирует показ compass UX через существующий
+`POST /api/v1/platform/commands`. Команда является cache-neutral telemetry:
+она не меняет `stateVersion`, не инвалидирует Home/Platform cache и exact
+replay возвращает исходный response без второй записи события. Backend не
+запускает для неё reconciliation и не сохраняет новые progress facts в
+`roadmap_user_state`; snapshot ответа остаётся на сохранённой версии state.
+
+```json
+{
+  "commandType": "RECORD_COMPASS_IMPRESSION",
+  "idempotencyKey": "compass-impression-chapter-1-v2-route-mirror-delta-v1-follow-resonance-ROUTE_AVAILABLE",
+  "payload": {
+    "impression": "ROUTE_AVAILABLE",
+    "contentVersion": "chapter-1-v2"
+  }
+}
+```
+
+Client передаёт только enum показа и версию фактически полученного network
+Home. Backend записывает server receive time и сам подставляет stable content
+IDs; произвольные `recipeId`, `eventId`, `choiceId`, availability или timestamp
+не принимаются.
+
+| `impression` | Canonical event | Canonical attributes |
+|---|---|---|
+| `RECIPE_MISSING_MATERIALS` | `compass_recipe_impression` | `recipeId=resonance-compass-v1`, `status=MISSING_MATERIALS` |
+| `RECIPE_READY` | `compass_recipe_impression` | `recipeId=resonance-compass-v1`, `status=READY` |
+| `RECIPE_CRAFTED` | `compass_recipe_impression` | `recipeId=resonance-compass-v1`, `status=CRAFTED` |
+| `ROUTE_LOCKED` | `compass_route_impression` | `eventId=mirror-delta-v1`, `choiceId=follow-resonance`, `availability=LOCKED` |
+| `ROUTE_AVAILABLE` | `compass_route_impression` | `eventId=mirror-delta-v1`, `choiceId=follow-resonance`, `availability=AVAILABLE` |
+
+Оба event содержат `contractVersion=compass-beta-funnel-v1` и переданный
+из network snapshot `contentVersion`. Route impressions допустимы только для
+`chapter-1-v2`, когда эта версия уже активна в `content_release`; exact replay
+проверяется раньше release gate. Cached Home не отправляет impression; network
+snapshot отправляет его только после viewport exposure соответствующей card при
+текущей Home route и foreground app.
+
 ## `GET /api/v1/admin/platform/analytics/first-journey`
 
 Admin-only read model первого пути. Опциональный `cohortCode` ограничивает
@@ -833,6 +873,85 @@ continuity `conversionFromStarted`, но исключаются из
 используется `authoritativeConversionFromStarted`. Если у state-only legacy
 пользователя нет receipt evidence, ACK milestone не синтезируется.
 
+## `GET /api/v1/admin/platform/analytics/compass-journey`
+
+Admin-only агрегированный read model для beta-пути
+`recipe → craft → equip → hidden route`. Опциональный `cohortCode` использует
+ту же membership-семантику `tester_cohort_member`, что first-journey analytics.
+Ответ не содержит user IDs и читается целиком в одной PostgreSQL
+`REPEATABLE_READ` транзакции.
+
+```json
+{
+  "cohortCode": "compass-beta",
+  "eligibleUsers": 40,
+  "instrumentedUsers": 32,
+  "instrumentationRate": 0.8,
+  "funnels": [
+    {
+      "funnel": "CRAFTING_EQUIPMENT",
+      "startStage": "RECIPE_SEEN",
+      "startSource": "CLIENT_REPORTED",
+      "startedUsers": 30,
+      "notStartedUsers": 10,
+      "startRate": 0.75,
+      "stages": [
+        {
+          "stage": "COMPASS_EQUIPPED",
+          "source": "AUTHORITATIVE",
+          "reachedUsers": 18,
+          "missingFromStartedUsers": 12,
+          "orderedUsers": 17,
+          "outOfOrderUsers": 1,
+          "conversionFromStarted": 0.6,
+          "orderedConversionFromStarted": 0.5666666666666667,
+          "medianSecondsFromStart": 420,
+          "p90SecondsFromStart": 1800
+        }
+      ]
+    }
+  ],
+  "dataQuality": {
+    "clientReportedStageRecords": 55,
+    "authoritativeStageRecords": 49,
+    "outOfOrderPairs": 3,
+    "craftingTargetsWithoutStartUsers": 4,
+    "routeTargetsWithoutStartUsers": 2
+  },
+  "generatedAt": "2026-07-30T18:00:00Z"
+}
+```
+
+Состав funnel-ов и источники:
+
+| Funnel | Baseline | Следующие stages |
+|---|---|---|
+| `CRAFTING_EQUIPMENT` | `RECIPE_SEEN` (`CLIENT_REPORTED`) | `RECIPE_READY_SEEN` (`CLIENT_REPORTED`), `COMPASS_CRAFTED`, `COMPASS_EQUIPPED` (`AUTHORITATIVE`) |
+| `RESONANCE_ROUTE` | `MIRROR_DELTA_REACHED` (`AUTHORITATIVE`) | `ROUTE_LOCKED_SEEN`, `ROUTE_AVAILABLE_SEEN` (`CLIENT_REPORTED`), `RESONANCE_ROUTE_CHOSEN`, `RESONANCE_ROUTE_COMPLETED` (`AUTHORITATIVE`) |
+
+`RESONANCE_ROUTE` открывает baseline только при активной `chapter-1-v2`.
+Пользователь, ожидавший на Mirror Delta до активации, стартует в
+`max(mirrorReachedAt, v2ActivatedAt) = v2ActivatedAt`; достигший событие позже
+стартует по receipt. Если Mirror Delta уже resolved до активации, пользователь
+не входит в route denominator: legacy choice нельзя переиграть после rollout.
+Staged V14 timestamp не считается exposure или началом latency.
+Baseline использует V15 `content_release.activated_at`, который заполняется
+при первой активации и остаётся immutable при republish; mutable `createdAt`
+release row не участвует в timing.
+
+`reachedUsers`/`conversionFromStarted` отвечают на вопрос, встречались ли обе
+стадии у пользователя. `orderedUsers` и latency percentiles дополнительно
+требуют `target.occurredAt >= baseline.occurredAt`; отрицательная или
+legacy/offline пара остаётся видна в `outOfOrderUsers`, но не искажает timing.
+Target без baseline не включается в conversion и отражается в соответствующем
+`*TargetsWithoutStartUsers`.
+
+`clientReportedStageRecords` и `authoritativeStageRecords` — число первых
+user-stage записей после дедупликации, а не число raw event rows. Client
+impression доказывает только доставку canonical telemetry command и не
+заменяет gameplay truth. Поэтому beta-решения должны указывать cohort/build/
+период, проверять `instrumentationRate` и опираться на authoritative stages.
+
 ## Anonymous telemetry и diagnostics
 
 Оба endpoint-а нужны для startup/pre-authentication diagnostics и поэтому
@@ -843,7 +962,10 @@ backend может связать запись с canonical subject; client-cont
 ### `POST /api/v1/telemetry/events`
 
 Raw JSON body ограничен 16 KiB. `eventName` обязателен и не длиннее 100
-символов; `attributes` содержит не более 64 top-level keys.
+символов; `attributes` содержит не более 64 top-level keys. Имена
+`compass_recipe_impression` и `compass_route_impression` зарезервированы для
+server-owned platform command и отклоняются до создания user/event row, чтобы
+public ingress не подменял canonical server time/attributes funnel-а.
 
 ```json
 {

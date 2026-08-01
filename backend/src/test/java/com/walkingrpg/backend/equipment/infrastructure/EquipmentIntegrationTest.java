@@ -516,7 +516,8 @@ class EquipmentIntegrationTest {
         jdbcTemplate.update("UPDATE content_release SET is_active = false WHERE is_active");
         assertEquals(1, jdbcTemplate.update("""
                 UPDATE content_release
-                SET is_active = true
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
                 WHERE content_version = 'chapter-1-v2'
                 """));
     }

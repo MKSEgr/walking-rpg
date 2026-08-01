@@ -43,6 +43,7 @@ class EquipmentAndResonanceRouteMigrationTest {
                         POSTGRES.getUsername(),
                         POSTGRES.getPassword()
                 )
+                .target(MigrationVersion.fromVersion("14"))
                 .load();
         flyway.migrate();
 

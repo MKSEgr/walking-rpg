@@ -36,6 +36,10 @@ public class PlatformAdminService {
             "sandboxPaymentsEnabled",
             "weeklyRouteEnabled"
     );
+    private static final Set<String> SERVER_RESERVED_EVENT_NAMES = Set.of(
+            "compass_recipe_impression",
+            "compass_route_impression"
+    );
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
@@ -70,6 +74,13 @@ public class PlatformAdminService {
             Instant occurredAt,
             Map<String, Object> attributes
     ) {
+        String normalizedEventName = requireText(eventName, "eventName");
+        if (SERVER_RESERVED_EVENT_NAMES.contains(normalizedEventName)) {
+            throw new PlatformValidationException(
+                    "Имя события зарезервировано server-owned telemetry",
+                    "eventName"
+            );
+        }
         Instant receivedAt = now();
         if (hasText(userId)) {
             ensureUser(userId.trim(), receivedAt);
@@ -80,7 +91,7 @@ public class PlatformAdminService {
                 ) VALUES (?, ?, ?, ?::jsonb, ?)
                 """,
                 normalizeNullable(userId),
-                requireText(eventName, "eventName"),
+                normalizedEventName,
                 Timestamp.from(occurredAt == null ? receivedAt : occurredAt),
                 writeJson(attributes == null ? Map.of() : attributes),
                 Timestamp.from(receivedAt)
@@ -196,34 +207,43 @@ public class PlatformAdminService {
         }
         Instant timestamp = now();
         jdbcTemplate.update("UPDATE content_release SET is_active = false WHERE is_active");
-        jdbcTemplate.update("""
+        Timestamp activatedAt = jdbcTemplate.queryForObject("""
                 INSERT INTO content_release (
                     content_version, release_notes, content_json,
-                    is_active, created_by, created_at
-                ) VALUES (?, ?, ?::jsonb, true, ?, ?)
+                    is_active, created_by, created_at, activated_at
+                ) VALUES (?, ?, ?::jsonb, true, ?, ?, ?)
                 ON CONFLICT (content_version) DO UPDATE
                 SET release_notes = EXCLUDED.release_notes,
                     content_json = EXCLUDED.content_json,
                     is_active = true,
                     created_by = EXCLUDED.created_by,
-                    created_at = EXCLUDED.created_at
+                    created_at = EXCLUDED.created_at,
+                    activated_at = COALESCE(
+                        content_release.activated_at,
+                        EXCLUDED.activated_at
+                    )
+                RETURNING activated_at
                 """,
+                Timestamp.class,
                 requireText(version, "version"),
                 requireText(releaseNotes, "releaseNotes"),
                 writeJson(content),
                 requireText(actor, "actor"),
+                Timestamp.from(timestamp),
                 Timestamp.from(timestamp)
         );
         return Map.of(
                 "contentVersion", version,
                 "active", true,
-                "createdAt", timestamp
+                "createdAt", timestamp,
+                "activatedAt", activatedAt.toInstant()
         );
     }
 
     public List<Map<String, Object>> contentReleases() {
         return jdbcTemplate.query("""
-                SELECT content_version, release_notes, is_active, created_by, created_at
+                SELECT content_version, release_notes, is_active, created_by,
+                       created_at, activated_at
                 FROM content_release
                 ORDER BY created_at DESC
                 """, (resultSet, rowNumber) -> {
@@ -233,6 +253,11 @@ public class PlatformAdminService {
             item.put("active", resultSet.getBoolean("is_active"));
             item.put("createdBy", resultSet.getString("created_by"));
             item.put("createdAt", resultSet.getTimestamp("created_at").toInstant());
+            Timestamp activatedAt = resultSet.getTimestamp("activated_at");
+            item.put(
+                    "activatedAt",
+                    activatedAt == null ? null : activatedAt.toInstant()
+            );
             return item;
         });
     }

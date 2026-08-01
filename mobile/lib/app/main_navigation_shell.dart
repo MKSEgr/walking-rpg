@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 class MainNavigationShell extends StatefulWidget {
@@ -26,7 +27,16 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       extendBody: true,
       body: IndexedStack(
         index: _selectedIndex,
-        children: <Widget>[widget.home, widget.platform],
+        children: <Widget>[
+          NavigationDestinationVisibility(
+            isVisible: _selectedIndex == 0,
+            child: widget.home,
+          ),
+          NavigationDestinationVisibility(
+            isVisible: _selectedIndex == 1,
+            child: widget.platform,
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,
