@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/commands/file_mobile_command_store.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/validation/validation_center_policy.dart';
 
 class WalkingRpgApp extends StatefulWidget {
@@ -69,10 +70,9 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
     return MaterialApp(
       title: 'Walking RPG',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF496D61),
-      ),
+      theme: WalkingRpgTheme.light(),
+      darkTheme: WalkingRpgTheme.dark(),
+      themeMode: ThemeMode.system,
       home: controller == null || cache == null || commandStore == null
           ? _ConfigurationErrorScreen(error: _configurationError)
           : AuthGate(

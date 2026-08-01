@@ -29,6 +29,8 @@
 
 - Java 21 / Spring Boot backend;
 - Flutter mobile;
+- системная light/dark дизайн-основа в направлении soft science-fantasy,
+  атмосферный экран экспедиции и плавающая игровая навигация;
 - PostgreSQL + Flyway;
 - Apple HealthKit и Google Health Connect как foreground-источники шагов;
 - server-owned персональная дневная цель по истории accepted activity;

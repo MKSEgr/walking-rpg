@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -50,7 +51,6 @@ class FirstJourneyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Первый путь'),
@@ -68,17 +68,7 @@ class FirstJourneyScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[
-              colors.primaryContainer.withValues(alpha: 0.42),
-              colors.surface,
-            ],
-          ),
-        ),
+      body: ExpeditionBackdrop(
         child: SafeArea(
           top: false,
           child: LayoutBuilder(
@@ -686,72 +676,66 @@ class _JourneyPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-    return Card(
-      elevation: accent ? 3 : 1,
-      color: accent ? colors.primaryContainer : colors.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.86, end: 1),
-                duration: const Duration(milliseconds: 420),
-                curve: Curves.easeOutBack,
-                builder: (BuildContext context, double scale, Widget? child) =>
-                    Transform.scale(scale: scale, child: child),
-                child: CircleAvatar(
-                  radius: 30,
-                  backgroundColor: accent
-                      ? colors.primary
-                      : colors.secondaryContainer,
-                  child: Icon(
-                    icon,
-                    size: 31,
-                    color: accent
-                        ? colors.onPrimary
-                        : colors.onSecondaryContainer,
-                  ),
+    return ExpeditionPanel(
+      tone: accent ? ExpeditionPanelTone.energy : ExpeditionPanelTone.lumen,
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.86, end: 1),
+              duration: const Duration(milliseconds: 420),
+              curve: Curves.easeOutBack,
+              builder: (BuildContext context, double scale, Widget? child) =>
+                  Transform.scale(scale: scale, child: child),
+              child: CircleAvatar(
+                radius: 30,
+                backgroundColor: accent
+                    ? colors.primary
+                    : colors.secondaryContainer,
+                child: Icon(
+                  icon,
+                  size: 31,
+                  color: accent
+                      ? colors.onPrimary
+                      : colors.onSecondaryContainer,
                 ),
               ),
             ),
-            const SizedBox(height: 18),
-            Text(
-              eyebrow.toUpperCase(),
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: colors.primary,
-                letterSpacing: 0.8,
-              ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            eyebrow.toUpperCase(),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: colors.primary,
+              letterSpacing: 0.8,
             ),
-            const SizedBox(height: 6),
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 10),
-            Text(body, style: Theme.of(context).textTheme.bodyLarge),
-            if (highlights.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 16),
-              ...highlights.map(
-                (String text) => Padding(
-                  padding: const EdgeInsets.only(bottom: 7),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      const Icon(Icons.check_circle_outline, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(text)),
-                    ],
-                  ),
+          ),
+          const SizedBox(height: 6),
+          Text(title, style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 10),
+          Text(body, style: Theme.of(context).textTheme.bodyLarge),
+          if (highlights.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 16),
+            ...highlights.map(
+              (String text) => Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Icon(Icons.check_circle_outline, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(text)),
+                  ],
                 ),
               ),
-            ],
-            if (child != null) ...<Widget>[const SizedBox(height: 18), child!],
-            if (action != null) ...<Widget>[
-              const SizedBox(height: 22),
-              action!,
-            ],
+            ),
           ],
-        ),
+          if (child != null) ...<Widget>[const SizedBox(height: 18), child!],
+          if (action != null) ...<Widget>[const SizedBox(height: 22), action!],
+        ],
       ),
     );
   }
