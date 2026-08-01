@@ -71,6 +71,26 @@ same semantic accents. Text scaling, screen-reader labels and platform reduced
 motion remain part of every screen review. Decorative painting must not add
 semantics or intercept gestures.
 
+## Companion identity
+
+`CompanionPortrait` gives every starter a recognizable code-native silhouette
+that remains readable without relying on color:
+
+- Искра is an angular lumen scout with high ears and a signal tail;
+- Мох is a low, rounded terra guardian with a living sprout;
+- Руна is a faceted echo navigator framed by asymmetric signal waves.
+
+The portrait reads the stable `petId` for identity and the authoritative
+`evolutionStage` for additional geometry. Stage zero is the base form; later
+values enrich the same silhouette rather than replacing it with an unrelated
+character. The painter is prepared for stages zero through two, but the client
+never predicts, unlocks or advertises a stage that the server did not return.
+
+Portraits are static repaint boundaries, carry a complete semantic label and
+pair the active marker with text elsewhere in the card. The first journey and
+the journal share the same portrait; adopting it on Home remains a separate
+slice so Home lifecycle and visibility telemetry can change independently.
+
 ## Journal composition
 
 The path journal extends the expedition language without becoming a second
@@ -93,7 +113,8 @@ accepted read models.
 ## Next visual slices
 
 1. Define the world key art and the first chapter environment language.
-2. Design final silhouettes and three evolution stages for all starter pets.
+2. Carry the shared companion portraits into the expedition hero after its
+   lifecycle and visibility work lands.
 3. Turn the expedition chapter into a visual route map without adding GPS or
    real-time walking interaction.
 4. Split the journal into player-facing tabs only when closed-beta content

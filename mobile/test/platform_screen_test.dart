@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -100,6 +101,11 @@ void main() {
       scrollable: find.byType(Scrollable),
     );
     expect(find.text('Искра · уровень 1'), findsOneWidget);
+    expect(find.byType(CompanionPortrait), findsWidgets);
+    expect(
+      find.byKey(const Key('platform-pet-portrait-spark-v1')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('authoritative generation reloads journal without losing input', (
@@ -651,7 +657,7 @@ void main() {
       stalePurchaseCallback();
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Косметика'),
+        find.text('Ореол Искры'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
