@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.walkingrpg.backend.inventory.domain.InventoryItemDefinition;
+import com.walkingrpg.backend.inventory.domain.InventoryItemKind;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,6 +17,7 @@ public class StarterInventoryContent {
     public static final String PRISM_DUST_ID = "prism-dust";
     public static final String ION_BLOOM_ID = "ion-bloom";
     public static final String DAWN_FRAGMENT_ID = "dawn-fragment";
+    public static final String RESONANCE_COMPASS_ID = "resonance-compass";
 
     private final Map<String, InventoryItemDefinition> items;
 
@@ -67,6 +69,15 @@ public class StarterInventoryContent {
                         DAWN_FRAGMENT_ID,
                         "Фрагмент рассвета",
                         "Сезонный материал из последнего ретранслятора первой главы."
+                )
+        );
+        definitions.put(
+                RESONANCE_COMPASS_ID,
+                new InventoryItemDefinition(
+                        RESONANCE_COMPASS_ID,
+                        "Резонансный компас",
+                        "Уникальный прибор, собранный из люминовых осколков и нити эха.",
+                        InventoryItemKind.UNIQUE
                 )
         );
         this.items = Map.copyOf(definitions);

@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
+import com.walkingrpg.backend.home.domain.CraftingRecipeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.InventoryItemSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
@@ -27,10 +28,14 @@ public record HomeSnapshotResponse(
         PetSnapshot pet,
         List<InventoryItemSnapshot> inventory,
         PendingEventResultSnapshot pendingEventResult,
-        ExpeditionSnapshot expedition
+        ExpeditionSnapshot expedition,
+        List<CraftingRecipeSnapshot> craftingRecipes
 ) {
     public HomeSnapshotResponse {
         inventory = inventory == null ? List.of() : List.copyOf(inventory);
+        craftingRecipes = craftingRecipes == null
+                ? List.of()
+                : List.copyOf(craftingRecipes);
     }
 
     public HomeSnapshotResponse(
@@ -65,7 +70,8 @@ public record HomeSnapshotResponse(
                 pet,
                 List.of(),
                 null,
-                expedition
+                expedition,
+                List.of()
         );
     }
 }

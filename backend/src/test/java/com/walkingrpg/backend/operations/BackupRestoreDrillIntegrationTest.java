@@ -100,8 +100,8 @@ class BackupRestoreDrillIntegrationTest {
         assertEquals(latestRepositoryVersion, sourceFlywayVersion);
         assertTrue(
                 MigrationVersion.fromVersion(latestRepositoryVersion)
-                        .compareTo(MigrationVersion.fromVersion("12")) >= 0,
-                "The drill must cover Flyway V1-V12 or later"
+                        .compareTo(MigrationVersion.fromVersion("13")) >= 0,
+                "The drill must cover Flyway V1-V13 or later"
         );
 
         try (Connection sourceConnection = connection(SOURCE)) {
@@ -439,6 +439,18 @@ class BackupRestoreDrillIntegrationTest {
                 SELECT acknowledged_at IS NOT NULL
                 FROM processed_event_resolution
                 WHERE receipt_id = '30000000-0000-0000-0000-000000000001'
+                """));
+        assertEquals(1, scalarLong(connection, """
+                SELECT count(*)
+                FROM unique_inventory_item
+                WHERE user_id = 'backup-drill-user'
+                  AND item_id = 'resonance-compass'
+                """));
+        assertEquals(2, scalarLong(connection, """
+                SELECT count(*)
+                FROM processed_crafting_ingredient
+                WHERE user_id = 'backup-drill-user'
+                  AND recipe_id = 'resonance-compass-v1'
                 """));
         assertFalse(scalarBoolean(connection, """
                 SELECT (config_json ->> 'sandboxPaymentsEnabled')::boolean

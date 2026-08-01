@@ -138,14 +138,21 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
     private List<InventoryRuntimeItem> findInventory(String userId) {
         return jdbcTemplate.query("""
                 SELECT item_id, quantity, version
-                FROM inventory_stack
-                WHERE user_id = ?
-                  AND quantity > 0
+                FROM (
+                    SELECT item_id, quantity, version
+                    FROM inventory_stack
+                    WHERE user_id = ?
+                      AND quantity > 0
+                    UNION ALL
+                    SELECT item_id, 1 AS quantity, version
+                    FROM unique_inventory_item
+                    WHERE user_id = ?
+                ) inventory
                 ORDER BY item_id
                 """, (resultSet, rowNumber) -> new InventoryRuntimeItem(
                 resultSet.getString("item_id"),
                 resultSet.getLong("quantity"),
                 resultSet.getLong("version")
-        ), userId);
+        ), userId, userId);
     }
 }

@@ -11,6 +11,8 @@ import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
+import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
+import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
@@ -40,6 +42,11 @@ typedef EventCommandSender =
     });
 typedef EventResultAcknowledgementSender =
     Future<EventResultAcknowledgement> Function({required String receiptId});
+typedef CraftingCommandSender =
+    Future<CraftingResult> Function({
+      required String recipeId,
+      required String idempotencyKey,
+    });
 typedef PlatformCommandSender =
     Future<PlatformCommandResult> Function({
       required String commandType,
@@ -55,6 +62,7 @@ final class MobileCommandRuntime {
     required ExpeditionCommandSender expeditionSender,
     required EventCommandSender eventSender,
     EventResultAcknowledgementSender? eventResultAcknowledgementSender,
+    CraftingCommandSender? craftingSender,
     PlatformCommandSender? platformSender,
     MobileCommandClock? clock,
     MobileCommandKeyFactory? keyFactory,
@@ -64,6 +72,7 @@ final class MobileCommandRuntime {
        _expeditionSender = expeditionSender,
        _eventSender = eventSender,
        _eventResultAcknowledgementSender = eventResultAcknowledgementSender,
+       _craftingSender = craftingSender,
        _platformSender = platformSender,
        _clock = clock ?? DateTime.now,
        _keyFactory = keyFactory ?? _defaultKey;
@@ -74,6 +83,8 @@ final class MobileCommandRuntime {
     final ExpeditionApiClient expeditionClient =
         ExpeditionApiClient.fromEnvironment();
     final EventApiClient eventClient = EventApiClient.fromEnvironment();
+    final CraftingApiClient craftingClient =
+        CraftingApiClient.fromEnvironment();
     final PlatformApiClient platformClient =
         PlatformApiClient.fromEnvironment();
     return MobileCommandRuntime(
@@ -83,6 +94,7 @@ final class MobileCommandRuntime {
       expeditionSender: expeditionClient.advance,
       eventSender: eventClient.resolve,
       eventResultAcknowledgementSender: eventClient.acknowledge,
+      craftingSender: craftingClient.craft,
       platformSender: platformClient.execute,
     );
   }
@@ -93,6 +105,7 @@ final class MobileCommandRuntime {
   final ExpeditionCommandSender _expeditionSender;
   final EventCommandSender _eventSender;
   final EventResultAcknowledgementSender? _eventResultAcknowledgementSender;
+  final CraftingCommandSender? _craftingSender;
   final PlatformCommandSender? _platformSender;
   final MobileCommandClock _clock;
   final MobileCommandKeyFactory _keyFactory;
@@ -204,6 +217,24 @@ final class MobileCommandRuntime {
           normalizedReceiptId,
         ]),
         payload: <String, Object?>{'receiptId': normalizedReceiptId},
+      ),
+    );
+  }
+
+  Future<CraftingResult> craft({
+    required String recipeId,
+    required String idempotencyKey,
+  }) {
+    final String normalizedRecipeId = _requireText(recipeId, 'recipeId');
+    return _runOpenOperation<CraftingResult>(
+      () => _submit<CraftingResult>(
+        type: MobileCommandType.crafting,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.crafting.wireName,
+          normalizedRecipeId,
+        ]),
+        payload: <String, Object?>{'recipeId': normalizedRecipeId},
       ),
     );
   }
@@ -644,6 +675,16 @@ final class MobileCommandRuntime {
         }
         final String receiptId = _payloadString(command, 'receiptId');
         return sender(receiptId: receiptId);
+      case MobileCommandType.crafting:
+        final CraftingCommandSender? sender = _craftingSender;
+        if (sender == null) {
+          throw const MobileCommandPayloadException();
+        }
+        final String recipeId = _payloadString(command, 'recipeId');
+        return sender(
+          recipeId: recipeId,
+          idempotencyKey: command.idempotencyKey,
+        );
       case MobileCommandType.platformCommand:
         final PlatformCommandSender? sender = _platformSender;
         if (sender == null) {
@@ -745,6 +786,9 @@ final class MobileCommandRuntime {
       return error.statusCode;
     }
     if (error is EventApiException) {
+      return error.statusCode;
+    }
+    if (error is CraftingApiException) {
       return error.statusCode;
     }
     if (error is PlatformApiException) {

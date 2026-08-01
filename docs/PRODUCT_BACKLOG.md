@@ -271,6 +271,34 @@ pack реализованы. Production secrets, DNS/TLS endpoint, WAF/distribut
 limiter, deployed management network, alerts, backup policy, PITR/RPO/RTO и
 датированный restore реального backup остаются external gates.
 
+### US-014. Собрать уникальный предмет из накопленных материалов
+
+Как пользователь, я хочу потратить найденные материалы на постоянный
+уникальный предмет, чтобы inventory давал следующую цель после события.
+
+Критерии:
+
+- рецепт, стоимость, имя и результат принадлежат server content;
+- `resonance-compass-v1` требует `2 × lumen-shard` и `1 × echo-thread`;
+- backend под user-scoped transaction lock проверяет оба stack, списывает их
+  без отрицательного остатка, пишет по одному debit ledger entry и создаёт
+  единственный `resonance-compass`;
+- нехватка любого ingredient не выполняет частичную мутацию;
+- повтор исходного `recipeId + idempotencyKey` возвращает exact response без
+  второго списания; новый key после создания unique item получает стабильный
+  state conflict;
+- `GET /home` возвращает additive recipe status `READY`,
+  `MISSING_MATERIALS` или `CRAFTED`, ingredients и unique result preview;
+- mobile сохраняет `CRAFTING` до отправки в GAMEPLAY outbox, не разрешает
+  mutation для cached home/pending event result и после успеха перечитывает
+  authoritative home;
+- unique inventory и immutable crafting snapshots входят в account export,
+  каскадное удаление и backup/restore manifest.
+
+**Статус:** backend/mobile/Flyway V13, unit/API/PostgreSQL/widget tests и
+операционные policy checks реализованы. Ценность рецепта и стоимость material
+sink требуют beta/economy validation.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -280,12 +308,13 @@ limiter, deployed management network, alerts, backup policy, PITR/RPO/RTO и
 - onboarding, задания и достижения;
 - development push provider boundary с local/test-only registration;
 - product analytics и experiment exposure;
-- read-only offline cache валидированных `home` / `platform` snapshots.
+- read-only offline cache валидированных `home` / `platform` snapshots;
+- расход материалов, starter crafting recipe и persistent unique item.
 
 После физической device-validation и beta остаются продуктовые расширения:
 
 - дополнительные типы событий и нелинейные ветки;
-- расход материалов, crafting и unique items;
+- дополнительные recipes, rarity/upgrade mechanics и баланс material sinks;
 - production APNs / FCM;
 - background activity research с battery evidence;
 - настройка баланса по фактическим retention/economy данным.

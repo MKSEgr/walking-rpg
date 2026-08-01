@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
@@ -150,6 +151,114 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(eventStateButton, findsOneWidget);
+  });
+
+  testWidgets('home screen crafts and reloads authoritative inventory', (
+    WidgetTester tester,
+  ) async {
+    int loads = 0;
+    String? sentRecipeId;
+    String? sentKey;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async {
+            loads += 1;
+            return loads == 1 ? _craftingReady() : _craftingCompleted();
+          },
+          idempotencyKeyFactory: () => 'craft-key',
+          crafter:
+              ({
+                required String recipeId,
+                required String idempotencyKey,
+              }) async {
+                sentRecipeId = recipeId;
+                sentKey = idempotencyKey;
+                return _craftingResult();
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder craftButton = find.byKey(
+      const Key('craft-resonance-compass-v1'),
+    );
+    await tester.scrollUntilVisible(
+      craftButton,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(craftButton).onPressed, isNotNull);
+
+    await tester.tap(craftButton);
+    await tester.pumpAndSettle();
+
+    expect(sentRecipeId, 'resonance-compass-v1');
+    expect(sentKey, 'craft-key');
+    expect(loads, 2);
+    final Finder uniqueItem = find.text(
+      'Резонансный компас · уникальный предмет',
+    );
+    await tester.scrollUntilVisible(
+      uniqueItem,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(uniqueItem, findsOneWidget);
+
+    final Finder craftedStatus = find.text('Предмет уже создан');
+    await tester.scrollUntilVisible(
+      craftedStatus,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(craftedStatus, findsOneWidget);
+  });
+
+  testWidgets('cached home keeps crafting read-only', (
+    WidgetTester tester,
+  ) async {
+    int craftCalls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async => _craftingReady(
+            cacheMetadata: CachedReadMetadata(
+              cachedAt: DateTime.utc(2026, 7, 27, 9),
+              reason: 'Нет соединения с сервером',
+            ),
+          ),
+          crafter:
+              ({
+                required String recipeId,
+                required String idempotencyKey,
+              }) async {
+                craftCalls += 1;
+                return _craftingResult();
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder craftButton = find.byKey(
+      const Key('craft-resonance-compass-v1'),
+    );
+    await tester.scrollUntilVisible(
+      craftButton,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(craftButton).onPressed, isNull);
+    expect(find.text('Создание недоступно офлайн'), findsOneWidget);
+    expect(craftCalls, 0);
   });
 
   testWidgets(
@@ -483,6 +592,156 @@ HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
   );
 }
 
+HomeSnapshot _craftingReady({CachedReadMetadata? cacheMetadata}) {
+  return HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 10000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 3,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v1',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'ash-orbit',
+    currentNodeName: 'Пепельная орбита',
+    expeditionProgress: 0,
+    requiredEnergy: 55,
+    expeditionStatus: 'IN_PROGRESS',
+    expeditionVersion: 4,
+    unlockedEvent: null,
+    pilotName: 'Навигатор',
+    pilotLevel: 1,
+    pilotCurrentExperience: 90,
+    pilotNextLevelExperience: 100,
+    petName: 'Искра',
+    petLevel: 1,
+    petBond: 23,
+    inventory: const <HomeInventoryItem>[
+      HomeInventoryItem(
+        itemId: 'lumen-shard',
+        name: 'Люминовый осколок',
+        description: 'Стабильный фрагмент светового ядра.',
+        quantity: 2,
+        version: 1,
+      ),
+      HomeInventoryItem(
+        itemId: 'echo-thread',
+        name: 'Нить эха',
+        description: 'Тонкая нить сохранённого сигнала.',
+        quantity: 1,
+        version: 1,
+      ),
+    ],
+    craftingRecipes: const <HomeCraftingRecipe>[_readyRecipe],
+    cacheMetadata: cacheMetadata,
+  );
+}
+
+HomeSnapshot _craftingCompleted() {
+  final HomeSnapshot ready = _craftingReady();
+  return HomeSnapshot(
+    localDate: ready.localDate,
+    timeZone: ready.timeZone,
+    dailySteps: ready.dailySteps,
+    dailyGoal: ready.dailyGoal,
+    dailyGoalPolicy: ready.dailyGoalPolicy,
+    availableEnergy: ready.availableEnergy,
+    activityStateVersion: ready.activityStateVersion,
+    economyVersion: ready.economyVersion,
+    lastActivitySyncAt: ready.lastActivitySyncAt,
+    serverTime: ready.serverTime,
+    contentVersion: ready.contentVersion,
+    expeditionId: ready.expeditionId,
+    expeditionName: ready.expeditionName,
+    currentNodeId: ready.currentNodeId,
+    currentNodeName: ready.currentNodeName,
+    expeditionProgress: ready.expeditionProgress,
+    requiredEnergy: ready.requiredEnergy,
+    expeditionStatus: ready.expeditionStatus,
+    expeditionVersion: ready.expeditionVersion,
+    unlockedEvent: ready.unlockedEvent,
+    pilotName: ready.pilotName,
+    pilotLevel: ready.pilotLevel,
+    pilotCurrentExperience: ready.pilotCurrentExperience,
+    pilotNextLevelExperience: ready.pilotNextLevelExperience,
+    petName: ready.petName,
+    petLevel: ready.petLevel,
+    petBond: ready.petBond,
+    inventory: const <HomeInventoryItem>[
+      HomeInventoryItem(
+        itemId: 'resonance-compass',
+        name: 'Резонансный компас',
+        description: 'Уникальный прибор.',
+        quantity: 1,
+        version: 1,
+        kind: 'UNIQUE',
+      ),
+    ],
+    craftingRecipes: const <HomeCraftingRecipe>[
+      HomeCraftingRecipe(
+        recipeId: 'resonance-compass-v1',
+        recipeVersion: '1',
+        name: 'Резонансный компас',
+        description: 'Собрать прибор из трофеев экспедиции.',
+        status: 'CRAFTED',
+        ingredients: <HomeCraftingIngredient>[
+          HomeCraftingIngredient(
+            itemId: 'lumen-shard',
+            name: 'Люминовый осколок',
+            requiredQuantity: 2,
+            availableQuantity: 0,
+          ),
+          HomeCraftingIngredient(
+            itemId: 'echo-thread',
+            name: 'Нить эха',
+            requiredQuantity: 1,
+            availableQuantity: 0,
+          ),
+        ],
+        result: HomeCraftingResultPreview(
+          itemId: 'resonance-compass',
+          name: 'Резонансный компас',
+          description: 'Уникальный прибор.',
+          kind: 'UNIQUE',
+        ),
+      ),
+    ],
+  );
+}
+
+const HomeCraftingRecipe _readyRecipe = HomeCraftingRecipe(
+  recipeId: 'resonance-compass-v1',
+  recipeVersion: '1',
+  name: 'Резонансный компас',
+  description: 'Собрать прибор из трофеев экспедиции.',
+  status: 'READY',
+  ingredients: <HomeCraftingIngredient>[
+    HomeCraftingIngredient(
+      itemId: 'lumen-shard',
+      name: 'Люминовый осколок',
+      requiredQuantity: 2,
+      availableQuantity: 2,
+    ),
+    HomeCraftingIngredient(
+      itemId: 'echo-thread',
+      name: 'Нить эха',
+      requiredQuantity: 1,
+      availableQuantity: 1,
+    ),
+  ],
+  result: HomeCraftingResultPreview(
+    itemId: 'resonance-compass',
+    name: 'Резонансный компас',
+    description: 'Уникальный прибор.',
+    kind: 'UNIQUE',
+  ),
+);
+
 HomeSnapshot _eventReady() {
   return const HomeSnapshot(
     localDate: '2026-07-26',
@@ -755,6 +1014,40 @@ EventResolutionResult _eventResolutionResult() {
       version: 1,
     ),
     nextNode: EventNextNode(nodeId: 'ash-orbit', name: 'Пепельная орбита'),
+    serverTime: '2026-07-26T06:00:00Z',
+  );
+}
+
+CraftingResult _craftingResult() {
+  return const CraftingResult(
+    contentVersion: 'crafting-v1',
+    recipeId: 'resonance-compass-v1',
+    recipeVersion: '1',
+    recipeName: 'Резонансный компас',
+    consumedIngredients: <CraftingIngredientResult>[
+      CraftingIngredientResult(
+        itemId: 'lumen-shard',
+        name: 'Люминовый осколок',
+        quantityConsumed: 2,
+        quantityAfter: 0,
+        version: 2,
+      ),
+      CraftingIngredientResult(
+        itemId: 'echo-thread',
+        name: 'Нить эха',
+        quantityConsumed: 1,
+        quantityAfter: 0,
+        version: 2,
+      ),
+    ],
+    craftedItem: CraftedUniqueItem(
+      itemInstanceId: '33333333-3333-3333-3333-333333333333',
+      itemId: 'resonance-compass',
+      name: 'Резонансный компас',
+      description: 'Уникальный прибор.',
+      version: 1,
+      craftedAt: '2026-07-26T06:00:00Z',
+    ),
     serverTime: '2026-07-26T06:00:00Z',
   );
 }

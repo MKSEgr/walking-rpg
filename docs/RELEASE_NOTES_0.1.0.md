@@ -2,7 +2,9 @@
 
 Этот candidate объединяет первый playable, 18-узловую главу, platform journal,
 durable mobile commands, server-authoritative economy/progression, risk shadow
-mode, bounded operational surface и release-quality pipeline.
+mode, bounded operational surface и release-quality pipeline. Material
+inventory теперь включает server-authoritative starter crafting recipe,
+audited debit и persistent unique item с exact replay.
 
 ## Проверяемые артефакты
 

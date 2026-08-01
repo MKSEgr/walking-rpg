@@ -32,6 +32,7 @@ class HomeSnapshot {
     this.petBond = 0,
     this.dailyGoalPolicy = const DailyGoalPolicy.legacy(),
     this.inventory = const <HomeInventoryItem>[],
+    this.craftingRecipes = const <HomeCraftingRecipe>[],
     this.pendingEventResult,
     this.cacheMetadata,
   });
@@ -85,6 +86,7 @@ class HomeSnapshot {
       petLevel: _readInt(pet, 'level'),
       petBond: _readInt(pet, 'bond'),
       inventory: _readInventory(json['inventory']),
+      craftingRecipes: _readCraftingRecipes(json['craftingRecipes']),
       pendingEventResult: pendingEventResultJson == null
           ? null
           : PendingEventResult.fromJson(
@@ -122,6 +124,7 @@ class HomeSnapshot {
   final int petLevel;
   final int petBond;
   final List<HomeInventoryItem> inventory;
+  final List<HomeCraftingRecipe> craftingRecipes;
   final PendingEventResult? pendingEventResult;
   final CachedReadMetadata? cacheMetadata;
 
@@ -208,6 +211,21 @@ class HomeSnapshot {
         .map(
           (Object? value) =>
               HomeInventoryItem.fromJson(_asMap(value, 'inventory[]')),
+        )
+        .toList(growable: false);
+  }
+
+  static List<HomeCraftingRecipe> _readCraftingRecipes(Object? raw) {
+    if (raw == null) {
+      return const <HomeCraftingRecipe>[];
+    }
+    if (raw is! List<dynamic>) {
+      throw const FormatException('craftingRecipes должен быть JSON-массивом');
+    }
+    return raw
+        .map(
+          (Object? value) =>
+              HomeCraftingRecipe.fromJson(_asMap(value, 'craftingRecipes[]')),
         )
         .toList(growable: false);
   }
@@ -410,6 +428,7 @@ class HomeInventoryItem {
     required this.description,
     required this.quantity,
     required this.version,
+    this.kind = 'MATERIAL',
   });
 
   factory HomeInventoryItem.fromJson(Map<String, dynamic> json) {
@@ -419,6 +438,9 @@ class HomeInventoryItem {
       description: HomeSnapshot._readString(json, 'description'),
       quantity: HomeSnapshot._readInt(json, 'quantity'),
       version: HomeSnapshot._readInt(json, 'version'),
+      kind: json['kind'] == null
+          ? 'MATERIAL'
+          : HomeSnapshot._readString(json, 'kind'),
     );
   }
 
@@ -427,6 +449,112 @@ class HomeInventoryItem {
   final String description;
   final int quantity;
   final int version;
+  final String kind;
+
+  bool get isUnique => kind == 'UNIQUE';
+}
+
+class HomeCraftingRecipe {
+  const HomeCraftingRecipe({
+    required this.recipeId,
+    required this.recipeVersion,
+    required this.name,
+    required this.description,
+    required this.status,
+    required this.ingredients,
+    required this.result,
+  });
+
+  factory HomeCraftingRecipe.fromJson(Map<String, dynamic> json) {
+    final Object? rawIngredients = json['ingredients'];
+    if (rawIngredients is! List<dynamic> || rawIngredients.isEmpty) {
+      throw const FormatException(
+        'crafting recipe ingredients должен быть непустым массивом',
+      );
+    }
+    final String status = HomeSnapshot._readString(json, 'status');
+    if (status != 'READY' &&
+        status != 'MISSING_MATERIALS' &&
+        status != 'CRAFTED') {
+      throw FormatException('Неизвестный crafting status: $status');
+    }
+    return HomeCraftingRecipe(
+      recipeId: HomeSnapshot._readString(json, 'recipeId'),
+      recipeVersion: HomeSnapshot._readString(json, 'recipeVersion'),
+      name: HomeSnapshot._readString(json, 'name'),
+      description: HomeSnapshot._readString(json, 'description'),
+      status: status,
+      ingredients: rawIngredients
+          .map(
+            (Object? value) => HomeCraftingIngredient.fromJson(
+              _asMap(value, 'craftingRecipes[].ingredients[]'),
+            ),
+          )
+          .toList(growable: false),
+      result: HomeCraftingResultPreview.fromJson(
+        _asMap(json['result'], 'craftingRecipes[].result'),
+      ),
+    );
+  }
+
+  final String recipeId;
+  final String recipeVersion;
+  final String name;
+  final String description;
+  final String status;
+  final List<HomeCraftingIngredient> ingredients;
+  final HomeCraftingResultPreview result;
+
+  bool get canCraft => status == 'READY';
+  bool get isCrafted => status == 'CRAFTED';
+}
+
+class HomeCraftingIngredient {
+  const HomeCraftingIngredient({
+    required this.itemId,
+    required this.name,
+    required this.requiredQuantity,
+    required this.availableQuantity,
+  });
+
+  factory HomeCraftingIngredient.fromJson(Map<String, dynamic> json) {
+    return HomeCraftingIngredient(
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      name: HomeSnapshot._readString(json, 'name'),
+      requiredQuantity: HomeSnapshot._readInt(json, 'requiredQuantity'),
+      availableQuantity: HomeSnapshot._readInt(json, 'availableQuantity'),
+    );
+  }
+
+  final String itemId;
+  final String name;
+  final int requiredQuantity;
+  final int availableQuantity;
+
+  bool get isAvailable => availableQuantity >= requiredQuantity;
+}
+
+class HomeCraftingResultPreview {
+  const HomeCraftingResultPreview({
+    required this.itemId,
+    required this.name,
+    required this.description,
+    required this.kind,
+  });
+
+  factory HomeCraftingResultPreview.fromJson(Map<String, dynamic> json) {
+    return HomeCraftingResultPreview(
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      name: HomeSnapshot._readString(json, 'name'),
+      description: HomeSnapshot._readString(json, 'description'),
+      kind: HomeSnapshot._readString(json, 'kind'),
+    );
+  }
+
+  final String itemId;
+  final String name;
+  final String description;
+  final String kind;
 }
 
 class PendingEventResult {

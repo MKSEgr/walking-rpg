@@ -72,7 +72,7 @@ class ProductionProviderIsolationMigrationTest {
                     )
                     FROM remote_config_snapshot
                     """));
-            assertEquals("12", scalarString(statement, """
+            assertEquals("13", scalarString(statement, """
                     SELECT version
                     FROM flyway_schema_history
                     WHERE success

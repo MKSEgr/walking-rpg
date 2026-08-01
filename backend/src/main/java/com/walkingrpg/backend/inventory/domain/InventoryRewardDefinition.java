@@ -8,6 +8,11 @@ public record InventoryRewardDefinition(
 ) {
     public InventoryRewardDefinition {
         Objects.requireNonNull(item, "item");
+        if (item.kind() != InventoryItemKind.MATERIAL) {
+            throw new IllegalArgumentException(
+                    "Event reward поддерживает только stackable material"
+            );
+        }
         if (quantity <= 0) {
             throw new IllegalArgumentException("quantity должна быть положительной");
         }

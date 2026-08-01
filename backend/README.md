@@ -31,6 +31,7 @@ authoritative step total
 → bodyless receipt acknowledgement
 → следующие content-driven узлы
 → persistent pilot XP + active-pet bond + material inventory
+→ atomic material debit + persistent unique item
 → chapter completion
 ```
 
@@ -128,6 +129,9 @@ PostgreSQL Testcontainers tests проверяют:
 - Flyway V12 отключает development capabilities во всех сохранённых remote
   configs; provider/profile guards и exact idempotency replay проверяются
   отдельными unit/integration tests.
+- Flyway V13 разрешает audited material debit при неотрицательном остатке,
+  создаёт unique inventory/crafting response tables и проверяется upgrade- и
+  concurrency-тестами.
 - operational integration проверяет main-port `/livez`/`readyz`, PostgreSQL в
   readiness, скрытые health details и admin-only Prometheus;
 - synthetic PostgreSQL 17.10 backup/restore drill сверяет archive checksum,
@@ -175,6 +179,7 @@ POST /api/v1/activity/sync
 POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
 POST /api/v1/event-results/{receiptId}/acknowledge
+POST /api/v1/crafting/recipes/{recipeId}/craft
 GET  /api/v1/platform
 POST /api/v1/platform/commands
 GET  /api/v1/admin/platform/analytics/first-journey?cohortCode=alpha-1
@@ -351,8 +356,8 @@ curl -X POST \
 `receiptId` — единственный server-side idempotency scope. Replay возвращает
 стабильные `acknowledgedAt` и `serverTime`. Чужой или неизвестный receipt
 возвращает `404 EVENT_RESULT_NOT_FOUND`. Пока есть pending receipt этой
-экспедиции, backend отклоняет новый expedition advance и новый event resolution
-кодом
+экспедиции, backend отклоняет новый expedition advance, новый event resolution
+и новую crafting mutation кодом
 `409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED`; ACK не меняет progression,
 inventory или expedition второй раз.
 
@@ -401,7 +406,10 @@ pilot_progress                 — уровень и опыт пилота
 pet_progress                   — уровень и bond питомца
 processed_event_resolution     — immutable event result, receipt/next node и ACK state
 inventory_stack                 — текущий material stack
-inventory_ledger                — append-only material reward journal
+inventory_ledger                — append-only material credit/debit journal
+unique_inventory_item           — persistent non-stackable crafted item
+processed_crafting_command      — immutable exact crafting response
+processed_crafting_ingredient   — immutable consumed-stack snapshots
 ```
 
 ## Инварианты
@@ -413,11 +421,15 @@ inventory_ledger                — append-only material reward journal
 - один command key не создаёт повторное изменение состояния;
 - key с другим payload возвращает `IDEMPOTENCY_CONFLICT`;
 - event разрешается только из `EVENT_READY`;
-- pending capable event receipt блокирует следующий advance/resolution той же
-  экспедиции до явного ACK; legacy delivery auto-acknowledged;
+- pending capable event receipt блокирует следующий advance/resolution и новую
+  crafting mutation до явного ACK; exact crafting replay остаётся доступен,
+  legacy delivery auto-acknowledged;
 - acknowledgement scoped только authenticated user + `receiptId`, не имеет
   request body и возвращает стабильное время первого ACK;
 - progression, inventory reward и expedition transition/completion фиксируются одной транзакцией;
+- crafting списывает все ingredients, пишет debit audit, создаёт unique item и
+  processed response одной транзакцией;
+- material quantity и `quantity_after` не становятся отрицательными;
 - `GET /home` не создаёт данные или goal snapshots;
 - текущий локальный день не участвует в собственной daily goal.
 
@@ -428,6 +440,7 @@ inventory_ledger                — append-only material reward journal
 - одна последовательная глава без нелинейных веток;
 - content definitions поставляются с backend, а release/config управляются
   versioned platform state;
-- inventory поддерживает только положительные stackable material rewards; расход и unique items отсутствуют;
+- starter crafting ограничен одним versioned recipe/unique item; rarity,
+  upgrades, dismantling и operator-authored recipes отсутствуют;
 - HealthKit/Health Connect требуют проверки на физических устройствах;
 - отдельный inventory endpoint отсутствует; mobile читает stack через home.

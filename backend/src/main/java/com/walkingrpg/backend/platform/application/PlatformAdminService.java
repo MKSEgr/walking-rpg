@@ -466,6 +466,28 @@ public class PlatformAdminService {
                         + "FROM inventory_ledger WHERE user_id = ? ORDER BY created_at",
                 normalized
         ));
+        export.put("uniqueInventory", jdbcTemplate.queryForList(
+                "SELECT item_instance_id, item_id, recipe_id, recipe_version, "
+                        + "version, crafted_at FROM unique_inventory_item "
+                        + "WHERE user_id = ? ORDER BY crafted_at, item_id",
+                normalized
+        ));
+        export.put("craftingOperations", jdbcTemplate.queryForList(
+                "SELECT recipe_id, idempotency_key, content_version, recipe_version, "
+                        + "recipe_name, item_instance_id, result_item_id, "
+                        + "result_item_name, result_item_description, "
+                        + "result_item_version, crafted_at, server_time, created_at "
+                        + "FROM processed_crafting_command "
+                        + "WHERE user_id = ? ORDER BY created_at",
+                normalized
+        ));
+        export.put("craftingIngredients", jdbcTemplate.queryForList(
+                "SELECT recipe_id, idempotency_key, item_id, item_name, "
+                        + "quantity_consumed, quantity_after, inventory_version "
+                        + "FROM processed_crafting_ingredient "
+                        + "WHERE user_id = ? ORDER BY recipe_id, idempotency_key, item_id",
+                normalized
+        ));
         export.put("platformState", jdbcTemplate.queryForList(
                 "SELECT state_json::text AS state_json, version, updated_at "
                         + "FROM roadmap_user_state WHERE user_id = ?",

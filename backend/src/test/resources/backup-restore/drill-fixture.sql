@@ -333,9 +333,16 @@ INSERT INTO inventory_stack (
     'backup-drill-user',
     'lumen-shard',
     2,
-    1,
+    3,
     '2026-07-30T10:00:30Z',
-    '2026-07-30T10:00:30Z'
+    '2026-07-30T10:00:36Z'
+), (
+    'backup-drill-user',
+    'echo-thread',
+    1,
+    2,
+    '2026-07-30T10:00:31Z',
+    '2026-07-30T10:00:36Z'
 );
 
 INSERT INTO inventory_ledger (
@@ -360,6 +367,131 @@ INSERT INTO inventory_ledger (
     'EVENT_RESOLUTION',
     'starter-expedition-v1:signal-source-v1',
     '2026-07-30T10:00:30Z'
+), (
+    '20000000-0000-0000-0000-000000000002',
+    'backup-drill-user',
+    'lumen-shard',
+    2,
+    4,
+    2,
+    'SYNTHETIC_FIXTURE',
+    'BACKUP_RESTORE_DRILL',
+    'backup-drill-extra-lumen',
+    '2026-07-30T10:00:31Z'
+), (
+    '20000000-0000-0000-0000-000000000003',
+    'backup-drill-user',
+    'echo-thread',
+    2,
+    2,
+    1,
+    'SYNTHETIC_FIXTURE',
+    'BACKUP_RESTORE_DRILL',
+    'backup-drill-echo',
+    '2026-07-30T10:00:31Z'
+), (
+    '20000000-0000-0000-0000-000000000004',
+    'backup-drill-user',
+    'lumen-shard',
+    -2,
+    2,
+    3,
+    'CRAFTING_INGREDIENT_CONSUMED',
+    'CRAFTING_COMMAND',
+    '20:resonance-compass-v1;18:backup-drill-craft;11:lumen-shard;',
+    '2026-07-30T10:00:36Z'
+), (
+    '20000000-0000-0000-0000-000000000005',
+    'backup-drill-user',
+    'echo-thread',
+    -1,
+    1,
+    2,
+    'CRAFTING_INGREDIENT_CONSUMED',
+    'CRAFTING_COMMAND',
+    '20:resonance-compass-v1;18:backup-drill-craft;11:echo-thread;',
+    '2026-07-30T10:00:36Z'
+);
+
+INSERT INTO unique_inventory_item (
+    item_instance_id,
+    user_id,
+    item_id,
+    recipe_id,
+    recipe_version,
+    version,
+    crafted_at
+) VALUES (
+    '70000000-0000-0000-0000-000000000001',
+    'backup-drill-user',
+    'resonance-compass',
+    'resonance-compass-v1',
+    '1',
+    1,
+    '2026-07-30T10:00:36Z'
+);
+
+INSERT INTO processed_crafting_command (
+    user_id,
+    recipe_id,
+    idempotency_key,
+    request_fingerprint,
+    content_version,
+    recipe_version,
+    recipe_name,
+    item_instance_id,
+    result_item_id,
+    result_item_name,
+    result_item_description,
+    result_item_version,
+    crafted_at,
+    server_time,
+    created_at
+) VALUES (
+    'backup-drill-user',
+    'resonance-compass-v1',
+    'backup-drill-craft',
+    repeat('9', 64),
+    'crafting-v1',
+    '1',
+    'Собрать резонансный компас',
+    '70000000-0000-0000-0000-000000000001',
+    'resonance-compass',
+    'Резонансный компас',
+    'Synthetic unique crafting reward.',
+    1,
+    '2026-07-30T10:00:36Z',
+    '2026-07-30T10:00:36Z',
+    '2026-07-30T10:00:36Z'
+);
+
+INSERT INTO processed_crafting_ingredient (
+    user_id,
+    recipe_id,
+    idempotency_key,
+    item_id,
+    item_name,
+    quantity_consumed,
+    quantity_after,
+    inventory_version
+) VALUES (
+    'backup-drill-user',
+    'resonance-compass-v1',
+    'backup-drill-craft',
+    'echo-thread',
+    'Нить эха',
+    1,
+    1,
+    2
+), (
+    'backup-drill-user',
+    'resonance-compass-v1',
+    'backup-drill-craft',
+    'lumen-shard',
+    'Люминовый осколок',
+    2,
+    2,
+    3
 );
 
 INSERT INTO processed_event_resolution (

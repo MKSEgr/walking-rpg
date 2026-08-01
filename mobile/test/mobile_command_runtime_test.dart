@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
+import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
@@ -113,6 +114,49 @@ void main() {
     expect(replayedEventId, 'echo-vault-v1');
     expect(replayedChoiceId, 'stabilize-core');
     expect(replayedKey, 'second-event-original');
+    expect(store.snapshot, isEmpty);
+  });
+
+  test('crafting replays the same recipe and key after restart', () async {
+    final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+    final MobileCommandRuntime firstRuntime = _runtime(
+      store: store,
+      craftingSender:
+          ({required String recipeId, required String idempotencyKey}) async =>
+              throw StateError('response lost after crafting'),
+    );
+
+    await expectLater(
+      firstRuntime.craft(
+        recipeId: 'resonance-compass-v1',
+        idempotencyKey: 'craft-original',
+      ),
+      throwsStateError,
+    );
+    expect(store.snapshot.single.type, MobileCommandType.crafting);
+    expect(store.snapshot.single.payload, <String, Object?>{
+      'recipeId': 'resonance-compass-v1',
+    });
+    expect(store.snapshot.single.state, MobileCommandState.pending);
+
+    String? replayedRecipeId;
+    String? replayedKey;
+    final MobileCommandRuntime restartedRuntime = _runtime(
+      store: store,
+      craftingSender:
+          ({required String recipeId, required String idempotencyKey}) async {
+            replayedRecipeId = recipeId;
+            replayedKey = idempotencyKey;
+            return _craftingResult();
+          },
+    );
+
+    final MobileCommandReplayReport report = await restartedRuntime
+        .replayPending();
+
+    expect(report.succeeded, 1);
+    expect(replayedRecipeId, 'resonance-compass-v1');
+    expect(replayedKey, 'craft-original');
     expect(store.snapshot, isEmpty);
   });
 
@@ -1062,6 +1106,7 @@ MobileCommandRuntime _runtime({
   ExpeditionCommandSender? expeditionSender,
   EventCommandSender? eventSender,
   EventResultAcknowledgementSender? eventResultAcknowledgementSender,
+  CraftingCommandSender? craftingSender,
   PlatformCommandSender? platformSender,
 }) {
   return MobileCommandRuntime(
@@ -1091,6 +1136,10 @@ MobileCommandRuntime _runtime({
         eventResultAcknowledgementSender ??
         ({required String receiptId}) async =>
             _acknowledgementResult(receiptId),
+    craftingSender:
+        craftingSender ??
+        ({required String recipeId, required String idempotencyKey}) async =>
+            _craftingResult(),
     platformSender:
         platformSender ??
         ({
@@ -1187,6 +1236,40 @@ EventResultAcknowledgement _acknowledgementResult(String receiptId) {
     status: 'ACKNOWLEDGED',
     acknowledgedAt: '2026-07-26T10:00:01Z',
     serverTime: '2026-07-26T10:00:01Z',
+  );
+}
+
+CraftingResult _craftingResult() {
+  return const CraftingResult(
+    contentVersion: 'crafting-v1',
+    recipeId: 'resonance-compass-v1',
+    recipeVersion: '1',
+    recipeName: 'Резонансный компас',
+    consumedIngredients: <CraftingIngredientResult>[
+      CraftingIngredientResult(
+        itemId: 'lumen-shard',
+        name: 'Люминовый осколок',
+        quantityConsumed: 2,
+        quantityAfter: 0,
+        version: 2,
+      ),
+      CraftingIngredientResult(
+        itemId: 'echo-thread',
+        name: 'Нить эха',
+        quantityConsumed: 1,
+        quantityAfter: 0,
+        version: 2,
+      ),
+    ],
+    craftedItem: CraftedUniqueItem(
+      itemInstanceId: '33333333-3333-3333-3333-333333333333',
+      itemId: 'resonance-compass',
+      name: 'Резонансный компас',
+      description: 'Уникальный прибор.',
+      version: 1,
+      craftedAt: '2026-07-26T10:00:00Z',
+    ),
+    serverTime: '2026-07-26T10:00:00Z',
   );
 }
 

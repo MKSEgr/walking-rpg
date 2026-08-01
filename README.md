@@ -18,6 +18,7 @@
 → 18 узлов первой главы
 → постоянные XP пилота, bond питомца и материалы
 → persistent inventory
+→ server-authoritative crafting и уникальный предмет
 → durable карточка результата и явное подтверждение продолжения
 → завершённое состояние экспедиции
 ```
@@ -39,7 +40,8 @@
 - server-authoritative funnel и time-to-value первого пути для alpha cohort,
   включая отдельное подтверждение показа первого результата;
 - три питомца с реальным active selection и независимым progression;
-- material inventory с append-only ledger и защитой от повторной выдачи;
+- material inventory с append-only credit/debit ledger, server-authoritative
+  crafting и persistent unique item;
 - durable event-result receipt, который восстанавливается через `GET /home`
   после потери ответа или restart;
 - foreground durable outbox для activity, gameplay, platform и telemetry
@@ -82,8 +84,8 @@ evidence физического прогона. Проверка чтения р
 ## Надёжная отправка команд
 
 Перед первой сетевой попыткой mobile сохраняет полный payload и idempotency key
-для activity sync, продвижения экспедиции и решения события. Для подтверждения
-результата outbox сохраняет `receiptId`: он же является единственным
+для activity sync, продвижения экспедиции, решения события и crafting. Для
+подтверждения результата outbox сохраняет `receiptId`: он же является единственным
 server-side idempotency scope bodyless ACK-запроса. После потери ответа или
 завершения процесса следующий запуск повторяет исходную команду. Успешно
 восстановленные state-changing команды завершаются повторным чтением
@@ -110,7 +112,7 @@ authenticated-сессии закрывает owner-scoped recovery/account rout
 [ADR 0012](docs/adr/0012-foreground-durable-mobile-command-outbox.md) и
 [ADR 0024](docs/adr/0024-mobile-command-recovery-and-telemetry-isolation.md).
 
-## Первая глава и инвентарь
+## Первая глава, инвентарь и crafting
 
 `chapter-1-v1` содержит 18 последовательных узлов от `outer-beacon` до
 `dawn-relay`. После первого события backend переводит пользователя на
@@ -127,6 +129,15 @@ follow-echo    → 1 × Нить эха
 snapshot и не выдаёт предмет повторно. Существующие пользователи, завершившие
 `starter-v1`, мигрируют без потери XP/bond и без ретроактивной material reward.
 Подробности: [ADR 0014](docs/adr/0014-second-node-and-persistent-inventory.md).
+
+Recipe `resonance-compass-v1` превращает `2 × lumen-shard` и
+`1 × echo-thread` в единственный `resonance-compass`. Backend под
+transaction-scoped user lock проверяет оба stack, пишет отрицательные audited
+ledger entries, создаёт unique item instance и immutable response одним
+commit. Flutter показывает server-owned статус рецепта в **«Мастерской»**,
+сохраняет `CRAFTING` в GAMEPLAY outbox и после успеха перечитывает `GET /home`.
+Cached state и неподтверждённый результат события остаются read-only.
+Подробности: [ADR 0029](docs/adr/0029-server-authoritative-crafting.md).
 
 Новый mobile объявляет capability
 `X-Walking-RPG-Capabilities: durable-event-result-v1`. После cluster-wide
@@ -219,6 +230,7 @@ POST /api/v1/expeditions/starter-expedition-v1/advance
 POST /api/v1/events/signal-source-v1/resolve
 POST /api/v1/events/echo-vault-v1/resolve
 POST /api/v1/event-results/{receiptId}/acknowledge
+POST /api/v1/crafting/recipes/{recipeId}/craft
 ```
 
 Подробности: [backend/README.md](backend/README.md).
@@ -285,7 +297,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V12 + PostgreSQL Testcontainers tests
+Flyway V1–V13 + PostgreSQL Testcontainers tests
 Synthetic PostgreSQL backup/restore drill + sanitized evidence
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
@@ -312,7 +324,8 @@ iOS Simulator debug build
 - гарантированная background health/command delivery;
 - enforcement anti-fraud по источникам (текущий риск-контур работает в shadow
   mode);
-- нелинейные события, расход предметов, crafting и уникальные предметы;
+- нелинейные события, дополнительные recipes, rarity/upgrades и
+  проверенный по beta-данным баланс material sinks;
 - подтверждение темпа первого пути и первой недели на реальной alpha cohort.
 
 Дальнейший порядок работ: [docs/ROADMAP.md](docs/ROADMAP.md).

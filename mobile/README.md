@@ -70,6 +70,7 @@ POST /api/v1/activity/sync
 POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
 POST /api/v1/event-results/{receiptId}/acknowledge
+POST /api/v1/crafting/recipes/{recipeId}/craft
 POST /api/v1/platform/commands
 ```
 
@@ -79,7 +80,7 @@ Versioned JSON store находится в application-support directory. Зап
 
 ```text
 ACTIVITY — синхронизация шагов
-GAMEPLAY — продвижение экспедиции, решение/подтверждение события и
+GAMEPLAY — продвижение экспедиции, решение/подтверждение события, crafting и
            изменяющие state platform-команды
 TELEMETRY — RECORD_EXPERIMENT_EXPOSURE
 ```
@@ -254,6 +255,20 @@ Event resolution использует generic durable outbox, поэтому `ev
 разрешают следующий advance/resolution той же экспедиции. Optimistic update XP,
 bond, inventory или статуса экспедиции не выполняется: после resolution и ACK
 всегда перечитывается home.
+
+Home дополнительно возвращает versioned `craftingRecipes`. Карточка
+**«Мастерская»** показывает authoritative стоимость и статус:
+
+```text
+2 × Люминовый осколок + 1 × Нить эха
+→ Резонансный компас · уникальный предмет
+```
+
+Кнопка доступна только для свежего `READY` snapshot без pending event result.
+`CRAFTING` сохраняет только `recipeId` и исходный idempotency key в GAMEPLAY
+outbox. Успешный response не применяется оптимистично: mobile инвалидирует
+read cache и перечитывает home, где materials уже списаны, unique item добавлен,
+а recipe имеет статус `CRAFTED`. Cached snapshot показывает recipe read-only.
 
 ## Минимальные платформенные настройки
 
@@ -451,6 +466,7 @@ Unit/widget tests покрывают:
 - persist-before-send и exact key replay для
   activity/expedition/event/platform;
 - persist-before-send/restart replay receipt для bodyless event-result ACK;
+- persist-before-send/restart replay crafting recipe с исходным key;
 - FIFO внутри lanes, порядок ACTIVITY → GAMEPLAY и параллельная TELEMETRY;
 - temporary/backup/corruption recovery файлового store;
 - единственный startup replay → reload authoritative home;
@@ -463,6 +479,8 @@ Unit/widget tests покрывают:
 - `sync → reload authoritative home`;
 - переход первого события на второй узел;
 - resolution второго события, material preview/result и inventory rendering;
+- parsing/UI/API error mapping crafting recipe, unique item и authoritative
+  reload; read-only cached crafting;
 - parsing и restart-visible rendering top-level `pendingEventResult`;
 - ACK result card, authoritative reload и read-only cached card;
 - restart-safe replay второго события с исходным payload/key;
