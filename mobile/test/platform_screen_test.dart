@@ -31,7 +31,6 @@ void main() {
 
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byType(ExpeditionPanel), findsWidgets);
-    expect(find.byType(ExpeditionProgressRing), findsOneWidget);
     final ExpeditionPanel hero = tester.widget<ExpeditionPanel>(
       find.byKey(const Key('platform-journal-hero')),
     );
@@ -41,6 +40,13 @@ void main() {
       Colors.transparent,
     );
     expect(find.text('Глава из 18 узлов · состояние 42'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('platform-advance-weekly')),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.byType(ExpeditionProgressRing), findsOneWidget);
   });
 
   testWidgets('renders platform snapshot and resumes guided first journey', (
