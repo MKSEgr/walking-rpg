@@ -88,8 +88,10 @@ never predicts, unlocks or advertises a stage that the server did not return.
 
 Portraits are static repaint boundaries, carry a complete semantic label and
 pair the active marker with text elsewhere in the card. The first journey and
-the journal share the same portrait; adopting it on Home remains a separate
-slice so Home lifecycle and visibility telemetry can change independently.
+the journal share the same portrait. Home currently exposes the accepted pet
+name, level and bond, but not the server-owned `petId` or `evolutionStage`; its
+hero therefore uses a textual active-companion badge and never guesses which
+portrait or form to draw.
 
 ## First chapter environment
 
@@ -105,9 +107,10 @@ trail illumination changes; the journal uses the scene without a progress
 value. The painter is static, isolated by a repaint boundary, ignores input and
 exposes one concise image semantic instead of decorative child semantics.
 
-The first journey and journal may use this environment independently from
-Home. Carrying it into the expedition hero remains deferred until Home's
-lifecycle and viewport telemetry work has landed.
+The first journey, journal and Home expedition hero share this environment.
+Home supplies only the progress from its accepted snapshot; cached state stays
+visually honest, and the vista does not participate in impression visibility or
+navigation lifecycle decisions.
 
 ## Journal composition
 
@@ -130,8 +133,8 @@ accepted read models.
 
 ## Next visual slices
 
-1. Carry the shared companion portraits and chapter vista into the expedition
-   hero after its lifecycle and visibility work lands.
+1. Carry the active companion portrait into Home only after its read model
+   exposes server-owned `petId` and `evolutionStage`.
 2. Turn the expedition chapter into a visual route map only from an
    authoritative topology/read model, without adding GPS or real-time walking
    interaction.

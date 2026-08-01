@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
+import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
@@ -1012,9 +1013,30 @@ class _ExpeditionHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          ExpeditionBadge(
-            label: snapshot.currentNodeName,
-            icon: completed ? Icons.flag_outlined : Icons.radar,
+          ChapterVista(
+            key: const Key('home-expedition-vista'),
+            semanticLabel:
+                '${snapshot.expeditionName}, ${snapshot.currentNodeName}',
+            progress: snapshot.expeditionProgressValue,
+            height: 178,
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              ExpeditionBadge(
+                key: const Key('home-current-node-badge'),
+                label: snapshot.currentNodeName,
+                icon: completed ? Icons.flag_outlined : Icons.radar,
+              ),
+              ExpeditionBadge(
+                key: const Key('home-active-companion-badge'),
+                label: '${snapshot.petName} · ур. ${snapshot.petLevel}',
+                icon: Icons.pets_outlined,
+                tone: ExpeditionPanelTone.resonance,
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(
