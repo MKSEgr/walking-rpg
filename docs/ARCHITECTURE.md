@@ -25,7 +25,8 @@ goal           — персональная дневная цель
 economy        — wallet и append-only ledger
 expedition     — узлы, события и прохождение
 progression    — pilot XP и pet bond
-inventory      — stack и reward ledger
+inventory      — material stack и credit/debit ledger
+crafting       — versioned recipes, material consumption и unique items
 home           — агрегированный read model
 platform       — onboarding, pets, skills, quests, season, squads, cosmetics, experiments
 content        — versioned server-owned releases
@@ -45,6 +46,7 @@ activity             — HealthKit/Health Connect и sync
 home                 — authoritative home snapshot
 expedition           — ENERGY spend
 event                — event resolution, durable result и acknowledgement
+crafting             — server recipe command/result
 onboarding            — guided first journey и recovery milestones
 platform             — typed snapshot, commands и «Путевой журнал»
 recovery             — owner-scoped UI сохранённых действий
@@ -79,6 +81,7 @@ GAMEPLAY
 ├── EXPEDITION_ADVANCE
 ├── EVENT_RESOLUTION
 ├── EVENT_RESULT_ACKNOWLEDGEMENT
+├── CRAFTING
 └── state-changing PLATFORM_COMMAND
 
 TELEMETRY
@@ -197,6 +200,11 @@ platform-команды. Для старого раздвоенного сост
 
 Активная версия `chapter-1-v1` содержит 18 последовательных узлов от `outer-beacon` до `dawn-relay`, server-owned choices и material rewards. Stable IDs сохраняются между версиями; mutable user state отделён от definitions. `content_release` и remote config позволяют публиковать активную версию без переписывания исторических command responses.
 
+Starter crafting content имеет независимую версию `crafting-v1`. Recipe
+`resonance-compass-v1` принимает только stable material item IDs и создаёт
+non-stackable `resonance-compass`. Client получает recipe projection через
+home, но не задаёт стоимость, количество или результат command-а.
+
 ## 7. Схема данных
 
 Основные таблицы:
@@ -211,6 +219,8 @@ pilot_progress, pet_progress
 processed_event_resolution
   └─ receipt_id, handoff_required, next_node_*, acknowledged_at
 inventory_stack, inventory_ledger
+unique_inventory_item
+processed_crafting_command, processed_crafting_ingredient
 roadmap_user_state, processed_roadmap_command
 remote_config_snapshot, content_release
 roadmap_squad, roadmap_squad_member
@@ -235,6 +245,9 @@ V12 выключает `sandboxPaymentsEnabled` и `backgroundHealthSyncEnabled`
 существующих remote-config snapshots. Это migration-safe default, а не
 authorization boundary: доступность покупки дополнительно ограничена backend
 provider mode.
+V13 ослабляет старый reward-only inventory ledger до ненулевого credit/debit
+при обязательном неотрицательном `quantity_after`, создаёт persistent unique
+item и immutable crafting response/ingredient snapshots.
 
 ## 8. Конкурентность и транзакции
 
@@ -242,9 +255,16 @@ provider mode.
 - row lock wallet/progression/inventory при изменении;
 - idempotency lookup до мутации;
 - source uniqueness в ledger;
+- account-deletion lock и active-subject check предшествуют crafting replay и
+  mutation; затем user-scoped advisory lock сериализует crafting;
+- после exact replay новая craft-команда получает тот же user+expedition lock,
+  что advance/resolution, и проверяет отсутствие pending event result до
+  material mutation; material rows блокируются в стабильном `itemId`-порядке;
+- все ingredient checks выполняются до debit, а material debit, ledger,
+  unique item и processed response имеют один commit;
 - один transaction commit для связанных изменений;
 - capable pending result проверяется под тем же user+expedition serialization
-  boundary до advance/resolution;
+  boundary до advance/resolution/new crafting mutation;
 - ACK заполняет `acknowledged_at` условным `UPDATE`, только пока поле `NULL`;
   тот же commit создаёт ACK milestone, replay читает сохранённое время без
   повторной мутации, а БД запрещает последующую правку timestamp;
@@ -297,6 +317,12 @@ provider mode.
     details никогда не раскрываются.
 29. Synthetic backup/restore evidence всегда имеет
     `productionValidated=false` и не закрывает реальный restore gate.
+30. Crafting command не принимает client-calculated cost/result и не допускает
+    частичного списания ingredients.
+31. Material ledger delta ненулевой, а stack/ledger `quantityAfter` никогда не
+    отрицателен.
+32. Один unique item создаётся не более одного раза на user+item/recipe; exact
+    replay возвращает исходный instance и snapshots.
 
 ## 10. Identity и authorization boundary
 

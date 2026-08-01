@@ -3,8 +3,12 @@ package com.walkingrpg.backend.home.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.walkingrpg.backend.crafting.application.StarterCraftingContent;
+import com.walkingrpg.backend.crafting.domain.CraftingRecipeDefinition;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.domain.ExpeditionDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventChoiceDefinition;
@@ -14,6 +18,9 @@ import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.goal.domain.DailyGoal;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
+import com.walkingrpg.backend.home.domain.CraftingIngredientSnapshot;
+import com.walkingrpg.backend.home.domain.CraftingRecipeSnapshot;
+import com.walkingrpg.backend.home.domain.CraftingResultPreviewSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
@@ -40,6 +47,7 @@ public class HomeService {
     private final DailyGoalService dailyGoalService;
     private final StarterExpeditionContent expeditionContent;
     private final StarterInventoryContent inventoryContent;
+    private final StarterCraftingContent craftingContent;
     private final Clock clock;
 
     @Autowired
@@ -49,6 +57,7 @@ public class HomeService {
             DailyGoalService dailyGoalService,
             StarterExpeditionContent expeditionContent,
             StarterInventoryContent inventoryContent,
+            StarterCraftingContent craftingContent,
             Clock clock
     ) {
         this.repository = repository;
@@ -56,6 +65,7 @@ public class HomeService {
         this.dailyGoalService = dailyGoalService;
         this.expeditionContent = expeditionContent;
         this.inventoryContent = inventoryContent;
+        this.craftingContent = craftingContent;
         this.clock = clock;
     }
 
@@ -72,6 +82,7 @@ public class HomeService {
                 dailyGoalService,
                 expeditionContent,
                 new StarterInventoryContent(),
+                new StarterCraftingContent(),
                 clock
         );
     }
@@ -108,7 +119,8 @@ public class HomeService {
                 petSnapshot(state),
                 inventorySnapshots(state),
                 pendingEventResult(query.userId(), initialDefinition.expeditionId()),
-                expeditionSnapshot(currentDefinition, state)
+                expeditionSnapshot(currentDefinition, state),
+                craftingSnapshots(state)
         );
     }
 
@@ -174,10 +186,66 @@ public class HomeService {
                             item.name(),
                             item.description(),
                             runtime.quantity(),
-                            runtime.version()
+                            runtime.version(),
+                            item.kind().name()
                     );
                 })
                 .toList();
+    }
+
+    private List<CraftingRecipeSnapshot> craftingSnapshots(
+            HomeRuntimeState state
+    ) {
+        Map<String, Long> quantities = new HashMap<>();
+        state.inventory().forEach(item -> quantities.put(
+                item.itemId(),
+                item.quantity()
+        ));
+        return craftingContent.recipes().stream()
+                .map(recipe -> craftingSnapshot(recipe, quantities))
+                .toList();
+    }
+
+    private CraftingRecipeSnapshot craftingSnapshot(
+            CraftingRecipeDefinition recipe,
+            Map<String, Long> quantities
+    ) {
+        boolean crafted = quantities.getOrDefault(
+                recipe.resultItem().itemId(),
+                0L
+        ) > 0;
+        boolean ready = !crafted && recipe.ingredients().stream()
+                .allMatch(ingredient -> quantities.getOrDefault(
+                        ingredient.item().itemId(),
+                        0L
+                ) >= ingredient.quantity());
+        String status = crafted
+                ? "CRAFTED"
+                : ready ? "READY" : "MISSING_MATERIALS";
+        return new CraftingRecipeSnapshot(
+                recipe.recipeId(),
+                recipe.recipeVersion(),
+                recipe.name(),
+                recipe.description(),
+                status,
+                recipe.ingredients().stream()
+                        .map(ingredient -> new CraftingIngredientSnapshot(
+                                ingredient.item().itemId(),
+                                ingredient.item().name(),
+                                ingredient.quantity(),
+                                quantities.getOrDefault(
+                                        ingredient.item().itemId(),
+                                        0L
+                                )
+                        ))
+                        .toList(),
+                new CraftingResultPreviewSnapshot(
+                        recipe.resultItem().itemId(),
+                        recipe.resultItem().name(),
+                        recipe.resultItem().description(),
+                        recipe.resultItem().kind().name()
+                )
+        );
     }
 
     private ExpeditionSnapshot expeditionSnapshot(

@@ -63,9 +63,9 @@ def valid_evidence() -> dict[str, object]:
             "flags": list(VERIFIER.REQUIRED_RESTORE_FLAGS),
         },
         "flyway": {
-            "latestRepositoryVersion": "12",
-            "sourceVersion": "12",
-            "restoredVersion": "12",
+            "latestRepositoryVersion": "13",
+            "sourceVersion": "13",
+            "restoredVersion": "13",
             "validationSuccessful": True,
         },
         "manifests": {

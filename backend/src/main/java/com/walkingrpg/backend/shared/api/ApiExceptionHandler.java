@@ -7,6 +7,11 @@ import java.util.UUID;
 import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.activity.application.ActivitySyncConflictException;
 import com.walkingrpg.backend.activity.application.ActivitySyncValidationException;
+import com.walkingrpg.backend.crafting.application.CraftingIdempotencyConflictException;
+import com.walkingrpg.backend.crafting.application.CraftingRecipeNotFoundException;
+import com.walkingrpg.backend.crafting.application.CraftingStateConflictException;
+import com.walkingrpg.backend.crafting.application.CraftingValidationException;
+import com.walkingrpg.backend.crafting.application.InsufficientCraftingMaterialsException;
 import com.walkingrpg.backend.economy.domain.InsufficientEnergyException;
 import com.walkingrpg.backend.expedition.application.EventNotFoundException;
 import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
@@ -80,6 +85,13 @@ public class ApiExceptionHandler {
         return fieldValidation(exception.getMessage(), exception.field());
     }
 
+    @ExceptionHandler(CraftingValidationException.class)
+    ResponseEntity<ApiErrorResponse> handleCraftingValidation(
+            CraftingValidationException exception
+    ) {
+        return fieldValidation(exception.getMessage(), exception.field());
+    }
+
     @ExceptionHandler(PlatformValidationException.class)
     ResponseEntity<ApiErrorResponse> handlePlatformValidation(
             PlatformValidationException exception
@@ -104,6 +116,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(EventResolutionIdempotencyConflictException.class)
     ResponseEntity<ApiErrorResponse> handleEventIdempotencyConflict(
             EventResolutionIdempotencyConflictException exception
+    ) {
+        return idempotencyConflict(exception.getMessage());
+    }
+
+    @ExceptionHandler(CraftingIdempotencyConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleCraftingIdempotencyConflict(
+            CraftingIdempotencyConflictException exception
     ) {
         return idempotencyConflict(exception.getMessage());
     }
@@ -136,6 +155,18 @@ public class ApiExceptionHandler {
                 "NOT_FOUND",
                 exception.getMessage(),
                 Map.of("eventId", exception.eventId())
+        );
+    }
+
+    @ExceptionHandler(CraftingRecipeNotFoundException.class)
+    ResponseEntity<ApiErrorResponse> handleCraftingRecipeNotFound(
+            CraftingRecipeNotFoundException exception
+    ) {
+        return error(
+                HttpStatus.NOT_FOUND,
+                "CRAFTING_RECIPE_NOT_FOUND",
+                exception.getMessage(),
+                Map.of("recipeId", exception.recipeId())
         );
     }
 
@@ -229,6 +260,44 @@ public class ApiExceptionHandler {
                 "INVENTORY_LEDGER_CONFLICT",
                 exception.getMessage(),
                 Map.of()
+        );
+    }
+
+    @ExceptionHandler(InsufficientCraftingMaterialsException.class)
+    ResponseEntity<ApiErrorResponse> handleInsufficientCraftingMaterials(
+            InsufficientCraftingMaterialsException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "INSUFFICIENT_MATERIALS",
+                exception.getMessage(),
+                Map.of(
+                        "shortages",
+                        exception.shortages().stream()
+                                .map(shortage -> Map.of(
+                                        "itemId", shortage.itemId(),
+                                        "requiredQuantity",
+                                        shortage.requiredQuantity(),
+                                        "availableQuantity",
+                                        shortage.availableQuantity()
+                                ))
+                                .toList()
+                )
+        );
+    }
+
+    @ExceptionHandler(CraftingStateConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleCraftingStateConflict(
+            CraftingStateConflictException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "CRAFT_ALREADY_COMPLETED",
+                exception.getMessage(),
+                Map.of(
+                        "recipeId", exception.recipeId(),
+                        "itemId", exception.itemId()
+                )
         );
     }
 

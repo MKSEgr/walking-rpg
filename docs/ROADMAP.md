@@ -199,6 +199,27 @@ Roadmap отражает снижение рисков. Статусы:
       candidates из проверенного post-merge `master` SHA, tree которого
       совпадает с CODEOWNER-approved PR
 
+## Milestone 10 — Server-authoritative crafting
+
+### CODE_COMPLETE
+
+- [x] Versioned starter recipe `resonance-compass-v1` с server-owned
+      ingredients и unique result
+- [x] Атомарное debit двух material stacks, append-only audit и запрет
+      отрицательного inventory balance
+- [x] Persistent unique item instance и exact idempotent crafting response
+- [x] Additive crafting projection в `GET /home` и Flutter **«Мастерская»**
+- [x] Persist-before-send `CRAFTING` в GAMEPLAY outbox и authoritative reload
+- [x] V12→V13 upgrade, concurrency, API/widget, account export/delete и
+      synthetic backup/restore tests
+
+### EXTERNAL_VALIDATION_REQUIRED
+
+- [ ] Проверить понятность стоимости/ценности первого unique item на beta
+      cohort
+- [ ] Настроить следующие recipes и баланс material sinks по фактической
+      экономике, не по synthetic данным
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

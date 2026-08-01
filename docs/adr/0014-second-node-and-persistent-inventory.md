@@ -7,7 +7,9 @@
 > `chapter-1-v1` с 18 последовательными узлами. Транзакционные решения по
 > inventory и Flyway V5 остаются действующими. Транзиентный показ результата
 > заменён durable receipt/home/ACK handoff из
-> [ADR 0022](0022-durable-event-result-handoff.md).
+> [ADR 0022](0022-durable-event-result-handoff.md). Историческое ограничение
+> reward-only inventory и отсутствие unique items снято
+> [ADR 0029](0029-server-authoritative-crafting.md).
 
 ## Контекст
 
@@ -117,8 +119,9 @@ Flyway V5:
 
 Исторические ограничения этого среза:
 
-- поддерживается только начисление stackable material;
-- расход предметов, лимиты stack, rarity и crafting отсутствуют;
+- в самом V5 поддерживалось только начисление stackable material; расход и
+  unique crafting добавлены V13/ADR 0029;
+- лимиты stack, rarity, upgrades и recipe CMS отсутствуют;
 - starter content остаётся в Java-коде;
 - историческое отсутствие следующего узла после второго события устранено в
   `chapter-1-v1`;

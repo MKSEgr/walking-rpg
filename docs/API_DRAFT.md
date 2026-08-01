@@ -25,7 +25,9 @@
 локальную staging-копию после закрытия sheet. Постоянное место сохранения
 выбирает пользователь в системном интерфейсе.
 Экспорт включает `firstJourneyMilestones` с milestone, source, минимальными
-игровыми attributes и timestamps.
+игровыми attributes и timestamps, а также `uniqueInventory`,
+`craftingOperations` и `craftingIngredients` без access tokens или локального
+mobile outbox.
 
 ```http
 Authorization: Bearer <access-token>
@@ -141,7 +143,37 @@ Authorization: Bearer <access-token>
       "name": "Люминовый осколок",
       "description": "Стабильный фрагмент светового ядра, пригодный для будущих улучшений.",
       "quantity": 2,
-      "version": 1
+      "version": 1,
+      "kind": "MATERIAL"
+    }
+  ],
+  "craftingRecipes": [
+    {
+      "recipeId": "resonance-compass-v1",
+      "recipeVersion": "1",
+      "name": "Собрать резонансный компас",
+      "description": "Соединить световое ядро с живой нитью маршрута.",
+      "status": "MISSING_MATERIALS",
+      "ingredients": [
+        {
+          "itemId": "lumen-shard",
+          "name": "Люминовый осколок",
+          "requiredQuantity": 2,
+          "availableQuantity": 2
+        },
+        {
+          "itemId": "echo-thread",
+          "name": "Нить эха",
+          "requiredQuantity": 1,
+          "availableQuantity": 0
+        }
+      ],
+      "result": {
+        "itemId": "resonance-compass",
+        "name": "Резонансный компас",
+        "description": "Уникальный прибор, собранный из люминовых осколков и нити эха.",
+        "kind": "UNIQUE"
+      }
     }
   ],
   "pendingEventResult": {
@@ -206,7 +238,11 @@ Authorization: Bearer <access-token>
 - `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
 - неизвестный пользователь получает zero-state и starter content;
-- `inventory[]` содержит актуальный stack;
+- `inventory[]` содержит актуальные material stacks и unique items;
+  `kind=MATERIAL|UNIQUE`, unique item всегда имеет `quantity=1`;
+- `craftingRecipes[]` — additive server-owned projection; `status` принимает
+  `READY`, `MISSING_MATERIALS` или `CRAFTED`, а available quantities отражают
+  тот же repeatable-read snapshot, что и inventory;
 - `pendingEventResult` — nullable top-level receipt единственного
   неподтверждённого результата текущей экспедиции; он содержит immutable
   choice/reward snapshot и nullable `nextNode`;
@@ -497,6 +533,84 @@ unique index ограничивает только строки с `handoff_requ
 В mixed-device сценарии pending receipt, созданный capable-клиентом, остаётся
 каноническим и блокирует старый клиент того же аккаунта до ACK; такой клиент
 нужно обновить либо подтвердить результат на capable-устройстве.
+
+## `POST /api/v1/crafting/recipes/{recipeId}/craft`
+
+Атомарно расходует server-owned ingredients и создаёт один persistent unique
+item. Starter recipe:
+
+```text
+resonance-compass-v1
+  2 × lumen-shard + 1 × echo-thread
+  → 1 × resonance-compass (UNIQUE)
+```
+
+```http
+Authorization: Bearer <access-token>
+Content-Type: application/json
+```
+
+```json
+{
+  "idempotencyKey": "craft-resonance-compass-1"
+}
+```
+
+```json
+{
+  "contentVersion": "crafting-v1",
+  "recipeId": "resonance-compass-v1",
+  "recipeVersion": "1",
+  "recipeName": "Собрать резонансный компас",
+  "consumedIngredients": [
+    {
+      "itemId": "echo-thread",
+      "name": "Нить эха",
+      "quantityConsumed": 1,
+      "quantityAfter": 0,
+      "version": 2
+    },
+    {
+      "itemId": "lumen-shard",
+      "name": "Люминовый осколок",
+      "quantityConsumed": 2,
+      "quantityAfter": 1,
+      "version": 3
+    }
+  ],
+  "craftedItem": {
+    "itemInstanceId": "11111111-2222-3333-4444-555555555555",
+    "itemId": "resonance-compass",
+    "name": "Резонансный компас",
+    "description": "Уникальный прибор, собранный из люминовых осколков и нити эха.",
+    "version": 1,
+    "craftedAt": "2026-08-01T08:00:00Z"
+  },
+  "serverTime": "2026-08-01T08:00:00Z"
+}
+```
+
+Правила:
+
+- request не принимает quantity, result item или reward от клиента;
+- account-deletion lock с active-subject check удерживается до commit;
+- следующий user-scoped transaction lock сериализует competing craft-команды;
+- material rows блокируются в стабильном `itemId`-порядке;
+- проверка всех ingredients предшествует списанию; shortage откатывает всю
+  транзакцию и возвращает `409 INSUFFICIENT_MATERIALS` с required/available;
+- каждое списание имеет отрицательный `inventory_ledger.quantityDelta`, при
+  этом `quantityAfter >= 0` и delta не может быть нулевой;
+- unique item ограничен одной строкой на `user + itemId` и `user + recipeId`;
+- exact replay исходного `user + recipeId + idempotencyKey` возвращает тот же
+  item instance, ingredient snapshots и timestamps без новой мутации;
+- exact replay остаётся доступен при pending event receipt, но новая
+  craft-команда сериализуется с advance/event resolution и возвращает
+  `409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED` до material debit;
+- новый key после уже созданного result возвращает
+  `409 CRAFT_ALREADY_COMPLETED`;
+- неизвестный recipe возвращает `404 CRAFTING_RECIPE_NOT_FOUND`;
+- mobile хранит `recipeId`/key в GAMEPLAY outbox и после успеха перечитывает
+  authoritative `GET /home`.
 
 ## `GET /api/v1/platform`
 

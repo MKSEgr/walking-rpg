@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
+import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
+import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
@@ -27,6 +29,11 @@ typedef EventResultAcknowledger =
       required String receiptId,
       required String idempotencyKey,
     });
+typedef CraftingExecutor =
+    Future<CraftingResult> Function({
+      required String recipeId,
+      required String idempotencyKey,
+    });
 typedef IdempotencyKeyFactory = String Function();
 
 class HomeScreen extends StatefulWidget {
@@ -36,6 +43,7 @@ class HomeScreen extends StatefulWidget {
     this.advancer,
     this.eventResolver,
     this.eventResultAcknowledger,
+    this.crafter,
     this.idempotencyKeyFactory,
     this.onOpenAccount,
     this.onOpenRecovery,
@@ -48,6 +56,7 @@ class HomeScreen extends StatefulWidget {
   final ExpeditionAdvancer? advancer;
   final EventResolver? eventResolver;
   final EventResultAcknowledger? eventResultAcknowledger;
+  final CraftingExecutor? crafter;
   final IdempotencyKeyFactory? idempotencyKeyFactory;
   final VoidCallback? onOpenAccount;
   final VoidCallback? onOpenRecovery;
@@ -64,8 +73,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isAdvancing = false;
   bool _isResolving = false;
   bool _isAcknowledging = false;
+  bool _isCrafting = false;
 
-  bool get _isBusy => _isAdvancing || _isResolving || _isAcknowledging;
+  bool get _isBusy =>
+      _isAdvancing || _isResolving || _isAcknowledging || _isCrafting;
 
   @override
   void initState() {
@@ -138,11 +149,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   isAdvancing: _isAdvancing,
                   isResolving: _isResolving,
                   isAcknowledging: _isAcknowledging,
+                  isCrafting: _isCrafting,
                   onAdvance: () => _advance(snapshot),
                   onResolve: (HomeEventChoice choice) =>
                       _resolveEvent(snapshot, choice),
                   onAcknowledgeEventResult: () =>
                       _acknowledgeEventResult(snapshot),
+                  onCraft: (HomeCraftingRecipe recipe) =>
+                      _craft(snapshot, recipe),
                   onRefresh: _reload,
                 );
               },
@@ -304,6 +318,48 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _craft(HomeSnapshot snapshot, HomeCraftingRecipe recipe) async {
+    if (_isBusy ||
+        snapshot.isCached ||
+        snapshot.pendingEventResult != null ||
+        !recipe.canCraft) {
+      return;
+    }
+
+    setState(() {
+      _isCrafting = true;
+    });
+    try {
+      final CraftingExecutor crafter =
+          widget.crafter ?? CraftingApiClient.fromEnvironment().craft;
+      final CraftingResult result = await crafter(
+        recipeId: recipe.recipeId,
+        idempotencyKey: _nextKey(recipe.recipeId),
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Создано: ${result.craftedItem.name}')),
+      );
+      setState(() {
+        _snapshotFuture = _loadSnapshot();
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось создать предмет: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCrafting = false;
+        });
+      }
+    }
+  }
+
   String _nextKey(String sourceId) {
     return widget.idempotencyKeyFactory?.call() ??
         '$sourceId-${DateTime.now().microsecondsSinceEpoch}';
@@ -331,9 +387,11 @@ class _HomeBody extends StatelessWidget {
     required this.isAdvancing,
     required this.isResolving,
     required this.isAcknowledging,
+    required this.isCrafting,
     required this.onAdvance,
     required this.onResolve,
     required this.onAcknowledgeEventResult,
+    required this.onCraft,
     required this.onRefresh,
   });
 
@@ -341,9 +399,11 @@ class _HomeBody extends StatelessWidget {
   final bool isAdvancing;
   final bool isResolving;
   final bool isAcknowledging;
+  final bool isCrafting;
   final VoidCallback onAdvance;
   final ValueChanged<HomeEventChoice> onResolve;
   final VoidCallback onAcknowledgeEventResult;
+  final ValueChanged<HomeCraftingRecipe> onCraft;
   final VoidCallback onRefresh;
 
   @override
@@ -442,6 +502,21 @@ class _HomeBody extends StatelessWidget {
           const SizedBox(height: 12),
           _InventoryCard(items: snapshot.inventory),
         ],
+        if (snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 12),
+          _CraftingCard(
+            recipes: snapshot.craftingRecipes,
+            readOnly: readOnly,
+            busy:
+                isAdvancing ||
+                isResolving ||
+                isAcknowledging ||
+                isCrafting ||
+                pendingEventResult != null,
+            crafting: isCrafting,
+            onCraft: onCraft,
+          ),
+        ],
         const SizedBox(height: 20),
         FilledButton.icon(
           onPressed:
@@ -452,7 +527,8 @@ class _HomeBody extends StatelessWidget {
                   spendableEnergy <= 0 ||
                   isAdvancing ||
                   isResolving ||
-                  isAcknowledging
+                  isAcknowledging ||
+                  isCrafting
               ? null
               : onAdvance,
           icon: isAdvancing
@@ -477,7 +553,7 @@ class _HomeBody extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: isAdvancing || isResolving || isAcknowledging
+          onPressed: isAdvancing || isResolving || isAcknowledging || isCrafting
               ? null
               : onRefresh,
           icon: const Icon(Icons.sync),
@@ -771,7 +847,9 @@ class _InventoryCard extends StatelessWidget {
             const SizedBox(height: 12),
             for (final HomeInventoryItem item in items) ...<Widget>[
               Text(
-                '${item.name} × ${item.quantity}',
+                item.isUnique
+                    ? '${item.name} · уникальный предмет'
+                    : '${item.name} × ${item.quantity}',
                 style: Theme.of(context).textTheme.labelLarge,
               ),
               const SizedBox(height: 2),
@@ -781,6 +859,141 @@ class _InventoryCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CraftingCard extends StatelessWidget {
+  const _CraftingCard({
+    required this.recipes,
+    required this.readOnly,
+    required this.busy,
+    required this.crafting,
+    required this.onCraft,
+  });
+
+  final List<HomeCraftingRecipe> recipes;
+  final bool readOnly;
+  final bool busy;
+  final bool crafting;
+  final ValueChanged<HomeCraftingRecipe> onCraft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const Key('crafting-card'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Icon(Icons.handyman_outlined),
+                const SizedBox(width: 8),
+                Text(
+                  'Мастерская',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            for (int index = 0; index < recipes.length; index++) ...<Widget>[
+              _CraftingRecipeView(
+                recipe: recipes[index],
+                readOnly: readOnly,
+                busy: busy,
+                crafting: crafting,
+                onCraft: () => onCraft(recipes[index]),
+              ),
+              if (index + 1 < recipes.length) const Divider(height: 28),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CraftingRecipeView extends StatelessWidget {
+  const _CraftingRecipeView({
+    required this.recipe,
+    required this.readOnly,
+    required this.busy,
+    required this.crafting,
+    required this.onCraft,
+  });
+
+  final HomeCraftingRecipe recipe;
+  final bool readOnly;
+  final bool busy;
+  final bool crafting;
+  final VoidCallback onCraft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(recipe.name, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(recipe.description),
+        const SizedBox(height: 10),
+        for (final HomeCraftingIngredient ingredient
+            in recipe.ingredients) ...<Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                ingredient.isAvailable
+                    ? Icons.check_circle_outline
+                    : Icons.radio_button_unchecked,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Expanded(child: Text(ingredient.name)),
+              Text(
+                '${ingredient.availableQuantity} / '
+                '${ingredient.requiredQuantity}',
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
+        const SizedBox(height: 6),
+        Text(
+          'Результат: ${recipe.result.name}',
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          recipe.result.description,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 12),
+        FilledButton.tonalIcon(
+          key: Key('craft-${recipe.recipeId}'),
+          onPressed: readOnly || busy || !recipe.canCraft ? null : onCraft,
+          icon: crafting && recipe.canCraft
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(
+                  recipe.isCrafted
+                      ? Icons.check_circle_outline
+                      : Icons.build_outlined,
+                ),
+          label: Text(
+            readOnly
+                ? 'Создание недоступно офлайн'
+                : recipe.isCrafted
+                ? 'Предмет уже создан'
+                : recipe.canCraft
+                ? 'Создать предмет'
+                : 'Не хватает материалов',
+          ),
+        ),
+      ],
     );
   }
 }

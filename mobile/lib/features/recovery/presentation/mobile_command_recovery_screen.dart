@@ -438,6 +438,7 @@ class _RecoveryCommandCard extends StatelessWidget {
       MobileCommandType.eventResolution => 'Выбор в событии',
       MobileCommandType.eventResultAcknowledgement =>
         'Подтверждение результата события',
+      MobileCommandType.crafting => 'Создание предмета',
       MobileCommandType.platformCommand => 'Изменение путевого журнала',
     };
   }

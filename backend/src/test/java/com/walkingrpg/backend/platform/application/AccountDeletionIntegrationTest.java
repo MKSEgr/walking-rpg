@@ -88,6 +88,9 @@ class AccountDeletionIntegrationTest {
         assertEquals(0, rowCount("activity_sync_state"));
         assertEquals(0, rowCount("platform_event"));
         assertEquals(0, rowCount("first_journey_milestone"));
+        assertEquals(0, rowCount("unique_inventory_item"));
+        assertEquals(0, rowCount("processed_crafting_command"));
+        assertEquals(0, rowCount("processed_crafting_ingredient"));
         assertEquals(1, rowCount("account_deletion_receipt"));
         assertNotEquals("delete-user", jdbcTemplate.queryForObject(
                 "SELECT subject_hash FROM account_deletion_receipt",
@@ -159,6 +162,9 @@ class AccountDeletionIntegrationTest {
                 "eventResolutions",
                 "inventory",
                 "inventoryLedger",
+                "uniqueInventory",
+                "craftingOperations",
+                "craftingIngredients",
                 "platformState",
                 "platformCommands",
                 "firstJourneyMilestones",
@@ -174,6 +180,9 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, ((List<?>) export.get("activity")).size());
         assertEquals(1, ((List<?>) export.get("telemetry")).size());
         assertEquals(1, ((List<?>) export.get("firstJourneyMilestones")).size());
+        assertEquals(1, ((List<?>) export.get("uniqueInventory")).size());
+        assertEquals(1, ((List<?>) export.get("craftingOperations")).size());
+        assertEquals(1, ((List<?>) export.get("craftingIngredients")).size());
     }
 
     @Test
@@ -250,6 +259,40 @@ class AccountDeletionIntegrationTest {
                     ?, 'JOURNEY_STARTED', ?, 'AUTHORITATIVE', '{}'::jsonb, ?
                 )
                 """, userId, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO unique_inventory_item (
+                    item_instance_id, user_id, item_id, recipe_id,
+                    recipe_version, version, crafted_at
+                ) VALUES (
+                    '70000000-0000-0000-0000-000000000001', ?,
+                    'resonance-compass', 'resonance-compass-v1', '1', 1, ?
+                )
+                """, userId, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO processed_crafting_command (
+                    user_id, recipe_id, idempotency_key, request_fingerprint,
+                    content_version, recipe_version, recipe_name,
+                    item_instance_id, result_item_id, result_item_name,
+                    result_item_description, result_item_version, crafted_at,
+                    server_time, created_at
+                ) VALUES (
+                    ?, 'resonance-compass-v1', 'account-test-craft',
+                    repeat('9', 64), 'crafting-v1', '1',
+                    'Собрать резонансный компас',
+                    '70000000-0000-0000-0000-000000000001',
+                    'resonance-compass', 'Резонансный компас',
+                    'Account export test item.', 1, ?, ?, ?
+                )
+                """, userId, timestamp, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO processed_crafting_ingredient (
+                    user_id, recipe_id, idempotency_key, item_id, item_name,
+                    quantity_consumed, quantity_after, inventory_version
+                ) VALUES (
+                    ?, 'resonance-compass-v1', 'account-test-craft',
+                    'lumen-shard', 'Люминовый осколок', 2, 0, 1
+                )
+                """, userId);
     }
 
     private int rowCount(String table) {

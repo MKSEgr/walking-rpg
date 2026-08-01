@@ -16,6 +16,7 @@ import 'package:walking_rpg_mobile/features/activity/application/activity_sync_c
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/data/platform_health_step_source.dart';
 import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
+import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart';
@@ -204,6 +205,12 @@ class _AuthenticatedApplicationShellState
       transport: transport,
       cache: widget.cache,
     );
+    final CraftingApiClient craftingClient = CraftingApiClient(
+      baseUri: configuration.apiBaseUri,
+      userId: widget.identity.ownerId,
+      transport: transport,
+      cache: widget.cache,
+    );
     _platformClient = PlatformApiClient(
       baseUri: configuration.apiBaseUri,
       userId: widget.identity.ownerId,
@@ -221,6 +228,7 @@ class _AuthenticatedApplicationShellState
       expeditionSender: expeditionClient.advance,
       eventSender: eventClient.resolve,
       eventResultAcknowledgementSender: eventClient.acknowledge,
+      craftingSender: craftingClient.craft,
       platformSender: _platformClient.execute,
     );
     _coordinator = ActivitySyncCoordinator.fromEnvironmentIfSupported(

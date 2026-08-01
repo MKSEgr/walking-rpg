@@ -20,6 +20,7 @@ void main() {
     expect(snapshot.pilotNextLevelExperience, 100);
     expect(snapshot.petBond, 10);
     expect(snapshot.inventory, isEmpty);
+    expect(snapshot.craftingRecipes, isEmpty);
   });
 
   test('production response maps ready event choices and progression', () {
@@ -180,6 +181,56 @@ void main() {
 
     expect(snapshot.remainingExpeditionEnergy, 10);
     expect(snapshot.spendableEnergy, 10);
+  });
+
+  test('crafting recipe and unique inventory item are mapped additively', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['inventory'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'itemId': 'resonance-compass',
+        'name': 'Резонансный компас',
+        'description': 'Уникальный прибор.',
+        'quantity': 1,
+        'version': 1,
+        'kind': 'UNIQUE',
+      },
+    ];
+    response['craftingRecipes'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'recipeId': 'resonance-compass-v1',
+        'recipeVersion': '1',
+        'name': 'Собрать резонансный компас',
+        'description': 'Соединить материалы.',
+        'status': 'CRAFTED',
+        'ingredients': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'itemId': 'lumen-shard',
+            'name': 'Люминовый осколок',
+            'requiredQuantity': 2,
+            'availableQuantity': 1,
+          },
+          <String, dynamic>{
+            'itemId': 'echo-thread',
+            'name': 'Нить эха',
+            'requiredQuantity': 1,
+            'availableQuantity': 0,
+          },
+        ],
+        'result': <String, dynamic>{
+          'itemId': 'resonance-compass',
+          'name': 'Резонансный компас',
+          'description': 'Уникальный прибор.',
+          'kind': 'UNIQUE',
+        },
+      },
+    ];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.inventory.single.isUnique, isTrue);
+    expect(snapshot.craftingRecipes.single.isCrafted, isTrue);
+    expect(snapshot.craftingRecipes.single.canCraft, isFalse);
+    expect(snapshot.craftingRecipes.single.ingredients, hasLength(2));
   });
 
   test('invalid nested response is rejected', () {

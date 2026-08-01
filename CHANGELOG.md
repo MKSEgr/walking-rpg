@@ -116,6 +116,16 @@
   authoritative checkpoints, ограниченный одним запуском и 64 записями;
 - redacted `walking-rpg-device-validation-evidence-v1` export до 64 KiB с
   SHA-256 checksum, временным JSON share/delete и ADR 0028;
+- server-authoritative рецепт `resonance-compass-v1` и
+  `POST /api/v1/crafting/recipes/{recipeId}/craft`;
+- атомарное списание `2 × lumen-shard + 1 × echo-thread`, отрицательные
+  audited inventory-ledger записи и уникальный `resonance-compass`;
+- persistent `unique_inventory_item`, exact replay snapshot в
+  `processed_crafting_command`/`processed_crafting_ingredient` и Flyway V13;
+- additive `craftingRecipes`/inventory `kind` в `GET /home`, Flutter
+  **«Мастерская»** и restart-safe `CRAFTING` в GAMEPLAY outbox;
+- account export/delete и synthetic backup/restore coverage для crafting state;
+- ADR 0029 о server-authoritative crafting и unique inventory;
 
 ### Changed
 
@@ -174,6 +184,13 @@
   source SHA/tree; protected signing связывает post-merge `master` с
   CODEOWNER-approved PR по tree SHA, а backend CI selector gate предотвращает
   пропуск новых тестов.
+- `inventory_ledger` принимает ненулевые credit/debit операции при
+  неотрицательном `quantityAfter`; event rewards по-прежнему только
+  положительные, а crafting consumption выполняется одной транзакцией с
+  unique-item и immutable response.
+- новая crafting mutation разделяет expedition serialization boundary с
+  advance/event resolution и блокируется pending event receipt; exact replay
+  уже выполненной craft-команды остаётся доступен до ACK.
 
 ## [0.1.0] — 2026-07-25
 
