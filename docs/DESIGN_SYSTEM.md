@@ -183,6 +183,26 @@ owner-scoped runtime as the only source of queue state.
 - compact layouts and enlarged system text stay scrollable, and signal red is
   paired with explicit rejected-state copy rather than used as color alone.
 
+## Physical-device validation
+
+The internal Validation Center carries the same trust-layer language into a
+controlled device-evidence workflow. Resonance marks the non-release operator
+surface, while lumen, ENERGY and resonance distinguish accepted Health facts,
+server sync and the authoritative checkpoint without changing their meaning.
+
+- the launch hero states that the route is internal and that exported JSON is
+  not physical-device evidence without the dated protocol and review;
+- build, authentication mode, Health source and source SHA remain literal
+  metadata from the current launch rather than decorative status;
+- Health read, synchronization and checkpoint capture remain three explicit
+  operator actions, and the presentation does not add background work;
+- observation panels and the launch journal display only the controller's
+  owner-bound in-memory snapshot, with no raw payload or identity;
+- schema-v1 export keeps the existing allowlist, redaction, checksum, size,
+  temporary-file and active-owner checks;
+- compact layouts and enlarged system text keep the complete workflow
+  scrollable, including the safety note and final export action.
+
 ## Next visual slices
 
 1. Carry the active companion portrait into Home only after its read model
@@ -192,7 +212,5 @@ owner-scoped runtime as the only source of queue state.
    interaction.
 3. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
-4. Carry the same trust-layer visual language into the internal Validation
-   Center without changing its owner, export or evidence safety workflows.
-5. Produce app icon, splash, store screenshots and motion guidelines only after
+4. Produce app icon, splash, store screenshots and motion guidelines only after
    the in-game direction is approved.
