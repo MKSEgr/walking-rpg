@@ -98,7 +98,7 @@ void main() {
           )
           .firstWhere(
             (Semantics widget) =>
-                widget.container && widget.properties.liveRegion,
+                widget.container && widget.properties.liveRegion == true,
           );
       expect(liveSignal.properties.liveRegion, isTrue);
     }
