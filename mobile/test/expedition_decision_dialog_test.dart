@@ -11,7 +11,6 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(320, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final SemanticsHandle semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     bool? result;
 
     await tester.pumpWidget(
@@ -91,5 +90,6 @@ void main() {
     await tester.tap(find.byKey(const Key('compact-decision-confirm')));
     await tester.pumpAndSettle();
     expect(result, isTrue);
+    semantics.dispose();
   });
 }
