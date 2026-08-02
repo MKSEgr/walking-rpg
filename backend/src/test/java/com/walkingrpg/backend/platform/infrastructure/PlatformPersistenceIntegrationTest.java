@@ -32,6 +32,7 @@ import com.walkingrpg.backend.expedition.domain.EventResolutionCommand;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
+import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
 import com.walkingrpg.backend.platform.application.PlatformContentCatalog;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
@@ -172,6 +173,77 @@ class PlatformPersistenceIntegrationTest {
                         Map.of("stepId", "first-sync")
                 ))
         );
+    }
+
+    @Test
+    void shouldReadPlatformSnapshotFromOneRepeatableSnapshot() throws Exception {
+        String userId = "platform-snapshot-user";
+        ensureUser(userId);
+        PlatformSnapshotResponse duringConcurrentSync;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<PlatformSnapshotResponse> pending = null;
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (Statement lock = blocker.createStatement()) {
+                    lock.execute(
+                            "LOCK TABLE processed_event_resolution "
+                                    + "IN ACCESS EXCLUSIVE MODE"
+                    );
+                }
+
+                pending = executor.submit(() -> platformService.getSnapshot(userId));
+                awaitPlatformResolvedEventsReadBlock();
+
+                jdbcTemplate.update("""
+                        INSERT INTO activity_sync_state (
+                            user_id, local_date, accepted_total, state_version,
+                            time_zone, updated_at
+                        ) VALUES (?, '2026-07-27', 1200, 1, 'Europe/Berlin', ?)
+                        """, userId, Timestamp.from(NOW));
+                jdbcTemplate.update("""
+                        UPDATE app_user
+                        SET has_successful_activity_sync = true
+                        WHERE user_id = ?
+                        """, userId);
+
+                blocker.commit();
+                duringConcurrentSync = pending.get(5, TimeUnit.SECONDS);
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (pending != null && !pending.isDone()) {
+                        pending.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        }
+
+        assertEquals(
+                0L,
+                ((Number) duringConcurrentSync.userState()
+                        .get("totalAcceptedSteps")).longValue()
+        );
+        assertEquals(
+                false,
+                duringConcurrentSync.userState().get("hasSuccessfulActivitySync")
+        );
+        assertEquals(1, rowCount("activity_sync_state"));
+        assertTrue(Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                SELECT has_successful_activity_sync
+                FROM app_user
+                WHERE user_id = ?
+                """, Boolean.class, userId)));
+
+        PlatformSnapshotResponse afterSync = platformService.getSnapshot(userId);
+        assertEquals(
+                1200L,
+                ((Number) afterSync.userState().get("totalAcceptedSteps")).longValue()
+        );
+        assertEquals(true, afterSync.userState().get("hasSuccessfulActivitySync"));
     }
 
     @Test
@@ -808,6 +880,26 @@ class PlatformPersistenceIntegrationTest {
         }
         throw new IllegalStateException(
                 "Retention query did not reach the blocked event read"
+        );
+    }
+
+    private void awaitPlatformResolvedEventsReadBlock() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND query LIKE '%FROM processed_event_resolution%'
+                    """, Integer.class);
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new IllegalStateException(
+                "Platform snapshot did not reach the blocked event fact read"
         );
     }
 

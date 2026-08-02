@@ -764,6 +764,11 @@ authoritative fact наличия хотя бы одной успешно обр
 очистке идемпотентных activity-receipts по retention policy и не выводится из
 push-регистрации устройства.
 
+Все user state, progress facts, squad, content и remote config в одном response
+читаются из единого `REPEATABLE_READ` snapshot. Параллельный activity sync или
+admin publish, завершившийся после фиксации snapshot, целиком попадает только в
+следующий platform response.
+
 ## `POST /api/v1/platform/commands`
 
 Все platform mutations используют одну restart-safe командную ручку:

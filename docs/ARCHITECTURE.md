@@ -332,7 +332,9 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
 - ACK заполняет `acknowledged_at` условным `UPDATE`, только пока поле `NULL`;
   тот же commit создаёт ACK milestone, replay читает сохранённое время без
   повторной мутации, а БД запрещает последующую правку timestamp;
-- read endpoints не создают zero-state.
+- read endpoints не создают zero-state;
+- platform snapshot и content bootstrap читают связанные state/facts/content/
+  remote-config секции из одного repeatable-read snapshot;
 - compass analytics читает eligible users, client impressions и gameplay
   receipts из одного repeatable-read snapshot.
 

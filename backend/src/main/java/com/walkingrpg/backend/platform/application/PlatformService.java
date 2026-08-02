@@ -35,6 +35,7 @@ import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.domain.PetProgressState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -73,6 +74,7 @@ public class PlatformService {
         this.progressionService = progressionService;
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PlatformSnapshotResponse getSnapshot(String userId) {
         String normalizedUserId = requireText(userId, "userId");
         PlatformProgressFacts facts = progressFactsProvider.factsFor(normalizedUserId);
@@ -82,6 +84,7 @@ public class PlatformService {
         return snapshot(normalizedUserId, state, facts, now());
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> getContentBootstrap() {
         String activeContentVersion = repository.activeContentVersion();
         Map<String, Object> response = new LinkedHashMap<>();
