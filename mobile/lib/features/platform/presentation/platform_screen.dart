@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
@@ -145,7 +146,13 @@ class _PlatformScreenState extends State<PlatformScreen> {
                   AsyncSnapshot<_PlatformViewData> snapshot,
                 ) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const ExpeditionReadState.loading(
+                      key: Key('platform-loading-state'),
+                      title: 'Открываем путевой журнал',
+                      message:
+                          'Получаем сезон, спутников и принятые сервером '
+                          'записи.',
+                    );
                   }
                   if (snapshot.hasError) {
                     return _PlatformError(
@@ -1434,29 +1441,16 @@ class _PlatformError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: ExpeditionPanel(
-          tone: ExpeditionPanelTone.resonance,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.cloud_off_outlined, size: 48),
-              const SizedBox(height: 12),
-              Text(
-                'Не удалось загрузить путевой журнал',
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(error.toString(), textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton(onPressed: onRetry, child: const Text('Повторить')),
-            ],
-          ),
-        ),
-      ),
+    return ExpeditionReadState.failure(
+      key: const Key('platform-error-state'),
+      title: 'Не удалось загрузить путевой журнал',
+      message:
+          'Актуальные записи не приняты. До успешного повтора журнал не '
+          'показывает и не выполняет серверные действия.',
+      details: error.toString(),
+      primaryActionKey: const Key('platform-error-retry'),
+      primaryActionLabel: 'Повторить',
+      onPrimaryAction: onRetry,
     );
   }
 }
