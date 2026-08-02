@@ -77,7 +77,9 @@ class HomeServiceTest {
         assertEquals(LAST_SYNC, snapshot.lastActivitySyncAt());
         assertEquals(NOW, snapshot.serverTime());
         assertEquals("Навигатор", snapshot.pilot().name());
+        assertEquals("spark-v1", snapshot.pet().petId());
         assertEquals("Искра", snapshot.pet().name());
+        assertEquals(0, snapshot.pet().evolutionStage());
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, snapshot.contentVersion());
         assertEquals("starter-expedition-v1", snapshot.expedition().expeditionId());
         assertEquals(0, snapshot.inventory().size());
@@ -180,8 +182,64 @@ class HomeServiceTest {
         );
 
         assertEquals("Мох", snapshot.pet().name());
+        assertEquals("moss-v1", snapshot.pet().petId());
         assertEquals("Терра", snapshot.pet().species());
         assertEquals(10, snapshot.pet().bond());
+        assertEquals(0, snapshot.pet().evolutionStage());
+    }
+
+    @Test
+    void shouldExposeAuthoritativeEvolutionStageForSelectedPet() {
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        0,
+                        0,
+                        null,
+                        0,
+                        null,
+                        null,
+                        false,
+                        0,
+                        0,
+                        0,
+                        "moss-v1",
+                        true,
+                        2,
+                        54,
+                        1,
+                        null,
+                        null,
+                        null,
+                        null
+                )
+        );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                new StarterExpeditionContent(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        HomeSnapshotResponse snapshot = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        );
+
+        assertEquals("moss-v1", snapshot.pet().petId());
+        assertEquals(2, snapshot.pet().level());
+        assertEquals(54, snapshot.pet().bond());
+        assertEquals(1, snapshot.pet().evolutionStage());
     }
 
     private DailyGoalPolicyProperties goalProperties() {

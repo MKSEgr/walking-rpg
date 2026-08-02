@@ -197,6 +197,62 @@ class HomeReadIntegrationTest {
         assertEquals(250, snapshot.dailyGoalPolicy().roundingStep());
     }
 
+    @Test
+    void shouldProjectSelectedPetIdentityEvolutionAndLegacyFallback() {
+        activitySyncService.synchronize(command(1_000));
+        jdbcTemplate.update("""
+                INSERT INTO roadmap_user_state (
+                    user_id,
+                    state_json,
+                    version,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?::jsonb, 1, now(), now())
+                """,
+                "home-user",
+                """
+                {
+                  "activePetId": "moss-v1",
+                  "pets": {
+                    "moss-v1": {
+                      "level": 2,
+                      "bond": 54,
+                      "evolutionStage": 1
+                    }
+                  }
+                }
+                """
+        );
+
+        HomeSnapshotResponse snapshot = homeService.getSnapshot(
+                new HomeQuery("home-user", ACTIVITY_DATE)
+        );
+
+        assertEquals("moss-v1", snapshot.pet().petId());
+        assertEquals("Мох", snapshot.pet().name());
+        assertEquals(2, snapshot.pet().level());
+        assertEquals(54, snapshot.pet().bond());
+        assertEquals(1, snapshot.pet().evolutionStage());
+
+        jdbcTemplate.update("""
+                UPDATE roadmap_user_state
+                SET state_json = state_json #- '{pets,moss-v1,evolutionStage}',
+                    version = version + 1,
+                    updated_at = now()
+                WHERE user_id = ?
+                """, "home-user");
+
+        HomeSnapshotResponse legacySnapshot = homeService.getSnapshot(
+                new HomeQuery("home-user", ACTIVITY_DATE)
+        );
+
+        assertEquals("moss-v1", legacySnapshot.pet().petId());
+        assertEquals(2, legacySnapshot.pet().level());
+        assertEquals(54, legacySnapshot.pet().bond());
+        assertEquals(0, legacySnapshot.pet().evolutionStage());
+    }
+
     private int rowCount(String table) {
         return jdbcTemplate.queryForObject("SELECT count(*) FROM " + table, Integer.class);
     }
