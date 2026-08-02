@@ -124,7 +124,11 @@ void main() {
     final Finder exportButton = find.byKey(
       const Key('validation-export-button'),
     );
-    await tester.ensureVisible(exportButton);
+    await tester.scrollUntilVisible(
+      exportButton,
+      240,
+      scrollable: find.byType(Scrollable),
+    );
     await tester.tap(exportButton);
     await tester.pump();
     expect(exporter.sharedJson, isNotNull);
@@ -244,7 +248,11 @@ Future<void> _tapAction(
   required bool Function() isComplete,
 }) async {
   final Finder target = find.byKey(key);
-  await tester.ensureVisible(target);
+  await tester.scrollUntilVisible(
+    target,
+    240,
+    scrollable: find.byType(Scrollable),
+  );
   await tester.tap(target);
   for (int attempt = 0; attempt < 20 && !isComplete(); attempt += 1) {
     await tester.pump(const Duration(milliseconds: 20));
