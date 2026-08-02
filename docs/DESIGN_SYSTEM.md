@@ -206,6 +206,24 @@ not as a generic blocking dialog or invented game progress.
 - the shared panel is a live region with a semantic heading and remains
   scrollable at compact width with enlarged system text.
 
+## First journey bootstrap states
+
+The first journey uses the same route-contact composition while startup replay
+and the two authoritative read models are still being prepared. This keeps the
+guided entry in the accepted expedition language without pretending that a
+milestone or route value has already been restored.
+
+- loading covers both owner-scoped saved-action replay and the subsequent Home
+  and journal reads, and remains indeterminate throughout;
+- failure keeps diagnostic detail separate from the player-facing explanation
+  and exposes the existing retry boundary;
+- the explicit **«Открыть игру»** path keeps its existing continue-later
+  behavior, while recovery and account actions remain available in the app bar;
+- no previous first-journey screen, milestone or reward is shown before both
+  authoritative snapshots have been accepted;
+- compact layouts and enlarged system text stay scrollable, with the same live
+  region, semantic heading and complete status label as the primary read state.
+
 ## Physical-device validation
 
 The internal Validation Center carries the same trust-layer language into a
