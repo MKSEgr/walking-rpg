@@ -109,10 +109,10 @@ class FirstJourneyScreen extends StatelessWidget {
                           const SizedBox(height: 12),
                           ExpeditionNotice(
                             key: const Key('first-journey-error-signal'),
-                            label: 'Действие не подтверждено',
-                            icon: Icons.error_outline,
+                            label: 'Состояние требует проверки',
+                            icon: Icons.sync_problem_outlined,
                             message: errorMessage!,
-                            tone: ExpeditionNoticeTone.danger,
+                            tone: ExpeditionNoticeTone.resonance,
                           ),
                         ],
                         const SizedBox(height: 18),

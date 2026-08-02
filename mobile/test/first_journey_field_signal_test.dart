@@ -20,7 +20,7 @@ void main() {
         'Отложенная команда ждёт соединения и будет проверена без второй '
         'награды.';
     const String error =
-        'Сервер не подтвердил действие. Состояние маршрута не изменено.';
+        'Команда подтверждена, но актуальное состояние маршрута не загрузилось.';
     final FirstJourneyProgress progress = FirstJourneyProgress(
       home: firstJourneyHome(
         cacheMetadata: CachedReadMetadata(
@@ -67,7 +67,7 @@ void main() {
     expect(find.byType(ExpeditionNotice), findsNWidgets(3));
     expect(find.text('СОХРАНЁННЫЙ ПУТЬ'), findsOneWidget);
     expect(find.text('СИГНАЛ МАРШРУТА'), findsOneWidget);
-    expect(find.text('ДЕЙСТВИЕ НЕ ПОДТВЕРЖДЕНО'), findsOneWidget);
+    expect(find.text('СОСТОЯНИЕ ТРЕБУЕТ ПРОВЕРКИ'), findsOneWidget);
     expect(find.text(notice), findsOneWidget);
     expect(find.text(error), findsOneWidget);
 
@@ -77,12 +77,12 @@ void main() {
     final ExpeditionNotice info = tester.widget<ExpeditionNotice>(
       find.byKey(const Key('first-journey-notice-signal')),
     );
-    final ExpeditionNotice failed = tester.widget<ExpeditionNotice>(
+    final ExpeditionNotice uncertain = tester.widget<ExpeditionNotice>(
       find.byKey(const Key('first-journey-error-signal')),
     );
     expect(saved.tone, ExpeditionNoticeTone.neutral);
     expect(info.tone, ExpeditionNoticeTone.lumen);
-    expect(failed.tone, ExpeditionNoticeTone.danger);
+    expect(uncertain.tone, ExpeditionNoticeTone.resonance);
 
     for (final Key key in <Key>[
       const Key('first-journey-read-only-signal'),
@@ -104,7 +104,7 @@ void main() {
     }
 
     final Text errorLabel = tester.widget<Text>(
-      find.text('ДЕЙСТВИЕ НЕ ПОДТВЕРЖДЕНО'),
+      find.text('СОСТОЯНИЕ ТРЕБУЕТ ПРОВЕРКИ'),
     );
     expect(errorLabel.maxLines, isNull);
     expect(errorLabel.overflow, TextOverflow.visible);

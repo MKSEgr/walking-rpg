@@ -301,15 +301,18 @@ decision composition instead of a generic Material alert.
 
 ## First journey field signals
 
-Read-only recovery, controller notices and failed action feedback remain part
-of the guided route instead of falling back to generic Material cards. The
-shared inline signal preserves the distinction between information and an
-actionable failure without changing who owns the underlying state.
+Read-only recovery, controller notices and outcome-ambiguous action feedback
+remain part of the guided route instead of falling back to generic Material
+cards. The shared inline signal preserves the distinction between information
+and state that needs an authoritative check without changing who owns it.
 
 - saved-state copy uses a neutral signal and does not imply that a live route
   or mutation is available;
-- controller notices use lumen, while signal red remains limited to an action
-  that was not authoritatively confirmed;
+- controller notices use lumen; the shared error channel uses resonance and
+  **«Состояние требует проверки»** because it can also receive a failed reload
+  after a confirmed mutation;
+- signal red requires an explicit caller classification that the action was
+  not authoritatively confirmed and is not inferred from `errorMessage`;
 - the signal owns no retry, dismissal or navigation callback, and it never
   turns diagnostic text into route progress or a reward;
 - icon, explicit status label and body copy carry meaning without relying on
