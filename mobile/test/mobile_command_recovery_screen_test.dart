@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_screen.dart';
@@ -51,9 +53,11 @@ void main() {
       );
       final MobileCommandRuntime runtime = _runtime(store: store);
       int authoritativeReloads = 0;
+      final SemanticsHandle semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: WalkingRpgTheme.dark(),
           home: MobileCommandRecoveryScreen(
             runtime: runtime,
             onServerStateChanged: () {
@@ -64,9 +68,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.byType(ExpeditionBackdrop), findsOneWidget);
+      expect(find.text('КОНТУР ВОССТАНОВЛЕНИЯ'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Контур восстановления. Ожидают отправки: 1. Отклонены: 1.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Синхронизация шагов'), findsOneWidget);
       expect(find.text('Продвижение экспедиции'), findsOneWidget);
-      expect(find.text('Ожидают отправки: 1 · отклонены: 1'), findsOneWidget);
       expect(find.byKey(const Key('command-recovery-retry')), findsOneWidget);
       expect(find.text('Убрать диагностическую запись'), findsOneWidget);
       expect(find.textContaining('private-idempotency-key'), findsNothing);
@@ -79,7 +90,20 @@ void main() {
       expect(authoritativeReloads, 1);
       expect(find.text('Синхронизация шагов'), findsNothing);
       expect(find.text('Продвижение экспедиции'), findsOneWidget);
-      expect(find.text('Ожидают отправки: 0 · отклонены: 1'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('command-recovery-pending-count')),
+          matching: find.text('0'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('command-recovery-failed-count')),
+          matching: find.text('1'),
+        ),
+        findsOneWidget,
+      );
       expect(store.snapshot.single.state, MobileCommandState.failed);
 
       await tester.tap(find.text('Убрать диагностическую запись'));
@@ -92,6 +116,7 @@ void main() {
 
       expect(find.byKey(const Key('command-recovery-empty')), findsOneWidget);
       expect(store.snapshot, isEmpty);
+      semantics.dispose();
     },
   );
 
@@ -141,7 +166,20 @@ void main() {
 
     expect(authoritativeReloads, 1);
     expect(store.snapshot.single.state, MobileCommandState.failed);
-    expect(find.text('Ожидают отправки: 0 · отклонены: 1'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('command-recovery-pending-count')),
+        matching: find.text('0'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('command-recovery-failed-count')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
     await runtime.close();
   });
 
@@ -395,6 +433,60 @@ void main() {
     expect(find.textContaining('private-exposure-key'), findsNothing);
     expect(find.textContaining('private-experiment'), findsNothing);
     expect(find.textContaining('private telemetry error'), findsNothing);
+  });
+
+  testWidgets('compact recovery remains scrollable with enlarged text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final MobileCommand failed =
+        MobileCommand.pending(
+          ownerId: 'owner-1',
+          type: MobileCommandType.eventResultAcknowledgement,
+          idempotencyKey: 'compact-result-ack',
+          fingerprint: 'compact-result-ack-fingerprint',
+          payload: const <String, Object?>{'receiptId': 'compact-receipt'},
+          now: DateTime.utc(2026, 7, 30, 8),
+        ).withAttemptFailure(
+          now: DateTime.utc(2026, 7, 30, 8, 1),
+          error: StateError('terminal'),
+          terminal: true,
+          category: MobileCommandFailureCategory.rejected,
+        );
+    final MobileCommandRuntime runtime = _runtime(
+      store: InMemoryMobileCommandStore(<MobileCommand>[failed]),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: MobileCommandRecoveryScreen(runtime: runtime),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('command-recovery-safety-note')),
+      220,
+      scrollable: find.byType(Scrollable),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Подтверждение результата события'), findsOneWidget);
+    expect(
+      find.byKey(const Key('command-recovery-safety-note')),
+      findsOneWidget,
+    );
+    await runtime.close();
   });
 }
 
