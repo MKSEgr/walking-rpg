@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/app/auth_gate.dart';
+import 'package:walking_rpg_mobile/app/expedition_boundary_screen.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_store.dart';
@@ -91,46 +92,15 @@ class _ConfigurationErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Icon(
-                        Icons.security_outlined,
-                        size: 56,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Аутентификация не настроена',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        kReleaseMode
-                            ? 'Проверьте настройки входа и повторите запуск.'
-                            : error?.toString() ??
-                                  'Проверьте OIDC-параметры приложения.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return ExpeditionBoundaryScreen.blocked(
+      key: const Key('configuration-error-screen'),
+      badgeLabel: 'Запуск заблокирован',
+      title: 'Аутентификация не настроена',
+      message: kReleaseMode
+          ? 'Проверьте настройки входа и повторите запуск.'
+          : 'Проверьте OIDC-параметры приложения.',
+      details: kReleaseMode ? null : error?.toString(),
+      icon: Icons.security_outlined,
     );
   }
 }

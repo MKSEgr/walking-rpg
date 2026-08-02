@@ -224,6 +224,25 @@ milestone or route value has already been restored.
 - compact layouts and enlarged system text stay scrollable, with the same live
   region, semantic heading and complete status label as the primary read state.
 
+## Application boundary states
+
+Session restoration, protected runtime shutdown, launch configuration and the
+internal Validation Center bootstrap share one application-boundary
+composition before any player snapshot can be shown.
+
+- loading remains indeterminate and explains the controller-owned lifecycle
+  operation without inventing route progress or adding a second retry path;
+- restoration and shutdown use distinct copy, while the authentication
+  controller keeps ownership of state transitions and route dismissal;
+- blocked configuration and validation states remain fail-closed and expose no
+  action that cannot be completed by the current lifecycle;
+- raw configuration diagnostics remain development-only; release builds keep
+  the existing redacted instruction;
+- resonance continues to identify the internal validation domain, while signal
+  red identifies a blocked launch and is paired with explicit text;
+- the shared full-screen panel is a live region with a semantic heading and
+  stays scrollable at compact width with enlarged system text.
+
 ## Physical-device validation
 
 The internal Validation Center carries the same trust-layer language into a

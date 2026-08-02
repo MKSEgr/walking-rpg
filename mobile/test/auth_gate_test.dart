@@ -8,12 +8,49 @@ import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_store.dart';
 import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
 import 'package:walking_rpg_mobile/core/auth/owner_local_state_cleaner.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
 
 import 'support/in_memory_mobile_command_store.dart';
 import 'support/in_memory_read_snapshot_cache.dart';
 
 void main() {
+  testWidgets('initializing session uses the expedition boundary state', (
+    WidgetTester tester,
+  ) async {
+    final AuthSessionController controller = AuthSessionController(
+      configuration: MobileAuthConfiguration(
+        mode: MobileAuthMode.development,
+        apiBaseUri: Uri.parse('https://api.example'),
+        refreshSkew: const Duration(seconds: 60),
+        developmentUserId: 'initializing-user',
+        developmentDeviceId: 'initializing-device',
+      ),
+      sessionStore: _UnusedSessionStore(),
+      oidcClient: _UnusedOidcClient(),
+      localStateCleaner: _UnusedLocalStateCleaner(),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: AuthGate(
+          controller: controller,
+          cache: InMemoryReadSnapshotCache(),
+          commandStore: InMemoryMobileCommandStore(),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('auth-initializing-screen')), findsOneWidget);
+    expect(find.text('Восстанавливаем маршрут'), findsOneWidget);
+    expect(find.text('КАНАЛ ЭКСПЕДИЦИИ'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets('keeps journey loaders stable across auth gate rebuilds', (
     WidgetTester tester,
   ) async {
