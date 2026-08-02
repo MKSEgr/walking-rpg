@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionIdempotencyScope;
@@ -25,13 +26,19 @@ public class JdbcExpeditionRepository implements ExpeditionRepository {
             """;
 
     private final JdbcTemplate jdbcTemplate;
+    private final AccountDeletionRegistry accountDeletionRegistry;
 
-    public JdbcExpeditionRepository(JdbcTemplate jdbcTemplate) {
+    public JdbcExpeditionRepository(
+            JdbcTemplate jdbcTemplate,
+            AccountDeletionRegistry accountDeletionRegistry
+    ) {
         this.jdbcTemplate = jdbcTemplate;
+        this.accountDeletionRegistry = accountDeletionRegistry;
     }
 
     @Override
     public void acquireLock(String userId, String expeditionId) {
+        accountDeletionRegistry.requireActive(userId);
         String lockKey = userId.length()
                 + ":"
                 + userId

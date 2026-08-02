@@ -50,6 +50,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
 
     @Override
     public void acquireUserLock(String userId) {
+        accountDeletionRegistry.requireActive(userId);
         jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(USER_LOCK_SQL)) {
                 JdbcStatementTimeouts.apply(jdbcTemplate, statement);

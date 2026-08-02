@@ -40,6 +40,7 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
 
     @Override
     public void acquireUserLock(String userId) {
+        accountDeletionRegistry.requireActive(userId);
         String lockKey = userId.length() + ":" + userId;
         jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(USER_LOCK_SQL)) {
@@ -53,7 +54,6 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
 
     @Override
     public void registerDevice(String userId, String deviceId, Instant seenAt) {
-        accountDeletionRegistry.requireActive(userId);
         Timestamp timestamp = Timestamp.from(seenAt);
         jdbcTemplate.update("""
                 INSERT INTO app_user (user_id, created_at, last_seen_at)

@@ -32,8 +32,12 @@ Backend уже умел выгружать и удалять данные пол
   Повторный запрос возвращает ту же квитанцию.
 - Квитанция хранит SHA-256 subject и request key, timestamps и receipt UUID.
   Raw OIDC subject и экспортированные данные в ней не сохраняются.
-- Subject-level advisory lock сериализует удаление и новые записи. После
-  удаления общий security filter до controller возвращает
+- Subject-level advisory lock захватывается внутри той же database transaction
+  до operation-specific locks, idempotency lookup и user-scoped mutation.
+  Граница покрывает activity/platform/crafting/equipment, expedition
+  advance/resolution и event-result acknowledgement; request security filter
+  не заменяет эту транзакционную сериализацию. После удаления общий security
+  filter до controller возвращает
   `410 ACCOUNT_DELETED` для всех authenticated операций, включая admin API;
   только deletion endpoint допускает replay квитанции.
 - Mobile Bearer transport не пытается refresh при `410 ACCOUNT_DELETED` и

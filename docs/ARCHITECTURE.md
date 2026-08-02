@@ -310,8 +310,11 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
 - row lock wallet/progression/inventory при изменении;
 - idempotency lookup до мутации;
 - source uniqueness в ledger;
-- account-deletion lock и active-subject check предшествуют crafting replay и
-  mutation; затем user-scoped advisory lock сериализует crafting;
+- account-deletion lock и active-subject check выполняются внутри mutating
+  transaction до operation-specific locks/replay. Это включает activity,
+  platform, crafting, equipment, expedition advance/resolution и result ACK;
+  request-level security check не считается конкурентной границей;
+- после account boundary user-scoped advisory lock сериализует crafting;
 - после exact replay новая craft-команда получает тот же user+expedition lock,
   что advance/resolution, и проверяет отсутствие pending event result до
   material mutation; material rows блокируются в стабильном `itemId`-порядке;

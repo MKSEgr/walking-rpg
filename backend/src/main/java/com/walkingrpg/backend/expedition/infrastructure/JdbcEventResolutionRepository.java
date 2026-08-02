@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventNextNodeResult;
@@ -64,9 +65,14 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
             """;
 
     private final JdbcTemplate jdbcTemplate;
+    private final AccountDeletionRegistry accountDeletionRegistry;
 
-    public JdbcEventResolutionRepository(JdbcTemplate jdbcTemplate) {
+    public JdbcEventResolutionRepository(
+            JdbcTemplate jdbcTemplate,
+            AccountDeletionRegistry accountDeletionRegistry
+    ) {
         this.jdbcTemplate = jdbcTemplate;
+        this.accountDeletionRegistry = accountDeletionRegistry;
     }
 
     @Override
@@ -204,6 +210,7 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
             UUID receiptId,
             Instant serverTime
     ) {
+        accountDeletionRegistry.requireActive(userId);
         List<EventResultAcknowledgementResult> acknowledged = jdbcTemplate.query("""
                 UPDATE processed_event_resolution
                 SET acknowledged_at = GREATEST(server_time, ?)

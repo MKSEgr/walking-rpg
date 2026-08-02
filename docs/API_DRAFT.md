@@ -396,6 +396,8 @@ Response после достижения узла:
   пользователь должен подтвердить durable receipt;
 - после `EVENT_READY` новый advance возвращает `409 EXPEDITION_STATE_CONFLICT`;
 - после первого event resolution тот же endpoint продвигает второй узел `lumen-gate` с порогом 45;
+- account-deletion subject lock и active check удерживаются в той же
+  транзакции до expedition lock, replay lookup, debit и progress mutation;
 - debit, ledger, progress и response сохраняются одной транзакцией.
 
 ## `POST /api/v1/events/{eventId}/resolve`
@@ -511,6 +513,8 @@ Response второго события:
 - новый resolution возвращает
   `409 EVENT_RESULT_ACKNOWLEDGEMENT_REQUIRED`, если у пользователя уже есть
   неподтверждённый capable result receipt той же экспедиции;
+- account-deletion subject lock и active check предшествуют expedition lock,
+  replay lookup и всем reward/progression mutations в той же транзакции;
 - `choiceId` выбирается из server-owned definition соответствующего `eventId`;
 - gated choice повторно проверяет authoritative equipment под тем же
   expedition lock; доступный вариант находится в `choices`, недоступный — в
@@ -562,6 +566,9 @@ Accept: application/json
   receipt возвращает `404 EVENT_RESULT_NOT_FOUND` без раскрытия владельца;
 - повторное acknowledgement того же receipt возвращает стабильные
   `acknowledgedAt` и `serverTime` и не выполняет вторую мутацию;
+- acknowledgement захватывает account-deletion subject lock внутри своей
+  транзакции до receipt lookup/update, поэтому concurrent deletion не может
+  превратить stale command в частичный ACK или другой доменный ответ;
 - после успешного acknowledgement mobile перечитывает authoritative
   `GET /home`;
 - acknowledgement не начисляет награды и не меняет expedition/progression или
