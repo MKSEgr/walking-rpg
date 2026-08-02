@@ -88,10 +88,16 @@ never predicts, unlocks or advertises a stage that the server did not return.
 
 Portraits are static repaint boundaries, carry a complete semantic label and
 pair the active marker with text elsewhere in the card. The first journey and
-the journal share the same portrait. Home currently exposes the accepted pet
-name, level and bond, but not the server-owned `petId` or `evolutionStage`; its
-hero therefore uses a textual active-companion badge and never guesses which
-portrait or form to draw.
+the journal share the same portrait. Home now carries the same identity into
+its expedition hero only when the accepted mobile snapshot contains the
+server-owned `petId`, species and `evolutionStage`. Older cached responses that
+predate those additive fields keep the textual active-companion badge; the
+client never derives identity or form from the pet name.
+
+The Home companion signal pairs the portrait with explicit active-companion,
+level, form and bond text. It becomes vertical on narrow layouts, remains a
+static presentation of the accepted snapshot and does not affect compass
+visibility, command execution or navigation lifecycle.
 
 ## First chapter environment
 
@@ -205,12 +211,10 @@ server sync and the authoritative checkpoint without changing their meaning.
 
 ## Next visual slices
 
-1. Carry the active companion portrait into Home only after its read model
-   exposes server-owned `petId` and `evolutionStage`.
-2. Turn the expedition chapter into a visual route map only from an
+1. Turn the expedition chapter into a visual route map only from an
    authoritative topology/read model, without adding GPS or real-time walking
    interaction.
-3. Split the journal into player-facing tabs only when closed-beta content
+2. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
-4. Produce app icon, splash, store screenshots and motion guidelines only after
+3. Produce app icon, splash, store screenshots and motion guidelines only after
    the in-game direction is approved.

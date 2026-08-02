@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
+import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
@@ -1007,6 +1008,10 @@ class _ExpeditionHero extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final int dailyPercent = (snapshot.dailyProgress * 100).round();
+    final bool hasCompanionPortrait =
+        snapshot.petId != null &&
+        snapshot.petSpecies != null &&
+        snapshot.petEvolutionStage != null;
     return ExpeditionPanel(
       tone: ExpeditionPanelTone.lumen,
       padding: const EdgeInsets.all(22),
@@ -1030,14 +1035,19 @@ class _ExpeditionHero extends StatelessWidget {
                 label: snapshot.currentNodeName,
                 icon: completed ? Icons.flag_outlined : Icons.radar,
               ),
-              ExpeditionBadge(
-                key: const Key('home-active-companion-badge'),
-                label: '${snapshot.petName} · ур. ${snapshot.petLevel}',
-                icon: Icons.pets_outlined,
-                tone: ExpeditionPanelTone.resonance,
-              ),
+              if (!hasCompanionPortrait)
+                ExpeditionBadge(
+                  key: const Key('home-active-companion-badge'),
+                  label: '${snapshot.petName} · ур. ${snapshot.petLevel}',
+                  icon: Icons.pets_outlined,
+                  tone: ExpeditionPanelTone.resonance,
+                ),
             ],
           ),
+          if (hasCompanionPortrait) ...<Widget>[
+            const SizedBox(height: 12),
+            _ActiveCompanionCard(snapshot: snapshot),
+          ],
           const SizedBox(height: 16),
           Text(
             completed ? 'Экспедиция завершена' : 'Экспедиция ждёт твоих шагов',
@@ -1125,6 +1135,107 @@ class _ExpeditionHero extends StatelessWidget {
             ).textTheme.labelMedium?.copyWith(color: palette.energy),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActiveCompanionCard extends StatelessWidget {
+  const _ActiveCompanionCard({required this.snapshot});
+
+  final HomeSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final String petId = snapshot.petId!;
+    final String species = snapshot.petSpecies!;
+    final int evolutionStage = snapshot.petEvolutionStage!;
+
+    final Widget portrait = CompanionPortrait(
+      key: const Key('home-active-companion-portrait'),
+      petId: petId,
+      name: snapshot.petName,
+      species: species,
+      evolutionStage: evolutionStage,
+      active: true,
+      size: 78,
+    );
+    final Widget details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'АКТИВНЫЙ СПУТНИК',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: palette.resonance,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.9,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: <Widget>[
+            ExpeditionBadge(
+              label: '${snapshot.petName} · ур. ${snapshot.petLevel}',
+              icon: Icons.pets_outlined,
+              tone: ExpeditionPanelTone.resonance,
+            ),
+            ExpeditionBadge(
+              label: 'Форма ${evolutionStage + 1}',
+              icon: Icons.auto_awesome_outlined,
+              tone: evolutionStage > 0
+                  ? ExpeditionPanelTone.resonance
+                  : ExpeditionPanelTone.neutral,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '$species · связь ${snapshot.petBond}',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
+      ],
+    );
+
+    return Semantics(
+      container: true,
+      child: DecoratedBox(
+        key: const Key('home-active-companion-badge'),
+        decoration: BoxDecoration(
+          color: palette.resonance.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: palette.resonance.withValues(alpha: 0.38)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              if (constraints.maxWidth < 280) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    portrait,
+                    const SizedBox(height: 12),
+                    details,
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  portrait,
+                  const SizedBox(width: 14),
+                  Expanded(child: details),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
