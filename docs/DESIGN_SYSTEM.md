@@ -112,6 +112,20 @@ Home supplies only the progress from its accepted snapshot; cached state stays
 visually honest, and the vista does not participate in impression visibility or
 navigation lifecycle decisions.
 
+## Entry experience
+
+The authentication entry uses the same quiet frontier backdrop and first-
+chapter vista as the accepted in-game direction. The vista is atmospheric and
+receives no progress value before authentication, so it cannot imply a player
+route or accepted server state.
+
+Sign-in remains a thin presentation over the existing OIDC lifecycle. The
+screen preserves controller-owned busy, reauthentication, error and notice
+states; it opens the same system-browser flow and does not handle credentials.
+Privacy facts shown before entry are limited to existing product boundaries:
+no GPS and read-only step access. Status messages are live regions, while the
+illustration exposes one concise image semantic.
+
 ## Journal composition
 
 The path journal extends the expedition language without becoming a second
@@ -140,5 +154,7 @@ accepted read models.
    interaction.
 3. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
-4. Produce app icon, splash, store screenshots and motion guidelines only after
+4. Carry the same trust-layer visual language into account, recovery and
+   validation routes without changing their safety workflows.
+5. Produce app icon, splash, store screenshots and motion guidelines only after
    the in-game direction is approved.

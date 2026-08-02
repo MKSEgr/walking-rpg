@@ -16,6 +16,7 @@ import 'package:walking_rpg_mobile/features/activity/application/activity_sync_c
 import 'package:walking_rpg_mobile/features/activity/data/activity_api_client.dart';
 import 'package:walking_rpg_mobile/features/activity/data/platform_health_step_source.dart';
 import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
+import 'package:walking_rpg_mobile/features/auth/presentation/auth_expedition_screen.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
 import 'package:walking_rpg_mobile/features/equipment/data/equipment_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
@@ -491,78 +492,12 @@ class _LoginScreen extends StatelessWidget {
     final bool busy =
         controller.state == AuthLifecycleState.authenticating ||
         controller.isBusy;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      const Icon(Icons.directions_walk, size: 56),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Walking RPG',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        reauthentication
-                            ? 'Сессия завершена. Войдите снова, чтобы '
-                                  'продолжить синхронизацию и игровые действия.'
-                            : 'Войдите через корпоративную учётную запись.',
-                        textAlign: TextAlign.center,
-                      ),
-                      if (controller.message != null) ...<Widget>[
-                        const SizedBox(height: 12),
-                        Text(
-                          controller.message!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                      ],
-                      if (controller.notice != null) ...<Widget>[
-                        const SizedBox(height: 12),
-                        Text(
-                          controller.notice!,
-                          key: const Key('auth-notice'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      FilledButton.icon(
-                        key: const Key('oidc-sign-in-button'),
-                        onPressed: busy ? null : controller.signIn,
-                        icon: busy
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.login),
-                        label: Text(busy ? 'Открываем вход...' : 'Войти'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return AuthExpeditionScreen(
+      reauthentication: reauthentication,
+      busy: busy,
+      message: controller.message,
+      notice: controller.notice,
+      onSignIn: controller.signIn,
     );
   }
 }
