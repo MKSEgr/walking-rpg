@@ -10,6 +10,8 @@ import 'package:walking_rpg_mobile/core/auth/owner_local_state_cleaner.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
 import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
@@ -21,6 +23,7 @@ void main() {
   testWidgets('account deletion requires two confirmations and fresh login', (
     WidgetTester tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     final OidcConfiguration oidc = _oidc();
     final _MemoryStore store = _MemoryStore(
       _session(oidc, subject: 'user-1', suffix: 'initial'),
@@ -50,6 +53,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: WalkingRpgTheme.dark(),
         home: AccountScreen(
           controller: controller,
           identity: controller.identity!,
@@ -66,11 +70,27 @@ void main() {
       ),
     );
 
+    expect(find.byType(ExpeditionBackdrop), findsOneWidget);
+    expect(find.byKey(const Key('account-pilot-dossier')), findsOneWidget);
+    expect(find.text('ДОСЬЕ ПИЛОТА'), findsOneWidget);
+    expect(find.text('OIDC ПОДТВЕРЖДЕНА'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Досье пилота, user-1, Защищённая OIDC-сессия'),
+      findsOneWidget,
+    );
     expect(find.text('Ожидают проверки: 2'), findsOneWidget);
     await tester.tap(find.byKey(const Key('account-command-recovery')));
     expect(recoveryOpened, isTrue);
 
-    await tester.tap(find.byKey(const Key('account-delete-button')));
+    final Finder deleteButton = find.byKey(const Key('account-delete-button'));
+    await Scrollable.ensureVisible(
+      tester.element(deleteButton),
+      alignment: 0.5,
+      duration: Duration.zero,
+    );
+    await tester.pump();
+    expect(deleteButton.hitTestable(), findsOneWidget);
+    await tester.tap(deleteButton);
     await tester.pumpAndSettle();
     expect(find.text('Удалить аккаунт?'), findsOneWidget);
     expect(find.byKey(const Key('account-delete-phrase')), findsNothing);
@@ -99,6 +119,7 @@ void main() {
     expect(controller.state, AuthLifecycleState.unauthenticated);
     expect(controller.notice, contains('11111111-1111-1111-1111-111111111111'));
     expect(store.session, isNull);
+    semantics.dispose();
   });
 
   testWidgets('account recovery count follows runtime changes while open', (

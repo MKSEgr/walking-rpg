@@ -145,6 +145,25 @@ Cached journal snapshots stay read-only and never infer ENERGY from stale
 platform state. Visual badges summarize only values already present in the
 accepted read models.
 
+## Pilot dossier and account controls
+
+The account surface is a pilot dossier, not another progression screen. It
+shares the expedition backdrop, field panels and semantic accents so the route
+language survives outside Home, while displaying only authenticated identity
+and local runtime state that the screen actually owns.
+
+- the dossier names the current identity and distinguishes a protected OIDC
+  session from development mode without implying extra account status;
+- saved-action counts and store warnings continue to come from the existing
+  owner-scoped command runtime, and the Validation Center remains visible only
+  when the shell supplies that internal route;
+- export stays a plain, portable JSON data action and does not become a reward
+  or progression mechanic;
+- permanent deletion keeps signal-red styling, explicit irreversible copy and
+  the existing two-step plus fresh-login confirmation;
+- no pet form, chapter progress, security claim or server capability is
+  inferred for decorative effect.
+
 ## Next visual slices
 
 1. Carry the active companion portrait into Home only after its read model
