@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,6 +19,11 @@ import java.util.concurrent.TimeoutException;
 import javax.sql.DataSource;
 
 import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.expedition.application.EventResultAcknowledgementService;
+import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
+import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
+import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
+import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceResult;
 import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +76,12 @@ class AccountDeletionIntegrationTest {
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private ExpeditionAdvanceService expeditionAdvanceService;
+
+    @Autowired
+    private EventResultAcknowledgementService acknowledgementService;
 
     @Autowired
     private BlockingPushDeliveryProvider blockingPushDeliveryProvider;
@@ -288,6 +300,106 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, rowCount("account_deletion_receipt"));
     }
 
+    @Test
+    void shouldSerializeExpeditionAdvanceWithDeletionForSameSubject() throws Exception {
+        String userId = "expedition-race-user";
+        seedAccount(userId);
+        seedEnergyWallet(userId, 100);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<ExpeditionAdvanceResult> advance = null;
+        Future<AccountDeletionReceipt> deletion = null;
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (Statement lock = blocker.createStatement()) {
+                    lock.execute(
+                            "LOCK TABLE expedition_progress IN ACCESS EXCLUSIVE MODE"
+                    );
+                }
+
+                advance = executor.submit(
+                        () -> expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                                userId,
+                                StarterExpeditionContent.EXPEDITION_ID,
+                                10,
+                                "expedition-race-advance"
+                        ))
+                );
+                awaitBlockedQuery("FROM expedition_progress");
+
+                Future<AccountDeletionReceipt> deletionTask = executor.submit(
+                        () -> service.requestAccountDeletion(
+                                userId,
+                                "expedition-race-deletion",
+                                "DELETE"
+                        )
+                );
+                deletion = deletionTask;
+                awaitBlockedQuery("pg_advisory_xact_lock");
+
+                assertThrows(
+                        TimeoutException.class,
+                        () -> deletionTask.get(250, TimeUnit.MILLISECONDS)
+                );
+                blocker.commit();
+
+                assertEquals(10, advance.get(5, TimeUnit.SECONDS).progressAfter());
+                assertEquals(
+                        "COMPLETED",
+                        deletionTask.get(5, TimeUnit.SECONDS).status()
+                );
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (advance != null && !advance.isDone()) {
+                        advance.cancel(true);
+                    }
+                    if (deletion != null && !deletion.isDone()) {
+                        deletion.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        }
+
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(0, rowCount("expedition_progress"));
+        assertEquals(0, rowCount("processed_expedition_advance"));
+        assertEquals(0, rowCount("economy_wallet"));
+        assertEquals(1, rowCount("account_deletion_receipt"));
+        assertThrows(
+                AccountDeletedException.class,
+                () -> expeditionAdvanceService.advance(new ExpeditionAdvanceCommand(
+                        userId,
+                        StarterExpeditionContent.EXPEDITION_ID,
+                        1,
+                        "stale-expedition-advance"
+                ))
+        );
+    }
+
+    @Test
+    void shouldRejectEventAcknowledgementForDeletedSubject() {
+        String userId = "deleted-ack-user";
+        seedAccount(userId);
+        service.requestAccountDeletion(
+                userId,
+                "deleted-ack-request",
+                "DELETE"
+        );
+
+        assertThrows(
+                AccountDeletedException.class,
+                () -> acknowledgementService.acknowledge(
+                        userId,
+                        UUID.fromString("10000000-0000-0000-0000-000000000001")
+                )
+        );
+    }
+
     private void seedAccount(String userId) {
         Timestamp timestamp = Timestamp.from(NOW);
         jdbcTemplate.update(
@@ -381,6 +493,16 @@ class AccountDeletionIntegrationTest {
                 """, userId);
     }
 
+    private void seedEnergyWallet(String userId, long balance) {
+        Timestamp timestamp = Timestamp.from(NOW);
+        jdbcTemplate.update("""
+                INSERT INTO economy_wallet (
+                    user_id, currency_code, balance, version,
+                    created_at, updated_at
+                ) VALUES (?, 'ENERGY', ?, 1, ?, ?)
+                """, userId, balance, timestamp, timestamp);
+    }
+
     private int rowCount(String table) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM " + table,
@@ -390,6 +512,10 @@ class AccountDeletionIntegrationTest {
     }
 
     private void awaitAccountExportMilestoneReadBlock() throws Exception {
+        awaitBlockedQuery("FROM first_journey_milestone");
+    }
+
+    private void awaitBlockedQuery(String queryFragment) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (System.nanoTime() < deadline) {
             Integer waiting = jdbcTemplate.queryForObject("""
@@ -397,15 +523,15 @@ class AccountDeletionIntegrationTest {
                     FROM pg_stat_activity
                     WHERE datname = current_database()
                       AND wait_event_type = 'Lock'
-                      AND query LIKE '%FROM first_journey_milestone%'
-                    """, Integer.class);
+                      AND query LIKE ?
+                    """, Integer.class, "%" + queryFragment + "%");
             if (waiting != null && waiting > 0) {
                 return;
             }
             Thread.sleep(25);
         }
         throw new IllegalStateException(
-                "Account export did not reach the blocked milestone read"
+                "Expected query did not reach the blocked state: " + queryFragment
         );
     }
 
