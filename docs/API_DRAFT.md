@@ -29,6 +29,9 @@
 `craftingOperations` и `craftingIngredients` без access tokens или локального
 mobile outbox. Persistent loadout и его exact command snapshots входят в
 `equipment` и `equipmentOperations`.
+Все секции одного файла читаются в одной read-only `REPEATABLE_READ`
+транзакции. Конкурентная игровая команда или удаление аккаунта не может
+смешать в одном экспорте состояния базы до и после своего commit.
 
 ```http
 Authorization: Bearer <access-token>

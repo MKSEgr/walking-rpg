@@ -397,6 +397,7 @@ public class PlatformAdminService {
         }, normalizeNullable(cohortCode), normalizeNullable(cohortCode));
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> exportAccount(String userId) {
         String normalized = requireText(userId, "userId");
         Map<String, Object> export = new LinkedHashMap<>();

@@ -1,5 +1,8 @@
 package com.walkingrpg.backend.platform.application;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -11,6 +14,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import javax.sql.DataSource;
 
 import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
@@ -62,6 +67,9 @@ class AccountDeletionIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DataSource dataSource;
 
     @Autowired
     private BlockingPushDeliveryProvider blockingPushDeliveryProvider;
@@ -189,6 +197,52 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, ((List<?>) export.get("craftingIngredients")).size());
         assertEquals(1, ((List<?>) export.get("equipment")).size());
         assertEquals(1, ((List<?>) export.get("equipmentOperations")).size());
+    }
+
+    @Test
+    void shouldExportAllSectionsFromOneRepeatableSnapshot() throws Exception {
+        String userId = "consistent-export-user";
+        seedAccount(userId);
+        Map<String, Object> duringConcurrentInsert;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        try (Connection blocker = dataSource.getConnection()) {
+            blocker.setAutoCommit(false);
+            try (Statement lock = blocker.createStatement()) {
+                lock.execute(
+                        "LOCK TABLE first_journey_milestone IN ACCESS EXCLUSIVE MODE"
+                );
+            }
+
+            Future<Map<String, Object>> pending = executor.submit(
+                    () -> service.exportAccount(userId)
+            );
+            awaitAccountExportMilestoneReadBlock();
+
+            try (PreparedStatement insertEvent = blocker.prepareStatement("""
+                    INSERT INTO platform_event (
+                        user_id, event_name, occurred_at,
+                        attributes, received_at
+                    ) VALUES (?, 'concurrent_export_event', ?, '{}'::jsonb, ?)
+                    """)) {
+                Timestamp eventTime = Timestamp.from(NOW.plusSeconds(60));
+                insertEvent.setString(1, userId);
+                insertEvent.setTimestamp(2, eventTime);
+                insertEvent.setTimestamp(3, eventTime);
+                insertEvent.executeUpdate();
+            }
+            blocker.commit();
+            duringConcurrentInsert = pending.get(5, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(1, ((List<?>) duringConcurrentInsert.get("telemetry")).size());
+        assertEquals(2, rowCount("platform_event"));
+
+        Map<String, Object> afterInsert = service.exportAccount(userId);
+        assertEquals(2, ((List<?>) afterInsert.get("telemetry")).size());
     }
 
     @Test
@@ -333,6 +387,26 @@ class AccountDeletionIntegrationTest {
                 Integer.class
         );
         return count == null ? 0 : count;
+    }
+
+    private void awaitAccountExportMilestoneReadBlock() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND query LIKE '%FROM first_journey_milestone%'
+                    """, Integer.class);
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new IllegalStateException(
+                "Account export did not reach the blocked milestone read"
+        );
     }
 
     @TestConfiguration(proxyBeanMethods = false)
