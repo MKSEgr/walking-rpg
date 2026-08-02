@@ -4,12 +4,14 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:walking_rpg_mobile/app/expedition_boundary_screen.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
 import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
 import 'package:walking_rpg_mobile/features/activity/application/activity_sync_coordinator.dart';
@@ -87,8 +89,25 @@ class _AuthGateState extends State<AuthGate> {
       builder: (BuildContext context, Widget? child) {
         switch (widget.controller.state) {
           case AuthLifecycleState.initializing:
+            return const ExpeditionBoundaryScreen.loading(
+              key: Key('auth-initializing-screen'),
+              badgeLabel: 'Канал экспедиции',
+              title: 'Восстанавливаем маршрут',
+              message:
+                  'Проверяем защищённую сессию и локальное состояние '
+                  'экспедиции.',
+              icon: Icons.shield_outlined,
+            );
           case AuthLifecycleState.stoppingRuntime:
-            return const _AuthProgressScreen();
+            return const ExpeditionBoundaryScreen.loading(
+              key: Key('auth-stopping-screen'),
+              badgeLabel: 'Безопасное завершение',
+              title: 'Закрываем маршрут',
+              message:
+                  'Завершаем активные операции и защищённо закрываем '
+                  'сессию.',
+              icon: Icons.power_settings_new,
+            );
           case AuthLifecycleState.unauthenticated:
           case AuthLifecycleState.reauthenticationRequired:
           case AuthLifecycleState.authenticating:
@@ -96,7 +115,15 @@ class _AuthGateState extends State<AuthGate> {
           case AuthLifecycleState.authenticated:
             final AuthIdentity? identity = widget.controller.identity;
             if (identity == null) {
-              return const _AuthProgressScreen();
+              return const ExpeditionBoundaryScreen.loading(
+                key: Key('auth-identity-screen'),
+                badgeLabel: 'Проверка доступа',
+                title: 'Подтверждаем маршрут',
+                message:
+                    'Сверяем защищённую сессию перед открытием '
+                    'экспедиции.',
+                icon: Icons.verified_user_outlined,
+              );
             }
             return AuthenticatedApplicationShell(
               key: ValueKey<String>(identity.ownerId),
@@ -454,7 +481,16 @@ class _ValidationMetadataProgressScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return const ExpeditionBoundaryScreen.loading(
+      key: Key('validation-metadata-loading-screen'),
+      badgeLabel: 'Внутренний контур',
+      title: 'Проверяем среду валидации',
+      message:
+          'Сверяем версию приложения, сборку и устройство перед '
+          'запуском Validation Center.',
+      icon: Icons.fact_check_outlined,
+      tone: ExpeditionPanelTone.resonance,
+    );
   }
 }
 
@@ -463,19 +499,13 @@ class _ValidationMetadataErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'Validation Center не запущен: runtime app/build metadata '
-              'недоступны или некорректны.',
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      ),
+    return const ExpeditionBoundaryScreen.blocked(
+      key: Key('validation-metadata-error-screen'),
+      badgeLabel: 'Контур заблокирован',
+      title: 'Validation Center не запущен',
+      message: 'Runtime app/build metadata недоступны или некорректны.',
+      icon: Icons.phonelink_erase,
+      tone: ExpeditionPanelTone.resonance,
     );
   }
 }
@@ -499,14 +529,5 @@ class _LoginScreen extends StatelessWidget {
       notice: controller.notice,
       onSignIn: controller.signIn,
     );
-  }
-}
-
-class _AuthProgressScreen extends StatelessWidget {
-  const _AuthProgressScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
