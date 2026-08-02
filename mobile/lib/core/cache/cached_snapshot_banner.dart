@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 
 class CachedSnapshotBanner extends StatelessWidget {
   const CachedSnapshotBanner({
     super.key,
     required this.metadata,
-    this.title = 'Офлайн-режим',
+    this.title = 'Маршрут доступен только для чтения',
   });
 
   final CachedReadMetadata metadata;
@@ -14,36 +15,84 @@ class CachedSnapshotBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-    return Card(
+    return Semantics(
       key: const Key('cached-snapshot-banner'),
-      color: colors.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      container: true,
+      liveRegion: true,
+      child: ExpeditionPanel(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Icon(Icons.cloud_off_outlined, color: colors.onSecondaryContainer),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: colors.onSecondaryContainer,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ExpeditionBadge(
+                label: 'Сохранённый маршрут',
+                icon: Icons.cloud_off_outlined,
+                tone: ExpeditionPanelTone.neutral,
+                allowWrap: true,
+                accentColor: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Semantics(
+              key: const Key('cached-snapshot-heading'),
+              container: true,
+              header: true,
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Показано сохранённое состояние от '
+              '${_format(metadata.cachedAt)}. Изменения временно '
+              'недоступны до восстановления связи.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerHighest.withValues(alpha: 0.56),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colors.outlineVariant.withValues(alpha: 0.72),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: colors.onSurfaceVariant,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Показано сохранённое состояние от '
-                    '${_format(metadata.cachedAt)}. Изменения временно '
-                    'недоступны. Причина: ${metadata.reason}.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.onSecondaryContainer,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            'Почему показана копия',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            metadata.reason,
+                            key: const Key('cached-snapshot-reason'),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colors.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
