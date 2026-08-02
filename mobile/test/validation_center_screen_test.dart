@@ -66,7 +66,6 @@ void main() {
         );
     addTearDown(controller.dispose);
     final SemanticsHandle semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -89,6 +88,7 @@ void main() {
       ),
       findsOneWidget,
     );
+    semantics.dispose();
     expect(find.byKey(const Key('validation-source-sha')), findsOneWidget);
     expect(find.text('Журнал · 0/64'), findsOneWidget);
 
