@@ -1202,39 +1202,36 @@ class _ActiveCompanionCard extends StatelessWidget {
       ],
     );
 
-    return Semantics(
-      container: true,
-      child: DecoratedBox(
-        key: const Key('home-active-companion-badge'),
-        decoration: BoxDecoration(
-          color: palette.resonance.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: palette.resonance.withValues(alpha: 0.38)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              if (constraints.maxWidth < 280) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    portrait,
-                    const SizedBox(height: 12),
-                    details,
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+    return DecoratedBox(
+      key: const Key('home-active-companion-badge'),
+      decoration: BoxDecoration(
+        color: palette.resonance.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.resonance.withValues(alpha: 0.38)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            if (constraints.maxWidth < 280) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   portrait,
-                  const SizedBox(width: 14),
-                  Expanded(child: details),
+                  const SizedBox(height: 12),
+                  details,
                 ],
               );
-            },
-          ),
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                portrait,
+                const SizedBox(width: 14),
+                Expanded(child: details),
+              ],
+            );
+          },
         ),
       ),
     );
