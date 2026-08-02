@@ -164,6 +164,25 @@ and local runtime state that the screen actually owns.
 - no pet form, chapter progress, security claim or server capability is
   inferred for decorative effect.
 
+## Saved-action recovery
+
+The saved-action route is a recovery trust layer, not an alternate command
+console. It uses the expedition backdrop and field panels while preserving the
+owner-scoped runtime as the only source of queue state.
+
+- the summary displays only the accepted local snapshot counts for pending and
+  terminal failed records;
+- explicit replay remains available only when pending records exist and keeps
+  the original command, payload and idempotency boundary;
+- pending records cannot be removed because the server response may have been
+  lost after the mutation completed;
+- only terminal failed diagnostic records expose dismissal, with the existing
+  confirmation that server state is not changed;
+- unreadable storage remains fail-closed, exposes no raw path, payload or token
+  data and never implies that the queue was cleared;
+- compact layouts and enlarged system text stay scrollable, and signal red is
+  paired with explicit rejected-state copy rather than used as color alone.
+
 ## Next visual slices
 
 1. Carry the active companion portrait into Home only after its read model
@@ -173,7 +192,7 @@ and local runtime state that the screen actually owns.
    interaction.
 3. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
-4. Carry the same trust-layer visual language into account, recovery and
-   validation routes without changing their safety workflows.
+4. Carry the same trust-layer visual language into the internal Validation
+   Center without changing its owner, export or evidence safety workflows.
 5. Produce app icon, splash, store screenshots and motion guidelines only after
    the in-game direction is approved.
