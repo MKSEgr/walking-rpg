@@ -50,11 +50,11 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                         children: <Widget>[
                           _ValidationHero(snapshot: snapshot),
                           const SizedBox(height: 22),
-                          const Semantics(
-                            key: Key('validation-launch-heading'),
+                          Semantics(
+                            key: const Key('validation-launch-heading'),
                             container: true,
                             header: true,
-                            child: ExpeditionSectionTitle(
+                            child: const ExpeditionSectionTitle(
                               title: 'Паспорт запуска',
                               subtitle:
                                   'Точный build, источник данных и режим '
@@ -65,11 +65,11 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                           const SizedBox(height: 12),
                           _LaunchCard(launch: snapshot.launch),
                           const SizedBox(height: 22),
-                          const Semantics(
-                            key: Key('validation-actions-heading'),
+                          Semantics(
+                            key: const Key('validation-actions-heading'),
                             container: true,
                             header: true,
-                            child: ExpeditionSectionTitle(
+                            child: const ExpeditionSectionTitle(
                               title: 'Сценарий проверки',
                               subtitle:
                                   'Три явных шага оператора без фоновых '
@@ -112,11 +112,11 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                               snapshot.authoritativeCheckpoint !=
                                   null) ...<Widget>[
                             const SizedBox(height: 22),
-                            const Semantics(
-                              key: Key('validation-observations-heading'),
+                            Semantics(
+                              key: const Key('validation-observations-heading'),
                               container: true,
                               header: true,
-                              child: ExpeditionSectionTitle(
+                              child: const ExpeditionSectionTitle(
                                 title: 'Принятые наблюдения',
                                 subtitle:
                                     'Только факты текущего запуска и свежего '
@@ -141,11 +141,11 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                             ),
                           ],
                           const SizedBox(height: 22),
-                          const Semantics(
-                            key: Key('validation-journal-heading'),
+                          Semantics(
+                            key: const Key('validation-journal-heading'),
                             container: true,
                             header: true,
-                            child: ExpeditionSectionTitle(
+                            child: const ExpeditionSectionTitle(
                               title: 'Журнал запуска',
                               subtitle:
                                   'Последовательность действий без raw '
@@ -156,11 +156,11 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                           const SizedBox(height: 12),
                           _JournalCard(entries: snapshot.journal),
                           const SizedBox(height: 22),
-                          const Semantics(
-                            key: Key('validation-evidence-heading'),
+                          Semantics(
+                            key: const Key('validation-evidence-heading'),
                             container: true,
                             header: true,
-                            child: ExpeditionSectionTitle(
+                            child: const ExpeditionSectionTitle(
                               title: 'Пакет evidence',
                               subtitle:
                                   'Проверяемый JSON для ручного '
