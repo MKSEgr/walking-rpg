@@ -88,6 +88,10 @@ void main() {
       ),
       findsOneWidget,
     );
+    _expectHeading(tester, const Key('validation-launch-heading'));
+    _expectHeading(tester, const Key('validation-actions-heading'));
+    _expectHeading(tester, const Key('validation-journal-heading'));
+    _expectHeading(tester, const Key('validation-evidence-heading'));
     semantics.dispose();
     expect(find.byKey(const Key('validation-source-sha')), findsOneWidget);
     expect(find.text('Журнал · 0/64'), findsOneWidget);
@@ -101,6 +105,7 @@ void main() {
     expect(readCalls, 1);
     expect(find.text('Aggregated total: 3000'), findsOneWidget);
     expect(find.text('Журнал · 3/64'), findsOneWidget);
+    _expectHeading(tester, const Key('validation-observations-heading'));
 
     await _tapAction(
       tester,
@@ -261,6 +266,12 @@ Future<void> _bringIntoView(WidgetTester tester, Finder target) async {
     duration: Duration.zero,
   );
   await tester.pump();
+}
+
+void _expectHeading(WidgetTester tester, Key key) {
+  final Semantics heading = tester.widget<Semantics>(find.byKey(key));
+  expect(heading.container, isTrue);
+  expect(heading.properties.header, isTrue);
 }
 
 final class _RecordingValidationEvidenceExporter
