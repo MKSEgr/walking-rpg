@@ -10,6 +10,7 @@ import java.util.Map;
 import tools.jackson.databind.json.JsonMapper;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.activity.retention.ActivityRetentionService;
+import com.walkingrpg.backend.platform.infrastructure.SquadTransactionLock;
 import com.walkingrpg.backend.platform.payment.DisabledPaymentProvider;
 import com.walkingrpg.backend.platform.payment.SandboxPaymentProvider;
 import com.walkingrpg.backend.platform.push.DisabledPushDeliveryProvider;
@@ -160,6 +161,7 @@ class PlatformAdminServiceProviderTest {
                 pushProvider,
                 mock(ActivityRetentionService.class),
                 deletionRegistry,
+                mock(SquadTransactionLock.class),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }

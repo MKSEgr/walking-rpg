@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.sql.DataSource;
 import tools.jackson.databind.ObjectMapper;
@@ -33,6 +34,7 @@ import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
+import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
 import com.walkingrpg.backend.platform.application.PlatformContentCatalog;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
@@ -55,6 +57,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -173,6 +176,110 @@ class PlatformPersistenceIntegrationTest {
                         Map.of("stepId", "first-sync")
                 ))
         );
+    }
+
+    @Test
+    void shouldSerializeOwnerDeletionWithLastMemberLeave() throws Exception {
+        String ownerId = "squad-delete-owner";
+        String memberId = "squad-leave-member";
+        PlatformCommandResponse created = platformService.execute(
+                ownerId,
+                new PlatformCommandRequest(
+                        "CREATE_SQUAD",
+                        "create-squad-for-deletion-race",
+                        Map.of("name", "Concurrent squad")
+                )
+        );
+        Object squad = created.snapshot().userState().get("squad");
+        assertTrue(squad instanceof Map<?, ?>);
+        String squadId = String.valueOf(((Map<?, ?>) squad).get("squadId"));
+        platformService.execute(memberId, new PlatformCommandRequest(
+                "JOIN_SQUAD",
+                "join-squad-for-deletion-race",
+                Map.of("squadId", squadId)
+        ));
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<AccountDeletionReceipt> deletion = null;
+        Future<PlatformCommandResponse> leave = null;
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (PreparedStatement lock = blocker.prepareStatement("""
+                        SELECT 1
+                        FROM roadmap_squad
+                        WHERE squad_id = ?::uuid
+                        FOR UPDATE
+                        """)) {
+                    lock.setString(1, squadId);
+                    try (ResultSet rows = lock.executeQuery()) {
+                        assertTrue(rows.next());
+                    }
+                }
+
+                deletion = executor.submit(() ->
+                        platformAdminService.requestAccountDeletion(
+                                ownerId,
+                                "delete-squad-owner",
+                                "DELETE"
+                        )
+                );
+                awaitBlockedQuery("UPDATE roadmap_squad");
+
+                Future<PlatformCommandResponse> leaveTask = executor.submit(() ->
+                        platformService.execute(memberId, new PlatformCommandRequest(
+                                "LEAVE_SQUAD",
+                                "leave-squad-during-owner-deletion",
+                                Map.of()
+                        ))
+                );
+                leave = leaveTask;
+                awaitBlockedQuery("squad-membership-serialization");
+                assertThrows(
+                        TimeoutException.class,
+                        () -> leaveTask.get(250, TimeUnit.MILLISECONDS)
+                );
+
+                blocker.commit();
+                assertEquals("COMPLETED", deletion.get(5, TimeUnit.SECONDS).status());
+                assertNull(leaveTask.get(5, TimeUnit.SECONDS)
+                        .snapshot().userState().get("squad"));
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (deletion != null && !deletion.isDone()) {
+                        deletion.cancel(true);
+                    }
+                    if (leave != null && !leave.isDone()) {
+                        leave.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        }
+
+        assertEquals(0, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM roadmap_squad
+                WHERE squad_id = ?::uuid
+                """, Integer.class, squadId));
+        assertEquals(0, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM roadmap_squad_member
+                WHERE squad_id = ?::uuid
+                """, Integer.class, squadId));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM app_user WHERE user_id = ?",
+                Integer.class,
+                ownerId
+        ));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM app_user WHERE user_id = ?",
+                Integer.class,
+                memberId
+        ));
     }
 
     @Test
@@ -900,6 +1007,26 @@ class PlatformPersistenceIntegrationTest {
         }
         throw new IllegalStateException(
                 "Platform snapshot did not reach the blocked event fact read"
+        );
+    }
+
+    private void awaitBlockedQuery(String queryFragment) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND query LIKE ?
+                    """, Integer.class, "%" + queryFragment + "%");
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new IllegalStateException(
+                "Expected query did not reach the blocked state: " + queryFragment
         );
     }
 

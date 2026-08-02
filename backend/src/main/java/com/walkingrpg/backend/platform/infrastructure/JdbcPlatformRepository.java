@@ -37,15 +37,18 @@ public class JdbcPlatformRepository implements PlatformRepository {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final AccountDeletionRegistry accountDeletionRegistry;
+    private final SquadTransactionLock squadTransactionLock;
 
     public JdbcPlatformRepository(
             JdbcTemplate jdbcTemplate,
             ObjectMapper objectMapper,
-            AccountDeletionRegistry accountDeletionRegistry
+            AccountDeletionRegistry accountDeletionRegistry,
+            SquadTransactionLock squadTransactionLock
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
         this.accountDeletionRegistry = accountDeletionRegistry;
+        this.squadTransactionLock = squadTransactionLock;
     }
 
     @Override
@@ -191,6 +194,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
             Instant createdAt
     ) {
         ensureUser(ownerUserId, createdAt);
+        squadTransactionLock.lock(squadId);
         Timestamp timestamp = Timestamp.from(createdAt);
         try {
             jdbcTemplate.update("""
@@ -214,6 +218,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
     public void joinSquad(String squadId, String userId, Instant joinedAt) {
         ensureUser(userId, joinedAt);
         try {
+            squadTransactionLock.lock(squadId);
             int inserted = jdbcTemplate.update("""
                     INSERT INTO roadmap_squad_member (
                         squad_id, user_id, joined_at
@@ -233,6 +238,7 @@ public class JdbcPlatformRepository implements PlatformRepository {
 
     @Override
     public void leaveSquad(String squadId, String userId) {
+        squadTransactionLock.lock(squadId);
         jdbcTemplate.update("""
                 DELETE FROM roadmap_squad_member
                 WHERE squad_id = ?::uuid

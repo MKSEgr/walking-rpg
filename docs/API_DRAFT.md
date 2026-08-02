@@ -798,6 +798,10 @@ admin publish, завершившийся после фиксации snapshot, 
   количества шагов, после чего mobile идемпотентно backfill-ит отсутствующие
   служебные milestones;
 - активный питомец затем возвращается в `GET /home` и получает event bond.
+- `CREATE_SQUAD`, `JOIN_SQUAD`, `LEAVE_SQUAD` и удаление аккаунта владельца
+  сериализуются общим transaction-scoped lock по `squadId`; параллельный выход
+  владельца и последнего участника либо удаляет пустой отряд, либо передаёт
+  владение участнику, который остаётся в нём.
 
 ### `commandType=RECORD_COMPASS_IMPRESSION`
 

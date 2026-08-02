@@ -18,6 +18,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.activity.retention.ActivityRetentionService;
+import com.walkingrpg.backend.platform.infrastructure.SquadTransactionLock;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
@@ -48,6 +49,7 @@ public class PlatformAdminService {
     private final PushDeliveryProvider pushDeliveryProvider;
     private final ActivityRetentionService retentionService;
     private final AccountDeletionRegistry accountDeletionRegistry;
+    private final SquadTransactionLock squadTransactionLock;
     private final Clock clock;
 
     public PlatformAdminService(
@@ -57,6 +59,7 @@ public class PlatformAdminService {
             PushDeliveryProvider pushDeliveryProvider,
             ActivityRetentionService retentionService,
             AccountDeletionRegistry accountDeletionRegistry,
+            SquadTransactionLock squadTransactionLock,
             Clock clock
     ) {
         this.jdbcTemplate = jdbcTemplate;
@@ -65,6 +68,7 @@ public class PlatformAdminService {
         this.pushDeliveryProvider = pushDeliveryProvider;
         this.retentionService = retentionService;
         this.accountDeletionRegistry = accountDeletionRegistry;
+        this.squadTransactionLock = squadTransactionLock;
         this.clock = clock;
     }
 
@@ -653,6 +657,7 @@ public class PlatformAdminService {
     }
 
     private void deleteAccountData(String normalized) {
+        squadTransactionLock.lockAffectedByUser(normalized);
         List<String> ownedSquads = jdbcTemplate.query("""
                 SELECT squad_id::text
                 FROM roadmap_squad

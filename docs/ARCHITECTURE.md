@@ -314,6 +314,10 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
   transaction до operation-specific locks/replay. Это включает activity,
   platform, crafting, equipment, expedition advance/resolution и result ACK;
   request-level security check не считается конкурентной границей;
+- squad create/join/leave после subject и user boundary получают общий
+  transaction-scoped lock по canonical `squadId`; account deletion получает
+  те же squad locks в стабильном порядке до выбора нового владельца и удаления
+  membership, поэтому конкурентные выходы не оставляют отряд без участников;
 - после account boundary user-scoped advisory lock сериализует crafting;
 - после exact replay новая craft-команда получает тот же user+expedition lock,
   что advance/resolution, и проверяет отсутствие pending event result до
