@@ -16,7 +16,8 @@ Backend уже умел выгружать и удалять данные пол
 - `GET /api/v1/account/export` остаётся authenticated JSON export. Mobile
   создаёт временный файл для системного share sheet и удаляет staging-копию
   после его закрытия. Постоянное сохранение выполняет выбранное пользователем
-  системное приложение.
+  системное приложение. Все account-scoped секции backend читает из одного
+  read-only `REPEATABLE_READ` snapshot, не смешивая конкурентные commits.
 - Удаление выполняется через
   `POST /api/v1/account/deletion-requests` с обязательными
   `Idempotency-Key` и точным server-side подтверждением `DELETE`.
