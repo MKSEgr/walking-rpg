@@ -824,6 +824,33 @@ IDs; произвольные `recipeId`, `eventId`, `choiceId`, availability и
 snapshot отправляет его только после viewport exposure соответствующей card при
 текущей Home route и foreground app.
 
+## `GET /api/v1/admin/platform/analytics/retention`
+
+Admin-only агрегированный D1/D7/D30 read model. Cohort day определяется по
+UTC-дате `app_user.created_at`. Activity arm использует сохранённую локальную
+дату успешной activity state, а telemetry arm — UTC-дату server-owned
+`platform_event.received_at`. Client-controlled `occurredAt` сохраняется для
+диагностики, но не может переместить пользователя в другой retention day.
+Telemetry day проверяется полуинтервалом `[UTC day start, next UTC day start)`,
+который использует V16 index `(user_id, received_at)` без преобразования
+индексируемой колонки к `date`.
+Все cohort/day/onboarding counters одного ответа читаются в одной
+`REPEATABLE_READ` транзакции и не смешивают состояния до и после конкурентной
+записи.
+
+```json
+{
+  "cohortSize": 40,
+  "d1": {"day": 1, "retainedUsers": 24, "rate": 0.6},
+  "d7": {"day": 7, "retainedUsers": 14, "rate": 0.35},
+  "d30": {"day": 30, "retainedUsers": 8, "rate": 0.2},
+  "onboarding": {"startedUsers": 32, "completedUsers": 19}
+}
+```
+
+Значения являются cumulative cohort summary текущей базы и не заменяют
+датированное beta evidence с зафиксированными cohort/build/периодом.
+
 ## `GET /api/v1/admin/platform/analytics/first-journey`
 
 Admin-only read model первого пути. Опциональный `cohortCode` ограничивает

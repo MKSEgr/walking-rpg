@@ -23,6 +23,7 @@ import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -311,6 +312,7 @@ public class PlatformAdminService {
         }, normalizedLimit);
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> retentionSummary() {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("cohortSize", queryLong("SELECT count(*) FROM app_user"));
@@ -715,10 +717,20 @@ public class PlatformAdminService {
                     SELECT 1
                     FROM platform_event e
                     WHERE e.user_id = u.user_id
-                      AND (e.occurred_at AT TIME ZONE 'UTC')::date =
-                          (u.created_at AT TIME ZONE 'UTC')::date + ?
+                      AND e.received_at >= (
+                          (
+                              (u.created_at AT TIME ZONE 'UTC')::date
+                              + CAST(? AS integer)
+                          )::timestamp AT TIME ZONE 'UTC'
+                      )
+                      AND e.received_at < (
+                          (
+                              (u.created_at AT TIME ZONE 'UTC')::date
+                              + CAST(? AS integer)
+                          )::timestamp AT TIME ZONE 'UTC'
+                      )
                 )
-                """, Long.class, day, day);
+                """, Long.class, day, day, day + 1);
         long cohort = queryLong("SELECT count(*) FROM app_user");
         long retainedValue = retained == null ? 0 : retained;
         return Map.of(

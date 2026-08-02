@@ -352,8 +352,8 @@ def validate_schema(
         for version in (latest, source_version, restored_version)
     ):
         fail("Flyway versions must be numeric strings")
-    if latest != "15" or source_version != latest or restored_version != latest:
-        fail("Flyway source/restore versions must match repository V15")
+    if latest != "16" or source_version != latest or restored_version != latest:
+        fail("Flyway source/restore versions must match repository V16")
     require_bool(
         flyway.get("validationSuccessful"),
         True,
@@ -363,15 +363,15 @@ def validate_schema(
     manifests = require_dict(evidence.get("manifests"), "manifests")
     require_exact_keys(manifests, MANIFEST_KEYS, "manifests")
     if manifests.get("tableCount") != len(EXPECTED_TABLES):
-        fail("manifests.tableCount must match the exact V15 schema")
+        fail("manifests.tableCount must match the exact V16 schema")
     if manifests.get("applicationTableCount") != len(EXPECTED_TABLES) - 1:
-        fail("manifests.applicationTableCount must match the exact V15 schema")
+        fail("manifests.applicationTableCount must match the exact V16 schema")
     if manifests.get("fixtureCoveredApplicationTableCount") != len(
         EXPECTED_TABLES
     ) - 1:
-        fail("the synthetic fixture must cover every V15 application table")
+        fail("the synthetic fixture must cover every V16 application table")
     if manifests.get("sequenceCount") != 3:
-        fail("manifests.sequenceCount must match the exact V15 schema")
+        fail("manifests.sequenceCount must match the exact V16 schema")
 
     row_counts = require_dict(
         manifests.get("tableRowCounts"),

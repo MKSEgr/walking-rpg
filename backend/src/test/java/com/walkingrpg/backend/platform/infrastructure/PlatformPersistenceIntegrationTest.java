@@ -2,6 +2,8 @@ package com.walkingrpg.backend.platform.infrastructure;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
@@ -616,12 +618,196 @@ class PlatformPersistenceIntegrationTest {
         assertFalse(facts.hasSuccessfulActivitySync());
     }
 
+    @Test
+    void shouldUseServerReceiptTimeForTelemetryRetention() throws Exception {
+        Instant cohortStartedAt = Instant.parse("2026-06-01T10:00:00Z");
+        ensureUser("forged-client-time", cohortStartedAt);
+        ensureUser("server-day-one", cohortStartedAt);
+        ensureUser("server-day-seven", cohortStartedAt);
+        ensureUser("server-day-thirty", cohortStartedAt);
+
+        recordPlatformEvent(
+                "forged-client-time",
+                cohortStartedAt.plus(30, ChronoUnit.DAYS),
+                cohortStartedAt.plus(1, ChronoUnit.HOURS)
+        );
+        recordPlatformEvent(
+                "server-day-one",
+                cohortStartedAt.minus(30, ChronoUnit.DAYS),
+                cohortStartedAt.plus(1, ChronoUnit.DAYS)
+        );
+        recordPlatformEvent(
+                "server-day-seven",
+                cohortStartedAt.minus(30, ChronoUnit.DAYS),
+                cohortStartedAt.plus(7, ChronoUnit.DAYS)
+        );
+        recordPlatformEvent(
+                "server-day-thirty",
+                cohortStartedAt.plus(30, ChronoUnit.DAYS),
+                cohortStartedAt.plus(30, ChronoUnit.DAYS)
+        );
+        assertReceiptTimeRetentionRangeUsesDedicatedIndex();
+
+        Map<String, Object> summary = platformAdminService.retentionSummary();
+
+        assertEquals(4L, summary.get("cohortSize"));
+        assertEquals(
+                Map.of("day", 1, "retainedUsers", 1L, "rate", 0.25),
+                summary.get("d1")
+        );
+        assertEquals(
+                Map.of("day", 7, "retainedUsers", 1L, "rate", 0.25),
+                summary.get("d7")
+        );
+        assertEquals(
+                Map.of("day", 30, "retainedUsers", 1L, "rate", 0.25),
+                summary.get("d30")
+        );
+    }
+
+    @Test
+    void shouldReadRetentionFromOneRepeatableSnapshot() throws Exception {
+        Map<String, Object> duringInsert;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try (Connection blocker = dataSource.getConnection()) {
+            blocker.setAutoCommit(false);
+            try (PreparedStatement lock = blocker.prepareStatement(
+                    "LOCK TABLE platform_event IN ACCESS EXCLUSIVE MODE"
+            )) {
+                lock.execute();
+            }
+
+            Future<Map<String, Object>> pending = executor.submit(
+                    platformAdminService::retentionSummary
+            );
+            awaitRetentionEventReadBlock();
+
+            try (PreparedStatement insertUser = blocker.prepareStatement("""
+                    INSERT INTO app_user (
+                        user_id, created_at, last_seen_at
+                    ) VALUES ('concurrent-retention-user', ?, ?)
+                    """);
+                 PreparedStatement insertEvent = blocker.prepareStatement("""
+                    INSERT INTO platform_event (
+                        user_id, event_name, occurred_at,
+                        attributes, received_at
+                    ) VALUES (
+                        'concurrent-retention-user', 'retention-test', ?,
+                        '{}'::jsonb, ?
+                    )
+                    """)) {
+                Timestamp createdAt = Timestamp.from(
+                        Instant.parse("2026-06-01T10:00:00Z")
+                );
+                Timestamp returnedAt = Timestamp.from(
+                        Instant.parse("2026-06-02T10:00:00Z")
+                );
+                insertUser.setTimestamp(1, createdAt);
+                insertUser.setTimestamp(2, createdAt);
+                insertUser.executeUpdate();
+                insertEvent.setTimestamp(1, returnedAt);
+                insertEvent.setTimestamp(2, returnedAt);
+                insertEvent.executeUpdate();
+            }
+            blocker.commit();
+            duringInsert = pending.get(5, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(0L, duringInsert.get("cohortSize"));
+        assertEquals(
+                Map.of("day", 1, "retainedUsers", 0L, "rate", 0.0),
+                duringInsert.get("d1")
+        );
+        assertEquals(1, rowCount("app_user"));
+        assertEquals(1, rowCount("platform_event"));
+
+        Map<String, Object> afterInsert = platformAdminService.retentionSummary();
+        assertEquals(1L, afterInsert.get("cohortSize"));
+        assertEquals(
+                Map.of("day", 1, "retainedUsers", 1L, "rate", 1.0),
+                afterInsert.get("d1")
+        );
+    }
+
     private void ensureUser(String userId) {
+        ensureUser(userId, NOW);
+    }
+
+    private void ensureUser(String userId, Instant createdAt) {
         jdbcTemplate.update(
                 "INSERT INTO app_user (user_id, created_at, last_seen_at) VALUES (?, ?, ?)",
                 userId,
-                Timestamp.from(NOW),
-                Timestamp.from(NOW)
+                Timestamp.from(createdAt),
+                Timestamp.from(createdAt)
+        );
+    }
+
+    private void recordPlatformEvent(
+            String userId,
+            Instant occurredAt,
+            Instant receivedAt
+    ) {
+        jdbcTemplate.update("""
+                INSERT INTO platform_event (
+                    user_id, event_name, occurred_at, attributes, received_at
+                ) VALUES (?, 'retention-test', ?, '{}'::jsonb, ?)
+                """,
+                userId,
+                Timestamp.from(occurredAt),
+                Timestamp.from(receivedAt)
+        );
+    }
+
+    private void assertReceiptTimeRetentionRangeUsesDedicatedIndex()
+            throws Exception {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute("SET enable_seqscan = off");
+            try (ResultSet result = statement.executeQuery("""
+                    EXPLAIN (COSTS OFF)
+                    SELECT 1
+                    FROM platform_event
+                    WHERE user_id = 'server-day-one'
+                      AND received_at >=
+                          TIMESTAMPTZ '2026-06-02T00:00:00Z'
+                      AND received_at <
+                          TIMESTAMPTZ '2026-06-03T00:00:00Z'
+                    """)) {
+                StringBuilder plan = new StringBuilder();
+                while (result.next()) {
+                    plan.append(result.getString(1)).append('\n');
+                }
+                assertTrue(
+                        plan.toString().contains(
+                                "ix_platform_event_user_received_at"
+                        ),
+                        () -> "Receipt-time range did not use its index:\n"
+                                + plan
+                );
+            }
+        }
+    }
+
+    private void awaitRetentionEventReadBlock() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND query LIKE '%e.received_at%'
+                    """, Integer.class);
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new IllegalStateException(
+                "Retention query did not reach the blocked event read"
         );
     }
 

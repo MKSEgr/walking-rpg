@@ -160,6 +160,8 @@ V15 сохраняет время первой активации в immutable `
 нестандартного upgrade, где v2 уже публиковалась на V14, V15 требует явное
 подтверждённое время первой активации и fail-closed отклоняет mutable
 `created_at` как исторический источник.
+V16 добавляет `(user_id, received_at)` index для server-owned D1/D7/D30
+telemetry retention и сохраняет client `occurredAt` только как диагностику.
 Mobile не меняет slot или availability оптимистично. Подробности:
 [ADR 0030](docs/adr/0030-equipment-and-gated-routes.md).
 
@@ -332,7 +334,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V15 + PostgreSQL Testcontainers tests
+Flyway V1–V16 + PostgreSQL Testcontainers tests
 Synthetic PostgreSQL backup/restore drill + sanitized evidence
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests
