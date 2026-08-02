@@ -108,6 +108,11 @@ void main() {
 
       await tester.tap(find.text('Убрать диагностическую запись'));
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('command-recovery-dismiss-dialog')),
+        findsOneWidget,
+      );
+      expect(find.text('ЛОКАЛЬНАЯ ДИАГНОСТИКА'), findsOneWidget);
       expect(find.text('Убрать отклонённую запись?'), findsOneWidget);
       await tester.tap(
         find.byKey(const Key('command-recovery-dismiss-confirm')),

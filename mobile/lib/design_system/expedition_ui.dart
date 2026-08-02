@@ -110,23 +110,27 @@ class ExpeditionBadge extends StatelessWidget {
     required this.icon,
     this.tone = ExpeditionPanelTone.lumen,
     this.allowWrap = false,
+    this.accentColor,
   });
 
   final String label;
   final IconData icon;
   final ExpeditionPanelTone tone;
   final bool allowWrap;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
-    final Color accent = switch (tone) {
-      ExpeditionPanelTone.neutral => colors.onSurfaceVariant,
-      ExpeditionPanelTone.lumen => colors.primary,
-      ExpeditionPanelTone.energy => palette.energy,
-      ExpeditionPanelTone.resonance => palette.resonance,
-    };
+    final Color accent =
+        accentColor ??
+        switch (tone) {
+          ExpeditionPanelTone.neutral => colors.onSurfaceVariant,
+          ExpeditionPanelTone.lumen => colors.primary,
+          ExpeditionPanelTone.energy => palette.energy,
+          ExpeditionPanelTone.resonance => palette.resonance,
+        };
 
     return DecoratedBox(
       decoration: BoxDecoration(
