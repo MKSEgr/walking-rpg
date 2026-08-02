@@ -6,6 +6,8 @@ import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -16,6 +18,29 @@ import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 
 void main() {
+  testWidgets('home loading waits for an accepted route snapshot', (
+    WidgetTester tester,
+  ) async {
+    final Completer<HomeSnapshot> loader = Completer<HomeSnapshot>();
+
+    await tester.pumpWidget(
+      MaterialApp(home: HomeScreen(loader: () => loader.future)),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('home-loading-state')), findsOneWidget);
+    expect(find.byType(ExpeditionReadState), findsOneWidget);
+    expect(find.byType(ExpeditionBackdrop), findsOneWidget);
+    expect(find.text('Сверяем маршрут'), findsOneWidget);
+    expect(find.byKey(const Key('home-expedition-vista')), findsNothing);
+
+    loader.complete(HomeSnapshot.demo);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-loading-state')), findsNothing);
+    expect(find.byKey(const Key('home-expedition-vista')), findsOneWidget);
+  });
+
   testWidgets('home hero uses accepted chapter and companion state', (
     WidgetTester tester,
   ) async {
@@ -1078,7 +1103,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Не удалось загрузить состояние'), findsOneWidget);
-    await tester.tap(find.text('Повторить'));
+    expect(find.byKey(const Key('home-error-state')), findsOneWidget);
+    expect(find.byType(ExpeditionReadState), findsOneWidget);
+    expect(find.textContaining('Backend недоступен'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('home-error-retry')));
     await tester.pumpAndSettle();
 
     expect(attempts, 2);

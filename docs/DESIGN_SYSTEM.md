@@ -189,6 +189,23 @@ owner-scoped runtime as the only source of queue state.
 - compact layouts and enlarged system text stay scrollable, and signal red is
   paired with explicit rejected-state copy rather than used as color alone.
 
+## Primary read states
+
+Home and the path journal share one connection-state composition before an
+authoritative snapshot is accepted. The state reads as contact with the route,
+not as a generic blocking dialog or invented game progress.
+
+- loading exposes an indeterminate signal only; it never estimates completion
+  or renders values from a snapshot that has not been accepted;
+- failure states keep the exact existing retry boundary and show diagnostic
+  detail separately from the player-facing explanation;
+- Home may still open its local demonstration snapshot explicitly, while the
+  journal offers no stale interactive fallback;
+- a failed refresh does not expose journal commands or optimistic state;
+- the status badge keeps its complete label and may wrap under enlarged text;
+- the shared panel is a live region with a semantic heading and remains
+  scrollable at compact width with enlarged system text.
+
 ## Physical-device validation
 
 The internal Validation Center carries the same trust-layer language into a

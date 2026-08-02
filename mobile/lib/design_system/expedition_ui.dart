@@ -109,11 +109,13 @@ class ExpeditionBadge extends StatelessWidget {
     required this.label,
     required this.icon,
     this.tone = ExpeditionPanelTone.lumen,
+    this.allowWrap = false,
   });
 
   final String label;
   final IconData icon;
   final ExpeditionPanelTone tone;
+  final bool allowWrap;
 
   @override
   Widget build(BuildContext context) {
@@ -142,8 +144,10 @@ class ExpeditionBadge extends StatelessWidget {
             Flexible(
               child: Text(
                 label.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: allowWrap ? null : 1,
+                overflow: allowWrap
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: accent,
                   fontWeight: FontWeight.w800,

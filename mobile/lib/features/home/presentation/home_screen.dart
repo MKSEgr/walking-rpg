@@ -6,6 +6,7 @@ import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
@@ -222,21 +223,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 AsyncSnapshot<HomeSnapshot> asyncSnapshot,
               ) {
                 if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const ExpeditionBackdrop(
+                    child: ExpeditionReadState.loading(
+                      key: Key('home-loading-state'),
+                      title: 'Сверяем маршрут',
+                      message:
+                          'Получаем шаги, ENERGY и актуальное состояние '
+                          'экспедиции.',
+                    ),
+                  );
                 }
                 if (asyncSnapshot.hasError) {
-                  return _HomeError(
-                    error: asyncSnapshot.error!,
-                    onRetry: _reload,
-                    onOpenDemo: _openDemo,
+                  return ExpeditionBackdrop(
+                    child: _HomeError(
+                      error: asyncSnapshot.error!,
+                      onRetry: _reload,
+                      onOpenDemo: _openDemo,
+                    ),
                   );
                 }
                 final HomeSnapshot? snapshot = asyncSnapshot.data;
                 if (snapshot == null) {
-                  return _HomeError(
-                    error: const FormatException('Backend не вернул состояние'),
-                    onRetry: _reload,
-                    onOpenDemo: _openDemo,
+                  return ExpeditionBackdrop(
+                    child: _HomeError(
+                      error: const FormatException(
+                        'Backend не вернул состояние',
+                      ),
+                      onRetry: _reload,
+                      onOpenDemo: _openDemo,
+                    ),
                   );
                 }
                 return _HomeBody(
@@ -1798,34 +1813,19 @@ class _HomeError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Icon(Icons.cloud_off_outlined, size: 48),
-            const SizedBox(height: 16),
-            Text(
-              'Не удалось загрузить состояние',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(error.toString(), textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Повторить'),
-            ),
-            TextButton(
-              onPressed: onOpenDemo,
-              child: const Text('Открыть демонстрационное состояние'),
-            ),
-          ],
-        ),
-      ),
+    return ExpeditionReadState.failure(
+      key: const Key('home-error-state'),
+      title: 'Не удалось загрузить состояние',
+      message:
+          'Актуальный маршрут не принят. Повтори запрос или открой локальное '
+          'демонстрационное состояние — оно не меняет серверные данные.',
+      details: error.toString(),
+      primaryActionKey: const Key('home-error-retry'),
+      primaryActionLabel: 'Повторить',
+      onPrimaryAction: onRetry,
+      secondaryActionKey: const Key('home-error-demo'),
+      secondaryActionLabel: 'Открыть демонстрационное состояние',
+      onSecondaryAction: onOpenDemo,
     );
   }
 }
