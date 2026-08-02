@@ -39,6 +39,14 @@ backup.
   без instrumented baseline;
 - support incidents.
 
+Telemetry-вклад в D1/D7/D30 определяется по server receipt time. Поле
+`occurredAt` остаётся client-reported диагностикой и не используется для выбора
+retention day; поэтому часы устройства или отложенная доставка не должны
+выдаваться за server-confirmed возврат пользователя. Counters одного ответа
+строятся из единого PostgreSQL snapshot. V16 index
+`(platform_event.user_id, platform_event.received_at)` должен быть применён до
+использования retention endpoint на накопленной telemetry history.
+
 Срез доступен через
 `GET /api/v1/admin/platform/analytics/first-journey?cohortCode=...`.
 `reachedUsers` может включать legacy backfill; временные percentiles используют

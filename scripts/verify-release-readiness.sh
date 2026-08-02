@@ -66,6 +66,7 @@ for file in \
   backend/src/main/resources/db/migration/V13__server_authoritative_crafting.sql \
   backend/src/main/resources/db/migration/V14__equipment_and_resonance_route.sql \
   backend/src/main/resources/db/migration/V15__immutable_content_activation_time.sql \
+  backend/src/main/resources/db/migration/V16__platform_event_receipt_time_index.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -195,6 +196,9 @@ grep -Fq 'V15 requires explicit chapter-1-v2 first activation timestamp' backend
 grep -Fq 'shouldRequireExplicitV14HistoryAndKeepFirstActivationImmutable' backend/src/test/java/com/walkingrpg/backend/migration/ContentReleaseActivationHistoryMigrationTest.java || fail 'V15 migration test must cover explicit legacy activation history'
 grep -Fq 'ContentReleaseActivationHistoryMigrationTest' .github/workflows/ci.yml || fail 'content activation history migration test must run in CI'
 grep -Fq 'CompassJourneyAnalyticsIntegrationTest' .github/workflows/ci.yml || fail 'compass journey analytics tests must run in CI'
+grep -Fq 'ix_platform_event_user_received_at' backend/src/main/resources/db/migration/V16__platform_event_receipt_time_index.sql || fail 'V16 must add the receipt-time retention index'
+grep -Fq 'ON platform_event (user_id, received_at)' backend/src/main/resources/db/migration/V16__platform_event_receipt_time_index.sql || fail 'V16 receipt-time index must support the retention user/range predicate'
+grep -Fq 'assertReceiptTimeRetentionRangeUsesDedicatedIndex' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'retention integration coverage must verify the V16 index plan'
 
 printf '%s\n' 'Checking production operational controls...'
 grep -Fq 'micrometer-registry-prometheus' backend/pom.xml || fail 'Prometheus registry is required'
@@ -333,8 +337,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 15:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V15: {versions}')
+if versions != expected or not versions or versions[-1] < 16:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V16: {versions}')
 print('Flyway versions:', versions)
 PY
 
