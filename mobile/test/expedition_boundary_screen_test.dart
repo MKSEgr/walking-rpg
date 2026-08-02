@@ -38,13 +38,10 @@ void main() {
       find.bySemanticsLabel('Операция запуска выполняется'),
       findsOneWidget,
     );
-    expect(
-      tester
-          .getSemantics(find.byKey(const Key('expedition-boundary-heading')))
-          .getSemanticsData()
-          .hasFlag(SemanticsFlag.isHeader),
-      isTrue,
+    final Semantics heading = tester.widget<Semantics>(
+      find.byKey(const Key('expedition-boundary-heading')),
     );
+    expect(heading.properties.header, isTrue);
 
     semantics.dispose();
   });
