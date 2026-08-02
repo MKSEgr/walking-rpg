@@ -7,6 +7,9 @@ import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -21,6 +24,117 @@ import 'support/in_memory_mobile_command_store.dart';
 import 'support/platform_fixture.dart';
 
 void main() {
+  testWidgets('uses route contact state while preparing the first journey', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final Completer<HomeSnapshot> homeLoad = Completer<HomeSnapshot>();
+    final MobileCommandRuntime runtime = _idleRuntime('journey-loading-user');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: FirstJourneyGate(
+          homeLoader: () => homeLoad.future,
+          platformLoader: () async => platformSnapshot(),
+          commandRuntime: runtime,
+          childBuilder: (VoidCallback onResume) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      find.byKey(const Key('first-journey-loading-state')),
+      findsOneWidget,
+    );
+    expect(find.byType(ExpeditionBackdrop), findsOneWidget);
+    expect(find.byType(ExpeditionReadState), findsOneWidget);
+    expect(find.text('Восстанавливаем первый путь'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Получение актуального состояния'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('%'), findsNothing);
+
+    homeLoad.complete(firstJourneyHome());
+    await tester.pumpAndSettle();
+    semantics.dispose();
+    await runtime.close();
+  });
+
+  testWidgets('keeps first journey recovery paths on compact load failure', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final Completer<HomeSnapshot> homeLoad = Completer<HomeSnapshot>();
+    final MobileCommandRuntime runtime = _idleRuntime('journey-error-user');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.light(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: FirstJourneyGate(
+          homeLoader: () => homeLoad.future,
+          platformLoader: () async => platformSnapshot(),
+          commandRuntime: runtime,
+          onOpenAccount: () {},
+          onOpenRecovery: () {},
+          childBuilder: (VoidCallback onResume) =>
+              const Scaffold(body: Text('Основная экспедиция')),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    homeLoad.completeError(StateError('route offline'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      find.byKey(const Key('first-journey-load-error-state')),
+      findsOneWidget,
+    );
+    expect(find.byType(ExpeditionBackdrop), findsOneWidget);
+    expect(find.byType(ExpeditionReadState), findsOneWidget);
+    expect(find.text('СИГНАЛ НЕДОСТУПЕН'), findsOneWidget);
+    expect(find.textContaining('route offline'), findsOneWidget);
+    expect(find.byKey(const Key('first-journey-retry')), findsOneWidget);
+    expect(
+      find.byKey(const Key('first-journey-load-recovery')),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Аккаунт'), findsOneWidget);
+
+    final Finder openGame = find.byKey(const Key('first-journey-open-game'));
+    await tester.ensureVisible(openGame);
+    await tester.tap(openGame);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Основная экспедиция'), findsOneWidget);
+    await runtime.close();
+  });
+
   testWidgets('runs real first journey actions and opens the expedition', (
     WidgetTester tester,
   ) async {
@@ -994,6 +1108,28 @@ void main() {
     expect(find.textContaining('private-token'), findsNothing);
     await runtime.close();
   });
+}
+
+MobileCommandRuntime _idleRuntime(String ownerId) {
+  return MobileCommandRuntime(
+    ownerId: ownerId,
+    store: InMemoryMobileCommandStore(),
+    activitySender:
+        ({required reading, required String idempotencyKey}) async =>
+            throw StateError('unused'),
+    expeditionSender:
+        ({
+          required String expeditionId,
+          required int energyToSpend,
+          required String idempotencyKey,
+        }) async => throw StateError('unused'),
+    eventSender:
+        ({
+          required String eventId,
+          required String choiceId,
+          required String idempotencyKey,
+        }) async => throw StateError('unused'),
+  );
 }
 
 MobileCommandRuntime _blockedStartupRuntime({

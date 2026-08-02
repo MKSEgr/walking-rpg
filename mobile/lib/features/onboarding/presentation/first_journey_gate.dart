@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -492,15 +494,15 @@ class _FirstJourneyLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              CircularProgressIndicator(),
-              SizedBox(height: 14),
-              Text('Восстанавливаем маршрут...'),
-            ],
+      backgroundColor: Colors.transparent,
+      body: ExpeditionBackdrop(
+        child: SafeArea(
+          child: ExpeditionReadState.loading(
+            key: Key('first-journey-loading-state'),
+            title: 'Восстанавливаем первый путь',
+            message:
+                'Проверяем сохранённые действия и получаем актуальное '
+                'состояние маршрута.',
           ),
         ),
       ),
@@ -530,6 +532,7 @@ class _FirstJourneyLoadError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Первый путь'),
         actions: <Widget>[
@@ -546,45 +549,21 @@ class _FirstJourneyLoadError extends StatelessWidget {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(22),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Icon(Icons.cloud_off_outlined, size: 48),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Не удалось восстановить первый путь',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        error?.toString() ?? 'Состояние недоступно.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 18),
-                      FilledButton(
-                        key: const Key('first-journey-retry'),
-                        onPressed: onRetry,
-                        child: const Text('Повторить'),
-                      ),
-                      TextButton(
-                        onPressed: onContinueLater,
-                        child: const Text('Открыть игру'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+      body: ExpeditionBackdrop(
+        child: SafeArea(
+          child: ExpeditionReadState.failure(
+            key: const Key('first-journey-load-error-state'),
+            title: 'Не удалось восстановить первый путь',
+            message:
+                'Прогресс первого пути не принят. Повтори запрос или открой '
+                'основную экспедицию — первый путь можно продолжить позже.',
+            details: error?.toString() ?? 'Состояние недоступно.',
+            primaryActionKey: const Key('first-journey-retry'),
+            primaryActionLabel: 'Повторить',
+            onPrimaryAction: onRetry,
+            secondaryActionKey: const Key('first-journey-open-game'),
+            secondaryActionLabel: 'Открыть игру',
+            onSecondaryAction: onContinueLater,
           ),
         ),
       ),
