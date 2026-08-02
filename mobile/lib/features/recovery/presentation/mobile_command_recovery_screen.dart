@@ -604,11 +604,13 @@ class _RecoveryCountBadge extends StatelessWidget {
           children: <Widget>[
             Icon(icon, size: 16, color: accent),
             const SizedBox(width: 7),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: accent,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(width: 7),
