@@ -48,24 +48,29 @@ void main() {
     WidgetTester tester,
   ) async {
     int attempts = 0;
+    final Completer<PlatformSnapshot> firstLoad = Completer<PlatformSnapshot>();
 
     await tester.pumpWidget(
       MaterialApp(
         home: PlatformScreen(
-          loader: () async {
+          loader: () {
             attempts += 1;
             if (attempts == 1) {
-              throw const PlatformApiException(
-                statusCode: 503,
-                code: 'SERVICE_UNAVAILABLE',
-                message: 'Backend недоступен',
-              );
+              return firstLoad.future;
             }
-            return platformSnapshot();
+            return Future<PlatformSnapshot>.value(platformSnapshot());
           },
           homeLoader: () async => HomeSnapshot.demo,
           recordExperimentExposures: false,
         ),
+      ),
+    );
+    await tester.pump();
+    firstLoad.completeError(
+      const PlatformApiException(
+        statusCode: 503,
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'Backend недоступен',
       ),
     );
     await tester.pumpAndSettle();
