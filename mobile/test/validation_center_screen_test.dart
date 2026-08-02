@@ -124,11 +124,7 @@ void main() {
     final Finder exportButton = find.byKey(
       const Key('validation-export-button'),
     );
-    await tester.scrollUntilVisible(
-      exportButton,
-      240,
-      scrollable: _scrollableAncestor(exportButton),
-    );
+    await _bringIntoView(tester, exportButton);
     await tester.tap(exportButton);
     await tester.pump();
     expect(exporter.sharedJson, isNotNull);
@@ -191,12 +187,9 @@ void main() {
           !controller.busy &&
           controller.snapshot.authoritativeCheckpoint != null,
     );
-    await tester.scrollUntilVisible(
+    await _bringIntoView(
+      tester,
       find.byKey(const Key('validation-export-button')),
-      240,
-      scrollable: _scrollableAncestor(
-        find.byKey(const Key('validation-export-button')),
-      ),
     );
 
     expect(tester.takeException(), isNull);
@@ -250,11 +243,7 @@ Future<void> _tapAction(
   required bool Function() isComplete,
 }) async {
   final Finder target = find.byKey(key);
-  await tester.scrollUntilVisible(
-    target,
-    240,
-    scrollable: _scrollableAncestor(target),
-  );
+  await _bringIntoView(tester, target);
   await tester.tap(target);
   for (int attempt = 0; attempt < 20 && !isComplete(); attempt += 1) {
     await tester.pump(const Duration(milliseconds: 20));
@@ -265,8 +254,13 @@ Future<void> _tapAction(
   await tester.pump(const Duration(milliseconds: 300));
 }
 
-Finder _scrollableAncestor(Finder target) {
-  return find.ancestor(of: target, matching: find.byType(Scrollable));
+Future<void> _bringIntoView(WidgetTester tester, Finder target) async {
+  await Scrollable.ensureVisible(
+    tester.element(target),
+    alignment: 0.5,
+    duration: Duration.zero,
+  );
+  await tester.pump();
 }
 
 final class _RecordingValidationEvidenceExporter
