@@ -63,6 +63,7 @@ public class ActivitySyncService {
     @Transactional
     public ActivitySyncOutcome synchronize(ActivitySyncCommand command) {
         Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
+        validateLocalDate(command, serverTime);
         repository.acquireUserLock(command.userId());
         repository.registerDevice(command.userId(), command.deviceId(), serverTime);
 
@@ -111,6 +112,17 @@ public class ActivitySyncService {
         repository.markSuccessfulSync(command.userId());
 
         return outcome;
+    }
+
+    private void validateLocalDate(ActivitySyncCommand command, Instant serverTime) {
+        if (command.localDate().isAfter(
+                serverTime.atZone(command.timeZone()).toLocalDate()
+        )) {
+            throw new ActivitySyncValidationException(
+                    "localDate",
+                    "localDate не может быть позже текущей даты в указанном timeZone"
+            );
+        }
     }
 
     private String ledgerSourceKey(IdempotencyScope scope) {

@@ -332,6 +332,13 @@ TOTAL_DECREASED
 
 Повтор одного key и payload возвращает исходный response. Тот же key с другим business payload возвращает `409 IDEMPOTENCY_CONFLICT`.
 
+`localDate` может быть текущей или прошлой датой в заявленной IANA `timeZone`.
+Дата, которая ещё не наступила по серверному времени в этой зоне, отклоняется
+до создания user/device/state/ledger с `400 VALIDATION_ERROR` и
+`details.field = localDate`. `timeZone` должна входить в установленный IANA/TZDB
+registry; произвольный fixed offset (`+18:00`, `UTC+18:00`) возвращает
+`400 VALIDATION_ERROR` с `details.field = timeZone`.
+
 ## `POST /api/v1/expeditions/{expeditionId}/advance`
 
 Тратит ENERGY на persistent progress экспедиции.

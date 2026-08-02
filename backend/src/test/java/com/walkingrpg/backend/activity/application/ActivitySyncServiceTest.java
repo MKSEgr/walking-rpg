@@ -75,12 +75,54 @@ class ActivitySyncServiceTest {
         assertEquals(2, recovered.activity().stateVersion());
     }
 
+    @Test
+    void shouldRejectLocalDateThatHasNotStartedInClaimedTimeZone() {
+        ActivitySyncValidationException exception = assertThrows(
+                ActivitySyncValidationException.class,
+                () -> service.synchronize(command(
+                        100,
+                        "future-date",
+                        LocalDate.of(2026, 7, 26),
+                        ZoneId.of("Europe/Berlin")
+                ))
+        );
+
+        assertEquals("localDate", exception.field());
+    }
+
+    @Test
+    void shouldAcceptDateAlreadyStartedInClaimedTimeZone() {
+        ActivitySyncOutcome outcome = service.synchronize(command(
+                100,
+                "utc-plus-fourteen",
+                LocalDate.of(2026, 7, 26),
+                ZoneId.of("Pacific/Kiritimati")
+        ));
+
+        assertEquals(100, outcome.activity().acceptedTotal());
+        assertEquals(1, outcome.activity().energyGranted());
+    }
+
     private ActivitySyncCommand command(long authoritativeTotal, String idempotencyKey) {
+        return command(
+                authoritativeTotal,
+                idempotencyKey,
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin")
+        );
+    }
+
+    private ActivitySyncCommand command(
+            long authoritativeTotal,
+            String idempotencyKey,
+            LocalDate localDate,
+            ZoneId timeZone
+    ) {
         return new ActivitySyncCommand(
                 "user-1",
                 "device-1",
-                LocalDate.of(2026, 7, 25),
-                ZoneId.of("Europe/Berlin"),
+                localDate,
+                timeZone,
                 authoritativeTotal,
                 List.of(),
                 "cursor-1",

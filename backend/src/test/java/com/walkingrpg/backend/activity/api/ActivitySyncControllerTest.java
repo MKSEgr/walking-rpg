@@ -88,4 +88,42 @@ class ActivitySyncControllerTest {
                 .andExpect(jsonPath("$.details.field").value("timeZone"))
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
     }
+
+    @Test
+    void shouldRejectFixedOffsetOutsideTheIanaTimeZoneRegistry() throws Exception {
+        mockMvc.perform(post("/api/v1/activity/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "localDate": "2026-07-26",
+                                  "timeZone": "+18:00",
+                                  "authoritativeTotal": 100,
+                                  "buckets": [],
+                                  "idempotencyKey": "sync-offset"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.details.field").value("timeZone"))
+                .andExpect(jsonPath("$.traceId").isNotEmpty());
+    }
+
+    @Test
+    void shouldRejectFutureLocalDateWithStableErrorBody() throws Exception {
+        mockMvc.perform(post("/api/v1/activity/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "localDate": "2026-07-26",
+                                  "timeZone": "Europe/Berlin",
+                                  "authoritativeTotal": 100,
+                                  "buckets": [],
+                                  "idempotencyKey": "sync-future"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.details.field").value("localDate"))
+                .andExpect(jsonPath("$.traceId").isNotEmpty());
+    }
 }
