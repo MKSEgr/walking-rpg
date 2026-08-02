@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncConflictException;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
+import com.walkingrpg.backend.activity.application.ActivitySyncValidationException;
 import com.walkingrpg.backend.activity.domain.ActivityDayKey;
 import com.walkingrpg.backend.activity.domain.ActivityDayState;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCalculator;
@@ -222,6 +223,36 @@ class ActivitySyncPersistenceIntegrationTest {
         assertEquals(0, rowCount("first_journey_milestone"));
     }
 
+    @Test
+    void shouldRejectFutureLocalDateBeforePersistingIdentityOrEconomyState() {
+        ActivitySyncService temporalBoundaryService = new ActivitySyncService(
+                repository,
+                new ActivitySyncCalculator(),
+                economyService,
+                Clock.fixed(Instant.parse("2026-07-25T12:00:00Z"), ZoneOffset.UTC)
+        );
+
+        ActivitySyncValidationException exception = assertThrows(
+                ActivitySyncValidationException.class,
+                () -> temporalBoundaryService.synchronize(command(
+                        "future-date-device",
+                        100,
+                        "future-date-key",
+                        LocalDate.of(2026, 7, 26),
+                        ZoneId.of("Europe/Berlin")
+                ))
+        );
+
+        assertEquals("localDate", exception.field());
+        assertEquals(0, rowCount("processed_activity_sync"));
+        assertEquals(0, rowCount("activity_sync_state"));
+        assertEquals(0, rowCount("economy_ledger"));
+        assertEquals(0, rowCount("economy_wallet"));
+        assertEquals(0, rowCount("app_device"));
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(0, rowCount("first_journey_milestone"));
+    }
+
     private ActivitySyncOutcome synchronizedCall(
             CountDownLatch ready,
             CountDownLatch start,
@@ -271,11 +302,27 @@ class ActivitySyncPersistenceIntegrationTest {
             long authoritativeTotal,
             String idempotencyKey
     ) {
+        return command(
+                deviceId,
+                authoritativeTotal,
+                idempotencyKey,
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin")
+        );
+    }
+
+    private ActivitySyncCommand command(
+            String deviceId,
+            long authoritativeTotal,
+            String idempotencyKey,
+            LocalDate localDate,
+            ZoneId timeZone
+    ) {
         return new ActivitySyncCommand(
                 "persistent-user",
                 deviceId,
-                LocalDate.of(2026, 7, 25),
-                ZoneId.of("Europe/Berlin"),
+                localDate,
+                timeZone,
                 authoritativeTotal,
                 List.of(),
                 "cursor-1",

@@ -3,6 +3,7 @@ package com.walkingrpg.backend.activity.application;
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
 
 import com.walkingrpg.backend.activity.api.ActivityBucketRequest;
 import com.walkingrpg.backend.activity.api.ActivitySyncRequest;
@@ -12,6 +13,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ActivitySyncCommandFactory {
+
+    private static final Set<String> SUPPORTED_TIME_ZONE_IDS = Set.copyOf(
+            ZoneId.getAvailableZoneIds()
+    );
 
     public ActivitySyncCommand create(
             String userId,
@@ -49,14 +54,22 @@ public class ActivitySyncCommandFactory {
     }
 
     private ZoneId parseZoneId(String value) {
-        try {
-            return ZoneId.of(value.trim());
-        } catch (DateTimeException exception) {
-            throw new ActivitySyncValidationException(
-                    "timeZone",
-                    "Неизвестный идентификатор часового пояса"
-            );
+        String normalized = value.trim();
+        if (!SUPPORTED_TIME_ZONE_IDS.contains(normalized)) {
+            throw invalidTimeZone();
         }
+        try {
+            return ZoneId.of(normalized);
+        } catch (DateTimeException exception) {
+            throw invalidTimeZone();
+        }
+    }
+
+    private ActivitySyncValidationException invalidTimeZone() {
+        return new ActivitySyncValidationException(
+                "timeZone",
+                "Ожидается известный IANA идентификатор часового пояса"
+        );
     }
 
     private String requireText(String value, String field) {

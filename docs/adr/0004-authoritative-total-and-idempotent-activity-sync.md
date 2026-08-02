@@ -27,6 +27,13 @@ energyGranted = floor(newAcceptedTotal / stepsPerEnergy)
 
 Это сохраняет остаток шагов между частыми синхронизациями. Например, total `99`, затем `100` выдаёт одну единицу энергии.
 
+9. До любой state mutation backend вычисляет текущую локальную дату из
+   `serverTime` и заявленной IANA `timeZone`. Запрос с более поздней
+   `localDate` отклоняется как `VALIDATION_ERROR`; прошлые даты остаются
+   допустимыми для безопасного повтора сохранённой команды после полуночи.
+   Request boundary принимает только ID из установленного IANA/TZDB registry;
+   произвольные fixed offsets вроде `+18:00` отклоняются до date validation.
+
 ## Persistence
 
 Первый prototype использовал память процесса. Persistent vertical slice заменяет его на PostgreSQL/Flyway и выполняет state update вместе с сохранением idempotent response в одной транзакции. Конкурирующие запросы одного пользователя сериализуются user-level advisory transaction lock.
@@ -42,6 +49,8 @@ energyGranted = floor(newAcceptedTotal / stepsPerEnergy)
 - сервер, а не клиент, вычисляет дельту и энергию;
 - частота синхронизации не влияет на накопление остатка шагов;
 - понижение данных Health API диагностируется без отрицательной экономики;
+- будущая локальная дата не может создать отдельный дневной high-watermark или
+  начислить ENERGY;
 - state и idempotent response сохраняются после перезапуска.
 
 ### Ограничения

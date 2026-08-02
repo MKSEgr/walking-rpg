@@ -251,6 +251,11 @@ curl -X POST http://localhost:8080/api/v1/activity/sync \
   }'
 ```
 
+Backend принимает текущую и прошлую `localDate` в заявленной IANA `timeZone`,
+но отклоняет ещё не наступившую локальную дату до создания identity, activity
+state или ENERGY ledger entry. Числовые fixed offsets не заменяют IANA/TZDB ID
+и отклоняются на request boundary.
+
 ### Первая глава стартовой экспедиции
 
 Один и тот же endpoint используется для 18 основных узлов и опционального:
