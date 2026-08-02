@@ -127,7 +127,7 @@ void main() {
     await tester.scrollUntilVisible(
       exportButton,
       240,
-      scrollable: find.byType(Scrollable),
+      scrollable: _scrollableAncestor(exportButton),
     );
     await tester.tap(exportButton);
     await tester.pump();
@@ -194,7 +194,9 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('validation-export-button')),
       240,
-      scrollable: find.byType(Scrollable),
+      scrollable: _scrollableAncestor(
+        find.byKey(const Key('validation-export-button')),
+      ),
     );
 
     expect(tester.takeException(), isNull);
@@ -251,7 +253,7 @@ Future<void> _tapAction(
   await tester.scrollUntilVisible(
     target,
     240,
-    scrollable: find.byType(Scrollable),
+    scrollable: _scrollableAncestor(target),
   );
   await tester.tap(target);
   for (int attempt = 0; attempt < 20 && !isComplete(); attempt += 1) {
@@ -261,6 +263,10 @@ Future<void> _tapAction(
   await tester.pump();
   await tester.pump(const Duration(seconds: 5));
   await tester.pump(const Duration(milliseconds: 300));
+}
+
+Finder _scrollableAncestor(Finder target) {
+  return find.ancestor(of: target, matching: find.byType(Scrollable));
 }
 
 final class _RecordingValidationEvidenceExporter
