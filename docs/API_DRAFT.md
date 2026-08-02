@@ -132,10 +132,12 @@ Authorization: Bearer <access-token>
     "specialization": "Не выбрана"
   },
   "pet": {
+    "petId": "spark-v1",
     "name": "Искра",
     "species": "Люмин",
     "level": 1,
     "bond": 23,
+    "evolutionStage": 0,
     "trait": "Чуткий разведчик"
   },
   "inventory": [
@@ -252,6 +254,9 @@ Authorization: Bearer <access-token>
 - `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
 - неизвестный пользователь получает zero-state и starter content;
+- `pet.petId` — стабильный server-owned идентификатор активного питомца, а
+  `pet.evolutionStage` — authoritative стадия из platform state; legacy state
+  без сохранённой стадии проецируется как `0`;
 - `inventory[]` содержит актуальные material stacks и unique items;
   `kind=MATERIAL|UNIQUE`, unique item всегда имеет `quantity=1`; для unique
   item additive fields содержат persistent `itemInstanceId`, допустимый

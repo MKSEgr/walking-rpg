@@ -220,10 +220,12 @@ public class HomeService {
             return starter;
         }
         return new PetSnapshot(
+                starter.petId(),
                 starter.name(),
                 starter.species(),
                 state.petLevel(),
                 state.petBond(),
+                state.petEvolutionStage(),
                 starter.trait()
         );
     }

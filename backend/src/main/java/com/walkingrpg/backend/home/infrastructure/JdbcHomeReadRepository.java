@@ -112,6 +112,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                     true,
                     Math.max(resultSet.getInt("pet_level"), activePet.level()),
                     Math.max(resultSet.getInt("pet_bond"), activePet.bond()),
+                    activePet.evolutionStage(),
                     null,
                     null,
                     null,

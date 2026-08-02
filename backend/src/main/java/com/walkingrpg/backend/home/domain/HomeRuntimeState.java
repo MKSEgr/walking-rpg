@@ -24,6 +24,7 @@ public record HomeRuntimeState(
         boolean petProgressPresent,
         int petLevel,
         int petBond,
+        int petEvolutionStage,
         String resolvedChoiceId,
         String resolvedChoiceTitle,
         String outcomeTitle,
@@ -53,7 +54,7 @@ public record HomeRuntimeState(
                 || pilotNextLevelExperience < 0) {
             throw new IllegalArgumentException("Pilot state не может быть отрицательным");
         }
-        if (petLevel < 0 || petBond < 0) {
+        if (petLevel < 0 || petBond < 0 || petEvolutionStage < 0) {
             throw new IllegalArgumentException("Pet state не может быть отрицательным");
         }
         if (petId == null || petId.isBlank()) {
@@ -126,6 +127,7 @@ public record HomeRuntimeState(
                 petProgressPresent,
                 petLevel,
                 petBond,
+                0,
                 resolvedChoiceId,
                 resolvedChoiceTitle,
                 outcomeTitle,
@@ -180,6 +182,63 @@ public record HomeRuntimeState(
                 petProgressPresent,
                 petLevel,
                 petBond,
+                0,
+                resolvedChoiceId,
+                resolvedChoiceTitle,
+                outcomeTitle,
+                outcomeSummary
+        );
+    }
+
+    public HomeRuntimeState(
+            long dailySteps,
+            long activityStateVersion,
+            String timeZone,
+            Instant lastActivitySyncAt,
+            long availableEnergy,
+            long economyVersion,
+            long expeditionProgress,
+            long expeditionRequiredEnergy,
+            String expeditionStatus,
+            long expeditionVersion,
+            String currentNodeId,
+            String unlockedEventId,
+            boolean pilotProgressPresent,
+            int pilotLevel,
+            int pilotCurrentExperience,
+            int pilotNextLevelExperience,
+            String petId,
+            boolean petProgressPresent,
+            int petLevel,
+            int petBond,
+            int petEvolutionStage,
+            String resolvedChoiceId,
+            String resolvedChoiceTitle,
+            String outcomeTitle,
+            String outcomeSummary
+    ) {
+        this(
+                dailySteps,
+                activityStateVersion,
+                timeZone,
+                lastActivitySyncAt,
+                availableEnergy,
+                economyVersion,
+                expeditionProgress,
+                expeditionRequiredEnergy,
+                expeditionStatus,
+                expeditionVersion,
+                currentNodeId,
+                unlockedEventId,
+                pilotProgressPresent,
+                pilotLevel,
+                pilotCurrentExperience,
+                pilotNextLevelExperience,
+                petId,
+                petProgressPresent,
+                petLevel,
+                petBond,
+                petEvolutionStage,
                 resolvedChoiceId,
                 resolvedChoiceTitle,
                 outcomeTitle,
@@ -257,6 +316,7 @@ public record HomeRuntimeState(
                 petProgressPresent,
                 petLevel,
                 petBond,
+                petEvolutionStage,
                 resolvedChoiceId,
                 resolvedChoiceTitle,
                 outcomeTitle,

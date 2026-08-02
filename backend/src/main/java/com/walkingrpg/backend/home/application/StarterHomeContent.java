@@ -45,10 +45,12 @@ public class StarterHomeContent {
     public PetSnapshot pet(String petId) {
         PetDefinition pet = progressionContent.requirePet(petId);
         return new PetSnapshot(
+                pet.petId(),
                 pet.name(),
                 pet.species(),
                 pet.initialLevel(),
                 pet.initialBond(),
+                0,
                 pet.trait()
         );
     }
