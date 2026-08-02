@@ -12,6 +12,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -280,6 +281,146 @@ class PlatformPersistenceIntegrationTest {
                 Integer.class,
                 memberId
         ));
+    }
+
+    @Test
+    void shouldSerializeConcurrentRemoteConfigPublications() throws Exception {
+        String previousVersion = scalarString("""
+                SELECT config_version
+                FROM remote_config_snapshot
+                WHERE is_active
+                """);
+        List<Map<String, Object>> responses = runConcurrentPublications(
+                """
+                SELECT config_version
+                FROM remote_config_snapshot
+                WHERE is_active
+                FOR UPDATE
+                """,
+                "UPDATE remote_config_snapshot",
+                () -> platformAdminService.updateRemoteConfig(
+                        "publication-operator-a",
+                        "publication-lock-config-a",
+                        publicationRemoteConfig("publication-season-a")
+                ),
+                () -> platformAdminService.updateRemoteConfig(
+                        "publication-operator-b",
+                        "publication-lock-config-b",
+                        publicationRemoteConfig("publication-season-b")
+                ),
+                new PublicationRestoration(
+                    "UPDATE remote_config_snapshot SET is_active = false WHERE is_active",
+                    """
+                    UPDATE remote_config_snapshot
+                    SET is_active = true
+                    WHERE config_version = ?
+                    """,
+                    """
+                    DELETE FROM remote_config_snapshot
+                    WHERE config_version LIKE ?
+                    """,
+                    previousVersion,
+                    "publication-lock-config-%",
+                    """
+                    SELECT count(*)
+                    FROM remote_config_snapshot
+                    WHERE is_active
+                    """,
+                    """
+                    SELECT config_version
+                    FROM remote_config_snapshot
+                    WHERE is_active
+                    """,
+                    "publication-lock-config-b"
+                )
+        );
+
+        assertEquals("publication-lock-config-a", responses.get(0).get("version"));
+        assertEquals("publication-lock-config-b", responses.get(1).get("version"));
+        assertEquals(1L, scalarLong("""
+                SELECT count(*)
+                FROM remote_config_snapshot
+                WHERE is_active
+                """));
+        assertEquals(previousVersion, scalarString("""
+                SELECT config_version
+                FROM remote_config_snapshot
+                WHERE is_active
+                """));
+    }
+
+    @Test
+    void shouldSerializeConcurrentContentPublications() throws Exception {
+        String previousVersion = scalarString("""
+                SELECT content_version
+                FROM content_release
+                WHERE is_active
+                """);
+        List<Map<String, Object>> responses = runConcurrentPublications(
+                """
+                SELECT content_version
+                FROM content_release
+                WHERE is_active
+                FOR UPDATE
+                """,
+                "UPDATE content_release",
+                () -> platformAdminService.publishContent(
+                        "publication-operator-a",
+                        "publication-lock-content-a",
+                        "Concurrent publication A",
+                        Map.of("publication", "a")
+                ),
+                () -> platformAdminService.publishContent(
+                        "publication-operator-b",
+                        "publication-lock-content-b",
+                        "Concurrent publication B",
+                        Map.of("publication", "b")
+                ),
+                new PublicationRestoration(
+                    "UPDATE content_release SET is_active = false WHERE is_active",
+                    """
+                    UPDATE content_release
+                    SET is_active = true
+                    WHERE content_version = ?
+                    """,
+                    """
+                    DELETE FROM content_release
+                    WHERE content_version LIKE ?
+                    """,
+                    previousVersion,
+                    "publication-lock-content-%",
+                    """
+                    SELECT count(*)
+                    FROM content_release
+                    WHERE is_active
+                    """,
+                    """
+                    SELECT content_version
+                    FROM content_release
+                    WHERE is_active
+                    """,
+                    "publication-lock-content-b"
+                )
+        );
+
+        assertEquals(
+                "publication-lock-content-a",
+                responses.get(0).get("contentVersion")
+        );
+        assertEquals(
+                "publication-lock-content-b",
+                responses.get(1).get("contentVersion")
+        );
+        assertEquals(1L, scalarLong("""
+                SELECT count(*)
+                FROM content_release
+                WHERE is_active
+                """));
+        assertEquals(previousVersion, scalarString("""
+                SELECT content_version
+                FROM content_release
+                WHERE is_active
+                """));
     }
 
     @Test
@@ -1027,6 +1168,131 @@ class PlatformPersistenceIntegrationTest {
         }
         throw new IllegalStateException(
                 "Expected query did not reach the blocked state: " + queryFragment
+        );
+    }
+
+    private List<Map<String, Object>> runConcurrentPublications(
+            String activeRowLockSql,
+            String firstBlockedQuery,
+            Callable<Map<String, Object>> firstPublication,
+            Callable<Map<String, Object>> secondPublication,
+            PublicationRestoration restoration
+    ) throws Exception {
+        try (Connection blocker = dataSource.getConnection()) {
+            ExecutorService executor = Executors.newFixedThreadPool(2);
+            Future<Map<String, Object>> first = null;
+            Future<Map<String, Object>> second = null;
+            try {
+                blocker.setAutoCommit(false);
+                try (Statement lock = blocker.createStatement();
+                     ResultSet rows = lock.executeQuery(activeRowLockSql)) {
+                    assertTrue(rows.next());
+                }
+
+                Future<Map<String, Object>> firstTask = executor.submit(
+                        firstPublication
+                );
+                first = firstTask;
+                awaitBlockedQuery(firstBlockedQuery);
+
+                Future<Map<String, Object>> secondTask = executor.submit(
+                        secondPublication
+                );
+                second = secondTask;
+                awaitBlockedQuery("platform-publication-serialization");
+                assertThrows(
+                        TimeoutException.class,
+                        () -> firstTask.get(250, TimeUnit.MILLISECONDS)
+                );
+                assertThrows(
+                        TimeoutException.class,
+                        () -> secondTask.get(250, TimeUnit.MILLISECONDS)
+                );
+
+                blocker.commit();
+                List<Map<String, Object>> responses = List.of(
+                        firstTask.get(5, TimeUnit.SECONDS),
+                        secondTask.get(5, TimeUnit.SECONDS)
+                );
+                assertEquals(1L, scalarLong(restoration.activeCountSql()));
+                assertEquals(
+                        restoration.expectedActiveVersion(),
+                        scalarString(restoration.activeVersionSql())
+                );
+                return responses;
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (first != null && !first.isDone()) {
+                        first.cancel(true);
+                    }
+                    if (second != null && !second.isDone()) {
+                        second.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    if (!executor.awaitTermination(20, TimeUnit.SECONDS)) {
+                        throw new IllegalStateException(
+                                "Publication executor did not terminate after cancellation"
+                        );
+                    }
+                    restorePublicationState(restoration);
+                }
+            }
+        }
+    }
+
+    private void restorePublicationState(PublicationRestoration restoration)
+            throws Exception {
+        try (Connection connection = dataSource.getConnection()) {
+            try {
+                connection.setAutoCommit(false);
+                try (Statement deactivate = connection.createStatement()) {
+                    deactivate.executeUpdate(restoration.deactivateSql());
+                }
+                try (PreparedStatement activate = connection.prepareStatement(
+                        restoration.activateSql()
+                )) {
+                    activate.setString(1, restoration.previousVersion());
+                    if (activate.executeUpdate() != 1) {
+                        throw new IllegalStateException(
+                                "Previous active publication was not restored"
+                        );
+                    }
+                }
+                try (PreparedStatement delete = connection.prepareStatement(
+                        restoration.deleteSql()
+                )) {
+                    delete.setString(1, restoration.testVersionPattern());
+                    delete.executeUpdate();
+                }
+                connection.commit();
+            } finally {
+                connection.rollback();
+            }
+        }
+    }
+
+    private record PublicationRestoration(
+            String deactivateSql,
+            String activateSql,
+            String deleteSql,
+            String previousVersion,
+            String testVersionPattern,
+            String activeCountSql,
+            String activeVersionSql,
+            String expectedActiveVersion
+    ) {
+    }
+
+    private Map<String, Object> publicationRemoteConfig(String seasonId) {
+        return Map.of(
+                "backgroundHealthSyncEnabled", false,
+                "activityRetentionDays", 30,
+                "seasonId", seasonId,
+                "weeklyRouteEnergy", 120,
+                "sandboxPaymentsEnabled", false,
+                "weeklyRouteEnabled", true
         );
     }
 
