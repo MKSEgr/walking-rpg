@@ -38,6 +38,11 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(SingleChildScrollView), findsOneWidget);
     expect(find.text('СВЯЗЬ С МАРШРУТОМ'), findsOneWidget);
+    final Text statusLabel = tester.widget<Text>(
+      find.text('СВЯЗЬ С МАРШРУТОМ'),
+    );
+    expect(statusLabel.maxLines, isNull);
+    expect(statusLabel.overflow, TextOverflow.visible);
     expect(find.text('Сверяем маршрут'), findsOneWidget);
     expect(
       find.bySemanticsLabel('Получение актуального состояния'),
@@ -55,12 +60,22 @@ void main() {
   testWidgets('failure state exposes explicit recovery actions', (
     WidgetTester tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     int retries = 0;
     int secondaryActions = 0;
 
     await tester.pumpWidget(
       MaterialApp(
         theme: WalkingRpgTheme.light(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
         home: Scaffold(
           body: ExpeditionReadState.failure(
             title: 'Сигнал потерян',
@@ -81,9 +96,17 @@ void main() {
       ),
     );
 
+    expect(tester.takeException(), isNull);
     expect(find.text('СИГНАЛ НЕДОСТУПЕН'), findsOneWidget);
+    final Text statusLabel = tester.widget<Text>(
+      find.text('СИГНАЛ НЕДОСТУПЕН'),
+    );
+    expect(statusLabel.maxLines, isNull);
+    expect(statusLabel.overflow, TextOverflow.visible);
     expect(find.text('Backend недоступен'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('retry')));
     await tester.tap(find.byKey(const Key('retry')));
+    await tester.ensureVisible(find.byKey(const Key('secondary')));
     await tester.tap(find.byKey(const Key('secondary')));
 
     expect(retries, 1);

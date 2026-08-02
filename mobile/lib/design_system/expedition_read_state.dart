@@ -78,6 +78,7 @@ class ExpeditionReadState extends StatelessWidget {
                       child: ExpeditionBadge(
                         label: statusLabel,
                         icon: _loading ? Icons.radar : Icons.cloud_off_outlined,
+                        allowWrap: true,
                         tone: _loading
                             ? ExpeditionPanelTone.lumen
                             : ExpeditionPanelTone.neutral,
