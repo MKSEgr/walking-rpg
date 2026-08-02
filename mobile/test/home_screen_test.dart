@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -14,6 +15,39 @@ import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 
 void main() {
+  testWidgets('home hero uses accepted chapter and companion state', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(home: HomeScreen(loader: () async => HomeSnapshot.demo)),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder vistaFinder = find.byKey(const Key('home-expedition-vista'));
+    expect(vistaFinder, findsOneWidget);
+    final ChapterVista vista = tester.widget<ChapterVista>(vistaFinder);
+    expect(vista.progress, HomeSnapshot.demo.expeditionProgressValue);
+    expect(
+      find.bySemanticsLabel(
+        'Сигнал из туманного сектора, Внешний маяк, маршрут 0%',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('home-current-node-badge')), findsOneWidget);
+    final Finder companionBadge = find.byKey(
+      const Key('home-active-companion-badge'),
+    );
+    expect(companionBadge, findsOneWidget);
+    expect(
+      find.descendant(of: companionBadge, matching: find.text('ИСКРА · УР. 1')),
+      findsOneWidget,
+    );
+
+    semantics.dispose();
+  });
+
   testWidgets('home screen renders loaded backend snapshot', (
     WidgetTester tester,
   ) async {
