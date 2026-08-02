@@ -92,11 +92,21 @@ void main() {
     expect(deleteButton.hitTestable(), findsOneWidget);
     await tester.tap(deleteButton);
     await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('account-delete-intent-dialog')),
+      findsOneWidget,
+    );
+    expect(find.text('НЕОБРАТИМОЕ ДЕЙСТВИЕ'), findsOneWidget);
     expect(find.text('Удалить аккаунт?'), findsOneWidget);
     expect(find.byKey(const Key('account-delete-phrase')), findsNothing);
 
     await tester.tap(find.byKey(const Key('account-delete-continue')));
     await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('account-delete-phrase-dialog')),
+      findsOneWidget,
+    );
+    expect(find.text('ПОСЛЕДНЯЯ ГРАНИЦА'), findsOneWidget);
     expect(find.byKey(const Key('account-delete-phrase')), findsOneWidget);
     expect(
       tester

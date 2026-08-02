@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_decision_dialog.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/account/application/account_export_coordinator.dart';
@@ -360,24 +361,20 @@ class _AccountScreenState extends State<AccountScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Удалить аккаунт?'),
-              content: const Text(
-                'Будут удалены игровой прогресс, история активности, '
-                'инвентарь, участие в отрядах и серверные настройки. '
-                'Отменить операцию после подтверждения нельзя.',
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Отмена'),
-                ),
-                FilledButton(
-                  key: const Key('account-delete-continue'),
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Продолжить'),
-                ),
-              ],
+            return ExpeditionDecisionDialog(
+              key: const Key('account-delete-intent-dialog'),
+              badgeLabel: 'Необратимое действие',
+              title: 'Удалить аккаунт?',
+              message:
+                  'Будут удалены игровой прогресс, история активности, '
+                  'инвентарь, участие в отрядах и серверные настройки. '
+                  'Отменить операцию после подтверждения нельзя.',
+              icon: Icons.delete_forever_outlined,
+              confirmLabel: 'Продолжить',
+              confirmButtonKey: const Key('account-delete-continue'),
+              destructive: true,
+              onCancel: () => Navigator.pop(context, false),
+              onConfirm: () => Navigator.pop(context, true),
             );
           },
         ) ??
@@ -738,38 +735,28 @@ class _DeletionPhraseDialogState extends State<_DeletionPhraseDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Последнее подтверждение'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const Text('Введите УДАЛИТЬ заглавными буквами:'),
-          const SizedBox(height: 12),
-          TextField(
-            key: const Key('account-delete-phrase'),
-            controller: _controller,
-            autofocus: true,
-            autocorrect: false,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'УДАЛИТЬ',
-            ),
-          ),
-        ],
+    return ExpeditionDecisionDialog(
+      key: const Key('account-delete-phrase-dialog'),
+      badgeLabel: 'Последняя граница',
+      title: 'Последнее подтверждение',
+      message: 'Введите УДАЛИТЬ заглавными буквами:',
+      icon: Icons.lock_outline,
+      confirmLabel: 'Удалить навсегда',
+      confirmButtonKey: const Key('account-delete-confirm'),
+      destructive: true,
+      onCancel: () => Navigator.pop(context, false),
+      onConfirm: _confirmed ? () => Navigator.pop(context, true) : null,
+      content: TextField(
+        key: const Key('account-delete-phrase'),
+        controller: _controller,
+        autofocus: true,
+        autocorrect: false,
+        textCapitalization: TextCapitalization.characters,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          hintText: 'УДАЛИТЬ',
+        ),
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Отмена'),
-        ),
-        FilledButton(
-          key: const Key('account-delete-confirm'),
-          onPressed: _confirmed ? () => Navigator.pop(context, true) : null,
-          child: const Text('Удалить навсегда'),
-        ),
-      ],
     );
   }
 

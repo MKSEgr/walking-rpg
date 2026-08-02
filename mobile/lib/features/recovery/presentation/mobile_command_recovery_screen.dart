@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_decision_dialog.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
@@ -170,24 +171,20 @@ class _MobileCommandRecoveryScreenState
         await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Убрать отклонённую запись?'),
-              content: const Text(
-                'Команда уже не повторяется и не блокирует очередь. '
-                'Удалится только локальная диагностическая запись; '
-                'состояние на сервере не изменится.',
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Отмена'),
-                ),
-                FilledButton(
-                  key: const Key('command-recovery-dismiss-confirm'),
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Убрать запись'),
-                ),
-              ],
+            return ExpeditionDecisionDialog(
+              key: const Key('command-recovery-dismiss-dialog'),
+              badgeLabel: 'Локальная диагностика',
+              title: 'Убрать отклонённую запись?',
+              message:
+                  'Команда уже не повторяется и не блокирует очередь. '
+                  'Удалится только локальная диагностическая запись; '
+                  'состояние на сервере не изменится.',
+              icon: Icons.delete_sweep_outlined,
+              confirmLabel: 'Убрать запись',
+              confirmButtonKey: const Key('command-recovery-dismiss-confirm'),
+              destructive: true,
+              onCancel: () => Navigator.of(context).pop(false),
+              onConfirm: () => Navigator.of(context).pop(true),
             );
           },
         ) ??

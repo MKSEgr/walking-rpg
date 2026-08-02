@@ -263,6 +263,24 @@ server sync and the authoritative checkpoint without changing their meaning.
 - compact layouts and enlarged system text keep the complete workflow
   scrollable, including the safety note and final export action.
 
+## Trust decision dialogs
+
+Irreversible account controls and terminal recovery cleanup use one explicit
+decision composition instead of a generic Material alert.
+
+- account deletion keeps both existing confirmation stages, the exact
+  `УДАЛИТЬ` phrase and fresh identity-provider authentication; the dialog does
+  not own deletion, session shutdown or idempotency;
+- recovery cleanup remains limited to terminal local diagnostics and states
+  plainly that authoritative server state is not changed;
+- signal red is reserved for the destructive confirmation, while a complete
+  badge, icon and copy carry the same meaning without color;
+- cancel remains available at every local decision boundary, and disabled
+  confirmation stays disabled until the caller's existing condition is met;
+- the semantic heading, complete wrapping badge and a single scroll surface
+  keep warnings and both actions reachable at compact width with enlarged
+  system text.
+
 ## Next visual slices
 
 1. Turn the expedition chapter into a visual route map only from an
