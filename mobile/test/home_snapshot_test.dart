@@ -18,7 +18,10 @@ void main() {
     expect(snapshot.unlockedEvent, isNull);
     expect(snapshot.pilotCurrentExperience, 20);
     expect(snapshot.pilotNextLevelExperience, 100);
+    expect(snapshot.petId, 'spark-v1');
+    expect(snapshot.petSpecies, 'Люмин');
     expect(snapshot.petBond, 10);
+    expect(snapshot.petEvolutionStage, 0);
     expect(snapshot.inventory, isEmpty);
     expect(snapshot.craftingRecipes, isEmpty);
   });
@@ -43,7 +46,32 @@ void main() {
     expect(snapshot.unlockedEvent?.choices, hasLength(2));
     expect(snapshot.unlockedEvent?.choices.first.choiceId, 'analyze-signal');
     expect(snapshot.pilotCurrentExperience, 20);
+    expect(snapshot.petId, 'spark-v1');
+    expect(snapshot.petSpecies, 'Люмин');
     expect(snapshot.petBond, 10);
+    expect(snapshot.petEvolutionStage, 0);
+  });
+
+  test('legacy response keeps companion identity unknown', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> pet = response['pet'] as Map<String, dynamic>;
+    pet
+      ..remove('petId')
+      ..remove('evolutionStage');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.petId, isNull);
+    expect(snapshot.petSpecies, 'Люмин');
+    expect(snapshot.petEvolutionStage, isNull);
+  });
+
+  test('negative companion evolution stage is rejected', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> pet = response['pet'] as Map<String, dynamic>;
+    pet['evolutionStage'] = -1;
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('daily goal must match the server policy envelope', () {
@@ -335,10 +363,12 @@ Map<String, dynamic> _readyHomeResponse() {
       'specialization': 'Не выбрана',
     },
     'pet': <String, dynamic>{
+      'petId': 'spark-v1',
       'name': 'Искра',
       'species': 'Люмин',
       'level': 1,
       'bond': 10,
+      'evolutionStage': 0,
       'trait': 'Чуткий разведчик',
     },
     'expedition': <String, dynamic>{

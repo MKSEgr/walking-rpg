@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
+import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -44,9 +45,48 @@ void main() {
       find.descendant(of: companionBadge, matching: find.text('ИСКРА · УР. 1')),
       findsOneWidget,
     );
+    final Finder portraitFinder = find.byKey(
+      const Key('home-active-companion-portrait'),
+    );
+    expect(portraitFinder, findsOneWidget);
+    final CompanionPortrait portrait = tester.widget<CompanionPortrait>(
+      portraitFinder,
+    );
+    expect(portrait.petId, 'spark-v1');
+    expect(portrait.evolutionStage, 0);
+    expect(
+      find.bySemanticsLabel('Искра, Люмин, форма 1, активный спутник'),
+      findsOneWidget,
+    );
 
     semantics.dispose();
   });
+
+  testWidgets(
+    'legacy cached companion stays textual without guessed identity',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: HomeScreen(loader: () async => _readyToAdvance())),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder companionBadge = find.byKey(
+        const Key('home-active-companion-badge'),
+      );
+      expect(companionBadge, findsOneWidget);
+      expect(
+        find.byKey(const Key('home-active-companion-portrait')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: companionBadge,
+          matching: find.text('ИСКРА · УР. 1'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('home screen renders loaded backend snapshot', (
     WidgetTester tester,

@@ -27,6 +27,9 @@ class HomeSnapshot {
     required this.pilotLevel,
     required this.petName,
     required this.petLevel,
+    this.petId,
+    this.petSpecies,
+    this.petEvolutionStage,
     this.pilotCurrentExperience = 0,
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
@@ -52,6 +55,12 @@ class HomeSnapshot {
     dailyGoalPolicy.validateGoal(dailyGoal);
     final Map<String, dynamic> pilot = _readMap(json, 'pilot');
     final Map<String, dynamic> pet = _readMap(json, 'pet');
+    final int? petEvolutionStage = _readOptionalInt(pet, 'evolutionStage');
+    if (petEvolutionStage != null && petEvolutionStage < 0) {
+      throw const FormatException(
+        'evolutionStage должен быть неотрицательным целым числом',
+      );
+    }
     final Map<String, dynamic> expedition = _readMap(json, 'expedition');
     final Object? eventJson = expedition['unlockedEvent'];
     final Object? pendingEventResultJson = json['pendingEventResult'];
@@ -83,9 +92,12 @@ class HomeSnapshot {
       pilotLevel: _readInt(pilot, 'level'),
       pilotCurrentExperience: _readInt(pilot, 'currentExperience'),
       pilotNextLevelExperience: _readInt(pilot, 'nextLevelExperience'),
+      petId: _readOptionalString(pet, 'petId'),
       petName: _readString(pet, 'name'),
+      petSpecies: _readOptionalString(pet, 'species'),
       petLevel: _readInt(pet, 'level'),
       petBond: _readInt(pet, 'bond'),
+      petEvolutionStage: petEvolutionStage,
       inventory: _readInventory(json['inventory']),
       equipment: _readEquipment(json['equipment']),
       craftingRecipes: _readCraftingRecipes(json['craftingRecipes']),
@@ -122,9 +134,12 @@ class HomeSnapshot {
   final int pilotLevel;
   final int pilotCurrentExperience;
   final int pilotNextLevelExperience;
+  final String? petId;
   final String petName;
+  final String? petSpecies;
   final int petLevel;
   final int petBond;
+  final int? petEvolutionStage;
   final List<HomeInventoryItem> inventory;
   final List<HomeEquipmentSlot> equipment;
   final List<HomeCraftingRecipe> craftingRecipes;
@@ -198,9 +213,12 @@ class HomeSnapshot {
     pilotLevel: 1,
     pilotCurrentExperience: 20,
     pilotNextLevelExperience: 100,
+    petId: 'spark-v1',
     petName: 'Искра',
+    petSpecies: 'Люмин',
     petLevel: 1,
     petBond: 10,
+    petEvolutionStage: 0,
   );
 
   static List<HomeInventoryItem> _readInventory(Object? raw) {
@@ -259,6 +277,13 @@ class HomeSnapshot {
     throw FormatException('$field должен быть целым числом');
   }
 
+  static int? _readOptionalInt(Map<String, dynamic> json, String field) {
+    if (!json.containsKey(field)) {
+      return null;
+    }
+    return _readInt(json, field);
+  }
+
   static Map<String, dynamic> _readMap(
     Map<String, dynamic> json,
     String field,
@@ -275,6 +300,13 @@ class HomeSnapshot {
       return value;
     }
     throw FormatException('$field должен быть строкой или null');
+  }
+
+  static String? _readOptionalString(Map<String, dynamic> json, String field) {
+    if (!json.containsKey(field)) {
+      return null;
+    }
+    return _readString(json, field);
   }
 
   static String _readString(Map<String, dynamic> json, String field) {
