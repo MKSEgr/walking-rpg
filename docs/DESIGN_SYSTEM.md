@@ -299,6 +299,24 @@ decision composition instead of a generic Material alert.
   keep warnings and both actions reachable at compact width with enlarged
   system text.
 
+## First journey field signals
+
+Read-only recovery, controller notices and failed action feedback remain part
+of the guided route instead of falling back to generic Material cards. The
+shared inline signal preserves the distinction between information and an
+actionable failure without changing who owns the underlying state.
+
+- saved-state copy uses a neutral signal and does not imply that a live route
+  or mutation is available;
+- controller notices use lumen, while signal red remains limited to an action
+  that was not authoritatively confirmed;
+- the signal owns no retry, dismissal or navigation callback, and it never
+  turns diagnostic text into route progress or a reward;
+- icon, explicit status label and body copy carry meaning without relying on
+  color, and every dynamic signal is announced as a live region;
+- the complete label and message wrap without truncation inside the existing
+  first-journey scroll surface at `320 px / 1.6×` text scale.
+
 ## Next visual slices
 
 1. Turn the expedition chapter into a visual route map only from an
