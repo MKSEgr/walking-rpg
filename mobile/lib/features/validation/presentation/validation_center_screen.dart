@@ -506,7 +506,7 @@ class _ActionCard extends StatelessWidget {
           ),
           if (controller.journalFull) ...<Widget>[
             const SizedBox(height: 12),
-            _ValidationWarning(
+            const _ValidationWarning(
               message:
                   'Лимит журнала не позволяет записать ещё одно полное '
                   'действие. Экспортируйте текущий JSON.',
