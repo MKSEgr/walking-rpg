@@ -50,20 +50,32 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                         children: <Widget>[
                           _ValidationHero(snapshot: snapshot),
                           const SizedBox(height: 22),
-                          const ExpeditionSectionTitle(
-                            title: 'Паспорт запуска',
-                            subtitle:
-                                'Точный build, источник данных и режим сессии',
-                            icon: Icons.fingerprint,
+                          const Semantics(
+                            key: Key('validation-launch-heading'),
+                            container: true,
+                            header: true,
+                            child: ExpeditionSectionTitle(
+                              title: 'Паспорт запуска',
+                              subtitle:
+                                  'Точный build, источник данных и режим '
+                                  'сессии',
+                              icon: Icons.fingerprint,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           _LaunchCard(launch: snapshot.launch),
                           const SizedBox(height: 22),
-                          const ExpeditionSectionTitle(
-                            title: 'Сценарий проверки',
-                            subtitle:
-                                'Три явных шага оператора без фоновых действий',
-                            icon: Icons.route,
+                          const Semantics(
+                            key: Key('validation-actions-heading'),
+                            container: true,
+                            header: true,
+                            child: ExpeditionSectionTitle(
+                              title: 'Сценарий проверки',
+                              subtitle:
+                                  'Три явных шага оператора без фоновых '
+                                  'действий',
+                              icon: Icons.route,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           _ActionCard(
@@ -100,12 +112,17 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                               snapshot.authoritativeCheckpoint !=
                                   null) ...<Widget>[
                             const SizedBox(height: 22),
-                            const ExpeditionSectionTitle(
-                              title: 'Принятые наблюдения',
-                              subtitle:
-                                  'Только факты текущего запуска и свежего '
-                                  'ответа сервера',
-                              icon: Icons.radar,
+                            const Semantics(
+                              key: Key('validation-observations-heading'),
+                              container: true,
+                              header: true,
+                              child: ExpeditionSectionTitle(
+                                title: 'Принятые наблюдения',
+                                subtitle:
+                                    'Только факты текущего запуска и свежего '
+                                    'ответа сервера',
+                                icon: Icons.radar,
+                              ),
                             ),
                           ],
                           if (snapshot.latestHealth != null) ...<Widget>[
@@ -124,21 +141,32 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                             ),
                           ],
                           const SizedBox(height: 22),
-                          const ExpeditionSectionTitle(
-                            title: 'Журнал запуска',
-                            subtitle:
-                                'Последовательность действий без raw payload '
-                                'и identity',
-                            icon: Icons.receipt_long_outlined,
+                          const Semantics(
+                            key: Key('validation-journal-heading'),
+                            container: true,
+                            header: true,
+                            child: ExpeditionSectionTitle(
+                              title: 'Журнал запуска',
+                              subtitle:
+                                  'Последовательность действий без raw '
+                                  'payload и identity',
+                              icon: Icons.receipt_long_outlined,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           _JournalCard(entries: snapshot.journal),
                           const SizedBox(height: 22),
-                          const ExpeditionSectionTitle(
-                            title: 'Пакет evidence',
-                            subtitle:
-                                'Проверяемый JSON для ручного device-протокола',
-                            icon: Icons.verified_user,
+                          const Semantics(
+                            key: Key('validation-evidence-heading'),
+                            container: true,
+                            header: true,
+                            child: ExpeditionSectionTitle(
+                              title: 'Пакет evidence',
+                              subtitle:
+                                  'Проверяемый JSON для ручного '
+                                  'device-протокола',
+                              icon: Icons.verified_user,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           _ValidationExportPanel(
