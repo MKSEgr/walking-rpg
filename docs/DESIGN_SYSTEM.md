@@ -206,6 +206,24 @@ not as a generic blocking dialog or invented game progress.
 - the shared panel is a live region with a semantic heading and remains
   scrollable at compact width with enlarged system text.
 
+## Cached route state
+
+Home and the path journal identify an accepted cached snapshot as a saved
+route rather than presenting it as a generic offline warning. The composition
+must preserve the trust boundary between readable server-confirmed history and
+actions that still require a live authoritative response.
+
+- the complete saved-route status, snapshot time and read-only explanation are
+  shown before the cached screen content;
+- the transport or server reason remains separate supporting detail and never
+  becomes a route fact, reward or progress value;
+- the banner owns no retry or mutation callback: each screen keeps its existing
+  refresh action, while cached gameplay and platform commands remain disabled;
+- signal red is not used for this non-destructive degraded state, and the cloud
+  icon, badge and explicit copy carry meaning without relying on color;
+- the whole state is a live region with a semantic heading, and its badge and
+  reason wrap without truncation at `320 px / 1.6×` text scale.
+
 ## First journey bootstrap states
 
 The first journey uses the same route-contact composition while startup replay
