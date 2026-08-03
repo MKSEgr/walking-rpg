@@ -281,26 +281,47 @@ class PlatformServiceTest {
     }
 
     @Test
-    void shouldSharePurchaseIdempotencyAcrossCommandAliases() {
+    void shouldSharePurchaseIdempotencyAcrossCommandAliases() throws Exception {
         platformRepository.setRemoteConfig(remoteConfig(true, false));
+        Map<String, Object> payload = Map.of("cosmeticId", "spark-halo");
         PlatformCommandRequest legacyRequest = command(
                 "BUY_COSMETIC",
                 "shared-purchase-alias",
-                Map.of("cosmeticId", "spark-halo")
+                payload
         );
 
         PlatformCommandResponse first = service.execute("alias-user", legacyRequest);
         PlatformCommandResponse replayed = service.execute("alias-user", command(
                 "PURCHASE_COSMETIC",
                 "shared-purchase-alias",
-                Map.of("cosmeticId", "spark-halo")
+                payload
         ));
 
         assertEquals(first, replayed);
         assertEquals("BUY_COSMETIC", first.commandType());
         assertEquals(1, platformRepository.paymentCount());
-        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(2, platformRepository.processedCommandCount());
         assertEquals(1, platformRepository.eventCount());
+
+        JsonMapper mapper = JsonMapper.builder().findAndAddModules().build();
+        ProcessedPlatformCommand legacyProcessed = platformRepository.findProcessed(
+                new PlatformCommandScope(
+                        "alias-user",
+                        "BUY_COSMETIC",
+                        "shared-purchase-alias"
+                )
+        ).orElseThrow();
+        assertEquals(
+                PlatformCommandFingerprint.sha256(mapper, "BUY_COSMETIC", payload),
+                legacyProcessed.requestFingerprint()
+        );
+        assertEquals(
+                first,
+                mapper.readValue(
+                        legacyProcessed.responseJson(),
+                        PlatformCommandResponse.class
+                )
+        );
 
         assertThrows(PlatformIdempotencyConflictException.class, () ->
                 service.execute("alias-user", command(
@@ -315,7 +336,7 @@ class PlatformServiceTest {
         assertFalse(collection(snapshot.userState(), "ownedCosmetics")
                 .contains("trail-banner"));
         assertEquals(1, platformRepository.paymentCount());
-        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(2, platformRepository.processedCommandCount());
         assertEquals(1, platformRepository.eventCount());
     }
 
@@ -421,7 +442,7 @@ class PlatformServiceTest {
         assertFalse((Boolean) replayed.snapshot().remoteConfig()
                 .get("backgroundHealthSyncEnabled"));
         assertEquals(1, platformRepository.paymentCount());
-        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(2, platformRepository.processedCommandCount());
         assertEquals(1, platformRepository.eventCount());
         assertThrows(PlatformIdempotencyConflictException.class, () ->
                 disabledService.execute("provider-user", command(

@@ -818,8 +818,11 @@ lock и отражает фактический порядок публикац�
   fingerprint lookup оба имени сводятся к одному canonical command scope.
   Повтор с тем же key через другой alias возвращает immutable первый response,
   а другой `cosmeticId` получает `409 IDEMPOTENCY_CONFLICT` до provider call или
-  изменения состояния. Старые processed rows с `command_type=BUY_COSMETIC`
-  продолжают exact replay через отдельный legacy lookup.
+  изменения состояния. Новая покупка в одной транзакции сохраняет одинаковый
+  response под canonical и legacy scopes с соответствующими fingerprints, чтобы
+  экземпляр предыдущей версии во время rolling deployment также выполнил exact
+  replay. Старые processed rows с `command_type=BUY_COSMETIC` продолжают exact
+  replay через отдельный legacy lookup.
 
 ### `commandType=RECORD_COMPASS_IMPRESSION`
 

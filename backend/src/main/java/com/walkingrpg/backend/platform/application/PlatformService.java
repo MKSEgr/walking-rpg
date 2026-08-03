@@ -193,12 +193,47 @@ public class PlatformService {
         );
         String responseJson = writeResponse(response);
         PlatformCommandResponse canonicalResponse = readResponse(responseJson);
-        repository.saveProcessed(
+        saveProcessedWithCompatibilityAliases(
                 scope,
-                new ProcessedPlatformCommand(fingerprint, responseJson),
+                request.payload(),
+                fingerprint,
+                responseJson,
                 serverTime
         );
         return canonicalResponse;
+    }
+
+    private void saveProcessedWithCompatibilityAliases(
+            PlatformCommandScope canonicalScope,
+            Map<String, Object> payload,
+            String canonicalFingerprint,
+            String responseJson,
+            Instant createdAt
+    ) {
+        repository.saveProcessed(
+                canonicalScope,
+                new ProcessedPlatformCommand(canonicalFingerprint, responseJson),
+                createdAt
+        );
+        if (!PURCHASE_COSMETIC_COMMAND.equals(canonicalScope.commandType())) {
+            return;
+        }
+
+        PlatformCommandScope legacyScope = new PlatformCommandScope(
+                canonicalScope.userId(),
+                LEGACY_BUY_COSMETIC_COMMAND,
+                canonicalScope.idempotencyKey()
+        );
+        String legacyFingerprint = PlatformCommandFingerprint.sha256(
+                objectMapper,
+                LEGACY_BUY_COSMETIC_COMMAND,
+                payload
+        );
+        repository.saveProcessed(
+                legacyScope,
+                new ProcessedPlatformCommand(legacyFingerprint, responseJson),
+                createdAt
+        );
     }
 
     private PlatformCommandResponse replay(

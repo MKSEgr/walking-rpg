@@ -37,9 +37,12 @@ import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
 import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
+import com.walkingrpg.backend.platform.application.PlatformCommandFingerprint;
 import com.walkingrpg.backend.platform.application.PlatformContentCatalog;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
 import com.walkingrpg.backend.platform.application.PlatformService;
+import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
+import com.walkingrpg.backend.platform.domain.ProcessedPlatformCommand;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
@@ -180,9 +183,10 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
-    void shouldPersistOnePurchaseAcrossLegacyAndCanonicalCommandAliases() {
+    void shouldPersistOnePurchaseAcrossLegacyAndCanonicalCommandAliases() throws Exception {
         String userId = "payment-alias-user";
         String idempotencyKey = "payment-alias-once";
+        Map<String, Object> payload = Map.of("cosmeticId", "spark-halo");
         platformAdminService.updateRemoteConfig(
                 "payment-alias-test",
                 "payment-alias-enabled",
@@ -195,27 +199,54 @@ class PlatformPersistenceIntegrationTest {
                     new PlatformCommandRequest(
                             "BUY_COSMETIC",
                             idempotencyKey,
-                            Map.of("cosmeticId", "spark-halo")
+                            payload
                     )
+            );
+            ProcessedPlatformCommand legacyProcessed = platformRepository.findProcessed(
+                    new PlatformCommandScope(
+                            userId,
+                            "BUY_COSMETIC",
+                            idempotencyKey
+                    )
+            ).orElseThrow();
+            PlatformCommandResponse legacyInstanceReplay = objectMapper.readValue(
+                    legacyProcessed.responseJson(),
+                    PlatformCommandResponse.class
             );
             PlatformCommandResponse replayed = platformService.execute(
                     userId,
                     new PlatformCommandRequest(
                             "PURCHASE_COSMETIC",
                             idempotencyKey,
-                            Map.of("cosmeticId", "spark-halo")
+                            payload
                     )
             );
 
+            assertEquals(first, legacyInstanceReplay);
             assertEquals(first, replayed);
             assertEquals("BUY_COSMETIC", first.commandType());
+            assertEquals(
+                    PlatformCommandFingerprint.sha256(
+                            objectMapper,
+                            "BUY_COSMETIC",
+                            payload
+                    ),
+                    legacyProcessed.requestFingerprint()
+            );
             assertEquals(1, rowCount("payment_intent"));
-            assertEquals(1, rowCount("processed_roadmap_command"));
-            assertEquals("PURCHASE_COSMETIC", scalarString("""
+            assertEquals(2, rowCount("processed_roadmap_command"));
+            assertEquals(List.of("BUY_COSMETIC", "PURCHASE_COSMETIC"),
+                    jdbcTemplate.queryForList("""
                     SELECT command_type
                     FROM processed_roadmap_command
                     WHERE user_id = 'payment-alias-user'
-                    """));
+                    ORDER BY command_type
+                    """, String.class));
+            assertEquals(1L, jdbcTemplate.queryForObject("""
+                    SELECT count(DISTINCT response_json)
+                    FROM processed_roadmap_command
+                    WHERE user_id = 'payment-alias-user'
+                    """, Long.class));
             assertEquals("spark-halo", scalarString("""
                     SELECT product_id
                     FROM payment_intent
@@ -233,7 +264,7 @@ class PlatformPersistenceIntegrationTest {
                     )
             );
             assertEquals(1, rowCount("payment_intent"));
-            assertEquals(1, rowCount("processed_roadmap_command"));
+            assertEquals(2, rowCount("processed_roadmap_command"));
             assertFalse(Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
                     SELECT (state_json -> 'ownedCosmetics') @> '["trail-banner"]'::jsonb
                     FROM roadmap_user_state

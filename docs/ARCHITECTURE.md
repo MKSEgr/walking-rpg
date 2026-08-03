@@ -314,10 +314,11 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
 - transaction-scoped advisory lock по user или user+expedition;
 - row lock wallet/progression/inventory при изменении;
 - idempotency lookup до мутации;
-- legacy `BUY_COSMETIC` и canonical `PURCHASE_COSMETIC` используют один новый
-  command scope/fingerprint; legacy processed rows читаются для совместимости,
-  поэтому смена alias не создаёт вторую provider operation или расходящуюся
-  `payment_intent` запись;
+- legacy `BUY_COSMETIC` и canonical `PURCHASE_COSMETIC` используют один
+  логический idempotency scope. Новая покупка атомарно сохраняет один response
+  под двумя physical scopes с command-specific fingerprints, поэтому старый и
+  новый экземпляры во время rolling deployment выполняют exact replay; legacy
+  processed rows также читаются для обратной совместимости;
 - source uniqueness в ledger;
 - account-deletion lock и active-subject check выполняются внутри mutating
   transaction до operation-specific locks/replay. Это включает activity,

@@ -208,7 +208,8 @@
   стать `false` после disable;
 - legacy `BUY_COSMETIC` и canonical `PURCHASE_COSMETIC` разделяют один
   idempotency scope: cross-alias replay возвращает первый immutable response,
-  а другой product под тем же key отклоняется до provider call;
+  а другой product под тем же key отклоняется до provider call; canonical и
+  legacy replay records сохраняются атомарно для mixed-version rollout;
 - platform snapshot не объявляет sandbox payment доступным при disabled
   provider, а mobile не показывает purchase action в release build, для
   `false` или cached snapshot.
