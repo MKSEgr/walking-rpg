@@ -1424,7 +1424,9 @@ class _ExpeditionTeam extends StatelessWidget {
           'XP ${snapshot.pilotCurrentExperience} / '
           '${snapshot.pilotNextLevelExperience}',
       icon: Icons.person_outline,
-      portrait: PilotPortrait(name: snapshot.pilotName, size: 72),
+      portrait: ExcludeSemantics(
+        child: PilotPortrait(name: snapshot.pilotName, size: 72),
+      ),
     );
     final Widget pet = _CharacterCard(
       key: const Key('home-pet-card'),

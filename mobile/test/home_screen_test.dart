@@ -81,6 +81,7 @@ void main() {
     expect(portrait.petId, 'spark-v1');
     expect(portrait.evolutionStage, 0);
     expect(find.byType(PilotPortrait), findsOneWidget);
+    expect(find.bySemanticsLabel('Пилот Навигатор'), findsNothing);
     expect(
       find.byKey(const Key('home-team-companion-portrait')),
       findsOneWidget,
