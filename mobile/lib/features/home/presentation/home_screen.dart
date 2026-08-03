@@ -59,6 +59,22 @@ typedef HomeImpressionRecorder =
     });
 typedef IdempotencyKeyFactory = String Function();
 
+enum _HomeAppAction { refresh, account }
+
+double _effectiveTextScale(BuildContext context) {
+  return MediaQuery.textScalerOf(context).scale(16) / 16;
+}
+
+bool _usesCompactHomeChrome(BuildContext context, BoxConstraints constraints) {
+  return constraints.maxWidth < 360 ||
+      (constraints.maxWidth < 430 && _effectiveTextScale(context) > 1.3);
+}
+
+bool _usesCompactHomeSection(BuildContext context, BoxConstraints constraints) {
+  return constraints.maxWidth < 320 ||
+      (constraints.maxWidth < 400 && _effectiveTextScale(context) > 1.3);
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -194,98 +210,113 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const _HomeAppTitle(),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Обновить',
-            onPressed: _isBusy ? null : _reload,
-            icon: const Icon(Icons.refresh),
-          ),
-          MobileCommandRecoveryAction(
-            key: const Key('home-command-recovery'),
-            onPressed: widget.onOpenRecovery,
-            count: widget.recoveryCount,
-            unavailable: widget.recoveryUnavailable,
-          ),
-          IconButton(
-            tooltip: 'Аккаунт',
-            onPressed: widget.onOpenAccount,
-            icon: const Icon(Icons.account_circle_outlined),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: FutureBuilder<HomeSnapshot>(
-          future: _snapshotFuture,
-          builder:
-              (
-                BuildContext context,
-                AsyncSnapshot<HomeSnapshot> asyncSnapshot,
-              ) {
-                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-                  return _HomeReadState(
-                    activitySyncAction: widget.activitySyncAction,
-                    child: const ExpeditionReadState.loading(
-                      key: Key('home-loading-state'),
-                      title: 'Сверяем маршрут',
-                      message:
-                          'Получаем шаги, ENERGY и актуальное состояние '
-                          'экспедиции.',
-                    ),
-                  );
-                }
-                if (asyncSnapshot.hasError) {
-                  return _HomeReadState(
-                    activitySyncAction: widget.activitySyncAction,
-                    child: _HomeError(
-                      error: asyncSnapshot.error!,
-                      onRetry: _reload,
-                      onOpenDemo: _openDemo,
-                    ),
-                  );
-                }
-                final HomeSnapshot? snapshot = asyncSnapshot.data;
-                if (snapshot == null) {
-                  return _HomeReadState(
-                    activitySyncAction: widget.activitySyncAction,
-                    child: _HomeError(
-                      error: const FormatException(
-                        'Backend не вернул состояние',
-                      ),
-                      onRetry: _reload,
-                      onOpenDemo: _openDemo,
-                    ),
-                  );
-                }
-                return _HomeBody(
-                  snapshot: snapshot,
-                  scrollController: _scrollController,
-                  routeChoiceViewportKey: _routeChoiceViewportKey,
-                  recipeViewportKey: _recipeViewportKey,
-                  stickyActionOcclusionKey: _stickyActionOcclusionKey,
-                  isAdvancing: _isAdvancing,
-                  isResolving: _isResolving,
-                  isAcknowledging: _isAcknowledging,
-                  isCrafting: _isCrafting,
-                  isChangingEquipment: _isChangingEquipment,
-                  onAdvance: () => _advance(snapshot),
-                  onResolve: (HomeEventChoice choice) =>
-                      _resolveEvent(snapshot, choice),
-                  onAcknowledgeEventResult: () =>
-                      _acknowledgeEventResult(snapshot),
-                  onCraft: (HomeCraftingRecipe recipe) =>
-                      _craft(snapshot, recipe),
-                  onEquip: (HomeInventoryItem item) => _equip(snapshot, item),
-                  onUnequip: (HomeEquipmentSlot slot) =>
-                      _unequip(snapshot, slot),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compactChrome = _usesCompactHomeChrome(context, constraints);
+        return Scaffold(
+          appBar: AppBar(
+            title: _HomeAppTitle(compact: compactChrome),
+            actions: <Widget>[
+              if (!compactChrome)
+                IconButton(
+                  tooltip: 'Обновить',
+                  onPressed: _isBusy ? null : _reload,
+                  icon: const Icon(Icons.refresh),
+                ),
+              MobileCommandRecoveryAction(
+                key: const Key('home-command-recovery'),
+                onPressed: widget.onOpenRecovery,
+                count: widget.recoveryCount,
+                unavailable: widget.recoveryUnavailable,
+              ),
+              if (compactChrome)
+                _HomeAppActionsMenu(
+                  refreshEnabled: !_isBusy,
                   onRefresh: _reload,
-                  activitySyncAction: widget.activitySyncAction,
-                );
-              },
-        ),
-      ),
+                  onOpenAccount: widget.onOpenAccount,
+                )
+              else
+                IconButton(
+                  tooltip: 'Аккаунт',
+                  onPressed: widget.onOpenAccount,
+                  icon: const Icon(Icons.account_circle_outlined),
+                ),
+            ],
+          ),
+          body: SafeArea(
+            child: FutureBuilder<HomeSnapshot>(
+              future: _snapshotFuture,
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<HomeSnapshot> asyncSnapshot,
+                  ) {
+                    if (asyncSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return _HomeReadState(
+                        activitySyncAction: widget.activitySyncAction,
+                        child: const ExpeditionReadState.loading(
+                          key: Key('home-loading-state'),
+                          title: 'Сверяем маршрут',
+                          message:
+                              'Получаем шаги, ENERGY и актуальное состояние '
+                              'экспедиции.',
+                        ),
+                      );
+                    }
+                    if (asyncSnapshot.hasError) {
+                      return _HomeReadState(
+                        activitySyncAction: widget.activitySyncAction,
+                        child: _HomeError(
+                          error: asyncSnapshot.error!,
+                          onRetry: _reload,
+                          onOpenDemo: _openDemo,
+                        ),
+                      );
+                    }
+                    final HomeSnapshot? snapshot = asyncSnapshot.data;
+                    if (snapshot == null) {
+                      return _HomeReadState(
+                        activitySyncAction: widget.activitySyncAction,
+                        child: _HomeError(
+                          error: const FormatException(
+                            'Backend не вернул состояние',
+                          ),
+                          onRetry: _reload,
+                          onOpenDemo: _openDemo,
+                        ),
+                      );
+                    }
+                    return _HomeBody(
+                      snapshot: snapshot,
+                      scrollController: _scrollController,
+                      routeChoiceViewportKey: _routeChoiceViewportKey,
+                      recipeViewportKey: _recipeViewportKey,
+                      stickyActionOcclusionKey: _stickyActionOcclusionKey,
+                      isAdvancing: _isAdvancing,
+                      isResolving: _isResolving,
+                      isAcknowledging: _isAcknowledging,
+                      isCrafting: _isCrafting,
+                      isChangingEquipment: _isChangingEquipment,
+                      onAdvance: () => _advance(snapshot),
+                      onResolve: (HomeEventChoice choice) =>
+                          _resolveEvent(snapshot, choice),
+                      onAcknowledgeEventResult: () =>
+                          _acknowledgeEventResult(snapshot),
+                      onCraft: (HomeCraftingRecipe recipe) =>
+                          _craft(snapshot, recipe),
+                      onEquip: (HomeInventoryItem item) =>
+                          _equip(snapshot, item),
+                      onUnequip: (HomeEquipmentSlot slot) =>
+                          _unequip(snapshot, slot),
+                      onRefresh: _reload,
+                      activitySyncAction: widget.activitySyncAction,
+                    );
+                  },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -931,30 +962,7 @@ class _HomeBody extends StatelessWidget {
                     icon: Icons.group_outlined,
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: _CharacterCard(
-                          label: 'Пилот',
-                          name: snapshot.pilotName,
-                          level: snapshot.pilotLevel,
-                          detail:
-                              'XP ${snapshot.pilotCurrentExperience} / ${snapshot.pilotNextLevelExperience}',
-                          icon: Icons.person_outline,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _CharacterCard(
-                          label: 'Питомец',
-                          name: snapshot.petName,
-                          level: snapshot.petLevel,
-                          detail: 'Связь ${snapshot.petBond}',
-                          icon: Icons.pets_outlined,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _ExpeditionTeam(snapshot: snapshot),
                   if (snapshot.equipment.isNotEmpty ||
                       snapshot.inventory.isNotEmpty ||
                       snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
@@ -1034,7 +1042,12 @@ class _HomeBody extends StatelessWidget {
                                 ),
                               )
                             : const Icon(Icons.near_me_outlined),
-                        label: Text(actionLabel),
+                        label: Text(
+                          actionLabel,
+                          maxLines: 2,
+                          overflow: TextOverflow.visible,
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ],
                   ),
@@ -1049,26 +1062,111 @@ class _HomeBody extends StatelessWidget {
 }
 
 class _HomeAppTitle extends StatelessWidget {
-  const _HomeAppTitle();
+  const _HomeAppTitle({required this.compact});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.primary.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Icon(Icons.radar, color: colors.primary, size: 20),
+    return Semantics(
+      header: true,
+      label: 'Walking RPG',
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (!compact) ...<Widget>[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(Icons.radar, color: colors.primary, size: 20),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
+            const Flexible(
+              child: Text(
+                'Walking RPG',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeAppActionsMenu extends StatelessWidget {
+  const _HomeAppActionsMenu({
+    required this.refreshEnabled,
+    required this.onRefresh,
+    required this.onOpenAccount,
+  });
+
+  final bool refreshEnabled;
+  final VoidCallback onRefresh;
+  final VoidCallback? onOpenAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_HomeAppAction>(
+      key: const Key('home-more-actions'),
+      tooltip: 'Ещё действия',
+      icon: const Icon(Icons.more_vert),
+      onSelected: (_HomeAppAction action) {
+        switch (action) {
+          case _HomeAppAction.refresh:
+            onRefresh();
+            break;
+          case _HomeAppAction.account:
+            onOpenAccount?.call();
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<_HomeAppAction>>[
+        PopupMenuItem<_HomeAppAction>(
+          key: const Key('home-menu-refresh'),
+          value: _HomeAppAction.refresh,
+          enabled: refreshEnabled,
+          child: const _HomeMenuLabel(
+            icon: Icons.refresh,
+            label: 'Обновить состояние',
           ),
         ),
-        const SizedBox(width: 10),
-        const Text('Walking RPG'),
+        PopupMenuItem<_HomeAppAction>(
+          key: const Key('home-menu-account'),
+          value: _HomeAppAction.account,
+          enabled: onOpenAccount != null,
+          child: const _HomeMenuLabel(
+            icon: Icons.account_circle_outlined,
+            label: 'Аккаунт',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeMenuLabel extends StatelessWidget {
+  const _HomeMenuLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 21),
+        const SizedBox(width: 12),
+        Flexible(child: Text(label)),
       ],
     );
   }
@@ -1089,7 +1187,6 @@ class _ExpeditionHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
-    final int dailyPercent = (snapshot.dailyProgress * 100).round();
     final bool hasCompanionPortrait =
         snapshot.petId != null &&
         snapshot.petSpecies != null &&
@@ -1143,54 +1240,16 @@ class _ExpeditionHero extends StatelessWidget {
             ).textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
           ),
           const SizedBox(height: 22),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              ExpeditionProgressRing(
-                progress: snapshot.dailyProgress,
-                value: '$dailyPercent%',
-                label: 'шаги',
-                size: 108,
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Сегодня: ${snapshot.dailySteps} / ${snapshot.dailyGoal}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      activitySubtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _DailyProgressSummary(
+            snapshot: snapshot,
+            activitySubtitle: activitySubtitle,
           ),
           const SizedBox(height: 22),
           Divider(color: context.walkingRpgPalette.panelBorder),
           const SizedBox(height: 2),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  snapshot.expeditionName,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              const SizedBox(width: 10),
-              ExpeditionBadge(
-                label: '${snapshot.availableEnergy} ENERGY',
-                icon: Icons.bolt,
-                tone: ExpeditionPanelTone.energy,
-              ),
-            ],
+          _RouteEnergySummary(
+            expeditionName: snapshot.expeditionName,
+            availableEnergy: snapshot.availableEnergy,
           ),
           const SizedBox(height: 8),
           Text(
@@ -1218,6 +1277,160 @@ class _ExpeditionHero extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DailyProgressSummary extends StatelessWidget {
+  const _DailyProgressSummary({
+    required this.snapshot,
+    required this.activitySubtitle,
+  });
+
+  final HomeSnapshot snapshot;
+  final String activitySubtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final Widget ring = ExpeditionProgressRing(
+      progress: snapshot.dailyProgress,
+      value: '${(snapshot.dailyProgress * 100).round()}%',
+      label: 'шаги',
+      size: 108,
+    );
+    final Widget details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Сегодня: ${snapshot.dailySteps} / ${snapshot.dailyGoal}',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          activitySubtitle,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (_usesCompactHomeSection(context, constraints)) {
+          return Column(
+            key: const Key('home-daily-progress-compact'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Center(child: ring),
+              const SizedBox(height: 16),
+              details,
+            ],
+          );
+        }
+        return Row(
+          key: const Key('home-daily-progress-wide'),
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            ring,
+            const SizedBox(width: 18),
+            Expanded(child: details),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RouteEnergySummary extends StatelessWidget {
+  const _RouteEnergySummary({
+    required this.expeditionName,
+    required this.availableEnergy,
+  });
+
+  final String expeditionName;
+  final int availableEnergy;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget title = Text(
+      expeditionName,
+      style: Theme.of(context).textTheme.titleLarge,
+    );
+    final Widget energy = ExpeditionBadge(
+      label: '$availableEnergy ENERGY',
+      icon: Icons.bolt,
+      tone: ExpeditionPanelTone.energy,
+      allowWrap: true,
+    );
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (_usesCompactHomeSection(context, constraints)) {
+          return Column(
+            key: const Key('home-route-energy-compact'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[title, const SizedBox(height: 10), energy],
+          );
+        }
+        return Row(
+          key: const Key('home-route-energy-wide'),
+          children: <Widget>[
+            Expanded(child: title),
+            const SizedBox(width: 10),
+            energy,
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ExpeditionTeam extends StatelessWidget {
+  const _ExpeditionTeam({required this.snapshot});
+
+  final HomeSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget pilot = _CharacterCard(
+      key: const Key('home-pilot-card'),
+      label: 'Пилот',
+      name: snapshot.pilotName,
+      level: snapshot.pilotLevel,
+      detail:
+          'XP ${snapshot.pilotCurrentExperience} / '
+          '${snapshot.pilotNextLevelExperience}',
+      icon: Icons.person_outline,
+    );
+    final Widget pet = _CharacterCard(
+      key: const Key('home-pet-card'),
+      label: 'Питомец',
+      name: snapshot.petName,
+      level: snapshot.petLevel,
+      detail: 'Связь ${snapshot.petBond}',
+      icon: Icons.pets_outlined,
+    );
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (_usesCompactHomeSection(context, constraints)) {
+          return Column(
+            key: const Key('home-expedition-team-compact'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[pilot, const SizedBox(height: 12), pet],
+          );
+        }
+        return Row(
+          key: const Key('home-expedition-team-wide'),
+          children: <Widget>[
+            Expanded(child: pilot),
+            const SizedBox(width: 12),
+            Expanded(child: pet),
+          ],
+        );
+      },
     );
   }
 }
@@ -1899,6 +2112,7 @@ class _HomeError extends StatelessWidget {
 
 class _CharacterCard extends StatelessWidget {
   const _CharacterCard({
+    super.key,
     required this.label,
     required this.name,
     required this.level,
