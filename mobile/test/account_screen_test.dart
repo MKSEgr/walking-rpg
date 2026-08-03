@@ -515,14 +515,14 @@ Future<void> _bringDecisionActionIntoView(
   Finder target,
 ) async {
   expect(target, findsOneWidget);
-  await tester.scrollUntilVisible(
-    target,
-    160,
-    scrollable: find.descendant(
-      of: find.byKey(const Key('expedition-decision-scroll')),
-      matching: find.byType(Scrollable),
-    ),
-  );
+  final Finder dialogScrollable = find
+      .descendant(
+        of: find.byKey(const Key('expedition-decision-scroll')),
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  expect(dialogScrollable, findsOneWidget);
+  await tester.scrollUntilVisible(target, 160, scrollable: dialogScrollable);
   await tester.pumpAndSettle();
 }
 
