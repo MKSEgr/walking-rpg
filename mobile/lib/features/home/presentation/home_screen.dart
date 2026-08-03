@@ -225,8 +225,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 AsyncSnapshot<HomeSnapshot> asyncSnapshot,
               ) {
                 if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-                  return const ExpeditionBackdrop(
-                    child: ExpeditionReadState.loading(
+                  return _HomeReadState(
+                    activitySyncAction: widget.activitySyncAction,
+                    child: const ExpeditionReadState.loading(
                       key: Key('home-loading-state'),
                       title: 'Сверяем маршрут',
                       message:
@@ -236,7 +237,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   );
                 }
                 if (asyncSnapshot.hasError) {
-                  return ExpeditionBackdrop(
+                  return _HomeReadState(
+                    activitySyncAction: widget.activitySyncAction,
                     child: _HomeError(
                       error: asyncSnapshot.error!,
                       onRetry: _reload,
@@ -246,7 +248,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 }
                 final HomeSnapshot? snapshot = asyncSnapshot.data;
                 if (snapshot == null) {
-                  return ExpeditionBackdrop(
+                  return _HomeReadState(
+                    activitySyncAction: widget.activitySyncAction,
                     child: _HomeError(
                       error: const FormatException(
                         'Backend не вернул состояние',
@@ -742,6 +745,48 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _snapshotFuture = _startSnapshotLoad();
     });
+  }
+}
+
+class _HomeReadState extends StatelessWidget {
+  const _HomeReadState({required this.child, required this.activitySyncAction});
+
+  final Widget child;
+  final Widget? activitySyncAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget? action = activitySyncAction;
+    if (action == null) {
+      return ExpeditionBackdrop(child: child);
+    }
+
+    return ExpeditionBackdrop(
+      child: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 220),
+              child: child,
+            ),
+          ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 102,
+            child: SafeArea(
+              top: false,
+              child: ExpeditionPanel(
+                key: const Key('home-sticky-action-panel'),
+                tone: ExpeditionPanelTone.lumen,
+                padding: const EdgeInsets.all(10),
+                child: action,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

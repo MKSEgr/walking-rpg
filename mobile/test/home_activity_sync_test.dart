@@ -92,6 +92,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('activity sync remains visible across Home read states', (
+    WidgetTester tester,
+  ) async {
+    final Completer<HomeSnapshot> homeResult = Completer<HomeSnapshot>();
+    final Completer<ActivitySyncResult> syncResult =
+        Completer<ActivitySyncResult>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ActivitySyncShell(
+          synchronizer: () => syncResult.future,
+          homeLoader: () => homeResult.future,
+          platformLoader: () async => platformSnapshot(),
+          platformHomeLoader: () async => HomeSnapshot.demo,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final Finder actionDock = find.byKey(const Key('home-sticky-action-panel'));
+    final Finder syncButton = find.byKey(const Key('activity-sync-button'));
+    expect(find.byKey(const Key('home-loading-state')), findsOneWidget);
+    expect(
+      find.descendant(of: actionDock, matching: syncButton),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('activity-sync-standalone-panel')),
+      findsNothing,
+    );
+
+    await tester.tap(syncButton);
+    await tester.pump();
+
+    expect(find.text('Синхронизация шагов...'), findsOneWidget);
+    expect(find.byKey(const Key('command-recovery-progress')), findsOneWidget);
+
+    homeResult.completeError(StateError('Backend недоступен'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('home-error-state')), findsOneWidget);
+    expect(
+      find.descendant(of: actionDock, matching: syncButton),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('command-recovery-progress')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    syncResult.complete(_syncResult());
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-error-state')), findsOneWidget);
+    expect(find.byKey(const Key('activity-sync-button')), findsOneWidget);
+    expect(find.byKey(const Key('command-recovery-progress')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('standalone activity sync action supports compact text', (
     WidgetTester tester,
   ) async {
