@@ -173,7 +173,8 @@
   fail-closed отклоняет уже lossy floating-point claim;
 - signed OIDC `sub`, actor и stable-device claims больше не схлопываются через
   `trim`: неоднозначные, управляющие и не помещающиеся в persistent identity
-  boundary значения отклоняются до controller;
+  boundary значения отклоняются до controller; присутствующий malformed
+  optional actor/device claim больше не подменяется subject/null fallback;
 - ручные onboarding-кнопки в «Путевом журнале» заменены на продолжение
   реального первого пути;
 - `SELECT_PET` одновременно сохраняет выбор питомца и milestone, а event reward

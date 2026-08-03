@@ -251,16 +251,22 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
             return Optional.empty();
         }
         Object current = jwt.getClaims();
-        for (String part : claimName.split("\\.")) {
+        for (String part : claimName.split("\\.", -1)) {
+            if (part.isEmpty()) {
+                throw invalidIdentityClaim(claimName);
+            }
             if (!(current instanceof java.util.Map<?, ?> map)) {
+                throw invalidIdentityClaim(claimName);
+            }
+            if (!map.containsKey(part)) {
                 return Optional.empty();
             }
             current = map.get(part);
         }
-        if (current instanceof String text && !text.isBlank()) {
-            return Optional.of(requireExactClaim(text, claimName, maximumLength));
+        if (!(current instanceof String text)) {
+            throw invalidIdentityClaim(claimName);
         }
-        return Optional.empty();
+        return Optional.of(requireExactClaim(text, claimName, maximumLength));
     }
 
     private String requireExactClaim(
@@ -268,12 +274,13 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
             String claimName,
             Integer maximumLength
     ) {
-        if (value == null || value.isBlank()) {
+        if (value == null) {
             throw new AuthenticationCredentialsNotFoundException(
                     "JWT не содержит обязательный claim " + claimName
             );
         }
-        if (hasBoundaryWhitespace(value)
+        if (value.isBlank()
+                || hasBoundaryWhitespace(value)
                 || value.codePoints().anyMatch(Character::isISOControl)) {
             throw invalidIdentityClaim(claimName);
         }

@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
 import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
@@ -80,6 +81,51 @@ class SecurityContextRequestIdentityProviderTest {
                 AuthenticationCredentialsNotFoundException.class,
                 provider::requireIdentity
         );
+    }
+
+    @Test
+    void shouldRejectPresentMalformedOptionalIdentityClaims() {
+        authenticate(jwtBuilder()
+                .claim("preferred_username", "")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("preferred_username", 42)
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("device_id", List.of("installation-9"))
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+    }
+
+    @Test
+    void shouldRejectMalformedNestedOptionalClaimButAllowAbsentLeaf() {
+        properties.setUsernameClaim("profile.preferred_username");
+
+        authenticate(jwtBuilder()
+                .claim("profile", "not-an-object")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("profile", Map.of("another_claim", "walker"))
+                .build());
+        assertEquals("subject-123", provider.requireIdentity().actor());
     }
 
     @Test

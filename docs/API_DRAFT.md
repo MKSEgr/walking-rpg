@@ -16,7 +16,9 @@
 - production API использует `Authorization: Bearer <access-token>`; `userId`, actor и activity device identity вычисляются backend-ом из authenticated context;
 - signed OIDC `sub`, actor и stable device claim не обрезаются: граничный
   whitespace, control characters и `sub`/actor длиннее persistent limit
-  отклоняются как `401 AUTHENTICATION_ERROR` до controller;
+  отклоняются как `401 AUTHENTICATION_ERROR` до controller; отсутствующий
+  optional actor/device claim разрешён, но присутствующий claim с пустым
+  значением, неверным типом или сломанным nested-path отклоняется fail-closed;
 - локальные `X-User-Id` / `X-Device-Id` разрешены только в явном профиле `local` с `dev-header`; production-профиль их игнорирует;
 - пользовательские endpoint-ы требуют `ROLE_USER`, `/api/v1/admin/**` требует `ROLE_ADMIN`.
 

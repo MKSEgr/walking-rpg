@@ -74,7 +74,7 @@ actor claim человекочитаемый actor совпадает с `sub`.
 
 Activity sync не принимает произвольный `X-Device-Id` в JWT-режиме. Backend берёт подписанный claim `walking-rpg.security.device-claim` — по умолчанию `device_id` — и хранит только SHA-256 от `issuer + sub + claim name + claim value`.
 
-Значение должно идентифицировать установку приложения или устройство и оставаться стабильным при обновлении access token и обычном повторном входе. Оно хэшируется в точном виде без `trim`; неоднозначное значение с граничным whitespace или control characters отклоняется. Session claim `sid` не используется по умолчанию: он может меняться между сессиями и тем самым ломать device-scoped idempotency и high-watermark semantics.
+Значение должно идентифицировать установку приложения или устройство и оставаться стабильным при обновлении access token и обычном повторном входе. Оно хэшируется в точном виде без `trim`; неоднозначное значение с граничным whitespace или control characters отклоняется. Если настроенный claim присутствует, его пустое/нестроковое значение или malformed nested-path отклоняется, а не трактуется как отсутствие. Session claim `sid` не используется по умолчанию: он может меняться между сессиями и тем самым ломать device-scoped idempotency и high-watermark semantics.
 
 Если стабильный claim отсутствует, activity sync завершается `401 AUTHENTICATION_ERROR`; остальные пользовательские операции могут выполняться без device identity. Если claim присутствует, но в JWT отсутствует `iss`, identity также отклоняется fail-closed.
 
