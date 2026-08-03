@@ -5,6 +5,8 @@ import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 enum ExpeditionPanelTone { neutral, lumen, energy, resonance }
 
+enum ExpeditionNoticeTone { neutral, lumen, energy, resonance, danger }
+
 class ExpeditionBackdrop extends StatelessWidget {
   const ExpeditionBackdrop({super.key, required this.child});
 
@@ -160,6 +162,94 @@ class ExpeditionBadge extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class ExpeditionNotice extends StatelessWidget {
+  const ExpeditionNotice({
+    super.key,
+    required this.label,
+    required this.message,
+    required this.icon,
+    this.tone = ExpeditionNoticeTone.neutral,
+    this.liveRegion = true,
+  });
+
+  final String label;
+  final String message;
+  final IconData icon;
+  final ExpeditionNoticeTone tone;
+  final bool liveRegion;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final Color accent = switch (tone) {
+      ExpeditionNoticeTone.neutral => colors.onSurfaceVariant,
+      ExpeditionNoticeTone.lumen => colors.primary,
+      ExpeditionNoticeTone.energy => palette.energy,
+      ExpeditionNoticeTone.resonance => palette.resonance,
+      ExpeditionNoticeTone.danger => colors.error,
+    };
+
+    return Semantics(
+      container: true,
+      liveRegion: liveRegion,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(
+            accent.withValues(alpha: 0.075),
+            colors.surfaceContainerHigh.withValues(alpha: 0.96),
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: accent.withValues(alpha: 0.42)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(13),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: SizedBox.square(
+                  dimension: 40,
+                  child: Icon(icon, size: 21, color: accent),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      label.toUpperCase(),
+                      maxLines: null,
+                      overflow: TextOverflow.visible,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.75,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: colors.onSurface),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

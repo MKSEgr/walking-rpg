@@ -86,23 +86,33 @@ class FirstJourneyScreen extends StatelessWidget {
                         _JourneyProgressHeader(progress: progress),
                         if (progress.readOnly) ...<Widget>[
                           const SizedBox(height: 12),
-                          const _StatusCard(
+                          const ExpeditionNotice(
+                            key: Key('first-journey-read-only-signal'),
+                            label: 'Сохранённый путь',
                             icon: Icons.cloud_off_outlined,
-                            text:
+                            message:
                                 'Показано сохранённое состояние. Действия '
                                 'станут доступны после подключения к серверу.',
                           ),
                         ],
                         if (notice != null) ...<Widget>[
                           const SizedBox(height: 12),
-                          _StatusCard(icon: Icons.info_outline, text: notice!),
+                          ExpeditionNotice(
+                            key: const Key('first-journey-notice-signal'),
+                            label: 'Сигнал маршрута',
+                            icon: Icons.info_outline,
+                            message: notice!,
+                            tone: ExpeditionNoticeTone.lumen,
+                          ),
                         ],
                         if (errorMessage != null) ...<Widget>[
                           const SizedBox(height: 12),
-                          _StatusCard(
-                            icon: Icons.error_outline,
-                            text: errorMessage!,
-                            error: true,
+                          ExpeditionNotice(
+                            key: const Key('first-journey-error-signal'),
+                            label: 'Состояние требует проверки',
+                            icon: Icons.sync_problem_outlined,
+                            message: errorMessage!,
+                            tone: ExpeditionNoticeTone.resonance,
                           ),
                         ],
                         const SizedBox(height: 18),
@@ -773,41 +783,6 @@ class _JourneyPanel extends StatelessWidget {
           if (child != null) ...<Widget>[const SizedBox(height: 18), child!],
           if (action != null) ...<Widget>[const SizedBox(height: 22), action!],
         ],
-      ),
-    );
-  }
-}
-
-class _StatusCard extends StatelessWidget {
-  const _StatusCard({
-    required this.icon,
-    required this.text,
-    this.error = false,
-  });
-
-  final IconData icon;
-  final String text;
-  final bool error;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    return Card(
-      color: error ? colors.errorContainer : colors.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: <Widget>[
-            Icon(
-              icon,
-              color: error
-                  ? colors.onErrorContainer
-                  : colors.onSecondaryContainer,
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: Text(text)),
-          ],
-        ),
       ),
     );
   }
