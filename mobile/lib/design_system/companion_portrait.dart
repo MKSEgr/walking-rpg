@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/illustrated_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
@@ -15,6 +16,7 @@ class CompanionPortrait extends StatelessWidget {
     required this.evolutionStage,
     this.active = false,
     this.size = 72,
+    this.equippedCosmeticIds = const <String>{},
   });
 
   final String petId;
@@ -23,6 +25,7 @@ class CompanionPortrait extends StatelessWidget {
   final int evolutionStage;
   final bool active;
   final double size;
+  final Set<String> equippedCosmeticIds;
 
   CompanionIdentity get identity {
     return switch (petId) {
@@ -34,12 +37,38 @@ class CompanionPortrait extends StatelessWidget {
   }
 
   String? get illustrationAsset {
+    final int stage = safeEvolutionStage;
     return switch (identity) {
-      CompanionIdentity.spark => 'assets/characters/companion_spark.webp',
-      CompanionIdentity.moss => 'assets/characters/companion_moss.webp',
-      CompanionIdentity.rune => 'assets/characters/companion_rune.webp',
+      CompanionIdentity.spark => switch (stage) {
+        0 => 'assets/characters/companion_spark_stage0.webp',
+        1 => 'assets/characters/companion_spark_stage1.webp',
+        _ => 'assets/characters/companion_spark.webp',
+      },
+      CompanionIdentity.moss => switch (stage) {
+        0 => 'assets/characters/companion_moss_stage0.webp',
+        1 => 'assets/characters/companion_moss_stage1.webp',
+        _ => 'assets/characters/companion_moss.webp',
+      },
+      CompanionIdentity.rune => switch (stage) {
+        0 => 'assets/characters/companion_rune_stage0.webp',
+        1 => 'assets/characters/companion_rune_stage1.webp',
+        _ => 'assets/characters/companion_rune.webp',
+      },
       CompanionIdentity.unknown => null,
     };
+  }
+
+  int get safeEvolutionStage {
+    return evolutionStage < 0
+        ? 0
+        : evolutionStage > 2
+        ? 2
+        : evolutionStage;
+  }
+
+  bool get hasSparkHalo {
+    return identity == CompanionIdentity.spark &&
+        equippedCosmeticIds.contains(CharacterCosmeticIds.sparkHalo);
   }
 
   @override
@@ -52,17 +81,16 @@ class CompanionPortrait extends StatelessWidget {
       CompanionIdentity.rune => palette.resonance,
       CompanionIdentity.unknown => colors.onSurfaceVariant,
     };
-    final int safeStage = evolutionStage < 0
-        ? 0
-        : evolutionStage > 2
-        ? 2
-        : evolutionStage;
+    final int safeStage = safeEvolutionStage;
     final String activeLabel = active ? ', активный спутник' : '';
+    final String cosmeticLabel = hasSparkHalo ? ', Ореол Искры' : '';
     final String? assetPath = illustrationAsset;
 
     return Semantics(
       image: true,
-      label: '$name, $species, форма ${evolutionStage + 1}$activeLabel',
+      label:
+          '$name, $species, форма ${evolutionStage + 1}'
+          '$activeLabel$cosmeticLabel',
       child: RepaintBoundary(
         child: SizedBox.square(
           dimension: size,
@@ -82,13 +110,16 @@ class CompanionPortrait extends StatelessWidget {
                 )
               : ExpeditionIllustratedPortrait(
                   assetPath: assetPath,
-                  imageKey: Key('companion-illustration-$petId'),
+                  imageKey: Key(
+                    'companion-illustration-$petId-stage-$safeStage',
+                  ),
                   size: size,
                   accent: accent,
                   border: palette.panelBorder,
                   shadow: palette.shadow,
                   highlighted: active,
                   stage: safeStage,
+                  haloColor: hasSparkHalo ? palette.energy : null,
                 ),
         ),
       ),

@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
+import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
@@ -503,6 +505,69 @@ void main() {
     );
     final OutlinedButton refresh = tester.widget<OutlinedButton>(refreshFinder);
     expect(refresh.onPressed, isNotNull);
+  });
+
+  testWidgets('journal renders equipped character cosmetics and previews', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final PlatformSnapshot snapshot = platformSnapshot(
+      ownedCosmetics: const <String>['pilot-scarf', 'spark-halo'],
+      activeCosmeticId: CharacterCosmeticIds.sparkHalo,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => snapshot,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+          sandboxPaymentsSupported: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final CompanionPortrait equippedSpark = tester.widget<CompanionPortrait>(
+      find.byKey(const Key('platform-pet-portrait-spark-v1')),
+    );
+    expect(equippedSpark.safeEvolutionStage, 0);
+    expect(
+      equippedSpark.illustrationAsset,
+      'assets/characters/companion_spark_stage0.webp',
+    );
+    expect(equippedSpark.hasSparkHalo, isTrue);
+    expect(
+      find.bySemanticsLabel(
+        'Искра, люмин, форма 1, активный спутник, Ореол Искры',
+      ),
+      findsOneWidget,
+    );
+
+    final Finder pilotPreview = find.byKey(
+      const Key('platform-cosmetic-preview-pilot-scarf'),
+    );
+    await _bringIntoView(tester, pilotPreview);
+    final PilotPortrait scarf = tester.widget<PilotPortrait>(pilotPreview);
+    expect(scarf.hasNavigatorScarf, isTrue);
+    expect(scarf.illustrationAsset, PilotPortrait.scarfAssetPath);
+
+    final Finder sparkPreview = find.byKey(
+      const Key('platform-cosmetic-preview-spark-halo'),
+    );
+    await _bringIntoView(tester, sparkPreview);
+    final CompanionPortrait halo = tester.widget<CompanionPortrait>(
+      sparkPreview,
+    );
+    expect(halo.hasSparkHalo, isTrue);
+    expect(
+      find.bySemanticsLabel('Пилот Навигатор, Шарф навигатора'),
+      findsNothing,
+    );
+    _expectNoLayoutException(tester);
+
+    semantics.dispose();
   });
 
   testWidgets('fresh journal disables weekly spend when home is unavailable', (

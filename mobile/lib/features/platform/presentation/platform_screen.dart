@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
+import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -48,6 +50,21 @@ bool _usesCompactPlatformSection(
 ) {
   return constraints.maxWidth < 300 ||
       (constraints.maxWidth < 400 && _platformTextScale(context) > 1.3);
+}
+
+PlatformPet? _petPreviewForCosmetic(
+  PlatformSnapshot snapshot,
+  String cosmeticId,
+) {
+  if (cosmeticId != CharacterCosmeticIds.sparkHalo) {
+    return null;
+  }
+  for (final PlatformPet pet in snapshot.userState.pets) {
+    if (pet.petId == 'spark-v1') {
+      return pet;
+    }
+  }
+  return null;
 }
 
 typedef PlatformSnapshotLoader = Future<PlatformSnapshot> Function();
@@ -510,6 +527,10 @@ class _PlatformBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final PlatformSnapshot snapshot = data.platform;
+    final Set<String> equippedCosmeticIds =
+        CharacterCosmeticIds.fromLegacyActive(
+          snapshot.userState.activeCosmeticId,
+        );
     final double bottomDockInset = NavigationChromeInsets.bottomDockInsetOf(
       context,
     );
@@ -564,6 +585,7 @@ class _PlatformBody extends StatelessWidget {
           for (final PlatformPet pet in snapshot.userState.pets) ...<Widget>[
             _PetCard(
               pet: pet,
+              equippedCosmeticIds: equippedCosmeticIds,
               busy: blocked,
               onSelect: () => onCommand('SELECT_PET', <String, Object?>{
                 'petId': pet.petId,
@@ -643,6 +665,7 @@ class _PlatformBody extends StatelessWidget {
               in snapshot.content.cosmetics) ...<Widget>[
             _CosmeticCard(
               cosmetic: cosmetic,
+              previewPet: _petPreviewForCosmetic(snapshot, cosmetic.cosmeticId),
               owned: snapshot.userState.ownedCosmetics.contains(
                 cosmetic.cosmeticId,
               ),
@@ -1060,12 +1083,14 @@ class _WeeklyRouteCard extends StatelessWidget {
 class _PetCard extends StatelessWidget {
   const _PetCard({
     required this.pet,
+    required this.equippedCosmeticIds,
     required this.busy,
     required this.onSelect,
     required this.onEvolve,
   });
 
   final PlatformPet pet;
+  final Set<String> equippedCosmeticIds;
   final bool busy;
   final VoidCallback onSelect;
   final VoidCallback onEvolve;
@@ -1084,6 +1109,7 @@ class _PetCard extends StatelessWidget {
       evolutionStage: pet.evolutionStage,
       active: pet.active,
       size: 78,
+      equippedCosmeticIds: equippedCosmeticIds,
     );
     final Widget details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1549,6 +1575,7 @@ class _SquadCard extends StatelessWidget {
 class _CosmeticCard extends StatelessWidget {
   const _CosmeticCard({
     required this.cosmetic,
+    required this.previewPet,
     required this.owned,
     required this.active,
     required this.paymentsEnabled,
@@ -1558,6 +1585,7 @@ class _CosmeticCard extends StatelessWidget {
   });
 
   final PlatformCosmetic cosmetic;
+  final PlatformPet? previewPet;
   final bool owned;
   final bool active;
   final bool paymentsEnabled;
@@ -1586,15 +1614,38 @@ class _CosmeticCard extends StatelessWidget {
             child: const Text('Купить'),
           )
         : null;
-    final Widget icon = CircleAvatar(
-      backgroundColor: context.walkingRpgPalette.resonance.withValues(
-        alpha: 0.14,
+    final Widget icon = switch (cosmetic.cosmeticId) {
+      CharacterCosmeticIds.pilotScarf => ExcludeSemantics(
+        child: PilotPortrait(
+          key: Key('platform-cosmetic-preview-${cosmetic.cosmeticId}'),
+          name: 'Навигатор',
+          size: 52,
+          equippedCosmeticIds: <String>{cosmetic.cosmeticId},
+        ),
       ),
-      child: Icon(
-        Icons.auto_awesome_outlined,
-        color: context.walkingRpgPalette.resonance,
+      CharacterCosmeticIds.sparkHalo when previewPet != null =>
+        ExcludeSemantics(
+          child: CompanionPortrait(
+            key: Key('platform-cosmetic-preview-${cosmetic.cosmeticId}'),
+            petId: previewPet!.petId,
+            name: previewPet!.name,
+            species: previewPet!.species,
+            evolutionStage: previewPet!.evolutionStage,
+            size: 52,
+            equippedCosmeticIds: <String>{cosmetic.cosmeticId},
+          ),
+        ),
+      _ => CircleAvatar(
+        key: Key('platform-cosmetic-preview-${cosmetic.cosmeticId}'),
+        backgroundColor: context.walkingRpgPalette.resonance.withValues(
+          alpha: 0.14,
+        ),
+        child: Icon(
+          Icons.auto_awesome_outlined,
+          color: context.walkingRpgPalette.resonance,
+        ),
       ),
-    );
+    };
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (_usesCompactPlatformSection(context, constraints)) {

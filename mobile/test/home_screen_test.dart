@@ -87,7 +87,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const Key('companion-illustration-spark-v1')),
+      find.byKey(const Key('companion-illustration-spark-v1-stage-0')),
       findsNWidgets(2),
     );
     expect(

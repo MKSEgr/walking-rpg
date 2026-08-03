@@ -13,6 +13,7 @@ class ExpeditionIllustratedPortrait extends StatelessWidget {
     required this.shadow,
     this.highlighted = false,
     this.stage = 0,
+    this.haloColor,
   });
 
   final String assetPath;
@@ -23,6 +24,7 @@ class ExpeditionIllustratedPortrait extends StatelessWidget {
   final Color shadow;
   final bool highlighted;
   final int stage;
+  final Color? haloColor;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +74,7 @@ class ExpeditionIllustratedPortrait extends StatelessWidget {
                       accent: accent,
                       highlighted: highlighted,
                       stage: safeStage,
+                      haloColor: haloColor,
                     ),
                   ),
                 ),
@@ -89,11 +92,13 @@ class _PortraitSignalPainter extends CustomPainter {
     required this.accent,
     required this.highlighted,
     required this.stage,
+    required this.haloColor,
   });
 
   final Color accent;
   final bool highlighted;
   final int stage;
+  final Color? haloColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -111,6 +116,37 @@ class _PortraitSignalPainter extends CustomPainter {
       size.width * 0.86,
       size.height * 0.86,
     );
+    final Color? halo = haloColor;
+    if (halo != null) {
+      final Rect haloBounds = Rect.fromCenter(
+        center: Offset(size.width * 0.52, size.height * 0.2),
+        width: size.width * 0.62,
+        height: size.height * 0.19,
+      );
+      canvas
+        ..drawOval(
+          haloBounds,
+          Paint()
+            ..color = halo.withValues(alpha: 0.46)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = math.max(2.0, size.shortestSide * 0.047)
+            ..maskFilter = MaskFilter.blur(
+              BlurStyle.normal,
+              math.max(2.0, size.shortestSide * 0.055),
+            ),
+        )
+        ..drawArc(
+          haloBounds,
+          -math.pi * 0.92,
+          math.pi * 1.84,
+          false,
+          Paint()
+            ..color = halo.withValues(alpha: 0.92)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = math.max(1.1, size.shortestSide * 0.018)
+            ..strokeCap = StrokeCap.round,
+        );
+    }
     if (stage > 0) {
       canvas.drawArc(orbit, -math.pi * 0.82, math.pi * 0.72, false, signal);
     }
@@ -134,6 +170,7 @@ class _PortraitSignalPainter extends CustomPainter {
   bool shouldRepaint(covariant _PortraitSignalPainter oldDelegate) {
     return oldDelegate.accent != accent ||
         oldDelegate.highlighted != highlighted ||
-        oldDelegate.stage != stage;
+        oldDelegate.stage != stage ||
+        oldDelegate.haloColor != haloColor;
   }
 }

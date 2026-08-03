@@ -80,19 +80,21 @@ that remains readable without relying on color:
 - Мох is a low, rounded terra guardian with a living sprout;
 - Руна is a faceted echo navigator framed by asymmetric signal waves.
 
-The four crew portraits are one coherent illustrated atlas: a universal
-helmeted Navigator pilot plus Искра, Мох and Руна. Cropped WebP assets stay
-readable at the `72-80 px` in-product sizes and use the same night-ink, lumen,
-ENERGY and resonance palette as the Flutter theme. The pilot portrait is shared
-by Home and the account dossier; companion portraits are shared by the first
-journey, Home and the journal.
+The original four crew portraits are one coherent illustrated atlas: a
+universal helmeted Navigator pilot plus the adult forms of Искра, Мох and Руна.
+Each companion also has identity-preserving young and adolescent portraits.
+All WebP assets stay readable at the `72-80 px` in-product sizes and use the
+same night-ink, lumen, ENERGY and resonance palette as the Flutter theme. The
+pilot portrait is shared by Home and the account dossier; companion portraits
+are shared by the first journey, Home and the journal.
 
 The companion reads the stable `petId` for its illustration and the
-authoritative `evolutionStage` for code-native orbit geometry. Stage zero is
-the base form; later values enrich the same portrait rather than replacing it
-with an unrelated character. The client never predicts, unlocks or advertises
-a stage that the server did not return. Unknown future IDs keep the previous
-code-native painter fallback instead of guessing an illustration from a name.
+authoritative `evolutionStage` for both the portrait and code-native orbit
+geometry. Stage zero is the small young form, stage one is the adolescent form
+and stage two is the existing fully developed portrait. The client never
+predicts, unlocks or advertises a stage that the server did not return. Unknown
+future IDs keep the previous code-native painter fallback instead of guessing
+an illustration from a name.
 
 Portraits are static repaint boundaries, carry a complete semantic label and
 pair the active marker with text elsewhere in the card. Home carries the same
@@ -106,6 +108,23 @@ The Home companion signal pairs the portrait with explicit active-companion,
 level, form and bond text. It becomes vertical on narrow layouts, remains a
 static presentation of the accepted snapshot and does not affect compass
 visibility, command execution or navigation lifecycle.
+
+## Character cosmetics
+
+Character art responds only to server-known cosmetic IDs. `pilot-scarf`
+selects the illustrated scarf portrait for the universal Navigator, while
+`spark-halo` adds an ENERGY-colored light ring above the accepted current form
+of Искра. The cosmetics list shows these real character previews instead of a
+generic sparkle icon. Preview portraits are decorative and excluded from
+semantics; the cosmetic name and action remain the accessible source.
+
+Portrait widgets accept a set of equipped cosmetic IDs so presentation is
+ready for simultaneous pilot and pet slots. The current platform read model
+still exposes a single `activeCosmeticId`; the adapter therefore supplies a
+singleton set. Supporting multiple equipped skins at once requires a future
+additive, server-authoritative per-slot contract rather than client-local
+selection. Unknown IDs keep the base portrait and cosmetics absent from the
+server catalog are not advertised by the client.
 
 ## First chapter environment
 

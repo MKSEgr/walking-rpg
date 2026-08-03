@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
@@ -25,6 +26,42 @@ void main() {
     );
     expect(image.image, isA<AssetImage>());
     expect((image.image as AssetImage).assetName, PilotPortrait.assetPath);
+    expect(tester.takeException(), isNull);
+
+    semantics.dispose();
+  });
+
+  testWidgets('uses the illustrated Navigator scarf when it is equipped', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: const Scaffold(
+          body: PilotPortrait(
+            name: 'Навигатор',
+            equippedCosmeticIds: <String>{CharacterCosmeticIds.pilotScarf},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final PilotPortrait portrait = tester.widget<PilotPortrait>(
+      find.byType(PilotPortrait),
+    );
+    final Image image = tester.widget<Image>(
+      find.byKey(const Key('pilot-portrait-image')),
+    );
+    expect(portrait.hasNavigatorScarf, isTrue);
+    expect(portrait.illustrationAsset, PilotPortrait.scarfAssetPath);
+    expect((image.image as AssetImage).assetName, PilotPortrait.scarfAssetPath);
+    expect(
+      find.bySemanticsLabel('Пилот Навигатор, Шарф навигатора'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
