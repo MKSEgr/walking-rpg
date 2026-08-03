@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -235,6 +236,33 @@ class JwtSecurityIntegrationTest {
                                 .jwt(token -> token.subject("admin-1"))
                                 .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
                 .andExpect(status().isNotFound());
+
+        verifyNoInteractions(accountDeletionRegistry);
+    }
+
+    @Test
+    void shouldRejectMalformedIdentityClaimsFromProtectedPrometheus() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus")
+                        .with(jwt()
+                                .jwt(token -> token
+                                        .subject("admin-1")
+                                        .claim("preferred_username", 42))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .with(jwt()
+                                .jwt(token -> token
+                                        .subject("admin-1")
+                                        .claim("device_id", ""))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+
+        verifyNoInteractions(accountDeletionRegistry);
     }
 
     @Test

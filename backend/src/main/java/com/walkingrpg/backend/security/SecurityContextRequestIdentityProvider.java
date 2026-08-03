@@ -58,19 +58,23 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
     }
 
     @Override
-    public RequestIdentity requireIdentity() {
+    public RequestIdentity requireValidatedIdentity() {
         RequestIdentity identity = resolveIdentity().orElseThrow(() ->
                 new AuthenticationCredentialsNotFoundException("Требуется аутентификация")
         );
+        return identity;
+    }
+
+    @Override
+    public RequestIdentity requireIdentity() {
+        RequestIdentity identity = requireValidatedIdentity();
         requireActive(identity);
         return identity;
     }
 
     @Override
     public RequestIdentity requireIdentityForAccountDeletion() {
-        RequestIdentity identity = resolveIdentity().orElseThrow(() ->
-                new AuthenticationCredentialsNotFoundException("Требуется аутентификация")
-        );
+        RequestIdentity identity = requireValidatedIdentity();
         requireFreshAuthentication();
         return identity;
     }

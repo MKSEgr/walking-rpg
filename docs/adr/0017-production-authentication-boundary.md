@@ -78,6 +78,11 @@ Activity sync не принимает произвольный `X-Device-Id` в 
 
 Если стабильный claim отсутствует, activity sync завершается `401 AUTHENTICATION_ERROR`; остальные пользовательские операции могут выполняться без device identity. Если claim присутствует, но в JWT отсутствует `iss`, identity также отклоняется fail-closed.
 
+Защищённый `/actuator/prometheus` применяет exact identity-claim validation до
+role authorization. Эта проверка намеренно отделена от active-account lookup:
+malformed admin JWT получает `401`, но доступность метрик не зависит от
+состояния пользовательского аккаунта или PostgreSQL.
+
 Это промежуточная production-граница. Отдельная attestation/device-registration модель остаётся следующим anti-fraud усилением.
 
 ### Public surface

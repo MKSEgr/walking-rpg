@@ -43,6 +43,11 @@ public final class FixedRequestIdentityProvider implements RequestIdentityProvid
     }
 
     @Override
+    public RequestIdentity requireValidatedIdentity() {
+        return requireIdentity();
+    }
+
+    @Override
     public RequestIdentity requireIdentity() {
         if (identity == null) {
             throw new org.springframework.security.authentication.AuthenticationCredentialsNotFoundException(

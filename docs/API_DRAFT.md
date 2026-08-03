@@ -19,6 +19,8 @@
   отклоняются как `401 AUTHENTICATION_ERROR` до controller; отсутствующий
   optional actor/device claim разрешён, но присутствующий claim с пустым
   значением, неверным типом или сломанным nested-path отклоняется fail-closed;
+  тот же контракт применяется к защищённому `/actuator/prometheus` без lookup
+  состояния игрового аккаунта;
 - локальные `X-User-Id` / `X-Device-Id` разрешены только в явном профиле `local` с `dev-header`; production-профиль их игнорирует;
 - пользовательские endpoint-ы требуют `ROLE_USER`, `/api/v1/admin/**` требует `ROLE_ADMIN`.
 

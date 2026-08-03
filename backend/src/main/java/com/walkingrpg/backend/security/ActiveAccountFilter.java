@@ -56,7 +56,11 @@ public class ActiveAccountFilter extends OncePerRequestFilter {
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
             try {
-                identityProvider.requireIdentity();
+                if (isActuatorRequest(request)) {
+                    identityProvider.requireValidatedIdentity();
+                } else {
+                    identityProvider.requireIdentity();
+                }
             } catch (AccountDeletedException exception) {
                 SecurityContextHolder.clearContext();
                 errorWriter.writeAccountDeleted(response, exception);
@@ -75,13 +79,18 @@ public class ActiveAccountFilter extends OncePerRequestFilter {
         PathContainer path = ServletRequestPathUtils.parseAndCache(request)
                 .pathWithinApplication();
         if (LIVE_PATH.matches(path)
-                || READY_PATH.matches(path)
-                || ACTUATOR_ROOT_PATH.matches(path)
-                || ACTUATOR_SUBPATH.matches(path)) {
+                || READY_PATH.matches(path)) {
             return true;
         }
         return HttpMethod.POST.matches(request.getMethod())
                 && ACCOUNT_DELETION_REQUEST_PATH.matches(path);
+    }
+
+    private boolean isActuatorRequest(HttpServletRequest request) {
+        PathContainer path = ServletRequestPathUtils.parseAndCache(request)
+                .pathWithinApplication();
+        return ACTUATOR_ROOT_PATH.matches(path)
+                || ACTUATOR_SUBPATH.matches(path);
     }
 
     private static PathPattern pattern(String path) {
