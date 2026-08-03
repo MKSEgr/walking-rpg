@@ -8,6 +8,7 @@ import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -79,6 +80,15 @@ void main() {
     );
     expect(portrait.petId, 'spark-v1');
     expect(portrait.evolutionStage, 0);
+    expect(find.byType(PilotPortrait), findsOneWidget);
+    expect(
+      find.byKey(const Key('home-team-companion-portrait')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('companion-illustration-spark-v1')),
+      findsNWidgets(2),
+    );
     expect(
       find.bySemanticsLabel('Искра, Люмин, форма 1, активный спутник'),
       findsOneWidget,

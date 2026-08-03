@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
@@ -1410,6 +1411,10 @@ class _ExpeditionTeam extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasCompanionPortrait =
+        snapshot.petId != null &&
+        snapshot.petSpecies != null &&
+        snapshot.petEvolutionStage != null;
     final Widget pilot = _CharacterCard(
       key: const Key('home-pilot-card'),
       label: 'Пилот',
@@ -1419,6 +1424,7 @@ class _ExpeditionTeam extends StatelessWidget {
           'XP ${snapshot.pilotCurrentExperience} / '
           '${snapshot.pilotNextLevelExperience}',
       icon: Icons.person_outline,
+      portrait: PilotPortrait(name: snapshot.pilotName, size: 72),
     );
     final Widget pet = _CharacterCard(
       key: const Key('home-pet-card'),
@@ -1427,6 +1433,17 @@ class _ExpeditionTeam extends StatelessWidget {
       level: snapshot.petLevel,
       detail: 'Связь ${snapshot.petBond}',
       icon: Icons.pets_outlined,
+      portrait: hasCompanionPortrait
+          ? CompanionPortrait(
+              key: const Key('home-team-companion-portrait'),
+              petId: snapshot.petId!,
+              name: snapshot.petName,
+              species: snapshot.petSpecies!,
+              evolutionStage: snapshot.petEvolutionStage!,
+              active: true,
+              size: 72,
+            )
+          : null,
     );
 
     return LayoutBuilder(
@@ -2134,6 +2151,7 @@ class _CharacterCard extends StatelessWidget {
     required this.level,
     required this.detail,
     required this.icon,
+    this.portrait,
   });
 
   final String label;
@@ -2141,6 +2159,7 @@ class _CharacterCard extends StatelessWidget {
   final int level;
   final String detail;
   final IconData icon;
+  final Widget? portrait;
 
   @override
   Widget build(BuildContext context) {
@@ -2150,16 +2169,17 @@ class _CharacterCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Icon(icon, size: 24, color: colors.primary),
-            ),
-          ),
+          portrait ??
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(icon, size: 24, color: colors.primary),
+                ),
+              ),
           const SizedBox(height: 14),
           Text(
             label.toUpperCase(),

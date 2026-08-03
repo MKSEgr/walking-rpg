@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_decision_dialog.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/account/application/account_export_coordinator.dart';
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
@@ -534,20 +535,11 @@ class _PilotDossier extends StatelessWidget {
     final String sessionDescription = development
         ? 'Локальная development-сессия'
         : 'Защищённая OIDC-сессия';
-    final Widget avatar = DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: colors.primary.withValues(alpha: 0.12),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.42)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Icon(
-          Icons.person_outline_rounded,
-          color: colors.primary,
-          size: 28,
-        ),
-      ),
+    final Widget avatar = PilotPortrait(
+      key: const Key('account-pilot-portrait'),
+      name: identity.displayName,
+      size: compact ? 80 : 72,
+      highlighted: !development,
     );
     final Widget details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,

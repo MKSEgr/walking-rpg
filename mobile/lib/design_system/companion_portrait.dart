@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/design_system/illustrated_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 enum CompanionIdentity { spark, moss, rune, unknown }
@@ -32,6 +33,15 @@ class CompanionPortrait extends StatelessWidget {
     };
   }
 
+  String? get illustrationAsset {
+    return switch (identity) {
+      CompanionIdentity.spark => 'assets/characters/companion_spark.webp',
+      CompanionIdentity.moss => 'assets/characters/companion_moss.webp',
+      CompanionIdentity.rune => 'assets/characters/companion_rune.webp',
+      CompanionIdentity.unknown => null,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
@@ -48,6 +58,7 @@ class CompanionPortrait extends StatelessWidget {
         ? 2
         : evolutionStage;
     final String activeLabel = active ? ', активный спутник' : '';
+    final String? assetPath = illustrationAsset;
 
     return Semantics(
       image: true,
@@ -55,19 +66,30 @@ class CompanionPortrait extends StatelessWidget {
       child: RepaintBoundary(
         child: SizedBox.square(
           dimension: size,
-          child: CustomPaint(
-            isComplex: true,
-            painter: _CompanionPortraitPainter(
-              identity: identity,
-              stage: safeStage,
-              active: active,
-              accent: accent,
-              foreground: colors.onSurface,
-              surface: colors.surfaceContainerHigh,
-              border: palette.panelBorder,
-              shadow: palette.shadow,
-            ),
-          ),
+          child: assetPath == null
+              ? CustomPaint(
+                  isComplex: true,
+                  painter: _CompanionPortraitPainter(
+                    identity: identity,
+                    stage: safeStage,
+                    active: active,
+                    accent: accent,
+                    foreground: colors.onSurface,
+                    surface: colors.surfaceContainerHigh,
+                    border: palette.panelBorder,
+                    shadow: palette.shadow,
+                  ),
+                )
+              : ExpeditionIllustratedPortrait(
+                  assetPath: assetPath,
+                  imageKey: Key('companion-illustration-$petId'),
+                  size: size,
+                  accent: accent,
+                  border: palette.panelBorder,
+                  shadow: palette.shadow,
+                  highlighted: active,
+                  stage: safeStage,
+                ),
         ),
       ),
     );

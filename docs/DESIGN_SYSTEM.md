@@ -73,26 +73,34 @@ semantics or intercept gestures.
 
 ## Companion identity
 
-`CompanionPortrait` gives every starter a recognizable code-native silhouette
+`CompanionPortrait` gives every starter a recognizable production illustration
 that remains readable without relying on color:
 
 - Искра is an angular lumen scout with high ears and a signal tail;
 - Мох is a low, rounded terra guardian with a living sprout;
 - Руна is a faceted echo navigator framed by asymmetric signal waves.
 
-The portrait reads the stable `petId` for identity and the authoritative
-`evolutionStage` for additional geometry. Stage zero is the base form; later
-values enrich the same silhouette rather than replacing it with an unrelated
-character. The painter is prepared for stages zero through two, but the client
-never predicts, unlocks or advertises a stage that the server did not return.
+The four crew portraits are one coherent illustrated atlas: a universal
+helmeted Navigator pilot plus Искра, Мох and Руна. Cropped WebP assets stay
+readable at the `72-80 px` in-product sizes and use the same night-ink, lumen,
+ENERGY and resonance palette as the Flutter theme. The pilot portrait is shared
+by Home and the account dossier; companion portraits are shared by the first
+journey, Home and the journal.
+
+The companion reads the stable `petId` for its illustration and the
+authoritative `evolutionStage` for code-native orbit geometry. Stage zero is
+the base form; later values enrich the same portrait rather than replacing it
+with an unrelated character. The client never predicts, unlocks or advertises
+a stage that the server did not return. Unknown future IDs keep the previous
+code-native painter fallback instead of guessing an illustration from a name.
 
 Portraits are static repaint boundaries, carry a complete semantic label and
-pair the active marker with text elsewhere in the card. The first journey and
-the journal share the same portrait. Home now carries the same identity into
-its expedition hero only when the accepted mobile snapshot contains the
-server-owned `petId`, species and `evolutionStage`. Older cached responses that
-predate those additive fields keep the textual active-companion badge; the
-client never derives identity or form from the pet name.
+pair the active marker with text elsewhere in the card. Home carries the same
+identity into its expedition hero and crew card only when the accepted mobile
+snapshot contains the server-owned `petId`, species and `evolutionStage`.
+Older cached responses that predate those additive fields keep the textual
+active-companion badge and icon fallback; the client never derives identity or
+form from the pet name.
 
 The Home companion signal pairs the portrait with explicit active-companion,
 level, form and bond text. It becomes vertical on narrow layouts, remains a
@@ -419,7 +427,9 @@ navigation chrome adapts to the space assigned by its parent.
 1. Turn the expedition chapter into a visual route map only from an
    authoritative topology/read model, without adding GPS or real-time walking
    interaction.
-2. Split the journal into player-facing tabs only when closed-beta content
+2. Produce the application icon, native splash and illustrated reward/event
+   vocabulary in the approved crew-and-frontier direction.
+3. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
-3. Produce app icon, splash, store screenshots and motion guidelines only after
-   the in-game direction is approved.
+4. Produce store screenshots and motion guidelines after the first complete
+   illustrated gameplay loop is captured on physical devices.
