@@ -338,6 +338,25 @@ reinterpret accepted state.
 - the contract is verified at `320 × 640 / 1.6×` without changing cache,
   command, idempotency, impression or authoritative-refresh ownership.
 
+## Compact journal composition
+
+The path journal remains one continuous player-facing log at compact width;
+responsive presentation does not introduce tabs, hide accepted content or
+change which commands the server owns.
+
+- compact application chrome keeps saved-action recovery visible and groups
+  refresh plus account navigation into one labelled overflow menu;
+- onboarding status, weekly progress, companion identity, skills, quests and
+  cosmetics reflow vertically before labels or actions become truncated;
+- dense action rows become explicit full-width controls while preserving the
+  same command keys, availability conditions and callbacks;
+- the single journal scroll surface reserves space below its footer for the
+  floating navigation bar, so the final refresh and version context remain
+  reachable;
+- the contract is verified across the complete journal at
+  `320 × 640 / 1.6×` without changing cache/read-only behavior, experiment
+  exposure, command execution, idempotency or authoritative refresh.
+
 ## Next visual slices
 
 1. Turn the expedition chapter into a visual route map only from an

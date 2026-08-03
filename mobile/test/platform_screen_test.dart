@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
@@ -130,6 +131,107 @@ void main() {
       scrollable: find.byType(Scrollable),
     );
     expect(find.byType(ExpeditionProgressRing), findsOneWidget);
+  });
+
+  testWidgets('full journal supports compact enlarged text without overflow', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
+    int loads = 0;
+    bool accountOpened = false;
+    bool recoveryOpened = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: MainNavigationShell(
+          home: const SizedBox.expand(),
+          platform: PlatformScreen(
+            loader: () async {
+              loads += 1;
+              return platformSnapshot();
+            },
+            homeLoader: () async => HomeSnapshot.demo,
+            recordExperimentExposures: false,
+            recoveryCount: 2,
+            onOpenRecovery: () {
+              recoveryOpened = true;
+            },
+            onOpenAccount: () {
+              accountOpened = true;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('navigation-platform')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('platform-more-actions')), findsOneWidget);
+    expect(find.byTooltip('Обновить'), findsNothing);
+    expect(find.byTooltip('Аккаунт'), findsNothing);
+    _expectNoLayoutException(tester);
+
+    await tester.tap(find.byKey(const Key('platform-command-recovery')));
+    expect(recoveryOpened, isTrue);
+
+    await tester.tap(find.byKey(const Key('platform-more-actions')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('platform-menu-refresh')));
+    await tester.pumpAndSettle();
+    expect(loads, 2);
+
+    await tester.tap(find.byKey(const Key('platform-more-actions')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('platform-menu-account')));
+    await tester.pump();
+    expect(accountOpened, isTrue);
+
+    for (final Key key in const <Key>[
+      Key('platform-onboarding-compact'),
+      Key('platform-weekly-route-compact'),
+      Key('platform-pet-compact-spark-v1'),
+      Key('platform-skill-compact-steady-step'),
+      Key('platform-quest-compact-walk-3000'),
+      Key('platform-cosmetic-compact-pilot-scarf'),
+      Key('platform-journal-footer'),
+    ]) {
+      final Finder target = find.byKey(key);
+      await _bringIntoView(tester, target);
+      expect(target, findsOneWidget);
+      _expectNoLayoutException(tester);
+    }
+
+    final Finder journalScrollable = find.descendant(
+      of: find.byKey(const Key('platform-screen-list')),
+      matching: find.byType(Scrollable),
+    );
+    final ScrollableState scrollable = tester.state<ScrollableState>(
+      journalScrollable,
+    );
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+    await tester.pump();
+
+    final double footerBottom = tester
+        .getBottomRight(find.byKey(const Key('platform-journal-footer')))
+        .dy;
+    final double navigationTop = tester
+        .getTopLeft(find.byType(NavigationBar))
+        .dy;
+    expect(footerBottom, lessThan(navigationTop));
+    _expectNoLayoutException(tester);
   });
 
   testWidgets('renders platform snapshot and resumes guided first journey', (
@@ -759,4 +861,14 @@ Future<void> _bringIntoView(WidgetTester tester, Finder target) async {
   );
   await tester.ensureVisible(target);
   await tester.pumpAndSettle();
+}
+
+void _expectNoLayoutException(WidgetTester tester) {
+  final Object? exception = tester.takeException();
+  if (exception == null) {
+    return;
+  }
+  fail(
+    exception is FlutterError ? exception.toStringDeep() : exception.toString(),
+  );
 }

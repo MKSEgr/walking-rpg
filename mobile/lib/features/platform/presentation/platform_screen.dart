@@ -25,6 +25,29 @@ const Map<String, String> _onboardingNames = <String, String>{
 };
 
 const String _sandboxPurchaseCommand = 'BUY_COSMETIC';
+const double _platformNavigationReserve = 128;
+
+enum _PlatformAppAction { refresh, account }
+
+double _platformTextScale(BuildContext context) {
+  return MediaQuery.textScalerOf(context).scale(16) / 16;
+}
+
+bool _usesCompactPlatformChrome(
+  BuildContext context,
+  BoxConstraints constraints,
+) {
+  return constraints.maxWidth < 360 ||
+      (constraints.maxWidth < 430 && _platformTextScale(context) > 1.3);
+}
+
+bool _usesCompactPlatformSection(
+  BuildContext context,
+  BoxConstraints constraints,
+) {
+  return constraints.maxWidth < 300 ||
+      (constraints.maxWidth < 400 && _platformTextScale(context) > 1.3);
+}
 
 typedef PlatformSnapshotLoader = Future<PlatformSnapshot> Function();
 typedef PlatformHomeLoader = Future<HomeSnapshot> Function();
@@ -113,76 +136,96 @@ class _PlatformScreenState extends State<PlatformScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text('Путевой журнал'),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Обновить',
-            onPressed: _busyCommand == null ? _reload : null,
-            icon: const Icon(Icons.refresh),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compactChrome = _usesCompactPlatformChrome(
+          context,
+          constraints,
+        );
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              compactChrome ? 'Журнал' : 'Путевой журнал',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            actions: <Widget>[
+              if (!compactChrome)
+                IconButton(
+                  tooltip: 'Обновить',
+                  onPressed: _busyCommand == null ? _reload : null,
+                  icon: const Icon(Icons.refresh),
+                ),
+              MobileCommandRecoveryAction(
+                key: const Key('platform-command-recovery'),
+                onPressed: widget.onOpenRecovery,
+                count: widget.recoveryCount,
+                unavailable: widget.recoveryUnavailable,
+              ),
+              if (compactChrome)
+                _PlatformAppActionsMenu(
+                  refreshEnabled: _busyCommand == null,
+                  onRefresh: _reload,
+                  onOpenAccount: widget.onOpenAccount,
+                )
+              else
+                IconButton(
+                  tooltip: 'Аккаунт',
+                  onPressed: widget.onOpenAccount,
+                  icon: const Icon(Icons.account_circle_outlined),
+                ),
+            ],
           ),
-          MobileCommandRecoveryAction(
-            key: const Key('platform-command-recovery'),
-            onPressed: widget.onOpenRecovery,
-            count: widget.recoveryCount,
-            unavailable: widget.recoveryUnavailable,
+          body: ExpeditionBackdrop(
+            child: SafeArea(
+              child: FutureBuilder<_PlatformViewData>(
+                future: _dataFuture,
+                builder:
+                    (
+                      BuildContext context,
+                      AsyncSnapshot<_PlatformViewData> snapshot,
+                    ) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const ExpeditionReadState.loading(
+                          key: Key('platform-loading-state'),
+                          title: 'Открываем путевой журнал',
+                          message:
+                              'Получаем сезон, спутников и принятые сервером '
+                              'записи.',
+                        );
+                      }
+                      if (snapshot.hasError) {
+                        return _PlatformError(
+                          error: snapshot.error!,
+                          onRetry: _reload,
+                        );
+                      }
+                      final _PlatformViewData? data = snapshot.data;
+                      if (data == null) {
+                        return _PlatformError(
+                          error: const FormatException(
+                            'Backend не вернул platform-состояние',
+                          ),
+                          onRetry: _reload,
+                        );
+                      }
+                      return _PlatformBody(
+                        data: data,
+                        busyCommand: _busyCommand,
+                        squadNameController: _squadNameController,
+                        squadIdController: _squadIdController,
+                        onCommand: _executeCommand,
+                        onRefresh: _reload,
+                        onResumeFirstJourney: widget.onResumeFirstJourney,
+                        sandboxPaymentsAvailable: _sandboxPaymentsAvailable,
+                      );
+                    },
+              ),
+            ),
           ),
-          IconButton(
-            tooltip: 'Аккаунт',
-            onPressed: widget.onOpenAccount,
-            icon: const Icon(Icons.account_circle_outlined),
-          ),
-        ],
-      ),
-      body: ExpeditionBackdrop(
-        child: SafeArea(
-          child: FutureBuilder<_PlatformViewData>(
-            future: _dataFuture,
-            builder:
-                (
-                  BuildContext context,
-                  AsyncSnapshot<_PlatformViewData> snapshot,
-                ) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const ExpeditionReadState.loading(
-                      key: Key('platform-loading-state'),
-                      title: 'Открываем путевой журнал',
-                      message:
-                          'Получаем сезон, спутников и принятые сервером '
-                          'записи.',
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    return _PlatformError(
-                      error: snapshot.error!,
-                      onRetry: _reload,
-                    );
-                  }
-                  final _PlatformViewData? data = snapshot.data;
-                  if (data == null) {
-                    return _PlatformError(
-                      error: const FormatException(
-                        'Backend не вернул platform-состояние',
-                      ),
-                      onRetry: _reload,
-                    );
-                  }
-                  return _PlatformBody(
-                    data: data,
-                    busyCommand: _busyCommand,
-                    squadNameController: _squadNameController,
-                    squadIdController: _squadIdController,
-                    onCommand: _executeCommand,
-                    onRefresh: _reload,
-                    onResumeFirstJourney: widget.onResumeFirstJourney,
-                    sandboxPaymentsAvailable: _sandboxPaymentsAvailable,
-                  );
-                },
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -370,6 +413,76 @@ class _PlatformViewData {
   final int? economyVersion;
 }
 
+class _PlatformAppActionsMenu extends StatelessWidget {
+  const _PlatformAppActionsMenu({
+    required this.refreshEnabled,
+    required this.onRefresh,
+    required this.onOpenAccount,
+  });
+
+  final bool refreshEnabled;
+  final VoidCallback onRefresh;
+  final VoidCallback? onOpenAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_PlatformAppAction>(
+      key: const Key('platform-more-actions'),
+      tooltip: 'Ещё действия',
+      icon: const Icon(Icons.more_vert),
+      onSelected: (_PlatformAppAction action) {
+        switch (action) {
+          case _PlatformAppAction.refresh:
+            onRefresh();
+            break;
+          case _PlatformAppAction.account:
+            onOpenAccount?.call();
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) =>
+          <PopupMenuEntry<_PlatformAppAction>>[
+            PopupMenuItem<_PlatformAppAction>(
+              key: const Key('platform-menu-refresh'),
+              value: _PlatformAppAction.refresh,
+              enabled: refreshEnabled,
+              child: const _PlatformMenuLabel(
+                icon: Icons.refresh,
+                label: 'Обновить журнал',
+              ),
+            ),
+            PopupMenuItem<_PlatformAppAction>(
+              key: const Key('platform-menu-account'),
+              value: _PlatformAppAction.account,
+              enabled: onOpenAccount != null,
+              child: const _PlatformMenuLabel(
+                icon: Icons.account_circle_outlined,
+                label: 'Аккаунт',
+              ),
+            ),
+          ],
+    );
+  }
+}
+
+class _PlatformMenuLabel extends StatelessWidget {
+  const _PlatformMenuLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 21),
+        const SizedBox(width: 12),
+        Flexible(child: Text(label)),
+      ],
+    );
+  }
+}
+
 class _PlatformBody extends StatelessWidget {
   const _PlatformBody({
     required this.data,
@@ -408,7 +521,12 @@ class _PlatformBody extends StatelessWidget {
       onRefresh: () async => onRefresh(),
       child: ListView(
         key: const Key('platform-screen-list'),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          _platformNavigationReserve,
+        ),
         children: <Widget>[
           if (snapshot.cacheMetadata != null) ...<Widget>[
             CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
@@ -549,6 +667,7 @@ class _PlatformBody extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
+            key: const Key('platform-journal-footer'),
             'Контент ${snapshot.contentVersion} · '
             'конфигурация ${snapshot.remoteConfig.seasonId}',
             textAlign: TextAlign.center,
@@ -580,12 +699,18 @@ class _JournalHero extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              const ExpeditionBadge(
-                label: 'Журнал пилота',
-                icon: Icons.route_outlined,
-                tone: ExpeditionPanelTone.resonance,
+              const Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: ExpeditionBadge(
+                    label: 'Журнал пилота',
+                    icon: Icons.route_outlined,
+                    tone: ExpeditionPanelTone.resonance,
+                    allowWrap: true,
+                  ),
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 12),
               Icon(Icons.public, color: palette.resonance, size: 22),
             ],
           ),
@@ -647,53 +772,70 @@ class _OnboardingCard extends StatelessWidget {
     final List<String> steps = snapshot.content.onboardingSteps;
     final Set<String> completed = snapshot.userState.completedOnboardingSteps;
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final Widget icon = DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(11),
+        child: Icon(Icons.flag_outlined),
+      ),
+    );
+    final Widget details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          snapshot.userState.onboardingComplete ? 'Путь открыт' : 'Начало пути',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 3),
+        Text(
+          snapshot.userState.onboardingComplete
+              ? 'Все основные системы экспедиции доступны.'
+              : 'Завершите маршрут знакомства с навигатором.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
+      ],
+    );
+    final Widget progressBadge = ExpeditionBadge(
+      label: '${completed.length}/${steps.length}',
+      icon: Icons.alt_route,
+    );
     return ExpeditionPanel(
       tone: ExpeditionPanelTone.lumen,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.all(11),
-                  child: Icon(Icons.flag_outlined),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              if (_usesCompactPlatformSection(context, constraints)) {
+                return Column(
+                  key: const Key('platform-onboarding-compact'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      snapshot.userState.onboardingComplete
-                          ? 'Путь открыт'
-                          : 'Начало пути',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Row(
+                      children: <Widget>[icon, const Spacer(), progressBadge],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      snapshot.userState.onboardingComplete
-                          ? 'Все основные системы экспедиции доступны.'
-                          : 'Завершите маршрут знакомства с навигатором.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
+                    const SizedBox(height: 12),
+                    details,
                   ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              ExpeditionBadge(
-                label: '${completed.length}/${steps.length}',
-                icon: Icons.alt_route,
-              ),
-            ],
+                );
+              }
+              return Row(
+                key: const Key('platform-onboarding-wide'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  icon,
+                  const SizedBox(width: 12),
+                  Expanded(child: details),
+                  const SizedBox(width: 8),
+                  progressBadge,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           LinearProgressIndicator(value: snapshot.onboardingProgressValue),
@@ -725,7 +867,12 @@ class _OnboardingCard extends StatelessWidget {
                 key: const Key('platform-resume-first-journey'),
                 onPressed: onResume,
                 icon: const Icon(Icons.route_outlined),
-                label: const Text('Продолжить первый путь'),
+                label: const Text(
+                  'Продолжить первый путь',
+                  maxLines: 2,
+                  overflow: TextOverflow.visible,
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           ],
@@ -776,19 +923,30 @@ class _WeeklyRouteCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              const ExpeditionBadge(
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              const Widget badge = ExpeditionBadge(
                 label: 'Недельный маршрут',
                 icon: Icons.route_outlined,
                 tone: ExpeditionPanelTone.energy,
-              ),
-              const Spacer(),
-              Text(
+                allowWrap: true,
+              );
+              final Widget level = Text(
                 'Ур. ${snapshot.userState.seasonLevel}',
                 style: Theme.of(context).textTheme.labelLarge,
-              ),
-            ],
+              );
+              if (_usesCompactPlatformSection(context, constraints)) {
+                return Column(
+                  key: const Key('platform-weekly-heading-compact'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[badge, const SizedBox(height: 8), level],
+                );
+              }
+              return Row(
+                key: const Key('platform-weekly-heading-wide'),
+                children: <Widget>[badge, const Spacer(), level],
+              );
+            },
           ),
           const SizedBox(height: 18),
           LayoutBuilder(
@@ -828,8 +986,9 @@ class _WeeklyRouteCard extends StatelessWidget {
                 tone: ExpeditionPanelTone.energy,
                 size: 112,
               );
-              if (constraints.maxWidth < 320) {
+              if (_usesCompactPlatformSection(context, constraints)) {
                 return Column(
+                  key: const Key('platform-weekly-route-compact'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Center(child: ring),
@@ -839,6 +998,7 @@ class _WeeklyRouteCard extends StatelessWidget {
                 );
               }
               return Row(
+                key: const Key('platform-weekly-route-wide'),
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   ring,
@@ -866,6 +1026,9 @@ class _WeeklyRouteCard extends StatelessWidget {
                   remaining == 0
                       ? 'Маршрут завершён'
                       : 'Потратить $spendable ENERGY',
+                  maxLines: 2,
+                  overflow: TextOverflow.visible,
+                  textAlign: TextAlign.center,
                 ),
               ),
               if (rewardLevel != null)
@@ -875,7 +1038,12 @@ class _WeeklyRouteCard extends StatelessWidget {
                       ? null
                       : () => onClaimSeasonReward(rewardLevel!),
                   icon: const Icon(Icons.card_giftcard_outlined),
-                  label: Text('Награда уровня $rewardLevel'),
+                  label: Text(
+                    'Награда уровня $rewardLevel',
+                    maxLines: 2,
+                    overflow: TextOverflow.visible,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
             ],
           ),
@@ -904,6 +1072,50 @@ class _PetCard extends StatelessWidget {
     final double bondProgress = (pet.bond / pet.evolutionBond)
         .clamp(0.0, 1.0)
         .toDouble();
+    final Widget portrait = CompanionPortrait(
+      key: Key('platform-pet-portrait-${pet.petId}'),
+      petId: pet.petId,
+      name: pet.name,
+      species: pet.species,
+      evolutionStage: pet.evolutionStage,
+      active: pet.active,
+      size: 78,
+    );
+    final Widget details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          '${pet.name} · уровень ${pet.level}',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '${pet.species} · ${pet.trait}',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 9),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: <Widget>[
+            if (pet.active)
+              const ExpeditionBadge(
+                label: 'В отряде',
+                icon: Icons.check_circle_outline,
+              ),
+            ExpeditionBadge(
+              label: 'Форма ${pet.evolutionStage + 1}',
+              icon: Icons.auto_awesome_outlined,
+              tone: pet.evolutionStage > 0
+                  ? ExpeditionPanelTone.resonance
+                  : ExpeditionPanelTone.neutral,
+            ),
+          ],
+        ),
+      ],
+    );
     return ExpeditionPanel(
       tone: pet.active
           ? ExpeditionPanelTone.lumen
@@ -911,57 +1123,29 @@ class _PetCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              CompanionPortrait(
-                key: Key('platform-pet-portrait-${pet.petId}'),
-                petId: pet.petId,
-                name: pet.name,
-                species: pet.species,
-                evolutionStage: pet.evolutionStage,
-                active: pet.active,
-                size: 78,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              if (_usesCompactPlatformSection(context, constraints)) {
+                return Column(
+                  key: Key('platform-pet-compact-${pet.petId}'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      '${pet.name} · уровень ${pet.level}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '${pet.species} · ${pet.trait}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 9),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: <Widget>[
-                        if (pet.active)
-                          const ExpeditionBadge(
-                            label: 'В отряде',
-                            icon: Icons.check_circle_outline,
-                          ),
-                        ExpeditionBadge(
-                          label: 'Форма ${pet.evolutionStage + 1}',
-                          icon: Icons.auto_awesome_outlined,
-                          tone: pet.evolutionStage > 0
-                              ? ExpeditionPanelTone.resonance
-                              : ExpeditionPanelTone.neutral,
-                        ),
-                      ],
-                    ),
+                    portrait,
+                    const SizedBox(height: 12),
+                    details,
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+              return Row(
+                key: Key('platform-pet-wide-${pet.petId}'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  portrait,
+                  const SizedBox(width: 16),
+                  Expanded(child: details),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           Row(
@@ -1004,7 +1188,12 @@ class _PetCard extends StatelessWidget {
                   key: Key('platform-select-pet-${pet.petId}'),
                   onPressed: busy ? null : onSelect,
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Взять в отряд'),
+                  label: const Text(
+                    'Взять в отряд',
+                    maxLines: 2,
+                    overflow: TextOverflow.visible,
+                    textAlign: TextAlign.center,
+                  ),
                 )
               else
                 const ExpeditionBadge(
@@ -1018,6 +1207,9 @@ class _PetCard extends StatelessWidget {
                   icon: const Icon(Icons.auto_awesome_outlined),
                   label: Text(
                     pet.canEvolve ? 'Эволюционировать' : 'Нужно больше связи',
+                    maxLines: 2,
+                    overflow: TextOverflow.visible,
+                    textAlign: TextAlign.center,
                   ),
                 ),
             ],
@@ -1046,31 +1238,99 @@ class _SkillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool available = seasonXp >= skill.requiredSeasonXp;
-    return ExpeditionPanel(
-      tone: unlocked ? ExpeditionPanelTone.lumen : ExpeditionPanelTone.neutral,
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        leading: Icon(
-          unlocked ? Icons.hub : Icons.hub_outlined,
-          color: unlocked
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        title: Text(skill.name),
-        subtitle: Text(
-          '${skill.description}\nНужно ${skill.requiredSeasonXp} сезонного XP',
-        ),
-        isThreeLine: true,
-        trailing: unlocked
-            ? const Icon(Icons.lock_open)
-            : IconButton(
-                key: Key('platform-unlock-skill-${skill.skillId}'),
-                tooltip: available ? 'Открыть навык' : 'Навык пока недоступен',
-                onPressed: busy || !available ? null : onUnlock,
-                icon: const Icon(Icons.lock_outline),
-              ),
-      ),
+    final Color iconColor = unlocked
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (_usesCompactPlatformSection(context, constraints)) {
+          return ExpeditionPanel(
+            key: Key('platform-skill-compact-${skill.skillId}'),
+            tone: unlocked
+                ? ExpeditionPanelTone.lumen
+                : ExpeditionPanelTone.neutral,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      unlocked ? Icons.hub : Icons.hub_outlined,
+                      color: iconColor,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        skill.name,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(skill.description),
+                const SizedBox(height: 4),
+                Text('Нужно ${skill.requiredSeasonXp} сезонного XP'),
+                const SizedBox(height: 12),
+                if (unlocked)
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: ExpeditionBadge(
+                      label: 'Навык открыт',
+                      icon: Icons.lock_open,
+                    ),
+                  )
+                else
+                  OutlinedButton.icon(
+                    key: Key('platform-unlock-skill-${skill.skillId}'),
+                    onPressed: busy || !available ? null : onUnlock,
+                    icon: const Icon(Icons.lock_outline),
+                    label: Text(
+                      available ? 'Открыть навык' : 'Навык пока недоступен',
+                      maxLines: 2,
+                      overflow: TextOverflow.visible,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }
+        return ExpeditionPanel(
+          key: Key('platform-skill-wide-${skill.skillId}'),
+          tone: unlocked
+              ? ExpeditionPanelTone.lumen
+              : ExpeditionPanelTone.neutral,
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 8,
+            ),
+            leading: Icon(
+              unlocked ? Icons.hub : Icons.hub_outlined,
+              color: iconColor,
+            ),
+            title: Text(skill.name),
+            subtitle: Text(
+              '${skill.description}\n'
+              'Нужно ${skill.requiredSeasonXp} сезонного XP',
+            ),
+            isThreeLine: true,
+            trailing: unlocked
+                ? const Icon(Icons.lock_open)
+                : IconButton(
+                    key: Key('platform-unlock-skill-${skill.skillId}'),
+                    tooltip: available
+                        ? 'Открыть навык'
+                        : 'Навык пока недоступен',
+                    onPressed: busy || !available ? null : onUnlock,
+                    icon: const Icon(Icons.lock_outline),
+                  ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1102,57 +1362,82 @@ class _QuestCard extends StatelessWidget {
       '+${quest.seasonXpReward} сезонного XP · '
       '+${quest.petBondReward} связи',
     );
+    final ExpeditionBadge status = ExpeditionBadge(
+      label: quest.claimed
+          ? 'Получено'
+          : quest.ready
+          ? 'Готово'
+          : 'В пути',
+      icon: quest.claimed
+          ? Icons.check_circle_outline
+          : Icons.assignment_outlined,
+      tone: quest.ready && !quest.claimed
+          ? ExpeditionPanelTone.energy
+          : ExpeditionPanelTone.neutral,
+    );
 
     return ExpeditionPanel(
       tone: quest.ready && !quest.claimed
           ? ExpeditionPanelTone.energy
           : ExpeditionPanelTone.neutral,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = _usesCompactPlatformSection(
+            context,
+            constraints,
+          );
+          final Widget action = FilledButton.tonal(
+            key: Key('platform-claim-quest-${quest.questId}'),
+            onPressed: busy || !quest.ready || quest.claimed ? null : onClaim,
+            child: Text(
+              quest.claimed
+                  ? 'Получено'
+                  : quest.ready
+                  ? 'Забрать награду'
+                  : 'В процессе',
+              maxLines: 2,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.center,
+            ),
+          );
+          return Column(
+            key: Key(
+              'platform-quest-${compact ? 'compact' : 'wide'}-'
+              '${quest.questId}',
+            ),
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: Text(
+              if (compact) ...<Widget>[
+                Text(
                   quest.name,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-              ),
-              ExpeditionBadge(
-                label: quest.claimed
-                    ? 'Получено'
-                    : quest.ready
-                    ? 'Готово'
-                    : 'В пути',
-                icon: quest.claimed
-                    ? Icons.check_circle_outline
-                    : Icons.assignment_outlined,
-                tone: quest.ready && !quest.claimed
-                    ? ExpeditionPanelTone.energy
-                    : ExpeditionPanelTone.neutral,
-              ),
+                const SizedBox(height: 8),
+                status,
+              ] else
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        quest.name,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    status,
+                  ],
+                ),
+              const SizedBox(height: 8),
+              if (rewardFirst) reward else progress,
+              const SizedBox(height: 8),
+              if (rewardFirst) progress else reward,
+              const SizedBox(height: 12),
+              if (compact)
+                SizedBox(width: double.infinity, child: action)
+              else
+                Align(alignment: Alignment.centerRight, child: action),
             ],
-          ),
-          const SizedBox(height: 8),
-          if (rewardFirst) reward else progress,
-          const SizedBox(height: 8),
-          if (rewardFirst) progress else reward,
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.tonal(
-              key: Key('platform-claim-quest-${quest.questId}'),
-              onPressed: busy || !quest.ready || quest.claimed ? null : onClaim,
-              child: Text(
-                quest.claimed
-                    ? 'Получено'
-                    : quest.ready
-                    ? 'Забрать награду'
-                    : 'В процессе',
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -1278,45 +1563,89 @@ class _CosmeticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ExpeditionPanel(
-      tone: active
-          ? ExpeditionPanelTone.resonance
-          : ExpeditionPanelTone.neutral,
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: context.walkingRpgPalette.resonance.withValues(
-            alpha: 0.14,
-          ),
-          child: Icon(
-            Icons.auto_awesome_outlined,
-            color: context.walkingRpgPalette.resonance,
-          ),
-        ),
-        title: Text(cosmetic.name),
-        subtitle: Text(
-          paymentsEnabled
-              ? '${cosmetic.slot} · '
-                    '${cosmetic.sandboxPrice == 0 ? 'базовая' : '${cosmetic.sandboxPrice} sandbox-кредитов'}'
-              : cosmetic.slot,
-        ),
-        trailing: active
-            ? const Chip(label: Text('Активно'))
-            : owned
-            ? FilledButton.tonal(
-                key: Key('platform-equip-cosmetic-${cosmetic.cosmeticId}'),
-                onPressed: busy ? null : onEquip,
-                child: const Text('Надеть'),
-              )
-            : paymentsEnabled
-            ? FilledButton.tonal(
-                key: Key('platform-buy-cosmetic-${cosmetic.cosmeticId}'),
-                onPressed: busy ? null : onBuy,
-                child: const Text('Купить'),
-              )
-            : null,
+    final String subtitle = paymentsEnabled
+        ? '${cosmetic.slot} · '
+              '${cosmetic.sandboxPrice == 0 ? 'базовая' : '${cosmetic.sandboxPrice} sandbox-кредитов'}'
+        : cosmetic.slot;
+    final Widget? action = active
+        ? const Chip(label: Text('Активно'))
+        : owned
+        ? FilledButton.tonal(
+            key: Key('platform-equip-cosmetic-${cosmetic.cosmeticId}'),
+            onPressed: busy ? null : onEquip,
+            child: const Text('Надеть'),
+          )
+        : paymentsEnabled
+        ? FilledButton.tonal(
+            key: Key('platform-buy-cosmetic-${cosmetic.cosmeticId}'),
+            onPressed: busy ? null : onBuy,
+            child: const Text('Купить'),
+          )
+        : null;
+    final Widget icon = CircleAvatar(
+      backgroundColor: context.walkingRpgPalette.resonance.withValues(
+        alpha: 0.14,
       ),
+      child: Icon(
+        Icons.auto_awesome_outlined,
+        color: context.walkingRpgPalette.resonance,
+      ),
+    );
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (_usesCompactPlatformSection(context, constraints)) {
+          return ExpeditionPanel(
+            key: Key('platform-cosmetic-compact-${cosmetic.cosmeticId}'),
+            tone: active
+                ? ExpeditionPanelTone.resonance
+                : ExpeditionPanelTone.neutral,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    icon,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        cosmetic.name,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(subtitle),
+                if (action != null) ...<Widget>[
+                  const SizedBox(height: 12),
+                  if (active)
+                    Align(alignment: Alignment.centerLeft, child: action)
+                  else
+                    SizedBox(width: double.infinity, child: action),
+                ],
+              ],
+            ),
+          );
+        }
+        return ExpeditionPanel(
+          key: Key('platform-cosmetic-wide-${cosmetic.cosmeticId}'),
+          tone: active
+              ? ExpeditionPanelTone.resonance
+              : ExpeditionPanelTone.neutral,
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 8,
+            ),
+            leading: icon,
+            title: Text(cosmetic.name),
+            subtitle: Text(subtitle),
+            trailing: action,
+          ),
+        );
+      },
     );
   }
 }
