@@ -5,6 +5,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 const double _wideNavigationBreakpoint = 960;
+const double _wideNavigationMinimumSafeHeight = 480;
 
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({
@@ -29,7 +30,11 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool wide = constraints.maxWidth >= _wideNavigationBreakpoint;
+        final double safeHeight =
+            constraints.maxHeight - MediaQuery.paddingOf(context).vertical;
+        final bool wide =
+            constraints.maxWidth >= _wideNavigationBreakpoint &&
+            safeHeight >= _wideNavigationMinimumSafeHeight;
         return Scaffold(
           key: const Key('main-navigation-shell'),
           extendBody: !wide,

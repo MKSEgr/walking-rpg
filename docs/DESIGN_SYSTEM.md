@@ -401,8 +401,9 @@ navigation chrome adapts to the space assigned by its parent.
 - phone and compact layouts retain the floating bottom dock, with reduced side
   reserve below `360 px` so both labelled destinations remain complete;
 - layouts at `960 px` and wider move the same destinations into a persistent
-  expedition rail, leaving the content surface free of an unnecessary bottom
-  overlay;
+  expedition rail only when at least `480 px` remain inside the vertical safe
+  area; shorter landscape and split-screen surfaces retain the overflow-safe
+  bottom dock;
 - both compositions reuse the same selected index, `IndexedStack`, destination
   visibility and `onDestinationChanged` callback;
 - one stable keyed destination slot moves inside the same shell row, preserving

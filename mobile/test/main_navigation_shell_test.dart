@@ -143,6 +143,47 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('wide viewport waits for enough height before showing rail', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(960, 320));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: const MainNavigationShell(
+          home: Center(child: Text('short-wide-home-content')),
+          platform: Center(child: Text('short-wide-platform-content')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(
+      find.byKey(const Key('main-navigation-bottom-dock')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    await tester.binding.setSurfaceSize(const Size(960, 480));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('keeps destination state while crossing the breakpoint', (
     WidgetTester tester,
   ) async {
