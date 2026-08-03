@@ -9,6 +9,28 @@ import 'package:walking_rpg_mobile/features/onboarding/domain/first_journey_prog
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
 
+enum _FirstJourneyAppAction { account }
+
+double _firstJourneyTextScale(BuildContext context) {
+  return MediaQuery.textScalerOf(context).scale(16) / 16;
+}
+
+bool _usesCompactFirstJourneyChrome(
+  BuildContext context,
+  BoxConstraints constraints,
+) {
+  return constraints.maxWidth < 360 ||
+      (constraints.maxWidth < 430 && _firstJourneyTextScale(context) > 1.3);
+}
+
+bool _usesCompactFirstJourneySection(
+  BuildContext context,
+  BoxConstraints constraints,
+) {
+  return constraints.maxWidth < 300 ||
+      (constraints.maxWidth < 400 && _firstJourneyTextScale(context) > 1.3);
+}
+
 class FirstJourneyScreen extends StatelessWidget {
   const FirstJourneyScreen({
     super.key,
@@ -53,103 +75,128 @@ class FirstJourneyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Первый путь'),
-        actions: <Widget>[
-          MobileCommandRecoveryAction(
-            key: const Key('first-journey-recovery'),
-            onPressed: onOpenRecovery,
-            count: recoveryCount,
-            unavailable: recoveryUnavailable,
-          ),
-          IconButton(
-            tooltip: 'Аккаунт',
-            onPressed: onOpenAccount,
-            icon: const Icon(Icons.account_circle_outlined),
-          ),
-        ],
-      ),
-      body: ExpeditionBackdrop(
-        child: SafeArea(
-          top: false,
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 620),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        _JourneyProgressHeader(progress: progress),
-                        if (progress.readOnly) ...<Widget>[
-                          const SizedBox(height: 12),
-                          const ExpeditionNotice(
-                            key: Key('first-journey-read-only-signal'),
-                            label: 'Сохранённый путь',
-                            icon: Icons.cloud_off_outlined,
-                            message:
-                                'Показано сохранённое состояние. Действия '
-                                'станут доступны после подключения к серверу.',
-                          ),
-                        ],
-                        if (notice != null) ...<Widget>[
-                          const SizedBox(height: 12),
-                          ExpeditionNotice(
-                            key: const Key('first-journey-notice-signal'),
-                            label: 'Сигнал маршрута',
-                            icon: Icons.info_outline,
-                            message: notice!,
-                            tone: ExpeditionNoticeTone.lumen,
-                          ),
-                        ],
-                        if (errorMessage != null) ...<Widget>[
-                          const SizedBox(height: 12),
-                          ExpeditionNotice(
-                            key: const Key('first-journey-error-signal'),
-                            label: 'Состояние требует проверки',
-                            icon: Icons.sync_problem_outlined,
-                            message: errorMessage!,
-                            tone: ExpeditionNoticeTone.resonance,
-                          ),
-                        ],
-                        const SizedBox(height: 18),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 360),
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          transitionBuilder:
-                              (Widget child, Animation<double> animation) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0.04, 0.02),
-                                      end: Offset.zero,
-                                    ).animate(animation),
-                                    child: child,
-                                  ),
-                                );
-                              },
-                          child: _stageContent(context),
-                        ),
-                        const SizedBox(height: 10),
-                        TextButton(
-                          key: const Key('first-journey-continue-later'),
-                          onPressed: busy ? null : onContinueLater,
-                          child: const Text('Продолжить позже'),
-                        ),
-                      ],
-                    ),
-                  ),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compactChrome = _usesCompactFirstJourneyChrome(
+          context,
+          constraints,
+        );
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Первый путь',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            actions: <Widget>[
+              MobileCommandRecoveryAction(
+                key: const Key('first-journey-recovery'),
+                onPressed: onOpenRecovery,
+                count: recoveryCount,
+                unavailable: recoveryUnavailable,
+              ),
+              if (compactChrome)
+                _FirstJourneyAppActionsMenu(onOpenAccount: onOpenAccount)
+              else
+                IconButton(
+                  tooltip: 'Аккаунт',
+                  onPressed: onOpenAccount,
+                  icon: const Icon(Icons.account_circle_outlined),
                 ),
-              );
-            },
+            ],
           ),
-        ),
-      ),
+          body: ExpeditionBackdrop(
+            child: SafeArea(
+              top: false,
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool compactSection = _usesCompactFirstJourneySection(
+                    context,
+                    constraints,
+                  );
+                  return SingleChildScrollView(
+                    key: const Key('first-journey-scroll'),
+                    padding: EdgeInsets.fromLTRB(
+                      compactSection ? 12 : 20,
+                      compactSection ? 14 : 18,
+                      compactSection ? 12 : 20,
+                      28,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 620),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            _JourneyProgressHeader(progress: progress),
+                            if (progress.readOnly) ...<Widget>[
+                              const SizedBox(height: 12),
+                              const ExpeditionNotice(
+                                key: Key('first-journey-read-only-signal'),
+                                label: 'Сохранённый путь',
+                                icon: Icons.cloud_off_outlined,
+                                message:
+                                    'Показано сохранённое состояние. Действия '
+                                    'станут доступны после подключения к серверу.',
+                              ),
+                            ],
+                            if (notice != null) ...<Widget>[
+                              const SizedBox(height: 12),
+                              ExpeditionNotice(
+                                key: const Key('first-journey-notice-signal'),
+                                label: 'Сигнал маршрута',
+                                icon: Icons.info_outline,
+                                message: notice!,
+                                tone: ExpeditionNoticeTone.lumen,
+                              ),
+                            ],
+                            if (errorMessage != null) ...<Widget>[
+                              const SizedBox(height: 12),
+                              ExpeditionNotice(
+                                key: const Key('first-journey-error-signal'),
+                                label: 'Состояние требует проверки',
+                                icon: Icons.sync_problem_outlined,
+                                message: errorMessage!,
+                                tone: ExpeditionNoticeTone.resonance,
+                              ),
+                            ],
+                            const SizedBox(height: 18),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 360),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              transitionBuilder:
+                                  (Widget child, Animation<double> animation) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: const Offset(0.04, 0.02),
+                                          end: Offset.zero,
+                                        ).animate(animation),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              child: _stageContent(context),
+                            ),
+                            const SizedBox(height: 10),
+                            TextButton(
+                              key: const Key('first-journey-continue-later'),
+                              onPressed: busy ? null : onContinueLater,
+                              child: const Text('Продолжить позже'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -212,6 +259,43 @@ class FirstJourneyScreen extends StatelessWidget {
   }
 }
 
+class _FirstJourneyAppActionsMenu extends StatelessWidget {
+  const _FirstJourneyAppActionsMenu({required this.onOpenAccount});
+
+  final VoidCallback? onOpenAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_FirstJourneyAppAction>(
+      key: const Key('first-journey-more-actions'),
+      tooltip: 'Ещё действия',
+      icon: const Icon(Icons.more_vert),
+      onSelected: (_FirstJourneyAppAction action) {
+        switch (action) {
+          case _FirstJourneyAppAction.account:
+            onOpenAccount?.call();
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) =>
+          <PopupMenuEntry<_FirstJourneyAppAction>>[
+            PopupMenuItem<_FirstJourneyAppAction>(
+              key: const Key('first-journey-menu-account'),
+              value: _FirstJourneyAppAction.account,
+              enabled: onOpenAccount != null,
+              child: const Row(
+                children: <Widget>[
+                  Icon(Icons.account_circle_outlined, size: 21),
+                  SizedBox(width: 12),
+                  Flexible(child: Text('Аккаунт')),
+                ],
+              ),
+            ),
+          ],
+    );
+  }
+}
+
 class _JourneyProgressHeader extends StatelessWidget {
   const _JourneyProgressHeader({required this.progress});
 
@@ -219,33 +303,57 @@ class _JourneyProgressHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = _usesCompactFirstJourneySection(
+          context,
+          constraints,
+        );
+        final String count =
+            '${progress.completedCount}/${FirstJourneyProgress.steps.length}';
+        return Column(
+          key: Key(
+            compact
+                ? 'first-journey-progress-compact'
+                : 'first-journey-progress-wide',
+          ),
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Expanded(
-              child: Text(
+            if (compact) ...<Widget>[
+              Text(
                 'Маршрут к первому сигналу',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
-            Text(
-              '${progress.completedCount}/${FirstJourneyProgress.steps.length}',
-              style: Theme.of(context).textTheme.labelLarge,
+              const SizedBox(height: 8),
+              ExpeditionBadge(
+                label: '$count этапов пройдено',
+                icon: Icons.route_outlined,
+                allowWrap: true,
+              ),
+            ] else
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      'Маршрут к первому сигналу',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  Text(count, style: Theme.of(context).textTheme.labelLarge),
+                ],
+              ),
+            const SizedBox(height: 8),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: progress.progressValue),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+              builder: (BuildContext context, double value, Widget? child) {
+                return LinearProgressIndicator(value: value, minHeight: 8);
+              },
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: progress.progressValue),
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOutCubic,
-          builder: (BuildContext context, double value, Widget? child) {
-            return LinearProgressIndicator(value: value, minHeight: 8);
-          },
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -282,7 +390,7 @@ class _WelcomePanel extends StatelessWidget {
         key: const Key('first-journey-start'),
         onPressed: busy ? null : onContinue,
         icon: const Icon(Icons.arrow_forward),
-        label: const Text('Начать путь'),
+        label: const _JourneyActionLabel('Начать путь'),
       ),
     );
   }
@@ -317,7 +425,7 @@ class _ActivityPanel extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.health_and_safety_outlined),
-        label: Text(
+        label: _JourneyActionLabel(
           busy ? 'Подключаем шаги...' : 'Разрешить и синхронизировать',
         ),
       ),
@@ -360,7 +468,7 @@ class _ActivityRewardPanel extends StatelessWidget {
         key: const Key('first-journey-activity-continue'),
         onPressed: busy ? null : onContinue,
         icon: const Icon(Icons.pets_outlined),
-        label: const Text('Выбрать питомца'),
+        label: const _JourneyActionLabel('Выбрать питомца'),
       ),
       accent: true,
     );
@@ -420,74 +528,103 @@ class _PetChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-    return Material(
-      color: colors.surfaceContainerHighest.withValues(alpha: 0.64),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.72)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        key: Key('first-journey-select-${pet.petId}'),
-        onTap: busy ? null : onSelect,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              CompanionPortrait(
-                key: Key('first-journey-pet-portrait-${pet.petId}'),
-                petId: pet.petId,
-                name: pet.name,
-                species: pet.species,
-                evolutionStage: pet.evolutionStage,
-                active: pet.active,
-                size: 78,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      pet.name,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 7),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = _usesCompactFirstJourneySection(
+          context,
+          constraints,
+        );
+        final Widget portrait = CompanionPortrait(
+          key: Key('first-journey-pet-portrait-${pet.petId}'),
+          petId: pet.petId,
+          name: pet.name,
+          species: pet.species,
+          evolutionStage: pet.evolutionStage,
+          active: pet.active,
+          size: compact ? 72 : 78,
+        );
+        final Widget details = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(pet.name, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 7),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: <Widget>[
+                ExpeditionBadge(
+                  label: pet.species,
+                  icon: Icons.blur_circular,
+                  allowWrap: compact,
+                ),
+                ExpeditionBadge(
+                  label: 'Форма ${pet.evolutionStage + 1}',
+                  icon: Icons.auto_awesome_outlined,
+                  tone: pet.evolutionStage > 0
+                      ? ExpeditionPanelTone.resonance
+                      : ExpeditionPanelTone.neutral,
+                  allowWrap: compact,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              pet.trait,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
+          ],
+        );
+        return Material(
+          color: colors.surfaceContainerHighest.withValues(alpha: 0.64),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: colors.outlineVariant.withValues(alpha: 0.72),
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: Key('first-journey-select-${pet.petId}'),
+            onTap: busy ? null : onSelect,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: EdgeInsets.all(compact ? 14 : 16),
+              child: compact
+                  ? Column(
+                      key: Key('first-journey-pet-compact-${pet.petId}'),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
-                        ExpeditionBadge(
-                          label: pet.species,
-                          icon: Icons.blur_circular,
-                        ),
-                        ExpeditionBadge(
-                          label: 'Форма ${pet.evolutionStage + 1}',
-                          icon: Icons.auto_awesome_outlined,
-                          tone: pet.evolutionStage > 0
-                              ? ExpeditionPanelTone.resonance
-                              : ExpeditionPanelTone.neutral,
+                        Align(alignment: Alignment.centerLeft, child: portrait),
+                        const SizedBox(height: 12),
+                        details,
+                        const SizedBox(height: 12),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            Flexible(child: Text('Выбрать спутника')),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward_ios, size: 18),
+                          ],
                         ),
                       ],
+                    )
+                  : Row(
+                      key: Key('first-journey-pet-wide-${pet.petId}'),
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        portrait,
+                        const SizedBox(width: 16),
+                        Expanded(child: details),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_ios, size: 18),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      pet.trait,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios, size: 18),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -550,7 +687,7 @@ class _ExpeditionPanel extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Icon(canAdvance ? Icons.bolt : Icons.directions_walk),
-            label: Text(
+            label: _JourneyActionLabel(
               canAdvance
                   ? 'Направить ${home.spendableEnergy} ENERGY'
                   : 'Синхронизировать новые шаги',
@@ -657,7 +794,7 @@ class _CompletionPanel extends StatelessWidget {
         key: const Key('first-journey-finish'),
         onPressed: busy ? null : onFinish,
         icon: const Icon(Icons.explore),
-        label: const Text('Открыть экспедицию'),
+        label: const _JourneyActionLabel('Открыть экспедицию'),
       ),
       accent: true,
     );
@@ -687,9 +824,25 @@ class _AlreadyCompletePanel extends StatelessWidget {
         key: const Key('first-journey-finish'),
         onPressed: busy ? null : onFinish,
         icon: const Icon(Icons.explore),
-        label: const Text('Открыть экспедицию'),
+        label: const _JourneyActionLabel('Открыть экспедицию'),
       ),
       accent: true,
+    );
+  }
+}
+
+class _JourneyActionLabel extends StatelessWidget {
+  const _JourneyActionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      maxLines: 2,
+      overflow: TextOverflow.visible,
+      textAlign: TextAlign.center,
     );
   }
 }
@@ -720,70 +873,90 @@ class _JourneyPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-    return ExpeditionPanel(
-      tone: accent ? ExpeditionPanelTone.energy : ExpeditionPanelTone.lumen,
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (visual != null)
-            visual!
-          else
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.86, end: 1),
-                duration: const Duration(milliseconds: 420),
-                curve: Curves.easeOutBack,
-                builder: (BuildContext context, double scale, Widget? child) =>
-                    Transform.scale(scale: scale, child: child),
-                child: CircleAvatar(
-                  radius: 30,
-                  backgroundColor: accent
-                      ? colors.primary
-                      : colors.secondaryContainer,
-                  child: Icon(
-                    icon,
-                    size: 31,
-                    color: accent
-                        ? colors.onPrimary
-                        : colors.onSecondaryContainer,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = _usesCompactFirstJourneySection(
+          context,
+          constraints,
+        );
+        return ExpeditionPanel(
+          tone: accent ? ExpeditionPanelTone.energy : ExpeditionPanelTone.lumen,
+          padding: EdgeInsets.all(compact ? 16 : 22),
+          child: Column(
+            key: Key(
+              compact
+                  ? 'first-journey-panel-compact'
+                  : 'first-journey-panel-wide',
+            ),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (visual != null)
+                visual!
+              else
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0.86, end: 1),
+                    duration: const Duration(milliseconds: 420),
+                    curve: Curves.easeOutBack,
+                    builder:
+                        (BuildContext context, double scale, Widget? child) =>
+                            Transform.scale(scale: scale, child: child),
+                    child: CircleAvatar(
+                      radius: compact ? 26 : 30,
+                      backgroundColor: accent
+                          ? colors.primary
+                          : colors.secondaryContainer,
+                      child: Icon(
+                        icon,
+                        size: compact ? 27 : 31,
+                        color: accent
+                            ? colors.onPrimary
+                            : colors.onSecondaryContainer,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          const SizedBox(height: 18),
-          Text(
-            eyebrow.toUpperCase(),
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: colors.primary,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 10),
-          Text(body, style: Theme.of(context).textTheme.bodyLarge),
-          if (highlights.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 16),
-            ...highlights.map(
-              (String text) => Padding(
-                padding: const EdgeInsets.only(bottom: 7),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Icon(Icons.check_circle_outline, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(text)),
-                  ],
+              SizedBox(height: compact ? 14 : 18),
+              Text(
+                eyebrow.toUpperCase(),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: colors.primary,
+                  letterSpacing: 0.8,
                 ),
               ),
-            ),
-          ],
-          if (child != null) ...<Widget>[const SizedBox(height: 18), child!],
-          if (action != null) ...<Widget>[const SizedBox(height: 22), action!],
-        ],
-      ),
+              const SizedBox(height: 6),
+              Text(title, style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 10),
+              Text(body, style: Theme.of(context).textTheme.bodyLarge),
+              if (highlights.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 16),
+                ...highlights.map(
+                  (String text) => Padding(
+                    padding: const EdgeInsets.only(bottom: 7),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Icon(Icons.check_circle_outline, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(text)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              if (child != null) ...<Widget>[
+                const SizedBox(height: 18),
+                child!,
+              ],
+              if (action != null) ...<Widget>[
+                const SizedBox(height: 22),
+                action!,
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

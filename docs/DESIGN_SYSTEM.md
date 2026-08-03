@@ -357,6 +357,26 @@ change which commands the server owns.
   `320 × 640 / 1.6×` without changing cache/read-only behavior, experiment
   exposure, command execution, idempotency or authoritative refresh.
 
+## Compact first journey composition
+
+The guided first chapter keeps one continuous authoritative route when narrow
+width and enlarged system text require a different composition. Responsive
+presentation changes wrapping and hierarchy only; it does not complete a
+milestone, predict a reward or introduce another command path.
+
+- compact application chrome keeps saved-action recovery visible and moves
+  account navigation into one labelled overflow menu;
+- route progress separates its complete label from the accepted milestone
+  count instead of compressing both into one row;
+- welcome, activity, reward, expedition, event and completion panels reduce
+  internal chrome while keeping every action full-width and two-line capable;
+- companion choices reflow vertically, keep their stable portrait identity and
+  expose the same selection callback over the complete card;
+- the single first-journey scroll surface keeps every stage action and the
+  existing **«Продолжить позже»** boundary reachable at `320 × 640 / 1.6×`;
+- the contract does not change startup replay, cached read-only behavior,
+  command keys, idempotency, authoritative refresh or completion ownership.
+
 ## Next visual slices
 
 1. Turn the expedition chapter into a visual route map only from an
