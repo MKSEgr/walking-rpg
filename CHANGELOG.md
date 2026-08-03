@@ -172,8 +172,9 @@
   nanoseconds, больше не округляет дробную NumericDate через `double` и
   fail-closed отклоняет уже lossy floating-point claim;
 - signed OIDC `sub`, actor и stable-device claims больше не схлопываются через
-  `trim` или неявное преобразование JSON-типа: `sub` принимается только как
-  исходная строка и проверяется Nimbus processor до Spring claim-set coercion, а
+  `trim` или неявное преобразование JSON-типа: compact JWS payload проверяется
+  до Nimbus/Spring registered-claim conversion, поэтому `sub` принимается
+  только как исходная JSON-строка, а
   неоднозначные, управляющие и не помещающиеся в persistent identity boundary
   значения отклоняются до controller; присутствующий malformed optional
   actor/device claim больше не подменяется subject/null fallback, а защищённый

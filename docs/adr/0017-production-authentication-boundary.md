@@ -52,9 +52,10 @@ Spring Security Resource Server валидирует JWT по:
 - стандартным временным claims.
 
 Обязательный `sub` становится каноническим `userId` только когда raw signed
-claim является JSON-строкой. Nimbus processor проверяет этот тип до стандартного
-Spring claim-set coercion; повторная проверка canonical identity provider
-защищает прямые и альтернативные decoder-ы. Backend не обрезает и не
+claim является JSON-строкой. `JwtDecoder` decorator проверяет compact JWS
+payload до Nimbus/Spring registered-claim conversion; повторная проверка
+canonical identity provider защищает прямые и альтернативные decoder-ы.
+Backend не обрезает и не
 канонизирует signed identity values: `sub`, настроенный actor claim и stable
 device claim сравниваются как точные строки. Значения с граничными пробелами или
 управляющими символами отклоняются до controller, чтобы разные claims не

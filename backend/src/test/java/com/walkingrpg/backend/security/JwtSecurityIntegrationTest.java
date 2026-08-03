@@ -3,7 +3,6 @@ package com.walkingrpg.backend.security;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -13,9 +12,9 @@ import javax.crypto.spec.SecretKeySpec;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebAppConfiguration
 @ContextConfiguration(classes = {
         SecurityConfiguration.class,
+        ExactSubjectJwtDecoderBeanPostProcessor.class,
         JwtSecurityIntegrationTest.TestConfiguration.class
 })
 class JwtSecurityIntegrationTest {
@@ -380,9 +380,6 @@ class JwtSecurityIntegrationTest {
             SecretKey key = new SecretKeySpec(TEST_JWT_SECRET, "HmacSHA256");
             return NimbusJwtDecoder.withSecretKey(key)
                     .macAlgorithm(MacAlgorithm.HS256)
-                    .jwtProcessorCustomizer(
-                            ExactSubjectJwtDecoderCustomizer::configureProcessor
-                    )
                     .build();
         }
 
@@ -396,15 +393,15 @@ class JwtSecurityIntegrationTest {
 
     private String signedAdminToken(Object subject) throws JOSEException {
         Instant now = Instant.now();
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .claim("sub", subject)
-                .claim("roles", List.of("walking-rpg-admin"))
-                .issueTime(Date.from(now.minusSeconds(5)))
-                .expirationTime(Date.from(now.plusSeconds(300)))
-                .build();
-        SignedJWT token = new SignedJWT(
+        Map<String, Object> claims = Map.of(
+                "sub", subject,
+                "roles", List.of("walking-rpg-admin"),
+                "iat", now.minusSeconds(5).getEpochSecond(),
+                "exp", now.plusSeconds(300).getEpochSecond()
+        );
+        JWSObject token = new JWSObject(
                 new JWSHeader(JWSAlgorithm.HS256),
-                claims
+                new Payload(claims)
         );
         token.sign(new MACSigner(TEST_JWT_SECRET));
         return token.serialize();
