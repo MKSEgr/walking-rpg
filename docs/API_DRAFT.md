@@ -72,7 +72,11 @@ Backend принимает destructive request только если подпи�
 `ACCOUNT_DELETION_MAX_AUTH_AGE` (по умолчанию `PT5M`). Отсутствующий,
 некорректный или устаревший claim возвращает
 `403 FRESH_AUTHENTICATION_REQUIRED`. Production IdP обязан включать
-стандартный OIDC `auth_time` в access token.
+стандартный OIDC `auth_time` в access token. NumericDate преобразуется без
+floating-point округления и сохраняет допустимую дробную часть до наносекунды,
+когда decoder предоставляет точный `BigDecimal` или `Instant`. Потенциально
+потерявшие исходную signed decimal точность `Float`/`Double`, выходящие за
+диапазон `Instant` и sub-nanosecond значения отклоняются до account mutation.
 
 Повтор после потери ответа возвращает ту же квитанцию с `replayed=true`, в том
 числе после перезапуска клиента. Backend хранит только SHA-256 subject и

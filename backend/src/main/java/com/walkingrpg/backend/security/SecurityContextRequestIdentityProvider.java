@@ -1,5 +1,7 @@
 package com.walkingrpg.backend.security;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -27,6 +29,8 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
 
     private static final Duration FUTURE_AUTHENTICATION_CLOCK_SKEW =
             Duration.ofSeconds(30);
+    private static final BigInteger NANOSECONDS_PER_SECOND =
+            BigInteger.valueOf(1_000_000_000L);
 
     private final WalkingRpgSecurityProperties properties;
     private final AccountDeletionRegistry accountDeletionRegistry;
@@ -148,23 +152,53 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
             return instant;
         }
         if (claim instanceof Number number) {
-            double rawValue = number.doubleValue();
-            long epochSecond = number.longValue();
-            if (!Double.isFinite(rawValue) || rawValue != (double) epochSecond) {
-                throw freshAuthenticationRequired(
-                        "JWT содержит некорректный auth_time"
-                );
-            }
             try {
-                return Instant.ofEpochSecond(epochSecond);
-            } catch (DateTimeException exception) {
-                throw freshAuthenticationRequired(
-                        "JWT содержит некорректный auth_time"
-                );
+                return requireExactNumericDate(number);
+            } catch (ArithmeticException | DateTimeException
+                    | NumberFormatException exception) {
+                throw invalidAuthenticationTime();
             }
         }
         throw freshAuthenticationRequired(
                 "JWT не содержит обязательный auth_time для удаления аккаунта"
+        );
+    }
+
+    private Instant requireExactNumericDate(Number number) {
+        BigInteger totalNanoseconds = exactDecimal(number)
+                .movePointRight(9)
+                .toBigIntegerExact();
+        BigInteger[] secondAndNanosecond = totalNanoseconds.divideAndRemainder(
+                NANOSECONDS_PER_SECOND
+        );
+        return Instant.ofEpochSecond(
+                secondAndNanosecond[0].longValueExact(),
+                secondAndNanosecond[1].longValueExact()
+        );
+    }
+
+    private BigDecimal exactDecimal(Number number) {
+        if (number instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (number instanceof BigInteger integer) {
+            return new BigDecimal(integer);
+        }
+        if (number instanceof Byte
+                || number instanceof Short
+                || number instanceof Integer
+                || number instanceof Long) {
+            return BigDecimal.valueOf(number.longValue());
+        }
+        if (number instanceof Float || number instanceof Double) {
+            throw new NumberFormatException("Lossy floating-point auth_time");
+        }
+        return new BigDecimal(number.toString());
+    }
+
+    private FreshAuthenticationRequiredException invalidAuthenticationTime() {
+        return freshAuthenticationRequired(
+                "JWT содержит некорректный auth_time"
         );
     }
 
