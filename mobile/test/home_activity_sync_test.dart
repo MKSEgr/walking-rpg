@@ -62,7 +62,37 @@ void main() {
     expect(find.text('Доступная энергия: 68 · версия 1'), findsOneWidget);
   });
 
-  testWidgets('activity sync shares the Home action dock on compact text', (
+  testWidgets('activity sync shares the Home action dock without an overlay', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ActivitySyncShell(
+          synchronizer: () async => _syncResult(),
+          homeLoader: () async => HomeSnapshot.demo,
+          platformLoader: () async => platformSnapshot(),
+          platformHomeLoader: () async => HomeSnapshot.demo,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder actionDock = find.byKey(const Key('home-sticky-action-panel'));
+    final Finder syncButton = find.byKey(const Key('activity-sync-button'));
+    expect(syncButton, findsOneWidget);
+    expect(
+      find.descendant(of: actionDock, matching: syncButton),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('activity-sync-standalone-panel')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('standalone activity sync action supports compact text', (
     WidgetTester tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -84,25 +114,23 @@ void main() {
         },
         home: ActivitySyncShell(
           synchronizer: () => result.future,
-          homeLoader: () async => HomeSnapshot.demo,
-          platformLoader: () async => platformSnapshot(),
-          platformHomeLoader: () async => HomeSnapshot.demo,
+          homeBuilder: (Key key) => Scaffold(
+            key: key,
+            body: const Center(child: Text('Полевой экран')),
+          ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    final Finder actionDock = find.byKey(const Key('home-sticky-action-panel'));
+    final Finder standalonePanel = find.byKey(
+      const Key('activity-sync-standalone-panel'),
+    );
     final Finder syncButton = find.byKey(const Key('activity-sync-button'));
+    expect(standalonePanel, findsOneWidget);
     expect(syncButton, findsOneWidget);
-    expect(
-      find.descendant(of: actionDock, matching: syncButton),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('activity-sync-standalone-panel')),
-      findsNothing,
-    );
+    expect(find.byKey(const Key('home-sticky-action-panel')), findsNothing);
+    expect(tester.getSize(standalonePanel).width, lessThanOrEqualTo(288));
     expect(tester.takeException(), isNull);
 
     await tester.tap(syncButton);
@@ -120,18 +148,7 @@ void main() {
     expect(find.byKey(const Key('command-recovery-progress')), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    result.complete(
-      const ActivitySyncResult(
-        acceptedTotal: 6842,
-        acceptedDelta: 6842,
-        energyGranted: 68,
-        energyBalanceAfter: 68,
-        economyVersion: 1,
-        riskStatus: 'ACCEPTED',
-        stateVersion: 1,
-        serverTime: '2026-07-26T07:00:00Z',
-      ),
-    );
+    result.complete(_syncResult());
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 
@@ -153,6 +170,19 @@ void main() {
 
     expect(find.byKey(const Key('activity-sync-button')), findsNothing);
   });
+}
+
+ActivitySyncResult _syncResult() {
+  return const ActivitySyncResult(
+    acceptedTotal: 6842,
+    acceptedDelta: 6842,
+    energyGranted: 68,
+    energyBalanceAfter: 68,
+    economyVersion: 1,
+    riskStatus: 'ACCEPTED',
+    stateVersion: 1,
+    serverTime: '2026-07-26T07:00:00Z',
+  );
 }
 
 HomeSnapshot _beforeSync() {
