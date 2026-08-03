@@ -139,7 +139,6 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(320, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final SemanticsHandle semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     int loads = 0;
     bool accountOpened = false;
     bool recoveryOpened = false;
@@ -232,6 +231,7 @@ void main() {
         .dy;
     expect(footerBottom, lessThan(navigationTop));
     _expectNoLayoutException(tester);
+    semantics.dispose();
   });
 
   testWidgets('renders platform snapshot and resumes guided first journey', (
