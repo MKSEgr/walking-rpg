@@ -217,6 +217,9 @@
   numbers через `Number.longValue()`: `energyToSpend`, season `level`,
   `activityRetentionDays` и `weeklyRouteEnergy` требуют точного целого,
   отклоняются до commit и не оставляют частичного state;
+- command/impression и административные platform/provider/status tokens теперь
+  используют locale-neutral uppercase: JVM locale вроде `tr-TR` больше не
+  меняет маршрутизацию команд и сохраняемые enum-like значения;
 - platform snapshot не объявляет sandbox payment доступным при disabled
   provider, а mobile не показывает purchase action в release build, для
   `false` или cached snapshot.

@@ -426,6 +426,9 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
     payload и подтверждается только persistent gameplay row.
 40. Отрицательный target-baseline interval не участвует в p50/p90 и остаётся
     виден отдельным out-of-order data-quality fact.
+41. Enum-like API/storage tokens канонизируются через locale-neutral Unicode
+    casing; JVM default locale не меняет command routing, telemetry semantics
+    или сохранённые platform/provider/cohort значения.
 
 ## 10. Identity и authorization boundary
 

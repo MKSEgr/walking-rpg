@@ -10,6 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -129,7 +130,7 @@ public class PlatformAdminService {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?)
                 """,
                 normalizeNullable(userId),
-                requireText(platform, "platform").toUpperCase(),
+                requireText(platform, "platform").toUpperCase(Locale.ROOT),
                 requireText(appVersion, "appVersion"),
                 requireText(errorType, "errorType"),
                 requireText(message, "message"),
@@ -164,8 +165,8 @@ public class PlatformAdminService {
                 """,
                 requireText(userId, "userId"),
                 requireText(deviceId, "deviceId"),
-                requireText(platform, "platform").toUpperCase(),
-                requireText(provider, "provider").toUpperCase(),
+                requireText(platform, "platform").toUpperCase(Locale.ROOT),
+                requireText(provider, "provider").toUpperCase(Locale.ROOT),
                 sha256(requireText(token, "token")),
                 Timestamp.from(timestamp),
                 Timestamp.from(timestamp)
@@ -385,7 +386,7 @@ public class PlatformAdminService {
                 """,
                 requireText(cohortCode, "cohortCode"),
                 requireText(userId, "userId"),
-                requireText(status, "status").toUpperCase(),
+                requireText(status, "status").toUpperCase(Locale.ROOT),
                 normalizeNullable(notes),
                 requireText(actor, "actor"),
                 Timestamp.from(timestamp),

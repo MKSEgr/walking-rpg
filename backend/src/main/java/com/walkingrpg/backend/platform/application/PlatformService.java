@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -106,7 +107,7 @@ public class PlatformService {
         String requestedCommandType = requireText(
                 request.commandType(),
                 "commandType"
-        ).toUpperCase();
+        ).toUpperCase(Locale.ROOT);
         String commandType = canonicalCommandType(requestedCommandType);
         Instant serverTime = now();
         repository.acquireUserLock(normalizedUserId);
@@ -668,7 +669,8 @@ public class PlatformService {
             Map<String, Object> payload,
             Instant occurredAt
     ) {
-        String impression = payloadText(payload, "impression").toUpperCase();
+        String impression = payloadText(payload, "impression")
+                .toUpperCase(Locale.ROOT);
         String contentVersion = payloadText(payload, "contentVersion");
         if (!StarterExpeditionContent.LEGACY_CONTENT_VERSION.equals(contentVersion)
                 && !StarterExpeditionContent.CONTENT_VERSION.equals(contentVersion)) {

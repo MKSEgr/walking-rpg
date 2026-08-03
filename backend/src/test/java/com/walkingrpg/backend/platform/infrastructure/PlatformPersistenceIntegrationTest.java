@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -50,6 +51,7 @@ import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -1060,6 +1062,97 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(1, rowCount("push_registration"));
         assertFalse(Boolean.TRUE.equals(marker));
         assertFalse(facts.hasSuccessfulActivitySync());
+    }
+
+    @Test
+    @ResourceLock("java.util.Locale.default")
+    void shouldCanonicalizeProtocolTokensIndependentlyOfJvmLocale() {
+        Locale previousLocale = Locale.getDefault();
+        Locale previousDisplayLocale = Locale.getDefault(Locale.Category.DISPLAY);
+        Locale previousFormatLocale = Locale.getDefault(Locale.Category.FORMAT);
+        PlatformCommandResponse response;
+        try {
+            Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+            response = platformService.execute(
+                    "locale-token-user",
+                    new PlatformCommandRequest(
+                            "record_compass_impression",
+                            "locale-compass-impression",
+                            Map.of(
+                                    "impression", "recipe_ready",
+                                    "contentVersion", "chapter-1-v2"
+                            )
+                    )
+            );
+            platformAdminService.registerPush(
+                    "locale-token-user",
+                    "locale-device",
+                    "ios",
+                    "firebase",
+                    "locale-push-token"
+            );
+            platformAdminService.recordCrash(
+                    "locale-token-user",
+                    "ios",
+                    "1.0.0",
+                    "locale-test",
+                    "locale-test-message",
+                    null,
+                    Map.of(),
+                    NOW
+            );
+            platformAdminService.upsertTester(
+                    "locale-admin",
+                    "locale-cohort",
+                    "locale-token-user",
+                    "active",
+                    null
+            );
+        } finally {
+            Locale.setDefault(previousLocale);
+            Locale.setDefault(Locale.Category.DISPLAY, previousDisplayLocale);
+            Locale.setDefault(Locale.Category.FORMAT, previousFormatLocale);
+        }
+
+        assertEquals(previousLocale, Locale.getDefault());
+        assertEquals(previousDisplayLocale, Locale.getDefault(Locale.Category.DISPLAY));
+        assertEquals(previousFormatLocale, Locale.getDefault(Locale.Category.FORMAT));
+        assertEquals("RECORD_COMPASS_IMPRESSION", response.commandType());
+        assertEquals("compass_recipe_impression", scalarString("""
+                SELECT event_name
+                FROM platform_event
+                WHERE user_id = 'locale-token-user'
+                  AND event_name = 'compass_recipe_impression'
+                """));
+        assertEquals("READY", scalarString("""
+                SELECT attributes ->> 'status'
+                FROM platform_event
+                WHERE user_id = 'locale-token-user'
+                  AND event_name = 'compass_recipe_impression'
+                """));
+        assertEquals("IOS", scalarString("""
+                SELECT platform
+                FROM push_registration
+                WHERE user_id = 'locale-token-user'
+                  AND device_id = 'locale-device'
+                """));
+        assertEquals("FIREBASE", scalarString("""
+                SELECT provider
+                FROM push_registration
+                WHERE user_id = 'locale-token-user'
+                  AND device_id = 'locale-device'
+                """));
+        assertEquals("IOS", scalarString("""
+                SELECT platform
+                FROM platform_crash_report
+                WHERE user_id = 'locale-token-user'
+                """));
+        assertEquals("ACTIVE", scalarString("""
+                SELECT status
+                FROM tester_cohort_member
+                WHERE cohort_code = 'locale-cohort'
+                  AND user_id = 'locale-token-user'
+                """));
     }
 
     @Test

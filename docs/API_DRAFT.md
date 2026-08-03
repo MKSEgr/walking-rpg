@@ -7,6 +7,9 @@
 - namespace: `/api/v1`;
 - JSON-поля: camelCase;
 - даты/время: ISO-8601;
+- enum-like protocol tokens (`commandType`, impression, platform, provider,
+  cohort status) канонизируются независимо от JVM/OS locale; lowercase ASCII
+  input всегда приводит к одному uppercase token;
 - команды изменения поддерживают idempotency;
 - клиент не передаёт рассчитанную награду, баланс, progress или progression;
 - ошибки имеют `code`, `message`, `details`, `traceId`;

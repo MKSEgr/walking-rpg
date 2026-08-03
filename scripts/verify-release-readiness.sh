@@ -273,6 +273,10 @@ grep -Fq 'saveProcessedWithCompatibilityAliases' backend/src/main/java/com/walki
 grep -Fq 'shouldPersistOnePurchaseAcrossLegacyAndCanonicalCommandAliases' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve cross-alias purchase idempotency'
 grep -Fq 'shouldRollbackFractionalPlatformCommandBeforePersistingState' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must reject fractional platform numbers without partial state'
 grep -Fq 'fractionalRemoteConfigNumbersShouldBeRejectedBeforeAnyWrite' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformAdminServiceProviderTest.java || fail 'remote config must reject fractional integer fields before publication'
+grep -Fq 'shouldCanonicalizeProtocolTokensIndependentlyOfJvmLocale' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'platform protocol tokens must remain locale-stable'
+if grep -RInF '.toUpperCase()' backend/src/main/java/com/walkingrpg/backend/platform/application; then
+  fail 'platform protocol tokens must not use JVM default-locale uppercase'
+fi
 grep -Fq 'squad-membership-serialization' backend/src/main/java/com/walkingrpg/backend/platform/infrastructure/SquadTransactionLock.java || fail 'squad membership mutations must keep their dedicated transaction-lock boundary'
 grep -Fq 'shouldSerializeOwnerDeletionWithLastMemberLeave' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve squad deletion/leave serialization'
 for test_name in \
