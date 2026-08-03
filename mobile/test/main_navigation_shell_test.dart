@@ -232,10 +232,12 @@ void main() {
     await tester.tap(find.byKey(const Key('navigation-platform-wide')));
     await tester.pumpAndSettle();
 
-    final Finder journalScrollable = find.descendant(
-      of: find.byKey(const Key('platform-screen-list')),
-      matching: find.byType(Scrollable),
-    );
+    final Finder journalScrollable = find
+        .descendant(
+          of: find.byKey(const Key('platform-screen-list')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
     final Finder journalFooter = find.byKey(
       const Key('platform-journal-footer'),
     );
@@ -244,6 +246,10 @@ void main() {
       500,
       scrollable: journalScrollable,
     );
+    final ScrollableState scrollable = tester.state<ScrollableState>(
+      journalScrollable,
+    );
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pumpAndSettle();
 
     final double footerBottom = tester.getBottomRight(journalFooter).dy;
