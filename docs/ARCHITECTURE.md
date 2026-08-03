@@ -235,6 +235,11 @@ platform-команды. Для старого раздвоенного сост
 сохраняются между версиями; mutable user state отделён от definitions.
 `content_release` и remote config позволяют публиковать активную версию без
 переписывания исторических command responses.
+Remote config и content release используют разные transaction-scoped advisory
+locks перед схемой `deactivate current → activate next`. Конкурентные admin
+requests одного типа сериализуются между backend instances, а независимые типы
+публикаций не блокируют друг друга. Partial unique indexes остаются последней
+DB-защитой single-active инварианта, а не механизмом обработки штатной гонки.
 V14 лишь stage-ит v2 и оставляет v1 активной. Пока оператор не активировал v2
 после полного drain старого backend pool, новый backend возвращает v1/18 nodes,
 не проецирует `follow-resonance` и отклоняет прямой переход. Exact replay

@@ -259,7 +259,10 @@ grep -Fq 'SERVER_RESERVED_EVENT_NAMES' backend/src/main/java/com/walkingrpg/back
 grep -Fq '@Component("dbHealthContributor")' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'bounded database readiness must keep the canonical db contributor id'
 grep -Fq 'connection.isValid(VALIDATION_TIMEOUT_SECONDS)' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'database readiness validation must use a non-zero bounded timeout'
 MANUAL_TIMEOUTS=$(grep -RFl 'JdbcStatementTimeouts.apply(jdbcTemplate, statement);' backend/src/main/java | wc -l | tr -d ' ')
-[ "$MANUAL_TIMEOUTS" -eq 7 ] || fail 'all seven manual advisory-lock statements must inherit the JDBC timeout'
+[ "$MANUAL_TIMEOUTS" -eq 8 ] || fail 'all eight manual advisory-lock statements must inherit the JDBC timeout'
+grep -Fq 'platform-publication-serialization' backend/src/main/java/com/walkingrpg/backend/platform/infrastructure/PlatformPublicationTransactionLock.java || fail 'platform publications must keep their dedicated transaction-lock boundary'
+grep -Fq 'shouldSerializeConcurrentRemoteConfigPublications' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve remote-config publication serialization'
+grep -Fq 'shouldSerializeConcurrentContentPublications' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve content publication serialization'
 grep -Fq 'squad-membership-serialization' backend/src/main/java/com/walkingrpg/backend/platform/infrastructure/SquadTransactionLock.java || fail 'squad membership mutations must keep their dedicated transaction-lock boundary'
 grep -Fq 'shouldSerializeOwnerDeletionWithLastMemberLeave' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve squad deletion/leave serialization'
 for test_name in \

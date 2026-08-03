@@ -18,6 +18,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.activity.retention.ActivityRetentionService;
+import com.walkingrpg.backend.platform.infrastructure.PlatformPublicationTransactionLock;
 import com.walkingrpg.backend.platform.infrastructure.SquadTransactionLock;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
@@ -49,6 +50,7 @@ public class PlatformAdminService {
     private final PushDeliveryProvider pushDeliveryProvider;
     private final ActivityRetentionService retentionService;
     private final AccountDeletionRegistry accountDeletionRegistry;
+    private final PlatformPublicationTransactionLock publicationTransactionLock;
     private final SquadTransactionLock squadTransactionLock;
     private final Clock clock;
 
@@ -59,6 +61,7 @@ public class PlatformAdminService {
             PushDeliveryProvider pushDeliveryProvider,
             ActivityRetentionService retentionService,
             AccountDeletionRegistry accountDeletionRegistry,
+            PlatformPublicationTransactionLock publicationTransactionLock,
             SquadTransactionLock squadTransactionLock,
             Clock clock
     ) {
@@ -68,6 +71,7 @@ public class PlatformAdminService {
         this.pushDeliveryProvider = pushDeliveryProvider;
         this.retentionService = retentionService;
         this.accountDeletionRegistry = accountDeletionRegistry;
+        this.publicationTransactionLock = publicationTransactionLock;
         this.squadTransactionLock = squadTransactionLock;
         this.clock = clock;
     }
@@ -175,6 +179,9 @@ public class PlatformAdminService {
             Map<String, Object> config
     ) {
         validateRemoteConfig(config);
+        String normalizedVersion = requireText(version, "version");
+        String normalizedActor = requireText(actor, "actor");
+        publicationTransactionLock.lockRemoteConfig();
         Instant timestamp = now();
         jdbcTemplate.update("UPDATE remote_config_snapshot SET is_active = false WHERE is_active");
         jdbcTemplate.update("""
@@ -187,9 +194,9 @@ public class PlatformAdminService {
                     created_by = EXCLUDED.created_by,
                     created_at = EXCLUDED.created_at
                 """,
-                requireText(version, "version"),
+                normalizedVersion,
                 writeJson(config),
-                requireText(actor, "actor"),
+                normalizedActor,
                 Timestamp.from(timestamp)
         );
         Map<String, Object> response = new LinkedHashMap<>();
@@ -210,6 +217,10 @@ public class PlatformAdminService {
         if (content == null || content.isEmpty()) {
             throw new PlatformValidationException("content не может быть пустым", "content");
         }
+        String normalizedVersion = requireText(version, "version");
+        String normalizedReleaseNotes = requireText(releaseNotes, "releaseNotes");
+        String normalizedActor = requireText(actor, "actor");
+        publicationTransactionLock.lockContentRelease();
         Instant timestamp = now();
         jdbcTemplate.update("UPDATE content_release SET is_active = false WHERE is_active");
         Timestamp activatedAt = jdbcTemplate.queryForObject("""
@@ -230,10 +241,10 @@ public class PlatformAdminService {
                 RETURNING activated_at
                 """,
                 Timestamp.class,
-                requireText(version, "version"),
-                requireText(releaseNotes, "releaseNotes"),
+                normalizedVersion,
+                normalizedReleaseNotes,
                 writeJson(content),
-                requireText(actor, "actor"),
+                normalizedActor,
                 Timestamp.from(timestamp),
                 Timestamp.from(timestamp)
         );

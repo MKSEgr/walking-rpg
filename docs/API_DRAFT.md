@@ -769,6 +769,18 @@ push-регистрации устройства.
 admin publish, завершившийся после фиксации snapshot, целиком попадает только в
 следующий platform response.
 
+## Admin-публикация platform config и content
+
+`PUT /api/v1/admin/platform/remote-config` и
+`POST /api/v1/admin/platform/content-releases` сохраняют single-active
+семантику при конкурентных запросах с разных backend instances. Каждый поток
+публикации получает отдельный bounded transaction-scoped PostgreSQL lock до
+деактивации текущей строки. Поэтому remote config не блокирует независимый
+content release, а два издателя одного типа завершаются последовательно:
+последняя закоммиченная версия остаётся единственной активной вместо ответа
+`500` из-за гонки partial unique index. `createdAt` фиксируется после получения
+lock и отражает фактический порядок публикации.
+
 ## `POST /api/v1/platform/commands`
 
 Все platform mutations используют одну restart-safe командную ручку:
