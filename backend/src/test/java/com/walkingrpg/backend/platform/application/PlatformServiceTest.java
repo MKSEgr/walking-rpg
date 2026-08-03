@@ -335,6 +335,11 @@ class PlatformServiceTest {
                 NOW
         );
         JsonMapper mapper = JsonMapper.builder().findAndAddModules().build();
+        String legacyResponseJson = mapper.writeValueAsString(legacyResponse);
+        PlatformCommandResponse persistedLegacyResponse = mapper.readValue(
+                legacyResponseJson,
+                PlatformCommandResponse.class
+        );
         platformRepository.saveProcessed(
                 new PlatformCommandScope(userId, "BUY_COSMETIC", idempotencyKey),
                 new ProcessedPlatformCommand(
@@ -343,7 +348,7 @@ class PlatformServiceTest {
                                 "BUY_COSMETIC",
                                 payload
                         ),
-                        mapper.writeValueAsString(legacyResponse)
+                        legacyResponseJson
                 ),
                 NOW
         );
@@ -354,7 +359,7 @@ class PlatformServiceTest {
                 payload
         ));
 
-        assertEquals(legacyResponse, replayed);
+        assertEquals(persistedLegacyResponse, replayed);
         assertEquals(0, platformRepository.paymentCount());
         assertEquals(1, platformRepository.processedCommandCount());
         assertEquals(0, platformRepository.eventCount());
