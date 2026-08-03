@@ -351,6 +351,189 @@ void main() {
     await tester.pump();
     controller.dispose();
   });
+
+  testWidgets('full account supports compact enlarged text without overflow', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final OidcConfiguration oidc = _oidc();
+    final AuthSessionController controller = AuthSessionController(
+      configuration: MobileAuthConfiguration(
+        mode: MobileAuthMode.oidc,
+        apiBaseUri: Uri.parse('https://api.example'),
+        refreshSkew: const Duration(seconds: 60),
+        oidc: oidc,
+      ),
+      sessionStore: _MemoryStore(
+        _session(
+          oidc,
+          subject: 'navigator-with-a-long-call-sign',
+          suffix: 'compact',
+        ),
+      ),
+      oidcClient: _FakeOidcClient(
+        authorizeResponse: _response(
+          oidc,
+          subject: 'navigator-with-a-long-call-sign',
+          suffix: 'confirmed',
+        ),
+      ),
+      localStateCleaner: _NoopCleaner(),
+      clock: () => DateTime.utc(2026, 8, 3, 12),
+    );
+    await controller.initialize();
+    bool recoveryOpened = false;
+    bool validationOpened = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: AccountScreen(
+          controller: controller,
+          identity: controller.identity!,
+          apiClient: AccountApiClient(
+            baseUri: Uri.parse('https://api.example'),
+            transport: _AccountTransport(),
+          ),
+          recoveryCount: 120,
+          onOpenRecovery: () async {
+            recoveryOpened = true;
+          },
+          onOpenValidation: () async {
+            validationOpened = true;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('account-pilot-dossier-compact')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('account-link-compact')), findsNWidgets(2));
+    expect(find.text('99+'), findsOneWidget);
+    _expectNoAccountLayoutException(tester);
+
+    await _bringAccountIntoView(
+      tester,
+      find.byKey(const Key('account-command-recovery')),
+    );
+    await tester.tap(find.byKey(const Key('account-command-recovery')));
+    await tester.pump();
+    expect(recoveryOpened, isTrue);
+
+    await _bringAccountIntoView(
+      tester,
+      find.byKey(const Key('account-validation-center')),
+    );
+    await tester.tap(find.byKey(const Key('account-validation-center')));
+    await tester.pump();
+    expect(validationOpened, isTrue);
+
+    await _bringAccountIntoView(
+      tester,
+      find.byKey(const Key('account-export-button')),
+    );
+    final Text exportLabel = tester.widget<Text>(
+      find.text('Создать и передать JSON'),
+    );
+    expect(exportLabel.maxLines, 2);
+    _expectNoAccountLayoutException(tester);
+
+    await _bringAccountIntoView(
+      tester,
+      find.byKey(const Key('account-delete-button')),
+    );
+    expect(
+      find.byKey(const Key('account-danger-zone-compact')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('account-delete-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('account-delete-intent-dialog')),
+      findsOneWidget,
+    );
+    await _bringDecisionActionIntoView(
+      tester,
+      find.byKey(const Key('account-delete-continue')),
+    );
+    _expectNoAccountLayoutException(tester);
+
+    await tester.tap(find.byKey(const Key('account-delete-continue')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('account-delete-phrase-dialog')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('account-delete-phrase')), findsOneWidget);
+    await _bringDecisionActionIntoView(
+      tester,
+      find.byKey(const Key('account-delete-confirm')),
+    );
+    _expectNoAccountLayoutException(tester);
+    await tester.tap(find.byKey(const Key('expedition-decision-cancel')));
+    await tester.pumpAndSettle();
+
+    await _bringAccountIntoView(tester, find.byKey(const Key('logout-button')));
+    final Text logoutLabel = tester.widget<Text>(
+      find.text('Выйти и очистить локальные данные'),
+    );
+    expect(logoutLabel.maxLines, 2);
+    _expectNoAccountLayoutException(tester);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    semantics.dispose();
+    controller.dispose();
+  });
+}
+
+Future<void> _bringAccountIntoView(WidgetTester tester, Finder target) async {
+  expect(target, findsOneWidget);
+  await Scrollable.ensureVisible(
+    tester.element(target),
+    alignment: 0.5,
+    duration: Duration.zero,
+  );
+  await tester.pump();
+}
+
+Future<void> _bringDecisionActionIntoView(
+  WidgetTester tester,
+  Finder target,
+) async {
+  expect(target, findsOneWidget);
+  await tester.scrollUntilVisible(
+    target,
+    160,
+    scrollable: find.descendant(
+      of: find.byKey(const Key('expedition-decision-scroll')),
+      matching: find.byType(Scrollable),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void _expectNoAccountLayoutException(WidgetTester tester) {
+  final Object? exception = tester.takeException();
+  if (exception == null) {
+    return;
+  }
+  fail(
+    exception is FlutterError ? exception.toStringDeep() : exception.toString(),
+  );
 }
 
 final class _TransientCommandStore implements MobileCommandStore {

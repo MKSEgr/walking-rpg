@@ -17,6 +17,18 @@ import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
 
 enum _AccountAction { exporting, deleting, loggingOut }
 
+double _accountTextScale(BuildContext context) {
+  return MediaQuery.textScalerOf(context).scale(16) / 16;
+}
+
+bool _usesCompactAccountLayout(
+  BuildContext context,
+  BoxConstraints constraints,
+) {
+  return constraints.maxWidth < 320 ||
+      (constraints.maxWidth < 400 && _accountTextScale(context) > 1.3);
+}
+
 class AccountScreen extends StatefulWidget {
   const AccountScreen({
     super.key,
@@ -108,169 +120,198 @@ class _AccountScreenState extends State<AccountScreen> {
         : colors.primary;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Аккаунт и данные')),
+      appBar: AppBar(
+        title: const Text(
+          'Аккаунт и данные',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
       body: ExpeditionBackdrop(
         child: SafeArea(
           top: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-            children: <Widget>[
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      _PilotDossier(
-                        key: const Key('account-pilot-dossier'),
-                        identity: widget.identity,
-                      ),
-                      const SizedBox(height: 22),
-                      const ExpeditionSectionTitle(
-                        title: 'Контур доступа',
-                        subtitle:
-                            'Сессия, локальная очередь и служебная проверка',
-                        icon: Icons.hub_outlined,
-                      ),
-                      const SizedBox(height: 12),
-                      _AccountLinkPanel(
-                        key: const Key('account-command-recovery'),
-                        tone: recoveryTone,
-                        leading: Badge(
-                          backgroundColor: recoveryAccent,
-                          textColor: _recoveryUnavailable
-                              ? colors.onError
-                              : _recoveryCount > 0
-                              ? palette.onEnergy
-                              : colors.onPrimary,
-                          isLabelVisible:
-                              _recoveryUnavailable || _recoveryCount > 0,
-                          label: Text(
-                            _recoveryUnavailable
-                                ? '!'
-                                : _recoveryCount > 99
-                                ? '99+'
-                                : '$_recoveryCount',
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compact = _usesCompactAccountLayout(
+                context,
+                constraints,
+              );
+              return ListView(
+                key: const Key('account-scroll'),
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 12 : 20,
+                  compact ? 14 : 18,
+                  compact ? 12 : 20,
+                  32,
+                ),
+                children: <Widget>[
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          _PilotDossier(
+                            key: const Key('account-pilot-dossier'),
+                            identity: widget.identity,
+                            compact: compact,
                           ),
-                          child: Icon(
-                            Icons.cloud_sync_outlined,
-                            color: recoveryAccent,
+                          const SizedBox(height: 22),
+                          const ExpeditionSectionTitle(
+                            title: 'Контур доступа',
+                            subtitle:
+                                'Сессия, локальная очередь и служебная проверка',
+                            icon: Icons.hub_outlined,
                           ),
-                        ),
-                        title: 'Сохранённые действия',
-                        subtitle: _recoveryUnavailable
-                            ? 'Локальная очередь требует внимания'
-                            : _recoveryCount == 0
-                            ? 'Все действия отправлены'
-                            : 'Ожидают проверки: $_recoveryCount',
-                        onTap: widget.onOpenRecovery == null
-                            ? null
-                            : () {
-                                unawaited(_openRecoveryAndRefresh());
-                              },
-                      ),
-                      if (widget.onOpenValidation != null) ...<Widget>[
-                        const SizedBox(height: 12),
-                        _AccountLinkPanel(
-                          key: const Key('account-validation-center'),
-                          tone: ExpeditionPanelTone.resonance,
-                          leading: Icon(
-                            Icons.science_outlined,
-                            color: palette.resonance,
-                          ),
-                          title: 'Validation Center',
-                          subtitle:
-                              'Внутренний журнал physical-device проверки',
-                          onTap: () {
-                            unawaited(widget.onOpenValidation!());
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 22),
-                      const ExpeditionSectionTitle(
-                        title: 'Личные данные',
-                        subtitle: 'Экспорт и прозрачное управление аккаунтом',
-                        icon: Icons.folder_shared_outlined,
-                      ),
-                      const SizedBox(height: 12),
-                      ExpeditionPanel(
-                        key: const Key('account-export-panel'),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            const ExpeditionSectionTitle(
-                              title: 'Экспорт данных',
-                              subtitle: 'Переносимая копия в формате JSON',
-                              icon: Icons.ios_share_outlined,
-                            ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Walking RPG сформирует JSON-файл с игровым '
-                              'прогрессом, активностью, устройствами и '
-                              'историей операций.',
-                            ),
-                            if (_lastExport != null) ...<Widget>[
-                              const SizedBox(height: 10),
-                              Text(
-                                'Последний экспорт: ${_lastExport!.fileName}',
-                                key: const Key('account-last-export'),
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: colors.onSurfaceVariant),
-                              ),
-                            ],
-                            const SizedBox(height: 18),
-                            FilledButton.tonalIcon(
-                              key: const Key('account-export-button'),
-                              onPressed: _busy ? null : _export,
-                              icon: _action == _AccountAction.exporting
-                                  ? const SizedBox.square(
-                                      dimension: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(Icons.ios_share),
+                          const SizedBox(height: 12),
+                          _AccountLinkPanel(
+                            key: const Key('account-command-recovery'),
+                            compact: compact,
+                            tone: recoveryTone,
+                            leading: Badge(
+                              backgroundColor: recoveryAccent,
+                              textColor: _recoveryUnavailable
+                                  ? colors.onError
+                                  : _recoveryCount > 0
+                                  ? palette.onEnergy
+                                  : colors.onPrimary,
+                              isLabelVisible:
+                                  _recoveryUnavailable || _recoveryCount > 0,
                               label: Text(
-                                _action == _AccountAction.exporting
-                                    ? 'Готовим файл...'
-                                    : 'Создать и передать JSON',
+                                _recoveryUnavailable
+                                    ? '!'
+                                    : _recoveryCount > 99
+                                    ? '99+'
+                                    : '$_recoveryCount',
+                              ),
+                              child: Icon(
+                                Icons.cloud_sync_outlined,
+                                color: recoveryAccent,
+                              ),
+                            ),
+                            title: 'Сохранённые действия',
+                            subtitle: _recoveryUnavailable
+                                ? 'Локальная очередь требует внимания'
+                                : _recoveryCount == 0
+                                ? 'Все действия отправлены'
+                                : 'Ожидают проверки: $_recoveryCount',
+                            onTap: widget.onOpenRecovery == null
+                                ? null
+                                : () {
+                                    unawaited(_openRecoveryAndRefresh());
+                                  },
+                          ),
+                          if (widget.onOpenValidation != null) ...<Widget>[
+                            const SizedBox(height: 12),
+                            _AccountLinkPanel(
+                              key: const Key('account-validation-center'),
+                              compact: compact,
+                              tone: ExpeditionPanelTone.resonance,
+                              leading: Icon(
+                                Icons.science_outlined,
+                                color: palette.resonance,
+                              ),
+                              title: 'Validation Center',
+                              subtitle:
+                                  'Внутренний журнал physical-device проверки',
+                              onTap: () {
+                                unawaited(widget.onOpenValidation!());
+                              },
+                            ),
+                          ],
+                          const SizedBox(height: 22),
+                          const ExpeditionSectionTitle(
+                            title: 'Личные данные',
+                            subtitle:
+                                'Экспорт и прозрачное управление аккаунтом',
+                            icon: Icons.folder_shared_outlined,
+                          ),
+                          const SizedBox(height: 12),
+                          ExpeditionPanel(
+                            key: const Key('account-export-panel'),
+                            padding: EdgeInsets.all(compact ? 16 : 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                const ExpeditionSectionTitle(
+                                  title: 'Экспорт данных',
+                                  subtitle: 'Переносимая копия в формате JSON',
+                                  icon: Icons.ios_share_outlined,
+                                ),
+                                const SizedBox(height: 14),
+                                const Text(
+                                  'Walking RPG сформирует JSON-файл с игровым '
+                                  'прогрессом, активностью, устройствами и '
+                                  'историей операций.',
+                                ),
+                                if (_lastExport != null) ...<Widget>[
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Последний экспорт: '
+                                    '${_lastExport!.fileName}',
+                                    key: const Key('account-last-export'),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
+                                const SizedBox(height: 18),
+                                FilledButton.tonal(
+                                  key: const Key('account-export-button'),
+                                  onPressed: _busy ? null : _export,
+                                  child: _AccountActionContent(
+                                    icon: _action == _AccountAction.exporting
+                                        ? const SizedBox.square(
+                                            dimension: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Icon(Icons.ios_share),
+                                    label: _action == _AccountAction.exporting
+                                        ? 'Готовим файл...'
+                                        : 'Создать и передать JSON',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _AccountDangerPanel(
+                            key: const Key('account-danger-zone'),
+                            compact: compact,
+                            development: widget.identity.isDevelopment,
+                            busy: _busy,
+                            deleting: _action == _AccountAction.deleting,
+                            retrying: _pendingDeletionKey != null,
+                            onDelete: _confirmAndDelete,
+                          ),
+                          if (!widget.identity.isDevelopment) ...<Widget>[
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              key: const Key('logout-button'),
+                              onPressed: _busy ? null : _logout,
+                              child: _AccountActionContent(
+                                icon: _action == _AccountAction.loggingOut
+                                    ? const SizedBox.square(
+                                        dimension: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.logout),
+                                label: 'Выйти и очистить локальные данные',
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      _AccountDangerPanel(
-                        key: const Key('account-danger-zone'),
-                        development: widget.identity.isDevelopment,
-                        busy: _busy,
-                        deleting: _action == _AccountAction.deleting,
-                        retrying: _pendingDeletionKey != null,
-                        onDelete: _confirmAndDelete,
-                      ),
-                      if (!widget.identity.isDevelopment) ...<Widget>[
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          key: const Key('logout-button'),
-                          onPressed: _busy ? null : _logout,
-                          icon: _action == _AccountAction.loggingOut
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.logout),
-                          label: const Text(
-                            'Выйти и очистить локальные данные',
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -477,9 +518,14 @@ class _AccountScreenState extends State<AccountScreen> {
 }
 
 class _PilotDossier extends StatelessWidget {
-  const _PilotDossier({super.key, required this.identity});
+  const _PilotDossier({
+    super.key,
+    required this.identity,
+    required this.compact,
+  });
 
   final AuthIdentity identity;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -488,6 +534,63 @@ class _PilotDossier extends StatelessWidget {
     final String sessionDescription = development
         ? 'Локальная development-сессия'
         : 'Защищённая OIDC-сессия';
+    final Widget avatar = DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: colors.primary.withValues(alpha: 0.12),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.42)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Icon(
+          Icons.person_outline_rounded,
+          color: colors.primary,
+          size: 28,
+        ),
+      ),
+    );
+    final Widget details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'ДОСЬЕ ПИЛОТА',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: colors.primary,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          identity.displayName,
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 3),
+        Text(
+          sessionDescription,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            ExpeditionBadge(
+              label: development ? 'Локальная сессия' : 'OIDC подтверждена',
+              icon: development
+                  ? Icons.developer_mode_outlined
+                  : Icons.verified_user_outlined,
+              tone: development
+                  ? ExpeditionPanelTone.resonance
+                  : ExpeditionPanelTone.lumen,
+              allowWrap: compact,
+            ),
+          ],
+        ),
+      ],
+    );
 
     return Semantics(
       container: true,
@@ -497,74 +600,22 @@ class _PilotDossier extends StatelessWidget {
         tone: development
             ? ExpeditionPanelTone.resonance
             : ExpeditionPanelTone.lumen,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.primary.withValues(alpha: 0.12),
-                border: Border.all(
-                  color: colors.primary.withValues(alpha: 0.42),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Icon(
-                  Icons.person_outline_rounded,
-                  color: colors.primary,
-                  size: 28,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
+        padding: EdgeInsets.all(compact ? 16 : 20),
+        child: compact
+            ? Column(
+                key: const Key('account-pilot-dossier-compact'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[avatar, const SizedBox(height: 14), details],
+              )
+            : Row(
+                key: const Key('account-pilot-dossier-wide'),
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    'ДОСЬЕ ПИЛОТА',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    identity.displayName,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    sessionDescription,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      ExpeditionBadge(
-                        label: development
-                            ? 'Локальная сессия'
-                            : 'OIDC подтверждена',
-                        icon: development
-                            ? Icons.developer_mode_outlined
-                            : Icons.verified_user_outlined,
-                        tone: development
-                            ? ExpeditionPanelTone.resonance
-                            : ExpeditionPanelTone.lumen,
-                      ),
-                    ],
-                  ),
+                  avatar,
+                  const SizedBox(width: 16),
+                  Expanded(child: details),
                 ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -573,6 +624,7 @@ class _PilotDossier extends StatelessWidget {
 class _AccountLinkPanel extends StatelessWidget {
   const _AccountLinkPanel({
     super.key,
+    required this.compact,
     required this.tone,
     required this.leading,
     required this.title,
@@ -580,6 +632,7 @@ class _AccountLinkPanel extends StatelessWidget {
     this.onTap,
   });
 
+  final bool compact;
   final ExpeditionPanelTone tone;
   final Widget leading;
   final String title;
@@ -588,6 +641,42 @@ class _AccountLinkPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (compact) {
+      return ExpeditionPanel(
+        tone: tone,
+        padding: EdgeInsets.zero,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  key: const Key('account-link-compact'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        leading,
+                        const Spacer(),
+                        if (onTap != null)
+                          const Icon(Icons.chevron_right_rounded),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(subtitle),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return ExpeditionPanel(
       tone: tone,
       padding: EdgeInsets.zero,
@@ -617,6 +706,7 @@ class _AccountLinkPanel extends StatelessWidget {
 class _AccountDangerPanel extends StatelessWidget {
   const _AccountDangerPanel({
     super.key,
+    required this.compact,
     required this.development,
     required this.busy,
     required this.deleting,
@@ -624,6 +714,7 @@ class _AccountDangerPanel extends StatelessWidget {
     required this.onDelete,
   });
 
+  final bool compact;
   final bool development;
   final bool busy;
   final bool deleting;
@@ -652,8 +743,13 @@ class _AccountDangerPanel extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(compact ? 16 : 20),
         child: Column(
+          key: Key(
+            compact
+                ? 'account-danger-zone-compact'
+                : 'account-danger-zone-wide',
+          ),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Row(
@@ -680,21 +776,21 @@ class _AccountDangerPanel extends StatelessWidget {
                         'запросом потребуется повторно подтвердить личность.',
             ),
             const SizedBox(height: 18),
-            FilledButton.icon(
+            FilledButton(
               key: const Key('account-delete-button'),
               style: FilledButton.styleFrom(
                 backgroundColor: colors.error,
                 foregroundColor: colors.onError,
               ),
               onPressed: busy || development ? null : onDelete,
-              icon: deleting
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.delete_forever),
-              label: Text(
-                deleting
+              child: _AccountActionContent(
+                icon: deleting
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.delete_forever),
+                label: deleting
                     ? 'Удаляем аккаунт...'
                     : retrying
                     ? 'Повторить запрос удаления'
@@ -704,6 +800,33 @@ class _AccountDangerPanel extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AccountActionContent extends StatelessWidget {
+  const _AccountActionContent({required this.icon, required this.label});
+
+  final Widget icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        icon,
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.visible,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
     );
   }
 }
