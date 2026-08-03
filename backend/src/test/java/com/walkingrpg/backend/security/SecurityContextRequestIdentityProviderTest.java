@@ -58,6 +58,56 @@ class SecurityContextRequestIdentityProviderTest {
     }
 
     @Test
+    void shouldRejectIdentityClaimsThatWouldCollapseAfterNormalization() {
+        authenticate(jwtBuilder().subject(" subject-123").build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("preferred_username", "walker ")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("device_id", " installation-9")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+    }
+
+    @Test
+    void shouldRejectIdentityClaimsOutsideThePersistentBoundary() {
+        authenticate(jwtBuilder().subject("s".repeat(129)).build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("preferred_username", "a".repeat(129))
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .subject("subject" + (char) 0 + "suffix")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+    }
+
+    @Test
     void shouldResolveDevelopmentPrincipalWithoutTrustingControllerHeaders() {
         WalkingRpgPrincipal principal = new WalkingRpgPrincipal(
                 "dev-user",

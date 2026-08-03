@@ -429,6 +429,9 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
 41. Enum-like API/storage tokens канонизируются через locale-neutral Unicode
     casing; JVM default locale не меняет command routing, telemetry semantics
     или сохранённые platform/provider/cohort значения.
+42. Signed OIDC `sub`, actor и stable-device claims не нормализуются через
+    `trim`; граничный whitespace, control characters и не помещающиеся в
+    persistent identity columns значения отклоняются до controller.
 
 ## 10. Identity и authorization boundary
 
@@ -442,7 +445,7 @@ OIDC access token
 → controller/application command
 ```
 
-Базовый режим backend — `jwt`; demo endpoint выключен. `dev-header` существует только в явных `local`/`test` профилях и изолирует технические headers внутри одного filter-а. В production `/api/v1/admin/**` требует `ROLE_ADMIN`, остальные защищённые `/api/v1/**` — `ROLE_USER`.
+Базовый режим backend — `jwt`; demo endpoint выключен. `dev-header` существует только в явных `local`/`test` профилях и изолирует технические headers внутри одного filter-а. В production `/api/v1/admin/**` требует `ROLE_ADMIN`, остальные защищённые `/api/v1/**` — `ROLE_USER`. Signed identity claims проходят exact, fail-closed validation: backend не обрезает их и не позволяет двум различным `sub`/device values попасть в одну persistent partition из-за строковой нормализации.
 
 Activity device identity получается из подписанного session/device claim и хранится как SHA-256 pseudonym. Произвольный `X-Device-Id` в JWT mode игнорируется. На public application surface остаются system info, content bootstrap, bounded anonymous telemetry/crash ingestion и no-detail aliases `/livez`/`/readyz`. Actuator counterparts остаются на management boundary; metrics требуют `ROLE_ADMIN`.
 

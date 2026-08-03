@@ -109,6 +109,19 @@ class JwtSecurityIntegrationTest {
     }
 
     @Test
+    void shouldRejectAmbiguousSignedIdentityBeforeController() throws Exception {
+        mockMvc.perform(get("/api/v1/security/probe")
+                        .with(jwt()
+                                .jwt(token -> token
+                                        .issuer("https://identity.example.com")
+                                        .subject(" subject-123"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+    }
+
+    @Test
     void shouldRejectUserAuthorityFromAdminApi() throws Exception {
         mockMvc.perform(get("/api/v1/admin/security/probe")
                         .with(jwt()

@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SecurityContextRequestIdentityProvider implements RequestIdentityProvider {
 
+    private static final int MAXIMUM_PERSISTED_IDENTITY_LENGTH = 128;
     private static final Duration FUTURE_AUTHENTICATION_CLOCK_SKEW =
             Duration.ofSeconds(30);
     private static final BigInteger NANOSECONDS_PER_SECOND =
@@ -212,9 +213,21 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
     }
 
     private RequestIdentity fromJwt(Jwt jwt, Set<String> authorities) {
-        String subject = requireClaim(jwt.getSubject(), "sub");
-        String actor = optionalStringClaim(jwt, properties.getUsernameClaim()).orElse(subject);
-        String deviceSeed = optionalStringClaim(jwt, properties.getDeviceClaim()).orElse(null);
+        String subject = requireExactClaim(
+                jwt.getSubject(),
+                "sub",
+                MAXIMUM_PERSISTED_IDENTITY_LENGTH
+        );
+        String actor = optionalExactStringClaim(
+                jwt,
+                properties.getUsernameClaim(),
+                MAXIMUM_PERSISTED_IDENTITY_LENGTH
+        ).orElse(subject);
+        String deviceSeed = optionalExactStringClaim(
+                jwt,
+                properties.getDeviceClaim(),
+                null
+        ).orElse(null);
         String deviceId = deviceSeed == null
                 ? null
                 : sha256Hex(
@@ -229,7 +242,11 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
         return new RequestIdentity(subject, actor, deviceId, authorities);
     }
 
-    private Optional<String> optionalStringClaim(Jwt jwt, String claimName) {
+    private Optional<String> optionalExactStringClaim(
+            Jwt jwt,
+            String claimName,
+            Integer maximumLength
+    ) {
         if (claimName == null || claimName.isBlank()) {
             return Optional.empty();
         }
@@ -241,18 +258,46 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
             current = map.get(part);
         }
         if (current instanceof String text && !text.isBlank()) {
-            return Optional.of(text.trim());
+            return Optional.of(requireExactClaim(text, claimName, maximumLength));
         }
         return Optional.empty();
     }
 
-    private String requireClaim(String value, String claimName) {
+    private String requireExactClaim(
+            String value,
+            String claimName,
+            Integer maximumLength
+    ) {
         if (value == null || value.isBlank()) {
             throw new AuthenticationCredentialsNotFoundException(
                     "JWT не содержит обязательный claim " + claimName
             );
         }
-        return value.trim();
+        if (hasBoundaryWhitespace(value)
+                || value.codePoints().anyMatch(Character::isISOControl)) {
+            throw invalidIdentityClaim(claimName);
+        }
+        if (maximumLength != null && value.length() > maximumLength) {
+            throw invalidIdentityClaim(claimName);
+        }
+        return value;
+    }
+
+    private boolean hasBoundaryWhitespace(String value) {
+        int first = value.codePointAt(0);
+        int last = value.codePointBefore(value.length());
+        return Character.isWhitespace(first)
+                || Character.isSpaceChar(first)
+                || Character.isWhitespace(last)
+                || Character.isSpaceChar(last);
+    }
+
+    private AuthenticationCredentialsNotFoundException invalidIdentityClaim(
+            String claimName
+    ) {
+        return new AuthenticationCredentialsNotFoundException(
+                "JWT содержит некорректный identity claim " + claimName
+        );
     }
 
     private String requireIssuer(Jwt jwt) {
