@@ -75,6 +75,7 @@ class HomeScreen extends StatefulWidget {
     this.recoveryCount = 0,
     this.recoveryUnavailable = false,
     this.authoritativeRefreshGeneration = 0,
+    this.activitySyncAction,
   });
 
   final HomeSnapshotLoader? loader;
@@ -90,6 +91,7 @@ class HomeScreen extends StatefulWidget {
   final int recoveryCount;
   final bool recoveryUnavailable;
   final int authoritativeRefreshGeneration;
+  final Widget? activitySyncAction;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -276,6 +278,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onUnequip: (HomeEquipmentSlot slot) =>
                       _unequip(snapshot, slot),
                   onRefresh: _reload,
+                  activitySyncAction: widget.activitySyncAction,
                 );
               },
         ),
@@ -761,6 +764,7 @@ class _HomeBody extends StatelessWidget {
     required this.onEquip,
     required this.onUnequip,
     required this.onRefresh,
+    required this.activitySyncAction,
   });
 
   final HomeSnapshot snapshot;
@@ -780,6 +784,7 @@ class _HomeBody extends StatelessWidget {
   final ValueChanged<HomeInventoryItem> onEquip;
   final ValueChanged<HomeEquipmentSlot> onUnequip;
   final VoidCallback onRefresh;
+  final Widget? activitySyncAction;
 
   @override
   Widget build(BuildContext context) {
@@ -826,7 +831,12 @@ class _HomeBody extends StatelessWidget {
         children: <Widget>[
           ListView(
             controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 220),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              14,
+              20,
+              activitySyncAction == null ? 220 : 300,
+            ),
             children: <Widget>[
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -961,15 +971,27 @@ class _HomeBody extends StatelessWidget {
                       ? ExpeditionPanelTone.resonance
                       : ExpeditionPanelTone.energy,
                   padding: const EdgeInsets.all(10),
-                  child: FilledButton.icon(
-                    onPressed: actionDisabled ? null : onAdvance,
-                    icon: isAdvancing
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.near_me_outlined),
-                    label: Text(actionLabel),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (activitySyncAction != null) ...<Widget>[
+                        activitySyncAction!,
+                        const SizedBox(height: 8),
+                      ],
+                      FilledButton.icon(
+                        onPressed: actionDisabled ? null : onAdvance,
+                        icon: isAdvancing
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.near_me_outlined),
+                        label: Text(actionLabel),
+                      ),
+                    ],
                   ),
                 ),
               ),
