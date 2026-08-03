@@ -393,6 +393,21 @@ does not reinterpret identity, queue state or any destructive boundary.
 - the complete route is verified at `320 × 640 / 1.6×` without changing export
   ownership, owner-scoped command state, idempotency or session lifecycle.
 
+## Adaptive expedition navigation
+
+The two primary player destinations keep one stable state boundary while the
+navigation chrome adapts to the space assigned by its parent.
+
+- phone and compact layouts retain the floating bottom dock, with reduced side
+  reserve below `360 px` so both labelled destinations remain complete;
+- layouts at `960 px` and wider move the same destinations into a persistent
+  expedition rail, leaving the content surface free of an unnecessary bottom
+  overlay;
+- both compositions reuse the same selected index, `IndexedStack`, destination
+  visibility and `onDestinationChanged` callback;
+- the shell does not add routes, content, commands or read-model assumptions;
+- compact and wide compositions are verified with enlarged system text.
+
 ## Next visual slices
 
 1. Turn the expedition chapter into a visual route map only from an
