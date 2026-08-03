@@ -407,6 +407,9 @@ navigation chrome adapts to the space assigned by its parent.
   visibility and `onDestinationChanged` callback;
 - one stable keyed destination slot moves inside the same shell row, preserving
   scroll position, draft input and loader state across resize or rotation;
+- descendants receive the actual bottom-dock obstruction: compact Home and
+  Journal retain their navigation clearance, while the wide rail removes that
+  reserve and keeps only action/footer spacing;
 - the shell does not add routes, content, commands or read-model assumptions;
 - compact and wide compositions are verified with enlarged system text.
 

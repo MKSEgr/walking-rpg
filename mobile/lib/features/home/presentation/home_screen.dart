@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
+import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
@@ -60,6 +61,10 @@ typedef HomeImpressionRecorder =
 typedef IdempotencyKeyFactory = String Function();
 
 enum _HomeAppAction { refresh, account }
+
+const double _homeStickyActionBaseBottom = 20;
+const double _homeContentBaseBottomPadding = 138;
+const double _homeContentWithSyncBaseBottomPadding = 218;
 
 double _effectiveTextScale(BuildContext context) {
   return MediaQuery.textScalerOf(context).scale(16) / 16;
@@ -788,6 +793,9 @@ class _HomeReadState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Widget? action = activitySyncAction;
+    final double bottomDockInset = NavigationChromeInsets.bottomDockInsetOf(
+      context,
+    );
     if (action == null) {
       return ExpeditionBackdrop(child: child);
     }
@@ -797,14 +805,16 @@ class _HomeReadState extends StatelessWidget {
         children: <Widget>[
           Positioned.fill(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 220),
+              padding: EdgeInsets.only(
+                bottom: _homeContentBaseBottomPadding + bottomDockInset,
+              ),
               child: child,
             ),
           ),
           Positioned(
             left: 20,
             right: 20,
-            bottom: 102,
+            bottom: _homeStickyActionBaseBottom + bottomDockInset,
             child: SafeArea(
               top: false,
               child: ExpeditionPanel(
@@ -864,6 +874,9 @@ class _HomeBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double bottomDockInset = NavigationChromeInsets.bottomDockInsetOf(
+      context,
+    );
     final String lastSync = snapshot.lastActivitySyncAt == null
         ? 'Шаги ещё не синхронизированы'
         : 'Последняя синхронизация: ${snapshot.lastActivitySyncAt}';
@@ -911,7 +924,10 @@ class _HomeBody extends StatelessWidget {
               20,
               14,
               20,
-              activitySyncAction == null ? 220 : 300,
+              (activitySyncAction == null
+                      ? _homeContentBaseBottomPadding
+                      : _homeContentWithSyncBaseBottomPadding) +
+                  bottomDockInset,
             ),
             children: <Widget>[
               Column(
@@ -1013,7 +1029,7 @@ class _HomeBody extends StatelessWidget {
           Positioned(
             left: 20,
             right: 20,
-            bottom: 102,
+            bottom: _homeStickyActionBaseBottom + bottomDockInset,
             child: SafeArea(
               top: false,
               child: SizedBox(

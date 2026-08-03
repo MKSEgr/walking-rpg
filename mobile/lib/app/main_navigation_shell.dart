@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -38,7 +39,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               if (wide) const SizedBox(width: 12),
               Expanded(
                 key: const Key('main-navigation-destinations'),
-                child: _buildDestinations(),
+                child: NavigationChromeInsets(
+                  bottomDockInset: wide
+                      ? 0
+                      : NavigationChromeInsets.compactBottomDockInset,
+                  child: _buildDestinations(),
+                ),
               ),
             ],
           ),

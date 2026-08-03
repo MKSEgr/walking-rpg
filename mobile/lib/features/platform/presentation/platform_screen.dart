@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
+import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
@@ -25,7 +26,7 @@ const Map<String, String> _onboardingNames = <String, String>{
 };
 
 const String _sandboxPurchaseCommand = 'BUY_COSMETIC';
-const double _platformNavigationReserve = 128;
+const double _platformBaseBottomReserve = 46;
 
 enum _PlatformAppAction { refresh, account }
 
@@ -509,6 +510,9 @@ class _PlatformBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final PlatformSnapshot snapshot = data.platform;
+    final double bottomDockInset = NavigationChromeInsets.bottomDockInsetOf(
+      context,
+    );
     final bool readOnly = snapshot.isCached;
     final bool blocked = _busy || readOnly;
     final String energyCopy =
@@ -521,11 +525,11 @@ class _PlatformBody extends StatelessWidget {
       onRefresh: () async => onRefresh(),
       child: ListView(
         key: const Key('platform-screen-list'),
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           16,
           16,
           16,
-          _platformNavigationReserve,
+          _platformBaseBottomReserve + bottomDockInset,
         ),
         children: <Widget>[
           if (snapshot.cacheMetadata != null) ...<Widget>[

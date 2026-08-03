@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
+import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
+import 'package:walking_rpg_mobile/features/platform/presentation/platform_screen.dart';
+
+import 'support/platform_fixture.dart';
 
 void main() {
   testWidgets('switches between expedition and platform journal', (
@@ -184,6 +189,63 @@ void main() {
     expect(find.text('Несохранённая заметка'), findsOneWidget);
     expect(tester.state(find.byType(EditableText)), same(compactEditableState));
     expect(selections, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('wide rail removes compact dock reserves from destinations', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1180, 820));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: MainNavigationShell(
+          home: HomeScreen(loader: () async => HomeSnapshot.demo),
+          platform: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => HomeSnapshot.demo,
+            recordExperimentExposures: false,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final double viewportBottom = tester
+        .getBottomRight(find.byKey(const Key('main-navigation-stack')))
+        .dy;
+    final double actionBottom = tester
+        .getBottomRight(find.byKey(const Key('home-sticky-action-panel')))
+        .dy;
+    expect(viewportBottom - actionBottom, closeTo(20, 1));
+
+    await tester.tap(find.byKey(const Key('navigation-platform-wide')));
+    await tester.pumpAndSettle();
+
+    final Finder journalScrollable = find.descendant(
+      of: find.byKey(const Key('platform-screen-list')),
+      matching: find.byType(Scrollable),
+    );
+    final ScrollableState scrollable = tester.state<ScrollableState>(
+      journalScrollable,
+    );
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+    await tester.pump();
+
+    final double footerBottom = tester
+        .getBottomRight(find.byKey(const Key('platform-journal-footer')))
+        .dy;
+    expect(viewportBottom - footerBottom, closeTo(46, 1));
     expect(tester.takeException(), isNull);
   });
 }
