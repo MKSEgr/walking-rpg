@@ -16,7 +16,9 @@ import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
+import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
 import com.walkingrpg.backend.platform.domain.PlatformUserState;
+import com.walkingrpg.backend.platform.domain.ProcessedPlatformCommand;
 import com.walkingrpg.backend.platform.infrastructure.InMemoryPlatformRepository;
 import com.walkingrpg.backend.platform.payment.DisabledPaymentProvider;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
@@ -279,6 +281,113 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldSharePurchaseIdempotencyAcrossCommandAliases() throws Exception {
+        platformRepository.setRemoteConfig(remoteConfig(true, false));
+        Map<String, Object> payload = Map.of("cosmeticId", "spark-halo");
+        PlatformCommandRequest legacyRequest = command(
+                "BUY_COSMETIC",
+                "shared-purchase-alias",
+                payload
+        );
+
+        PlatformCommandResponse first = service.execute("alias-user", legacyRequest);
+        PlatformCommandResponse replayed = service.execute("alias-user", command(
+                "PURCHASE_COSMETIC",
+                "shared-purchase-alias",
+                payload
+        ));
+
+        assertEquals(first, replayed);
+        assertEquals("BUY_COSMETIC", first.commandType());
+        assertEquals(1, platformRepository.paymentCount());
+        assertEquals(2, platformRepository.processedCommandCount());
+        assertEquals(1, platformRepository.eventCount());
+
+        JsonMapper mapper = JsonMapper.builder().findAndAddModules().build();
+        ProcessedPlatformCommand legacyProcessed = platformRepository.findProcessed(
+                new PlatformCommandScope(
+                        "alias-user",
+                        "BUY_COSMETIC",
+                        "shared-purchase-alias"
+                )
+        ).orElseThrow();
+        assertEquals(
+                PlatformCommandFingerprint.sha256(mapper, "BUY_COSMETIC", payload),
+                legacyProcessed.requestFingerprint()
+        );
+        assertEquals(
+                first,
+                mapper.readValue(
+                        legacyProcessed.responseJson(),
+                        PlatformCommandResponse.class
+                )
+        );
+
+        assertThrows(PlatformIdempotencyConflictException.class, () ->
+                service.execute("alias-user", command(
+                        "PURCHASE_COSMETIC",
+                        "shared-purchase-alias",
+                        Map.of("cosmeticId", "trail-banner")
+                ))
+        );
+        PlatformSnapshotResponse snapshot = service.getSnapshot("alias-user");
+        assertTrue(collection(snapshot.userState(), "ownedCosmetics")
+                .contains("spark-halo"));
+        assertFalse(collection(snapshot.userState(), "ownedCosmetics")
+                .contains("trail-banner"));
+        assertEquals(1, platformRepository.paymentCount());
+        assertEquals(2, platformRepository.processedCommandCount());
+        assertEquals(1, platformRepository.eventCount());
+    }
+
+    @Test
+    void shouldReplayLegacyBuyCosmeticRecordThroughCanonicalAlias() throws Exception {
+        platformRepository.setRemoteConfig(remoteConfig(true, false));
+        String userId = "legacy-alias-user";
+        String idempotencyKey = "legacy-buy-record";
+        Map<String, Object> payload = Map.of("cosmeticId", "spark-halo");
+        PlatformSnapshotResponse snapshot = service.getSnapshot(userId);
+        PlatformCommandResponse legacyResponse = new PlatformCommandResponse(
+                "BUY_COSMETIC",
+                idempotencyKey,
+                "Sandbox-покупка выполнена",
+                snapshot.stateVersion(),
+                snapshot,
+                NOW
+        );
+        JsonMapper mapper = JsonMapper.builder().findAndAddModules().build();
+        String legacyResponseJson = mapper.writeValueAsString(legacyResponse);
+        PlatformCommandResponse persistedLegacyResponse = mapper.readValue(
+                legacyResponseJson,
+                PlatformCommandResponse.class
+        );
+        platformRepository.saveProcessed(
+                new PlatformCommandScope(userId, "BUY_COSMETIC", idempotencyKey),
+                new ProcessedPlatformCommand(
+                        PlatformCommandFingerprint.sha256(
+                                mapper,
+                                "BUY_COSMETIC",
+                                payload
+                        ),
+                        legacyResponseJson
+                ),
+                NOW
+        );
+
+        PlatformCommandResponse replayed = service.execute(userId, command(
+                "PURCHASE_COSMETIC",
+                idempotencyKey,
+                payload
+        ));
+
+        assertEquals(persistedLegacyResponse, replayed);
+        assertEquals(0, platformRepository.paymentCount());
+        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(0, platformRepository.eventCount());
+        assertTrue(platformRepository.findState(userId).isEmpty());
+    }
+
+    @Test
     void shouldRejectUnavailablePurchaseBeforeStateOrAnyOtherWrite() {
         platformRepository.setRemoteConfig(remoteConfig(true, true));
         PlatformService disabledService = service(new DisabledPaymentProvider());
@@ -333,7 +442,7 @@ class PlatformServiceTest {
         assertFalse((Boolean) replayed.snapshot().remoteConfig()
                 .get("backgroundHealthSyncEnabled"));
         assertEquals(1, platformRepository.paymentCount());
-        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(2, platformRepository.processedCommandCount());
         assertEquals(1, platformRepository.eventCount());
         assertThrows(PlatformIdempotencyConflictException.class, () ->
                 disabledService.execute("provider-user", command(
