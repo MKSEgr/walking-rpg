@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
+
+import 'support/platform_fixture.dart';
 
 void main() {
   testWidgets('activity sync reloads authoritative home state', (
@@ -57,6 +62,158 @@ void main() {
     expect(find.text('Доступная энергия: 68 · версия 1'), findsOneWidget);
   });
 
+  testWidgets('activity sync shares the Home action dock without an overlay', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ActivitySyncShell(
+          synchronizer: () async => _syncResult(),
+          homeLoader: () async => HomeSnapshot.demo,
+          platformLoader: () async => platformSnapshot(),
+          platformHomeLoader: () async => HomeSnapshot.demo,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder actionDock = find.byKey(const Key('home-sticky-action-panel'));
+    final Finder syncButton = find.byKey(const Key('activity-sync-button'));
+    expect(syncButton, findsOneWidget);
+    expect(
+      find.descendant(of: actionDock, matching: syncButton),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('activity-sync-standalone-panel')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('activity sync remains visible across Home read states', (
+    WidgetTester tester,
+  ) async {
+    final Completer<HomeSnapshot> homeResult = Completer<HomeSnapshot>();
+    final Completer<ActivitySyncResult> syncResult =
+        Completer<ActivitySyncResult>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ActivitySyncShell(
+          synchronizer: () => syncResult.future,
+          homeLoader: () => homeResult.future,
+          platformLoader: () async => platformSnapshot(),
+          platformHomeLoader: () async => HomeSnapshot.demo,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final Finder actionDock = find.byKey(const Key('home-sticky-action-panel'));
+    final Finder syncButton = find.byKey(const Key('activity-sync-button'));
+    expect(find.byKey(const Key('home-loading-state')), findsOneWidget);
+    expect(
+      find.descendant(of: actionDock, matching: syncButton),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('activity-sync-standalone-panel')),
+      findsNothing,
+    );
+
+    await tester.tap(syncButton);
+    await tester.pump();
+
+    expect(find.text('Синхронизация шагов...'), findsOneWidget);
+    expect(find.byKey(const Key('command-recovery-progress')), findsOneWidget);
+
+    homeResult.completeError(StateError('Backend недоступен'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('home-error-state')), findsOneWidget);
+    expect(
+      find.descendant(of: actionDock, matching: syncButton),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('command-recovery-progress')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    syncResult.complete(_syncResult());
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-error-state')), findsOneWidget);
+    expect(find.byKey(const Key('activity-sync-button')), findsOneWidget);
+    expect(find.byKey(const Key('command-recovery-progress')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('standalone activity sync action supports compact text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final Completer<ActivitySyncResult> result =
+        Completer<ActivitySyncResult>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: ActivitySyncShell(
+          synchronizer: () => result.future,
+          homeBuilder: (Key key) => Scaffold(
+            key: key,
+            body: const Center(child: Text('Полевой экран')),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder standalonePanel = find.byKey(
+      const Key('activity-sync-standalone-panel'),
+    );
+    final Finder syncButton = find.byKey(const Key('activity-sync-button'));
+    expect(standalonePanel, findsOneWidget);
+    expect(syncButton, findsOneWidget);
+    expect(find.byKey(const Key('home-sticky-action-panel')), findsNothing);
+    expect(tester.getSize(standalonePanel).width, lessThanOrEqualTo(288));
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(syncButton);
+    await tester.pump();
+
+    final Text busyLabel = tester.widget<Text>(
+      find.text('Синхронизация шагов...'),
+    );
+    expect(busyLabel.maxLines, 2);
+    expect(busyLabel.overflow, TextOverflow.visible);
+    final Semantics status = tester.widget<Semantics>(
+      find.byKey(const Key('activity-sync-status')),
+    );
+    expect(status.properties.liveRegion, isTrue);
+    expect(find.byKey(const Key('command-recovery-progress')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    result.complete(_syncResult());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    semantics.dispose();
+  });
+
   testWidgets('test activity control is absent without an explicit source', (
     WidgetTester tester,
   ) async {
@@ -72,6 +229,19 @@ void main() {
 
     expect(find.byKey(const Key('activity-sync-button')), findsNothing);
   });
+}
+
+ActivitySyncResult _syncResult() {
+  return const ActivitySyncResult(
+    acceptedTotal: 6842,
+    acceptedDelta: 6842,
+    energyGranted: 68,
+    energyBalanceAfter: 68,
+    economyVersion: 1,
+    riskStatus: 'ACCEPTED',
+    stateVersion: 1,
+    serverTime: '2026-07-26T07:00:00Z',
+  );
 }
 
 HomeSnapshot _beforeSync() {

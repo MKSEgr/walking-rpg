@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/application/activity_sync_coordinator.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
@@ -97,38 +99,33 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
 
   @override
   Widget build(BuildContext context) {
-    final Widget home = _buildHome();
-    if (_synchronizer == null ||
-        _buttonLabel == null ||
+    final Widget? activitySyncAction = _buildActivitySyncAction();
+    final Widget home = _buildHome(activitySyncAction: activitySyncAction);
+    if (activitySyncAction == null ||
+        widget.homeBuilder == null ||
         _selectedDestination != 0) {
       return home;
     }
 
-    final bool busy = _isSyncing || _isRecovering;
-    final double buttonBottom = widget.homeBuilder == null ? 92 : 20;
     return Stack(
       children: <Widget>[
         home,
         Positioned(
+          left: 16,
           right: 16,
-          bottom: buttonBottom,
+          bottom: 20,
           child: SafeArea(
-            child: FloatingActionButton.extended(
-              key: const Key('activity-sync-button'),
-              onPressed: busy ? null : _sync,
-              icon: busy
-                  ? const SizedBox.square(
-                      key: Key('command-recovery-progress'),
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.sync),
-              label: Text(
-                _isRecovering
-                    ? 'Восстановление команд...'
-                    : _isSyncing
-                    ? 'Синхронизация шагов...'
-                    : _buttonLabel!,
+            top: false,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: ExpeditionPanel(
+                  key: const Key('activity-sync-standalone-panel'),
+                  tone: ExpeditionPanelTone.lumen,
+                  padding: const EdgeInsets.all(8),
+                  child: activitySyncAction,
+                ),
               ),
             ),
           ),
@@ -137,7 +134,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     );
   }
 
-  Widget _buildHome() {
+  Widget _buildHome({required Widget? activitySyncAction}) {
     final Key key = ValueKey<int>(_homeGeneration);
     final ActivityHomeBuilder? builder = widget.homeBuilder;
     if (builder != null) {
@@ -159,6 +156,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         recoveryCount: widget.recoveryCount,
         recoveryUnavailable: widget.recoveryUnavailable,
         authoritativeRefreshGeneration: widget.authoritativeRefreshGeneration,
+        activitySyncAction: activitySyncAction,
       ),
       platform: PlatformScreen(
         key: ValueKey<String>('platform-$_platformGeneration'),
@@ -174,6 +172,22 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         authoritativeRefreshGeneration: widget.authoritativeRefreshGeneration,
       ),
       onDestinationChanged: _handleDestinationChanged,
+    );
+  }
+
+  Widget? _buildActivitySyncAction() {
+    if (_synchronizer == null || _buttonLabel == null) {
+      return null;
+    }
+    final bool busy = _isSyncing || _isRecovering;
+    return _ActivitySyncAction(
+      busy: busy,
+      label: _isRecovering
+          ? 'Восстановление команд...'
+          : _isSyncing
+          ? 'Синхронизация шагов...'
+          : _buttonLabel!,
+      onPressed: _sync,
     );
   }
 
@@ -374,5 +388,69 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         });
       }
     }
+  }
+}
+
+class _ActivitySyncAction extends StatelessWidget {
+  const _ActivitySyncAction({
+    required this.busy,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final bool busy;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    return Semantics(
+      key: const Key('activity-sync-status'),
+      container: true,
+      liveRegion: true,
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          key: const Key('activity-sync-button'),
+          onPressed: busy ? null : onPressed,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 56),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            foregroundColor: palette.energy,
+            disabledForegroundColor: colors.onSurfaceVariant,
+            backgroundColor: Color.alphaBlend(
+              palette.energy.withValues(alpha: 0.07),
+              colors.surfaceContainerHigh,
+            ),
+            disabledBackgroundColor: colors.surfaceContainerHigh.withValues(
+              alpha: 0.74,
+            ),
+            side: BorderSide(
+              color: busy
+                  ? colors.outlineVariant
+                  : palette.energy.withValues(alpha: 0.48),
+            ),
+          ),
+          icon: busy
+              ? SizedBox.square(
+                  key: const Key('command-recovery-progress'),
+                  dimension: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.onSurfaceVariant,
+                  ),
+                )
+              : const Icon(Icons.directions_walk_outlined),
+          label: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.visible,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
   }
 }
