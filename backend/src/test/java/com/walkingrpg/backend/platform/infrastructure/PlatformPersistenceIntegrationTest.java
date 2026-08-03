@@ -37,9 +37,12 @@ import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.api.PlatformSnapshotResponse;
 import com.walkingrpg.backend.platform.application.AccountDeletionReceipt;
 import com.walkingrpg.backend.platform.application.PlatformAdminService;
+import com.walkingrpg.backend.platform.application.PlatformCommandFingerprint;
 import com.walkingrpg.backend.platform.application.PlatformContentCatalog;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
 import com.walkingrpg.backend.platform.application.PlatformService;
+import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
+import com.walkingrpg.backend.platform.domain.ProcessedPlatformCommand;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
@@ -177,6 +180,103 @@ class PlatformPersistenceIntegrationTest {
                         Map.of("stepId", "first-sync")
                 ))
         );
+    }
+
+    @Test
+    void shouldPersistOnePurchaseAcrossLegacyAndCanonicalCommandAliases() throws Exception {
+        String userId = "payment-alias-user";
+        String idempotencyKey = "payment-alias-once";
+        Map<String, Object> payload = Map.of("cosmeticId", "spark-halo");
+        platformAdminService.updateRemoteConfig(
+                "payment-alias-test",
+                "payment-alias-enabled",
+                paymentRemoteConfig(true)
+        );
+
+        try {
+            PlatformCommandResponse first = platformService.execute(
+                    userId,
+                    new PlatformCommandRequest(
+                            "BUY_COSMETIC",
+                            idempotencyKey,
+                            payload
+                    )
+            );
+            ProcessedPlatformCommand legacyProcessed = platformRepository.findProcessed(
+                    new PlatformCommandScope(
+                            userId,
+                            "BUY_COSMETIC",
+                            idempotencyKey
+                    )
+            ).orElseThrow();
+            PlatformCommandResponse legacyInstanceReplay = objectMapper.readValue(
+                    legacyProcessed.responseJson(),
+                    PlatformCommandResponse.class
+            );
+            PlatformCommandResponse replayed = platformService.execute(
+                    userId,
+                    new PlatformCommandRequest(
+                            "PURCHASE_COSMETIC",
+                            idempotencyKey,
+                            payload
+                    )
+            );
+
+            assertEquals(first, legacyInstanceReplay);
+            assertEquals(first, replayed);
+            assertEquals("BUY_COSMETIC", first.commandType());
+            assertEquals(
+                    PlatformCommandFingerprint.sha256(
+                            objectMapper,
+                            "BUY_COSMETIC",
+                            payload
+                    ),
+                    legacyProcessed.requestFingerprint()
+            );
+            assertEquals(1, rowCount("payment_intent"));
+            assertEquals(2, rowCount("processed_roadmap_command"));
+            assertEquals(List.of("BUY_COSMETIC", "PURCHASE_COSMETIC"),
+                    jdbcTemplate.queryForList("""
+                    SELECT command_type
+                    FROM processed_roadmap_command
+                    WHERE user_id = 'payment-alias-user'
+                    ORDER BY command_type
+                    """, String.class));
+            assertEquals(1L, jdbcTemplate.queryForObject("""
+                    SELECT count(DISTINCT response_json)
+                    FROM processed_roadmap_command
+                    WHERE user_id = 'payment-alias-user'
+                    """, Long.class));
+            assertEquals("spark-halo", scalarString("""
+                    SELECT product_id
+                    FROM payment_intent
+                    WHERE user_id = 'payment-alias-user'
+                    """));
+
+            assertThrows(PlatformIdempotencyConflictException.class, () ->
+                    platformService.execute(
+                            userId,
+                            new PlatformCommandRequest(
+                                    "PURCHASE_COSMETIC",
+                                    idempotencyKey,
+                                    Map.of("cosmeticId", "trail-banner")
+                            )
+                    )
+            );
+            assertEquals(1, rowCount("payment_intent"));
+            assertEquals(2, rowCount("processed_roadmap_command"));
+            assertFalse(Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                    SELECT (state_json -> 'ownedCosmetics') @> '["trail-banner"]'::jsonb
+                    FROM roadmap_user_state
+                    WHERE user_id = ?
+                    """, Boolean.class, userId)));
+        } finally {
+            platformAdminService.updateRemoteConfig(
+                    "payment-alias-test",
+                    "payment-alias-disabled",
+                    paymentRemoteConfig(false)
+            );
+        }
     }
 
     @Test
@@ -1292,6 +1392,17 @@ class PlatformPersistenceIntegrationTest {
                 "seasonId", seasonId,
                 "weeklyRouteEnergy", 120,
                 "sandboxPaymentsEnabled", false,
+                "weeklyRouteEnabled", true
+        );
+    }
+
+    private Map<String, Object> paymentRemoteConfig(boolean enabled) {
+        return Map.of(
+                "backgroundHealthSyncEnabled", false,
+                "activityRetentionDays", 30,
+                "seasonId", "season-1",
+                "weeklyRouteEnergy", 120,
+                "sandboxPaymentsEnabled", enabled,
                 "weeklyRouteEnabled", true
         );
     }
