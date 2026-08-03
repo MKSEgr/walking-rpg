@@ -405,6 +405,8 @@ navigation chrome adapts to the space assigned by its parent.
   overlay;
 - both compositions reuse the same selected index, `IndexedStack`, destination
   visibility and `onDestinationChanged` callback;
+- one stable keyed destination slot moves inside the same shell row, preserving
+  scroll position, draft input and loader state across resize or rotation;
 - the shell does not add routes, content, commands or read-model assumptions;
 - compact and wide compositions are verified with enlarged system text.
 

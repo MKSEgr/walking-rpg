@@ -63,7 +63,7 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const Key('main-navigation-compact')), findsOneWidget);
+    expect(find.byKey(const Key('main-navigation-shell')), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(NavigationRail), findsNothing);
     expect(
@@ -107,7 +107,7 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const Key('main-navigation-wide')), findsOneWidget);
+    expect(find.byKey(const Key('main-navigation-shell')), findsOneWidget);
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.text('ПОЛЕВОЙ ТЕРМИНАЛ'), findsOneWidget);
@@ -135,6 +135,55 @@ void main() {
 
     expect(selections, <int>[1, 0]);
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps destination state while crossing the breakpoint', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 700));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final List<int> selections = <int>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: MainNavigationShell(
+          home: const Padding(
+            padding: EdgeInsets.all(24),
+            child: TextField(
+              key: Key('navigation-destination-draft'),
+              decoration: InputDecoration(labelText: 'Полевая заметка'),
+            ),
+          ),
+          platform: const Center(child: Text('stateful-platform-content')),
+          onDestinationChanged: selections.add,
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('navigation-destination-draft')),
+      'Несохранённая заметка',
+    );
+    await tester.pump();
+    final Object compactEditableState = tester.state(find.byType(EditableText));
+
+    await tester.binding.setSurfaceSize(const Size(1180, 820));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.text('Несохранённая заметка'), findsOneWidget);
+    expect(tester.state(find.byType(EditableText)), same(compactEditableState));
+    expect(selections, isEmpty);
+
+    await tester.binding.setSurfaceSize(const Size(800, 700));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('Несохранённая заметка'), findsOneWidget);
+    expect(tester.state(find.byType(EditableText)), same(compactEditableState));
+    expect(selections, isEmpty);
     expect(tester.takeException(), isNull);
   });
 }
