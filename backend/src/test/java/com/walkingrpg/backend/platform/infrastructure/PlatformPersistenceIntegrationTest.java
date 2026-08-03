@@ -180,6 +180,75 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldPersistOnePurchaseAcrossLegacyAndCanonicalCommandAliases() {
+        String userId = "payment-alias-user";
+        String idempotencyKey = "payment-alias-once";
+        platformAdminService.updateRemoteConfig(
+                "payment-alias-test",
+                "payment-alias-enabled",
+                paymentRemoteConfig(true)
+        );
+
+        try {
+            PlatformCommandResponse first = platformService.execute(
+                    userId,
+                    new PlatformCommandRequest(
+                            "BUY_COSMETIC",
+                            idempotencyKey,
+                            Map.of("cosmeticId", "spark-halo")
+                    )
+            );
+            PlatformCommandResponse replayed = platformService.execute(
+                    userId,
+                    new PlatformCommandRequest(
+                            "PURCHASE_COSMETIC",
+                            idempotencyKey,
+                            Map.of("cosmeticId", "spark-halo")
+                    )
+            );
+
+            assertEquals(first, replayed);
+            assertEquals("BUY_COSMETIC", first.commandType());
+            assertEquals(1, rowCount("payment_intent"));
+            assertEquals(1, rowCount("processed_roadmap_command"));
+            assertEquals("PURCHASE_COSMETIC", scalarString("""
+                    SELECT command_type
+                    FROM processed_roadmap_command
+                    WHERE user_id = 'payment-alias-user'
+                    """));
+            assertEquals("spark-halo", scalarString("""
+                    SELECT product_id
+                    FROM payment_intent
+                    WHERE user_id = 'payment-alias-user'
+                    """));
+
+            assertThrows(PlatformIdempotencyConflictException.class, () ->
+                    platformService.execute(
+                            userId,
+                            new PlatformCommandRequest(
+                                    "PURCHASE_COSMETIC",
+                                    idempotencyKey,
+                                    Map.of("cosmeticId", "trail-banner")
+                            )
+                    )
+            );
+            assertEquals(1, rowCount("payment_intent"));
+            assertEquals(1, rowCount("processed_roadmap_command"));
+            assertFalse(Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                    SELECT (state_json -> 'ownedCosmetics') @> '["trail-banner"]'::jsonb
+                    FROM roadmap_user_state
+                    WHERE user_id = ?
+                    """, Boolean.class, userId)));
+        } finally {
+            platformAdminService.updateRemoteConfig(
+                    "payment-alias-test",
+                    "payment-alias-disabled",
+                    paymentRemoteConfig(false)
+            );
+        }
+    }
+
+    @Test
     void shouldSerializeOwnerDeletionWithLastMemberLeave() throws Exception {
         String ownerId = "squad-delete-owner";
         String memberId = "squad-leave-member";
@@ -1292,6 +1361,17 @@ class PlatformPersistenceIntegrationTest {
                 "seasonId", seasonId,
                 "weeklyRouteEnergy", 120,
                 "sandboxPaymentsEnabled", false,
+                "weeklyRouteEnabled", true
+        );
+    }
+
+    private Map<String, Object> paymentRemoteConfig(boolean enabled) {
+        return Map.of(
+                "backgroundHealthSyncEnabled", false,
+                "activityRetentionDays", 30,
+                "seasonId", "season-1",
+                "weeklyRouteEnergy", 120,
+                "sandboxPaymentsEnabled", enabled,
                 "weeklyRouteEnabled", true
         );
     }

@@ -43,6 +43,8 @@ public class PlatformService {
 
     private static final String DEFAULT_PET_ID = "spark-v1";
     private static final String DEFAULT_COSMETIC_ID = "pilot-scarf";
+    private static final String PURCHASE_COSMETIC_COMMAND = "PURCHASE_COSMETIC";
+    private static final String LEGACY_BUY_COSMETIC_COMMAND = "BUY_COSMETIC";
 
     private final PlatformRepository repository;
     private final PlatformContentCatalog content;
@@ -101,7 +103,11 @@ public class PlatformService {
             PlatformCommandRequest request
     ) {
         String normalizedUserId = requireText(userId, "userId");
-        String commandType = requireText(request.commandType(), "commandType").toUpperCase();
+        String requestedCommandType = requireText(
+                request.commandType(),
+                "commandType"
+        ).toUpperCase();
+        String commandType = canonicalCommandType(requestedCommandType);
         Instant serverTime = now();
         repository.acquireUserLock(normalizedUserId);
 
@@ -117,10 +123,24 @@ public class PlatformService {
         );
         ProcessedPlatformCommand processed = repository.findProcessed(scope).orElse(null);
         if (processed != null) {
-            if (!processed.requestFingerprint().equals(fingerprint)) {
-                throw new PlatformIdempotencyConflictException();
+            return replay(processed, fingerprint);
+        }
+        if (PURCHASE_COSMETIC_COMMAND.equals(commandType)) {
+            PlatformCommandScope legacyScope = new PlatformCommandScope(
+                    normalizedUserId,
+                    LEGACY_BUY_COSMETIC_COMMAND,
+                    request.idempotencyKey()
+            );
+            ProcessedPlatformCommand legacy = repository.findProcessed(legacyScope)
+                    .orElse(null);
+            if (legacy != null) {
+                String legacyFingerprint = PlatformCommandFingerprint.sha256(
+                        objectMapper,
+                        LEGACY_BUY_COSMETIC_COMMAND,
+                        request.payload()
+                );
+                return replay(legacy, legacyFingerprint);
             }
-            return withEffectiveRemoteConfig(readResponse(processed.responseJson()));
         }
         if ("RECORD_COMPASS_IMPRESSION".equals(commandType)) {
             return executeCompassImpression(
@@ -164,7 +184,7 @@ public class PlatformService {
 
         PlatformProgressFacts factsAfter = progressFactsProvider.factsFor(normalizedUserId);
         PlatformCommandResponse response = new PlatformCommandResponse(
-                commandType,
+                requestedCommandType,
                 scope.idempotencyKey(),
                 mutation.message(),
                 updated.version(),
@@ -179,6 +199,22 @@ public class PlatformService {
                 serverTime
         );
         return canonicalResponse;
+    }
+
+    private PlatformCommandResponse replay(
+            ProcessedPlatformCommand processed,
+            String expectedFingerprint
+    ) {
+        if (!processed.requestFingerprint().equals(expectedFingerprint)) {
+            throw new PlatformIdempotencyConflictException();
+        }
+        return withEffectiveRemoteConfig(readResponse(processed.responseJson()));
+    }
+
+    private String canonicalCommandType(String commandType) {
+        return LEGACY_BUY_COSMETIC_COMMAND.equals(commandType)
+                ? PURCHASE_COSMETIC_COMMAND
+                : commandType;
     }
 
     private Mutation mutate(
@@ -204,7 +240,7 @@ public class PlatformService {
             case "CREATE_SQUAD" -> createSquad(userId, state, payload, scope, occurredAt);
             case "JOIN_SQUAD" -> joinSquad(userId, state, payload, occurredAt);
             case "LEAVE_SQUAD" -> leaveSquad(userId, state);
-            case "PURCHASE_COSMETIC", "BUY_COSMETIC" -> purchaseCosmetic(
+            case PURCHASE_COSMETIC_COMMAND -> purchaseCosmetic(
                     userId, state, payload, scope, occurredAt
             );
             case "EQUIP_COSMETIC" -> equipCosmetic(state, payload);
@@ -916,8 +952,7 @@ public class PlatformService {
     }
 
     private boolean isPurchaseCommand(String commandType) {
-        return "PURCHASE_COSMETIC".equals(commandType)
-                || "BUY_COSMETIC".equals(commandType);
+        return PURCHASE_COSMETIC_COMMAND.equals(commandType);
     }
 
     private Map<String, Object> effectiveRemoteConfig() {

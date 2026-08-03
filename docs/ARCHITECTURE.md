@@ -314,6 +314,10 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
 - transaction-scoped advisory lock по user или user+expedition;
 - row lock wallet/progression/inventory при изменении;
 - idempotency lookup до мутации;
+- legacy `BUY_COSMETIC` и canonical `PURCHASE_COSMETIC` используют один новый
+  command scope/fingerprint; legacy processed rows читаются для совместимости,
+  поэтому смена alias не создаёт вторую provider operation или расходящуюся
+  `payment_intent` запись;
 - source uniqueness в ledger;
 - account-deletion lock и active-subject check выполняются внутри mutating
   transaction до operation-specific locks/replay. Это включает activity,
@@ -358,61 +362,63 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
 7. Historical response не заменяется более новым snapshot.
 8. Process restart не меняет pending payload/key.
 9. Platform command first response равен replayed response.
-10. Risk engine работает в shadow mode до внешней калибровки.
-11. User/device/actor не принимаются контроллерами из произвольных headers или body в production.
-12. Валидный JWT без прикладной `ROLE_USER`/`ROLE_ADMIN` не даёт доступ к API.
-13. Event reward с `handoffRequired = true` считается переданным UI только
+10. Alias имени cosmetic purchase не меняет idempotency scope; тот же key с
+    другим `cosmeticId` конфликтует до provider call.
+11. Risk engine работает в shadow mode до внешней калибровки.
+12. User/device/actor не принимаются контроллерами из произвольных headers или body в production.
+13. Валидный JWT без прикладной `ROLE_USER`/`ROLE_ADMIN` не даёт доступ к API.
+14. Event reward с `handoffRequired = true` считается переданным UI только
     после owner-scoped ACK соответствующего `receiptId`; legacy mode
     auto-acknowledged.
-14. Пока capable event result pending, новый advance или resolution той же
+15. Пока capable event result pending, новый advance или resolution той же
     экспедиции запрещён.
-15. ACK не имеет request body; replay возвращает стабильные
+16. ACK не имеет request body; replay возвращает стабильные
     `acknowledgedAt/serverTime`.
-16. Capability не входит в idempotency fingerprint; exact replay возвращает
+17. Capability не входит в idempotency fingerprint; exact replay возвращает
     delivery mode первого commit.
-17. `ONBOARDING_COMPLETED` сохраняет V9-семантику; доказательством доставки
+18. `ONBOARDING_COMPLETED` сохраняет V9-семантику; доказательством доставки
     первого результата является отдельный
     `FIRST_EVENT_RESULT_ACKNOWLEDGED`.
-18. `PENDING` mobile-команда не удаляется пользовательским действием и
+19. `PENDING` mobile-команда не удаляется пользовательским действием и
     повторяется только с исходным payload/key.
-19. Telemetry failure не удерживает ACTIVITY или GAMEPLAY lane.
-20. Recovery presentation не раскрывает command payload, idempotency key,
+20. Telemetry failure не удерживает ACTIVITY или GAMEPLAY lane.
+21. Recovery presentation не раскрывает command payload, idempotency key,
     receipt, raw error или локальный путь.
-21. `stage`/`prod` нельзя совмещать с `local`/`test`.
-22. Protected runtime не регистрирует sandbox payment или development push.
-23. Remote config не может включить отсутствующую backend/mobile capability.
-24. Новая недоступная покупка отклоняется до state mutation.
-25. Replay сохранённой покупки возвращает прежний command outcome/user state
+22. `stage`/`prod` нельзя совмещать с `local`/`test`.
+23. Protected runtime не регистрирует sandbox payment или development push.
+24. Remote config не может включить отсутствующую backend/mobile capability.
+25. Новая недоступная покупка отклоняется до state mutation.
+26. Replay сохранённой покупки возвращает прежний command outcome/user state
     без нового provider call или mutation; capability fields заново
     проецируются из текущего deployment и после disable могут стать `false`.
-26. Oversized или rate-limited anonymous telemetry/crash request не вызывает
+27. Oversized или rate-limited anonymous telemetry/crash request не вызывает
     application service и не создаёт database state.
-27. Salted hashes direct client keys public ingress limiter-а bounded и
+28. Salted hashes direct client keys public ingress limiter-а bounded и
     ephemeral; raw address не персистируется и не используется как metric
     label.
-28. Liveness не зависит от PostgreSQL; readiness включает его, а health
+29. Liveness не зависит от PostgreSQL; readiness включает его, а health
     details никогда не раскрываются.
-29. Synthetic backup/restore evidence всегда имеет
+30. Synthetic backup/restore evidence всегда имеет
     `productionValidated=false` и не закрывает реальный restore gate.
-30. Crafting command не принимает client-calculated cost/result и не допускает
+31. Crafting command не принимает client-calculated cost/result и не допускает
     частичного списания ingredients.
-31. Material ledger delta ненулевой, а stack/ledger `quantityAfter` никогда не
+32. Material ledger delta ненулевой, а stack/ledger `quantityAfter` никогда не
     отрицателен.
-32. Один unique item создаётся не более одного раза на user+item/recipe; exact
+33. Один unique item создаётся не более одного раза на user+item/recipe; exact
     replay возвращает исходный instance и snapshots.
-33. Equipment slot может ссылаться только на unique item того же user; один
+34. Equipment slot может ссылаться только на unique item того же user; один
     instance не занимает два slot.
-34. Home choice availability не заменяет server-side prerequisite check.
-35. Exact equipment replay доступен при pending event receipt, но новая
+35. Home choice availability не заменяет server-side prerequisite check.
+36. Exact equipment replay доступен при pending event receipt, но новая
     equip/unequip mutation до ACK запрещена.
-36. Обычный выбор `mirror-delta-v1` не попадает в optional route; только
+37. Обычный выбор `mirror-delta-v1` не попадает в optional route; только
     `follow-resonance` с экипированным компасом ведёт в `resonance-pocket`.
-37. Cached, superseded, off-viewport, covered или background Home не создаёт
+38. Cached, superseded, off-viewport, covered или background Home не создаёт
     compass impression; network impression имеет canonical server IDs, exact
     replay и не меняет gameplay state.
-38. Craft/equip/reach/choice/completion funnel stage не выводится из client
+39. Craft/equip/reach/choice/completion funnel stage не выводится из client
     payload и подтверждается только persistent gameplay row.
-39. Отрицательный target-baseline interval не участвует в p50/p90 и остаётся
+40. Отрицательный target-baseline interval не участвует в p50/p90 и остаётся
     виден отдельным out-of-order data-quality fact.
 
 ## 10. Identity и authorization boundary
