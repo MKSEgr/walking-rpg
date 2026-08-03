@@ -1068,6 +1068,8 @@ class PlatformPersistenceIntegrationTest {
     @ResourceLock("java.util.Locale.default")
     void shouldCanonicalizeProtocolTokensIndependentlyOfJvmLocale() {
         Locale previousLocale = Locale.getDefault();
+        Locale previousDisplayLocale = Locale.getDefault(Locale.Category.DISPLAY);
+        Locale previousFormatLocale = Locale.getDefault(Locale.Category.FORMAT);
         PlatformCommandResponse response;
         try {
             Locale.setDefault(Locale.forLanguageTag("tr-TR"));
@@ -1108,8 +1110,13 @@ class PlatformPersistenceIntegrationTest {
             );
         } finally {
             Locale.setDefault(previousLocale);
+            Locale.setDefault(Locale.Category.DISPLAY, previousDisplayLocale);
+            Locale.setDefault(Locale.Category.FORMAT, previousFormatLocale);
         }
 
+        assertEquals(previousLocale, Locale.getDefault());
+        assertEquals(previousDisplayLocale, Locale.getDefault(Locale.Category.DISPLAY));
+        assertEquals(previousFormatLocale, Locale.getDefault(Locale.Category.FORMAT));
         assertEquals("RECORD_COMPASS_IMPRESSION", response.commandType());
         assertEquals("compass_recipe_impression", scalarString("""
                 SELECT event_name
