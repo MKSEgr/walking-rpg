@@ -63,6 +63,36 @@ void main() {
       CompanionIdentity.rune,
     );
     expect(
+      tester
+          .widget<CompanionPortrait>(find.byKey(const Key('portrait-spark')))
+          .illustrationAsset,
+      'assets/characters/companion_spark.webp',
+    );
+    expect(
+      tester
+          .widget<CompanionPortrait>(find.byKey(const Key('portrait-moss')))
+          .illustrationAsset,
+      'assets/characters/companion_moss.webp',
+    );
+    expect(
+      tester
+          .widget<CompanionPortrait>(find.byKey(const Key('portrait-rune')))
+          .illustrationAsset,
+      'assets/characters/companion_rune.webp',
+    );
+    expect(
+      find.byKey(const Key('companion-illustration-spark-v1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('companion-illustration-moss-v1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('companion-illustration-rune-v1')),
+      findsOneWidget,
+    );
+    expect(
       find.bySemanticsLabel('Искра, люмин, форма 1, активный спутник'),
       findsOneWidget,
     );
@@ -86,10 +116,12 @@ void main() {
       ),
     );
 
-    expect(
-      tester.widget<CompanionPortrait>(find.byType(CompanionPortrait)).identity,
-      CompanionIdentity.unknown,
+    final CompanionPortrait portrait = tester.widget<CompanionPortrait>(
+      find.byType(CompanionPortrait),
     );
+    expect(portrait.identity, CompanionIdentity.unknown);
+    expect(portrait.illustrationAsset, isNull);
+    expect(find.byType(Image), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

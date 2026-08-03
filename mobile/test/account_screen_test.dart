@@ -11,6 +11,7 @@ import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
 import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
@@ -72,6 +73,8 @@ void main() {
 
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byKey(const Key('account-pilot-dossier')), findsOneWidget);
+    expect(find.byKey(const Key('account-pilot-portrait')), findsOneWidget);
+    expect(find.byType(PilotPortrait), findsOneWidget);
     expect(find.text('ДОСЬЕ ПИЛОТА'), findsOneWidget);
     expect(find.text('OIDC ПОДТВЕРЖДЕНА'), findsOneWidget);
     expect(
