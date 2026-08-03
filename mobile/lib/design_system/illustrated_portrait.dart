@@ -55,9 +55,7 @@ class ExpeditionIllustratedPortrait extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(inset),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(
-              math.max(0.0, radius - inset),
-            ),
+            borderRadius: BorderRadius.circular(math.max(0.0, radius - inset)),
             child: Stack(
               fit: StackFit.expand,
               children: <Widget>[
@@ -129,11 +127,7 @@ class _PortraitSignalPainter extends CustomPainter {
         size.shortestSide * 0.075,
         Paint()..color = const Color(0xF20B2028),
       )
-      ..drawCircle(
-        marker,
-        size.shortestSide * 0.043,
-        Paint()..color = accent,
-      );
+      ..drawCircle(marker, size.shortestSide * 0.043, Paint()..color = accent);
   }
 
   @override

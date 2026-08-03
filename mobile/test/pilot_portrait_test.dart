@@ -13,11 +13,7 @@ void main() {
       MaterialApp(
         theme: WalkingRpgTheme.dark(),
         home: const Scaffold(
-          body: PilotPortrait(
-            name: 'Навигатор',
-            size: 80,
-            highlighted: true,
-          ),
+          body: PilotPortrait(name: 'Навигатор', size: 80, highlighted: true),
         ),
       ),
     );
@@ -28,10 +24,7 @@ void main() {
       find.byKey(const Key('pilot-portrait-image')),
     );
     expect(image.image, isA<AssetImage>());
-    expect(
-      (image.image as AssetImage).assetName,
-      PilotPortrait.assetPath,
-    );
+    expect((image.image as AssetImage).assetName, PilotPortrait.assetPath);
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
