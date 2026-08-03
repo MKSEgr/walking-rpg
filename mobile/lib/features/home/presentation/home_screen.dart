@@ -1434,14 +1434,16 @@ class _ExpeditionTeam extends StatelessWidget {
       detail: 'Связь ${snapshot.petBond}',
       icon: Icons.pets_outlined,
       portrait: hasCompanionPortrait
-          ? CompanionPortrait(
-              key: const Key('home-team-companion-portrait'),
-              petId: snapshot.petId!,
-              name: snapshot.petName,
-              species: snapshot.petSpecies!,
-              evolutionStage: snapshot.petEvolutionStage!,
-              active: true,
-              size: 72,
+          ? ExcludeSemantics(
+              child: CompanionPortrait(
+                key: const Key('home-team-companion-portrait'),
+                petId: snapshot.petId!,
+                name: snapshot.petName,
+                species: snapshot.petSpecies!,
+                evolutionStage: snapshot.petEvolutionStage!,
+                active: true,
+                size: 72,
+              ),
             )
           : null,
     );
