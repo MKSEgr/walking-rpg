@@ -30,8 +30,9 @@ Backend уже умел выгружать и удалять данные пол
   отрицательное и превышающее 15 минут окно.
 - OIDC NumericDate `auth_time` преобразуется в epoch nanoseconds без
   промежуточного `double` и сравнивается с age/skew boundary в исходной
-  точности. Нефинитное, выходящее за `Instant` или sub-nanosecond значение
-  отклоняется fail-closed вместо округления.
+  точности. Уже потерявшие исходную JSON decimal точность `Float`/`Double`,
+  выходящие за `Instant` и sub-nanosecond значения отклоняются fail-closed
+  вместо округления.
 - Backend удаляет данные транзакционно и возвращает постоянную UUID-квитанцию.
   Повторный запрос возвращает ту же квитанцию.
 - Квитанция хранит SHA-256 subject и request key, timestamps и receipt UUID.

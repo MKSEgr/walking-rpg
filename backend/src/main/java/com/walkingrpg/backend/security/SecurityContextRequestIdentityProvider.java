@@ -191,11 +191,7 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
             return BigDecimal.valueOf(number.longValue());
         }
         if (number instanceof Float || number instanceof Double) {
-            double value = number.doubleValue();
-            if (!Double.isFinite(value)) {
-                throw new NumberFormatException("Non-finite auth_time");
-            }
-            return BigDecimal.valueOf(value);
+            throw new NumberFormatException("Lossy floating-point auth_time");
         }
         return new BigDecimal(number.toString());
     }

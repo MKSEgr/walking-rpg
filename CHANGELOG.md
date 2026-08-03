@@ -169,7 +169,8 @@
 - backend-контроллеры больше не принимают user/device/actor headers: identity приходит из `SecurityContext`;
 - production defaults стали fail-closed: JWT включён, demo endpoint выключен.
 - destructive fresh-auth guard преобразует OIDC `auth_time` в exact epoch
-  nanoseconds и больше не округляет дробную NumericDate через `double`;
+  nanoseconds, больше не округляет дробную NumericDate через `double` и
+  fail-closed отклоняет уже lossy floating-point claim;
 - ручные onboarding-кнопки в «Путевом журнале» заменены на продолжение
   реального первого пути;
 - `SELECT_PET` одновременно сохраняет выбор питомца и milestone, а event reward

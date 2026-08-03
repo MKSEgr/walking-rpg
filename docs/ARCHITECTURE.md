@@ -615,5 +615,6 @@ Backend не доверяет только mobile step-up: destructive endpoint 
 подписанный `auth_time` в access token в пределах короткого server-side окна.
 Fresh-auth boundary преобразует NumericDate в exact epoch nanoseconds;
 floating-point rounding не может превратить дробный claim в другое допустимое
-время аутентификации, а типизированный `Instant` сохраняет исходную точность.
+время аутентификации: точные integer/decimal/`Instant` представления
+поддерживаются, а уже lossy `Float`/`Double` отклоняются fail-closed.
 См. ADR 0019.

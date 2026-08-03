@@ -290,6 +290,31 @@ class SecurityContextRequestIdentityProviderTest {
     }
 
     @Test
+    void shouldRejectLossyFloatingPointAuthenticationTime() {
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        mock(AccountDeletionRegistry.class),
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        double roundedAcrossSkewBoundary = Double.parseDouble(
+                NOW.plusSeconds(30).getEpochSecond() + ".000000001"
+        );
+        assertEquals(
+                (double) NOW.plusSeconds(30).getEpochSecond(),
+                roundedAcrossSkewBoundary
+        );
+        authenticate(jwtBuilder()
+                .claim("auth_time", roundedAcrossSkewBoundary)
+                .build());
+
+        assertThrows(
+                FreshAuthenticationRequiredException.class,
+                guardedProvider::requireIdentityForAccountDeletion
+        );
+    }
+
+    @Test
     void shouldAcceptExactFractionalNumericDate() {
         SecurityContextRequestIdentityProvider guardedProvider =
                 new SecurityContextRequestIdentityProvider(
