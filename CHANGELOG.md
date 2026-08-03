@@ -210,6 +210,10 @@
   idempotency scope: cross-alias replay возвращает первый immutable response,
   а другой product под тем же key отклоняется до provider call; canonical и
   legacy replay records сохраняются атомарно для mixed-version rollout;
+- platform command payload и remote config больше не усекают дробные JSON
+  numbers через `Number.longValue()`: `energyToSpend`, season `level`,
+  `activityRetentionDays` и `weeklyRouteEnergy` требуют точного целого,
+  отклоняются до commit и не оставляют частичного state;
 - platform snapshot не объявляет sandbox payment доступным при disabled
   provider, а mobile не показывает purchase action в release build, для
   `false` или cached snapshot.

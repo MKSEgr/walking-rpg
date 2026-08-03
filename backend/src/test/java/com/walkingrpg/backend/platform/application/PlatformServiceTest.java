@@ -712,6 +712,53 @@ class PlatformServiceTest {
                 .contains("season-reward-1"));
     }
 
+    @Test
+    void shouldRejectFractionalCommandNumbersInsteadOfTruncatingThem() {
+        economyService.creditActivityEnergy("user-1", 120, "fractional-seed", NOW);
+
+        PlatformValidationException energy = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("user-1", command(
+                        "ADVANCE_WEEKLY_ROUTE",
+                        "fractional-weekly-route",
+                        Map.of("energyToSpend", 1.9)
+                ))
+        );
+        PlatformValidationException level = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("user-2", command(
+                        "CLAIM_SEASON_REWARD",
+                        "fractional-season-reward",
+                        Map.of("level", 2.5)
+                ))
+        );
+
+        assertEquals("energyToSpend", energy.field());
+        assertEquals("level", level.field());
+        assertEquals(0, platformRepository.processedCommandCount());
+        assertEquals(0, platformRepository.eventCount());
+        assertEquals(
+                120,
+                economyRepository.currentBalance(
+                        "user-1",
+                        EconomyCurrency.ENERGY,
+                        NOW
+                ).balance()
+        );
+    }
+
+    @Test
+    void shouldUseDefaultForFractionalLegacyRemoteConfig() {
+        Map<String, Object> config = new HashMap<>(remoteConfig(false, false));
+        config.put("weeklyRouteEnergy", 120.75);
+        platformRepository.setRemoteConfig(config);
+
+        PlatformSnapshotResponse snapshot = service.getSnapshot("legacy-config-user");
+
+        assertEquals(120, number(snapshot.userState(), "weeklyRouteRequiredEnergy"));
+        assertEquals(120, number(snapshot.remoteConfig(), "weeklyRouteEnergy"));
+    }
+
     private PlatformCommandRequest command(
             String commandType,
             String idempotencyKey,

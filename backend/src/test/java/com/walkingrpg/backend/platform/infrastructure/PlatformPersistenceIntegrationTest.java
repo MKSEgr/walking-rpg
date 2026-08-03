@@ -41,6 +41,7 @@ import com.walkingrpg.backend.platform.application.PlatformCommandFingerprint;
 import com.walkingrpg.backend.platform.application.PlatformContentCatalog;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
 import com.walkingrpg.backend.platform.application.PlatformService;
+import com.walkingrpg.backend.platform.application.PlatformValidationException;
 import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
 import com.walkingrpg.backend.platform.domain.ProcessedPlatformCommand;
 import com.walkingrpg.backend.platform.payment.PaymentProvider;
@@ -935,6 +936,29 @@ class PlatformPersistenceIntegrationTest {
                 FROM roadmap_user_state
                 WHERE user_id = 'weekly-user'
                 """, Boolean.class)));
+    }
+
+    @Test
+    void shouldRollbackFractionalPlatformCommandBeforePersistingState() {
+        PlatformValidationException exception = assertThrows(
+                PlatformValidationException.class,
+                () -> platformService.execute(
+                        "fractional-command-user",
+                        new PlatformCommandRequest(
+                                "ADVANCE_WEEKLY_ROUTE",
+                                "fractional-command-key",
+                                Map.of("energyToSpend", 1.25)
+                        )
+                )
+        );
+
+        assertEquals("energyToSpend", exception.field());
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(0, rowCount("roadmap_user_state"));
+        assertEquals(0, rowCount("processed_roadmap_command"));
+        assertEquals(0, rowCount("platform_event"));
+        assertEquals(0, rowCount("economy_wallet"));
+        assertEquals(0, rowCount("economy_ledger"));
     }
 
     @Test
