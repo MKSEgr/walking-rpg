@@ -65,9 +65,9 @@ double _effectiveTextScale(BuildContext context) {
   return MediaQuery.textScalerOf(context).scale(16) / 16;
 }
 
-bool _usesCompactHomeChrome(BuildContext context) {
-  final double width = MediaQuery.sizeOf(context).width;
-  return width < 360 || (width < 430 && _effectiveTextScale(context) > 1.3);
+bool _usesCompactHomeChrome(BuildContext context, BoxConstraints constraints) {
+  return constraints.maxWidth < 360 ||
+      (constraints.maxWidth < 430 && _effectiveTextScale(context) > 1.3);
 }
 
 bool _usesCompactHomeSection(BuildContext context, BoxConstraints constraints) {
@@ -210,107 +210,113 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final bool compactChrome = _usesCompactHomeChrome(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: _HomeAppTitle(compact: compactChrome),
-        actions: <Widget>[
-          if (!compactChrome)
-            IconButton(
-              tooltip: 'Обновить',
-              onPressed: _isBusy ? null : _reload,
-              icon: const Icon(Icons.refresh),
-            ),
-          MobileCommandRecoveryAction(
-            key: const Key('home-command-recovery'),
-            onPressed: widget.onOpenRecovery,
-            count: widget.recoveryCount,
-            unavailable: widget.recoveryUnavailable,
-          ),
-          if (compactChrome)
-            _HomeAppActionsMenu(
-              refreshEnabled: !_isBusy,
-              onRefresh: _reload,
-              onOpenAccount: widget.onOpenAccount,
-            )
-          else
-            IconButton(
-              tooltip: 'Аккаунт',
-              onPressed: widget.onOpenAccount,
-              icon: const Icon(Icons.account_circle_outlined),
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: FutureBuilder<HomeSnapshot>(
-          future: _snapshotFuture,
-          builder:
-              (
-                BuildContext context,
-                AsyncSnapshot<HomeSnapshot> asyncSnapshot,
-              ) {
-                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-                  return _HomeReadState(
-                    activitySyncAction: widget.activitySyncAction,
-                    child: const ExpeditionReadState.loading(
-                      key: Key('home-loading-state'),
-                      title: 'Сверяем маршрут',
-                      message:
-                          'Получаем шаги, ENERGY и актуальное состояние '
-                          'экспедиции.',
-                    ),
-                  );
-                }
-                if (asyncSnapshot.hasError) {
-                  return _HomeReadState(
-                    activitySyncAction: widget.activitySyncAction,
-                    child: _HomeError(
-                      error: asyncSnapshot.error!,
-                      onRetry: _reload,
-                      onOpenDemo: _openDemo,
-                    ),
-                  );
-                }
-                final HomeSnapshot? snapshot = asyncSnapshot.data;
-                if (snapshot == null) {
-                  return _HomeReadState(
-                    activitySyncAction: widget.activitySyncAction,
-                    child: _HomeError(
-                      error: const FormatException(
-                        'Backend не вернул состояние',
-                      ),
-                      onRetry: _reload,
-                      onOpenDemo: _openDemo,
-                    ),
-                  );
-                }
-                return _HomeBody(
-                  snapshot: snapshot,
-                  scrollController: _scrollController,
-                  routeChoiceViewportKey: _routeChoiceViewportKey,
-                  recipeViewportKey: _recipeViewportKey,
-                  stickyActionOcclusionKey: _stickyActionOcclusionKey,
-                  isAdvancing: _isAdvancing,
-                  isResolving: _isResolving,
-                  isAcknowledging: _isAcknowledging,
-                  isCrafting: _isCrafting,
-                  isChangingEquipment: _isChangingEquipment,
-                  onAdvance: () => _advance(snapshot),
-                  onResolve: (HomeEventChoice choice) =>
-                      _resolveEvent(snapshot, choice),
-                  onAcknowledgeEventResult: () =>
-                      _acknowledgeEventResult(snapshot),
-                  onCraft: (HomeCraftingRecipe recipe) =>
-                      _craft(snapshot, recipe),
-                  onEquip: (HomeInventoryItem item) => _equip(snapshot, item),
-                  onUnequip: (HomeEquipmentSlot slot) =>
-                      _unequip(snapshot, slot),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compactChrome = _usesCompactHomeChrome(context, constraints);
+        return Scaffold(
+          appBar: AppBar(
+            title: _HomeAppTitle(compact: compactChrome),
+            actions: <Widget>[
+              if (!compactChrome)
+                IconButton(
+                  tooltip: 'Обновить',
+                  onPressed: _isBusy ? null : _reload,
+                  icon: const Icon(Icons.refresh),
+                ),
+              MobileCommandRecoveryAction(
+                key: const Key('home-command-recovery'),
+                onPressed: widget.onOpenRecovery,
+                count: widget.recoveryCount,
+                unavailable: widget.recoveryUnavailable,
+              ),
+              if (compactChrome)
+                _HomeAppActionsMenu(
+                  refreshEnabled: !_isBusy,
                   onRefresh: _reload,
-                  activitySyncAction: widget.activitySyncAction,
-                );
-              },
-        ),
-      ),
+                  onOpenAccount: widget.onOpenAccount,
+                )
+              else
+                IconButton(
+                  tooltip: 'Аккаунт',
+                  onPressed: widget.onOpenAccount,
+                  icon: const Icon(Icons.account_circle_outlined),
+                ),
+            ],
+          ),
+          body: SafeArea(
+            child: FutureBuilder<HomeSnapshot>(
+              future: _snapshotFuture,
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<HomeSnapshot> asyncSnapshot,
+                  ) {
+                    if (asyncSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return _HomeReadState(
+                        activitySyncAction: widget.activitySyncAction,
+                        child: const ExpeditionReadState.loading(
+                          key: Key('home-loading-state'),
+                          title: 'Сверяем маршрут',
+                          message:
+                              'Получаем шаги, ENERGY и актуальное состояние '
+                              'экспедиции.',
+                        ),
+                      );
+                    }
+                    if (asyncSnapshot.hasError) {
+                      return _HomeReadState(
+                        activitySyncAction: widget.activitySyncAction,
+                        child: _HomeError(
+                          error: asyncSnapshot.error!,
+                          onRetry: _reload,
+                          onOpenDemo: _openDemo,
+                        ),
+                      );
+                    }
+                    final HomeSnapshot? snapshot = asyncSnapshot.data;
+                    if (snapshot == null) {
+                      return _HomeReadState(
+                        activitySyncAction: widget.activitySyncAction,
+                        child: _HomeError(
+                          error: const FormatException(
+                            'Backend не вернул состояние',
+                          ),
+                          onRetry: _reload,
+                          onOpenDemo: _openDemo,
+                        ),
+                      );
+                    }
+                    return _HomeBody(
+                      snapshot: snapshot,
+                      scrollController: _scrollController,
+                      routeChoiceViewportKey: _routeChoiceViewportKey,
+                      recipeViewportKey: _recipeViewportKey,
+                      stickyActionOcclusionKey: _stickyActionOcclusionKey,
+                      isAdvancing: _isAdvancing,
+                      isResolving: _isResolving,
+                      isAcknowledging: _isAcknowledging,
+                      isCrafting: _isCrafting,
+                      isChangingEquipment: _isChangingEquipment,
+                      onAdvance: () => _advance(snapshot),
+                      onResolve: (HomeEventChoice choice) =>
+                          _resolveEvent(snapshot, choice),
+                      onAcknowledgeEventResult: () =>
+                          _acknowledgeEventResult(snapshot),
+                      onCraft: (HomeCraftingRecipe recipe) =>
+                          _craft(snapshot, recipe),
+                      onEquip: (HomeInventoryItem item) =>
+                          _equip(snapshot, item),
+                      onUnequip: (HomeEquipmentSlot slot) =>
+                          _unequip(snapshot, slot),
+                      onRefresh: _reload,
+                      activitySyncAction: widget.activitySyncAction,
+                    );
+                  },
+            ),
+          ),
+        );
+      },
     );
   }
 
