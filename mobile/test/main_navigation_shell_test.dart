@@ -110,7 +110,7 @@ void main() {
     expect(find.byKey(const Key('main-navigation-wide')), findsOneWidget);
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.text('Полевой терминал'), findsOneWidget);
+    expect(find.text('ПОЛЕВОЙ ТЕРМИНАЛ'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const Key('main-navigation-rail'))).width,
       224,
