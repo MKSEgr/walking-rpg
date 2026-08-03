@@ -236,15 +236,17 @@ void main() {
       of: find.byKey(const Key('platform-screen-list')),
       matching: find.byType(Scrollable),
     );
-    final ScrollableState scrollable = tester.state<ScrollableState>(
-      journalScrollable,
+    final Finder journalFooter = find.byKey(
+      const Key('platform-journal-footer'),
     );
-    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
-    await tester.pump();
+    await tester.scrollUntilVisible(
+      journalFooter,
+      500,
+      scrollable: journalScrollable,
+    );
+    await tester.pumpAndSettle();
 
-    final double footerBottom = tester
-        .getBottomRight(find.byKey(const Key('platform-journal-footer')))
-        .dy;
+    final double footerBottom = tester.getBottomRight(journalFooter).dy;
     expect(viewportBottom - footerBottom, closeTo(46, 1));
     expect(tester.takeException(), isNull);
   });
