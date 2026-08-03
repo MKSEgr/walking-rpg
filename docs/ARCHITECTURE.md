@@ -613,4 +613,7 @@ fail-closed local logout/cleanup. Backend receipt не содержит raw subj
 deletion registry отклоняет последующие запросы со старым Bearer token.
 Backend не доверяет только mobile step-up: destructive endpoint требует
 подписанный `auth_time` в access token в пределах короткого server-side окна.
+Fresh-auth boundary преобразует NumericDate в exact epoch nanoseconds;
+floating-point rounding не может превратить дробный claim в другое допустимое
+время аутентификации, а типизированный `Instant` сохраняет исходную точность.
 См. ADR 0019.

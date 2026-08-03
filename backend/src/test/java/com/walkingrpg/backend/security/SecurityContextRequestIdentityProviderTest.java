@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.security;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -241,6 +242,79 @@ class SecurityContextRequestIdentityProviderTest {
         assertThrows(
                 FreshAuthenticationRequiredException.class,
                 guardedProvider::requireIdentityForAccountDeletion
+        );
+    }
+
+    @Test
+    void shouldApplyClockSkewToExactFractionalAuthenticationTime() {
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        mock(AccountDeletionRegistry.class),
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        authenticate(jwtBuilder()
+                .claim(
+                        "auth_time",
+                        new BigDecimal(NOW.plusSeconds(30).getEpochSecond()
+                                + ".000000001")
+                )
+                .build());
+
+        assertThrows(
+                FreshAuthenticationRequiredException.class,
+                guardedProvider::requireIdentityForAccountDeletion
+        );
+    }
+
+    @Test
+    void shouldRejectNumericDateMorePreciseThanNanoseconds() {
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        mock(AccountDeletionRegistry.class),
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        authenticate(jwtBuilder()
+                .claim(
+                        "auth_time",
+                        new BigDecimal(NOW.minusSeconds(30).getEpochSecond()
+                                + ".0000000001")
+                )
+                .build());
+
+        assertThrows(
+                FreshAuthenticationRequiredException.class,
+                guardedProvider::requireIdentityForAccountDeletion
+        );
+    }
+
+    @Test
+    void shouldAcceptExactFractionalNumericDate() {
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        mock(AccountDeletionRegistry.class),
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        authenticate(jwtBuilder()
+                .claim(
+                        "auth_time",
+                        new BigDecimal(NOW.minusSeconds(30).getEpochSecond() + ".250")
+                )
+                .build());
+
+        assertEquals(
+                "subject-123",
+                guardedProvider.requireIdentityForAccountDeletion().userId()
+        );
+
+        authenticate(jwtBuilder()
+                .claim("auth_time", NOW.minusSeconds(30).plusNanos(1))
+                .build());
+        assertEquals(
+                "subject-123",
+                guardedProvider.requireIdentityForAccountDeletion().userId()
         );
     }
 
