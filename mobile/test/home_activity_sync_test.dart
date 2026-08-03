@@ -92,9 +92,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final Finder actionDock = find.byKey(
-      const Key('home-sticky-action-panel'),
-    );
+    final Finder actionDock = find.byKey(const Key('home-sticky-action-panel'));
     final Finder syncButton = find.byKey(const Key('activity-sync-button'));
     expect(syncButton, findsOneWidget);
     expect(
@@ -119,10 +117,7 @@ void main() {
       find.byKey(const Key('activity-sync-status')),
     );
     expect(status.properties.liveRegion, isTrue);
-    expect(
-      find.byKey(const Key('command-recovery-progress')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('command-recovery-progress')), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     result.complete(
