@@ -249,6 +249,11 @@ V15 добавляет nullable `activated_at`: активная версия о
 изменение. `created_at` остаётся временем последней публикации и не участвует в
 накопительном route funnel.
 
+Platform command payload и remote config остаются JSON, но server-owned
+числовые поля проходят exact integer conversion. Дробные и выходящие за
+диапазон значения отклоняются до mutation; уже сохранённый некорректный
+`weeklyRouteEnergy` не усекается, а безопасно заменяется значением по умолчанию.
+
 Starter crafting content имеет независимую версию `crafting-v1`. Recipe
 `resonance-compass-v1` принимает только stable material item IDs и создаёт
 non-stackable `resonance-compass`. Client получает recipe projection через

@@ -119,6 +119,31 @@ class PlatformAdminServiceProviderTest {
     }
 
     @Test
+    void fractionalRemoteConfigNumbersShouldBeRejectedBeforeAnyWrite() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        PlatformAdminService service = service(
+                jdbcTemplate,
+                new SandboxPaymentProvider(),
+                new DisabledPushDeliveryProvider(),
+                mock(AccountDeletionRegistry.class)
+        );
+        Map<String, Object> config = new LinkedHashMap<>(remoteConfig(false));
+        config.put("weeklyRouteEnergy", 120.75);
+
+        PlatformValidationException exception = assertThrows(
+                PlatformValidationException.class,
+                () -> service.updateRemoteConfig(
+                        "admin",
+                        "fractional-remote-config",
+                        config
+                )
+        );
+
+        assertEquals("config.weeklyRouteEnergy", exception.field());
+        verifyNoInteractions(jdbcTemplate);
+    }
+
+    @Test
     void serverOwnedCompassEventsCannotEnterThroughPublicTelemetry() {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         AccountDeletionRegistry deletionRegistry = mock(AccountDeletionRegistry.class);

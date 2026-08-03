@@ -966,12 +966,25 @@ public class PlatformService {
     }
 
     private int configInt(String key, int defaultValue, int min, int max) {
-        Object value = effectiveRemoteConfig().get(key);
-        if (!(value instanceof Number number)) {
+        return boundedConfigInteger(
+                effectiveRemoteConfig().get(key),
+                defaultValue,
+                min,
+                max
+        );
+    }
+
+    private int boundedConfigInteger(
+            Object value,
+            int defaultValue,
+            int min,
+            int max
+    ) {
+        Integer raw = PlatformNumbers.integerOrNull(value);
+        if (raw == null) {
             return defaultValue;
         }
-        long raw = number.longValue();
-        return raw < min || raw > max ? defaultValue : (int) raw;
+        return raw < min || raw > max ? defaultValue : raw;
     }
 
     private void requireProviderAvailability(String commandType) {
@@ -1014,6 +1027,24 @@ public class PlatformService {
                         && Boolean.TRUE.equals(activeConfig.get("sandboxPaymentsEnabled"))
         );
         config.put("backgroundHealthSyncEnabled", false);
+        config.put(
+                "activityRetentionDays",
+                boundedConfigInteger(
+                        config.get("activityRetentionDays"),
+                        30,
+                        1,
+                        3650
+                )
+        );
+        config.put(
+                "weeklyRouteEnergy",
+                boundedConfigInteger(
+                        config.get("weeklyRouteEnergy"),
+                        120,
+                        10,
+                        10_000
+                )
+        );
         return Map.copyOf(config);
     }
 
@@ -1068,15 +1099,7 @@ public class PlatformService {
     }
 
     private int payloadInt(Map<String, Object> payload, String field) {
-        Object value = payload.get(field);
-        if (value instanceof Number number) {
-            try {
-                return Math.toIntExact(number.longValue());
-            } catch (ArithmeticException exception) {
-                throw new PlatformValidationException("Значение вне диапазона integer", field);
-            }
-        }
-        throw new PlatformValidationException("Поле должно быть целым числом", field);
+        return PlatformNumbers.requireInteger(payload.get(field), field);
     }
 
     private Instant now() {

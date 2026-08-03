@@ -803,8 +803,8 @@ public class PlatformAdminService {
                     "config.sandboxPaymentsEnabled"
             );
         }
-        requireNumber(config, "activityRetentionDays", 1, 3650);
-        requireNumber(config, "weeklyRouteEnergy", 10, 10_000);
+        requireInteger(config, "activityRetentionDays", 1, 3650);
+        requireInteger(config, "weeklyRouteEnergy", 10, 10_000);
         Object seasonId = config.get("seasonId");
         if (!(seasonId instanceof String value) || value.isBlank()) {
             throw new PlatformValidationException("seasonId обязателен", "config.seasonId");
@@ -820,10 +820,17 @@ public class PlatformAdminService {
         }
     }
 
-    private void requireNumber(Map<String, Object> config, String key, long min, long max) {
-        if (!(config.get(key) instanceof Number number)
-                || number.longValue() < min
-                || number.longValue() > max) {
+    private void requireInteger(
+            Map<String, Object> config,
+            String key,
+            long min,
+            long max
+    ) {
+        long value = PlatformNumbers.requireLongInteger(
+                config.get(key),
+                "config." + key
+        );
+        if (value < min || value > max) {
             throw new PlatformValidationException(
                     key + " вне допустимого диапазона",
                     "config." + key
