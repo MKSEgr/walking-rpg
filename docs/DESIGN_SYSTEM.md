@@ -377,6 +377,22 @@ milestone, predict a reward or introduce another command path.
 - the contract does not change startup replay, cached read-only behavior,
   command keys, idempotency, authoritative refresh or completion ownership.
 
+## Compact pilot dossier composition
+
+The account route remains a trust and data-control surface when narrow width
+and enlarged system text require a different composition. Responsive layout
+does not reinterpret identity, queue state or any destructive boundary.
+
+- the pilot identity reflows below its marker while keeping the complete
+  session label and existing dossier semantics;
+- saved-action recovery and the optional Validation Center become explicit
+  vertical link panels without changing their callbacks or visibility rules;
+- export, permanent deletion and logout retain full-width two-line actions;
+- both deletion confirmations keep the shared scrollable trust dialog, phrase
+  requirement and fresh-authentication boundary;
+- the complete route is verified at `320 × 640 / 1.6×` without changing export
+  ownership, owner-scoped command state, idempotency or session lifecycle.
+
 ## Next visual slices
 
 1. Turn the expedition chapter into a visual route map only from an
