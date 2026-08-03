@@ -529,8 +529,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final Finder equippedSparkFinder = find.byKey(
+      const Key('platform-pet-portrait-spark-v1'),
+    );
+    await _bringIntoView(tester, equippedSparkFinder);
     final CompanionPortrait equippedSpark = tester.widget<CompanionPortrait>(
-      find.byKey(const Key('platform-pet-portrait-spark-v1')),
+      equippedSparkFinder,
     );
     expect(equippedSpark.safeEvolutionStage, 0);
     expect(
