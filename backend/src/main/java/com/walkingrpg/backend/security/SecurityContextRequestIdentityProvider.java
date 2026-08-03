@@ -217,8 +217,8 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
     }
 
     private RequestIdentity fromJwt(Jwt jwt, Set<String> authorities) {
-        String subject = requireExactClaim(
-                jwt.getSubject(),
+        String subject = requiredExactStringClaim(
+                jwt,
                 "sub",
                 MAXIMUM_PERSISTED_IDENTITY_LENGTH
         );
@@ -244,6 +244,23 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
                                 + deviceSeed
                 );
         return new RequestIdentity(subject, actor, deviceId, authorities);
+    }
+
+    private String requiredExactStringClaim(
+            Jwt jwt,
+            String claimName,
+            Integer maximumLength
+    ) {
+        if (!jwt.getClaims().containsKey(claimName)) {
+            throw new AuthenticationCredentialsNotFoundException(
+                    "JWT не содержит обязательный claim " + claimName
+            );
+        }
+        Object rawValue = jwt.getClaims().get(claimName);
+        if (!(rawValue instanceof String text)) {
+            throw invalidIdentityClaim(claimName);
+        }
+        return requireExactClaim(text, claimName, maximumLength);
     }
 
     private Optional<String> optionalExactStringClaim(

@@ -113,6 +113,25 @@ class JwtAuthorityConverterTest {
         );
     }
 
+    @Test
+    void shouldRejectNonStringSubjectBeforePrincipalConversion() {
+        WalkingRpgSecurityProperties properties = new WalkingRpgSecurityProperties();
+        JwtAuthorityConverter converter = new JwtAuthorityConverter(properties);
+        Instant now = Instant.parse("2026-07-28T06:00:00Z");
+        Jwt jwt = Jwt.withTokenValue("token")
+                .header("alg", "RS256")
+                .issuer("https://identity.example.com")
+                .claim("sub", 42)
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(300))
+                .build();
+
+        assertThrows(
+                org.springframework.security.oauth2.core.OAuth2AuthenticationException.class,
+                () -> converter.convert(jwt)
+        );
+    }
+
     private Set<String> authorities(AbstractAuthenticationToken authentication) {
         return authentication.getAuthorities().stream()
                 .map(authority -> authority.getAuthority())

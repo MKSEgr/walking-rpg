@@ -84,6 +84,18 @@ class SecurityContextRequestIdentityProviderTest {
     }
 
     @Test
+    void shouldRejectNonStringSubjectBeforeClaimCoercion() {
+        authenticate(jwtBuilder().claim("sub", 42).build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder().subject("42").build());
+        assertEquals("42", provider.requireIdentity().userId());
+    }
+
+    @Test
     void shouldRejectPresentMalformedOptionalIdentityClaims() {
         authenticate(jwtBuilder()
                 .claim("preferred_username", "")

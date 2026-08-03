@@ -108,6 +108,13 @@ grep -Fq '.movePointRight(9)' backend/src/main/java/com/walkingrpg/backend/secur
 grep -Fq '.toBigIntegerExact();' backend/src/main/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProvider.java || fail 'auth_time must reject lossy numeric conversion'
 grep -Fq 'Lossy floating-point auth_time' backend/src/main/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProvider.java || fail 'floating auth_time must fail closed'
 grep -Fq 'shouldRejectIdentityClaimsThatWouldCollapseAfterNormalization' backend/src/test/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProviderTest.java || fail 'signed identity normalization regression must remain covered'
+grep -Fq 'shouldRejectNonStringSubjectBeforeClaimCoercion' backend/src/test/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProviderTest.java || fail 'raw OIDC subject type regression must remain covered'
+grep -Fq 'requiredExactStringClaim(' backend/src/main/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProvider.java || fail 'OIDC subject must be validated before Spring string coercion'
+grep -Fq 'shouldRejectNonStringSubjectBeforePrincipalConversion' backend/src/test/java/com/walkingrpg/backend/security/JwtAuthorityConverterTest.java || fail 'JWT principal conversion must reject non-string subjects'
+grep -Fq '.claim("sub", 42)' backend/src/test/java/com/walkingrpg/backend/security/JwtSecurityIntegrationTest.java || fail 'protected actuator must reject a numeric subject before authorization'
+if grep -Fq 'getSubject()' backend/src/main/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProvider.java backend/src/main/java/com/walkingrpg/backend/security/JwtAuthorityConverter.java; then
+  fail 'identity boundary must not coerce the raw OIDC subject through getSubject()'
+fi
 grep -Fq 'shouldRejectPresentMalformedOptionalIdentityClaims' backend/src/test/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProviderTest.java || fail 'present malformed optional identity claims must remain fail-closed'
 grep -Fq 'if (!map.containsKey(part))' backend/src/main/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProvider.java || fail 'optional identity claim fallback must distinguish absent paths from malformed values'
 grep -Fq 'shouldRejectMalformedIdentityClaimsFromProtectedPrometheus' backend/src/test/java/com/walkingrpg/backend/security/JwtSecurityIntegrationTest.java || fail 'protected actuator identity validation regression must remain covered'

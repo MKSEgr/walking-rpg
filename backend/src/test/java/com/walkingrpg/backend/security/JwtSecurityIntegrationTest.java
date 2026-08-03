@@ -244,6 +244,14 @@ class JwtSecurityIntegrationTest {
     void shouldRejectMalformedIdentityClaimsFromProtectedPrometheus() throws Exception {
         mockMvc.perform(get("/actuator/prometheus")
                         .with(jwt()
+                                .jwt(token -> token.claim("sub", 42))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .with(jwt()
                                 .jwt(token -> token
                                         .subject("admin-1")
                                         .claim("preferred_username", 42))

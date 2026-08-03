@@ -51,13 +51,14 @@ Spring Security Resource Server валидирует JWT по:
 - audience из `OIDC_AUDIENCE`;
 - стандартным временным claims.
 
-Обязательный `sub` становится каноническим `userId`. Backend не обрезает и не
-канонизирует signed identity values: `sub`, настроенный actor claim и stable
-device claim сравниваются как точные строки. Значения с граничными пробелами
-или управляющими символами отклоняются до controller, чтобы разные claims не
-схлопывались в одну account/device partition. `sub` и actor дополнительно
-ограничены 128 символами — это соответствует persistent schema. При отсутствии
-actor claim человекочитаемый actor совпадает с `sub`.
+Обязательный `sub` становится каноническим `userId` только когда raw signed
+claim является JSON-строкой; Spring string coercion не используется. Backend не
+обрезает и не канонизирует signed identity values: `sub`, настроенный actor claim
+и stable device claim сравниваются как точные строки. Значения с граничными
+пробелами или управляющими символами отклоняются до controller, чтобы разные
+claims не схлопывались в одну account/device partition. `sub` и actor
+дополнительно ограничены 128 символами — это соответствует persistent schema.
+При отсутствии actor claim человекочитаемый actor совпадает с `sub`.
 
 ### Authorities
 
