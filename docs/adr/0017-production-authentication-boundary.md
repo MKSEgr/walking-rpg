@@ -52,13 +52,15 @@ Spring Security Resource Server валидирует JWT по:
 - стандартным временным claims.
 
 Обязательный `sub` становится каноническим `userId` только когда raw signed
-claim является JSON-строкой; Spring string coercion не используется. Backend не
-обрезает и не канонизирует signed identity values: `sub`, настроенный actor claim
-и stable device claim сравниваются как точные строки. Значения с граничными
-пробелами или управляющими символами отклоняются до controller, чтобы разные
-claims не схлопывались в одну account/device partition. `sub` и actor
-дополнительно ограничены 128 символами — это соответствует persistent schema.
-При отсутствии actor claim человекочитаемый actor совпадает с `sub`.
+claim является JSON-строкой. Nimbus processor проверяет этот тип до стандартного
+Spring claim-set coercion; повторная проверка canonical identity provider
+защищает прямые и альтернативные decoder-ы. Backend не обрезает и не
+канонизирует signed identity values: `sub`, настроенный actor claim и stable
+device claim сравниваются как точные строки. Значения с граничными пробелами или
+управляющими символами отклоняются до controller, чтобы разные claims не
+схлопывались в одну account/device partition. `sub` и actor дополнительно
+ограничены 128 символами — это соответствует persistent schema. При отсутствии
+actor claim человекочитаемый actor совпадает с `sub`.
 
 ### Authorities
 

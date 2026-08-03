@@ -112,6 +112,10 @@ grep -Fq 'shouldRejectNonStringSubjectBeforeClaimCoercion' backend/src/test/java
 grep -Fq 'requiredExactStringClaim(' backend/src/main/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProvider.java || fail 'OIDC subject must be validated before Spring string coercion'
 grep -Fq 'shouldRejectNonStringSubjectBeforePrincipalConversion' backend/src/test/java/com/walkingrpg/backend/security/JwtAuthorityConverterTest.java || fail 'JWT principal conversion must reject non-string subjects'
 grep -Fq '.claim("sub", 42)' backend/src/test/java/com/walkingrpg/backend/security/JwtSecurityIntegrationTest.java || fail 'protected actuator must reject a numeric subject before authorization'
+grep -Fq 'implements JwkSetUriJwtDecoderBuilderCustomizer' backend/src/main/java/com/walkingrpg/backend/security/ExactSubjectJwtDecoderCustomizer.java || fail 'auto-configured Nimbus decoder must validate the raw subject type'
+grep -Fq 'processor.setJWTClaimsSetVerifier' backend/src/main/java/com/walkingrpg/backend/security/ExactSubjectJwtDecoderCustomizer.java || fail 'raw subject validation must run before Spring claim-set conversion'
+grep -Fq 'shouldRejectSignedNumericSubjectBeforeClaimSetConversion' backend/src/test/java/com/walkingrpg/backend/security/JwtSecurityIntegrationTest.java || fail 'signed decoder subject-type regression must remain covered'
+grep -Fq '"Bearer " + signedAdminToken(42)' backend/src/test/java/com/walkingrpg/backend/security/JwtSecurityIntegrationTest.java || fail 'signed numeric subject must exercise the real decoder path'
 if grep -Fq 'getSubject()' backend/src/main/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProvider.java backend/src/main/java/com/walkingrpg/backend/security/JwtAuthorityConverter.java; then
   fail 'identity boundary must not coerce the raw OIDC subject through getSubject()'
 fi

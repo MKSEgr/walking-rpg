@@ -14,9 +14,10 @@
 - клиент не передаёт рассчитанную награду, баланс, progress или progression;
 - ошибки имеют `code`, `message`, `details`, `traceId`;
 - production API использует `Authorization: Bearer <access-token>`; `userId`, actor и activity device identity вычисляются backend-ом из authenticated context;
-- signed OIDC `sub` принимается только как исходная JSON-строка, а `sub`, actor
-  и stable device claim не обрезаются: граничный whitespace, control characters
-  и `sub`/actor длиннее persistent limit отклоняются как
+- signed OIDC `sub` принимается только как исходная JSON-строка и проверяется
+  Nimbus processor до стандартного Spring claim-set conversion; `sub`, actor и
+  stable device claim не обрезаются: граничный whitespace, control characters и
+  `sub`/actor длиннее persistent limit отклоняются как
   `401 AUTHENTICATION_ERROR` до controller; отсутствующий optional actor/device
   claim разрешён, но присутствующий claim с пустым значением, неверным типом
   или сломанным nested-path отклоняется fail-closed;
