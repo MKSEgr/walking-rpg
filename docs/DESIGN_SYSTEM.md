@@ -320,6 +320,24 @@ and state that needs an authoritative check without changing who owns it.
 - the complete label and message wrap without truncation inside the existing
   first-journey scroll surface at `320 px / 1.6×` text scale.
 
+## Compact Home composition
+
+The full expedition Home remains the same authoritative screen when narrow
+width and enlarged system text require a different composition. Responsive
+layout changes hierarchy and wrapping only; it does not remove a command or
+reinterpret accepted state.
+
+- compact application chrome keeps saved-action recovery visible and groups
+  refresh plus account navigation into one labelled overflow menu;
+- the daily walking ring, route ENERGY status and pilot/pet cards reflow
+  vertically instead of shrinking text or clipping status;
+- the integrated synchronization and gameplay dock keeps both existing
+  callbacks, allows two-line labels and remains outside the scroll surface;
+- all Home content remains reachable through the existing single scroll view,
+  while the floating journal navigation and sticky dock keep their reserves;
+- the contract is verified at `320 × 640 / 1.6×` without changing cache,
+  command, idempotency, impression or authoritative-refresh ownership.
+
 ## Next visual slices
 
 1. Turn the expedition chapter into a visual route map only from an

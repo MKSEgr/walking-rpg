@@ -92,6 +92,91 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('full Home supports compact enlarged text without overflow', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    int homeLoads = 0;
+    bool accountOpened = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: ActivitySyncShell(
+          synchronizer: () async => _syncResult(),
+          homeLoader: () async {
+            homeLoads += 1;
+            return HomeSnapshot.demo;
+          },
+          platformLoader: () async => platformSnapshot(),
+          platformHomeLoader: () async => HomeSnapshot.demo,
+          onOpenAccount: () {
+            accountOpened = true;
+          },
+          onOpenRecovery: () {},
+          recoveryCount: 2,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-more-actions')), findsOneWidget);
+    expect(find.byTooltip('Обновить'), findsNothing);
+    expect(find.byTooltip('Аккаунт'), findsNothing);
+    expect(
+      find.byKey(const Key('home-daily-progress-compact')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('home-route-energy-compact')), findsOneWidget);
+    expect(
+      find.byKey(const Key('home-expedition-team-compact')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('home-sticky-action-panel')), findsOneWidget);
+    expect(find.byKey(const Key('navigation-home')), findsOneWidget);
+
+    final double pilotTop = tester
+        .getTopLeft(find.byKey(const Key('home-pilot-card')))
+        .dy;
+    final double petTop = tester
+        .getTopLeft(find.byKey(const Key('home-pet-card')))
+        .dy;
+    expect(petTop, greaterThan(pilotTop));
+
+    await tester.tap(find.byKey(const Key('home-more-actions')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('home-menu-refresh')));
+    await tester.pumpAndSettle();
+    expect(homeLoads, 2);
+
+    await tester.tap(find.byKey(const Key('home-more-actions')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('home-menu-account')));
+    await tester.pump();
+    expect(accountOpened, isTrue);
+
+    final Object? exception = tester.takeException();
+    if (exception != null) {
+      fail(
+        exception is FlutterError
+            ? exception.toStringDeep()
+            : exception.toString(),
+      );
+    }
+
+    semantics.dispose();
+  });
+
   testWidgets('activity sync remains visible across Home read states', (
     WidgetTester tester,
   ) async {
