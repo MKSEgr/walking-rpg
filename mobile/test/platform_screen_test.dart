@@ -514,6 +514,10 @@ void main() {
     final PlatformSnapshot snapshot = platformSnapshot(
       ownedCosmetics: const <String>['pilot-scarf', 'spark-halo'],
       activeCosmeticId: CharacterCosmeticIds.sparkHalo,
+      equippedCosmetics: const <String, String>{
+        'PILOT': CharacterCosmeticIds.pilotScarf,
+        'PET': CharacterCosmeticIds.sparkHalo,
+      },
     );
 
     await tester.pumpWidget(
@@ -528,6 +532,22 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    final PilotPortrait equippedPilot = tester.widget<PilotPortrait>(
+      find.byKey(const Key('platform-hero-pilot-portrait')),
+    );
+    final CompanionPortrait equippedHeroPet = tester.widget<CompanionPortrait>(
+      find.byKey(const Key('platform-hero-pet-portrait')),
+    );
+    expect(equippedPilot.hasNavigatorScarf, isTrue);
+    expect(equippedHeroPet.hasSparkHalo, isTrue);
+    expect(
+      find.bySemanticsLabel(
+        'Экипаж маршрута: пилот Навигатор и Искра. '
+        'Экипировано: Шарф навигатора, Ореол Искры',
+      ),
+      findsOneWidget,
+    );
 
     final Finder equippedSparkFinder = find.byKey(
       const Key('platform-pet-portrait-spark-v1'),
@@ -565,6 +585,23 @@ void main() {
       sparkPreview,
     );
     expect(halo.hasSparkHalo, isTrue);
+    expect(find.text('Спутник'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-equipped-cosmetic-pilot-scarf')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('platform-equipped-cosmetic-spark-halo')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('platform-equip-cosmetic-pilot-scarf')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('platform-equip-cosmetic-spark-halo')),
+      findsNothing,
+    );
     expect(
       find.bySemanticsLabel('Пилот Навигатор, Шарф навигатора'),
       findsNothing,

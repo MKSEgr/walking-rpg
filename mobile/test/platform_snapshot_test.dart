@@ -18,6 +18,68 @@ void main() {
     expect(snapshot.claimableSeasonLevel, 2);
     expect(snapshot.remoteConfig.sandboxPaymentsEnabled, isTrue);
     expect(snapshot.userState.hasSuccessfulActivitySync, isTrue);
+    expect(snapshot.userState.equippedCosmetics, const <String, String>{
+      'PILOT': 'pilot-scarf',
+    });
+    expect(snapshot.userState.equippedCosmeticIds, const <String>{
+      'pilot-scarf',
+    });
+  });
+
+  test('maps independent server-owned cosmetic slots', () {
+    final PlatformSnapshot snapshot = platformSnapshot(
+      ownedCosmetics: const <String>['pilot-scarf', 'spark-halo'],
+      activeCosmeticId: 'spark-halo',
+      equippedCosmetics: const <String, String>{
+        'PILOT': 'pilot-scarf',
+        'PET': 'spark-halo',
+      },
+    );
+
+    expect(snapshot.userState.equippedCosmetics, const <String, String>{
+      'PILOT': 'pilot-scarf',
+      'PET': 'spark-halo',
+    });
+    expect(snapshot.userState.equippedCosmeticIds, const <String>{
+      'pilot-scarf',
+      'spark-halo',
+    });
+  });
+
+  test('falls back to the legacy cosmetic pointer when slots are absent', () {
+    final Map<String, dynamic> json = platformSnapshotJson(
+      ownedCosmetics: const <String>['pilot-scarf', 'spark-halo'],
+      activeCosmeticId: 'spark-halo',
+    );
+    final Map<String, dynamic> userState = Map<String, dynamic>.from(
+      json['userState']! as Map<String, dynamic>,
+    )..remove('equippedCosmetics');
+    json['userState'] = userState;
+
+    final PlatformSnapshot snapshot = PlatformSnapshot.fromJson(json);
+
+    expect(snapshot.userState.equippedCosmetics, isEmpty);
+    expect(snapshot.userState.equippedCosmeticIds, const <String>{
+      'spark-halo',
+    });
+  });
+
+  test('keeps an explicit empty cosmetic slot mapping authoritative', () {
+    final PlatformSnapshot snapshot = platformSnapshot(
+      equippedCosmetics: const <String, String>{},
+    );
+
+    expect(snapshot.userState.activeCosmeticId, 'pilot-scarf');
+    expect(snapshot.userState.equippedCosmeticIds, isEmpty);
+  });
+
+  test('rejects equipped cosmetics that are not owned', () {
+    expect(
+      () => platformSnapshot(
+        equippedCosmetics: const <String, String>{'PET': 'spark-halo'},
+      ),
+      throwsA(isA<FormatException>()),
+    );
   });
 
   test('falls back to lifetime steps for an older platform response', () {

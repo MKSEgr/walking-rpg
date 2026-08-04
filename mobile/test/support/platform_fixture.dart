@@ -12,6 +12,9 @@ Map<String, dynamic> platformSnapshotJson({
   Map<String, dynamic>? squad,
   List<String> ownedCosmetics = const <String>['pilot-scarf'],
   String? activeCosmeticId = 'pilot-scarf',
+  Map<String, String> equippedCosmetics = const <String, String>{
+    'PILOT': 'pilot-scarf',
+  },
   List<String> achievements = const <String>['season-reward-1'],
   int resolvedEventCount = 2,
   int totalAcceptedSteps = 6842,
@@ -106,6 +109,7 @@ Map<String, dynamic> platformSnapshotJson({
       'squad': squad,
       'ownedCosmetics': ownedCosmetics,
       'activeCosmeticId': activeCosmeticId,
+      'equippedCosmetics': equippedCosmetics,
       'experimentAssignments': <String, String>{
         'home-energy-copy-v1': 'MOTIVATIONAL',
         'quest-order-v1': 'REWARD_FIRST',
@@ -204,6 +208,9 @@ PlatformSnapshot platformSnapshot({
   Map<String, dynamic>? squad,
   List<String> ownedCosmetics = const <String>['pilot-scarf'],
   String? activeCosmeticId = 'pilot-scarf',
+  Map<String, String> equippedCosmetics = const <String, String>{
+    'PILOT': 'pilot-scarf',
+  },
   List<String> achievements = const <String>['season-reward-1'],
   int resolvedEventCount = 2,
   int totalAcceptedSteps = 6842,
@@ -221,6 +228,7 @@ PlatformSnapshot platformSnapshot({
       squad: squad,
       ownedCosmetics: ownedCosmetics,
       activeCosmeticId: activeCosmeticId,
+      equippedCosmetics: equippedCosmetics,
       achievements: achievements,
       resolvedEventCount: resolvedEventCount,
       totalAcceptedSteps: totalAcceptedSteps,
