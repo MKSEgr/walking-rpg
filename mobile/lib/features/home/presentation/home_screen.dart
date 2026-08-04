@@ -8,6 +8,7 @@ import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibi
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
@@ -1685,14 +1686,20 @@ class _PendingEventResultCard extends StatelessWidget {
           Text(result.outcomeSummary),
           const SizedBox(height: 16),
           _RewardLine(
-            icon: Icons.person_outline,
+            leading: const SizedBox.square(
+              dimension: 44,
+              child: Icon(Icons.person_outline, size: 20),
+            ),
             text:
                 '+${result.pilot.experienceGained} XP · '
                 'всего ${result.pilot.currentExperience}',
           ),
           const SizedBox(height: 8),
           _RewardLine(
-            icon: Icons.pets_outlined,
+            leading: const SizedBox.square(
+              dimension: 44,
+              child: Icon(Icons.pets_outlined, size: 20),
+            ),
             text:
                 '+${result.pet.bondGained} связи · '
                 '${result.pet.name}: ${result.pet.bond}',
@@ -1700,7 +1707,11 @@ class _PendingEventResultCard extends StatelessWidget {
           if (material != null) ...<Widget>[
             const SizedBox(height: 8),
             _RewardLine(
-              icon: Icons.inventory_2_outlined,
+              leading: ExpeditionItemEmblem(
+                itemId: material.itemId,
+                size: 44,
+                highlighted: true,
+              ),
               text:
                   '+${material.quantityGained} ${material.name} · '
                   'всего ${material.quantityAfter}',
@@ -1745,9 +1756,9 @@ class _PendingEventResultCard extends StatelessWidget {
 }
 
 class _RewardLine extends StatelessWidget {
-  const _RewardLine({required this.icon, required this.text});
+  const _RewardLine({required this.leading, required this.text});
 
-  final IconData icon;
+  final Widget leading;
   final String text;
 
   @override
@@ -1755,7 +1766,7 @@ class _RewardLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Icon(icon, size: 20),
+        leading,
         const SizedBox(width: 8),
         Expanded(
           child: Text(text, style: Theme.of(context).textTheme.labelLarge),
@@ -1811,11 +1822,16 @@ class _EventCard extends StatelessWidget {
             Text(event.outcomeSummary ?? ''),
             if (event.materialReward != null) ...<Widget>[
               const SizedBox(height: 10),
-              Text(
-                '+${event.materialReward!.quantityGained} '
-                '${event.materialReward!.itemName} '
-                '· всего ${event.materialReward!.quantityAfter}',
-                style: Theme.of(context).textTheme.labelLarge,
+              _RewardLine(
+                leading: ExpeditionItemEmblem(
+                  itemId: event.materialReward!.itemId,
+                  size: 44,
+                  highlighted: true,
+                ),
+                text:
+                    '+${event.materialReward!.quantityGained} '
+                    '${event.materialReward!.itemName} '
+                    '· всего ${event.materialReward!.quantityAfter}',
               ),
             ],
           ] else ...<Widget>[
@@ -1831,14 +1847,9 @@ class _EventCard extends StatelessWidget {
                   onPressed: disabled || !choice.isAvailable
                       ? null
                       : () => onChoose(choice),
-                  child: Column(
-                    children: <Widget>[
-                      Text(choice.title),
-                      Text(
-                        _rewardText(choice),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
+                  child: _EventChoiceLabel(
+                    choice: choice,
+                    rewardText: _rewardText(choice),
                   ),
                 ),
               ),
@@ -1869,6 +1880,38 @@ class _EventCard extends StatelessWidget {
         : ' · +${material.quantity} ${material.itemName}';
     return '+${choice.pilotExperienceReward} XP · '
         '+${choice.petBondReward} связь$materialText';
+  }
+}
+
+class _EventChoiceLabel extends StatelessWidget {
+  const _EventChoiceLabel({required this.choice, required this.rewardText});
+
+  final HomeEventChoice choice;
+  final String rewardText;
+
+  @override
+  Widget build(BuildContext context) {
+    final HomeMaterialRewardPreview? material = choice.materialReward;
+    final Widget copy = Column(
+      crossAxisAlignment: material == null
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(choice.title),
+        Text(rewardText, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+    if (material == null) {
+      return copy;
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        ExpeditionItemEmblem(itemId: material.itemId, size: 42),
+        const SizedBox(width: 10),
+        Expanded(child: copy),
+      ],
+    );
   }
 }
 
@@ -1907,25 +1950,29 @@ class _EquipmentCard extends StatelessWidget {
             const SizedBox(height: 8),
             if (slot.item == null)
               const Text('Слот свободен')
-            else ...<Widget>[
-              Text(
-                slot.item!.name,
-                key: Key('equipment-item-${slot.slotId}'),
-                style: Theme.of(context).textTheme.titleSmall,
+            else
+              _IllustratedItemIdentity(
+                layoutKey: 'equipment-item-layout-${slot.slotId}',
+                itemId: slot.item!.itemId,
+                title: slot.item!.name,
+                titleKey: Key('equipment-item-${slot.slotId}'),
+                description: slot.item!.description,
+                highlighted: true,
+                footer: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    key: Key('equipment-unequip-${slot.slotId}'),
+                    onPressed: readOnly || busy ? null : () => onUnequip(slot),
+                    icon: changing
+                        ? const SizedBox.square(
+                            dimension: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.remove_circle_outline),
+                    label: const Text('Снять'),
+                  ),
+                ),
               ),
-              const SizedBox(height: 6),
-              OutlinedButton.icon(
-                key: Key('equipment-unequip-${slot.slotId}'),
-                onPressed: readOnly || busy ? null : () => onUnequip(slot),
-                icon: changing
-                    ? const SizedBox.square(
-                        dimension: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.remove_circle_outline),
-                label: const Text('Снять'),
-              ),
-            ],
             const SizedBox(height: 6),
           ],
         ],
@@ -1962,30 +2009,37 @@ class _InventoryCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           for (final HomeInventoryItem item in items) ...<Widget>[
-            Text(
-              item.isUnique
+            _IllustratedItemIdentity(
+              layoutKey: 'inventory-item-layout-${item.itemId}',
+              itemId: item.itemId,
+              title: item.isUnique
                   ? '${item.name} · уникальный предмет'
                   : '${item.name} × ${item.quantity}',
-              style: Theme.of(context).textTheme.labelLarge,
+              description: item.description,
+              highlighted: item.isUnique || item.isEquipped,
+              footer: item.isEquippable
+                  ? SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        key: Key('inventory-equip-${item.itemId}'),
+                        onPressed: readOnly || busy || item.isEquipped
+                            ? null
+                            : () => onEquip(item),
+                        icon: changing
+                            ? const SizedBox.square(
+                                dimension: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.explore_outlined),
+                        label: Text(
+                          item.isEquipped ? 'Экипировано' : 'Экипировать',
+                        ),
+                      ),
+                    )
+                  : null,
             ),
-            const SizedBox(height: 2),
-            Text(item.description),
-            if (item.isEquippable) ...<Widget>[
-              const SizedBox(height: 6),
-              FilledButton.tonalIcon(
-                key: Key('inventory-equip-${item.itemId}'),
-                onPressed: readOnly || busy || item.isEquipped
-                    ? null
-                    : () => onEquip(item),
-                icon: changing
-                    ? const SizedBox.square(
-                        dimension: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.explore_outlined),
-                label: Text(item.isEquipped ? 'Экипировано' : 'Экипировать'),
-              ),
-            ],
             const SizedBox(height: 8),
           ],
         ],
@@ -2068,29 +2122,50 @@ class _CraftingRecipeView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(recipe.name, style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 4),
-        Text(recipe.description),
-        const SizedBox(height: 10),
+        _IllustratedItemIdentity(
+          layoutKey: 'crafting-result-layout-${recipe.result.itemId}',
+          itemId: recipe.result.itemId,
+          title: recipe.name,
+          description: recipe.description,
+          highlighted: recipe.canCraft || recipe.isCrafted,
+        ),
+        const SizedBox(height: 12),
         for (final HomeCraftingIngredient ingredient
             in recipe.ingredients) ...<Widget>[
-          Row(
-            children: <Widget>[
-              Icon(
-                ingredient.isAvailable
-                    ? Icons.check_circle_outline
-                    : Icons.radio_button_unchecked,
-                size: 18,
+          Semantics(
+            container: true,
+            label:
+                '${ingredient.name}, ${ingredient.availableQuantity} из '
+                '${ingredient.requiredQuantity}, '
+                '${ingredient.isAvailable ? 'материала достаточно' : 'материала не хватает'}',
+            child: ExcludeSemantics(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  ExpeditionItemEmblem(itemId: ingredient.itemId, size: 38),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(ingredient.name)),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: <Widget>[
+                      Icon(
+                        ingredient.isAvailable
+                            ? Icons.check_circle_outline
+                            : Icons.radio_button_unchecked,
+                        size: 18,
+                      ),
+                      Text(
+                        '${ingredient.availableQuantity} / '
+                        '${ingredient.requiredQuantity}',
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 6),
-              Expanded(child: Text(ingredient.name)),
-              Text(
-                '${ingredient.availableQuantity} / '
-                '${ingredient.requiredQuantity}',
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
         ],
         const SizedBox(height: 6),
         Text(
@@ -2127,6 +2202,70 @@ class _CraftingRecipeView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _IllustratedItemIdentity extends StatelessWidget {
+  const _IllustratedItemIdentity({
+    required this.layoutKey,
+    required this.itemId,
+    required this.title,
+    required this.description,
+    this.titleKey,
+    this.highlighted = false,
+    this.footer,
+  });
+
+  final String layoutKey;
+  final String itemId;
+  final String title;
+  final String description;
+  final Key? titleKey;
+  final bool highlighted;
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          key: titleKey,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 3),
+        Text(description),
+        if (footer != null) ...<Widget>[const SizedBox(height: 8), footer!],
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 300;
+        final Widget art = ExpeditionItemEmblem(
+          itemId: itemId,
+          size: compact ? 64 : 72,
+          highlighted: highlighted,
+        );
+        return KeyedSubtree(
+          key: Key('$layoutKey-${compact ? 'compact' : 'wide'}'),
+          child: compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[art, const SizedBox(height: 10), details],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    art,
+                    const SizedBox(width: 12),
+                    Expanded(child: details),
+                  ],
+                ),
+        );
+      },
     );
   }
 }

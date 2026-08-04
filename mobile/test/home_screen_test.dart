@@ -7,9 +7,11 @@ import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -168,6 +170,83 @@ void main() {
     expect(find.text('XP 20 / 100'), findsOneWidget);
     expect(find.text('Связь 10 · Малыш'), findsOneWidget);
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
+  });
+
+  testWidgets(
+    'field kit reuses stable item art across inventory and crafting',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WalkingRpgTheme.dark(),
+          home: HomeScreen(loader: () async => _craftingReady()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('item-art-lumen-shard')), findsNWidgets(2));
+      expect(find.byKey(const Key('item-art-echo-thread')), findsNWidgets(2));
+      expect(find.byType(ExpeditionItemEmblem), findsNWidgets(5));
+      expect(
+        find.byKey(const Key('item-art-resonance-compass')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('crafting-result-layout-resonance-compass-wide')),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Люминовый осколок, 2 из 2, материала достаточно',
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('illustrated field kit reflows on compact enlarged text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(loader: () async => _craftingReady()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await _scrollAboveStickyAction(
+      tester,
+      find.byKey(const Key('craft-resonance-compass-v1')),
+    );
+
+    expect(
+      find.byKey(const Key('inventory-item-layout-lumen-shard-compact')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('crafting-result-layout-resonance-compass-compact')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('authoritative generation reloads home in place', (
@@ -921,6 +1000,13 @@ void main() {
       scrollable: find.byType(Scrollable),
     );
     await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('equipment-card')),
+        matching: find.byKey(const Key('item-art-resonance-compass')),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(unequip);
     await tester.pumpAndSettle();
 
@@ -1005,6 +1091,13 @@ void main() {
         scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: choiceButton,
+          matching: find.byKey(const Key('item-art-lumen-shard')),
+        ),
+        findsOneWidget,
+      );
       await tester.tap(choiceButton);
       await tester.pumpAndSettle();
 
@@ -1017,6 +1110,13 @@ void main() {
         const Key('pending-event-result-card'),
       );
       expect(pendingResult, findsOneWidget);
+      expect(
+        find.descendant(
+          of: pendingResult,
+          matching: find.byKey(const Key('item-art-lumen-shard')),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Стабильный резонанс'), findsOneWidget);
       expect(find.text('Следующий узел: Пепельная орбита'), findsOneWidget);
 
