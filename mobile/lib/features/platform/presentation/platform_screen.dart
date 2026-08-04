@@ -11,6 +11,7 @@ import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -1363,9 +1364,6 @@ class _SkillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool available = seasonXp >= skill.requiredSeasonXp;
-    final Color iconColor = unlocked
-        ? Theme.of(context).colorScheme.primary
-        : Theme.of(context).colorScheme.onSurfaceVariant;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (_usesCompactPlatformSection(context, constraints)) {
@@ -1380,9 +1378,10 @@ class _SkillCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(
-                      unlocked ? Icons.hub : Icons.hub_outlined,
-                      color: iconColor,
+                    ProgressionSigil(
+                      identity: skill.skillId,
+                      active: unlocked,
+                      size: 56,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1433,9 +1432,10 @@ class _SkillCard extends StatelessWidget {
               horizontal: 18,
               vertical: 8,
             ),
-            leading: Icon(
-              unlocked ? Icons.hub : Icons.hub_outlined,
-              color: iconColor,
+            leading: ProgressionSigil(
+              identity: skill.skillId,
+              active: unlocked,
+              size: 52,
             ),
             title: Text(skill.name),
             subtitle: Text(
@@ -1444,7 +1444,7 @@ class _SkillCard extends StatelessWidget {
             ),
             isThreeLine: true,
             trailing: unlocked
-                ? const Icon(Icons.lock_open)
+                ? const Icon(Icons.lock_open, semanticLabel: 'Навык открыт')
                 : IconButton(
                     key: Key('platform-unlock-skill-${skill.skillId}'),
                     tooltip: available
@@ -1830,24 +1830,137 @@ class _AchievementsCard extends StatelessWidget {
             icon: Icons.emoji_events_outlined,
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: snapshot.content.achievements
-                .map(
-                  (PlatformAchievement achievement) => Chip(
-                    avatar: Icon(
-                      unlocked.contains(achievement.achievementId)
-                          ? Icons.emoji_events
-                          : Icons.lock_outline,
-                      size: 18,
-                    ),
-                    label: Text(achievement.name),
-                  ),
-                )
-                .toList(growable: false),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compact = _usesCompactPlatformSection(
+                context,
+                constraints,
+              );
+              final double tileWidth = compact
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - 8) / 2;
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: snapshot.content.achievements
+                    .map(
+                      (PlatformAchievement achievement) => SizedBox(
+                        width: tileWidth,
+                        child: _AchievementTile(
+                          achievement: achievement,
+                          unlocked: unlocked.contains(
+                            achievement.achievementId,
+                          ),
+                          horizontal: compact,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+              );
+            },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AchievementTile extends StatelessWidget {
+  const _AchievementTile({
+    required this.achievement,
+    required this.unlocked,
+    required this.horizontal,
+  });
+
+  final PlatformAchievement achievement;
+  final bool unlocked;
+  final bool horizontal;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final Color accent = unlocked ? palette.resonance : colors.onSurfaceVariant;
+    final Widget copy = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: horizontal
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
+      children: <Widget>[
+        Text(
+          achievement.name,
+          textAlign: horizontal ? TextAlign.start : TextAlign.center,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 5),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              unlocked ? Icons.check_circle_outline : Icons.lock_outline,
+              size: 15,
+              color: accent,
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                unlocked ? 'Открыто' : 'Закрыто',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(color: accent),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    return Semantics(
+      key: Key('platform-achievement-${achievement.achievementId}'),
+      container: true,
+      label:
+          'Достижение «${achievement.name}»: '
+          '${unlocked ? 'открыто' : 'закрыто'}',
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: unlocked ? 0.1 : 0.045),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: unlocked
+                  ? accent.withValues(alpha: 0.5)
+                  : palette.panelBorder,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: horizontal
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      ProgressionSigil(
+                        identity: achievement.achievementId,
+                        active: unlocked,
+                        size: 52,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(child: copy),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      ProgressionSigil(
+                        identity: achievement.achievementId,
+                        active: unlocked,
+                        size: 54,
+                      ),
+                      const SizedBox(height: 9),
+                      copy,
+                    ],
+                  ),
+          ),
+        ),
       ),
     );
   }

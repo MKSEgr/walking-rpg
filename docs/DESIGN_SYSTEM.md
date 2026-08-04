@@ -157,6 +157,24 @@ supported and exactly matches the referenced server-catalog item; unknown IDs
 or cross-slot assignments reject the inconsistent snapshot instead of being
 silently reinterpreted by presentation.
 
+## Pilot progression sigils
+
+The journal gives server-authored pilot skills and achievements a compact
+code-native sigil vocabulary instead of repeating generic hub, trophy and lock
+icons. Each current catalog identity has a distinct route, signal, ENERGY,
+crew or milestone silhouette. Exact stable `skillId` and `achievementId`
+values select those marks; an unknown future ID receives a neutral
+constellation fallback even if its display name resembles existing content.
+
+Sigils never decide availability or completion. Skill unlock state continues
+to come from `unlockedSkills`, achievement state from the accepted achievement
+set, and all names, descriptions, XP requirements and ordering remain
+server-authored. Locked and unlocked treatments pair contrast with explicit
+text, while the decorative mark is excluded from semantics so screen readers
+hear one server name and one literal state. At compact width with enlarged
+text, achievement tiles become a single vertical list and skill actions retain
+their existing full-width command boundary.
+
 ## Expedition item vocabulary
 
 The first field-kit illustrations turn server-owned rewards and equipment into
