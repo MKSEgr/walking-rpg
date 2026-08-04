@@ -102,7 +102,7 @@ GAMEPLAY не вызывается и остаётся `PENDING`; `TELEMETRY` в
 lane. Exposure lane выводится из
 сохранённого payload, поэтому старый v1 record изолируется без миграции store.
 
-Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
+Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. `equippedCosmetics` является additive server-owned mapping `PILOT`/`PET`/`PROFILE → cosmeticId`; legacy `activeCosmeticId` остаётся указателем на последний выбор для старого клиента. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
 
 Authenticated shell выполняет startup replay ровно в одном месте, а runtime
 memoize-ит его Future до завершения authenticated session. После первой
@@ -313,6 +313,10 @@ item и immutable crafting response/ingredient snapshots.
 V14 добавляет composite ownership FK и single-slot uniqueness equipment state,
 immutable equip/unequip responses и stage-ит inactive `chapter-1-v2`, сохраняя
 starter `chapter-1-v1` активной до отдельного cluster-wide activation step.
+V17 добавляет независимый persistent cosmetic slot state, backfill известного
+legacy `activeCosmeticId`, account cascade и additive platform projection. Старый
+backend продолжает менять только compatibility pointer и не удаляет V17 rows;
+новый read model накладывает этот pointer на его server-catalog slot.
 
 ## 8. Конкурентность и транзакции
 
@@ -324,6 +328,9 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
   под двумя physical scopes с command-specific fingerprints, поэтому старый и
   новый экземпляры во время rolling deployment выполняют exact replay; legacy
   processed rows также читаются для обратной совместимости;
+- cosmetic equip выводит slot только из server catalog, материализует legacy
+  selection и upsert-ит один `(user, slot)` под тем же user lock; независимые
+  slots не заменяют друг друга, а exact replay не выполняет второй upsert;
 - source uniqueness в ledger;
 - account-deletion lock и active-subject check выполняются внутри mutating
   transaction до operation-specific locks/replay. Это включает activity,
@@ -370,6 +377,8 @@ starter `chapter-1-v1` активной до отдельного cluster-wide a
 9. Platform command first response равен replayed response.
 10. Alias имени cosmetic purchase не меняет idempotency scope; тот же key с
     другим `cosmeticId` конфликтует до provider call.
+10a. Cosmetic ID не выбирает slot на клиенте; один пользователь имеет не более
+     одного server-known cosmetic в каждом `PILOT`/`PET`/`PROFILE` slot.
 11. Risk engine работает в shadow mode до внешней калибровки.
 12. User/device/actor не принимаются контроллерами из произвольных headers или body в production.
 13. Валидный JWT без прикладной `ROLE_USER`/`ROLE_ADMIN` не даёт доступ к API.

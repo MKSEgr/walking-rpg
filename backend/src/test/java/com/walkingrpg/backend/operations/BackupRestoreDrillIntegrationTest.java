@@ -100,8 +100,8 @@ class BackupRestoreDrillIntegrationTest {
         assertEquals(latestRepositoryVersion, sourceFlywayVersion);
         assertTrue(
                 MigrationVersion.fromVersion(latestRepositoryVersion)
-                        .compareTo(MigrationVersion.fromVersion("16")) >= 0,
-                "The drill must cover Flyway V1-V16 or later"
+                        .compareTo(MigrationVersion.fromVersion("17")) >= 0,
+                "The drill must cover Flyway V1-V17 or later"
         );
 
         try (Connection sourceConnection = connection(SOURCE)) {
@@ -115,8 +115,8 @@ class BackupRestoreDrillIntegrationTest {
         try (Connection sourceConnection = connection(SOURCE)) {
             sourceManifest = PostgresDrillManifest.capture(sourceConnection);
         }
-        assertTrue(sourceManifest.tables().size() >= 33);
-        assertTrue(sourceManifest.applicationTableCount() >= 32);
+        assertTrue(sourceManifest.tables().size() >= 34);
+        assertTrue(sourceManifest.applicationTableCount() >= 33);
         assertEquals(
                 sourceManifest.applicationTableCount(),
                 sourceManifest.fixtureCoveredApplicationTableCount()
@@ -459,6 +459,13 @@ class BackupRestoreDrillIntegrationTest {
                   AND slot_id = 'NAVIGATION'
                   AND item_instance_id =
                       '70000000-0000-0000-0000-000000000001'
+                """));
+        assertEquals(1, scalarLong(connection, """
+                SELECT count(*)
+                FROM platform_cosmetic_slot_state
+                WHERE user_id = 'backup-drill-user'
+                  AND slot = 'PILOT'
+                  AND cosmetic_id = 'pilot-scarf'
                 """));
         assertEquals(1, scalarLong(connection, """
                 SELECT count(*)

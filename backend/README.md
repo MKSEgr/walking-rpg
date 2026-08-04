@@ -145,6 +145,9 @@ PostgreSQL Testcontainers tests проверяют:
   запрещают republish сдвигать route baseline. Если v2 уже публиковалась на
   V14, upgrade fail-closed требует явно восстановить первую активацию из
   rollout/audit evidence и не принимает mutable `created_at` как источник.
+- Flyway V16 добавляет receipt-time retention index, а V17 сохраняет cosmetic
+  loadout независимо по `PILOT`/`PET`/`PROFILE`, backfill-ит известный legacy
+  selection и покрывается restart/upgrade/account/backup tests.
 - operational integration проверяет main-port `/livez`/`readyz`, PostgreSQL в
   readiness, скрытые health details и admin-only Prometheus;
 - synthetic PostgreSQL 17.10 backup/restore drill сверяет archive checksum,

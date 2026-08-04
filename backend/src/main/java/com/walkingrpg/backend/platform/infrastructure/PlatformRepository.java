@@ -36,6 +36,15 @@ public interface PlatformRepository {
 
     Map<String, Object> activeRemoteConfig();
 
+    Map<String, String> findEquippedCosmetics(String userId);
+
+    void equipCosmetic(
+            String userId,
+            String slot,
+            String cosmeticId,
+            Instant equippedAt
+    );
+
     void createSquad(
             String squadId,
             String name,

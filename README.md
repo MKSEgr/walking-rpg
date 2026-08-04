@@ -334,7 +334,7 @@ Pull request CI выполняет:
 ```text
 Project structure
 Backend compile + unit/API tests
-Flyway V1–V16 + PostgreSQL Testcontainers tests
+Flyway V1–V17 + PostgreSQL Testcontainers tests
 Synthetic PostgreSQL backup/restore drill + sanitized evidence
 Adaptive daily-goal unit/API/integration tests
 Dart formatting + Flutter analyze + Flutter tests

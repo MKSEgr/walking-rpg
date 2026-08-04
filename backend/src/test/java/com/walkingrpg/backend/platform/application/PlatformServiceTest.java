@@ -277,7 +277,80 @@ class PlatformServiceTest {
         assertTrue(collection(purchased.snapshot().userState(), "achievements")
                 .contains("first-cosmetic"));
         assertEquals("spark-halo", equipped.snapshot().userState().get("activeCosmeticId"));
+        assertEquals(
+                Map.of(
+                        "PILOT", "pilot-scarf",
+                        "PET", "spark-halo"
+                ),
+                stringMap(equipped.snapshot().userState().get("equippedCosmetics"))
+        );
+        assertEquals(
+                Map.of(
+                        "PILOT", "pilot-scarf",
+                        "PET", "spark-halo"
+                ),
+                platformRepository.equippedCosmetics("user-1")
+        );
         assertEquals(1, platformRepository.paymentCount());
+    }
+
+    @Test
+    void shouldReplaceOnlyTheSelectedCosmeticSlot() {
+        platformRepository.setRemoteConfig(remoteConfig(true, false));
+        service.execute("user-1", command(
+                "BUY_COSMETIC",
+                "buy-trail-banner",
+                Map.of("cosmeticId", "trail-banner")
+        ));
+        service.execute("user-1", command(
+                "BUY_COSMETIC",
+                "buy-dawn-frame",
+                Map.of("cosmeticId", "dawn-frame")
+        ));
+        service.execute("user-1", command(
+                "EQUIP_COSMETIC",
+                "equip-trail-banner",
+                Map.of("cosmeticId", "trail-banner")
+        ));
+
+        PlatformCommandResponse replaced = service.execute("user-1", command(
+                "EQUIP_COSMETIC",
+                "equip-dawn-frame",
+                Map.of("cosmeticId", "dawn-frame")
+        ));
+
+        assertEquals(
+                Map.of(
+                        "PILOT", "pilot-scarf",
+                        "PROFILE", "dawn-frame"
+                ),
+                stringMap(replaced.snapshot().userState().get("equippedCosmetics"))
+        );
+        assertEquals(
+                Map.of(
+                        "PILOT", "pilot-scarf",
+                        "PROFILE", "dawn-frame"
+                ),
+                platformRepository.equippedCosmetics("user-1")
+        );
+        assertEquals("dawn-frame", replaced.snapshot().userState().get(
+                "activeCosmeticId"
+        ));
+    }
+
+    @Test
+    void shouldRejectUnownedCosmeticBeforePersistingAnySlot() {
+        PlatformStateConflictException conflict = assertThrows(
+                PlatformStateConflictException.class,
+                () -> service.execute("user-1", command(
+                        "EQUIP_COSMETIC",
+                        "equip-unowned-spark-halo",
+                        Map.of("cosmeticId", "spark-halo")
+                ))
+        );
+
+        assertEquals("Косметика не приобретена", conflict.getMessage());
+        assertTrue(platformRepository.equippedCosmetics("user-1").isEmpty());
     }
 
     @Test

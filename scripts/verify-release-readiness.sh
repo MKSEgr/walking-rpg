@@ -35,6 +35,7 @@ for file in \
   docs/adr/0029-server-authoritative-crafting.md \
   docs/adr/0030-equipment-and-gated-routes.md \
   docs/adr/0031-compass-beta-funnel.md \
+  docs/adr/0032-server-authoritative-cosmetic-slots.md \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
@@ -67,6 +68,7 @@ for file in \
   backend/src/main/resources/db/migration/V14__equipment_and_resonance_route.sql \
   backend/src/main/resources/db/migration/V15__immutable_content_activation_time.sql \
   backend/src/main/resources/db/migration/V16__platform_event_receipt_time_index.sql \
+  backend/src/main/resources/db/migration/V17__server_authoritative_cosmetic_slots.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -81,6 +83,7 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/migration/ServerAuthoritativeCraftingMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/EquipmentAndResonanceRouteMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ContentReleaseActivationHistoryMigrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/migration/CosmeticSlotStateMigrationTest.java \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
   scripts/ci/verify-android-release-config.sh \
@@ -222,6 +225,12 @@ grep -Fq 'CompassJourneyAnalyticsIntegrationTest' .github/workflows/ci.yml || fa
 grep -Fq 'ix_platform_event_user_received_at' backend/src/main/resources/db/migration/V16__platform_event_receipt_time_index.sql || fail 'V16 must add the receipt-time retention index'
 grep -Fq 'ON platform_event (user_id, received_at)' backend/src/main/resources/db/migration/V16__platform_event_receipt_time_index.sql || fail 'V16 receipt-time index must support the retention user/range predicate'
 grep -Fq 'assertReceiptTimeRetentionRangeUsesDedicatedIndex' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'retention integration coverage must verify the V16 index plan'
+grep -Fq 'CREATE TABLE platform_cosmetic_slot_state' backend/src/main/resources/db/migration/V17__server_authoritative_cosmetic_slots.sql || fail 'V17 must persist cosmetic equipment independently by slot'
+grep -Fq "CHECK (slot IN ('PILOT', 'PET', 'PROFILE'))" backend/src/main/resources/db/migration/V17__server_authoritative_cosmetic_slots.sql || fail 'V17 must keep cosmetic slots server-owned'
+grep -Fq 'UNIQUE (user_id, cosmetic_id)' backend/src/main/resources/db/migration/V17__server_authoritative_cosmetic_slots.sql || fail 'V17 must not equip one cosmetic in multiple slots'
+grep -Fq 'ON DELETE CASCADE' backend/src/main/resources/db/migration/V17__server_authoritative_cosmetic_slots.sql || fail 'V17 cosmetic state must follow account deletion'
+grep -Fq 'equippedCosmetics' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'platform snapshot must expose additive cosmetic slots'
+grep -Fq 'CosmeticSlotStateMigrationTest' .github/workflows/ci.yml || fail 'cosmetic slot migration test must run in CI'
 
 printf '%s\n' 'Checking production operational controls...'
 grep -Fq 'micrometer-registry-prometheus' backend/pom.xml || fail 'Prometheus registry is required'
@@ -374,8 +383,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 16:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V16: {versions}')
+if versions != expected or not versions or versions[-1] < 17:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V17: {versions}')
 print('Flyway versions:', versions)
 PY
 

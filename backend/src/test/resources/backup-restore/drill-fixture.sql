@@ -47,6 +47,22 @@ INSERT INTO roadmap_user_state (
     '2026-07-30T10:00:40Z'
 );
 
+INSERT INTO platform_cosmetic_slot_state (
+    user_id,
+    slot,
+    cosmetic_id,
+    version,
+    equipped_at,
+    updated_at
+) VALUES (
+    'backup-drill-user',
+    'PILOT',
+    'pilot-scarf',
+    1,
+    '2026-07-30T10:00:40Z',
+    '2026-07-30T10:00:40Z'
+);
+
 INSERT INTO processed_roadmap_command (
     user_id,
     command_type,

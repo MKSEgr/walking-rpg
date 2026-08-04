@@ -551,6 +551,12 @@ public class PlatformAdminService {
                         + "FROM roadmap_user_state WHERE user_id = ?",
                 normalized
         ));
+        export.put("cosmeticEquipment", jdbcTemplate.queryForList(
+                "SELECT slot, cosmetic_id, version, equipped_at, updated_at "
+                        + "FROM platform_cosmetic_slot_state "
+                        + "WHERE user_id = ? ORDER BY slot",
+                normalized
+        ));
         export.put("platformCommands", jdbcTemplate.queryForList(
                 "SELECT command_type, idempotency_key, response_json::text AS response_json, "
                         + "created_at "

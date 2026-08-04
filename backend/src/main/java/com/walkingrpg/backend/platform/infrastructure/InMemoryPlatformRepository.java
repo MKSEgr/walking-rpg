@@ -24,6 +24,7 @@ public class InMemoryPlatformRepository implements PlatformRepository {
     private final Map<String, MutableSquad> squads = new HashMap<>();
     private final Map<String, String> squadByUser = new HashMap<>();
     private final Map<String, PaymentReceipt> payments = new HashMap<>();
+    private final Map<String, Map<String, String>> equippedCosmetics = new HashMap<>();
     private final List<Map<String, Object>> events = new ArrayList<>();
     private Map<String, Object> remoteConfig = defaultConfig();
     private String contentVersion = "chapter-1-v2";
@@ -80,6 +81,23 @@ public class InMemoryPlatformRepository implements PlatformRepository {
     @Override
     public synchronized Map<String, Object> activeRemoteConfig() {
         return Map.copyOf(remoteConfig);
+    }
+
+    @Override
+    public synchronized Map<String, String> findEquippedCosmetics(String userId) {
+        return Map.copyOf(equippedCosmetics.getOrDefault(userId, Map.of()));
+    }
+
+    @Override
+    public synchronized void equipCosmetic(
+            String userId,
+            String slot,
+            String cosmeticId,
+            Instant equippedAt
+    ) {
+        equippedCosmetics
+                .computeIfAbsent(userId, ignored -> new LinkedHashMap<>())
+                .put(slot, cosmeticId);
     }
 
     @Override
@@ -177,6 +195,10 @@ public class InMemoryPlatformRepository implements PlatformRepository {
 
     public synchronized int eventCount() {
         return events.size();
+    }
+
+    public synchronized Map<String, String> equippedCosmetics(String userId) {
+        return findEquippedCosmetics(userId);
     }
 
     public synchronized List<Map<String, Object>> events() {

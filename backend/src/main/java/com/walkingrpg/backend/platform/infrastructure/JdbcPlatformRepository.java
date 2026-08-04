@@ -187,6 +187,52 @@ public class JdbcPlatformRepository implements PlatformRepository {
     }
 
     @Override
+    public Map<String, String> findEquippedCosmetics(String userId) {
+        Map<String, String> equipped = new LinkedHashMap<>();
+        jdbcTemplate.query("""
+                SELECT slot, cosmetic_id
+                FROM platform_cosmetic_slot_state
+                WHERE user_id = ?
+                ORDER BY slot
+                """, resultSet -> {
+            equipped.put(
+                    resultSet.getString("slot"),
+                    resultSet.getString("cosmetic_id")
+            );
+        }, userId);
+        return Map.copyOf(equipped);
+    }
+
+    @Override
+    public void equipCosmetic(
+            String userId,
+            String slot,
+            String cosmeticId,
+            Instant equippedAt
+    ) {
+        ensureUser(userId, equippedAt);
+        Timestamp timestamp = Timestamp.from(equippedAt);
+        jdbcTemplate.update("""
+                INSERT INTO platform_cosmetic_slot_state (
+                    user_id, slot, cosmetic_id, version, equipped_at, updated_at
+                ) VALUES (?, ?, ?, 1, ?, ?)
+                ON CONFLICT (user_id, slot) DO UPDATE
+                SET cosmetic_id = EXCLUDED.cosmetic_id,
+                    version = platform_cosmetic_slot_state.version + 1,
+                    equipped_at = EXCLUDED.equipped_at,
+                    updated_at = EXCLUDED.updated_at
+                WHERE platform_cosmetic_slot_state.cosmetic_id
+                    IS DISTINCT FROM EXCLUDED.cosmetic_id
+                """,
+                userId,
+                slot,
+                cosmeticId,
+                timestamp,
+                timestamp
+        );
+    }
+
+    @Override
     public void createSquad(
             String squadId,
             String name,

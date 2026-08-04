@@ -8,6 +8,7 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class PlatformContentCatalog {
+
+    private static final Set<String> COSMETIC_SLOTS =
+            Set.of("PILOT", "PET", "PROFILE");
 
     public enum QuestMetric {
         TOTAL_ACCEPTED_STEPS,
@@ -57,6 +61,20 @@ public class PlatformContentCatalog {
             String slot,
             long sandboxPrice
     ) {
+        public CosmeticDefinition {
+            if (cosmeticId == null || cosmeticId.isBlank()) {
+                throw new IllegalArgumentException("cosmeticId обязателен");
+            }
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException("Название cosmetic обязательно");
+            }
+            if (!COSMETIC_SLOTS.contains(slot)) {
+                throw new IllegalArgumentException("Неизвестный cosmetic slot");
+            }
+            if (sandboxPrice < 0) {
+                throw new IllegalArgumentException("Цена cosmetic не может быть отрицательной");
+            }
+        }
     }
 
     public record ExperimentDefinition(
