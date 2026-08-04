@@ -143,9 +143,9 @@ class QuestRouteProgress extends StatelessWidget {
           children: <Widget>[
             Text(
               '$progress / $target',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: activeAccent,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: activeAccent),
             ),
             const SizedBox(height: 5),
             SizedBox(
