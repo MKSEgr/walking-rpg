@@ -11,6 +11,7 @@ import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
@@ -136,6 +137,65 @@ void main() {
     expect(find.byType(ExpeditionProgressRing), findsOneWidget);
   });
 
+  testWidgets('keeps server progression copy beside exact visual identities', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final PlatformSnapshot initial = platformSnapshot(
+      achievements: const <String>['onboarding-complete'],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => initial,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder unlockedSkill = find.byKey(
+      const Key('progression-sigil-steady-step-active'),
+    );
+    await _bringIntoView(tester, unlockedSkill);
+    expect(unlockedSkill, findsOneWidget);
+    expect(find.text('Ровный шаг'), findsOneWidget);
+
+    final Finder lockedSkill = find.byKey(
+      const Key('progression-sigil-trail-memory-locked'),
+    );
+    await _bringIntoView(tester, lockedSkill);
+    expect(lockedSkill, findsOneWidget);
+    expect(find.byType(ProgressionSigil), findsWidgets);
+
+    final Finder unlockedAchievement = find.byKey(
+      const Key('platform-achievement-onboarding-complete'),
+    );
+    await _bringIntoView(tester, unlockedAchievement);
+    expect(
+      find.bySemanticsLabel('Достижение «Путь открыт»: открыто'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('progression-sigil-onboarding-complete-active')),
+      findsOneWidget,
+    );
+
+    final Finder lockedAchievement = find.byKey(
+      const Key('platform-achievement-season-level-3'),
+    );
+    await _bringIntoView(tester, lockedAchievement);
+    expect(
+      find.bySemanticsLabel('Достижение «Третий уровень сезона»: закрыто'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testWidgets('full journal supports compact enlarged text without overflow', (
     WidgetTester tester,
   ) async {
@@ -208,6 +268,7 @@ void main() {
       Key('platform-skill-compact-steady-step'),
       Key('platform-quest-compact-walk-3000'),
       Key('platform-cosmetic-compact-pilot-scarf'),
+      Key('platform-achievement-onboarding-complete'),
       Key('platform-journal-footer'),
     ]) {
       final Finder target = find.byKey(key);
