@@ -13,6 +13,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
+import 'package:walking_rpg_mobile/design_system/squad_formation_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -1616,6 +1617,7 @@ class _SquadCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final PlatformSquad? current = squad;
     if (current != null) {
+      final int memberCount = current.memberUserIds.length;
       return ExpeditionPanel(
         tone: ExpeditionPanelTone.resonance,
         child: Column(
@@ -1626,16 +1628,91 @@ class _SquadCard extends StatelessWidget {
               subtitle: 'Совместный маршрут и общий позывной.',
               icon: Icons.groups_outlined,
             ),
-            const SizedBox(height: 8),
-            Text(current.name),
-            Text('Участников: ${current.memberUserIds.length}'),
-            SelectableText('ID: ${current.squadId}'),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              key: const Key('platform-leave-squad'),
-              onPressed: busy ? null : onLeave,
-              icon: const Icon(Icons.logout),
-              label: const Text('Покинуть отряд'),
+            const SizedBox(height: 14),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final bool compact = _usesCompactPlatformSection(
+                  context,
+                  constraints,
+                );
+                final Widget formation = SquadFormationSignal(
+                  connected: true,
+                  memberCount: memberCount,
+                  size: compact ? 104 : 120,
+                );
+                final Widget summary = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Semantics(
+                      key: const Key('platform-squad-summary'),
+                      container: true,
+                      label:
+                          'Отряд «${current.name}». '
+                          'Участников: $memberCount',
+                      child: ExcludeSemantics(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              current.name,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            ExpeditionBadge(
+                              label: 'Участников: $memberCount',
+                              icon: Icons.group_outlined,
+                              tone: ExpeditionPanelTone.resonance,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SelectableText('ID: ${current.squadId}'),
+                  ],
+                );
+                final Widget action = OutlinedButton.icon(
+                  key: const Key('platform-leave-squad'),
+                  onPressed: busy ? null : onLeave,
+                  icon: const Icon(Icons.logout),
+                  label: const Text(
+                    'Покинуть отряд',
+                    maxLines: 2,
+                    overflow: TextOverflow.visible,
+                    textAlign: TextAlign.center,
+                  ),
+                );
+
+                if (compact) {
+                  return Column(
+                    key: const Key('platform-squad-connected-compact'),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Center(child: formation),
+                      const SizedBox(height: 14),
+                      summary,
+                      const SizedBox(height: 14),
+                      SizedBox(width: double.infinity, child: action),
+                    ],
+                  );
+                }
+                return Column(
+                  key: const Key('platform-squad-connected-wide'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        formation,
+                        const SizedBox(width: 18),
+                        Expanded(child: summary),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    action,
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -1644,49 +1721,119 @@ class _SquadCard extends StatelessWidget {
 
     return ExpeditionPanel(
       tone: ExpeditionPanelTone.resonance,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          const ExpeditionSectionTitle(
-            title: 'Отряд',
-            subtitle: 'Создайте группу или присоединитесь по ID.',
-            icon: Icons.groups_outlined,
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            key: const Key('platform-squad-name'),
-            controller: nameController,
-            enabled: !busy,
-            decoration: const InputDecoration(
-              labelText: 'Название нового отряда',
-            ),
-          ),
-          const SizedBox(height: 8),
-          FilledButton.tonalIcon(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = _usesCompactPlatformSection(
+            context,
+            constraints,
+          );
+          final Widget formation = const SquadFormationSignal(
+            connected: false,
+            memberCount: 0,
+            size: 104,
+          );
+          final Widget introduction = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Свободный канал',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'Создайте позывной для нового отряда или настройтесь на '
+                'существующий сигнал.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          );
+          final Widget createAction = FilledButton.tonalIcon(
             key: const Key('platform-create-squad'),
             onPressed: busy || nameController.text.trim().isEmpty
                 ? null
                 : onCreate,
             icon: const Icon(Icons.group_add_outlined),
-            label: const Text('Создать отряд'),
-          ),
-          const Divider(height: 28),
-          TextField(
-            key: const Key('platform-squad-id'),
-            controller: idController,
-            enabled: !busy,
-            decoration: const InputDecoration(
-              labelText: 'ID существующего отряда',
+            label: const Text(
+              'Создать отряд',
+              maxLines: 2,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
+          );
+          final Widget joinAction = OutlinedButton.icon(
             key: const Key('platform-join-squad'),
             onPressed: busy || idController.text.trim().isEmpty ? null : onJoin,
             icon: const Icon(Icons.login),
-            label: const Text('Вступить'),
-          ),
-        ],
+            label: const Text(
+              'Вступить',
+              maxLines: 2,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.center,
+            ),
+          );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const ExpeditionSectionTitle(
+                title: 'Отряд',
+                subtitle: 'Создайте группу или присоединитесь по ID.',
+                icon: Icons.groups_outlined,
+              ),
+              const SizedBox(height: 14),
+              if (compact)
+                Column(
+                  key: const Key('platform-squad-empty-compact'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Center(child: formation),
+                    const SizedBox(height: 12),
+                    introduction,
+                  ],
+                )
+              else
+                Row(
+                  key: const Key('platform-squad-empty-wide'),
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    formation,
+                    const SizedBox(width: 18),
+                    Expanded(child: introduction),
+                  ],
+                ),
+              const SizedBox(height: 16),
+              TextField(
+                key: const Key('platform-squad-name'),
+                controller: nameController,
+                enabled: !busy,
+                decoration: const InputDecoration(
+                  labelText: 'Название нового отряда',
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (compact)
+                SizedBox(width: double.infinity, child: createAction)
+              else
+                Align(alignment: Alignment.centerLeft, child: createAction),
+              const Divider(height: 28),
+              TextField(
+                key: const Key('platform-squad-id'),
+                controller: idController,
+                enabled: !busy,
+                decoration: const InputDecoration(
+                  labelText: 'ID существующего отряда',
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (compact)
+                SizedBox(width: double.infinity, child: joinAction)
+              else
+                Align(alignment: Alignment.centerLeft, child: joinAction),
+            ],
+          );
+        },
       ),
     );
   }
