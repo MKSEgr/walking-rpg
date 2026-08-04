@@ -172,6 +172,27 @@ void main() {
     expect(lockedSkill, findsOneWidget);
     expect(find.byType(ProgressionSigil), findsWidgets);
 
+    final Finder stepsQuest = find.byKey(
+      const Key('quest-route-signal-walk-3000-steps'),
+    );
+    await _bringIntoView(tester, stepsQuest);
+    expect(stepsQuest, findsOneWidget);
+    expect(find.byType(QuestRouteSignal), findsWidgets);
+    expect(
+      find.bySemanticsLabel('Прогресс задания «Первый маршрут»: 3000 из 3000'),
+      findsOneWidget,
+    );
+
+    final Finder eventQuest = find.byKey(
+      const Key('quest-route-signal-resolve-3-events'),
+    );
+    await _bringIntoView(tester, eventQuest);
+    expect(eventQuest, findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Прогресс задания «Исследователь»: 2 из 3'),
+      findsOneWidget,
+    );
+
     final Finder unlockedAchievement = find.byKey(
       const Key('platform-achievement-onboarding-complete'),
     );
@@ -191,27 +212,6 @@ void main() {
     await _bringIntoView(tester, lockedAchievement);
     expect(
       find.bySemanticsLabel('Достижение «Третий уровень сезона»: закрыто'),
-      findsOneWidget,
-    );
-
-    final Finder stepsQuest = find.byKey(
-      const Key('quest-route-signal-walk-3000-steps'),
-    );
-    await _bringIntoView(tester, stepsQuest);
-    expect(stepsQuest, findsOneWidget);
-    expect(find.byType(QuestRouteSignal), findsWidgets);
-    expect(
-      find.bySemanticsLabel('Прогресс задания «Первый маршрут»: 3000 из 3000'),
-      findsOneWidget,
-    );
-
-    final Finder eventQuest = find.byKey(
-      const Key('quest-route-signal-resolve-3-events'),
-    );
-    await _bringIntoView(tester, eventQuest);
-    expect(eventQuest, findsOneWidget);
-    expect(
-      find.bySemanticsLabel('Прогресс задания «Исследователь»: 2 из 3'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
