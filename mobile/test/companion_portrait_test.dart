@@ -96,11 +96,14 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Искра, люмин, форма 1, активный спутник'),
+      find.bySemanticsLabel('Искра, люмин, Малыш · форма 1, активный спутник'),
       findsOneWidget,
     );
-    expect(find.bySemanticsLabel('Мох, терра, форма 2'), findsOneWidget);
-    expect(find.bySemanticsLabel('Руна, эхо, форма 3'), findsOneWidget);
+    expect(find.bySemanticsLabel('Мох, терра, Юный · форма 2'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Руна, эхо, Взрослый · форма 3'),
+      findsOneWidget,
+    );
     semantics.dispose();
   });
 
@@ -165,7 +168,7 @@ void main() {
     expect(portrait.hasSparkHalo, isTrue);
     expect(illustration.haloColor, isNotNull);
     expect(
-      find.bySemanticsLabel('Искра, люмин, форма 2, Ореол Искры'),
+      find.bySemanticsLabel('Искра, люмин, Юный · форма 2, Ореол Искры'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
