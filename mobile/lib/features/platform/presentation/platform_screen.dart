@@ -1788,7 +1788,7 @@ class _SquadCard extends StatelessWidget {
                   key: const Key('platform-squad-empty-compact'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Center(child: formation),
+                    const Center(child: formation),
                     const SizedBox(height: 12),
                     introduction,
                   ],
