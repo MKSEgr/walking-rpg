@@ -197,6 +197,28 @@ exposes one complete label with the current server quest name and literal
 progress. Compact cards place the mark above the name and keep the existing
 full-width claim action; wide cards keep the mark beside the server copy.
 
+## Squad formation signal
+
+The journal turns accepted squad membership into a quiet resonance formation
+instead of presenting the group as an administrative text block. The signal is
+driven only by whether `squad` exists and by the exact length of the accepted
+`memberUserIds` list. It never assigns portraits, roles, online presence or a
+client-side capacity to those opaque identities.
+
+Up to six decorative member nodes remain legible in the formation. Larger
+server-owned squads add an overflow broadcast mark while the adjacent text
+continues to state the exact member count; the visual cap is not a membership
+limit. When `squad` is absent, the same component shows an open channel beside
+the existing create and join controls without implying that either command has
+already succeeded.
+
+The formation is excluded from semantics. One summary exposes the exact
+server-provided squad name and member count; the full `squadId` remains a
+separate selectable text value, and leave remains a separate control. Compact
+layouts place the signal above that summary and make create, join and leave
+actions full-width. Command keys, payloads, busy/read-only conditions and
+authoritative refresh stay unchanged.
+
 ## Expedition item vocabulary
 
 The first field-kit illustrations turn server-owned rewards and equipment into

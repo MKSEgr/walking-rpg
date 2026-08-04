@@ -13,6 +13,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
+import 'package:walking_rpg_mobile/design_system/squad_formation_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
@@ -290,6 +291,8 @@ void main() {
       Key('platform-skill-compact-steady-step'),
       Key('platform-quest-compact-walk-3000'),
       Key('quest-route-signal-walk-3000-steps'),
+      Key('platform-squad-empty-compact'),
+      Key('squad-formation-signal-open-0'),
       Key('platform-cosmetic-compact-pilot-scarf'),
       Key('platform-achievement-onboarding-complete'),
       Key('platform-journal-footer'),
@@ -475,6 +478,80 @@ void main() {
       find.byKey(const Key('platform-join-squad')),
     );
     expect(join.onPressed, isNotNull);
+  });
+
+  testWidgets('renders only the authoritative squad formation summary', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const String squadId = '11111111-1111-1111-1111-111111111111';
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final PlatformSnapshot snapshot = platformSnapshot(
+      squad: <String, dynamic>{
+        'squadId': squadId,
+        'name': 'Северный импульс',
+        'ownerUserId': 'pilot-owner',
+        'memberUserIds': <String>[
+          'pilot-owner',
+          'pilot-member-1',
+          'pilot-member-2',
+          'pilot-member-3',
+          'pilot-member-4',
+          'pilot-member-5',
+          'pilot-member-6',
+        ],
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: PlatformScreen(
+          loader: () async => snapshot,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder summary = find.byKey(const Key('platform-squad-summary'));
+    await _bringIntoView(tester, summary);
+
+    expect(summary, findsOneWidget);
+    expect(find.byType(SquadFormationSignal), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-squad-connected-compact')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('squad-formation-signal-connected-6-overflow')),
+      findsOneWidget,
+    );
+    expect(find.text('Северный импульс'), findsOneWidget);
+    expect(find.text('УЧАСТНИКОВ: 7'), findsOneWidget);
+    expect(find.text('ID: $squadId'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Отряд «Северный импульс». Участников: 7'),
+      findsOneWidget,
+    );
+    expect(find.text('pilot-member-1'), findsNothing);
+    expect(find.byKey(const Key('platform-squad-name')), findsNothing);
+    final OutlinedButton leave = tester.widget<OutlinedButton>(
+      find.byKey(const Key('platform-leave-squad')),
+    );
+    expect(leave.onPressed, isNotNull);
+    _expectNoLayoutException(tester);
+    semantics.dispose();
   });
 
   testWidgets('shows backend message instead of exception internals', (
