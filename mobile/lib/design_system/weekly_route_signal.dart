@@ -24,7 +24,7 @@ abstract final class WeeklyRouteSignalCatalog {
 ///
 /// The waypoints are decorative samples along one progress trace, not chapter
 /// nodes or server-owned milestones. Exact progress remains visible as text
-/// and as one complete semantic value.
+/// and as one complete semantic label.
 class WeeklyRouteSignal extends StatelessWidget {
   const WeeklyRouteSignal({
     super.key,
@@ -64,7 +64,6 @@ class WeeklyRouteSignal extends StatelessWidget {
       label:
           'Недельный маршрут «$seasonName»: '
           '$progress из $target ENERGY',
-      value: '${(normalized * 100).round()}%',
       child: ExcludeSemantics(
         child: Column(
           mainAxisSize: MainAxisSize.min,
