@@ -62,7 +62,7 @@ class PlatformServiceTest {
         JsonMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
         return new PlatformService(
                 platformRepository,
-                new PlatformContentCatalog(objectMapper),
+                new PlatformContentCatalog(),
                 factsProvider,
                 economyService,
                 paymentProvider,

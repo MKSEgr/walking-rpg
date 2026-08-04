@@ -12,17 +12,32 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 public class PlatformContentCatalog {
 
     private static final Set<String> COSMETIC_SLOTS =
             Set.of("PILOT", "PET", "PROFILE");
+    /*
+     * This writer is deliberately independent from Spring's API ObjectMapper.
+     * Response formatting and application serializer overrides must not change
+     * a cache validator for otherwise identical server-owned content.
+     */
+    private static final ObjectWriter CANONICAL_CATALOG_WRITER =
+            JsonMapper.builder()
+                    .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+                    .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                    .disable(SerializationFeature.INDENT_OUTPUT)
+                    .build()
+                    .writer();
 
     public enum QuestMetric {
         TOTAL_ACCEPTED_STEPS,
@@ -182,12 +197,6 @@ public class PlatformContentCatalog {
             achievement("season-level-3", "Третий уровень сезона")
     );
 
-    private final ObjectMapper objectMapper;
-
-    public PlatformContentCatalog(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
     public List<String> onboardingSteps() {
         return onboardingSteps;
     }
@@ -307,7 +316,7 @@ public class PlatformContentCatalog {
 
     private String digest(Map<String, Object> catalog) {
         try {
-            byte[] canonicalJson = objectMapper.writeValueAsString(
+            byte[] canonicalJson = CANONICAL_CATALOG_WRITER.writeValueAsString(
                     canonicalize(catalog)
             ).getBytes(StandardCharsets.UTF_8);
             return HexFormat.of().formatHex(

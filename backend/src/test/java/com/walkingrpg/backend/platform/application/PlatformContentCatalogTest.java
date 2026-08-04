@@ -9,7 +9,6 @@ import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import com.walkingrpg.backend.progression.domain.PetDefinition;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -18,9 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlatformContentCatalogTest {
 
-    private final PlatformContentCatalog catalog = new PlatformContentCatalog(
-            new ObjectMapper()
-    );
+    private final PlatformContentCatalog catalog = new PlatformContentCatalog();
 
     @Test
     void shouldExposeCompleteVersionedChapterCatalog() {
@@ -62,7 +59,8 @@ class PlatformContentCatalogTest {
         assertNotEquals(current.get("catalogDigest"), legacy.get("catalogDigest"));
         assertEquals(
                 current.get("catalogDigest"),
-                catalog.publicCatalog(StarterExpeditionContent.CONTENT_VERSION)
+                new PlatformContentCatalog()
+                        .publicCatalog(StarterExpeditionContent.CONTENT_VERSION)
                         .get("catalogDigest")
         );
     }
