@@ -51,6 +51,25 @@ restriction.
 Theme-specific values are exposed through `WalkingRpgPalette`; business
 widgets should not introduce independent accent colors.
 
+## Native application identity
+
+The launcher and native startup boundary use one universal expedition emblem:
+a dark compass, an illuminated route and a distant ENERGY signal. It belongs
+to the whole expedition rather than one starter, so the application never
+selects Искра, Мох or Руна before the player does.
+
+- launcher art contains no text and keeps its essential silhouette inside the
+  Android `66 × 66 dp` adaptive-icon safe zone;
+- Android supplies separate foreground/background layers, a round fallback and
+  a monochrome themed-icon layer; iOS exports every declared app-icon scale
+  from the same source;
+- the native splash uses the same emblem on application Ink `#07151D`, with no
+  fake loading progress, animation delay, remote content or Flutter dependency;
+- Android 12+ delegates masking and startup timing to the system splash API,
+  while older Android and iOS show the static mark until Flutter's first frame;
+- startup remains decorative and introduces no accessibility announcement,
+  gameplay state or navigation action.
+
 ## Component rules
 
 - `ExpeditionBackdrop` owns the quiet atmospheric layer. Its painter is static,
@@ -446,8 +465,9 @@ navigation chrome adapts to the space assigned by its parent.
 1. Turn the expedition chapter into a visual route map only from an
    authoritative topology/read model, without adding GPS or real-time walking
    interaction.
-2. Produce the application icon, native splash and illustrated reward/event
-   vocabulary in the approved crew-and-frontier direction.
+2. Produce the illustrated resource, reward, compass-state and event vocabulary
+   in the approved crew-and-frontier direction; application icon and native
+   splash are now defined by the shared expedition emblem.
 3. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
 4. Produce store screenshots and motion guidelines after the first complete
