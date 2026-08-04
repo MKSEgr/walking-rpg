@@ -67,6 +67,7 @@ EXPECTED_TABLES = {
     "pet_progress",
     "pilot_progress",
     "platform_crash_report",
+    "platform_cosmetic_slot_state",
     "platform_event",
     "processed_activity_sync",
     "processed_crafting_command",
@@ -352,8 +353,8 @@ def validate_schema(
         for version in (latest, source_version, restored_version)
     ):
         fail("Flyway versions must be numeric strings")
-    if latest != "16" or source_version != latest or restored_version != latest:
-        fail("Flyway source/restore versions must match repository V16")
+    if latest != "17" or source_version != latest or restored_version != latest:
+        fail("Flyway source/restore versions must match repository V17")
     require_bool(
         flyway.get("validationSuccessful"),
         True,
@@ -363,15 +364,15 @@ def validate_schema(
     manifests = require_dict(evidence.get("manifests"), "manifests")
     require_exact_keys(manifests, MANIFEST_KEYS, "manifests")
     if manifests.get("tableCount") != len(EXPECTED_TABLES):
-        fail("manifests.tableCount must match the exact V16 schema")
+        fail("manifests.tableCount must match the exact V17 schema")
     if manifests.get("applicationTableCount") != len(EXPECTED_TABLES) - 1:
-        fail("manifests.applicationTableCount must match the exact V16 schema")
+        fail("manifests.applicationTableCount must match the exact V17 schema")
     if manifests.get("fixtureCoveredApplicationTableCount") != len(
         EXPECTED_TABLES
     ) - 1:
-        fail("the synthetic fixture must cover every V16 application table")
+        fail("the synthetic fixture must cover every V17 application table")
     if manifests.get("sequenceCount") != 3:
-        fail("manifests.sequenceCount must match the exact V16 schema")
+        fail("manifests.sequenceCount must match the exact V17 schema")
 
     row_counts = require_dict(
         manifests.get("tableRowCounts"),

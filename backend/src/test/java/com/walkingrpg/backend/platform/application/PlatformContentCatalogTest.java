@@ -3,6 +3,7 @@ package com.walkingrpg.backend.platform.application;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
@@ -72,6 +73,21 @@ class PlatformContentCatalogTest {
         assertEquals(catalog.cosmetics().size(), new HashSet<>(catalog.cosmetics().stream()
                 .map(PlatformContentCatalog.CosmeticDefinition::cosmeticId)
                 .toList()).size());
+    }
+
+    @Test
+    void shouldKeepEveryCosmeticInAPersistentServerOwnedSlot() {
+        Set<String> supportedSlots = Set.of("PILOT", "PET", "PROFILE");
+
+        assertTrue(catalog.cosmetics().stream()
+                .map(PlatformContentCatalog.CosmeticDefinition::slot)
+                .allMatch(supportedSlots::contains));
+        assertEquals(
+                supportedSlots,
+                new HashSet<>(catalog.cosmetics().stream()
+                        .map(PlatformContentCatalog.CosmeticDefinition::slot)
+                        .toList())
+        );
     }
 
     @Test

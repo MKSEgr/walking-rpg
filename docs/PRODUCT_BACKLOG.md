@@ -388,7 +388,8 @@ metadata и unit/API/PostgreSQL/migration/widget/cache/outbox tests реализ
 
 ## P2 — soft-launch capabilities
 
-Технически реализованы season, weekly route, squads, cosmetics, sandbox
+Технически реализованы season, weekly route, squads, cosmetics, независимые
+server-authoritative `PILOT`/`PET`/`PROFILE` cosmetic slots, sandbox
 payment boundary с local/test-only registration, effective-capability UI gate,
 risk/admin read models и базовый content/remote-config admin API.
 

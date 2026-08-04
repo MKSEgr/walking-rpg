@@ -85,7 +85,8 @@ Roadmap отражает снижение рисков. Статусы:
 ## Milestone 6 — Soft-launch technical readiness
 
 - [x] Season, weekly routes и squads
-- [x] Cosmetic catalog/shop
+- [x] Cosmetic catalog/shop и server-authoritative `PILOT`/`PET`/`PROFILE`
+      equipment slots с legacy read compatibility
 - [x] Payment-provider boundary + sandbox provider
 - [x] A/B assignment и exposure logging
 - [x] Release candidate CI и store review checklist

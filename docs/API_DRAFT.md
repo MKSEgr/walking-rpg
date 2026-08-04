@@ -40,7 +40,8 @@
 игровыми attributes и timestamps, а также `uniqueInventory`,
 `craftingOperations` и `craftingIngredients` без access tokens или локального
 mobile outbox. Persistent loadout и его exact command snapshots входят в
-`equipment` и `equipmentOperations`.
+`equipment` и `equipmentOperations`; cosmetic loadout входит в
+`cosmeticEquipment`.
 Все секции одного файла читаются в одной read-only `REPEATABLE_READ`
 транзакции. Конкурентная игровая команда или удаление аккаунта не может
 смешать в одном экспорте состояния базы до и после своего commit.
@@ -780,6 +781,14 @@ authoritative fact наличия хотя бы одной успешно обр
 очистке идемпотентных activity-receipts по retention policy и не выводится из
 push-регистрации устройства.
 
+`userState.equippedCosmetics` — additive object `slot -> cosmeticId`, например
+`{"PILOT":"pilot-scarf","PET":"spark-halo"}`. В одном server-owned слоте
+может быть только один принадлежащий пользователю cosmetic; разные слоты
+экипируются одновременно. `activeCosmeticId` временно сохраняется как указатель
+на последний выбранный предмет для старых клиентов. Во время rolling upgrade
+поле может отсутствовать в exact replay ответа, записанного до V17; следующий
+`GET /api/v1/platform` возвращает актуальную per-slot projection.
+
 Все user state, progress facts, squad, content и remote config в одном response
 читаются из единого `REPEATABLE_READ` snapshot. Параллельный activity sync или
 admin publish, завершившийся после фиксации snapshot, целиком попадает только в
@@ -847,6 +856,10 @@ publication lock и не меняют активный snapshot.
   экземпляр предыдущей версии во время rolling deployment также выполнил exact
   replay. Старые processed rows с `command_type=BUY_COSMETIC` продолжают exact
   replay через отдельный legacy lookup.
+- `EQUIP_COSMETIC` принимает только `cosmeticId`: slot выводится из server
+  catalog. Команда материализует прежний `activeCosmeticId`, заменяет только
+  соответствующий `PILOT`/`PET`/`PROFILE` slot и сохраняет остальные slots;
+  неизвестный или не принадлежащий пользователю item отклоняется до изменения.
 
 ### `commandType=RECORD_COMPASS_IMPRESSION`
 

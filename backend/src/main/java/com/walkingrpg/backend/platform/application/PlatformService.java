@@ -279,7 +279,9 @@ public class PlatformService {
             case PURCHASE_COSMETIC_COMMAND -> purchaseCosmetic(
                     userId, state, payload, scope, occurredAt
             );
-            case "EQUIP_COSMETIC" -> equipCosmetic(state, payload);
+            case "EQUIP_COSMETIC" -> equipCosmetic(
+                    userId, state, payload, occurredAt
+            );
             case "CLAIM_SEASON_REWARD" -> claimSeasonReward(state, payload);
             case "RECORD_EXPERIMENT_EXPOSURE" -> recordExperimentExposure(
                     userId, state, payload, occurredAt
@@ -604,12 +606,25 @@ public class PlatformService {
         );
     }
 
-    private Mutation equipCosmetic(PlatformUserState state, Map<String, Object> payload) {
+    private Mutation equipCosmetic(
+            String userId,
+            PlatformUserState state,
+            Map<String, Object> payload,
+            Instant occurredAt
+    ) {
         String cosmeticId = payloadText(payload, "cosmeticId");
-        content.requireCosmetic(cosmeticId);
+        PlatformContentCatalog.CosmeticDefinition cosmetic =
+                content.requireCosmetic(cosmeticId);
         if (!state.ownedCosmetics().contains(cosmeticId)) {
             throw new PlatformStateConflictException("Косметика не приобретена");
         }
+        materializeLegacyActiveCosmetic(userId, state, occurredAt);
+        repository.equipCosmetic(
+                userId,
+                cosmetic.slot(),
+                cosmeticId,
+                occurredAt
+        );
         if (cosmeticId.equals(state.activeCosmeticId())) {
             return new Mutation(state, "Косметика уже экипирована");
         }
@@ -617,6 +632,27 @@ public class PlatformService {
                 withCosmetics(state, state.ownedCosmetics(), cosmeticId),
                 "Косметика экипирована"
         );
+    }
+
+    private void materializeLegacyActiveCosmetic(
+            String userId,
+            PlatformUserState state,
+            Instant occurredAt
+    ) {
+        String activeCosmeticId = state.activeCosmeticId();
+        if (activeCosmeticId == null
+                || !state.ownedCosmetics().contains(activeCosmeticId)) {
+            return;
+        }
+        content.cosmetics().stream()
+                .filter(cosmetic -> cosmetic.cosmeticId().equals(activeCosmeticId))
+                .findFirst()
+                .ifPresent(cosmetic -> repository.equipCosmetic(
+                        userId,
+                        cosmetic.slot(),
+                        cosmetic.cosmeticId(),
+                        occurredAt
+                ));
     }
 
     private Mutation claimSeasonReward(PlatformUserState state, Map<String, Object> payload) {
@@ -876,6 +912,10 @@ public class PlatformService {
         userState.put("squad", squadView(userId, state));
         userState.put("ownedCosmetics", state.ownedCosmetics());
         userState.put("activeCosmeticId", state.activeCosmeticId());
+        userState.put(
+                "equippedCosmetics",
+                equippedCosmeticView(userId, state)
+        );
         userState.put("experimentAssignments", state.experimentAssignments());
         userState.put("resolvedEventCount", facts.resolvedEventCount());
         userState.put("totalAcceptedSteps", facts.totalAcceptedSteps());
@@ -893,6 +933,33 @@ public class PlatformService {
                 effectiveRemoteConfig(),
                 serverTime
         );
+    }
+
+    private Map<String, String> equippedCosmeticView(
+            String userId,
+            PlatformUserState state
+    ) {
+        Map<String, String> persisted = repository.findEquippedCosmetics(userId);
+        Map<String, String> equipped = new LinkedHashMap<>();
+        for (PlatformContentCatalog.CosmeticDefinition cosmetic : content.cosmetics()) {
+            if (cosmetic.cosmeticId().equals(persisted.get(cosmetic.slot()))
+                    && state.ownedCosmetics().contains(cosmetic.cosmeticId())) {
+                equipped.put(cosmetic.slot(), cosmetic.cosmeticId());
+            }
+        }
+
+        String activeCosmeticId = state.activeCosmeticId();
+        if (activeCosmeticId != null
+                && state.ownedCosmetics().contains(activeCosmeticId)) {
+            content.cosmetics().stream()
+                    .filter(cosmetic -> cosmetic.cosmeticId().equals(activeCosmeticId))
+                    .findFirst()
+                    .ifPresent(cosmetic -> equipped.put(
+                            cosmetic.slot(),
+                            cosmetic.cosmeticId()
+                    ));
+        }
+        return Map.copyOf(equipped);
     }
 
     private List<Map<String, Object>> petViews(PlatformUserState state) {

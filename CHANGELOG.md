@@ -154,6 +154,10 @@
   immutability, fail-closed explicit history для pre-V15 v2 republish и stable
   route baseline при same-version republish;
 - ADR 0031 о границе client impressions и authoritative gameplay stages;
+- Flyway V17 `platform_cosmetic_slot_state`, additive
+  `userState.equippedCosmetics`, legacy-selection backfill и account export/
+  delete/backup coverage для независимых `PILOT`, `PET` и `PROFILE` slots;
+- ADR 0032 о server-authoritative cosmetic equipment и rolling compatibility;
 
 ### Changed
 
@@ -231,6 +235,9 @@
 - platform snapshot не объявляет sandbox payment доступным при disabled
   provider, а mobile не показывает purchase action в release build, для
   `false` или cached snapshot.
+- `EQUIP_COSMETIC` теперь выводит slot из server catalog и заменяет только его;
+  `activeCosmeticId` сохранён как legacy pointer, поэтому старый клиент и
+  backend могут участвовать в rolling deployment без удаления других slots.
 - release metadata и backend/Android/iOS candidates привязаны к одному exact
   source SHA/tree; protected signing связывает post-merge `master` с
   CODEOWNER-approved PR по tree SHA, а backend CI selector gate предотвращает

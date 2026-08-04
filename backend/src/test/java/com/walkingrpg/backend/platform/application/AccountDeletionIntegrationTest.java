@@ -113,6 +113,7 @@ class AccountDeletionIntegrationTest {
         assertEquals(0, rowCount("processed_crafting_ingredient"));
         assertEquals(0, rowCount("equipment_slot_state"));
         assertEquals(0, rowCount("processed_equipment_command"));
+        assertEquals(0, rowCount("platform_cosmetic_slot_state"));
         assertEquals(1, rowCount("account_deletion_receipt"));
         assertNotEquals("delete-user", jdbcTemplate.queryForObject(
                 "SELECT subject_hash FROM account_deletion_receipt",
@@ -190,6 +191,7 @@ class AccountDeletionIntegrationTest {
                 "equipment",
                 "equipmentOperations",
                 "platformState",
+                "cosmeticEquipment",
                 "platformCommands",
                 "firstJourneyMilestones",
                 "squadMembership",
@@ -209,6 +211,7 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, ((List<?>) export.get("craftingIngredients")).size());
         assertEquals(1, ((List<?>) export.get("equipment")).size());
         assertEquals(1, ((List<?>) export.get("equipmentOperations")).size());
+        assertEquals(1, ((List<?>) export.get("cosmeticEquipment")).size());
     }
 
     @Test
@@ -491,6 +494,12 @@ class AccountDeletionIntegrationTest {
                     'lumen-shard', 'Люминовый осколок', 2, 0, 1
                 )
                 """, userId);
+        jdbcTemplate.update("""
+                INSERT INTO platform_cosmetic_slot_state (
+                    user_id, slot, cosmetic_id, version,
+                    equipped_at, updated_at
+                ) VALUES (?, 'PILOT', 'pilot-scarf', 1, ?, ?)
+                """, userId, timestamp, timestamp);
     }
 
     private void seedEnergyWallet(String userId, long balance) {

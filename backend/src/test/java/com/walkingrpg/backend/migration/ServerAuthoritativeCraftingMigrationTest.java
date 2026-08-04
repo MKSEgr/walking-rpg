@@ -60,7 +60,7 @@ class ServerAuthoritativeCraftingMigrationTest {
                 .load();
         flyway.migrate();
 
-        assertEquals("16", flyway.info().current().getVersion().getVersion());
+        assertEquals("17", flyway.info().current().getVersion().getVersion());
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             assertEquals(3, scalar(statement, """
                     SELECT quantity

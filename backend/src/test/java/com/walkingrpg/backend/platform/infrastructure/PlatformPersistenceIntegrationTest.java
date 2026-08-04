@@ -283,6 +283,73 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldPersistIndependentCosmeticSlotsAcrossServiceRestart() {
+        String userId = "cosmetic-slot-user";
+        platformAdminService.updateRemoteConfig(
+                "cosmetic-slot-test",
+                "cosmetic-slot-payments-enabled",
+                paymentRemoteConfig(true)
+        );
+
+        try {
+            platformService.execute(userId, new PlatformCommandRequest(
+                    "BUY_COSMETIC",
+                    "buy-persisted-spark-halo",
+                    Map.of("cosmeticId", "spark-halo")
+            ));
+            PlatformCommandRequest equipRequest = new PlatformCommandRequest(
+                    "EQUIP_COSMETIC",
+                    "equip-persisted-spark-halo",
+                    Map.of("cosmeticId", "spark-halo")
+            );
+            PlatformCommandResponse equipped = platformService.execute(
+                    userId,
+                    equipRequest
+            );
+
+            PlatformService restarted = new PlatformService(
+                    platformRepository,
+                    contentCatalog,
+                    progressFactsProvider,
+                    economyService,
+                    paymentProvider,
+                    objectMapper,
+                    clock,
+                    progressionService
+            );
+            PlatformSnapshotResponse afterRestart = restarted.getSnapshot(userId);
+            PlatformCommandResponse replayed = restarted.execute(userId, equipRequest);
+
+            Map<String, String> expected = Map.of(
+                    "PILOT", "pilot-scarf",
+                    "PET", "spark-halo"
+            );
+            assertEquals(
+                    expected,
+                    stringMap(equipped.snapshot().userState().get("equippedCosmetics"))
+            );
+            assertEquals(
+                    expected,
+                    stringMap(afterRestart.userState().get("equippedCosmetics"))
+            );
+            assertEquals(equipped, replayed);
+            assertEquals(2, rowCount("platform_cosmetic_slot_state"));
+            assertEquals(2L, scalarLong("""
+                    SELECT count(*)
+                    FROM platform_cosmetic_slot_state
+                    WHERE user_id = 'cosmetic-slot-user'
+                      AND version = 1
+                    """));
+        } finally {
+            platformAdminService.updateRemoteConfig(
+                    "cosmetic-slot-test",
+                    "cosmetic-slot-payments-disabled",
+                    paymentRemoteConfig(false)
+            );
+        }
+    }
+
+    @Test
     void shouldSerializeOwnerDeletionWithLastMemberLeave() throws Exception {
         String ownerId = "squad-delete-owner";
         String memberId = "squad-leave-member";
@@ -1610,5 +1677,10 @@ class PlatformPersistenceIntegrationTest {
 
     private String scalarString(String sql) {
         return jdbcTemplate.queryForObject(sql, String.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, String> stringMap(Object value) {
+        return (Map<String, String>) value;
     }
 }
