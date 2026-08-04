@@ -1727,7 +1727,7 @@ class _SquadCard extends StatelessWidget {
             context,
             constraints,
           );
-          final Widget formation = const SquadFormationSignal(
+          const Widget formation = SquadFormationSignal(
             connected: false,
             memberCount: 0,
             size: 104,
