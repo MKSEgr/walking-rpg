@@ -1223,3 +1223,11 @@ NOT_FOUND
 ```text
 GET  /api/v1/content/bootstrap
 ```
+
+Вложенный `content.catalogDigest` — SHA-256 канонического содержимого каталога
+без самого digest. Порядок ключей JSON object на значение не влияет, порядок
+элементов массивов остаётся значимым. Любое изменение server-owned catalog
+value, включая `contentVersion`, меняет digest; повторная выдача того же
+каталога возвращает то же значение. Расчёт использует отдельный writer с
+фиксированным порядком object properties и без форматирования, поэтому настройки
+API `ObjectMapper`, включая pretty-print, на digest не влияют.

@@ -11,6 +11,7 @@ import com.walkingrpg.backend.progression.domain.PetDefinition;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,6 +45,24 @@ class PlatformContentCatalogTest {
 
         assertEquals("chapter-1-v1", publicCatalog.get("contentVersion"));
         assertEquals(18, publicCatalog.get("chapterNodes"));
+    }
+
+    @Test
+    void shouldChangeDigestWhenCatalogContentChanges() {
+        Map<String, Object> current = catalog.publicCatalog(
+                StarterExpeditionContent.CONTENT_VERSION
+        );
+        Map<String, Object> legacy = catalog.publicCatalog(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION
+        );
+
+        assertNotEquals(current.get("catalogDigest"), legacy.get("catalogDigest"));
+        assertEquals(
+                current.get("catalogDigest"),
+                new PlatformContentCatalog()
+                        .publicCatalog(StarterExpeditionContent.CONTENT_VERSION)
+                        .get("catalogDigest")
+        );
     }
 
     @Test

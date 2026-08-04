@@ -59,13 +59,14 @@ class PlatformServiceTest {
     }
 
     private PlatformService service(PaymentProvider paymentProvider) {
+        JsonMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
         return new PlatformService(
                 platformRepository,
                 new PlatformContentCatalog(),
                 factsProvider,
                 economyService,
                 paymentProvider,
-                JsonMapper.builder().findAndAddModules().build(),
+                objectMapper,
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 new ProgressionService(
                         new InMemoryProgressionRepository(),

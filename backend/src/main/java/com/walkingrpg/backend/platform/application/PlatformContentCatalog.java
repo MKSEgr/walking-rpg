@@ -4,21 +4,40 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 public class PlatformContentCatalog {
 
     private static final Set<String> COSMETIC_SLOTS =
             Set.of("PILOT", "PET", "PROFILE");
+    /*
+     * This writer is deliberately independent from Spring's API ObjectMapper.
+     * Response formatting and application serializer overrides must not change
+     * a cache validator for otherwise identical server-owned content.
+     */
+    private static final ObjectWriter CANONICAL_CATALOG_WRITER =
+            JsonMapper.builder()
+                    .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+                    .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                    .disable(SerializationFeature.INDENT_OUTPUT)
+                    .build()
+                    .writer();
 
     public enum QuestMetric {
         TOTAL_ACCEPTED_STEPS,
@@ -287,7 +306,7 @@ public class PlatformContentCatalog {
                 StarterInventoryContent.ION_BLOOM_ID,
                 StarterInventoryContent.DAWN_FRAGMENT_ID
         ));
-        catalog.put("catalogDigest", digest(catalog.keySet().toString()));
+        catalog.put("catalogDigest", digest(catalog));
         return Map.copyOf(catalog);
     }
 
@@ -295,14 +314,41 @@ public class PlatformContentCatalog {
         return Map.of("achievementId", id, "name", name);
     }
 
-    private static String digest(String value) {
+    private String digest(Map<String, Object> catalog) {
         try {
+            byte[] canonicalJson = CANONICAL_CATALOG_WRITER.writeValueAsString(
+                    canonicalize(catalog)
+            ).getBytes(StandardCharsets.UTF_8);
             return HexFormat.of().formatHex(
                     MessageDigest.getInstance("SHA-256")
-                            .digest(value.getBytes(StandardCharsets.UTF_8))
+                            .digest(canonicalJson)
             );
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 недоступен", exception);
+        } catch (JacksonException | NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(
+                    "Не удалось рассчитать digest platform catalog",
+                    exception
+            );
         }
+    }
+
+    private static Object canonicalize(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> sorted = new TreeMap<>();
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (!(entry.getKey() instanceof String key)) {
+                    throw new IllegalArgumentException(
+                            "Platform catalog object keys must be strings"
+                    );
+                }
+                sorted.put(key, canonicalize(entry.getValue()));
+            }
+            return sorted;
+        }
+        if (value instanceof List<?> list) {
+            List<Object> canonical = new ArrayList<>(list.size());
+            list.forEach(item -> canonical.add(canonicalize(item)));
+            return Collections.unmodifiableList(canonical);
+        }
+        return value;
     }
 }
