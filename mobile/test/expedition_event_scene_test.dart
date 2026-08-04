@@ -27,6 +27,25 @@ void main() {
     expect(ExpeditionEventArtwork.assetPathFor('unknown-event'), isNull);
   });
 
+  test('scene semantics use the current server event title', () {
+    expect(
+      ExpeditionEventArtwork.semanticDescriptionFor(
+        eventId: 'mirror-delta-v1',
+        eventTitle: 'Раздвоенный сигнал',
+      ),
+      'Сцена события «Раздвоенный сигнал»: два отражённых сигнала '
+      'расходятся над скрытым резонансным течением.',
+    );
+    expect(
+      ExpeditionEventArtwork.semanticDescriptionFor(
+        eventId: 'resonance-pocket-v1',
+        eventTitle: 'Карта скрытого течения',
+      ),
+      'Сцена события «Карта скрытого течения»: забытые маршруты сходятся '
+      'в удерживаемом компасом пространстве.',
+    );
+  });
+
   testWidgets('committed scene assets are available to the Flutter bundle', (
     WidgetTester tester,
   ) async {
@@ -58,11 +77,13 @@ void main() {
               children: <Widget>[
                 ExpeditionEventScene(
                   eventId: 'signal-source-v1',
+                  eventTitle: 'Повторяющийся импульс',
                   fallbackSemanticLabel: 'Не используется',
                 ),
                 SizedBox(height: 16),
                 ExpeditionEventScene(
                   eventId: 'future-event-v1',
+                  eventTitle: 'Источник сигнала',
                   fallbackSemanticLabel: 'Сцена события «Источник сигнала»',
                 ),
               ],
@@ -81,7 +102,7 @@ void main() {
     );
     expect(
       find.bySemanticsLabel(
-        'Сцена события «Источник сигнала»: внешний маяк посылает '
+        'Сцена события «Повторяющийся импульс»: внешний маяк посылает '
         'повторяющиеся импульсы сквозь туман.',
       ),
       findsOneWidget,

@@ -1653,6 +1653,7 @@ class _PendingEventResultCard extends StatelessWidget {
         children: <Widget>[
           ExpeditionEventScene(
             eventId: result.eventId,
+            eventTitle: result.eventTitle,
             fallbackSemanticLabel:
                 'Сцена завершённого события «${result.eventTitle}»',
           ),
@@ -1803,6 +1804,7 @@ class _EventCard extends StatelessWidget {
           const SizedBox(height: 12),
           ExpeditionEventScene(
             eventId: event.eventId,
+            eventTitle: event.title,
             fallbackSemanticLabel: 'Сцена события «${event.title}»',
           ),
           const SizedBox(height: 14),

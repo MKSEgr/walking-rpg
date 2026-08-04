@@ -14,19 +14,22 @@ abstract final class ExpeditionEventArtwork {
     };
   }
 
-  static String? semanticDescriptionFor(String eventId) {
+  static String? semanticDescriptionFor({
+    required String eventId,
+    required String eventTitle,
+  }) {
     return switch (eventId) {
       'signal-source-v1' =>
-        'Сцена события «Источник сигнала»: внешний маяк посылает '
+        'Сцена события «$eventTitle»: внешний маяк посылает '
             'повторяющиеся импульсы сквозь туман.',
       'echo-vault-v1' =>
-        'Сцена события «Хранилище эха»: нестабильное ядро архива '
+        'Сцена события «$eventTitle»: нестабильное ядро архива '
             'расходится на контур стабилизации и живую нить эха.',
       'mirror-delta-v1' =>
-        'Сцена события «Зеркальная дельта»: два отражённых сигнала '
+        'Сцена события «$eventTitle»: два отражённых сигнала '
             'расходятся над скрытым резонансным течением.',
       'resonance-pocket-v1' =>
-        'Сцена события «Резонансный карман»: забытые маршруты сходятся '
+        'Сцена события «$eventTitle»: забытые маршруты сходятся '
             'в удерживаемом компасом пространстве.',
       _ => null,
     };
@@ -41,11 +44,13 @@ class ExpeditionEventScene extends StatelessWidget {
   const ExpeditionEventScene({
     super.key,
     required this.eventId,
+    required this.eventTitle,
     required this.fallbackSemanticLabel,
     this.maxHeight = 190,
   }) : assert(maxHeight > 0);
 
   final String eventId;
+  final String eventTitle;
   final String fallbackSemanticLabel;
   final double maxHeight;
 
@@ -55,7 +60,10 @@ class ExpeditionEventScene extends StatelessWidget {
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final String? assetPath = ExpeditionEventArtwork.assetPathFor(eventId);
     final String semanticLabel =
-        ExpeditionEventArtwork.semanticDescriptionFor(eventId) ??
+        ExpeditionEventArtwork.semanticDescriptionFor(
+          eventId: eventId,
+          eventTitle: eventTitle,
+        ) ??
         fallbackSemanticLabel;
     final Color accent = switch (eventId) {
       'signal-source-v1' => colors.primary,

@@ -727,6 +727,7 @@ class _EventPanel extends StatelessWidget {
       icon: Icons.auto_awesome_outlined,
       visual: ExpeditionEventScene(
         eventId: current.eventId,
+        eventTitle: current.title,
         fallbackSemanticLabel: 'Сцена события «${current.title}»',
       ),
       eyebrow: 'Шаг 4 · решение',
@@ -788,6 +789,7 @@ class _CompletionPanel extends StatelessWidget {
       icon: Icons.emoji_events_outlined,
       visual: ExpeditionEventScene(
         eventId: result.eventId,
+        eventTitle: result.eventTitle,
         fallbackSemanticLabel:
             'Сцена завершённого события «${result.eventTitle}»',
       ),

@@ -200,11 +200,12 @@ title or summary and never derives choice availability, requirements, rewards
 or route access. Unknown IDs receive a neutral code-native signal field, so
 future server content remains readable without borrowing an unrelated scene.
 
-Each scene owns one concise image semantic; the visible server title, summary,
-choice and result copy remain unchanged. The `960 x 540` WebP sources keep
-their focal silhouettes inside the middle of the frame, render behind a repaint
-boundary and scale proportionally at compact width before the height cap is
-applied on wider surfaces.
+Each scene owns one concise image semantic that begins with the current
+server-authored event title; visual node names never become a parallel content
+source. The visible server title, summary, choice and result copy remain
+unchanged. The `960 x 540` WebP sources keep their focal silhouettes inside the
+middle of the frame, render behind a repaint boundary and scale proportionally
+at compact width before the height cap is applied on wider surfaces.
 
 ## First chapter environment
 
