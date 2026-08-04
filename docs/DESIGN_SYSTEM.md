@@ -157,6 +157,31 @@ supported and exactly matches the referenced server-catalog item; unknown IDs
 or cross-slot assignments reject the inconsistent snapshot instead of being
 silently reinterpreted by presentation.
 
+## Expedition item vocabulary
+
+The first field-kit illustrations turn server-owned rewards and equipment into
+recognizable expedition objects instead of repeating generic Material icons:
+
+- `lumen-shard` is an asymmetric lumen crystal with a visible ENERGY core;
+- `echo-thread` is a flexible braided resonance filament with an open loop;
+- `resonance-compass` is the crafted circular navigation instrument that
+  combines lumen, resonance and one ENERGY marker.
+
+The same square art follows an item through event reward preview, durable
+result, inventory, recipe ingredients, crafted result and equipped navigation
+slot. It is selected only from the exact stable `itemId`; an unknown ID
+receives the neutral code-native fallback even if its display name resembles
+known content. Presentation never derives quantity, rarity, availability,
+recipe state, equipment state or route access from the illustration.
+
+Item art is decorative beside the complete server-provided name and state
+copy, is excluded from semantics and does not intercept input. Highlighted
+borders may reinforce a unique, crafted or equipped presentation only where
+adjacent text already states that condition. The coordinated `512 x 512` WebP
+sources remain legible at `56-72 px`; compact item identities place art above
+copy and the existing full-width action instead of compressing text beside the
+image.
+
 ## First chapter environment
 
 `ChapterVista` defines the code-native key art for the first chapter: layered
@@ -479,9 +504,9 @@ navigation chrome adapts to the space assigned by its parent.
 1. Turn the expedition chapter into a visual route map only from an
    authoritative topology/read model, without adding GPS or real-time walking
    interaction.
-2. Produce the illustrated resource, reward, compass-state and event vocabulary
-   in the approved crew-and-frontier direction; application icon and native
-   splash are now defined by the shared expedition emblem.
+2. Extend the new illustrated resource, reward and compass vocabulary into
+   server-authored event-state scenes; application icon and native splash are
+   already defined by the shared expedition emblem.
 3. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
 4. Produce store screenshots and motion guidelines after the first complete
