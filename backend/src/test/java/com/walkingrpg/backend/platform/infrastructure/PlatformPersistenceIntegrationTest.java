@@ -191,7 +191,7 @@ class PlatformPersistenceIntegrationTest {
         String userId = "canonical-fingerprint-user";
         String idempotencyKey = "canonical-compass-once";
         Map<String, Object> firstPayload = new LinkedHashMap<>();
-        firstPayload.put("impression", "ROUTE_AVAILABLE");
+        firstPayload.put("impression", "RECIPE_READY");
         firstPayload.put(
                 "contentVersion",
                 StarterExpeditionContent.CONTENT_VERSION
@@ -220,7 +220,7 @@ class PlatformPersistenceIntegrationTest {
                 "contentVersion",
                 StarterExpeditionContent.CONTENT_VERSION
         );
-        reorderedPayload.put("impression", "ROUTE_AVAILABLE");
+        reorderedPayload.put("impression", "RECIPE_READY");
         PlatformCommandResponse replayed = restarted.execute(
                 userId,
                 new PlatformCommandRequest(
