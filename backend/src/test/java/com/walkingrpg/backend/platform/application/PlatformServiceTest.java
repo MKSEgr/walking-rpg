@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.economy.domain.EconomyCurrency;
@@ -60,6 +61,13 @@ class PlatformServiceTest {
 
     private PlatformService service(PaymentProvider paymentProvider) {
         JsonMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
+        return service(paymentProvider, objectMapper);
+    }
+
+    private PlatformService service(
+            PaymentProvider paymentProvider,
+            JsonMapper objectMapper
+    ) {
         return new PlatformService(
                 platformRepository,
                 new PlatformContentCatalog(),
@@ -128,6 +136,33 @@ class PlatformServiceTest {
         assertEquals(1, platformRepository.processedCommandCount());
         assertEquals(1, platformRepository.eventCount());
         assertTrue(platformRepository.findState("user-1").isPresent());
+    }
+
+    @Test
+    void shouldReplayAfterApiMapperFormattingChanges() {
+        PlatformCommandRequest request = command(
+                "COMPLETE_ONBOARDING_STEP",
+                "mapper-independent-replay",
+                Map.of("stepId", "welcome")
+        );
+        PlatformCommandResponse first = service.execute("mapper-user", request);
+        JsonMapper indentedMapper = JsonMapper.builder()
+                .findAndAddModules()
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
+        PlatformService restarted = service(
+                new SandboxPaymentProvider(),
+                indentedMapper
+        );
+
+        PlatformCommandResponse replayed = restarted.execute(
+                "mapper-user",
+                request
+        );
+
+        assertEquals(first, replayed);
+        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(1, platformRepository.eventCount());
     }
 
     @Test
@@ -388,7 +423,7 @@ class PlatformServiceTest {
                 )
         ).orElseThrow();
         assertEquals(
-                PlatformCommandFingerprint.sha256(mapper, "BUY_COSMETIC", payload),
+                PlatformCommandFingerprint.sha256("BUY_COSMETIC", payload),
                 legacyProcessed.requestFingerprint()
         );
         assertEquals(
@@ -441,7 +476,6 @@ class PlatformServiceTest {
                 new PlatformCommandScope(userId, "BUY_COSMETIC", idempotencyKey),
                 new ProcessedPlatformCommand(
                         PlatformCommandFingerprint.sha256(
-                                mapper,
                                 "BUY_COSMETIC",
                                 payload
                         ),
@@ -727,7 +761,6 @@ class PlatformServiceTest {
                 ),
                 new ProcessedPlatformCommand(
                         PlatformCommandFingerprint.legacySha256(
-                                mapper,
                                 "RECORD_COMPASS_IMPRESSION",
                                 historicalPayload
                         ),

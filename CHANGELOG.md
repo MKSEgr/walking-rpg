@@ -179,6 +179,8 @@
   частично сохранённого platform state;
 - `processed_roadmap_command.request_fingerprint` больше не зависит от порядка
   ключей JSON object или случайного iteration order `Map.copyOf` между JVM;
+  выделенный immutable writer также изолирует persistent hash от pretty-print и
+  других настроек API `ObjectMapper` между deployment-ами; default encoding,
   array order, scalar value/type и конфликт другого payload сохранены;
 - first playable расширен до двух узлов, двух событий и persistent material reward;
 - home read-model возвращает pilot XP, pet bond, event choices, material outcome, inventory и server-owned личную цель;

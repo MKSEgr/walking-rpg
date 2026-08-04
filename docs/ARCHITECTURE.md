@@ -383,7 +383,8 @@ backend продолжает менять только compatibility pointer и 
 7. Historical response не заменяется более новым snapshot.
 8. Process restart не меняет pending payload/key.
 9. Platform command first response равен replayed response; перестановка ключей
-   JSON object не меняет business fingerprint, а array order остаётся значимым.
+   JSON object и настройки общего API `ObjectMapper` не меняют persistent
+   business fingerprint, а array order остаётся значимым.
 10. Alias имени cosmetic purchase не меняет idempotency scope; тот же key с
     другим `cosmeticId` конфликтует до provider call.
 10a. Cosmetic ID не выбирает slot на клиенте; один пользователь имеет не более

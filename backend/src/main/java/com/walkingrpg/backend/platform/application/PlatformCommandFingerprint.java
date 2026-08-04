@@ -14,33 +14,51 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public final class PlatformCommandFingerprint {
+
+    /*
+     * Fingerprints are a persistent idempotency contract, so they must not
+     * inherit formatting or serializer overrides from Spring's API mapper.
+     */
+    private static final ObjectWriter CANONICAL_WRITER =
+            JsonMapper.builder()
+                    .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+                    .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                    .disable(SerializationFeature.INDENT_OUTPUT)
+                    .build()
+                    .writer();
+    private static final ObjectWriter LEGACY_WRITER =
+            JsonMapper.builder()
+                    .disable(SerializationFeature.INDENT_OUTPUT)
+                    .build()
+                    .writer();
 
     private PlatformCommandFingerprint() {
     }
 
     public static String sha256(
-            ObjectMapper objectMapper,
             String commandType,
             Map<String, Object> payload
     ) {
         return hash(
-                objectMapper,
+                CANONICAL_WRITER,
                 commandType,
                 canonicalize(payload == null ? Map.of() : payload)
         );
     }
 
     static Set<String> legacySha256Candidates(
-            ObjectMapper objectMapper,
             String commandType,
             Map<String, Object> payload
     ) {
         Map<String, Object> value = payload == null ? Map.of() : payload;
         Set<String> candidates = new LinkedHashSet<>();
-        candidates.add(legacySha256(objectMapper, commandType, value));
+        candidates.add(legacySha256(commandType, value));
 
         // Every declared platform command has at most two top-level payload
         // fields. Before canonical fingerprints, Map.copyOf could expose either
@@ -51,21 +69,20 @@ public final class PlatformCommandFingerprint {
             Map<String, Object> reversed = new LinkedHashMap<>();
             reversed.put(entries.get(1).getKey(), entries.get(1).getValue());
             reversed.put(entries.get(0).getKey(), entries.get(0).getValue());
-            candidates.add(legacySha256(objectMapper, commandType, reversed));
+            candidates.add(legacySha256(commandType, reversed));
         }
         return Set.copyOf(candidates);
     }
 
     static String legacySha256(
-            ObjectMapper objectMapper,
             String commandType,
             Map<String, Object> payload
     ) {
-        return hash(objectMapper, commandType, payload == null ? Map.of() : payload);
+        return hash(LEGACY_WRITER, commandType, payload == null ? Map.of() : payload);
     }
 
     private static String hash(
-            ObjectMapper objectMapper,
+            ObjectWriter writer,
             String commandType,
             Object payload
     ) {
@@ -73,7 +90,7 @@ public final class PlatformCommandFingerprint {
             Map<String, Object> canonical = new TreeMap<>();
             canonical.put("commandType", commandType);
             canonical.put("payload", payload);
-            byte[] bytes = objectMapper.writeValueAsString(canonical)
+            byte[] bytes = writer.writeValueAsString(canonical)
                     .getBytes(StandardCharsets.UTF_8);
             return HexFormat.of().formatHex(
                     MessageDigest.getInstance("SHA-256").digest(bytes)

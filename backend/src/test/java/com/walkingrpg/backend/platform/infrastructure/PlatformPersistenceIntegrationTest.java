@@ -23,6 +23,8 @@ import java.util.concurrent.TimeoutException;
 
 import javax.sql.DataSource;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivityBucket;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
@@ -141,7 +143,7 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
-    void shouldPersistPlatformStateAndReplayAfterServiceRestart() {
+    void shouldPersistAndReplayAfterRestartWithDifferentMapperFormatting() {
         assertEquals(0, rowCount("app_user"));
         assertEquals(0, platformService.getSnapshot("platform-user").stateVersion());
         assertEquals(0, rowCount("app_user"));
@@ -153,13 +155,17 @@ class PlatformPersistenceIntegrationTest {
         );
         PlatformCommandResponse first = platformService.execute("platform-user", request);
 
+        ObjectMapper indentedObjectMapper = JsonMapper.builder()
+                .findAndAddModules()
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
         PlatformService restarted = new PlatformService(
                 platformRepository,
                 contentCatalog,
                 progressFactsProvider,
                 economyService,
                 paymentProvider,
-                objectMapper,
+                indentedObjectMapper,
                 clock,
                 progressionService
         );
@@ -235,7 +241,6 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(2, rowCount("platform_event"));
         assertEquals(
                 PlatformCommandFingerprint.sha256(
-                        objectMapper,
                         "RECORD_COMPASS_IMPRESSION",
                         reorderedPayload
                 ),
@@ -294,7 +299,6 @@ class PlatformPersistenceIntegrationTest {
             assertEquals("BUY_COSMETIC", first.commandType());
             assertEquals(
                     PlatformCommandFingerprint.sha256(
-                            objectMapper,
                             "BUY_COSMETIC",
                             payload
                     ),

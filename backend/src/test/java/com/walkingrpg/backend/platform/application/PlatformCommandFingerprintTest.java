@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,8 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlatformCommandFingerprintTest {
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     void shouldCanonicalizeObjectKeysRecursively() {
@@ -39,24 +36,20 @@ class PlatformCommandFingerprintTest {
 
         assertEquals(
                 PlatformCommandFingerprint.sha256(
-                        objectMapper,
                         "RECORD_COMPASS_IMPRESSION",
                         first
                 ),
                 PlatformCommandFingerprint.sha256(
-                        objectMapper,
                         "RECORD_COMPASS_IMPRESSION",
                         reordered
                 )
         );
         assertNotEquals(
                 PlatformCommandFingerprint.legacySha256(
-                        objectMapper,
                         "RECORD_COMPASS_IMPRESSION",
                         first
                 ),
                 PlatformCommandFingerprint.legacySha256(
-                        objectMapper,
                         "RECORD_COMPASS_IMPRESSION",
                         reordered
                 )
@@ -66,17 +59,14 @@ class PlatformCommandFingerprintTest {
     @Test
     void shouldKeepArrayOrderAndScalarValuesSignificant() {
         String first = PlatformCommandFingerprint.sha256(
-                objectMapper,
                 "TEST",
                 Map.of("values", List.of("a", "b"), "enabled", true)
         );
         String reorderedArray = PlatformCommandFingerprint.sha256(
-                objectMapper,
                 "TEST",
                 Map.of("enabled", true, "values", List.of("b", "a"))
         );
         String changedScalar = PlatformCommandFingerprint.sha256(
-                objectMapper,
                 "TEST",
                 Map.of("values", List.of("a", "b"), "enabled", false)
         );
@@ -97,22 +87,33 @@ class PlatformCommandFingerprintTest {
         );
 
         Set<String> candidates = PlatformCommandFingerprint.legacySha256Candidates(
-                objectMapper,
                 "RECORD_COMPASS_IMPRESSION",
                 first
         );
 
         assertEquals(2, candidates.size());
         assertTrue(candidates.contains(PlatformCommandFingerprint.legacySha256(
-                objectMapper,
                 "RECORD_COMPASS_IMPRESSION",
                 first
         )));
         assertTrue(candidates.contains(PlatformCommandFingerprint.legacySha256(
-                objectMapper,
                 "RECORD_COMPASS_IMPRESSION",
                 reversed
         )));
+    }
+
+    @Test
+    void shouldPreserveExistingDefaultCanonicalEncoding() {
+        assertEquals(
+                "4c4e9e7ff71a6e8e6bf5fd7421f73673808a33f98e1c651c4cca1e327a49aaf2",
+                PlatformCommandFingerprint.sha256(
+                        "RECORD_COMPASS_IMPRESSION",
+                        Map.of(
+                                "impression", "RECIPE_READY",
+                                "contentVersion", "chapter-1-v2"
+                        )
+                )
+        );
     }
 
     private Map<String, Object> orderedMap(

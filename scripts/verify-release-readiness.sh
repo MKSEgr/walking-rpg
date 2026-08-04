@@ -233,8 +233,13 @@ grep -Fq 'ON DELETE CASCADE' backend/src/main/resources/db/migration/V17__server
 grep -Fq 'equippedCosmetics' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'platform snapshot must expose additive cosmetic slots'
 grep -Fq 'CosmeticSlotStateMigrationTest' .github/workflows/ci.yml || fail 'cosmetic slot migration test must run in CI'
 grep -Fq 'canonicalize(payload == null ? Map.of() : payload)' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprint.java || fail 'platform fingerprints must canonicalize nested payload objects'
+grep -Fq 'private static final ObjectWriter CANONICAL_WRITER' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprint.java || fail 'platform fingerprints must use a dedicated immutable writer'
+grep -Fq '.disable(SerializationFeature.INDENT_OUTPUT)' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprint.java || fail 'platform fingerprint writer must ignore API indentation settings'
 grep -Fq 'legacySha256Candidates' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprint.java || fail 'platform replay must retain bounded legacy fingerprint compatibility'
 grep -Fq 'shouldCanonicalizeObjectKeysRecursively' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprintTest.java || fail 'platform fingerprint unit regression is required'
+grep -Fq 'shouldPreserveExistingDefaultCanonicalEncoding' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprintTest.java || fail 'platform fingerprint byte compatibility regression is required'
+grep -Fq 'shouldReplayAfterApiMapperFormattingChanges' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformServiceTest.java || fail 'platform replay must survive API mapper formatting changes'
+grep -Fq 'shouldPersistAndReplayAfterRestartWithDifferentMapperFormatting' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL replay must survive API mapper formatting changes'
 grep -Fq 'shouldReplayCanonicalPlatformPayloadAfterRestartAndKeyReordering' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'platform canonical fingerprint persistence regression is required'
 
 printf '%s\n' 'Checking production operational controls...'

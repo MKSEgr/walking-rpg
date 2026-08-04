@@ -432,6 +432,9 @@ Cached/off-viewport/covered/background Home ничего не отправляе
 Fingerprint platform payload рекурсивно сортирует JSON object keys, поэтому
 тот же compass/exposure payload replay-ится после restart и между instances
 даже при другом порядке полей; arrays и scalar values/types остаются значимыми.
+Persistent hash вычисляет отдельный writer с фиксированными настройками, поэтому
+pretty-print или другое форматирование API mapper между deployment-ами не
+ломает exact replay уже сохранённой команды.
 Bounded compatibility path принимает оба исторических порядка объявленных
 двухполевых payload без сохранения raw request.
 

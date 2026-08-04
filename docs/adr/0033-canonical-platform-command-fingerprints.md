@@ -17,9 +17,15 @@ specified and may differ between JVM processes. A two-field command such as
 produce a different fingerprint after restart or on another backend instance
 and return a false `409 IDEMPOTENCY_CONFLICT` for the same payload.
 
+The canonical path also used Spring's shared API `ObjectMapper`. A response-only
+serializer change such as enabling indentation therefore changed the persistent
+hash of an otherwise identical request after deployment.
+
 ## Decision
 
 - Fingerprints recursively sort every JSON object key before serialization.
+- Canonical and bounded legacy hashes use dedicated immutable writers with
+  indentation disabled instead of inheriting API mapper configuration.
 - JSON array order, scalar value and scalar type remain significant.
 - The canonical command alias is still selected before hashing, so
   `BUY_COSMETIC`/`PURCHASE_COSMETIC` compatibility is unchanged.
@@ -35,9 +41,11 @@ and return a false `409 IDEMPOTENCY_CONFLICT` for the same payload.
 ## Consequences
 
 Exact replay is stable across backend restarts, instances and JSON object-key
-reordering. Previously stored compass and experiment rows remain replayable
-without a data migration, and no health, telemetry or command payload is added
-to persistent storage.
+reordering, including when API response formatting changes. The dedicated
+writer preserves the previous default compact byte encoding, so existing
+canonical, compass and experiment rows remain replayable without a data
+migration, and no health, telemetry or command payload is added to persistent
+storage.
 
 During a mixed-binary rollout, an old instance still has the defect described
 above and may reject a canonical row written by a new instance. This is not a
