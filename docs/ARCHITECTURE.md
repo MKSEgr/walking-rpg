@@ -292,7 +292,10 @@ activity_risk_assessment
 first_journey_milestone
 ```
 
-`processed_*` хранит fingerprint и immutable response. Повтор после restart не
+`processed_*` хранит fingerprint и immutable response. Platform fingerprint
+рекурсивно сортирует ключи JSON objects, сохраняя порядок arrays и точные
+scalar values/types; bounded fallback принимает оба исторических порядка
+объявленных двухполевых payload. Повтор после restart или на другом instance не
 меняет состояние второй раз и возвращает канонический сохранённый результат.
 V10 расширяет event resolution receipt/delivery-mode/next-node/ACK state;
 исторические результаты получают receipt, но backfill-ятся acknowledged, чтобы
@@ -374,7 +377,8 @@ backend продолжает менять только compatibility pointer и 
 6. Inventory stack меняется через inventory ledger.
 7. Historical response не заменяется более новым snapshot.
 8. Process restart не меняет pending payload/key.
-9. Platform command first response равен replayed response.
+9. Platform command first response равен replayed response; перестановка ключей
+   JSON object не меняет business fingerprint, а array order остаётся значимым.
 10. Alias имени cosmetic purchase не меняет idempotency scope; тот же key с
     другим `cosmeticId` конфликтует до provider call.
 10a. Cosmetic ID не выбирает slot на клиенте; один пользователь имеет не более

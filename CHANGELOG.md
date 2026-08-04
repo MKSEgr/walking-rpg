@@ -158,9 +158,14 @@
   `userState.equippedCosmetics`, legacy-selection backfill и account export/
   delete/backup coverage для независимых `PILOT`, `PET` и `PROFILE` slots;
 - ADR 0032 о server-authoritative cosmetic equipment и rolling compatibility;
+- ADR 0033 и recursive canonical JSON fingerprint для platform-команд с
+  bounded replay compatibility для ранее сохранённых двухполевых payload;
 
 ### Changed
 
+- `processed_roadmap_command.request_fingerprint` больше не зависит от порядка
+  ключей JSON object или случайного iteration order `Map.copyOf` между JVM;
+  array order, scalar value/type и конфликт другого payload сохранены;
 - first playable расширен до двух узлов, двух событий и persistent material reward;
 - home read-model возвращает pilot XP, pet bond, event choices, material outcome, inventory и server-owned личную цель;
 - Android/iOS mobile по умолчанию использует platform health source;

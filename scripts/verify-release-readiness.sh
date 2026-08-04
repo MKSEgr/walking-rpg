@@ -36,6 +36,7 @@ for file in \
   docs/adr/0030-equipment-and-gated-routes.md \
   docs/adr/0031-compass-beta-funnel.md \
   docs/adr/0032-server-authoritative-cosmetic-slots.md \
+  docs/adr/0033-canonical-platform-command-fingerprints.md \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
@@ -231,6 +232,10 @@ grep -Fq 'UNIQUE (user_id, cosmetic_id)' backend/src/main/resources/db/migration
 grep -Fq 'ON DELETE CASCADE' backend/src/main/resources/db/migration/V17__server_authoritative_cosmetic_slots.sql || fail 'V17 cosmetic state must follow account deletion'
 grep -Fq 'equippedCosmetics' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'platform snapshot must expose additive cosmetic slots'
 grep -Fq 'CosmeticSlotStateMigrationTest' .github/workflows/ci.yml || fail 'cosmetic slot migration test must run in CI'
+grep -Fq 'canonicalize(payload == null ? Map.of() : payload)' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprint.java || fail 'platform fingerprints must canonicalize nested payload objects'
+grep -Fq 'legacySha256Candidates' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprint.java || fail 'platform replay must retain bounded legacy fingerprint compatibility'
+grep -Fq 'shouldCanonicalizeObjectKeysRecursively' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformCommandFingerprintTest.java || fail 'platform fingerprint unit regression is required'
+grep -Fq 'shouldReplayCanonicalPlatformPayloadAfterRestartAndKeyReordering' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'platform canonical fingerprint persistence regression is required'
 
 printf '%s\n' 'Checking production operational controls...'
 grep -Fq 'micrometer-registry-prometheus' backend/pom.xml || fail 'Prometheus registry is required'

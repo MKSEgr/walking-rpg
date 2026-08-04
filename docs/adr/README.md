@@ -49,3 +49,4 @@ NNNN-short-title.md
 - [0030 — server-authoritative equipment и gated routes](0030-equipment-and-gated-routes.md)
 - [0031 — compass beta funnel и authoritative gameplay stages](0031-compass-beta-funnel.md)
 - [0032 — server-authoritative cosmetic slots](0032-server-authoritative-cosmetic-slots.md)
+- [0033 — canonical platform command fingerprints](0033-canonical-platform-command-fingerprints.md)

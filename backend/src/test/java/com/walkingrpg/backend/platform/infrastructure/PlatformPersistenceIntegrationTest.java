@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -182,6 +183,67 @@ class PlatformPersistenceIntegrationTest {
                         "welcome-once",
                         Map.of("stepId", "first-sync")
                 ))
+        );
+    }
+
+    @Test
+    void shouldReplayCanonicalPlatformPayloadAfterRestartAndKeyReordering() {
+        String userId = "canonical-fingerprint-user";
+        String idempotencyKey = "canonical-compass-once";
+        Map<String, Object> firstPayload = new LinkedHashMap<>();
+        firstPayload.put("impression", "RECIPE_READY");
+        firstPayload.put(
+                "contentVersion",
+                StarterExpeditionContent.CONTENT_VERSION
+        );
+        PlatformCommandResponse first = platformService.execute(
+                userId,
+                new PlatformCommandRequest(
+                        "RECORD_COMPASS_IMPRESSION",
+                        idempotencyKey,
+                        firstPayload
+                )
+        );
+
+        PlatformService restarted = new PlatformService(
+                platformRepository,
+                contentCatalog,
+                progressFactsProvider,
+                economyService,
+                paymentProvider,
+                objectMapper,
+                clock,
+                progressionService
+        );
+        Map<String, Object> reorderedPayload = new LinkedHashMap<>();
+        reorderedPayload.put(
+                "contentVersion",
+                StarterExpeditionContent.CONTENT_VERSION
+        );
+        reorderedPayload.put("impression", "RECIPE_READY");
+        PlatformCommandResponse replayed = restarted.execute(
+                userId,
+                new PlatformCommandRequest(
+                        "RECORD_COMPASS_IMPRESSION",
+                        idempotencyKey,
+                        reorderedPayload
+                )
+        );
+
+        assertEquals(first, replayed);
+        assertEquals(1, rowCount("processed_roadmap_command"));
+        assertEquals(2, rowCount("platform_event"));
+        assertEquals(
+                PlatformCommandFingerprint.sha256(
+                        objectMapper,
+                        "RECORD_COMPASS_IMPRESSION",
+                        reorderedPayload
+                ),
+                scalarString("""
+                        SELECT request_fingerprint
+                        FROM processed_roadmap_command
+                        WHERE user_id = 'canonical-fingerprint-user'
+                        """)
         );
     }
 
