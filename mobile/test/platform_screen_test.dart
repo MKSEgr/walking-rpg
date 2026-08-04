@@ -538,7 +538,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Северный импульс'), findsOneWidget);
-    expect(find.text('Участников: 7'), findsOneWidget);
+    expect(find.text('УЧАСТНИКОВ: 7'), findsOneWidget);
     expect(find.text('ID: $squadId'), findsOneWidget);
     expect(
       find.bySemanticsLabel('Отряд «Северный импульс». Участников: 7'),

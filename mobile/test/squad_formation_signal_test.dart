@@ -70,7 +70,12 @@ void main() {
     expect(tester.getSize(open), const Size.square(72));
     expect(tester.getSize(connected), const Size.square(72));
     expect(tester.getSize(overflow), const Size.square(72));
-    expect(find.byType(CustomPaint), findsNWidgets(3));
+    for (final Finder signal in <Finder>[open, connected, overflow]) {
+      expect(
+        find.descendant(of: signal, matching: find.byType(CustomPaint)),
+        findsOneWidget,
+      );
+    }
     expect(find.bySemanticsLabel(RegExp('отряд|участник')), findsNothing);
     expect(tester.takeException(), isNull);
 
