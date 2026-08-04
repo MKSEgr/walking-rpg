@@ -6,6 +6,7 @@ import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
+import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -563,8 +564,17 @@ void main() {
     );
     expect(equippedSpark.hasSparkHalo, isTrue);
     expect(
+      find.byKey(const Key('platform-pet-growth-spark-v1')),
+      findsOneWidget,
+    );
+    expect(find.byType(CompanionGrowthTrack), findsWidgets);
+    expect(
+      find.bySemanticsLabel('Рост спутника: Малыш, этап 1 из 3'),
+      findsWidgets,
+    );
+    expect(
       find.bySemanticsLabel(
-        'Искра, люмин, форма 1, активный спутник, Ореол Искры',
+        'Искра, люмин, Малыш · форма 1, активный спутник, Ореол Искры',
       ),
       findsOneWidget,
     );

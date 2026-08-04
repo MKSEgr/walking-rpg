@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
+import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/illustrated_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
@@ -59,11 +60,7 @@ class CompanionPortrait extends StatelessWidget {
   }
 
   int get safeEvolutionStage {
-    return evolutionStage < 0
-        ? 0
-        : evolutionStage > 2
-        ? 2
-        : evolutionStage;
+    return CompanionGrowth.illustratedStage(evolutionStage);
   }
 
   bool get hasSparkHalo {
@@ -89,7 +86,7 @@ class CompanionPortrait extends StatelessWidget {
     return Semantics(
       image: true,
       label:
-          '$name, $species, форма ${evolutionStage + 1}'
+          '$name, $species, ${CompanionGrowth.formLabel(evolutionStage)}'
           '$activeLabel$cosmeticLabel',
       child: RepaintBoundary(
         child: SizedBox.square(

@@ -6,6 +6,7 @@ import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
+import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -1433,7 +1434,10 @@ class _ExpeditionTeam extends StatelessWidget {
       label: 'Питомец',
       name: snapshot.petName,
       level: snapshot.petLevel,
-      detail: 'Связь ${snapshot.petBond}',
+      detail: snapshot.petEvolutionStage == null
+          ? 'Связь ${snapshot.petBond}'
+          : 'Связь ${snapshot.petBond} · '
+                '${CompanionGrowth.stageName(snapshot.petEvolutionStage!)}',
       icon: Icons.pets_outlined,
       portrait: hasCompanionPortrait
           ? ExcludeSemantics(
@@ -1516,7 +1520,7 @@ class _ActiveCompanionCard extends StatelessWidget {
               tone: ExpeditionPanelTone.resonance,
             ),
             ExpeditionBadge(
-              label: 'Форма ${evolutionStage + 1}',
+              label: CompanionGrowth.formLabel(evolutionStage),
               icon: Icons.auto_awesome_outlined,
               tone: evolutionStage > 0
                   ? ExpeditionPanelTone.resonance
@@ -1543,27 +1547,37 @@ class _ActiveCompanionCard extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            if (constraints.maxWidth < 280) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  portrait,
-                  const SizedBox(height: 12),
-                  details,
-                ],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                portrait,
-                const SizedBox(width: 14),
-                Expanded(child: details),
-              ],
-            );
-          },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                if (constraints.maxWidth < 280) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      portrait,
+                      const SizedBox(height: 12),
+                      details,
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    portrait,
+                    const SizedBox(width: 14),
+                    Expanded(child: details),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 14),
+            CompanionGrowthTrack(
+              key: const Key('home-companion-growth'),
+              currentStage: evolutionStage,
+            ),
+          ],
         ),
       ),
     );

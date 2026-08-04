@@ -110,10 +110,15 @@ are shared by the first journey, Home and the journal.
 The companion reads the stable `petId` for its illustration and the
 authoritative `evolutionStage` for both the portrait and code-native orbit
 geometry. Stage zero is the small young form, stage one is the adolescent form
-and stage two is the existing fully developed portrait. The client never
-predicts, unlocks or advertises a stage that the server did not return. Unknown
+and stage two is the existing fully developed portrait. Player-facing copy
+names those forms **Малыш**, **Юный** and **Взрослый** instead of exposing only
+a technical number. A static three-node growth line may show this known visual
+arc, but only the server-returned stage is marked as current. It never predicts
+unlock eligibility, bond requirements, rewards or transition timing. Unknown
 future IDs keep the previous code-native painter fallback instead of guessing
-an illustration from a name.
+an illustration from a name; stages beyond the illustrated set keep their
+literal form number and the last known portrait rather than receiving an
+invented age label.
 
 Portraits are static repaint boundaries, carry a complete semantic label and
 pair the active marker with text elsewhere in the card. Home carries the same
@@ -124,9 +129,11 @@ active-companion badge and icon fallback; the client never derives identity or
 form from the pet name.
 
 The Home companion signal pairs the portrait with explicit active-companion,
-level, form and bond text. It becomes vertical on narrow layouts, remains a
-static presentation of the accepted snapshot and does not affect compass
-visibility, command execution or navigation lifecycle.
+level, named form, bond text and the non-interactive growth line. Journal pet
+cards repeat the same current marker beside the existing authoritative bond
+progress and evolution action. The composition becomes vertical on narrow
+layouts, remains a static presentation of the accepted snapshot and does not
+affect compass visibility, command execution or navigation lifecycle.
 
 ## Character cosmetics
 
@@ -399,6 +406,8 @@ change which commands the server owns.
   refresh plus account navigation into one labelled overflow menu;
 - onboarding status, weekly progress, companion identity, skills, quests and
   cosmetics reflow vertically before labels or actions become truncated;
+- the three-node companion growth line shares width equally between its stage
+  names and keeps one complete semantic summary instead of three noisy nodes;
 - dense action rows become explicit full-width controls while preserving the
   same command keys, availability conditions and callbacks;
 - the single journal scroll surface reserves space below its footer for the

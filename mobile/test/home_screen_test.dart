@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
+import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -91,7 +92,12 @@ void main() {
       findsNWidgets(2),
     );
     expect(
-      find.bySemanticsLabel('Искра, Люмин, форма 1, активный спутник'),
+      find.bySemanticsLabel('Искра, Люмин, Малыш · форма 1, активный спутник'),
+      findsOneWidget,
+    );
+    expect(find.byType(CompanionGrowthTrack), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Рост спутника: Малыш, этап 1 из 3'),
       findsOneWidget,
     );
 
@@ -160,7 +166,7 @@ void main() {
     );
 
     expect(find.text('XP 20 / 100'), findsOneWidget);
-    expect(find.text('Связь 10'), findsOneWidget);
+    expect(find.text('Связь 10 · Малыш'), findsOneWidget);
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
   });
 

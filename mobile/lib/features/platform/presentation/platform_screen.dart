@@ -6,6 +6,7 @@ import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
+import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -817,6 +818,12 @@ class _JournalHero extends StatelessWidget {
                 icon: Icons.pets_outlined,
               ),
               ExpeditionBadge(
+                label: CompanionGrowth.formLabel(activePet.evolutionStage),
+                icon: Icons.auto_awesome_outlined,
+                tone: ExpeditionPanelTone.resonance,
+                allowWrap: true,
+              ),
+              ExpeditionBadge(
                 label: '${snapshot.userState.seasonXp} XP',
                 icon: Icons.auto_awesome_outlined,
                 tone: ExpeditionPanelTone.resonance,
@@ -1218,7 +1225,7 @@ class _PetCard extends StatelessWidget {
                 icon: Icons.check_circle_outline,
               ),
             ExpeditionBadge(
-              label: 'Форма ${pet.evolutionStage + 1}',
+              label: CompanionGrowth.formLabel(pet.evolutionStage),
               icon: Icons.auto_awesome_outlined,
               tone: pet.evolutionStage > 0
                   ? ExpeditionPanelTone.resonance
@@ -1259,6 +1266,11 @@ class _PetCard extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 18),
+          CompanionGrowthTrack(
+            key: Key('platform-pet-growth-${pet.petId}'),
+            currentStage: pet.evolutionStage,
+          ),
           const SizedBox(height: 16),
           Row(
             children: <Widget>[
@@ -1281,7 +1293,8 @@ class _PetCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             pet.evolutionStage > 0
-                ? 'Новая форма закреплена в журнале.'
+                ? '${CompanionGrowth.stageName(pet.evolutionStage)} — '
+                      'текущая серверная форма спутника.'
                 : pet.canEvolve
                 ? 'Связь готова к эволюции.'
                 : 'Решения событий укрепляют связь со спутником.',
