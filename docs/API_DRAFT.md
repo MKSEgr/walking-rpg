@@ -884,7 +884,9 @@ publication lock и не меняют активный snapshot.
   deployment-ами не превращает exact replay в конфликт. Порядок arrays,
   значения и JSON-типы остаются значимыми. Для сохранённых до канонизации
   двухполевых compass/exposure payload backend принимает оба прежних top-level
-  порядка, но другой business payload по-прежнему получает
+  порядка. Replay-only compatibility также принимает bounded compact/indented
+  hashes непосредственно предыдущего shared API mapper; новые rows их не
+  сохраняют. Другой business payload по-прежнему получает
   `409 IDEMPOTENCY_CONFLICT` до любой записи.
 
 ### `commandType=RECORD_COMPASS_IMPRESSION`

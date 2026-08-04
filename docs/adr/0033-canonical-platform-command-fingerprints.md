@@ -24,8 +24,8 @@ hash of an otherwise identical request after deployment.
 ## Decision
 
 - Fingerprints recursively sort every JSON object key before serialization.
-- Canonical and bounded legacy hashes use dedicated immutable writers with
-  indentation disabled instead of inheriting API mapper configuration.
+- New canonical hashes use a dedicated immutable writer with indentation
+  disabled instead of inheriting API mapper configuration.
 - JSON array order, scalar value and scalar type remain significant.
 - The canonical command alias is still selected before hashing, so
   `BUY_COSMETIC`/`PURCHASE_COSMETIC` compatibility is unchanged.
@@ -35,6 +35,10 @@ hash of an otherwise identical request after deployment.
   two-field platform payloads. Zero- and one-field payloads already have one
   possible legacy encoding. The fallback is bounded and never permutes an
   arbitrary attacker-sized map.
+- Replay-only compatibility candidates also retain the immediately preceding
+  shared API mapper encoding and the known compact/indented formatting variants.
+  At most canonical, observed and reversed two-field encodings are evaluated
+  per writer; none of these candidates is persisted for a new command.
 - A hash mismatch after canonical and bounded legacy comparison remains a
   fail-closed idempotency conflict before state, event or provider mutation.
 
@@ -42,9 +46,10 @@ hash of an otherwise identical request after deployment.
 
 Exact replay is stable across backend restarts, instances and JSON object-key
 reordering, including when API response formatting changes. The dedicated
-writer preserves the previous default compact byte encoding, so existing
-canonical, compass and experiment rows remain replayable without a data
-migration, and no health, telemetry or command payload is added to persistent
+writer preserves the previous default compact byte encoding. Bounded
+replay-only candidates also keep rows written by the preceding shared mapper,
+including pretty-printed hashes, replayable across the upgrade without a data
+migration. No health, telemetry or command payload is added to persistent
 storage.
 
 During a mixed-binary rollout, an old instance still has the defect described

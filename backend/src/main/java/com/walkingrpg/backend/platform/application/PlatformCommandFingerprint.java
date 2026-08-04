@@ -15,6 +15,7 @@ import java.util.TreeMap;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.ObjectWriter;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
@@ -37,6 +38,11 @@ public final class PlatformCommandFingerprint {
                     .disable(SerializationFeature.INDENT_OUTPUT)
                     .build()
                     .writer();
+    private static final ObjectWriter LEGACY_INDENTED_WRITER =
+            JsonMapper.builder()
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .build()
+                    .writer();
 
     private PlatformCommandFingerprint() {
     }
@@ -53,24 +59,31 @@ public final class PlatformCommandFingerprint {
     }
 
     static Set<String> legacySha256Candidates(
+            ObjectMapper legacyApiMapper,
             String commandType,
             Map<String, Object> payload
     ) {
         Map<String, Object> value = payload == null ? Map.of() : payload;
         Set<String> candidates = new LinkedHashSet<>();
-        candidates.add(legacySha256(commandType, value));
+        addLegacyCandidates(candidates, LEGACY_WRITER, commandType, value);
 
-        // Every declared platform command has at most two top-level payload
-        // fields. Before canonical fingerprints, Map.copyOf could expose either
-        // order in a different JVM. Cover both historical two-field encodings
-        // without factorial work on an untrusted oversized map.
-        if (value.size() == 2) {
-            List<Map.Entry<String, Object>> entries = new ArrayList<>(value.entrySet());
-            Map<String, Object> reversed = new LinkedHashMap<>();
-            reversed.put(entries.get(1).getKey(), entries.get(1).getValue());
-            reversed.put(entries.get(0).getKey(), entries.get(0).getValue());
-            candidates.add(legacySha256(commandType, reversed));
-        }
+        /*
+         * The immediately preceding binary hashed with Spring's API mapper.
+         * Keep its active writer and the known indentation variant as replay-only
+         * candidates. New rows still store only the fixed canonical hash.
+         */
+        addLegacyCandidates(
+                candidates,
+                legacyApiMapper.writer(),
+                commandType,
+                value
+        );
+        addLegacyCandidates(
+                candidates,
+                LEGACY_INDENTED_WRITER,
+                commandType,
+                value
+        );
         return Set.copyOf(candidates);
     }
 
@@ -79,6 +92,28 @@ public final class PlatformCommandFingerprint {
             Map<String, Object> payload
     ) {
         return hash(LEGACY_WRITER, commandType, payload == null ? Map.of() : payload);
+    }
+
+    private static void addLegacyCandidates(
+            Set<String> candidates,
+            ObjectWriter writer,
+            String commandType,
+            Map<String, Object> payload
+    ) {
+        candidates.add(hash(writer, commandType, canonicalize(payload)));
+        candidates.add(hash(writer, commandType, payload));
+
+        // Every declared platform command has at most two top-level payload
+        // fields. Before canonical fingerprints, Map.copyOf could expose either
+        // order in a different JVM. Cover both historical two-field encodings
+        // without factorial work on an untrusted oversized map.
+        if (payload.size() == 2) {
+            List<Map.Entry<String, Object>> entries = new ArrayList<>(payload.entrySet());
+            Map<String, Object> reversed = new LinkedHashMap<>();
+            reversed.put(entries.get(1).getKey(), entries.get(1).getValue());
+            reversed.put(entries.get(0).getKey(), entries.get(0).getValue());
+            candidates.add(hash(writer, commandType, reversed));
+        }
     }
 
     private static String hash(

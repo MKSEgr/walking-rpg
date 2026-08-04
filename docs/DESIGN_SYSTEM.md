@@ -197,6 +197,27 @@ exposes one complete label with the current server quest name and literal
 progress. Compact cards place the mark above the name and keep the existing
 full-width claim action; wide cards keep the mark beside the server copy.
 
+## Weekly route beacon
+
+The journal gives the headline weekly route one code-native ENERGY beacon
+instead of a generic route icon and progress ring. The exact server-authored
+`routeId` selects the known first-signal trace; an unknown future ID receives a
+neutral constellation fallback even when its season name resembles current
+content.
+
+The illuminated part of the trace is driven only by accepted
+`weeklyRouteProgress / weeklyRouteRequiredEnergy`. Its five painted samples are
+decorative positions along one continuous measure: they are not chapter nodes,
+reward tiers or client-owned milestones. Season name, level, XP, remaining
+ENERGY, available wallet balance and claim actions remain separate literal
+server facts.
+
+The painter is excluded from semantics. One complete label exposes the exact
+season name and numeric ENERGY progress, while the same numbers remain visible
+below the beacon. Compact layout places the beacon above the server copy; wide
+layout keeps it beside that copy. Spend and reward commands, read-only state,
+remote-config availability and authoritative reload remain unchanged.
+
 ## Squad formation signal
 
 The journal turns accepted squad membership into a quiet resonance formation
@@ -311,7 +332,7 @@ Home screen:
   companion, XP and currently known ENERGY balance;
 - first-journey progress remains the first resumable task;
 - the weekly route is the single headline progression measure and therefore
-  owns the ENERGY progress ring;
+  owns the exact-ID ENERGY beacon;
 - companions, pilot skills, quests, squad, cosmetics and achievements use
   domain-toned field panels while preserving their existing command keys;
 - experiment assignments and remote configuration remain collapsed service

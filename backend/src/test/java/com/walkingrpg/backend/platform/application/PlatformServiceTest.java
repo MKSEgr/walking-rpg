@@ -1,14 +1,18 @@
 package com.walkingrpg.backend.platform.application;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
@@ -163,6 +167,44 @@ class PlatformServiceTest {
         assertEquals(first, replayed);
         assertEquals(1, platformRepository.processedCommandCount());
         assertEquals(1, platformRepository.eventCount());
+    }
+
+    @Test
+    void shouldReplayPreStabilizationIndentedFingerprintAfterCompactRestart()
+            throws Exception {
+        String userId = "legacy-indented-mapper-user";
+        String commandType = "COMPLETE_ONBOARDING_STEP";
+        String idempotencyKey = "legacy-indented-mapper-replay";
+        Map<String, Object> payload = Map.of("stepId", "welcome");
+        PlatformCommandRequest request = command(
+                commandType,
+                idempotencyKey,
+                payload
+        );
+        PlatformCommandResponse first = service.execute(userId, request);
+        JsonMapper historicalMapper = JsonMapper.builder()
+                .findAndAddModules()
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
+        platformRepository.saveProcessed(
+                new PlatformCommandScope(userId, commandType, idempotencyKey),
+                new ProcessedPlatformCommand(
+                        previousApiMapperFingerprint(
+                                historicalMapper,
+                                commandType,
+                                payload
+                        ),
+                        historicalMapper.writeValueAsString(first)
+                ),
+                NOW
+        );
+        int eventCount = platformRepository.eventCount();
+
+        PlatformCommandResponse replayed = service.execute(userId, request);
+
+        assertEquals(first, replayed);
+        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(eventCount, platformRepository.eventCount());
     }
 
     @Test
@@ -999,6 +1041,21 @@ class PlatformServiceTest {
     @SuppressWarnings("unchecked")
     private static Map<String, String> stringMap(Object value) {
         return (Map<String, String>) value;
+    }
+
+    private String previousApiMapperFingerprint(
+            JsonMapper mapper,
+            String commandType,
+            Map<String, Object> payload
+    ) throws Exception {
+        Map<String, Object> envelope = new TreeMap<>();
+        envelope.put("commandType", commandType);
+        envelope.put("payload", new TreeMap<>(payload));
+        byte[] bytes = mapper.writeValueAsString(envelope)
+                .getBytes(StandardCharsets.UTF_8);
+        return HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(bytes)
+        );
     }
 
     private static final class MutableFactsProvider implements PlatformProgressFactsProvider {

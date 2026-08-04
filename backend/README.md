@@ -436,7 +436,10 @@ Persistent hash вычисляет отдельный writer с фиксиров
 pretty-print или другое форматирование API mapper между deployment-ами не
 ломает exact replay уже сохранённой команды.
 Bounded compatibility path принимает оба исторических порядка объявленных
-двухполевых payload без сохранения raw request.
+двухполевых payload, а также ограниченный набор compact/indented hashes
+предыдущего shared API mapper без сохранения raw request. Эти кандидаты
+используются только для replay; новая команда всегда сохраняет канонический
+compact fingerprint.
 
 Admin endpoint `/api/v1/admin/platform/analytics/compass-journey` объединяет
 эти client-reported показы с фактами существующих

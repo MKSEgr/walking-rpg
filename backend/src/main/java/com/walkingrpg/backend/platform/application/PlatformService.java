@@ -128,6 +128,7 @@ public class PlatformService {
                     processed,
                     fingerprint,
                     PlatformCommandFingerprint.legacySha256Candidates(
+                            objectMapper,
                             commandType,
                             request.payload()
                     )
@@ -150,6 +151,7 @@ public class PlatformService {
                         legacy,
                         legacyFingerprint,
                         PlatformCommandFingerprint.legacySha256Candidates(
+                                objectMapper,
                                 LEGACY_BUY_COSMETIC_COMMAND,
                                 request.payload()
                         )

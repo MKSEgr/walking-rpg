@@ -1,10 +1,16 @@
 package com.walkingrpg.backend.platform.application;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,7 +82,7 @@ class PlatformCommandFingerprintTest {
     }
 
     @Test
-    void shouldRecognizeBothHistoricalOrdersForDeclaredTwoFieldPayloads() {
+    void shouldBoundHistoricalOrdersAndFormattingCandidates() {
         Map<String, Object> first = orderedMap(
                 "impression", "ROUTE_AVAILABLE",
                 "contentVersion", "chapter-1-v2"
@@ -87,11 +93,12 @@ class PlatformCommandFingerprintTest {
         );
 
         Set<String> candidates = PlatformCommandFingerprint.legacySha256Candidates(
+                JsonMapper.builder().build(),
                 "RECORD_COMPASS_IMPRESSION",
                 first
         );
 
-        assertEquals(2, candidates.size());
+        assertTrue(candidates.size() <= 9);
         assertTrue(candidates.contains(PlatformCommandFingerprint.legacySha256(
                 "RECORD_COMPASS_IMPRESSION",
                 first
@@ -100,6 +107,29 @@ class PlatformCommandFingerprintTest {
                 "RECORD_COMPASS_IMPRESSION",
                 reversed
         )));
+    }
+
+    @Test
+    void shouldRecognizePreStabilizationIndentedApiMapperEncoding()
+            throws Exception {
+        String commandType = "COMPLETE_ONBOARDING_STEP";
+        Map<String, Object> payload = Map.of("stepId", "welcome");
+        JsonMapper historicalMapper = JsonMapper.builder()
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
+        String historicalFingerprint = previousApiMapperFingerprint(
+                historicalMapper,
+                commandType,
+                payload
+        );
+
+        Set<String> candidates = PlatformCommandFingerprint.legacySha256Candidates(
+                JsonMapper.builder().build(),
+                commandType,
+                payload
+        );
+
+        assertTrue(candidates.contains(historicalFingerprint));
     }
 
     @Test
@@ -144,5 +174,20 @@ class PlatformCommandFingerprintTest {
         );
         result.put(thirdKey, thirdValue);
         return result;
+    }
+
+    private String previousApiMapperFingerprint(
+            JsonMapper mapper,
+            String commandType,
+            Map<String, Object> payload
+    ) throws Exception {
+        Map<String, Object> envelope = new TreeMap<>();
+        envelope.put("commandType", commandType);
+        envelope.put("payload", new TreeMap<>(payload));
+        byte[] bytes = mapper.writeValueAsString(envelope)
+                .getBytes(StandardCharsets.UTF_8);
+        return HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(bytes)
+        );
     }
 }
