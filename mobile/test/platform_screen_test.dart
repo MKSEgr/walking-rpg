@@ -576,6 +576,14 @@ void main() {
     final PilotPortrait scarf = tester.widget<PilotPortrait>(pilotPreview);
     expect(scarf.hasNavigatorScarf, isTrue);
     expect(scarf.illustrationAsset, PilotPortrait.scarfAssetPath);
+    expect(
+      find.byKey(const Key('platform-equipped-cosmetic-pilot-scarf')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('platform-equip-cosmetic-pilot-scarf')),
+      findsNothing,
+    );
 
     final Finder sparkPreview = find.byKey(
       const Key('platform-cosmetic-preview-spark-halo'),
@@ -587,16 +595,8 @@ void main() {
     expect(halo.hasSparkHalo, isTrue);
     expect(find.text('Спутник'), findsOneWidget);
     expect(
-      find.byKey(const Key('platform-equipped-cosmetic-pilot-scarf')),
-      findsOneWidget,
-    );
-    expect(
       find.byKey(const Key('platform-equipped-cosmetic-spark-halo')),
       findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('platform-equip-cosmetic-pilot-scarf')),
-      findsNothing,
     );
     expect(
       find.byKey(const Key('platform-equip-cosmetic-spark-halo')),
