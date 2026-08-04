@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.walkingrpg.backend.activity.domain.ActivityRiskStatus;
@@ -14,11 +15,16 @@ import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.activity.infrastructure.InMemoryActivitySyncRepository;
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
+import com.walkingrpg.backend.risk.application.ActivityRiskEvaluator;
+import com.walkingrpg.backend.risk.application.ActivityRiskRecorder;
+import com.walkingrpg.backend.risk.domain.ActivityRiskAssessment;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ActivitySyncServiceTest {
 
@@ -45,6 +51,51 @@ class ActivitySyncServiceTest {
         assertEquals(1, repeated.economyVersion());
         assertEquals(1, repeated.activity().stateVersion());
         assertEquals(NOW, repeated.activity().serverTime());
+    }
+
+    @Test
+    void shouldEvaluateChangedAttestationOnEveryExactReplay() {
+        List<ActivityRiskAssessment> assessments = new ArrayList<>();
+        ActivityRiskEvaluator evaluator = new ActivityRiskEvaluator();
+        ActivityRiskRecorder recorder = (command, previousState, result, createdAt) -> {
+            ActivityRiskAssessment assessment = evaluator.evaluate(
+                    command,
+                    previousState,
+                    result,
+                    createdAt
+            );
+            assessments.add(assessment);
+            return assessment;
+        };
+        ActivitySyncService replayAuditedService = new ActivitySyncService(
+                new InMemoryActivitySyncRepository(),
+                new ActivitySyncCalculator(),
+                new EconomyService(new InMemoryEconomyRepository()),
+                recorder,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        ActivitySyncOutcome first = replayAuditedService.synchronize(command(
+                6_842,
+                "attestation-replay",
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin"),
+                "signed-attestation"
+        ));
+        ActivitySyncOutcome replayed = replayAuditedService.synchronize(command(
+                6_842,
+                "attestation-replay",
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin"),
+                null
+        ));
+
+        assertSame(first, replayed);
+        assertEquals(2, assessments.size());
+        assertEquals(6_842, assessments.getFirst().acceptedDelta());
+        assertFalse(assessments.getFirst().signals().contains("ATTESTATION_MISSING"));
+        assertEquals(0, assessments.getLast().acceptedDelta());
+        assertTrue(assessments.getLast().signals().contains("ATTESTATION_MISSING"));
     }
 
     @Test
@@ -118,6 +169,22 @@ class ActivitySyncServiceTest {
             LocalDate localDate,
             ZoneId timeZone
     ) {
+        return command(
+                authoritativeTotal,
+                idempotencyKey,
+                localDate,
+                timeZone,
+                null
+        );
+    }
+
+    private ActivitySyncCommand command(
+            long authoritativeTotal,
+            String idempotencyKey,
+            LocalDate localDate,
+            ZoneId timeZone,
+            String attestation
+    ) {
         return new ActivitySyncCommand(
                 "user-1",
                 "device-1",
@@ -127,7 +194,7 @@ class ActivitySyncServiceTest {
                 List.of(),
                 "cursor-1",
                 idempotencyKey,
-                null
+                attestation
         );
     }
 }

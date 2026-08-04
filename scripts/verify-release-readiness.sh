@@ -313,6 +313,8 @@ grep -Fq 'squad-membership-serialization' backend/src/main/java/com/walkingrpg/b
 grep -Fq 'shouldSerializeOwnerDeletionWithLastMemberLeave' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve squad deletion/leave serialization'
 grep -Fq 'validateCommandPayloadBeforeState(commandType, request.payload());' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'JOIN_SQUAD payload validation must run before platform state creation'
 grep -Fq 'shouldRejectMalformedSquadIdsBeforePersistentState' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must reject malformed squad UUIDs before persistent state'
+grep -Fq 'riskRecorder.record(command, currentState, result, serverTime);' backend/src/main/java/com/walkingrpg/backend/activity/application/ActivitySyncService.java || fail 'activity attestation risk assessment must run for every request before replay'
+grep -Fq 'shouldAuditChangedAttestationOnReplayWithoutChangingBusinessState' backend/src/test/java/com/walkingrpg/backend/activity/infrastructure/ActivitySyncPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve request-scoped attestation assessment on exact replay'
 for test_name in \
   ProductionOperationsGuardTest \
   PublicIngressPropertiesTest \

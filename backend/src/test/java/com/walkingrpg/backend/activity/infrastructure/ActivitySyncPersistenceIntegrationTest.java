@@ -133,6 +133,41 @@ class ActivitySyncPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldAuditChangedAttestationOnReplayWithoutChangingBusinessState() {
+        ActivitySyncOutcome first = service.synchronize(command(
+                "attestation-device",
+                6_842,
+                "attestation-key",
+                "signed-attestation"
+        ));
+        ActivitySyncOutcome replayed = service.synchronize(command(
+                "attestation-device",
+                6_842,
+                "attestation-key",
+                null
+        ));
+
+        assertEquals(first, replayed);
+        assertEquals(2, rowCount("activity_risk_assessment"));
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM activity_risk_assessment
+                WHERE signals @> '["ATTESTATION_MISSING"]'::jsonb
+                """, Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM activity_risk_assessment
+                WHERE accepted_delta = 0
+                """, Integer.class));
+        assertEquals(1, rowCount("processed_activity_sync"));
+        assertEquals(1, rowCount("activity_sync_state"));
+        assertEquals(1, rowCount("economy_wallet"));
+        assertEquals(1, rowCount("economy_ledger"));
+        assertEquals(68L, walletBalance());
+        assertEquals(68L, ledgerAmountSum());
+    }
+
+    @Test
     void shouldOnlyAppendLedgerWhenEnergyThresholdIsCrossed() {
         ActivitySyncOutcome belowThreshold = service.synchronize(
                 command("threshold-device", 99, "threshold-1")
@@ -315,8 +350,42 @@ class ActivitySyncPersistenceIntegrationTest {
             String deviceId,
             long authoritativeTotal,
             String idempotencyKey,
+            String attestation
+    ) {
+        return command(
+                deviceId,
+                authoritativeTotal,
+                idempotencyKey,
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin"),
+                attestation
+        );
+    }
+
+    private ActivitySyncCommand command(
+            String deviceId,
+            long authoritativeTotal,
+            String idempotencyKey,
             LocalDate localDate,
             ZoneId timeZone
+    ) {
+        return command(
+                deviceId,
+                authoritativeTotal,
+                idempotencyKey,
+                localDate,
+                timeZone,
+                null
+        );
+    }
+
+    private ActivitySyncCommand command(
+            String deviceId,
+            long authoritativeTotal,
+            String idempotencyKey,
+            LocalDate localDate,
+            ZoneId timeZone,
+            String attestation
     ) {
         return new ActivitySyncCommand(
                 "persistent-user",
@@ -327,7 +396,7 @@ class ActivitySyncPersistenceIntegrationTest {
                 List.of(),
                 "cursor-1",
                 idempotencyKey,
-                null
+                attestation
         );
     }
 

@@ -69,6 +69,17 @@ public class ActivitySyncService {
 
         IdempotencyScope idempotencyScope = IdempotencyScope.from(command);
         String requestFingerprint = ActivitySyncFingerprint.sha256(command);
+        ActivityDayKey dayKey = ActivityDayKey.from(command);
+        ActivityDayState currentState = repository.findState(dayKey)
+                .orElse(ActivityDayState.initial());
+        ActivitySyncResult result = calculator.calculate(
+                currentState,
+                command,
+                serverTime
+        );
+        // Attestation is request-scoped and intentionally excluded from the
+        // business fingerprint, so every transport attempt is assessed.
+        riskRecorder.record(command, currentState, result, serverTime);
         ProcessedActivitySync processed = repository.findProcessed(idempotencyScope)
                 .orElse(null);
 
@@ -81,11 +92,6 @@ public class ActivitySyncService {
             return processed.outcome();
         }
 
-        ActivityDayKey dayKey = ActivityDayKey.from(command);
-        ActivityDayState currentState = repository.findState(dayKey)
-                .orElse(ActivityDayState.initial());
-        ActivitySyncResult result = calculator.calculate(currentState, command, serverTime);
-        riskRecorder.record(command, currentState, result, serverTime);
         WalletSnapshot wallet = economyService.creditActivityEnergy(
                 command.userId(),
                 result.energyGranted(),
