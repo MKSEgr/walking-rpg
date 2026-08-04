@@ -4,12 +4,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import org.springframework.stereotype.Component;
@@ -178,6 +182,12 @@ public class PlatformContentCatalog {
             achievement("season-level-3", "Третий уровень сезона")
     );
 
+    private final ObjectMapper objectMapper;
+
+    public PlatformContentCatalog(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     public List<String> onboardingSteps() {
         return onboardingSteps;
     }
@@ -287,7 +297,7 @@ public class PlatformContentCatalog {
                 StarterInventoryContent.ION_BLOOM_ID,
                 StarterInventoryContent.DAWN_FRAGMENT_ID
         ));
-        catalog.put("catalogDigest", digest(catalog.keySet().toString()));
+        catalog.put("catalogDigest", digest(catalog));
         return Map.copyOf(catalog);
     }
 
@@ -295,14 +305,41 @@ public class PlatformContentCatalog {
         return Map.of("achievementId", id, "name", name);
     }
 
-    private static String digest(String value) {
+    private String digest(Map<String, Object> catalog) {
         try {
+            byte[] canonicalJson = objectMapper.writeValueAsString(
+                    canonicalize(catalog)
+            ).getBytes(StandardCharsets.UTF_8);
             return HexFormat.of().formatHex(
                     MessageDigest.getInstance("SHA-256")
-                            .digest(value.getBytes(StandardCharsets.UTF_8))
+                            .digest(canonicalJson)
             );
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 недоступен", exception);
+        } catch (JacksonException | NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(
+                    "Не удалось рассчитать digest platform catalog",
+                    exception
+            );
         }
+    }
+
+    private static Object canonicalize(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> sorted = new TreeMap<>();
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (!(entry.getKey() instanceof String key)) {
+                    throw new IllegalArgumentException(
+                            "Platform catalog object keys must be strings"
+                    );
+                }
+                sorted.put(key, canonicalize(entry.getValue()));
+            }
+            return sorted;
+        }
+        if (value instanceof List<?> list) {
+            List<Object> canonical = new ArrayList<>(list.size());
+            list.forEach(item -> canonical.add(canonicalize(item)));
+            return Collections.unmodifiableList(canonical);
+        }
+        return value;
     }
 }

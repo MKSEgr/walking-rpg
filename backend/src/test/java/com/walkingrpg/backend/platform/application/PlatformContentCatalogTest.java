@@ -9,14 +9,18 @@ import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import com.walkingrpg.backend.progression.domain.PetDefinition;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlatformContentCatalogTest {
 
-    private final PlatformContentCatalog catalog = new PlatformContentCatalog();
+    private final PlatformContentCatalog catalog = new PlatformContentCatalog(
+            new ObjectMapper()
+    );
 
     @Test
     void shouldExposeCompleteVersionedChapterCatalog() {
@@ -44,6 +48,23 @@ class PlatformContentCatalogTest {
 
         assertEquals("chapter-1-v1", publicCatalog.get("contentVersion"));
         assertEquals(18, publicCatalog.get("chapterNodes"));
+    }
+
+    @Test
+    void shouldChangeDigestWhenCatalogContentChanges() {
+        Map<String, Object> current = catalog.publicCatalog(
+                StarterExpeditionContent.CONTENT_VERSION
+        );
+        Map<String, Object> legacy = catalog.publicCatalog(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION
+        );
+
+        assertNotEquals(current.get("catalogDigest"), legacy.get("catalogDigest"));
+        assertEquals(
+                current.get("catalogDigest"),
+                catalog.publicCatalog(StarterExpeditionContent.CONTENT_VERSION)
+                        .get("catalogDigest")
+        );
     }
 
     @Test

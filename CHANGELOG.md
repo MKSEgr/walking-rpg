@@ -163,6 +163,9 @@
 
 ### Changed
 
+- `catalogDigest` теперь вычисляется по каноническому содержимому platform
+  catalog, а не только по набору его верхнеуровневых ключей; разные content
+  versions получают разные стабильные SHA-256 значения;
 - equipment `itemInstanceId` и event-result `receiptId` принимаются только в
   полном UUID-формате; shortened/malformed aliases возвращают единый
   `400 VALIDATION_ERROR` до service/DB, а полный uppercase input сохраняет

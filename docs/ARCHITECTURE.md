@@ -462,6 +462,9 @@ backend продолжает менять только compatibility pointer и 
     зависит от lookup состояния игрового аккаунта.
 43. Внешние `itemInstanceId` и `receiptId` имеют единственное полное UUID-
     представление; shortened aliases отклоняются до service, lock и lookup.
+44. `catalogDigest` покрывает каноническое содержимое platform catalog без
+    самого digest: map key order незначим, list order значим, а изменение
+    любого server-owned catalog value меняет стабильный SHA-256.
 
 ## 10. Identity и authorization boundary
 
