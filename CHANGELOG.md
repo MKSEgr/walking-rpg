@@ -171,6 +171,14 @@
 - destructive fresh-auth guard преобразует OIDC `auth_time` в exact epoch
   nanoseconds, больше не округляет дробную NumericDate через `double` и
   fail-closed отклоняет уже lossy floating-point claim;
+- signed OIDC `sub`, actor и stable-device claims больше не схлопываются через
+  `trim` или неявное преобразование JSON-типа: compact JWS payload проверяется
+  до Nimbus/Spring registered-claim conversion, поэтому `sub` принимается
+  только как исходная JSON-строка, а
+  неоднозначные, управляющие и не помещающиеся в persistent identity boundary
+  значения отклоняются до controller; присутствующий malformed optional
+  actor/device claim больше не подменяется subject/null fallback, а защищённый
+  Prometheus валидирует те же claims без account-state lookup;
 - ручные onboarding-кнопки в «Путевом журнале» заменены на продолжение
   реального первого пути;
 - `SELECT_PET` одновременно сохраняет выбор питомца и milestone, а event reward

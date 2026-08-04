@@ -14,6 +14,15 @@
 - клиент не передаёт рассчитанную награду, баланс, progress или progression;
 - ошибки имеют `code`, `message`, `details`, `traceId`;
 - production API использует `Authorization: Bearer <access-token>`; `userId`, actor и activity device identity вычисляются backend-ом из authenticated context;
+- signed OIDC `sub` принимается только как исходная JSON-строка: compact JWS
+  payload проверяется до Nimbus/Spring registered-claim conversion; `sub`,
+  actor и stable device claim не обрезаются: граничный whitespace, control characters и
+  `sub`/actor длиннее persistent limit отклоняются как
+  `401 AUTHENTICATION_ERROR` до controller; отсутствующий optional actor/device
+  claim разрешён, но присутствующий claim с пустым значением, неверным типом
+  или сломанным nested-path отклоняется fail-closed;
+  тот же контракт применяется к защищённому `/actuator/prometheus` без lookup
+  состояния игрового аккаунта;
 - локальные `X-User-Id` / `X-Device-Id` разрешены только в явном профиле `local` с `dev-header`; production-профиль их игнорирует;
 - пользовательские endpoint-ы требуют `ROLE_USER`, `/api/v1/admin/**` требует `ROLE_ADMIN`.
 

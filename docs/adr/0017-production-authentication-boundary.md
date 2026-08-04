@@ -51,7 +51,17 @@ Spring Security Resource Server валидирует JWT по:
 - audience из `OIDC_AUDIENCE`;
 - стандартным временным claims.
 
-Обязательный `sub` становится каноническим `userId`. Человекочитаемый actor берётся из настраиваемого claim `preferred_username` и при отсутствии совпадает с `sub`.
+Обязательный `sub` становится каноническим `userId` только когда raw signed
+claim является JSON-строкой. `JwtDecoder` decorator проверяет compact JWS
+payload до Nimbus/Spring registered-claim conversion; повторная проверка
+canonical identity provider защищает прямые и альтернативные decoder-ы.
+Backend не обрезает и не
+канонизирует signed identity values: `sub`, настроенный actor claim и stable
+device claim сравниваются как точные строки. Значения с граничными пробелами или
+управляющими символами отклоняются до controller, чтобы разные claims не
+схлопывались в одну account/device partition. `sub` и actor дополнительно
+ограничены 128 символами — это соответствует persistent schema. При отсутствии
+actor claim человекочитаемый actor совпадает с `sub`.
 
 ### Authorities
 
@@ -68,9 +78,14 @@ Spring Security Resource Server валидирует JWT по:
 
 Activity sync не принимает произвольный `X-Device-Id` в JWT-режиме. Backend берёт подписанный claim `walking-rpg.security.device-claim` — по умолчанию `device_id` — и хранит только SHA-256 от `issuer + sub + claim name + claim value`.
 
-Значение должно идентифицировать установку приложения или устройство и оставаться стабильным при обновлении access token и обычном повторном входе. Session claim `sid` не используется по умолчанию: он может меняться между сессиями и тем самым ломать device-scoped idempotency и high-watermark semantics.
+Значение должно идентифицировать установку приложения или устройство и оставаться стабильным при обновлении access token и обычном повторном входе. Оно хэшируется в точном виде без `trim`; неоднозначное значение с граничным whitespace или control characters отклоняется. Если настроенный claim присутствует, его пустое/нестроковое значение или malformed nested-path отклоняется, а не трактуется как отсутствие. Session claim `sid` не используется по умолчанию: он может меняться между сессиями и тем самым ломать device-scoped idempotency и high-watermark semantics.
 
 Если стабильный claim отсутствует, activity sync завершается `401 AUTHENTICATION_ERROR`; остальные пользовательские операции могут выполняться без device identity. Если claim присутствует, но в JWT отсутствует `iss`, identity также отклоняется fail-closed.
+
+Защищённый `/actuator/prometheus` применяет exact identity-claim validation до
+role authorization. Эта проверка намеренно отделена от active-account lookup:
+malformed admin JWT получает `401`, но доступность метрик не зависит от
+состояния пользовательского аккаунта или PostgreSQL.
 
 Это промежуточная production-граница. Отдельная attestation/device-registration модель остаётся следующим anti-fraud усилением.
 
@@ -118,7 +133,8 @@ Identity provider принимает только ожидаемые principal-�
 ## Проверки
 
 - unit tests role/scope converter-а, включая запрет неявных generic aliases;
-- identity extraction из JWT и dev principal;
+- identity extraction из JWT и dev principal, включая fail-closed отказ для
+  неоднозначных/слишком длинных signed identity claims;
 - отказ от session-only `sid`, missing issuer и неизвестного principal-типа;
 - startup guard tests для профилей, demo/dev overrides и конфликтующих mappings;
 - dev filter tests;

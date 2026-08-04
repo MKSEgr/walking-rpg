@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SecurityContextRequestIdentityProvider implements RequestIdentityProvider {
 
+    private static final int MAXIMUM_PERSISTED_IDENTITY_LENGTH = 128;
     private static final Duration FUTURE_AUTHENTICATION_CLOCK_SKEW =
             Duration.ofSeconds(30);
     private static final BigInteger NANOSECONDS_PER_SECOND =
@@ -57,19 +58,23 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
     }
 
     @Override
-    public RequestIdentity requireIdentity() {
+    public RequestIdentity requireValidatedIdentity() {
         RequestIdentity identity = resolveIdentity().orElseThrow(() ->
                 new AuthenticationCredentialsNotFoundException("Требуется аутентификация")
         );
+        return identity;
+    }
+
+    @Override
+    public RequestIdentity requireIdentity() {
+        RequestIdentity identity = requireValidatedIdentity();
         requireActive(identity);
         return identity;
     }
 
     @Override
     public RequestIdentity requireIdentityForAccountDeletion() {
-        RequestIdentity identity = resolveIdentity().orElseThrow(() ->
-                new AuthenticationCredentialsNotFoundException("Требуется аутентификация")
-        );
+        RequestIdentity identity = requireValidatedIdentity();
         requireFreshAuthentication();
         return identity;
     }
@@ -212,9 +217,21 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
     }
 
     private RequestIdentity fromJwt(Jwt jwt, Set<String> authorities) {
-        String subject = requireClaim(jwt.getSubject(), "sub");
-        String actor = optionalStringClaim(jwt, properties.getUsernameClaim()).orElse(subject);
-        String deviceSeed = optionalStringClaim(jwt, properties.getDeviceClaim()).orElse(null);
+        String subject = requiredExactStringClaim(
+                jwt,
+                "sub",
+                MAXIMUM_PERSISTED_IDENTITY_LENGTH
+        );
+        String actor = optionalExactStringClaim(
+                jwt,
+                properties.getUsernameClaim(),
+                MAXIMUM_PERSISTED_IDENTITY_LENGTH
+        ).orElse(subject);
+        String deviceSeed = optionalExactStringClaim(
+                jwt,
+                properties.getDeviceClaim(),
+                null
+        ).orElse(null);
         String deviceId = deviceSeed == null
                 ? null
                 : sha256Hex(
@@ -229,30 +246,86 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
         return new RequestIdentity(subject, actor, deviceId, authorities);
     }
 
-    private Optional<String> optionalStringClaim(Jwt jwt, String claimName) {
-        if (claimName == null || claimName.isBlank()) {
-            return Optional.empty();
-        }
-        Object current = jwt.getClaims();
-        for (String part : claimName.split("\\.")) {
-            if (!(current instanceof java.util.Map<?, ?> map)) {
-                return Optional.empty();
-            }
-            current = map.get(part);
-        }
-        if (current instanceof String text && !text.isBlank()) {
-            return Optional.of(text.trim());
-        }
-        return Optional.empty();
-    }
-
-    private String requireClaim(String value, String claimName) {
-        if (value == null || value.isBlank()) {
+    private String requiredExactStringClaim(
+            Jwt jwt,
+            String claimName,
+            Integer maximumLength
+    ) {
+        if (!jwt.getClaims().containsKey(claimName)) {
             throw new AuthenticationCredentialsNotFoundException(
                     "JWT не содержит обязательный claim " + claimName
             );
         }
-        return value.trim();
+        Object rawValue = jwt.getClaims().get(claimName);
+        if (!(rawValue instanceof String text)) {
+            throw invalidIdentityClaim(claimName);
+        }
+        return requireExactClaim(text, claimName, maximumLength);
+    }
+
+    private Optional<String> optionalExactStringClaim(
+            Jwt jwt,
+            String claimName,
+            Integer maximumLength
+    ) {
+        if (claimName == null || claimName.isBlank()) {
+            return Optional.empty();
+        }
+        Object current = jwt.getClaims();
+        for (String part : claimName.split("\\.", -1)) {
+            if (part.isEmpty()) {
+                throw invalidIdentityClaim(claimName);
+            }
+            if (!(current instanceof java.util.Map<?, ?> map)) {
+                throw invalidIdentityClaim(claimName);
+            }
+            if (!map.containsKey(part)) {
+                return Optional.empty();
+            }
+            current = map.get(part);
+        }
+        if (!(current instanceof String text)) {
+            throw invalidIdentityClaim(claimName);
+        }
+        return Optional.of(requireExactClaim(text, claimName, maximumLength));
+    }
+
+    private String requireExactClaim(
+            String value,
+            String claimName,
+            Integer maximumLength
+    ) {
+        if (value == null) {
+            throw new AuthenticationCredentialsNotFoundException(
+                    "JWT не содержит обязательный claim " + claimName
+            );
+        }
+        if (value.isBlank()
+                || hasBoundaryWhitespace(value)
+                || value.codePoints().anyMatch(Character::isISOControl)) {
+            throw invalidIdentityClaim(claimName);
+        }
+        if (maximumLength != null && value.length() > maximumLength) {
+            throw invalidIdentityClaim(claimName);
+        }
+        return value;
+    }
+
+    private boolean hasBoundaryWhitespace(String value) {
+        int first = value.codePointAt(0);
+        int last = value.codePointBefore(value.length());
+        return Character.isWhitespace(first)
+                || Character.isSpaceChar(first)
+                || Character.isWhitespace(last)
+                || Character.isSpaceChar(last);
+    }
+
+    private AuthenticationCredentialsNotFoundException invalidIdentityClaim(
+            String claimName
+    ) {
+        return new AuthenticationCredentialsNotFoundException(
+                "JWT содержит некорректный identity claim " + claimName
+        );
     }
 
     private String requireIssuer(Jwt jwt) {

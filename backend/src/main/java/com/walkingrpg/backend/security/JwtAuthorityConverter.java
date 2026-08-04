@@ -60,7 +60,7 @@ public class JwtAuthorityConverter implements Converter<Jwt, AbstractAuthenticat
                 .map(SimpleGrantedAuthority::new)
                 .map(GrantedAuthority.class::cast)
                 .toList();
-        String subject = stringValue(jwt.getSubject());
+        String subject = stringValue(jwt.getClaims().get("sub"));
         if (subject == null) {
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("invalid_token"),

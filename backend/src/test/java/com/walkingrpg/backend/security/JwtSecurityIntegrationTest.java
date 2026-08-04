@@ -1,8 +1,20 @@
 package com.walkingrpg.backend.security;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.MACSigner;
 import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,8 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -30,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -42,9 +58,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebAppConfiguration
 @ContextConfiguration(classes = {
         SecurityConfiguration.class,
+        ExactSubjectJwtDecoderBeanPostProcessor.class,
         JwtSecurityIntegrationTest.TestConfiguration.class
 })
 class JwtSecurityIntegrationTest {
+
+    private static final byte[] TEST_JWT_SECRET =
+            "0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.US_ASCII);
 
     @Autowired
     private WebApplicationContext applicationContext;
@@ -106,6 +126,44 @@ class JwtSecurityIntegrationTest {
                 .andExpect(jsonPath("$.userId").value("subject-123"))
                 .andExpect(jsonPath("$.actor").value("walker"))
                 .andExpect(jsonPath("$.deviceId", hasLength(64)));
+    }
+
+    @Test
+    void shouldRejectAmbiguousSignedIdentityBeforeController() throws Exception {
+        mockMvc.perform(get("/api/v1/security/probe")
+                        .with(jwt()
+                                .jwt(token -> token
+                                        .issuer("https://identity.example.com")
+                                        .subject(" subject-123"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+    }
+
+    @Test
+    void shouldRejectMalformedOptionalIdentityClaimBeforeController() throws Exception {
+        mockMvc.perform(get("/api/v1/security/probe")
+                        .with(jwt()
+                                .jwt(token -> token
+                                        .issuer("https://identity.example.com")
+                                        .subject("subject-123")
+                                        .claim("preferred_username", 42))
+                                .authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+
+        mockMvc.perform(get("/api/v1/security/probe")
+                        .with(jwt()
+                                .jwt(token -> token
+                                        .issuer("https://identity.example.com")
+                                        .subject("subject-123")
+                                        .claim("device_id", ""))
+                                .authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
     }
 
     @Test
@@ -197,6 +255,62 @@ class JwtSecurityIntegrationTest {
                                 .jwt(token -> token.subject("admin-1"))
                                 .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
                 .andExpect(status().isNotFound());
+
+        verifyNoInteractions(accountDeletionRegistry);
+    }
+
+    @Test
+    void shouldRejectMalformedIdentityClaimsFromProtectedPrometheus() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus")
+                        .with(jwt()
+                                .jwt(token -> token.claim("sub", 42))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .with(jwt()
+                                .jwt(token -> token
+                                        .subject("admin-1")
+                                        .claim("preferred_username", 42))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .with(jwt()
+                                .jwt(token -> token
+                                        .subject("admin-1")
+                                        .claim("device_id", ""))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+
+        verifyNoInteractions(accountDeletionRegistry);
+    }
+
+    @Test
+    void shouldRejectSignedNumericSubjectBeforeClaimSetConversion() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus")
+                        .header(
+                                HttpHeaders.AUTHORIZATION,
+                                "Bearer " + signedAdminToken(42)
+                        ))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_ERROR"));
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .header(
+                                HttpHeaders.AUTHORIZATION,
+                                "Bearer " + signedAdminToken("42")
+                        ))
+                .andExpect(status().isNotFound());
+
+        verifyNoInteractions(accountDeletionRegistry);
     }
 
     @Test
@@ -263,9 +377,10 @@ class JwtSecurityIntegrationTest {
 
         @Bean
         JwtDecoder jwtDecoder() {
-            return token -> {
-                throw new IllegalStateException("JWT decoder is not used by mock JWT requests");
-            };
+            SecretKey key = new SecretKeySpec(TEST_JWT_SECRET, "HmacSHA256");
+            return NimbusJwtDecoder.withSecretKey(key)
+                    .macAlgorithm(MacAlgorithm.HS256)
+                    .build();
         }
 
         @Bean
@@ -274,6 +389,22 @@ class JwtSecurityIntegrationTest {
         ) {
             return new SecurityProbeController(identityProvider);
         }
+    }
+
+    private String signedAdminToken(Object subject) throws JOSEException {
+        Instant now = Instant.now();
+        Map<String, Object> claims = Map.of(
+                "sub", subject,
+                "roles", List.of("walking-rpg-admin"),
+                "iat", now.minusSeconds(5).getEpochSecond(),
+                "exp", now.plusSeconds(300).getEpochSecond()
+        );
+        JWSObject token = new JWSObject(
+                new JWSHeader(JWSAlgorithm.HS256),
+                new Payload(claims)
+        );
+        token.sign(new MACSigner(TEST_JWT_SECRET));
+        return token.serialize();
     }
 
     @RestController

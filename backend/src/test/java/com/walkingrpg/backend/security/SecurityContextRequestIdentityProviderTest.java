@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
 import com.walkingrpg.backend.account.application.AccountDeletedException;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
@@ -55,6 +56,113 @@ class SecurityContextRequestIdentityProviderTest {
         assertEquals(64, identity.requireDeviceId().length());
         assertNotEquals("installation-9", identity.deviceId());
         assertTrue(identity.authorities().contains("ROLE_USER"));
+    }
+
+    @Test
+    void shouldRejectIdentityClaimsThatWouldCollapseAfterNormalization() {
+        authenticate(jwtBuilder().subject(" subject-123").build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("preferred_username", "walker ")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("device_id", " installation-9")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+    }
+
+    @Test
+    void shouldRejectNonStringSubjectBeforeClaimCoercion() {
+        authenticate(jwtBuilder().claim("sub", 42).build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder().subject("42").build());
+        assertEquals("42", provider.requireIdentity().userId());
+    }
+
+    @Test
+    void shouldRejectPresentMalformedOptionalIdentityClaims() {
+        authenticate(jwtBuilder()
+                .claim("preferred_username", "")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("preferred_username", 42)
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("device_id", List.of("installation-9"))
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+    }
+
+    @Test
+    void shouldRejectMalformedNestedOptionalClaimButAllowAbsentLeaf() {
+        properties.setUsernameClaim("profile.preferred_username");
+
+        authenticate(jwtBuilder()
+                .claim("profile", "not-an-object")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("profile", Map.of("another_claim", "walker"))
+                .build());
+        assertEquals("subject-123", provider.requireIdentity().actor());
+    }
+
+    @Test
+    void shouldRejectIdentityClaimsOutsideThePersistentBoundary() {
+        authenticate(jwtBuilder().subject("s".repeat(129)).build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .claim("preferred_username", "a".repeat(129))
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
+
+        authenticate(jwtBuilder()
+                .subject("subject" + (char) 0 + "suffix")
+                .build());
+        assertThrows(
+                AuthenticationCredentialsNotFoundException.class,
+                provider::requireIdentity
+        );
     }
 
     @Test

@@ -32,16 +32,10 @@ class ActiveAccountFilterTest {
     @ValueSource(strings = {
             "/livez",
             "/readyz",
-            "/actuator",
-            "/actuator/health/liveness",
-            "/actuator/health/readiness",
-            "/actuator/prometheus",
             "/live%7a",
-            "/readyz;v=1",
-            "/actuator;v=1/prometheus",
-            "/actuat%6fr/prometheus"
+            "/readyz;v=1"
     })
-    void shouldSkipAccountLookupForOperationsPaths(String path) throws Exception {
+    void shouldSkipIdentityLookupForMainOperationsProbes(String path) throws Exception {
         authenticate();
         MockHttpServletRequest request = request("GET", path);
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -53,8 +47,31 @@ class ActiveAccountFilterTest {
         verifyNoInteractions(identityProvider, errorWriter);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/actuator",
+            "/actuator/health/liveness",
+            "/actuator/health/readiness",
+            "/actuator/prometheus",
+            "/actuator;v=1/prometheus",
+            "/actuat%6fr/prometheus"
+    })
+    void shouldValidateIdentityWithoutAccountLookupForActuatorPaths(String path)
+            throws Exception {
+        authenticate();
+        MockHttpServletRequest request = request("GET", path);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+
+        filter.doFilter(request, response, chain);
+
+        verify(identityProvider).requireValidatedIdentity();
+        verify(chain).doFilter(request, response);
+        verifyNoInteractions(errorWriter);
+    }
+
     @Test
-    void shouldSkipOperationsPathBelowServletContext() throws Exception {
+    void shouldValidateActuatorPathBelowServletContext() throws Exception {
         authenticate();
         MockHttpServletRequest request = request(
                 "GET",
@@ -66,8 +83,9 @@ class ActiveAccountFilterTest {
 
         filter.doFilter(request, response, chain);
 
+        verify(identityProvider).requireValidatedIdentity();
         verify(chain).doFilter(request, response);
-        verifyNoInteractions(identityProvider, errorWriter);
+        verifyNoInteractions(errorWriter);
     }
 
     @ParameterizedTest
