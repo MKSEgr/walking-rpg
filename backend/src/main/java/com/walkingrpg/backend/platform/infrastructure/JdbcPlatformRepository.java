@@ -194,10 +194,12 @@ public class JdbcPlatformRepository implements PlatformRepository {
                 FROM platform_cosmetic_slot_state
                 WHERE user_id = ?
                 ORDER BY slot
-                """, resultSet -> equipped.put(
-                resultSet.getString("slot"),
-                resultSet.getString("cosmetic_id")
-        ), userId);
+                """, resultSet -> {
+            equipped.put(
+                    resultSet.getString("slot"),
+                    resultSet.getString("cosmetic_id")
+            );
+        }, userId);
         return Map.copyOf(equipped);
     }
 
