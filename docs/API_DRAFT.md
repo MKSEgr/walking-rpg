@@ -847,6 +847,10 @@ publication lock и не меняют активный snapshot.
   сериализуются общим transaction-scoped lock по `squadId`; параллельный выход
   владельца и последнего участника либо удаляет пустой отряд, либо передаёт
   владение участнику, который остаётся в нём.
+- `JOIN_SQUAD.payload.squadId` должен быть полным UUID. Canonical UUID с
+  буквами в верхнем регистре нормализуется перед state/DB mutation; malformed и
+  укороченные формы возвращают `400 VALIDATION_ERROR` с полем `squadId` до
+  создания platform state или получения squad lock.
 - `BUY_COSMETIC` остаётся совместимым alias для `PURCHASE_COSMETIC`, но до
   fingerprint lookup оба имени сводятся к одному canonical command scope.
   Повтор с тем же key через другой alias возвращает immutable первый response,

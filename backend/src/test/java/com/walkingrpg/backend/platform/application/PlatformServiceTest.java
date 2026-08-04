@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import tools.jackson.databind.json.JsonMapper;
@@ -553,7 +554,7 @@ class PlatformServiceTest {
         PlatformCommandResponse joined = service.execute("member", command(
                 "JOIN_SQUAD",
                 "join-squad-1",
-                Map.of("squadId", squadId)
+                Map.of("squadId", squadId.toUpperCase(Locale.ROOT))
         ));
         factsProvider.set("member", new PlatformProgressFacts(0, 0, 10, squadId));
 
@@ -570,6 +571,34 @@ class PlatformServiceTest {
         ));
         assertNull(left.snapshot().userState().get("squad"));
         assertTrue(platformRepository.findSquadForUser("member").isEmpty());
+    }
+
+    @Test
+    void shouldRejectMalformedSquadIdsBeforeCreatingPlatformState() {
+        PlatformValidationException malformed = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("malformed-squad-user", command(
+                        "JOIN_SQUAD",
+                        "join-malformed-squad",
+                        Map.of("squadId", "not-a-uuid")
+                ))
+        );
+        PlatformValidationException shortened = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("short-squad-user", command(
+                        "JOIN_SQUAD",
+                        "join-short-squad",
+                        Map.of("squadId", "1-1-1-1-1")
+                ))
+        );
+
+        assertEquals("squadId", malformed.field());
+        assertEquals("squadId", shortened.field());
+        assertTrue(platformRepository.findState("malformed-squad-user").isEmpty());
+        assertTrue(platformRepository.findState("short-squad-user").isEmpty());
+        assertEquals(0, platformRepository.processedCommandCount());
+        assertEquals(0, platformRepository.eventCount());
+        assertEquals(0, factsProvider.calls());
     }
 
     @Test

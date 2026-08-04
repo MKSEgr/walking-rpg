@@ -163,6 +163,9 @@
 
 ### Changed
 
+- `JOIN_SQUAD` проверяет полный UUID и нормализует его до state/DB mutation;
+  malformed и укороченные значения возвращают `400 VALIDATION_ERROR` без
+  частично сохранённого platform state;
 - `processed_roadmap_command.request_fingerprint` больше не зависит от порядка
   ключей JSON object или случайного iteration order `Map.copyOf` между JVM;
   array order, scalar value/type и конфликт другого payload сохранены;
