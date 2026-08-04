@@ -182,6 +182,31 @@ sources remain legible at `56-72 px`; compact item identities place art above
 copy and the existing full-width action instead of compressing text beside the
 image.
 
+## Expedition event scenes
+
+Four pivotal first-chapter events establish the illustrated scene vocabulary:
+
+- `signal-source-v1` frames the outer beacon and its repeating signal;
+- `echo-vault-v1` frames the unstable archive core, stabilization lattice and
+  living echo thread;
+- `mirror-delta-v1` frames the reflected fork and the concealed resonance
+  current;
+- `resonance-pocket-v1` frames forgotten routes converging inside folded
+  space.
+
+The same event scene follows an exact `eventId` through the ready choice card,
+durable result handoff and guided first journey. It never selects art from a
+title or summary and never derives choice availability, requirements, rewards
+or route access. Unknown IDs receive a neutral code-native signal field, so
+future server content remains readable without borrowing an unrelated scene.
+
+Each scene owns one concise image semantic that begins with the current
+server-authored event title; visual node names never become a parallel content
+source. The visible server title, summary, choice and result copy remain
+unchanged. The `960 x 540` WebP sources keep their focal silhouettes inside the
+middle of the frame, render behind a repaint boundary and scale proportionally
+at compact width before the height cap is applied on wider surfaces.
+
 ## First chapter environment
 
 `ChapterVista` defines the code-native key art for the first chapter: layered
@@ -504,9 +529,9 @@ navigation chrome adapts to the space assigned by its parent.
 1. Turn the expedition chapter into a visual route map only from an
    authoritative topology/read model, without adding GPS or real-time walking
    interaction.
-2. Extend the new illustrated resource, reward and compass vocabulary into
-   server-authored event-state scenes; application icon and native splash are
-   already defined by the shared expedition emblem.
+2. Extend the four pivotal event scenes across the remaining first-chapter
+   event IDs only after the core illustrated loop is validated; application
+   icon and native splash are already defined by the shared expedition emblem.
 3. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
 4. Produce store screenshots and motion guidelines after the first complete

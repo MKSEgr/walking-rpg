@@ -223,6 +223,17 @@ void main() {
       eventReady: true,
     );
     await _pumpCompactJourney(tester, progress: event);
+    expect(
+      find.byKey(const Key('event-scene-signal-source-v1')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Сцена события «Источник сигнала»: внешний маяк посылает '
+        'повторяющиеся импульсы сквозь туман.',
+      ),
+      findsOneWidget,
+    );
     for (final String choiceId in const <String>[
       'analyze-signal',
       'trust-companion',
@@ -238,6 +249,10 @@ void main() {
       tester,
       progress: event,
       eventReward: firstJourneyResolutionResult(),
+    );
+    expect(
+      find.byKey(const Key('event-scene-signal-source-v1')),
+      findsOneWidget,
     );
     await _bringIntoView(tester, find.byKey(const Key('first-journey-finish')));
     await _bringIntoView(
