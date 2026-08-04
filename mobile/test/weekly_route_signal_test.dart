@@ -36,8 +36,10 @@ void main() {
           theme: theme,
           home: const Scaffold(
             body: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                runSpacing: 16,
                 children: <Widget>[
                   WeeklyRouteSignal(
                     routeId: 'weekly-route-1',
@@ -46,7 +48,6 @@ void main() {
                     target: 100,
                     size: 88,
                   ),
-                  SizedBox(width: 16),
                   WeeklyRouteSignal(
                     routeId: 'future-route',
                     seasonName: 'Новый сезон',
