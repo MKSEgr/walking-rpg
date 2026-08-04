@@ -175,6 +175,28 @@ hear one server name and one literal state. At compact width with enlarged
 text, achievement tiles become a single vertical list and skill actions retain
 their existing full-width command boundary.
 
+## Quest route signals
+
+Journal quests use a code-native objective mark and a five-node route trace
+instead of repeating one generic assignment icon and Material progress bar.
+The exact server-authored `metric` selects the current vocabulary:
+
+- `TOTAL_ACCEPTED_STEPS` uses a walking trail;
+- `RESOLVED_EVENTS` uses a linked signal;
+- `SQUAD_MEMBERSHIP` uses a three-member route cluster.
+
+An unknown future metric receives a neutral constellation even when its quest
+name resembles current content. The accepted `progress` and `target` illuminate
+the trace proportionally; `ready` and `claimed` affect presentation only and
+remain paired with the explicit **«В пути»**, **«Готово»** or **«Получено»**
+badge. Quest order, reward-first experiment assignment, reward values, claim
+availability and command identity remain server-owned.
+
+Objective painting is decorative and excluded from semantics. The route trace
+exposes one complete label with the current server quest name and literal
+progress. Compact cards place the mark above the name and keep the existing
+full-width claim action; wide cards keep the mark beside the server copy.
+
 ## Expedition item vocabulary
 
 The first field-kit illustrations turn server-owned rewards and equipment into

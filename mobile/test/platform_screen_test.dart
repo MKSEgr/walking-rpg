@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
+import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
@@ -171,6 +172,27 @@ void main() {
     expect(lockedSkill, findsOneWidget);
     expect(find.byType(ProgressionSigil), findsWidgets);
 
+    final Finder stepsQuest = find.byKey(
+      const Key('quest-route-signal-walk-3000-steps'),
+    );
+    await _bringIntoView(tester, stepsQuest);
+    expect(stepsQuest, findsOneWidget);
+    expect(find.byType(QuestRouteSignal), findsWidgets);
+    expect(
+      find.bySemanticsLabel('Прогресс задания «Первый маршрут»: 3000 из 3000'),
+      findsOneWidget,
+    );
+
+    final Finder eventQuest = find.byKey(
+      const Key('quest-route-signal-resolve-3-events'),
+    );
+    await _bringIntoView(tester, eventQuest);
+    expect(eventQuest, findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Прогресс задания «Исследователь»: 2 из 3'),
+      findsOneWidget,
+    );
+
     final Finder unlockedAchievement = find.byKey(
       const Key('platform-achievement-onboarding-complete'),
     );
@@ -267,6 +289,7 @@ void main() {
       Key('platform-pet-compact-spark-v1'),
       Key('platform-skill-compact-steady-step'),
       Key('platform-quest-compact-walk-3000'),
+      Key('quest-route-signal-walk-3000-steps'),
       Key('platform-cosmetic-compact-pilot-scarf'),
       Key('platform-achievement-onboarding-complete'),
       Key('platform-journal-footer'),
