@@ -3,6 +3,7 @@ package com.walkingrpg.backend.expedition.api;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Locale;
 import java.util.UUID;
 
 import com.walkingrpg.backend.expedition.application.EventResolutionService;
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -95,7 +98,9 @@ class EventResultAcknowledgementControllerTest {
 
     @Test
     void shouldAcknowledgeReceiptIdempotently() throws Exception {
-        String path = "/api/v1/event-results/" + receiptId + "/acknowledge";
+        String path = "/api/v1/event-results/"
+                + receiptId.toString().toUpperCase(Locale.ROOT)
+                + "/acknowledge";
 
         mockMvc.perform(post(path))
                 .andExpect(status().isOk())
@@ -142,6 +147,36 @@ class EventResultAcknowledgementControllerTest {
                 ))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("EVENT_RESULT_NOT_FOUND"));
+    }
+
+    @Test
+    void shouldRejectNonCanonicalReceiptIdsWithStableValidationError()
+            throws Exception {
+        EventResultAcknowledgementService service = mock(
+                EventResultAcknowledgementService.class
+        );
+        MockMvc validationClient = MockMvcBuilders.standaloneSetup(
+                        new EventResultAcknowledgementController(
+                                service,
+                                FixedRequestIdentityProvider.user("user-1")
+                        )
+                )
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        for (String invalidReceiptId : new String[]{"1-1-1-1-1", "not-a-uuid"}) {
+            validationClient.perform(post(
+                            "/api/v1/event-results/"
+                                    + invalidReceiptId
+                                    + "/acknowledge"
+                    ))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.details.field")
+                            .value("receiptId"));
+        }
+
+        verifyNoInteractions(service);
     }
 
     private MockMvc acknowledgementClient(String userId, Instant now) {

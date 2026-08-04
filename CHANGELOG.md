@@ -163,6 +163,10 @@
 
 ### Changed
 
+- equipment `itemInstanceId` и event-result `receiptId` принимаются только в
+  полном UUID-формате; shortened/malformed aliases возвращают единый
+  `400 VALIDATION_ERROR` до service/DB, а полный uppercase input сохраняет
+  совместимость и канонизируется;
 - activity-sync exact replay повторно оценивает request-scoped `attestation` и
   сохраняет отдельный shadow-mode risk assessment, не меняя исходный response,
   activity high-watermark или ENERGY ledger;

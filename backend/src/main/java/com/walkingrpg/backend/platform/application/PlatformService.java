@@ -34,6 +34,7 @@ import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.domain.PetProgressState;
+import com.walkingrpg.backend.shared.validation.CanonicalUuid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -1197,16 +1198,11 @@ public class PlatformService {
 
     private String payloadUuid(Map<String, Object> payload, String field) {
         String text = payloadText(payload, field);
-        String canonical;
         try {
-            canonical = UUID.fromString(text).toString();
+            return CanonicalUuid.parse(text).toString();
         } catch (IllegalArgumentException exception) {
             throw new PlatformValidationException("Поле должно содержать полный UUID", field);
         }
-        if (!canonical.equalsIgnoreCase(text)) {
-            throw new PlatformValidationException("Поле должно содержать полный UUID", field);
-        }
-        return canonical;
     }
 
     private int payloadInt(Map<String, Object> payload, String field) {

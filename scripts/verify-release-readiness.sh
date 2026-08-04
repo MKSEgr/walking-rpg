@@ -315,6 +315,11 @@ grep -Fq 'validateCommandPayloadBeforeState(commandType, request.payload());' ba
 grep -Fq 'shouldRejectMalformedSquadIdsBeforePersistentState' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must reject malformed squad UUIDs before persistent state'
 grep -Fq 'riskRecorder.record(command, currentState, result, serverTime);' backend/src/main/java/com/walkingrpg/backend/activity/application/ActivitySyncService.java || fail 'activity attestation risk assessment must run for every request before replay'
 grep -Fq 'shouldAuditChangedAttestationOnReplayWithoutChangingBusinessState' backend/src/test/java/com/walkingrpg/backend/activity/infrastructure/ActivitySyncPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve request-scoped attestation assessment on exact replay'
+grep -Fq 'CanonicalUuid.parse(normalized)' backend/src/main/java/com/walkingrpg/backend/equipment/application/EquipmentCommandFactory.java || fail 'equipment item identity must reject shortened UUID aliases before service'
+grep -Fq 'shouldRejectShortenedItemInstanceIdBeforeService' backend/src/test/java/com/walkingrpg/backend/equipment/api/EquipmentControllerTest.java || fail 'equipment API coverage must preserve fail-before-service UUID validation'
+grep -Fq 'CanonicalUuid.parse(value)' backend/src/main/java/com/walkingrpg/backend/expedition/api/EventResultAcknowledgementController.java || fail 'event acknowledgement must reject shortened receipt UUID aliases before service'
+grep -Fq 'shouldRejectNonCanonicalReceiptIdsWithStableValidationError' backend/src/test/java/com/walkingrpg/backend/expedition/api/EventResultAcknowledgementControllerTest.java || fail 'event ACK API coverage must preserve canonical UUID validation envelope'
+grep -Fq 'return CanonicalUuid.parse(text).toString();' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'platform UUID payloads must share canonical request parsing'
 for test_name in \
   ProductionOperationsGuardTest \
   PublicIngressPropertiesTest \

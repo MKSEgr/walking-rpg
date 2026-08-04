@@ -339,6 +339,9 @@ backend продолжает менять только compatibility pointer и 
   transaction до operation-specific locks/replay. Это включает activity,
   platform, crafting, equipment, expedition advance/resolution и result ACK;
   request-level security check не считается конкурентной границей;
+- server-owned `itemInstanceId` и event `receiptId` проходят общую canonical
+  UUID-проверку на HTTP boundary до service/DB; Java-совместимые сокращённые
+  UUID-алиасы не становятся alternate identity и возвращают единый `400`;
 - squad create/join/leave после subject и user boundary получают общий
   transaction-scoped lock по canonical `squadId`; входящий `JOIN_SQUAD.squadId`
   проверяется как полный UUID и нормализуется до создания platform state и
@@ -457,6 +460,8 @@ backend продолжает менять только compatibility pointer и 
     nested-path не подменяется fallback-identity.
     Защищённый actuator surface валидирует claims до role authorization, но не
     зависит от lookup состояния игрового аккаунта.
+43. Внешние `itemInstanceId` и `receiptId` имеют единственное полное UUID-
+    представление; shortened aliases отклоняются до service, lock и lookup.
 
 ## 10. Identity и authorization boundary
 
