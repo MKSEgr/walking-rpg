@@ -1434,9 +1434,10 @@ class _ExpeditionTeam extends StatelessWidget {
       label: 'Питомец',
       name: snapshot.petName,
       level: snapshot.petLevel,
-      detail:
-          'Связь ${snapshot.petBond} · '
-          '${CompanionGrowth.stageName(snapshot.petEvolutionStage ?? 0)}',
+      detail: snapshot.petEvolutionStage == null
+          ? 'Связь ${snapshot.petBond}'
+          : 'Связь ${snapshot.petBond} · '
+                '${CompanionGrowth.stageName(snapshot.petEvolutionStage!)}',
       icon: Icons.pets_outlined,
       portrait: hasCompanionPortrait
           ? ExcludeSemantics(

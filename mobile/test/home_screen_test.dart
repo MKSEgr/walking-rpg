@@ -166,7 +166,7 @@ void main() {
     );
 
     expect(find.text('XP 20 / 100'), findsOneWidget);
-    expect(find.text('Связь 10'), findsOneWidget);
+    expect(find.text('Связь 10 · Малыш'), findsOneWidget);
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
   });
 
