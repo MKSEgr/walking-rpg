@@ -528,9 +528,7 @@ class _PlatformBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final PlatformSnapshot snapshot = data.platform;
     final Set<String> equippedCosmeticIds =
-        CharacterCosmeticIds.fromLegacyActive(
-          snapshot.userState.activeCosmeticId,
-        );
+        snapshot.userState.equippedCosmeticIds;
     final double bottomDockInset = NavigationChromeInsets.bottomDockInsetOf(
       context,
     );
@@ -557,7 +555,7 @@ class _PlatformBody extends StatelessWidget {
             CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
             const SizedBox(height: 12),
           ],
-          _JournalHero(data: data),
+          _JournalHero(data: data, equippedCosmeticIds: equippedCosmeticIds),
           const SizedBox(height: 12),
           _OnboardingCard(snapshot: snapshot, onResume: onResumeFirstJourney),
           const SizedBox(height: 12),
@@ -669,8 +667,7 @@ class _PlatformBody extends StatelessWidget {
               owned: snapshot.userState.ownedCosmetics.contains(
                 cosmetic.cosmeticId,
               ),
-              active:
-                  snapshot.userState.activeCosmeticId == cosmetic.cosmeticId,
+              active: equippedCosmeticIds.contains(cosmetic.cosmeticId),
               paymentsEnabled: sandboxPaymentsAvailable,
               busy: blocked,
               onBuy: () => onCommand('BUY_COSMETIC', <String, Object?>{
@@ -707,9 +704,10 @@ class _PlatformBody extends StatelessWidget {
 }
 
 class _JournalHero extends StatelessWidget {
-  const _JournalHero({required this.data});
+  const _JournalHero({required this.data, required this.equippedCosmeticIds});
 
   final _PlatformViewData data;
+  final Set<String> equippedCosmeticIds;
 
   @override
   Widget build(BuildContext context) {
@@ -717,6 +715,56 @@ class _JournalHero extends StatelessWidget {
     final PlatformPet activePet = snapshot.activePet;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final List<String> equippedCosmeticNames = snapshot.content.cosmetics
+        .where(
+          (PlatformCosmetic cosmetic) =>
+              equippedCosmeticIds.contains(cosmetic.cosmeticId),
+        )
+        .map((PlatformCosmetic cosmetic) => cosmetic.name)
+        .toList(growable: false);
+    final Widget crewPortraits = ExcludeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          PilotPortrait(
+            key: const Key('platform-hero-pilot-portrait'),
+            name: 'Навигатор',
+            size: 64,
+            highlighted: true,
+            equippedCosmeticIds: equippedCosmeticIds,
+          ),
+          const SizedBox(width: 10),
+          CompanionPortrait(
+            key: const Key('platform-hero-pet-portrait'),
+            petId: activePet.petId,
+            name: activePet.name,
+            species: activePet.species,
+            evolutionStage: activePet.evolutionStage,
+            active: true,
+            size: 64,
+            equippedCosmeticIds: equippedCosmeticIds,
+          ),
+        ],
+      ),
+    );
+    final Widget crewCopy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Навигатор и ${activePet.name}',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          equippedCosmeticNames.isEmpty
+              ? 'Без активной косметики'
+              : 'Экипировано: ${equippedCosmeticNames.join(' · ')}',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
+      ],
+    );
 
     return ExpeditionPanel(
       key: const Key('platform-journal-hero'),
@@ -781,6 +829,40 @@ class _JournalHero extends StatelessWidget {
                 tone: ExpeditionPanelTone.energy,
               ),
             ],
+          ),
+          const SizedBox(height: 18),
+          Semantics(
+            key: const Key('platform-journal-crew'),
+            container: true,
+            label:
+                'Экипаж маршрута: пилот Навигатор и ${activePet.name}. '
+                '${equippedCosmeticNames.isEmpty ? 'Без активной косметики' : 'Экипировано: ${equippedCosmeticNames.join(', ')}'}',
+            child: ExcludeSemantics(
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  if (_usesCompactPlatformSection(context, constraints)) {
+                    return Column(
+                      key: const Key('platform-journal-crew-compact'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        crewPortraits,
+                        const SizedBox(height: 12),
+                        crewCopy,
+                      ],
+                    );
+                  }
+                  return Row(
+                    key: const Key('platform-journal-crew-wide'),
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      crewPortraits,
+                      const SizedBox(width: 16),
+                      Expanded(child: crewCopy),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ],
       ),
@@ -1595,12 +1677,21 @@ class _CosmeticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String slotLabel = switch (cosmetic.slot) {
+      'PILOT' => 'Пилот',
+      'PET' => 'Спутник',
+      'PROFILE' => 'Профиль',
+      _ => cosmetic.slot,
+    };
     final String subtitle = paymentsEnabled
-        ? '${cosmetic.slot} · '
+        ? '$slotLabel · '
               '${cosmetic.sandboxPrice == 0 ? 'базовая' : '${cosmetic.sandboxPrice} sandbox-кредитов'}'
-        : cosmetic.slot;
+        : slotLabel;
     final Widget? action = active
-        ? const Chip(label: Text('Активно'))
+        ? Chip(
+            key: Key('platform-equipped-cosmetic-${cosmetic.cosmeticId}'),
+            label: const Text('Экипировано'),
+          )
         : owned
         ? FilledButton.tonal(
             key: Key('platform-equip-cosmetic-${cosmetic.cosmeticId}'),

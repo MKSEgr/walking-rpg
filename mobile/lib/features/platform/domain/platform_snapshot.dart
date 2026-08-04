@@ -1,5 +1,7 @@
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 
+const Set<String> _supportedCosmeticSlots = <String>{'PILOT', 'PET', 'PROFILE'};
+
 class PlatformSnapshot {
   PlatformSnapshot({
     required this.contentVersion,
@@ -17,6 +19,7 @@ class PlatformSnapshot {
         'Версия состояния не может быть отрицательной',
       );
     }
+    _validateEquippedCosmetics(userState, content);
   }
 
   factory PlatformSnapshot.fromJson(
@@ -119,6 +122,7 @@ class PlatformUserState {
     required this.squad,
     required Set<String> ownedCosmetics,
     required this.activeCosmeticId,
+    Map<String, String>? equippedCosmetics,
     required Map<String, String> experimentAssignments,
     required this.resolvedEventCount,
     required this.totalAcceptedSteps,
@@ -132,6 +136,15 @@ class PlatformUserState {
        claimedQuests = Set<String>.unmodifiable(claimedQuests),
        achievements = Set<String>.unmodifiable(achievements),
        ownedCosmetics = Set<String>.unmodifiable(ownedCosmetics),
+       equippedCosmetics = Map<String, String>.unmodifiable(
+         equippedCosmetics ?? const <String, String>{},
+       ),
+       equippedCosmeticIds = Set<String>.unmodifiable(
+         equippedCosmetics?.values ??
+             (activeCosmeticId == null
+                 ? const <String>[]
+                 : <String>[activeCosmeticId]),
+       ),
        experimentAssignments = Map<String, String>.unmodifiable(
          experimentAssignments,
        ) {
@@ -160,6 +173,14 @@ class PlatformUserState {
         !this.ownedCosmetics.contains(activeCosmeticId)) {
       throw const FormatException(
         'activeCosmeticId отсутствует в ownedCosmetics',
+      );
+    }
+    if (this.equippedCosmetics.keys.any((String slot) => slot.trim().isEmpty)) {
+      throw const FormatException('equippedCosmetics содержит пустой slot');
+    }
+    if (!this.ownedCosmetics.containsAll(equippedCosmeticIds)) {
+      throw const FormatException(
+        'equippedCosmetics содержит косметику не из ownedCosmetics',
       );
     }
   }
@@ -201,6 +222,9 @@ class PlatformUserState {
           : PlatformSquad.fromJson(_asMap(rawSquad, 'squad')),
       ownedCosmetics: _readStringSet(json, 'ownedCosmetics'),
       activeCosmeticId: _readNullableString(json, 'activeCosmeticId'),
+      equippedCosmetics: json.containsKey('equippedCosmetics')
+          ? _readStringMap(json, 'equippedCosmetics')
+          : null,
       experimentAssignments: _readStringMap(json, 'experimentAssignments'),
       resolvedEventCount: _readInt(json, 'resolvedEventCount'),
       totalAcceptedSteps: totalAcceptedSteps,
@@ -223,6 +247,8 @@ class PlatformUserState {
   final PlatformSquad? squad;
   final Set<String> ownedCosmetics;
   final String? activeCosmeticId;
+  final Map<String, String> equippedCosmetics;
+  final Set<String> equippedCosmeticIds;
   final Map<String, String> experimentAssignments;
   final int resolvedEventCount;
   final int totalAcceptedSteps;
@@ -485,6 +511,39 @@ class PlatformCosmetic {
   final String name;
   final String slot;
   final int sandboxPrice;
+}
+
+void _validateEquippedCosmetics(
+  PlatformUserState userState,
+  PlatformContent content,
+) {
+  final Map<String, PlatformCosmetic> cosmeticsById =
+      <String, PlatformCosmetic>{
+        for (final PlatformCosmetic cosmetic in content.cosmetics)
+          cosmetic.cosmeticId: cosmetic,
+      };
+
+  for (final MapEntry<String, String> entry
+      in userState.equippedCosmetics.entries) {
+    if (!_supportedCosmeticSlots.contains(entry.key)) {
+      throw FormatException(
+        'equippedCosmetics содержит неподдерживаемый slot ${entry.key}',
+      );
+    }
+    final PlatformCosmetic? cosmetic = cosmeticsById[entry.value];
+    if (cosmetic == null) {
+      throw FormatException(
+        'equippedCosmetics содержит cosmeticId ${entry.value}, '
+        'отсутствующий в content.cosmetics',
+      );
+    }
+    if (cosmetic.slot != entry.key) {
+      throw FormatException(
+        'equippedCosmetics.${entry.key} не совпадает со slot '
+        '${cosmetic.slot} для ${entry.value}',
+      );
+    }
+  }
 }
 
 class PlatformExperiment {

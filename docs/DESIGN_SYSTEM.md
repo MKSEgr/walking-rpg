@@ -138,12 +138,17 @@ generic sparkle icon. Preview portraits are decorative and excluded from
 semantics; the cosmetic name and action remain the accessible source.
 
 Portrait widgets accept a set of equipped cosmetic IDs so presentation is
-ready for simultaneous pilot and pet slots. The current platform read model
-still exposes a single `activeCosmeticId`; the adapter therefore supplies a
-singleton set. Supporting multiple equipped skins at once requires a future
-additive, server-authoritative per-slot contract rather than client-local
-selection. Unknown IDs keep the base portrait and cosmetics absent from the
-server catalog are not advertised by the client.
+driven by the additive server-owned `equippedCosmetics` mapping. The journal
+renders the Navigator and active companion together, applies the returned
+`PILOT` and `PET` values independently and marks every equipped catalog card;
+`PROFILE` remains a separate server slot rather than replacing character art.
+Exact responses committed before that field existed fall back to the legacy
+`activeCosmeticId`, while an explicitly empty mapping remains authoritative.
+The client never combines local selections with server state. Unknown IDs keep
+the base portrait. An equipped projection is accepted only when its slot is
+supported and exactly matches the referenced server-catalog item; unknown IDs
+or cross-slot assignments reject the inconsistent snapshot instead of being
+silently reinterpreted by presentation.
 
 ## First chapter environment
 
