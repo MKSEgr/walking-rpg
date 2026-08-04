@@ -55,4 +55,30 @@ void main() {
 
     semantics.dispose();
   });
+
+  testWidgets(
+    'future server stage completes known nodes without a fake current',
+    (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WalkingRpgTheme.dark(),
+          home: const Scaffold(body: CompanionGrowthTrack(currentStage: 3)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check), findsNWidgets(3));
+      expect(find.byKey(const Key('companion-growth-current')), findsNothing);
+      expect(
+        find.bySemanticsLabel(
+          'Рост спутника: Форма 4, показана последняя известная иллюстрация',
+        ),
+        findsOneWidget,
+      );
+
+      semantics.dispose();
+    },
+  );
 }

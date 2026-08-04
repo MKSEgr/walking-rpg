@@ -36,7 +36,6 @@ class CompanionGrowthTrack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int normalizedStage = CompanionGrowth.normalizedStage(currentStage);
-    final int visualStage = CompanionGrowth.illustratedStage(currentStage);
     final String currentName = CompanionGrowth.stageName(currentStage);
     final String semanticValue =
         normalizedStage < CompanionGrowth.illustratedStageCount
@@ -55,7 +54,7 @@ class CompanionGrowthTrack extends StatelessWidget {
             (int stage) => Expanded(
               child: _CompanionGrowthStage(
                 stage: stage,
-                currentStage: visualStage,
+                currentStage: normalizedStage,
               ),
             ),
             growable: false,
