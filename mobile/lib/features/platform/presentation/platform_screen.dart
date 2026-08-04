@@ -14,6 +14,7 @@ import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/squad_formation_signal.dart';
+import 'package:walking_rpg_mobile/design_system/weekly_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -1096,21 +1097,19 @@ class _WeeklyRouteCard extends StatelessWidget {
                   ),
                 ],
               );
-              final Widget ring = ExpeditionProgressRing(
-                progress: snapshot.weeklyRouteProgressValue,
-                value:
-                    '${snapshot.userState.weeklyRouteProgress}/'
-                    '${snapshot.userState.weeklyRouteRequiredEnergy}',
-                label: 'маршрут',
-                tone: ExpeditionPanelTone.energy,
-                size: 112,
+              final Widget routeSignal = WeeklyRouteSignal(
+                routeId: snapshot.content.weeklyRoute.routeId,
+                seasonName: snapshot.content.season.name,
+                progress: snapshot.userState.weeklyRouteProgress,
+                target: snapshot.userState.weeklyRouteRequiredEnergy,
+                size: 120,
               );
               if (_usesCompactPlatformSection(context, constraints)) {
                 return Column(
                   key: const Key('platform-weekly-route-compact'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Center(child: ring),
+                    Center(child: routeSignal),
                     const SizedBox(height: 16),
                     summary,
                   ],
@@ -1120,7 +1119,7 @@ class _WeeklyRouteCard extends StatelessWidget {
                 key: const Key('platform-weekly-route-wide'),
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  ring,
+                  routeSignal,
                   const SizedBox(width: 18),
                   Expanded(child: summary),
                 ],
