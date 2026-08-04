@@ -18,6 +18,11 @@ IOS_ASSETS = MOBILE_ROOT / "ios" / "Runner" / "Assets.xcassets"
 
 INK = "#07151D"
 DEEP_WATER = "#102A33"
+ADAPTIVE_LAYER_DP = 108
+ADAPTIVE_SAFE_DIAMETER_DP = 66
+# Keep one logical pixel inside the guaranteed circle so density rounding and
+# antialiasing cannot place a partially opaque edge outside the safe zone.
+ADAPTIVE_ART_DIAMETER_DP = 65
 
 ANDROID_DENSITIES = {
     "mdpi": 1.0,
@@ -109,7 +114,7 @@ def generate() -> None:
     for density, scale in ANDROID_DENSITIES.items():
         mipmap = ANDROID_RES / f"mipmap-{density}"
         launcher_size = round(48 * scale)
-        adaptive_size = round(108 * scale)
+        adaptive_size = round(ADAPTIVE_LAYER_DP * scale)
         launch_size = round(128 * scale)
 
         _write_png(
@@ -122,7 +127,11 @@ def generate() -> None:
             mipmap / "ic_launcher_round.png",
         )
         _write_png(
-            _centered_emblem(emblem, adaptive_size, 66 / 108),
+            _centered_emblem(
+                emblem,
+                adaptive_size,
+                ADAPTIVE_ART_DIAMETER_DP / ADAPTIVE_LAYER_DP,
+            ),
             mipmap / "ic_launcher_foreground.png",
         )
         _write_png(
@@ -179,7 +188,7 @@ def validate() -> None:
     for density, scale in ANDROID_DENSITIES.items():
         mipmap = ANDROID_RES / f"mipmap-{density}"
         launcher_size = round(48 * scale)
-        adaptive_size = round(108 * scale)
+        adaptive_size = round(ADAPTIVE_LAYER_DP * scale)
         launch_size = round(128 * scale)
 
         _assert_image(mipmap / "ic_launcher.png", launcher_size, "RGB")
@@ -202,19 +211,27 @@ def validate() -> None:
 
         with Image.open(mipmap / "ic_launcher_foreground.png") as foreground:
             alpha = foreground.getchannel("A")
-            safe_size = round(adaptive_size * 66 / 108)
-            safe_start = (adaptive_size - safe_size) // 2
-            safe_box = (
-                safe_start,
-                safe_start,
-                safe_start + safe_size,
-                safe_start + safe_size,
-            )
             outside_safe_zone = alpha.copy()
-            outside_safe_zone.paste(0, safe_box)
+            pixels = outside_safe_zone.load()
+            center = adaptive_size / 2
+            safe_radius = (
+                adaptive_size
+                * ADAPTIVE_SAFE_DIAMETER_DP
+                / ADAPTIVE_LAYER_DP
+                / 2
+            )
+            safe_radius_squared = safe_radius * safe_radius
+            for y in range(adaptive_size):
+                for x in range(adaptive_size):
+                    distance_squared = (x + 0.5 - center) ** 2 + (
+                        y + 0.5 - center
+                    ) ** 2
+                    if distance_squared <= safe_radius_squared:
+                        pixels[x, y] = 0
             if outside_safe_zone.getbbox() is not None:
                 raise ValueError(
-                    f"{mipmap / 'ic_launcher_foreground.png'} exceeds the 66 dp safe zone"
+                    f"{mipmap / 'ic_launcher_foreground.png'} exceeds the circular "
+                    f"{ADAPTIVE_SAFE_DIAMETER_DP} dp safe zone"
                 )
 
     for filename, size in IOS_ICON_SIZES.items():
