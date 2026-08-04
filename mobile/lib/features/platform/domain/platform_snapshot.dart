@@ -1,5 +1,7 @@
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 
+const Set<String> _supportedCosmeticSlots = <String>{'PILOT', 'PET', 'PROFILE'};
+
 class PlatformSnapshot {
   PlatformSnapshot({
     required this.contentVersion,
@@ -17,6 +19,7 @@ class PlatformSnapshot {
         'Версия состояния не может быть отрицательной',
       );
     }
+    _validateEquippedCosmetics(userState, content);
   }
 
   factory PlatformSnapshot.fromJson(
@@ -508,6 +511,39 @@ class PlatformCosmetic {
   final String name;
   final String slot;
   final int sandboxPrice;
+}
+
+void _validateEquippedCosmetics(
+  PlatformUserState userState,
+  PlatformContent content,
+) {
+  final Map<String, PlatformCosmetic> cosmeticsById =
+      <String, PlatformCosmetic>{
+        for (final PlatformCosmetic cosmetic in content.cosmetics)
+          cosmetic.cosmeticId: cosmetic,
+      };
+
+  for (final MapEntry<String, String> entry
+      in userState.equippedCosmetics.entries) {
+    if (!_supportedCosmeticSlots.contains(entry.key)) {
+      throw FormatException(
+        'equippedCosmetics содержит неподдерживаемый slot ${entry.key}',
+      );
+    }
+    final PlatformCosmetic? cosmetic = cosmeticsById[entry.value];
+    if (cosmetic == null) {
+      throw FormatException(
+        'equippedCosmetics содержит cosmeticId ${entry.value}, '
+        'отсутствующий в content.cosmetics',
+      );
+    }
+    if (cosmetic.slot != entry.key) {
+      throw FormatException(
+        'equippedCosmetics.${entry.key} не совпадает со slot '
+        '${cosmetic.slot} для ${entry.value}',
+      );
+    }
+  }
 }
 
 class PlatformExperiment {

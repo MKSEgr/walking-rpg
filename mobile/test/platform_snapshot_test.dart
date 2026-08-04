@@ -82,6 +82,53 @@ void main() {
     );
   });
 
+  test('rejects an unsupported equipped cosmetic slot', () {
+    expect(
+      () => platformSnapshot(
+        equippedCosmetics: const <String, String>{'AURA': 'pilot-scarf'},
+      ),
+      throwsA(
+        isA<FormatException>().having(
+          (FormatException error) => error.message,
+          'message',
+          contains('неподдерживаемый slot AURA'),
+        ),
+      ),
+    );
+  });
+
+  test('rejects an equipped cosmetic missing from the catalog', () {
+    expect(
+      () => platformSnapshot(
+        ownedCosmetics: const <String>['pilot-scarf', 'future-scarf'],
+        equippedCosmetics: const <String, String>{'PILOT': 'future-scarf'},
+      ),
+      throwsA(
+        isA<FormatException>().having(
+          (FormatException error) => error.message,
+          'message',
+          contains('future-scarf, отсутствующий в content.cosmetics'),
+        ),
+      ),
+    );
+  });
+
+  test('rejects an equipped cosmetic assigned to the wrong slot', () {
+    expect(
+      () => platformSnapshot(
+        ownedCosmetics: const <String>['pilot-scarf', 'spark-halo'],
+        equippedCosmetics: const <String, String>{'PILOT': 'spark-halo'},
+      ),
+      throwsA(
+        isA<FormatException>().having(
+          (FormatException error) => error.message,
+          'message',
+          contains('PILOT не совпадает со slot PET для spark-halo'),
+        ),
+      ),
+    );
+  });
+
   test('falls back to lifetime steps for an older platform response', () {
     final Map<String, dynamic> json = platformSnapshotJson();
     final Map<String, dynamic> userState = Map<String, dynamic>.from(

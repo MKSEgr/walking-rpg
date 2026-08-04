@@ -145,8 +145,10 @@ renders the Navigator and active companion together, applies the returned
 Exact responses committed before that field existed fall back to the legacy
 `activeCosmeticId`, while an explicitly empty mapping remains authoritative.
 The client never combines local selections with server state. Unknown IDs keep
-the base portrait and cosmetics absent from the server catalog are not
-advertised by the client.
+the base portrait. An equipped projection is accepted only when its slot is
+supported and exactly matches the referenced server-catalog item; unknown IDs
+or cross-slot assignments reject the inconsistent snapshot instead of being
+silently reinterpreted by presentation.
 
 ## First chapter environment
 
