@@ -262,6 +262,8 @@ Roadmap отражает снижение рисков. Статусы:
       mapping, доступными semantics и нейтральным fallback
 - [x] Exact-ID сигилы навыков и достижений с явным состоянием и нейтральным
       fallback для будущего серверного контента
+- [x] Metric-driven знаки и маршрутная шкала заданий с буквальным прогрессом и
+      нейтральным fallback для будущих типов целей
 - [x] Design rules, accessibility boundaries и следующие срезы зафиксированы в
       `docs/DESIGN_SYSTEM.md`
 

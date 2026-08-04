@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
+import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -1475,13 +1476,14 @@ class _QuestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget progress = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text('${quest.progress} / ${quest.target}'),
-        const SizedBox(height: 6),
-        LinearProgressIndicator(value: quest.progressValue),
-      ],
+    final Widget progress = QuestRouteProgress(
+      questId: quest.questId,
+      questName: quest.name,
+      metric: quest.metric,
+      progress: quest.progress,
+      target: quest.target,
+      ready: quest.ready,
+      claimed: quest.claimed,
     );
     final Widget reward = Text(
       '+${quest.seasonXpReward} сезонного XP · '
@@ -1511,6 +1513,13 @@ class _QuestCard extends StatelessWidget {
             context,
             constraints,
           );
+          final Widget signal = QuestRouteSignal(
+            questId: quest.questId,
+            metric: quest.metric,
+            ready: quest.ready,
+            claimed: quest.claimed,
+            size: compact ? 64 : 72,
+          );
           final Widget action = FilledButton.tonal(
             key: Key('platform-claim-quest-${quest.questId}'),
             onPressed: busy || !quest.ready || quest.claimed ? null : onClaim,
@@ -1533,25 +1542,41 @@ class _QuestCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               if (compact) ...<Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    signal,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topRight,
+                        child: status,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Text(
                   quest.name,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 8),
-                status,
               ] else
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
+                    signal,
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         quest.name,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
+                    const SizedBox(width: 12),
                     status,
                   ],
                 ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               if (rewardFirst) reward else progress,
               const SizedBox(height: 8),
               if (rewardFirst) progress else reward,
