@@ -7,6 +7,9 @@
 - namespace: `/api/v1`;
 - JSON-поля: camelCase;
 - даты/время: ISO-8601;
+- внешние UUID принимаются только в полном формате `8-4-4-4-12`; регистр hex
+  незначим, response использует каноническую lowercase-форму, а сокращённые
+  алиасы возвращают `400 VALIDATION_ERROR` до application service;
 - enum-like protocol tokens (`commandType`, impression, platform, provider,
   cohort status) канонизируются независимо от JVM/OS locale; lowercase ASCII
   input всегда приводит к одному uppercase token;
@@ -584,6 +587,8 @@ Accept: application/json
 
 - request не содержит body; `receiptId` является единственным server-side
   idempotency scope;
+- `receiptId` должен быть полным UUID; malformed и сокращённые UUID возвращают
+  `400 VALIDATION_ERROR` с `details.field = receiptId` до receipt lookup;
 - receipt доступен только своему authenticated user; неизвестный или чужой
   receipt возвращает `404 EVENT_RESULT_NOT_FOUND` без раскрытия владельца;
 - повторное acknowledgement того же receipt возвращает стабильные
@@ -746,6 +751,9 @@ version.
 
 Правила:
 
+- `itemInstanceId` должен быть полным UUID; malformed и сокращённые UUID
+  возвращают `400 VALIDATION_ERROR` с `details.field = itemInstanceId` до
+  equipment service и persistent locks;
 - slot/item compatibility и ownership проверяет backend; чужой или
   отсутствующий instance возвращает `409 EQUIPMENT_ITEM_UNAVAILABLE` без
   раскрытия владельца;

@@ -37,6 +37,9 @@ time-to-value.
 - Explicit durable ACK записывается с `source = AUTHORITATIVE` и attributes:
   `receiptId`, `eventId`, `handoffRequired = true`,
   `deliveryMode = DURABLE_ACK`.
+- HTTP boundary принимает `receiptId` только как полный UUID `8-4-4-4-12` и
+  канонизирует регистр до service; malformed/shortened aliases возвращают
+  стабильный validation envelope до receipt lookup.
 - V10 legacy auto-ACK не доказывает явный просмотр карточки. Он участвует в
   continuity conversion как `source = BACKFILLED`,
   `deliveryMode = LEGACY_AUTO_ACK`, но не в p50/p90.
@@ -79,6 +82,7 @@ time-to-value.
 - legacy acknowledged, durable pending и state-only legacy cases;
 - rejection pre-acknowledged durable INSERT;
 - explicit, repeated и concurrent ACK с одним неизменяемым milestone;
+- canonical uppercase receipt и rejection malformed/shortened UUID до lookup;
 - ACK transaction rollback сохраняет pending receipt без `acknowledged_at`
   и milestone;
 - cohort conversion и p50/p90 отдельно для authoritative и backfilled data;

@@ -29,7 +29,10 @@ POST /api/v1/equipment/slots/{slotId}/unequip
 
 Equip принимает только `itemInstanceId` и `idempotencyKey`; unequip принимает
 только `idempotencyKey`. Имя, тип, эффект и допустимый slot клиент не задаёт.
-Identity всегда берётся из authenticated context.
+Identity всегда берётся из authenticated context. `itemInstanceId` проходит
+полную canonical UUID-проверку до application service: uppercase hex
+разрешён, shortened Java UUID aliases отклоняются как validation error без
+lock или database lookup.
 
 ### Transaction и concurrency
 

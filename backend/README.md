@@ -469,7 +469,10 @@ Unequip использует тот же request contract с `itemInstanceId: nu
 key. Обе операции имеют desired-state semantics: повтор exact command
 возвращает исходный response, а новый key для уже достигнутого состояния
 возвращает `changed = false`. Item должен принадлежать authenticated user,
-соответствовать slot content и не может занимать два slot.
+соответствовать slot content и не может занимать два slot. Входящий
+`itemInstanceId` принимается только как полный UUID и канонизируется до
+equipment service; сокращённые UUID-алиасы отклоняются стабильным `400` без
+получения persistent lock.
 
 Новая equipment mutation получает account/equipment locks, сохраняет exact
 replay доступным, затем входит в общий expedition serialization boundary и

@@ -2,9 +2,11 @@ package com.walkingrpg.backend.expedition.api;
 
 import java.util.UUID;
 
+import com.walkingrpg.backend.expedition.application.EventResolutionValidationException;
 import com.walkingrpg.backend.expedition.application.EventResultAcknowledgementService;
 import com.walkingrpg.backend.expedition.domain.EventResultAcknowledgementResult;
 import com.walkingrpg.backend.security.RequestIdentityProvider;
+import com.walkingrpg.backend.shared.validation.CanonicalUuid;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,11 +29,11 @@ public class EventResultAcknowledgementController {
 
     @PostMapping("/{receiptId}/acknowledge")
     public EventResultAcknowledgementResponse acknowledge(
-            @PathVariable UUID receiptId
+            @PathVariable String receiptId
     ) {
         EventResultAcknowledgementResult result = service.acknowledge(
                 identityProvider.requireIdentity().userId(),
-                receiptId
+                parseReceiptId(receiptId)
         );
         return new EventResultAcknowledgementResponse(
                 result.receiptId(),
@@ -40,5 +42,16 @@ public class EventResultAcknowledgementController {
                 result.acknowledgedAt(),
                 result.serverTime()
         );
+    }
+
+    private UUID parseReceiptId(String value) {
+        try {
+            return CanonicalUuid.parse(value);
+        } catch (IllegalArgumentException exception) {
+            throw new EventResolutionValidationException(
+                    "receiptId должен быть полным UUID",
+                    "receiptId"
+            );
+        }
     }
 }

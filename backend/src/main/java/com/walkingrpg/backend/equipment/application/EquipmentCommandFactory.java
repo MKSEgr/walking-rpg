@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.walkingrpg.backend.equipment.api.EquipmentRequest;
 import com.walkingrpg.backend.equipment.domain.EquipmentAction;
 import com.walkingrpg.backend.equipment.domain.EquipmentCommand;
+import com.walkingrpg.backend.shared.validation.CanonicalUuid;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,10 +40,10 @@ public class EquipmentCommandFactory {
     private UUID parseItemInstanceId(String value) {
         String normalized = requireText(value, "itemInstanceId", 36);
         try {
-            return UUID.fromString(normalized);
+            return CanonicalUuid.parse(normalized);
         } catch (IllegalArgumentException exception) {
             throw new EquipmentValidationException(
-                    "itemInstanceId должен быть UUID",
+                    "itemInstanceId должен быть полным UUID",
                     "itemInstanceId"
             );
         }
