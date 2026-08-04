@@ -15,6 +15,7 @@ import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/squad_formation_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/design_system/weekly_route_signal.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
@@ -98,6 +99,7 @@ void main() {
   testWidgets('uses the shared expedition language for the journal', (
     WidgetTester tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     final PlatformSnapshot initial = platformSnapshot();
     await tester.pumpWidget(
       MaterialApp(
@@ -136,7 +138,18 @@ void main() {
       300,
       scrollable: find.byType(Scrollable),
     );
-    expect(find.byType(ExpeditionProgressRing), findsOneWidget);
+    expect(find.byType(WeeklyRouteSignal), findsOneWidget);
+    expect(
+      find.byKey(const Key('weekly-route-signal-weekly-route-1-firstSignal')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Недельный маршрут «Сезон первого сигнала»: 40 из 100 ENERGY',
+      ),
+      findsOneWidget,
+    );
+    semantics.dispose();
   });
 
   testWidgets('keeps server progression copy beside exact visual identities', (
@@ -287,6 +300,7 @@ void main() {
     for (final Key key in const <Key>[
       Key('platform-onboarding-compact'),
       Key('platform-weekly-route-compact'),
+      Key('weekly-route-signal-weekly-route-1-firstSignal'),
       Key('platform-pet-compact-spark-v1'),
       Key('platform-skill-compact-steady-step'),
       Key('platform-quest-compact-walk-3000'),
