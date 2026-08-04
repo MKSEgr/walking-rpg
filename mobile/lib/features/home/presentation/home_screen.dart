@@ -1642,6 +1642,7 @@ class _PendingEventResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
     final EventMaterialReward? material = result.material;
     final EventNextNode? nextNode = result.nextNode;
     return ExpeditionPanel(
