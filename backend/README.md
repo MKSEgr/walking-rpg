@@ -425,6 +425,11 @@ Network Home регистрирует recipe/route state командой
 state, не материализует новые progress facts и не меняет `stateVersion`.
 Cached/off-viewport/covered/background Home ничего не отправляет, а mobile
 обрабатывает команду в cache-neutral `TELEMETRY` lane отдельно от gameplay.
+Fingerprint platform payload рекурсивно сортирует JSON object keys, поэтому
+тот же compass/exposure payload replay-ится после restart и между instances
+даже при другом порядке полей; arrays и scalar values/types остаются значимыми.
+Bounded compatibility path принимает оба исторических порядка объявленных
+двухполевых payload без сохранения raw request.
 
 Admin endpoint `/api/v1/admin/platform/analytics/compass-journey` объединяет
 эти client-reported показы с фактами существующих

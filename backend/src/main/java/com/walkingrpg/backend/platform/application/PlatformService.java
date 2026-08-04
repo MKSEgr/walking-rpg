@@ -124,7 +124,15 @@ public class PlatformService {
         );
         ProcessedPlatformCommand processed = repository.findProcessed(scope).orElse(null);
         if (processed != null) {
-            return replay(processed, fingerprint);
+            return replay(
+                    processed,
+                    fingerprint,
+                    PlatformCommandFingerprint.legacySha256Candidates(
+                            objectMapper,
+                            commandType,
+                            request.payload()
+                    )
+            );
         }
         if (PURCHASE_COSMETIC_COMMAND.equals(commandType)) {
             PlatformCommandScope legacyScope = new PlatformCommandScope(
@@ -140,7 +148,15 @@ public class PlatformService {
                         LEGACY_BUY_COSMETIC_COMMAND,
                         request.payload()
                 );
-                return replay(legacy, legacyFingerprint);
+                return replay(
+                        legacy,
+                        legacyFingerprint,
+                        PlatformCommandFingerprint.legacySha256Candidates(
+                                objectMapper,
+                                LEGACY_BUY_COSMETIC_COMMAND,
+                                request.payload()
+                        )
+                );
             }
         }
         if ("RECORD_COMPASS_IMPRESSION".equals(commandType)) {
@@ -239,9 +255,11 @@ public class PlatformService {
 
     private PlatformCommandResponse replay(
             ProcessedPlatformCommand processed,
-            String expectedFingerprint
+            String expectedFingerprint,
+            Set<String> legacyFingerprints
     ) {
-        if (!processed.requestFingerprint().equals(expectedFingerprint)) {
+        if (!processed.requestFingerprint().equals(expectedFingerprint)
+                && !legacyFingerprints.contains(processed.requestFingerprint())) {
             throw new PlatformIdempotencyConflictException();
         }
         return withEffectiveRemoteConfig(readResponse(processed.responseJson()));

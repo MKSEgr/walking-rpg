@@ -171,6 +171,12 @@ craft/equip/expedition/event receipts, отдельно показывает cov
 out-of-order gaps и не выдаёт client display за игровой факт. Подробности:
 [ADR 0031](docs/adr/0031-compass-beta-funnel.md).
 
+Platform command fingerprint канонизирует JSON object keys рекурсивно и
+сохраняет array order/scalar semantics. Это устраняет ложный idempotency
+conflict после backend restart для двухполевых telemetry payload; исторические
+fingerprints поддерживаются bounded fallback. Подробности:
+[ADR 0033](docs/adr/0033-canonical-platform-command-fingerprints.md).
+
 Новый mobile объявляет capability
 `X-Walking-RPG-Capabilities: durable-event-result-v1`. После cluster-wide
 активации `DURABLE_EVENT_RESULT_HANDOFF_ENABLED=true` backend возвращает для

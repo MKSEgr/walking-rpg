@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -668,6 +669,58 @@ class PlatformServiceTest {
                         )
                 ))
         );
+    }
+
+    @Test
+    void shouldReplayHistoricalTwoFieldFingerprintAfterPayloadReordering()
+            throws Exception {
+        String userId = "legacy-fingerprint-user";
+        String idempotencyKey = "legacy-compass-order";
+        Map<String, Object> historicalPayload = new LinkedHashMap<>();
+        historicalPayload.put("impression", "ROUTE_AVAILABLE");
+        historicalPayload.put(
+                "contentVersion",
+                StarterExpeditionContent.CONTENT_VERSION
+        );
+        PlatformCommandResponse first = service.execute(userId, command(
+                "RECORD_COMPASS_IMPRESSION",
+                idempotencyKey,
+                historicalPayload
+        ));
+
+        JsonMapper mapper = JsonMapper.builder().findAndAddModules().build();
+        platformRepository.saveProcessed(
+                new PlatformCommandScope(
+                        userId,
+                        "RECORD_COMPASS_IMPRESSION",
+                        idempotencyKey
+                ),
+                new ProcessedPlatformCommand(
+                        PlatformCommandFingerprint.legacySha256(
+                                mapper,
+                                "RECORD_COMPASS_IMPRESSION",
+                                historicalPayload
+                        ),
+                        mapper.writeValueAsString(first)
+                ),
+                NOW
+        );
+        int eventCount = platformRepository.eventCount();
+
+        Map<String, Object> reorderedPayload = new LinkedHashMap<>();
+        reorderedPayload.put(
+                "contentVersion",
+                StarterExpeditionContent.CONTENT_VERSION
+        );
+        reorderedPayload.put("impression", "ROUTE_AVAILABLE");
+        PlatformCommandResponse replayed = service.execute(userId, command(
+                "RECORD_COMPASS_IMPRESSION",
+                idempotencyKey,
+                reorderedPayload
+        ));
+
+        assertEquals(first, replayed);
+        assertEquals(eventCount, platformRepository.eventCount());
     }
 
     @Test

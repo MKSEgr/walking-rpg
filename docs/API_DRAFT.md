@@ -860,6 +860,12 @@ publication lock и не меняют активный snapshot.
   catalog. Команда материализует прежний `activeCosmeticId`, заменяет только
   соответствующий `PILOT`/`PET`/`PROFILE` slot и сохраняет остальные slots;
   неизвестный или не принадлежащий пользователю item отклоняется до изменения.
+- Fingerprint `payload` канонизирует порядок ключей рекурсивно: одинаковые JSON
+  objects replay-ятся независимо от порядка полей после restart/между backend
+  instances. Порядок arrays, значения и JSON-типы остаются значимыми. Для
+  сохранённых до канонизации двухполевых compass/exposure payload backend
+  принимает оба прежних top-level порядка, но другой business payload
+  по-прежнему получает `409 IDEMPOTENCY_CONFLICT` до любой записи.
 
 ### `commandType=RECORD_COMPASS_IMPRESSION`
 
