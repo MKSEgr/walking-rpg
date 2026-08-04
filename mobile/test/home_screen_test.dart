@@ -249,6 +249,51 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'illustrated event keeps both choices reachable on compact text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WalkingRpgTheme.dark(),
+          builder: (BuildContext context, Widget? child) {
+            return MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.6)),
+              child: child!,
+            );
+          },
+          home: HomeScreen(loader: () async => _eventReady()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('event-scene-signal-source-v1')),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Сцена события «Источник сигнала»: внешний маяк посылает '
+          'повторяющиеся импульсы сквозь туман.',
+        ),
+        findsOneWidget,
+      );
+      for (final String choiceId in <String>['analyze-signal', 'trust-spark']) {
+        final Finder choice = find.byKey(Key('home-event-choice-$choiceId'));
+        await _scrollAboveStickyAction(tester, choice);
+        expect(tester.widget<FilledButton>(choice).onPressed, isNotNull);
+        expect(tester.takeException(), isNull);
+      }
+
+      semantics.dispose();
+    },
+  );
+
   testWidgets('authoritative generation reloads home in place', (
     WidgetTester tester,
   ) async {
@@ -779,6 +824,10 @@ void main() {
     expect(sentKey, 'fixed-key');
     expect(loads, 2);
     expect(find.text('Источник сигнала'), findsOneWidget);
+    expect(
+      find.byKey(const Key('event-scene-signal-source-v1')),
+      findsOneWidget,
+    );
 
     final Finder eventStateButton = find.widgetWithText(
       FilledButton,
@@ -1110,6 +1159,13 @@ void main() {
         const Key('pending-event-result-card'),
       );
       expect(pendingResult, findsOneWidget);
+      expect(
+        find.descendant(
+          of: pendingResult,
+          matching: find.byKey(const Key('event-scene-echo-vault-v1')),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: pendingResult,

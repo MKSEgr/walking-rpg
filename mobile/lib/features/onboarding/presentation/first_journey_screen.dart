@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -724,6 +725,10 @@ class _EventPanel extends StatelessWidget {
     }
     return _JourneyPanel(
       icon: Icons.auto_awesome_outlined,
+      visual: ExpeditionEventScene(
+        eventId: current.eventId,
+        fallbackSemanticLabel: 'Сцена события «${current.title}»',
+      ),
       eyebrow: 'Шаг 4 · решение',
       title: current.title,
       body: current.summary,
@@ -781,6 +786,11 @@ class _CompletionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _JourneyPanel(
       icon: Icons.emoji_events_outlined,
+      visual: ExpeditionEventScene(
+        eventId: result.eventId,
+        fallbackSemanticLabel:
+            'Сцена завершённого события «${result.eventTitle}»',
+      ),
       eyebrow: 'Первый сигнал расшифрован',
       title: result.outcomeTitle,
       body: result.outcomeSummary,

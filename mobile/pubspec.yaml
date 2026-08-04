@@ -28,6 +28,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/characters/
+    - assets/events/
     - assets/items/
   config:
     enable-swift-package-manager: false

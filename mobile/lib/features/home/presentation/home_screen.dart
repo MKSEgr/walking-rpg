@@ -8,6 +8,7 @@ import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibi
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -1641,7 +1642,6 @@ class _PendingEventResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final WalkingRpgPalette palette = context.walkingRpgPalette;
     final EventMaterialReward? material = result.material;
     final EventNextNode? nextNode = result.nextNode;
     return ExpeditionPanel(
@@ -1650,14 +1650,10 @@ class _PendingEventResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: palette.resonance,
-              foregroundColor: palette.onResonance,
-              child: const Icon(Icons.emoji_events_outlined, size: 30),
-            ),
+          ExpeditionEventScene(
+            eventId: result.eventId,
+            fallbackSemanticLabel:
+                'Сцена завершённого события «${result.eventTitle}»',
           ),
           const SizedBox(height: 16),
           Text(
@@ -1803,7 +1799,12 @@ class _EventCard extends StatelessWidget {
             icon: Icons.auto_awesome_outlined,
             tone: ExpeditionPanelTone.resonance,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          ExpeditionEventScene(
+            eventId: event.eventId,
+            fallbackSemanticLabel: 'Сцена события «${event.title}»',
+          ),
+          const SizedBox(height: 14),
           Text(event.title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
           Text(event.summary),
