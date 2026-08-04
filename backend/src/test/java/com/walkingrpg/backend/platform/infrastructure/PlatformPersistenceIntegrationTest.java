@@ -1097,6 +1097,41 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldRejectMalformedSquadIdsBeforePersistentState() {
+        PlatformValidationException malformed = assertThrows(
+                PlatformValidationException.class,
+                () -> platformService.execute(
+                        "malformed-squad-user",
+                        new PlatformCommandRequest(
+                                "JOIN_SQUAD",
+                                "join-malformed-squad",
+                                Map.of("squadId", "not-a-uuid")
+                        )
+                )
+        );
+        PlatformValidationException shortened = assertThrows(
+                PlatformValidationException.class,
+                () -> platformService.execute(
+                        "short-squad-user",
+                        new PlatformCommandRequest(
+                                "JOIN_SQUAD",
+                                "join-short-squad",
+                                Map.of("squadId", "1-1-1-1-1")
+                        )
+                )
+        );
+
+        assertEquals("squadId", malformed.field());
+        assertEquals("squadId", shortened.field());
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(0, rowCount("roadmap_user_state"));
+        assertEquals(0, rowCount("processed_roadmap_command"));
+        assertEquals(0, rowCount("platform_event"));
+        assertEquals(0, rowCount("roadmap_squad"));
+        assertEquals(0, rowCount("roadmap_squad_member"));
+    }
+
+    @Test
     void shouldPersistBlockingRiskSignalWithoutRejectingActivityInShadowMode() {
         ActivitySyncCommand command = new ActivitySyncCommand(
                 "risk-user",

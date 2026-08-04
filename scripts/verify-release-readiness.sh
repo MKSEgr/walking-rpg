@@ -311,6 +311,8 @@ if grep -RInF '.toUpperCase()' backend/src/main/java/com/walkingrpg/backend/plat
 fi
 grep -Fq 'squad-membership-serialization' backend/src/main/java/com/walkingrpg/backend/platform/infrastructure/SquadTransactionLock.java || fail 'squad membership mutations must keep their dedicated transaction-lock boundary'
 grep -Fq 'shouldSerializeOwnerDeletionWithLastMemberLeave' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve squad deletion/leave serialization'
+grep -Fq 'validateCommandPayloadBeforeState(commandType, request.payload());' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'JOIN_SQUAD payload validation must run before platform state creation'
+grep -Fq 'shouldRejectMalformedSquadIdsBeforePersistentState' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must reject malformed squad UUIDs before persistent state'
 for test_name in \
   ProductionOperationsGuardTest \
   PublicIngressPropertiesTest \

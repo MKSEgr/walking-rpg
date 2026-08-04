@@ -170,6 +170,7 @@ public class PlatformService {
             );
         }
         requireProviderAvailability(commandType);
+        validateCommandPayloadBeforeState(commandType, request.payload());
 
         PlatformProgressFacts factsBefore = progressFactsProvider.factsFor(normalizedUserId);
         PlatformUserState current = repository.lockOrCreateState(
@@ -576,7 +577,7 @@ public class PlatformService {
         if (state.squadId() != null) {
             throw new PlatformStateConflictException("Пользователь уже состоит в отряде");
         }
-        String squadId = payloadText(payload, "squadId");
+        String squadId = payloadUuid(payload, "squadId");
         repository.joinSquad(squadId, userId, occurredAt);
         return new Mutation(withSquad(state, squadId), "Пользователь вступил в отряд");
     }
@@ -1183,6 +1184,29 @@ public class PlatformService {
             throw new PlatformValidationException("Поле обязательно", field);
         }
         return text.trim();
+    }
+
+    private void validateCommandPayloadBeforeState(
+            String commandType,
+            Map<String, Object> payload
+    ) {
+        if ("JOIN_SQUAD".equals(commandType)) {
+            payloadUuid(payload, "squadId");
+        }
+    }
+
+    private String payloadUuid(Map<String, Object> payload, String field) {
+        String text = payloadText(payload, field);
+        String canonical;
+        try {
+            canonical = UUID.fromString(text).toString();
+        } catch (IllegalArgumentException exception) {
+            throw new PlatformValidationException("Поле должно содержать полный UUID", field);
+        }
+        if (!canonical.equalsIgnoreCase(text)) {
+            throw new PlatformValidationException("Поле должно содержать полный UUID", field);
+        }
+        return canonical;
     }
 
     private int payloadInt(Map<String, Object> payload, String field) {
