@@ -23,7 +23,7 @@
 6. В начале транзакции получать PostgreSQL advisory transaction lock по стабильному ключу user.
 7. Проверять idempotency только после получения lock.
 8. Хранить ранее выданный response целиком и возвращать его без повторного расчёта.
-9. Для сравнения payload хранить SHA-256 fingerprint канонической бизнес-команды, а не сырые bucket-ы, cursor или attestation. Attestation не входит в fingerprint: при повторе он может быть перевыпущен и должен проверяться отдельно до обработки idempotency.
+9. Для сравнения payload хранить SHA-256 fingerprint канонической бизнес-команды, а не сырые bucket-ы, cursor или attestation. Attestation не входит в fingerprint: при повторе он может быть перевыпущен и должен оцениваться отдельно до обработки idempotency. Каждый exact replay создаёт новый shadow-mode risk assessment относительно текущего дневного high-watermark, но возвращает сохранённый business response и не меняет activity state или ENERGY ledger.
 10. Не использовать Redis-lock и отдельный ingestion-сервис до появления измеренной необходимости.
 
 ## Последствия

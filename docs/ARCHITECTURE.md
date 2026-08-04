@@ -385,7 +385,10 @@ backend продолжает менять только compatibility pointer и 
     другим `cosmeticId` конфликтует до provider call.
 10a. Cosmetic ID не выбирает slot на клиенте; один пользователь имеет не более
      одного server-known cosmetic в каждом `PILOT`/`PET`/`PROFILE` slot.
-11. Risk engine работает в shadow mode до внешней калибровки.
+11. Risk engine работает в shadow mode до внешней калибровки. Attestation
+    остаётся request-scoped и оценивается на каждой попытке до idempotency
+    replay; сохранённый business response, activity state и ENERGY при этом не
+    меняются.
 12. User/device/actor не принимаются контроллерами из произвольных headers или body в production.
 13. Валидный JWT без прикладной `ROLE_USER`/`ROLE_ADMIN` не даёт доступ к API.
 14. Event reward с `handoffRequired = true` считается переданным UI только

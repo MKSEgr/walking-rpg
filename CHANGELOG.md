@@ -163,6 +163,9 @@
 
 ### Changed
 
+- activity-sync exact replay повторно оценивает request-scoped `attestation` и
+  сохраняет отдельный shadow-mode risk assessment, не меняя исходный response,
+  activity high-watermark или ENERGY ledger;
 - `JOIN_SQUAD` проверяет полный UUID и нормализует его до state/DB mutation;
   malformed и укороченные значения возвращают `400 VALIDATION_ERROR` без
   частично сохранённого platform state;

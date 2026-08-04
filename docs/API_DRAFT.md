@@ -352,6 +352,11 @@ TOTAL_DECREASED
 
 Повтор одного key и payload возвращает исходный response. Тот же key с другим business payload возвращает `409 IDEMPOTENCY_CONFLICT`.
 
+`attestation` не входит в business fingerprint и может быть перевыпущен между
+сетевыми попытками. Поэтому backend создаёт отдельный shadow-mode risk
+assessment для каждого exact replay до возврата сохранённого response; replay
+не повторяет ENERGY credit и не меняет activity high-watermark.
+
 `localDate` может быть текущей или прошлой датой в заявленной IANA `timeZone`.
 Дата, которая ещё не наступила по серверному времени в этой зоне, отклоняется
 до создания user/device/state/ledger с `400 VALIDATION_ERROR` и
