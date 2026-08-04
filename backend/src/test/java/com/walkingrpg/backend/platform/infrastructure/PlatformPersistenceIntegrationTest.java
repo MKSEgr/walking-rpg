@@ -190,6 +190,8 @@ class PlatformPersistenceIntegrationTest {
         String userId = "payment-alias-user";
         String idempotencyKey = "payment-alias-once";
         Map<String, Object> payload = Map.of("cosmeticId", "spark-halo");
+        Map<String, Object> previousRemoteConfig =
+                platformRepository.activeRemoteConfig();
         platformAdminService.updateRemoteConfig(
                 "payment-alias-test",
                 "payment-alias-enabled",
@@ -276,8 +278,8 @@ class PlatformPersistenceIntegrationTest {
         } finally {
             platformAdminService.updateRemoteConfig(
                     "payment-alias-test",
-                    "payment-alias-disabled",
-                    paymentRemoteConfig(false)
+                    "payment-alias-restored",
+                    previousRemoteConfig
             );
         }
     }
@@ -285,6 +287,8 @@ class PlatformPersistenceIntegrationTest {
     @Test
     void shouldPersistIndependentCosmeticSlotsAcrossServiceRestart() {
         String userId = "cosmetic-slot-user";
+        Map<String, Object> previousRemoteConfig =
+                platformRepository.activeRemoteConfig();
         platformAdminService.updateRemoteConfig(
                 "cosmetic-slot-test",
                 "cosmetic-slot-payments-enabled",
@@ -343,8 +347,8 @@ class PlatformPersistenceIntegrationTest {
         } finally {
             platformAdminService.updateRemoteConfig(
                     "cosmetic-slot-test",
-                    "cosmetic-slot-payments-disabled",
-                    paymentRemoteConfig(false)
+                    "cosmetic-slot-payments-restored",
+                    previousRemoteConfig
             );
         }
     }
