@@ -199,6 +199,15 @@ void main() {
         findsOneWidget,
       );
       expect(
+        find.byKey(
+          const Key(
+            'crafting-assembly-signal-resonance-compass-v1-'
+            'resonanceCompass-READY',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
         find.bySemanticsLabel(
           'Люминовый осколок, 2 из 2, материала достаточно',
         ),
@@ -244,6 +253,15 @@ void main() {
     );
     expect(
       find.byKey(const Key('crafting-result-layout-resonance-compass-compact')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const Key(
+          'crafting-assembly-signal-resonance-compass-v1-'
+          'resonanceCompass-READY',
+        ),
+      ),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
@@ -907,6 +925,15 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(craftedStatus, findsOneWidget);
+    expect(
+      find.byKey(
+        const Key(
+          'crafting-assembly-signal-resonance-compass-v1-'
+          'resonanceCompass-CRAFTED',
+        ),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('cached home keeps crafting read-only', (
