@@ -270,7 +270,20 @@ public class PlatformContentCatalog {
         }
     }
 
-    public Map<String, Object> publicCatalog(String activeContentVersion) {
+    public Map<String, Object> publicCatalog(
+            String activeContentVersion,
+            String seasonId,
+            int weeklyRouteEnergy
+    ) {
+        if (seasonId == null || seasonId.isBlank()) {
+            throw new IllegalArgumentException("seasonId обязателен");
+        }
+        if (weeklyRouteEnergy <= 0) {
+            throw new IllegalArgumentException(
+                    "weeklyRouteEnergy должна быть положительной"
+            );
+        }
+        String normalizedSeasonId = seasonId.trim();
         boolean resonanceRouteActive = StarterExpeditionContent.CONTENT_VERSION.equals(
                 activeContentVersion
         );
@@ -290,13 +303,13 @@ public class PlatformContentCatalog {
         catalog.put("cosmetics", cosmetics);
         catalog.put("experiments", experiments);
         catalog.put("season", Map.of(
-                "seasonId", "season-1",
+                "seasonId", normalizedSeasonId,
                 "name", "Сезон первого сигнала",
                 "levels", 10
         ));
         catalog.put("weeklyRoute", Map.of(
                 "routeId", "weekly-route-1",
-                "requiredEnergy", 120
+                "requiredEnergy", weeklyRouteEnergy
         ));
         catalog.put("materials", List.of(
                 StarterInventoryContent.LUMEN_SHARD_ID,

@@ -147,6 +147,30 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldProjectPersistedRemoteConfigIntoEveryPlatformCatalog() {
+        PlatformSnapshotResponse snapshot = platformService.getSnapshot(
+                "runtime-catalog-user"
+        );
+        Map<String, Object> bootstrap = platformService.getContentBootstrap();
+        Map<String, Object> bootstrapContent = objectMap(bootstrap.get("content"));
+        Map<String, Object> bootstrapConfig = objectMap(
+                bootstrap.get("remoteConfig")
+        );
+
+        assertEquals(
+                snapshot.remoteConfig().get("seasonId"),
+                objectMap(snapshot.content().get("season")).get("seasonId")
+        );
+        assertEquals(
+                snapshot.remoteConfig().get("weeklyRouteEnergy"),
+                objectMap(snapshot.content().get("weeklyRoute"))
+                        .get("requiredEnergy")
+        );
+        assertEquals(snapshot.content(), bootstrapContent);
+        assertEquals(snapshot.remoteConfig(), bootstrapConfig);
+    }
+
+    @Test
     void shouldReplayPreStabilizationIndentedFingerprintAfterCompactRestart()
             throws Exception {
         assertEquals(0, rowCount("app_user"));
@@ -1829,5 +1853,10 @@ class PlatformPersistenceIntegrationTest {
     @SuppressWarnings("unchecked")
     private static Map<String, String> stringMap(Object value) {
         return (Map<String, String>) value;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> objectMap(Object value) {
+        return (Map<String, Object>) value;
     }
 }

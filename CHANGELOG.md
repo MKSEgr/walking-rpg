@@ -163,6 +163,10 @@
 
 ### Changed
 
+- platform snapshot и content bootstrap теперь проецируют `seasonId` и
+  `weeklyRouteEnergy` из одного effective remote config: catalog, user-state
+  threshold и remote config больше не сообщают разные значения, а
+  `catalogDigest` отражает фактически выданную runtime-проекцию;
 - `catalogDigest` теперь вычисляется по каноническому содержимому platform
   catalog, а не только по набору его верхнеуровневых ключей; разные content
   versions получают разные стабильные SHA-256 значения, не зависящие от

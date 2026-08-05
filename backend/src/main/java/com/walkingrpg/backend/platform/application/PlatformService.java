@@ -45,6 +45,8 @@ public class PlatformService {
 
     private static final String DEFAULT_PET_ID = "spark-v1";
     private static final String DEFAULT_COSMETIC_ID = "pilot-scarf";
+    private static final String DEFAULT_SEASON_ID = "season-1";
+    private static final int DEFAULT_WEEKLY_ROUTE_ENERGY = 120;
     private static final String PURCHASE_COSMETIC_COMMAND = "PURCHASE_COSMETIC";
     private static final String LEGACY_BUY_COSMETIC_COMMAND = "BUY_COSMETIC";
 
@@ -91,10 +93,14 @@ public class PlatformService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> getContentBootstrap() {
         String activeContentVersion = repository.activeContentVersion();
+        Map<String, Object> remoteConfig = effectiveRemoteConfig();
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("contentVersion", activeContentVersion);
-        response.put("content", content.publicCatalog(activeContentVersion));
-        response.put("remoteConfig", effectiveRemoteConfig());
+        response.put(
+                "content",
+                publicCatalog(activeContentVersion, remoteConfig)
+        );
+        response.put("remoteConfig", remoteConfig);
         response.put("serverTime", now());
         return response;
     }
@@ -510,7 +516,12 @@ public class PlatformService {
         if (!featureEnabled("weeklyRouteEnabled")) {
             throw new PlatformStateConflictException("Недельный маршрут отключён конфигурацией");
         }
-        int requiredEnergy = configInt("weeklyRouteEnergy", 120, 10, 10_000);
+        int requiredEnergy = configInt(
+                "weeklyRouteEnergy",
+                DEFAULT_WEEKLY_ROUTE_ENERGY,
+                10,
+                10_000
+        );
         int energyToSpend = payloadInt(payload, "energyToSpend");
         if (energyToSpend <= 0) {
             throw new PlatformValidationException(
@@ -788,7 +799,12 @@ public class PlatformService {
         if (state.claimedQuests().size() >= 2) {
             achievements.add("quest-runner");
         }
-        int weeklyRequired = configInt("weeklyRouteEnergy", 120, 10, 10_000);
+        int weeklyRequired = configInt(
+                "weeklyRouteEnergy",
+                DEFAULT_WEEKLY_ROUTE_ENERGY,
+                10,
+                10_000
+        );
         if (state.weeklyRouteProgress() >= weeklyRequired) {
             achievements.add("weekly-route-complete");
         }
@@ -911,6 +927,14 @@ public class PlatformService {
             PlatformProgressFacts facts,
             Instant serverTime
     ) {
+        Map<String, Object> remoteConfig = effectiveRemoteConfig();
+        int weeklyRouteEnergy = configInt(
+                remoteConfig,
+                "weeklyRouteEnergy",
+                DEFAULT_WEEKLY_ROUTE_ENERGY,
+                10,
+                10_000
+        );
         Map<String, Object> userState = new LinkedHashMap<>();
         userState.put("activePetId", state.activePetId());
         userState.put("pets", petViews(state));
@@ -924,8 +948,7 @@ public class PlatformService {
         userState.put("seasonXp", state.seasonXp());
         userState.put("seasonLevel", state.seasonXp() / 100 + 1);
         userState.put("weeklyRouteProgress", state.weeklyRouteProgress());
-        userState.put("weeklyRouteRequiredEnergy",
-                configInt("weeklyRouteEnergy", 120, 10, 10_000));
+        userState.put("weeklyRouteRequiredEnergy", weeklyRouteEnergy);
         userState.put("squad", squadView(userId, state));
         userState.put("ownedCosmetics", state.ownedCosmetics());
         userState.put("activeCosmeticId", state.activeCosmeticId());
@@ -946,8 +969,8 @@ public class PlatformService {
                 activeContentVersion,
                 state.version(),
                 userState,
-                content.publicCatalog(activeContentVersion),
-                effectiveRemoteConfig(),
+                publicCatalog(activeContentVersion, remoteConfig),
+                remoteConfig,
                 serverTime
         );
     }
@@ -1052,8 +1075,24 @@ public class PlatformService {
     }
 
     private int configInt(String key, int defaultValue, int min, int max) {
+        return configInt(
+                effectiveRemoteConfig(),
+                key,
+                defaultValue,
+                min,
+                max
+        );
+    }
+
+    private int configInt(
+            Map<String, Object> config,
+            String key,
+            int defaultValue,
+            int min,
+            int max
+    ) {
         return boundedConfigInteger(
-                effectiveRemoteConfig().get(key),
+                config.get(key),
                 defaultValue,
                 min,
                 max
@@ -1126,12 +1165,46 @@ public class PlatformService {
                 "weeklyRouteEnergy",
                 boundedConfigInteger(
                         config.get("weeklyRouteEnergy"),
-                        120,
+                        DEFAULT_WEEKLY_ROUTE_ENERGY,
                         10,
                         10_000
                 )
         );
+        config.put(
+                "seasonId",
+                normalizedConfigText(
+                        config.get("seasonId"),
+                        DEFAULT_SEASON_ID
+                )
+        );
         return Map.copyOf(config);
+    }
+
+    private String normalizedConfigText(Object value, String defaultValue) {
+        if (!(value instanceof String text) || text.isBlank()) {
+            return defaultValue;
+        }
+        return text.trim();
+    }
+
+    private Map<String, Object> publicCatalog(
+            String activeContentVersion,
+            Map<String, Object> remoteConfig
+    ) {
+        return content.publicCatalog(
+                activeContentVersion,
+                normalizedConfigText(
+                        remoteConfig.get("seasonId"),
+                        DEFAULT_SEASON_ID
+                ),
+                configInt(
+                        remoteConfig,
+                        "weeklyRouteEnergy",
+                        DEFAULT_WEEKLY_ROUTE_ENERGY,
+                        10,
+                        10_000
+                )
+        );
     }
 
     private PlatformCommandResponse withEffectiveRemoteConfig(

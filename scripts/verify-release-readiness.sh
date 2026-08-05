@@ -245,6 +245,9 @@ grep -Fq 'shouldReplayAfterApiMapperFormattingChanges' backend/src/test/java/com
 grep -Fq 'shouldReplayPreStabilizationIndentedFingerprintAfterCompactRestart' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformServiceTest.java || fail 'platform replay must retain pre-stabilization indented fingerprints'
 grep -Fq 'shouldReplayPreStabilizationIndentedFingerprintAfterCompactRestart' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL replay must retain pre-stabilization indented fingerprints'
 grep -Fq 'shouldReplayCanonicalPlatformPayloadAfterRestartAndKeyReordering' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'platform canonical fingerprint persistence regression is required'
+grep -Fq 'shouldIncludeRuntimeCatalogValuesInProjectionAndDigest' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformContentCatalogTest.java || fail 'platform catalog digest must cover effective runtime values'
+grep -Fq 'shouldProjectOneEffectiveConfigIntoSnapshotAndBootstrapCatalogs' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformServiceTest.java || fail 'platform snapshot and bootstrap must share one effective runtime catalog projection'
+grep -Fq 'shouldProjectPersistedRemoteConfigIntoEveryPlatformCatalog' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL platform catalogs must match persisted effective remote config'
 
 printf '%s\n' 'Checking production operational controls...'
 grep -Fq 'micrometer-registry-prometheus' backend/pom.xml || fail 'Prometheus registry is required'

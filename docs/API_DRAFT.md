@@ -807,6 +807,15 @@ push-регистрации устройства.
 admin publish, завершившийся после фиксации snapshot, целиком попадает только в
 следующий platform response.
 
+Mutable runtime values не имеют второго источника истины внутри content
+projection: `content.season.seasonId` равен `remoteConfig.seasonId`, а
+`content.weeklyRoute.requiredEnergy` и
+`userState.weeklyRouteRequiredEnergy` равны
+`remoteConfig.weeklyRouteEnergy`. `GET /api/v1/platform` и
+`GET /api/v1/content/bootstrap` строят catalog и remote config из одного
+effective config snapshot, поэтому clean install и последующая admin-публикация
+не могут выдать противоречащие друг другу значения.
+
 ## Admin-публикация platform config и content
 
 `PUT /api/v1/admin/platform/remote-config` и
@@ -1232,7 +1241,8 @@ GET  /api/v1/content/bootstrap
 Вложенный `content.catalogDigest` — SHA-256 канонического содержимого каталога
 без самого digest. Порядок ключей JSON object на значение не влияет, порядок
 элементов массивов остаётся значимым. Любое изменение server-owned catalog
-value, включая `contentVersion`, меняет digest; повторная выдача того же
-каталога возвращает то же значение. Расчёт использует отдельный writer с
-фиксированным порядком object properties и без форматирования, поэтому настройки
-API `ObjectMapper`, включая pretty-print, на digest не влияют.
+value, включая `contentVersion`, effective `seasonId` и
+`weeklyRouteEnergy`, меняет digest; повторная выдача того же каталога возвращает
+то же значение. Расчёт использует отдельный writer с фиксированным порядком
+object properties и без форматирования, поэтому настройки API `ObjectMapper`,
+включая pretty-print, на digest не влияют.

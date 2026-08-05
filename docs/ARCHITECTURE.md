@@ -235,6 +235,12 @@ platform-команды. Для старого раздвоенного сост
 сохраняются между версиями; mutable user state отделён от definitions.
 `content_release` и remote config позволяют публиковать активную версию без
 переписывания исторических command responses.
+Live platform snapshot и bootstrap сначала читают один effective remote config,
+а затем проецируют из него `seasonId` и `weeklyRouteEnergy` в catalog. Поэтому
+catalog, user-state threshold и remote config не расходятся при clean install
+или admin publication; runtime values участвуют в `catalogDigest`. Уже
+сохранённый command response остаётся immutable и replay-ится с исходной
+проекцией.
 Remote config и content release используют разные transaction-scoped advisory
 locks перед схемой `deactivate current → activate next`. Конкурентные admin
 requests одного типа сериализуются между backend instances, а независимые типы
