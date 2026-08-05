@@ -154,6 +154,31 @@ class ActivitySyncServiceTest {
         assertEquals(1, outcome.activity().energyGranted());
     }
 
+    @Test
+    void shouldTimestampSynchronizationAfterUserLock() {
+        MutableClock clock = new MutableClock(NOW.minusSeconds(30));
+        InMemoryActivitySyncRepository repository =
+                new InMemoryActivitySyncRepository() {
+                    @Override
+                    public void acquireUserLock(String userId) {
+                        clock.set(NOW);
+                    }
+                };
+        ActivitySyncService orderedService = new ActivitySyncService(
+                repository,
+                new ActivitySyncCalculator(),
+                new EconomyService(new InMemoryEconomyRepository()),
+                clock
+        );
+
+        ActivitySyncOutcome outcome = orderedService.synchronize(command(
+                100,
+                "lock-time-order"
+        ));
+
+        assertEquals(NOW, outcome.activity().serverTime());
+    }
+
     private ActivitySyncCommand command(long authoritativeTotal, String idempotencyKey) {
         return command(
                 authoritativeTotal,
@@ -196,5 +221,40 @@ class ActivitySyncServiceTest {
                 idempotencyKey,
                 attestation
         );
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant current;
+        private final ZoneId zone;
+
+        private MutableClock(Instant current) {
+            this(current, ZoneOffset.UTC);
+        }
+
+        private MutableClock(Instant current, ZoneId zone) {
+            this.current = current;
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public synchronized Clock withZone(ZoneId requestedZone) {
+            return zone.equals(requestedZone)
+                    ? this
+                    : new MutableClock(current, requestedZone);
+        }
+
+        @Override
+        public synchronized Instant instant() {
+            return current;
+        }
+
+        private synchronized void set(Instant value) {
+            current = value;
+        }
     }
 }

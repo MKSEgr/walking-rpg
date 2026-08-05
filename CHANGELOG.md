@@ -163,6 +163,9 @@
 
 ### Changed
 
+- `serverTime` новой activity sync теперь фиксируется после user lock:
+  validation, device presence, risk assessment, ENERGY ledger и durable
+  response больше не могут предшествовать уже завершённой serialized command;
 - `serverTime` новой platform-команды теперь фиксируется после user lock и
   frozen runtime reads: route impression, принятый для новой active content
   version, больше не сохраняется раньше наблюдаемой content activation;

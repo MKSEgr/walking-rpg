@@ -62,9 +62,9 @@ public class ActivitySyncService {
 
     @Transactional
     public ActivitySyncOutcome synchronize(ActivitySyncCommand command) {
+        repository.acquireUserLock(command.userId());
         Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
         validateLocalDate(command, serverTime);
-        repository.acquireUserLock(command.userId());
         repository.registerDevice(command.userId(), command.deviceId(), serverTime);
 
         IdempotencyScope idempotencyScope = IdempotencyScope.from(command);

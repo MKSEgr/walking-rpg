@@ -1,5 +1,8 @@
 package com.walkingrpg.backend.activity.infrastructure;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -13,6 +16,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.sql.DataSource;
+
 import com.walkingrpg.backend.activity.application.ActivitySyncConflictException;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.application.ActivitySyncValidationException;
@@ -24,6 +29,7 @@ import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
 import com.walkingrpg.backend.activity.domain.IdempotencyScope;
 import com.walkingrpg.backend.activity.domain.ProcessedActivitySync;
 import com.walkingrpg.backend.economy.application.EconomyService;
+import com.walkingrpg.backend.risk.application.ActivityRiskRecorder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,6 +76,12 @@ class ActivitySyncPersistenceIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private ActivityRiskRecorder riskRecorder;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -230,6 +242,66 @@ class ActivitySyncPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldTimestampSynchronizationAfterWaitingForUserLock() throws Exception {
+        Instant lockReleaseTime = Instant.parse("2026-07-25T12:00:00Z");
+        MutableClock clock = new MutableClock(lockReleaseTime.minusSeconds(30));
+        CountDownLatch lockAttempted = new CountDownLatch(1);
+        ActivitySyncService orderedService = new ActivitySyncService(
+                new LockSignallingRepository(repository, lockAttempted),
+                new ActivitySyncCalculator(),
+                economyService,
+                riskRecorder,
+                clock
+        );
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        executor = Executors.newSingleThreadExecutor();
+
+        ActivitySyncOutcome outcome;
+        try (Connection blocker = dataSource.getConnection()) {
+            blocker.setAutoCommit(false);
+            try (PreparedStatement lock = blocker.prepareStatement("""
+                    SELECT pg_advisory_xact_lock(hashtextextended(?, 0))
+                    """)) {
+                String userId = "persistent-user";
+                lock.setString(1, userId.length() + ":" + userId);
+                lock.execute();
+            }
+
+            Future<ActivitySyncOutcome> pending = executor.submit(() ->
+                    transaction.execute(status -> orderedService.synchronize(
+                            command("lock-time-device", 100, "lock-time-order")
+                    ))
+            );
+            assertTrue(lockAttempted.await(5, TimeUnit.SECONDS));
+            clock.set(lockReleaseTime);
+            blocker.commit();
+            outcome = pending.get(10, TimeUnit.SECONDS);
+        }
+
+        assertEquals(lockReleaseTime, outcome.activity().serverTime());
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT server_time
+                FROM processed_activity_sync
+                WHERE idempotency_key = 'lock-time-order'
+                """));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT created_at
+                FROM economy_ledger
+                WHERE source_key = '16:lock-time-device:lock-time-order'
+                """));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT created_at
+                FROM activity_risk_assessment
+                WHERE device_id = 'lock-time-device'
+                """));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT last_seen_at
+                FROM app_device
+                WHERE device_id = 'lock-time-device'
+                """));
+    }
+
+    @Test
     void shouldRollbackWalletLedgerStateAndIdentityWhenProcessedSaveFails() {
         ActivitySyncRepository failingRepository = new FailingProcessedSaveRepository(repository);
         ActivitySyncService failingService = new ActivitySyncService(
@@ -330,6 +402,10 @@ class ActivitySyncPersistenceIntegrationTest {
                 Long.class
         );
         return value == null ? 0 : value;
+    }
+
+    private Instant timestamp(String sql) {
+        return jdbcTemplate.queryForObject(sql, Timestamp.class).toInstant();
     }
 
     private ActivitySyncCommand command(
@@ -445,6 +521,95 @@ class ActivitySyncPersistenceIntegrationTest {
         @Override
         public void markSuccessfulSync(String userId) {
             delegate.markSuccessfulSync(userId);
+        }
+    }
+
+    private static final class LockSignallingRepository
+            implements ActivitySyncRepository {
+
+        private final ActivitySyncRepository delegate;
+        private final CountDownLatch lockAttempted;
+
+        private LockSignallingRepository(
+                ActivitySyncRepository delegate,
+                CountDownLatch lockAttempted
+        ) {
+            this.delegate = delegate;
+            this.lockAttempted = lockAttempted;
+        }
+
+        @Override
+        public void acquireUserLock(String userId) {
+            lockAttempted.countDown();
+            delegate.acquireUserLock(userId);
+        }
+
+        @Override
+        public void registerDevice(String userId, String deviceId, Instant seenAt) {
+            delegate.registerDevice(userId, deviceId, seenAt);
+        }
+
+        @Override
+        public Optional<ActivityDayState> findState(ActivityDayKey key) {
+            return delegate.findState(key);
+        }
+
+        @Override
+        public void saveState(ActivityDayKey key, ActivityDayState state, ZoneId timeZone) {
+            delegate.saveState(key, state, timeZone);
+        }
+
+        @Override
+        public Optional<ProcessedActivitySync> findProcessed(IdempotencyScope scope) {
+            return delegate.findProcessed(scope);
+        }
+
+        @Override
+        public void saveProcessed(
+                IdempotencyScope scope,
+                ProcessedActivitySync processedSync
+        ) {
+            delegate.saveProcessed(scope, processedSync);
+        }
+
+        @Override
+        public void markSuccessfulSync(String userId) {
+            delegate.markSuccessfulSync(userId);
+        }
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant current;
+        private final ZoneId zone;
+
+        private MutableClock(Instant current) {
+            this(current, ZoneOffset.UTC);
+        }
+
+        private MutableClock(Instant current, ZoneId zone) {
+            this.current = current;
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public synchronized Clock withZone(ZoneId requestedZone) {
+            return zone.equals(requestedZone)
+                    ? this
+                    : new MutableClock(current, requestedZone);
+        }
+
+        @Override
+        public synchronized Instant instant() {
+            return current;
+        }
+
+        private synchronized void set(Instant value) {
+            current = value;
         }
     }
 }
