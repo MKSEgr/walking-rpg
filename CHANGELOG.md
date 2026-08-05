@@ -163,6 +163,10 @@
 
 ### Changed
 
+- время authenticated telemetry/crash ingestion, push registration, test push
+  и tester cohort upsert теперь фиксируется после account-deletion subject
+  lock; `received_at` и связанные user/device timestamps отражают фактический
+  serialized порядок, включая переход через UTC day boundary;
 - `serverTime` нового event-result acknowledgement теперь фиксируется после
   account-deletion subject lock: durable ACK и первый onboarding milestone не
   могут предшествовать уже завершённой serialized account mutation;

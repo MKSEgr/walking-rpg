@@ -91,16 +91,16 @@ public class PlatformAdminService {
                     "eventName"
             );
         }
-        Instant receivedAt = now();
-        if (hasText(userId)) {
-            ensureUser(userId.trim(), receivedAt);
-        }
+        String normalizedUserId = normalizeNullable(userId);
+        Instant receivedAt = normalizedUserId == null
+                ? now()
+                : ensureUser(normalizedUserId);
         jdbcTemplate.update("""
                 INSERT INTO platform_event (
                     user_id, event_name, occurred_at, attributes, received_at
                 ) VALUES (?, ?, ?, ?::jsonb, ?)
                 """,
-                normalizeNullable(userId),
+                normalizedUserId,
                 normalizedEventName,
                 Timestamp.from(occurredAt == null ? receivedAt : occurredAt),
                 writeJson(attributes == null ? Map.of() : attributes),
@@ -119,22 +119,28 @@ public class PlatformAdminService {
             Map<String, Object> context,
             Instant occurredAt
     ) {
-        Instant receivedAt = now();
-        if (hasText(userId)) {
-            ensureUser(userId.trim(), receivedAt);
-        }
+        String normalizedUserId = normalizeNullable(userId);
+        String normalizedPlatform = requireText(platform, "platform")
+                .toUpperCase(Locale.ROOT);
+        String normalizedAppVersion = requireText(appVersion, "appVersion");
+        String normalizedErrorType = requireText(errorType, "errorType");
+        String normalizedMessage = requireText(message, "message");
+        String normalizedStackTrace = normalizeNullable(stackTrace);
+        Instant receivedAt = normalizedUserId == null
+                ? now()
+                : ensureUser(normalizedUserId);
         jdbcTemplate.update("""
                 INSERT INTO platform_crash_report (
                     user_id, platform, app_version, error_type, message,
                     stack_trace, context, occurred_at, received_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?)
                 """,
-                normalizeNullable(userId),
-                requireText(platform, "platform").toUpperCase(Locale.ROOT),
-                requireText(appVersion, "appVersion"),
-                requireText(errorType, "errorType"),
-                requireText(message, "message"),
-                normalizeNullable(stackTrace),
+                normalizedUserId,
+                normalizedPlatform,
+                normalizedAppVersion,
+                normalizedErrorType,
+                normalizedMessage,
+                normalizedStackTrace,
                 writeJson(context == null ? Map.of() : context),
                 Timestamp.from(occurredAt == null ? receivedAt : occurredAt),
                 Timestamp.from(receivedAt)
@@ -149,8 +155,14 @@ public class PlatformAdminService {
             String provider,
             String token
     ) {
-        Instant timestamp = now();
-        ensureDevice(userId, deviceId, timestamp);
+        String normalizedUserId = requireText(userId, "userId");
+        String normalizedDeviceId = requireText(deviceId, "deviceId");
+        String normalizedPlatform = requireText(platform, "platform")
+                .toUpperCase(Locale.ROOT);
+        String normalizedProvider = requireText(provider, "provider")
+                .toUpperCase(Locale.ROOT);
+        String tokenHash = sha256(requireText(token, "token"));
+        Instant timestamp = ensureDevice(normalizedUserId, normalizedDeviceId);
         jdbcTemplate.update("""
                 INSERT INTO push_registration (
                     user_id, device_id, platform, provider, token_hash,
@@ -163,11 +175,11 @@ public class PlatformAdminService {
                     enabled = true,
                     updated_at = EXCLUDED.updated_at
                 """,
-                requireText(userId, "userId"),
-                requireText(deviceId, "deviceId"),
-                requireText(platform, "platform").toUpperCase(Locale.ROOT),
-                requireText(provider, "provider").toUpperCase(Locale.ROOT),
-                sha256(requireText(token, "token")),
+                normalizedUserId,
+                normalizedDeviceId,
+                normalizedPlatform,
+                normalizedProvider,
+                tokenHash,
                 Timestamp.from(timestamp),
                 Timestamp.from(timestamp)
         );
@@ -349,8 +361,7 @@ public class PlatformAdminService {
                     "Push-отправка недоступна в текущей конфигурации"
             );
         }
-        Instant timestamp = now();
-        ensureUser(normalizedUser, timestamp);
+        Instant timestamp = ensureUser(normalizedUser);
         PushDeliveryResult result = pushDeliveryProvider.send(
                 normalizedUser,
                 normalizedTitle,
@@ -372,8 +383,12 @@ public class PlatformAdminService {
             String status,
             String notes
     ) {
-        Instant timestamp = now();
-        ensureUser(userId, timestamp);
+        String normalizedActor = requireText(actor, "actor");
+        String normalizedCohortCode = requireText(cohortCode, "cohortCode");
+        String normalizedUserId = requireText(userId, "userId");
+        String normalizedStatus = requireText(status, "status")
+                .toUpperCase(Locale.ROOT);
+        Instant timestamp = ensureUser(normalizedUserId);
         jdbcTemplate.update("""
                 INSERT INTO tester_cohort_member (
                     cohort_code, user_id, status, notes,
@@ -384,11 +399,11 @@ public class PlatformAdminService {
                     notes = EXCLUDED.notes,
                     updated_at = EXCLUDED.updated_at
                 """,
-                requireText(cohortCode, "cohortCode"),
-                requireText(userId, "userId"),
-                requireText(status, "status").toUpperCase(Locale.ROOT),
+                normalizedCohortCode,
+                normalizedUserId,
+                normalizedStatus,
                 normalizeNullable(notes),
-                requireText(actor, "actor"),
+                normalizedActor,
                 Timestamp.from(timestamp),
                 Timestamp.from(timestamp)
         );
@@ -845,8 +860,9 @@ public class PlatformAdminService {
         }
     }
 
-    private void ensureUser(String userId, Instant observedAt) {
+    private Instant ensureUser(String userId) {
         accountDeletionRegistry.requireActive(userId);
+        Instant observedAt = now();
         Timestamp timestamp = Timestamp.from(observedAt);
         jdbcTemplate.update("""
                 INSERT INTO app_user (user_id, created_at, last_seen_at)
@@ -854,10 +870,11 @@ public class PlatformAdminService {
                 ON CONFLICT (user_id) DO UPDATE
                 SET last_seen_at = GREATEST(app_user.last_seen_at, EXCLUDED.last_seen_at)
                 """, requireText(userId, "userId"), timestamp, timestamp);
+        return observedAt;
     }
 
-    private void ensureDevice(String userId, String deviceId, Instant observedAt) {
-        ensureUser(userId, observedAt);
+    private Instant ensureDevice(String userId, String deviceId) {
+        Instant observedAt = ensureUser(userId);
         Timestamp timestamp = Timestamp.from(observedAt);
         jdbcTemplate.update("""
                 INSERT INTO app_device (user_id, device_id, created_at, last_seen_at)
@@ -870,6 +887,7 @@ public class PlatformAdminService {
                 timestamp,
                 timestamp
         );
+        return observedAt;
     }
 
     private String writeJson(Object value) {

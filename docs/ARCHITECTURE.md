@@ -361,6 +361,12 @@ backend продолжает менять только compatibility pointer и 
   transaction до operation-specific locks/replay. Это включает activity,
   platform, crafting, equipment, expedition advance/resolution и result ACK;
   request-level security check не считается конкурентной границей;
+- authenticated telemetry/crash ingestion, push registration, test push и
+  tester cohort upsert снимают server-owned receive/mutation timestamps после
+  этого account boundary. `app_user`, `app_device` и целевая запись не могут
+  быть датированы раньше уже завершённой serialized account mutation;
+  anonymous telemetry/diagnostics не имеют user lock и используют прямое
+  receive time;
 - server-owned `itemInstanceId` и event `receiptId` проходят общую canonical
   UUID-проверку на HTTP boundary до service/DB; Java-совместимые сокращённые
   UUID-алиасы не становятся alternate identity и возвращают единый `400`;
@@ -425,6 +431,11 @@ backend продолжает менять только compatibility pointer и 
     lock; durable receipt и onboarding milestone не могут предшествовать уже
     завершённой serialized account mutation. Exact replay сохраняет исходное
     post-lock время без повторного ACK.
+5e. Время authenticated platform ingestion фиксируется после account-deletion
+    subject lock. Server-owned telemetry/crash `received_at`, push/tester
+    mutation timestamps и связанные user/device timestamps отражают
+    фактический serialized порядок, в том числе через UTC day boundary;
+    client-controlled `occurredAt` остаётся только диагностическим.
 6. Inventory stack меняется через inventory ledger.
 7. Historical response не заменяется более новым snapshot.
 8. Process restart не меняет pending payload/key.

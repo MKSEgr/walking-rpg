@@ -1209,6 +1209,15 @@ Raw JSON body ограничен 64 KiB. Ограничения:
 
 Успех: `202 Accepted` с `{"accepted":true}`.
 
+Для authenticated telemetry и crash reports server-owned `received_at`
+фиксируется только после account-deletion subject lock. То же post-lock время
+используется для создаваемого/обновляемого `app_user`; поэтому request,
+ожидавший предыдущую account mutation через границу UTC, относится к дню
+фактической serialized записи. Переданный клиентом `occurredAt` остаётся
+диагностическим временем события и не подменяет `received_at`. Anonymous
+ingestion не имеет account boundary и снимает receive time непосредственно
+перед записью.
+
 ### Abuse responses
 
 Каждый route имеет bounded per-process client и global rate limits. Backend не
