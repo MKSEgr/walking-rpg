@@ -542,6 +542,13 @@ Response второго события:
 Финальное событие главы возвращает `nextNode = null` и
 `expeditionStatus = COMPLETED`.
 
+Для нового, ещё не обработанного resolution `serverTime` фиксируется после
+общего user+expedition lock. Pilot/pet progression, material stack/ledger,
+expedition transition и durable result используют одно post-lock значение,
+поэтому ожидавший lock resolution не может быть датирован раньше уже
+завершённой serialized mutation той же экспедиции. Exact replay возвращает
+исходный `serverTime` без повторной награды или transition.
+
 Правила:
 
 - event должен быть фактически открыт и expedition должна иметь `EVENT_READY`;

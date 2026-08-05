@@ -1,5 +1,7 @@
 package com.walkingrpg.backend.expedition.infrastructure;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
@@ -15,6 +17,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import javax.sql.DataSource;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
@@ -114,6 +118,9 @@ class EventResolutionIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DataSource dataSource;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -746,6 +753,79 @@ class EventResolutionIntegrationTest {
         }
     }
 
+    @Test
+    void shouldTimestampResolutionAfterWaitingForExpeditionLock() throws Exception {
+        String userId = "resolution-lock-time-user";
+        String idempotencyKey = "resolution-lock-time";
+        Instant lockReleaseTime = Instant.parse("2026-07-26T12:00:00Z");
+        prepareFirstEvent(userId);
+
+        MutableClock clock = new MutableClock(lockReleaseTime.minusSeconds(30));
+        EventResolutionService orderedService = new EventResolutionService(
+                expeditionRepository,
+                eventResolutionRepository,
+                progressionService,
+                inventoryService,
+                content,
+                clock
+        );
+        EventResolutionCommand command = command(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                idempotencyKey
+        );
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        EventResolutionResult result;
+        try {
+            try (Connection blocker = dataSource.getConnection()) {
+                blocker.setAutoCommit(false);
+                try (PreparedStatement lock = blocker.prepareStatement("""
+                        SELECT pg_advisory_xact_lock(hashtextextended(?, 0))
+                        """)) {
+                    lock.setString(1, expeditionLockKey(userId));
+                    lock.execute();
+                }
+
+                Future<EventResolutionResult> pending = executor.submit(() ->
+                        transaction.execute(status -> orderedService.resolve(command))
+                );
+                awaitAdvisoryLockWait();
+                clock.set(lockReleaseTime);
+                blocker.commit();
+                result = pending.get(10, TimeUnit.SECONDS);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertEquals(lockReleaseTime, result.serverTime());
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT server_time
+                FROM processed_event_resolution
+                WHERE user_id = ?
+                  AND idempotency_key = ?
+                """, userId, idempotencyKey));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT updated_at
+                FROM expedition_progress
+                WHERE user_id = ?
+                """, userId));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT updated_at
+                FROM pilot_progress
+                WHERE user_id = ?
+                """, userId));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT updated_at
+                FROM pet_progress
+                WHERE user_id = ?
+                """, userId));
+        assertEquals(result, eventResolutionService.resolve(command));
+    }
+
     private void prepareFirstEvent(String userId) {
         activitySyncService.synchronize(new ActivitySyncCommand(
                 userId,
@@ -805,7 +885,23 @@ class EventResolutionIntegrationTest {
             }
             Thread.sleep(25);
         }
-        throw new AssertionError("Event reward did not wait for the pet selection lock");
+        throw new AssertionError("Event resolution did not wait for an advisory lock");
+    }
+
+    private String expeditionLockKey(String userId) {
+        return userId.length()
+                + ":"
+                + userId
+                + ":"
+                + StarterExpeditionContent.EXPEDITION_ID;
+    }
+
+    private Instant timestamp(String sql, Object... arguments) {
+        return jdbcTemplate.queryForObject(
+                sql,
+                Timestamp.class,
+                arguments
+        ).toInstant();
     }
 
     private int rowCount(String table) {
@@ -863,5 +959,40 @@ class EventResolutionIntegrationTest {
                 "SELECT current_node_id FROM expedition_progress",
                 String.class
         );
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant current;
+        private final ZoneId zone;
+
+        private MutableClock(Instant current) {
+            this(current, ZoneOffset.UTC);
+        }
+
+        private MutableClock(Instant current, ZoneId zone) {
+            this.current = current;
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public synchronized Clock withZone(ZoneId requestedZone) {
+            return zone.equals(requestedZone)
+                    ? this
+                    : new MutableClock(current, requestedZone);
+        }
+
+        @Override
+        public synchronized Instant instant() {
+            return current;
+        }
+
+        private synchronized void set(Instant value) {
+            current = value;
+        }
     }
 }

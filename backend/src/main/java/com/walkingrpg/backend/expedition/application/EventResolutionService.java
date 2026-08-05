@@ -132,8 +132,8 @@ public class EventResolutionService {
             boolean handoffRequired
     ) {
         ExpeditionDefinition definition = content.requireEvent(command.eventId());
-        Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
         expeditionRepository.acquireLock(command.userId(), definition.expeditionId());
+        Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
 
         EventIdempotencyScope scope = EventIdempotencyScope.from(command);
         String fingerprint = EventResolutionFingerprint.sha256(command);
