@@ -909,10 +909,18 @@ void main() {
         find.byKey(const Key('profile-cosmetic-frame-dawn-frame')),
         findsOneWidget,
       );
+      await tester.ensureVisible(
+        find.byKey(const Key('platform-chapter-vista')),
+      );
+      await tester.pumpAndSettle();
       expect(
         find.bySemanticsLabel('Туманный сектор, визуальный образ первой главы'),
         findsOneWidget,
       );
+      await tester.ensureVisible(
+        find.byKey(const Key('platform-journal-crew')),
+      );
+      await tester.pumpAndSettle();
       expect(
         find.bySemanticsLabel(
           'Экипаж маршрута: пилот Навигатор и Искра. '
