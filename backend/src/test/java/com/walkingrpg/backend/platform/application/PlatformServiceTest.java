@@ -123,6 +123,32 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldProjectOneEffectiveConfigIntoSnapshotAndBootstrapCatalogs() {
+        Map<String, Object> config = new LinkedHashMap<>(remoteConfig(false, false));
+        config.put("seasonId", "signal-season-42");
+        config.put("weeklyRouteEnergy", 100);
+        platformRepository.setRemoteConfig(config);
+
+        PlatformSnapshotResponse snapshot = service.getSnapshot("configured-user");
+        Map<String, Object> bootstrap = service.getContentBootstrap();
+        Map<String, Object> bootstrapContent = map(bootstrap.get("content"));
+        Map<String, Object> bootstrapConfig = map(bootstrap.get("remoteConfig"));
+
+        assertEquals("signal-season-42", snapshot.remoteConfig().get("seasonId"));
+        assertEquals(
+                snapshot.remoteConfig().get("seasonId"),
+                map(snapshot.content().get("season")).get("seasonId")
+        );
+        assertEquals(
+                snapshot.remoteConfig().get("weeklyRouteEnergy"),
+                map(snapshot.content().get("weeklyRoute")).get("requiredEnergy")
+        );
+        assertEquals(100, snapshot.userState().get("weeklyRouteRequiredEnergy"));
+        assertEquals(snapshot.content(), bootstrapContent);
+        assertEquals(snapshot.remoteConfig(), bootstrapConfig);
+    }
+
+    @Test
     void shouldPersistAndReplayOnboardingCommandExactly() {
         PlatformCommandRequest request = command(
                 "COMPLETE_ONBOARDING_STEP",

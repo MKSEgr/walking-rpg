@@ -21,7 +21,7 @@ class PlatformContentCatalogTest {
 
     @Test
     void shouldExposeCompleteVersionedChapterCatalog() {
-        Map<String, Object> publicCatalog = catalog.publicCatalog(
+        Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.CONTENT_VERSION
         );
 
@@ -39,7 +39,7 @@ class PlatformContentCatalogTest {
 
     @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
-        Map<String, Object> publicCatalog = catalog.publicCatalog(
+        Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION
         );
 
@@ -49,10 +49,10 @@ class PlatformContentCatalogTest {
 
     @Test
     void shouldChangeDigestWhenCatalogContentChanges() {
-        Map<String, Object> current = catalog.publicCatalog(
+        Map<String, Object> current = publicCatalog(
                 StarterExpeditionContent.CONTENT_VERSION
         );
-        Map<String, Object> legacy = catalog.publicCatalog(
+        Map<String, Object> legacy = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION
         );
 
@@ -60,8 +60,42 @@ class PlatformContentCatalogTest {
         assertEquals(
                 current.get("catalogDigest"),
                 new PlatformContentCatalog()
-                        .publicCatalog(StarterExpeditionContent.CONTENT_VERSION)
+                        .publicCatalog(
+                                StarterExpeditionContent.CONTENT_VERSION,
+                                "season-1",
+                                120
+                        )
                         .get("catalogDigest")
+        );
+    }
+
+    @Test
+    void shouldIncludeRuntimeCatalogValuesInProjectionAndDigest() {
+        Map<String, Object> configured = catalog.publicCatalog(
+                StarterExpeditionContent.CONTENT_VERSION,
+                "signal-season-2",
+                175
+        );
+        Map<String, Object> changedSeason = catalog.publicCatalog(
+                StarterExpeditionContent.CONTENT_VERSION,
+                "signal-season-3",
+                175
+        );
+        Map<String, Object> changedEnergy = catalog.publicCatalog(
+                StarterExpeditionContent.CONTENT_VERSION,
+                "signal-season-2",
+                180
+        );
+
+        assertEquals("signal-season-2", map(configured.get("season")).get("seasonId"));
+        assertEquals(175, map(configured.get("weeklyRoute")).get("requiredEnergy"));
+        assertNotEquals(
+                configured.get("catalogDigest"),
+                changedSeason.get("catalogDigest")
+        );
+        assertNotEquals(
+                configured.get("catalogDigest"),
+                changedEnergy.get("catalogDigest")
         );
     }
 
@@ -132,5 +166,14 @@ class PlatformContentCatalogTest {
     @SuppressWarnings("unchecked")
     private static List<Object> list(Map<String, Object> map, String key) {
         return (List<Object>) map.get(key);
+    }
+
+    private Map<String, Object> publicCatalog(String contentVersion) {
+        return catalog.publicCatalog(contentVersion, "season-1", 120);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> map(Object value) {
+        return (Map<String, Object>) value;
     }
 }
