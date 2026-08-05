@@ -153,6 +153,13 @@ class _ProfileCosmeticFramePainter extends CustomPainter {
     if (size.isEmpty) {
       return;
     }
+    final RRect clip = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(math.min(22.0, size.shortestSide / 2)),
+    );
+    canvas
+      ..save()
+      ..clipRRect(clip);
     switch (variant) {
       case _ProfileCosmeticVariant.trailBanner:
         _paintTrailBanner(canvas, size);
@@ -163,6 +170,7 @@ class _ProfileCosmeticFramePainter extends CustomPainter {
       case _ProfileCosmeticVariant.unknown:
         break;
     }
+    canvas.restore();
   }
 
   void _paintTrailBanner(Canvas canvas, Size size) {
