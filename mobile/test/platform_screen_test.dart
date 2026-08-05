@@ -954,6 +954,53 @@ void main() {
     },
   );
 
+  testWidgets('journal applies legacy profile cosmetic pointer', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final Map<String, dynamic> json = platformSnapshotJson(
+      ownedCosmetics: const <String>[ProfileCosmeticIds.dawnFrame],
+      activeCosmeticId: ProfileCosmeticIds.dawnFrame,
+      includeProfileCosmetics: true,
+    );
+    final Map<String, dynamic> userState = Map<String, dynamic>.from(
+      json['userState']! as Map<String, dynamic>,
+    )..remove('equippedCosmetics');
+    json['userState'] = userState;
+    final PlatformSnapshot snapshot = PlatformSnapshot.fromJson(json);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => snapshot,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+          sandboxPaymentsSupported: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ProfileCosmeticFrame frame = tester.widget<ProfileCosmeticFrame>(
+      find.byKey(const Key('platform-profile-cosmetic-frame')),
+    );
+    expect(frame.cosmeticId, ProfileCosmeticIds.dawnFrame);
+    expect(
+      find.byKey(const Key('profile-cosmetic-frame-dawn-frame')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Экипаж маршрута: пилот Навигатор и Искра. '
+        'Экипировано: Рамка рассвета',
+      ),
+      findsOneWidget,
+    );
+    _expectNoLayoutException(tester);
+    semantics.dispose();
+  });
+
   testWidgets('fresh journal disables weekly spend when home is unavailable', (
     WidgetTester tester,
   ) async {

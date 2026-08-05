@@ -74,6 +74,21 @@ PlatformPet? _petPreviewForCosmetic(
   return null;
 }
 
+String? _profileCosmeticIdFor(PlatformSnapshot snapshot) {
+  final String? equippedProfile =
+      snapshot.userState.equippedCosmetics['PROFILE'];
+  if (equippedProfile != null) {
+    return equippedProfile;
+  }
+  for (final PlatformCosmetic cosmetic in snapshot.content.cosmetics) {
+    if (cosmetic.slot == 'PROFILE' &&
+        snapshot.userState.equippedCosmeticIds.contains(cosmetic.cosmeticId)) {
+      return cosmetic.cosmeticId;
+    }
+  }
+  return null;
+}
+
 typedef PlatformSnapshotLoader = Future<PlatformSnapshot> Function();
 typedef PlatformHomeLoader = Future<HomeSnapshot> Function();
 typedef PlatformCommandExecutor =
@@ -799,7 +814,7 @@ class _JournalHero extends StatelessWidget {
           const SizedBox(height: 18),
           ProfileCosmeticFrame(
             key: const Key('platform-profile-cosmetic-frame'),
-            cosmeticId: snapshot.userState.equippedCosmetics['PROFILE'],
+            cosmeticId: _profileCosmeticIdFor(snapshot),
             child: const ChapterVista(
               key: Key('platform-chapter-vista'),
               semanticLabel: 'Туманный сектор, визуальный образ первой главы',
