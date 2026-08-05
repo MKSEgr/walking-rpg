@@ -376,6 +376,24 @@ Home supplies only the progress from its accepted snapshot; cached state stays
 visually honest, and the vista does not participate in impression visibility or
 navigation lifecycle decisions.
 
+## Current node landmarks
+
+The Home hero pairs the complete server-provided current-node name with one
+compact code-native landmark instead of repeating the same radar icon at every
+stop. All nineteen nodes in the accepted `chapter-1-v2` catalog, including the
+optional `resonance-pocket`, have distinct silhouettes selected only from the
+exact `currentNodeId`. A future unknown ID receives a neutral constellation even
+when its display name matches a known landmark.
+
+The landmark represents one accepted current location, not chapter topology.
+It does not show ordering, adjacency, hidden branches, travel availability or a
+predicted next node. Progress, completion and the advance action continue to
+come from the accepted expedition snapshot; completion only adds the existing
+flag treatment. The painter is excluded from semantics and input, while one
+container announces the complete server-authored current-node name and literal
+completion state. The two-line label remains readable at compact width with
+enlarged system text.
+
 ## Entry experience
 
 The authentication entry uses the same quiet frontier backdrop and first-
