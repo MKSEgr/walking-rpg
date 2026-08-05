@@ -98,7 +98,6 @@ class EquipmentMountSignal extends StatelessWidget {
             child: CustomPaint(
               painter: _EquipmentMountSignalPainter(
                 kind: kind,
-                itemKind: itemKind,
                 state: state,
                 mounted: status == 'EQUIPPED',
                 lumen: colors.primary,
@@ -120,7 +119,6 @@ class EquipmentMountSignal extends StatelessWidget {
 class _EquipmentMountSignalPainter extends CustomPainter {
   const _EquipmentMountSignalPainter({
     required this.kind,
-    required this.itemKind,
     required this.state,
     required this.mounted,
     required this.lumen,
@@ -133,7 +131,6 @@ class _EquipmentMountSignalPainter extends CustomPainter {
   });
 
   final EquipmentMountSignalKind kind;
-  final EquipmentMountItemKind itemKind;
   final EquipmentMountSignalState state;
   final bool mounted;
   final Color lumen;
@@ -300,12 +297,12 @@ class _EquipmentMountSignalPainter extends CustomPainter {
       ..drawCircle(center, radius, ring)
       ..drawCircle(center, radius * 0.72, ring);
 
-    switch (itemKind) {
-      case EquipmentMountItemKind.empty:
+    switch (state) {
+      case EquipmentMountSignalState.navigationEmpty:
         _paintEmptyMount(canvas, center, radius, stateAccent);
-      case EquipmentMountItemKind.resonanceCompass:
+      case EquipmentMountSignalState.resonanceCompassMounted:
         _paintResonanceCompass(canvas, center, radius, stateAccent);
-      case EquipmentMountItemKind.unknown:
+      case EquipmentMountSignalState.neutral:
         _paintUnknownItem(canvas, center, radius, stateAccent);
     }
   }
@@ -397,7 +394,6 @@ class _EquipmentMountSignalPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _EquipmentMountSignalPainter oldDelegate) {
     return oldDelegate.kind != kind ||
-        oldDelegate.itemKind != itemKind ||
         oldDelegate.state != state ||
         oldDelegate.mounted != mounted ||
         oldDelegate.lumen != lumen ||
