@@ -835,6 +835,34 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldTimestampSquadCommandAfterSquadLock() {
+        MutableClock clock = new MutableClock(NOW.minusSeconds(30));
+        LockAdvancingSquadRepository repository =
+                new LockAdvancingSquadRepository(clock, NOW);
+        platformRepository = repository;
+        service = service(
+                new SandboxPaymentProvider(),
+                JsonMapper.builder().findAndAddModules().build(),
+                clock
+        );
+
+        PlatformCommandRequest request = command(
+                "CREATE_SQUAD",
+                "create-squad-after-lock",
+                Map.of("name", "Post-lock squad")
+        );
+        PlatformCommandResponse response = service.execute("squad-time-owner", request);
+        clock.set(NOW.plusSeconds(60));
+        PlatformCommandResponse replayed = service.execute("squad-time-owner", request);
+
+        assertEquals(NOW, response.serverTime());
+        assertEquals(NOW, repository.createdAt());
+        assertEquals(NOW, event("platform_command_completed").get("occurredAt"));
+        assertEquals(response, replayed);
+        assertEquals(1, repository.lockCalls());
+    }
+
+    @Test
     void shouldRejectMalformedSquadIdsBeforeCreatingPlatformState() {
         PlatformValidationException malformed = assertThrows(
                 PlatformValidationException.class,
@@ -1325,6 +1353,47 @@ class PlatformServiceTest {
         public synchronized String activeContentVersion() {
             clock.set(activatedAt);
             return StarterExpeditionContent.CONTENT_VERSION;
+        }
+    }
+
+    private static final class LockAdvancingSquadRepository
+            extends InMemoryPlatformRepository {
+        private final MutableClock clock;
+        private final Instant lockAcquiredAt;
+        private Instant createdAt;
+        private int lockCalls;
+
+        private LockAdvancingSquadRepository(
+                MutableClock clock,
+                Instant lockAcquiredAt
+        ) {
+            this.clock = clock;
+            this.lockAcquiredAt = lockAcquiredAt;
+        }
+
+        @Override
+        public synchronized void acquireSquadLock(String squadId) {
+            lockCalls++;
+            clock.set(lockAcquiredAt);
+        }
+
+        @Override
+        public synchronized void createSquad(
+                String squadId,
+                String name,
+                String ownerUserId,
+                Instant createdAt
+        ) {
+            this.createdAt = createdAt;
+            super.createSquad(squadId, name, ownerUserId, createdAt);
+        }
+
+        private synchronized Instant createdAt() {
+            return createdAt;
+        }
+
+        private synchronized int lockCalls() {
+            return lockCalls;
         }
     }
 

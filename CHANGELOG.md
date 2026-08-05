@@ -163,6 +163,9 @@
 
 ### Changed
 
+- `serverTime` новых squad create/join/leave теперь фиксируется после общего
+  squad advisory lock: membership, platform state, audit event и durable
+  response отражают фактический межпользовательский serialized порядок;
 - время authenticated telemetry/crash ingestion, push registration, test push
   и tester cohort upsert теперь фиксируется после account-deletion subject
   lock; `received_at` и связанные user/device timestamps отражают фактический

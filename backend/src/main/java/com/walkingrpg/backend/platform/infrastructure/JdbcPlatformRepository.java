@@ -65,6 +65,11 @@ public class JdbcPlatformRepository implements PlatformRepository {
     }
 
     @Override
+    public void acquireSquadLock(String squadId) {
+        squadTransactionLock.lock(squadId);
+    }
+
+    @Override
     public Optional<PlatformUserState> findState(String userId) {
         List<PlatformUserState> states = jdbcTemplate.query("""
                 SELECT state_json::text

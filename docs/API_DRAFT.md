@@ -912,7 +912,10 @@ fail-closed заменить capability field на `false` без повторн
 - `CREATE_SQUAD`, `JOIN_SQUAD`, `LEAVE_SQUAD` и удаление аккаунта владельца
   сериализуются общим transaction-scoped lock по `squadId`; параллельный выход
   владельца и последнего участника либо удаляет пустой отряд, либо передаёт
-  владение участнику, который остаётся в нём.
+  владение участнику, который остаётся в нём. Для новой squad-команды
+  `serverTime` фиксируется после этого lock и одним значением датирует
+  membership, platform state, audit event и durable response. Exact replay
+  возвращает сохранённое post-lock время без повторного получения squad lock.
 - `JOIN_SQUAD.payload.squadId` должен быть полным UUID. Canonical UUID с
   буквами в верхнем регистре нормализуется перед state/DB mutation; malformed и
   укороченные формы возвращают `400 VALIDATION_ERROR` с полем `squadId` до
