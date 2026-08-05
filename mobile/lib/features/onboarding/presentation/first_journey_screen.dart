@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
@@ -745,22 +746,26 @@ class _EventPanel extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     alignment: Alignment.centerLeft,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        choice.title,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(choice.description),
-                      const SizedBox(height: 6),
-                      Text(
-                        '+${choice.pilotExperienceReward} XP · '
-                        '+${choice.petBondReward} связь',
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                    ],
+                  child: EventChoiceSignalLayout(
+                    eventId: current.eventId,
+                    choiceId: choice.choiceId,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          choice.title,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(choice.description),
+                        const SizedBox(height: 6),
+                        Text(
+                          '+${choice.pilotExperienceReward} XP · '
+                          '+${choice.petBondReward} связь',
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
