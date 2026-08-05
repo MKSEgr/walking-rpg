@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -1035,6 +1036,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(impressions, isEmpty);
+    expect(
+      find.byKey(
+        const Key('equipment-mount-signal-NAVIGATION-navigation-empty-EMPTY'),
+      ),
+      findsOneWidget,
+    );
 
     final Finder routeChoice = find.byKey(
       const Key('home-event-choice-follow-resonance'),
@@ -1063,6 +1070,15 @@ void main() {
     expect(itemInstanceIds, <String?>['33333333-3333-3333-3333-333333333333']);
     expect(idempotencyKeys, <String>['equipment-key-1']);
     expect(loads, 2);
+    expect(
+      find.byKey(
+        const Key(
+          'equipment-mount-signal-NAVIGATION-navigation-'
+          'resonanceCompass-EQUIPPED',
+        ),
+      ),
+      findsOneWidget,
+    );
     await _scrollAboveStickyAction(tester, routeChoice);
     expect(tester.widget<FilledButton>(routeChoice).onPressed, isNotNull);
     expect(impressions, <String>['ROUTE_LOCKED', 'ROUTE_AVAILABLE']);
@@ -1102,6 +1118,43 @@ void main() {
       'compass-impression-chapter-1-v2-'
           'route-mirror-delta-v1-follow-resonance-ROUTE_AVAILABLE',
     ]);
+  });
+
+  testWidgets('equipment mount stays reachable on compact enlarged text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(
+          loader: () async => _resonanceEventReady(equipped: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder unequip = find.byKey(
+      const Key('equipment-unequip-NAVIGATION'),
+    );
+    await _scrollAboveStickyAction(tester, unequip);
+
+    final Finder mount = find.byType(EquipmentMountSignal);
+    expect(mount, findsOneWidget);
+    expect(tester.getSize(mount).height, 112);
+    expect(tester.getSize(mount).width, lessThanOrEqualTo(248));
+    expect(unequip, findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

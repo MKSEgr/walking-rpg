@@ -314,6 +314,24 @@ The signal is excluded from semantics and owns no craft action, impression,
 outbox, idempotency or authoritative-reload behavior. Its fixed-height field
 remains width-flexible at `320 px / 1.6×` text scale.
 
+## Equipment mount signal
+
+The server-owned `NAVIGATION` slot is presented as a field-instrument mount
+rather than a generic administrative row. Its two route rails remain open for
+the accepted `EMPTY` status and illuminate only for the accepted `EQUIPPED`
+status. The installed `resonance-compass` receives its own needle identity only
+from the exact item ID; an unknown item keeps a neutral constellation inside
+the accepted slot, and an unknown slot uses a neutral field instead of
+borrowing the navigation contour.
+
+The mount does not infer equipment compatibility, route availability or an
+action from item ownership. Slot status and item identity come literally from
+the accepted equipment projection; the existing full slot name, description,
+item copy and `EQUIP`/`UNEQUIP` controls remain authoritative. The signal is
+excluded from semantics and input handling, and owns no command, idempotency,
+impression or reload behavior. Its fixed-height field remains width-flexible in
+light and dark themes at `320 px / 1.6×` text scale.
+
 ## Expedition event scenes
 
 Four pivotal first-chapter events establish the illustrated scene vocabulary:

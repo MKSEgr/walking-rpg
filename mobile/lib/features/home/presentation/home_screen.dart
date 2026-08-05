@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/crafting_assembly_signal.dart';
+import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
@@ -1953,6 +1954,12 @@ class _EquipmentCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(slot.description),
             const SizedBox(height: 8),
+            EquipmentMountSignal(
+              slotId: slot.slotId,
+              status: slot.status,
+              itemId: slot.item?.itemId,
+            ),
+            const SizedBox(height: 10),
             if (slot.item == null)
               const Text('Слот свободен')
             else
