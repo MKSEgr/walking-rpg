@@ -366,10 +366,13 @@ Risk assessment использует checked arithmetic для суммы `bucke
 
 Для новой синхронизации `serverTime` фиксируется после общего user lock.
 Проверка `localDate`, device presence, shadow risk assessment, ENERGY ledger и
-durable response используют одно значение, поэтому ожидавший lock request не
-может быть датирован раньше уже завершённой serialized command. Exact replay
-возвращает исходный business response; новый request-scoped risk assessment
-попытки получает текущее post-lock время.
+durable response используют одно значение. Тем же временем датируются
+`activity_sync_state.updated_at`, который проецируется как Home
+`lastActivitySyncAt`, и retention-key `processed_activity_sync.created_at`.
+Поэтому ожидавший lock request не может быть датирован или удалён как будто он
+предшествовал уже завершённой serialized command. Exact replay возвращает
+исходный business response; новый request-scoped risk assessment попытки
+получает текущее post-lock время.
 
 `localDate` может быть текущей или прошлой датой в заявленной IANA `timeZone`.
 Дата, которая ещё не наступила по серверному времени в этой зоне, отклоняется

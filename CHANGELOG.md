@@ -163,6 +163,9 @@
 
 ### Changed
 
+- activity high-watermark `updated_at` и durable operation `created_at` теперь
+  используют тот же post-user-lock `serverTime`: Home `lastActivitySyncAt`,
+  account export и retention ordering отражают фактическую сериализацию sync;
 - `serverTime` новых squad create/join/leave теперь фиксируется после общего
   squad advisory lock: membership, platform state, audit event и durable
   response отражают фактический межпользовательский serialized порядок;

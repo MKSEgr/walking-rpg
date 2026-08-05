@@ -286,6 +286,17 @@ class ActivitySyncPersistenceIntegrationTest {
                 """));
         assertEquals(lockReleaseTime, timestamp("""
                 SELECT created_at
+                FROM processed_activity_sync
+                WHERE idempotency_key = 'lock-time-order'
+                """));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT updated_at
+                FROM activity_sync_state
+                WHERE user_id = 'persistent-user'
+                  AND local_date = '2026-07-25'
+                """));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT created_at
                 FROM economy_ledger
                 WHERE source_key = '16:lock-time-device:lock-time-order'
                 """));
@@ -501,8 +512,13 @@ class ActivitySyncPersistenceIntegrationTest {
         }
 
         @Override
-        public void saveState(ActivityDayKey key, ActivityDayState state, ZoneId timeZone) {
-            delegate.saveState(key, state, timeZone);
+        public void saveState(
+                ActivityDayKey key,
+                ActivityDayState state,
+                ZoneId timeZone,
+                Instant updatedAt
+        ) {
+            delegate.saveState(key, state, timeZone, updatedAt);
         }
 
         @Override
@@ -555,8 +571,13 @@ class ActivitySyncPersistenceIntegrationTest {
         }
 
         @Override
-        public void saveState(ActivityDayKey key, ActivityDayState state, ZoneId timeZone) {
-            delegate.saveState(key, state, timeZone);
+        public void saveState(
+                ActivityDayKey key,
+                ActivityDayState state,
+                ZoneId timeZone,
+                Instant updatedAt
+        ) {
+            delegate.saveState(key, state, timeZone, updatedAt);
         }
 
         @Override

@@ -7,7 +7,10 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
+import com.walkingrpg.backend.activity.domain.ActivityDayKey;
+import com.walkingrpg.backend.activity.domain.ActivityDayState;
 import com.walkingrpg.backend.activity.domain.ActivityRiskStatus;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCalculator;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
@@ -157,11 +160,23 @@ class ActivitySyncServiceTest {
     @Test
     void shouldTimestampSynchronizationAfterUserLock() {
         MutableClock clock = new MutableClock(NOW.minusSeconds(30));
+        AtomicReference<Instant> stateUpdatedAt = new AtomicReference<>();
         InMemoryActivitySyncRepository repository =
                 new InMemoryActivitySyncRepository() {
                     @Override
                     public void acquireUserLock(String userId) {
                         clock.set(NOW);
+                    }
+
+                    @Override
+                    public void saveState(
+                            ActivityDayKey key,
+                            ActivityDayState state,
+                            ZoneId timeZone,
+                            Instant updatedAt
+                    ) {
+                        stateUpdatedAt.set(updatedAt);
+                        super.saveState(key, state, timeZone, updatedAt);
                     }
                 };
         ActivitySyncService orderedService = new ActivitySyncService(
@@ -177,6 +192,7 @@ class ActivitySyncServiceTest {
         ));
 
         assertEquals(NOW, outcome.activity().serverTime());
+        assertEquals(NOW, stateUpdatedAt.get());
     }
 
     private ActivitySyncCommand command(long authoritativeTotal, String idempotencyKey) {

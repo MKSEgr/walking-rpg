@@ -17,7 +17,12 @@ public interface ActivitySyncRepository {
 
     Optional<ActivityDayState> findState(ActivityDayKey key);
 
-    void saveState(ActivityDayKey key, ActivityDayState state, ZoneId timeZone);
+    void saveState(
+            ActivityDayKey key,
+            ActivityDayState state,
+            ZoneId timeZone,
+            Instant updatedAt
+    );
 
     Optional<ProcessedActivitySync> findProcessed(IdempotencyScope scope);
 
