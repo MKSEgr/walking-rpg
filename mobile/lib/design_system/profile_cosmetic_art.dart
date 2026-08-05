@@ -37,25 +37,33 @@ class ProfileCosmeticFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final _ProfileCosmeticVariant variant = _variantFor(cosmeticId);
     if (variant == _ProfileCosmeticVariant.unknown) {
-      return KeyedSubtree(
-        key: Key('profile-cosmetic-frame-fallback-${cosmeticId ?? 'none'}'),
-        child: child,
+      return Semantics(
+        container: true,
+        explicitChildNodes: true,
+        child: KeyedSubtree(
+          key: Key('profile-cosmetic-frame-fallback-${cosmeticId ?? 'none'}'),
+          child: child,
+        ),
       );
     }
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
-    return RepaintBoundary(
-      key: Key('profile-cosmetic-frame-$cosmeticId'),
-      child: CustomPaint(
-        foregroundPainter: _ProfileCosmeticFramePainter(
-          variant: variant,
-          lumen: colors.primary,
-          energy: palette.energy,
-          resonance: palette.resonance,
-          ink: palette.backdropTop,
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: RepaintBoundary(
+        key: Key('profile-cosmetic-frame-$cosmeticId'),
+        child: CustomPaint(
+          foregroundPainter: _ProfileCosmeticFramePainter(
+            variant: variant,
+            lumen: colors.primary,
+            energy: palette.energy,
+            resonance: palette.resonance,
+            ink: palette.backdropTop,
+          ),
+          child: child,
         ),
-        child: child,
       ),
     );
   }
