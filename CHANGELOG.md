@@ -163,6 +163,9 @@
 
 ### Changed
 
+- `serverTime` нового event resolution теперь фиксируется после общего
+  user+expedition lock: progression, material reward, expedition transition и
+  durable result не могут предшествовать уже завершённой serialized mutation;
 - `serverTime` нового expedition advance теперь фиксируется после общего
   user+expedition lock: ENERGY debit/ledger, progress и durable response не
   могут предшествовать уже завершённой serialized expedition mutation;

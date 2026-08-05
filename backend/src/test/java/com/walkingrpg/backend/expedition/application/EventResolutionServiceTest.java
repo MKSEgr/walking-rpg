@@ -2,6 +2,7 @@ package com.walkingrpg.backend.expedition.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -507,6 +508,43 @@ class EventResolutionServiceTest {
         );
     }
 
+    @Test
+    void shouldTimestampResolutionAfterExpeditionLock() {
+        MutableClock clock = new MutableClock(NOW.minusSeconds(30));
+        InMemoryExpeditionRepository orderedRepository =
+                new InMemoryExpeditionRepository() {
+                    @Override
+                    public void acquireLock(String userId, String expeditionId) {
+                        clock.set(NOW);
+                    }
+                };
+        orderedRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                firstReadyState(),
+                NOW.minusSeconds(30)
+        );
+        EventResolutionService orderedService = new EventResolutionService(
+                orderedRepository,
+                new InMemoryEventResolutionRepository(),
+                new ProgressionService(
+                        new InMemoryProgressionRepository(),
+                        new StarterProgressionContent()
+                ),
+                new InventoryService(new InMemoryInventoryRepository()),
+                content,
+                clock
+        );
+
+        EventResolutionResult result = orderedService.resolve(command(
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "resolution-lock-time"
+        ));
+
+        assertEquals(NOW, result.serverTime());
+    }
+
     private EventResolutionCommand command(
             String eventId,
             String choiceId,
@@ -549,5 +587,40 @@ class EventResolutionServiceTest {
                 node.event().eventId(),
                 version
         );
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant current;
+        private final ZoneId zone;
+
+        private MutableClock(Instant current) {
+            this(current, ZoneOffset.UTC);
+        }
+
+        private MutableClock(Instant current, ZoneId zone) {
+            this.current = current;
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public synchronized Clock withZone(ZoneId requestedZone) {
+            return zone.equals(requestedZone)
+                    ? this
+                    : new MutableClock(current, requestedZone);
+        }
+
+        @Override
+        public synchronized Instant instant() {
+            return current;
+        }
+
+        private synchronized void set(Instant value) {
+            current = value;
+        }
     }
 }
