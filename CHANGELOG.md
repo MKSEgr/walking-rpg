@@ -163,6 +163,9 @@
 
 ### Changed
 
+- `serverTime` нового expedition advance теперь фиксируется после общего
+  user+expedition lock: ENERGY debit/ledger, progress и durable response не
+  могут предшествовать уже завершённой serialized expedition mutation;
 - `serverTime` новой activity sync теперь фиксируется после user lock:
   validation, device presence, risk assessment, ENERGY ledger и durable
   response больше не могут предшествовать уже завершённой serialized command;

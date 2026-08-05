@@ -68,8 +68,8 @@ public class ExpeditionAdvanceService {
     @Transactional
     public ExpeditionAdvanceResult advance(ExpeditionAdvanceCommand command) {
         content.require(command.expeditionId());
-        Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
         repository.acquireLock(command.userId(), command.expeditionId());
+        Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
 
         ExpeditionIdempotencyScope scope = ExpeditionIdempotencyScope.from(command);
         String fingerprint = ExpeditionAdvanceFingerprint.sha256(command);

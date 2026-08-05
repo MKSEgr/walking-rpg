@@ -421,6 +421,12 @@ Response после достижения узла:
 }
 ```
 
+Для новой, ещё не обработанной команды `serverTime` фиксируется после общего
+user+expedition lock. ENERGY debit/ledger, expedition progress и durable
+response используют одно post-lock значение, поэтому ожидавший lock advance не
+может быть датирован раньше уже завершённой serialized mutation той же
+экспедиции. Exact replay возвращает исходный `serverTime` без повторного debit.
+
 Правила:
 
 - `energyToSpend > 0`;
