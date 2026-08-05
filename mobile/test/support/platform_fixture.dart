@@ -20,6 +20,7 @@ Map<String, dynamic> platformSnapshotJson({
   int totalAcceptedSteps = 6842,
   bool? hasSuccessfulActivitySync,
   bool sandboxPaymentsEnabled = true,
+  bool includeProfileCosmetics = false,
   CachedReadMetadata? cacheMetadata,
 }) {
   const List<String> onboardingSteps = <String>[
@@ -162,6 +163,20 @@ Map<String, dynamic> platformSnapshotJson({
           'slot': 'PET',
           'sandboxPrice': 199,
         },
+        if (includeProfileCosmetics) ...<Map<String, dynamic>>[
+          <String, dynamic>{
+            'cosmeticId': 'trail-banner',
+            'name': 'Знамя маршрута',
+            'slot': 'PROFILE',
+            'sandboxPrice': 299,
+          },
+          <String, dynamic>{
+            'cosmeticId': 'dawn-frame',
+            'name': 'Рамка рассвета',
+            'slot': 'PROFILE',
+            'sandboxPrice': 399,
+          },
+        ],
       ],
       'experiments': <Map<String, dynamic>>[
         <String, dynamic>{
@@ -216,6 +231,7 @@ PlatformSnapshot platformSnapshot({
   int totalAcceptedSteps = 6842,
   bool? hasSuccessfulActivitySync,
   bool sandboxPaymentsEnabled = true,
+  bool includeProfileCosmetics = false,
   CachedReadMetadata? cacheMetadata,
 }) {
   return PlatformSnapshot.fromJson(
@@ -234,6 +250,7 @@ PlatformSnapshot platformSnapshot({
       totalAcceptedSteps: totalAcceptedSteps,
       hasSuccessfulActivitySync: hasSuccessfulActivitySync,
       sandboxPaymentsEnabled: sandboxPaymentsEnabled,
+      includeProfileCosmetics: includeProfileCosmetics,
     ),
     cacheMetadata: cacheMetadata,
   );

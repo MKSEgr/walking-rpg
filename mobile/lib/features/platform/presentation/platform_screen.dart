@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/profile_cosmetic_art.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/squad_formation_signal.dart';
@@ -796,9 +797,13 @@ class _JournalHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const ChapterVista(
-            key: Key('platform-chapter-vista'),
-            semanticLabel: 'Туманный сектор, визуальный образ первой главы',
+          ProfileCosmeticFrame(
+            key: const Key('platform-profile-cosmetic-frame'),
+            cosmeticId: snapshot.userState.equippedCosmetics['PROFILE'],
+            child: const ChapterVista(
+              key: Key('platform-chapter-vista'),
+              semanticLabel: 'Туманный сектор, визуальный образ первой главы',
+            ),
           ),
           const SizedBox(height: 18),
           Text(
@@ -1921,6 +1926,10 @@ class _CosmeticCard extends StatelessWidget {
             equippedCosmeticIds: <String>{cosmetic.cosmeticId},
           ),
         ),
+      _ when cosmetic.slot == 'PROFILE' => ProfileCosmeticPreview(
+        key: Key('platform-cosmetic-preview-${cosmetic.cosmeticId}'),
+        cosmeticId: cosmetic.cosmeticId,
+      ),
       _ => CircleAvatar(
         key: Key('platform-cosmetic-preview-${cosmetic.cosmeticId}'),
         backgroundColor: context.walkingRpgPalette.resonance.withValues(
