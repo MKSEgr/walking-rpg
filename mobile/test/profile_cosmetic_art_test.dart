@@ -18,7 +18,7 @@ void main() {
             body: ListView(
               padding: const EdgeInsets.all(16),
               children: <Widget>[
-                ProfileCosmeticFrame(
+                const ProfileCosmeticFrame(
                   cosmeticId: ProfileCosmeticIds.trailBanner,
                   child: const SizedBox(
                     height: 120,
@@ -26,7 +26,7 @@ void main() {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ProfileCosmeticFrame(
+                const ProfileCosmeticFrame(
                   cosmeticId: ProfileCosmeticIds.dawnFrame,
                   child: const SizedBox(
                     height: 120,
@@ -79,7 +79,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: WalkingRpgTheme.dark(),
-          home: const Scaffold(
+          home: Scaffold(
             body: Column(
               children: <Widget>[
                 ProfileCosmeticFrame(
@@ -87,10 +87,12 @@ void main() {
                   child: Semantics(
                     image: true,
                     label: 'Принятая сервером глава',
-                    child: SizedBox(width: 240, height: 120),
+                    child: const SizedBox(width: 240, height: 120),
                   ),
                 ),
-                ProfileCosmeticPreview(cosmeticId: 'future-profile-style'),
+                const ProfileCosmeticPreview(
+                  cosmeticId: 'future-profile-style',
+                ),
               ],
             ),
           ),
