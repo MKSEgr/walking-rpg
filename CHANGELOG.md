@@ -163,6 +163,10 @@
 
 ### Changed
 
+- anti-fraud bucket totals и sudden-growth threshold теперь вычисляются без
+  `long` wraparound: переполнение bucket sum сохраняется как
+  `BUCKET_TOTAL_MISMATCH`, а недостижимый `8×` threshold не создаёт ложный
+  `SUDDEN_MULTIPLIER_GROWTH`;
 - новая platform-команда теперь фиксирует один effective remote config после
   user serialization и использует его для feature/provider gates, стоимости
   недельного маршрута, achievements, catalog и response; параллельная admin-

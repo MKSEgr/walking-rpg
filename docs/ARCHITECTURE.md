@@ -72,6 +72,10 @@ HealthKit / Health Connect
 ```
 
 Mobile не отправляет сырые health samples и не вычисляет награду.
+Shadow-mode risk evaluator проверяет aggregate bucket metadata checked
+арифметикой. Переполнение суммы является `BUCKET_TOTAL_MISMATCH`, а порог
+резкого `8×` роста вычисляется только когда multiplication представима в
+`long`; wraparound не может понизить или искусственно поднять risk score.
 
 ## 5. Durable mobile commands
 
