@@ -1732,8 +1732,22 @@ class _PendingEventResultCard extends StatelessWidget {
           if (nextNode != null) ...<Widget>[
             const SizedBox(height: 16),
             Text(
-              'Следующий узел: ${nextNode.name}',
-              style: Theme.of(context).textTheme.titleSmall,
+              'СЛЕДУЮЩИЙ УЗЕЛ',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: palette.resonance,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ExpeditionNodeSignal(
+                nodeId: nextNode.nodeId,
+                nodeName: nextNode.name,
+                completed: false,
+                role: ExpeditionNodeSignalRole.next,
+                markSize: 46,
+              ),
             ),
           ],
           const SizedBox(height: 18),

@@ -28,6 +28,8 @@ enum ExpeditionNodeSignalKind {
 
 enum ExpeditionNodeSignalTone { lumen, energy, resonance, neutral }
 
+enum ExpeditionNodeSignalRole { current, next }
+
 /// Presentation identities for the current server-authored chapter nodes.
 ///
 /// Only an exact stable node ID selects a known landmark. The accepted display
@@ -85,23 +87,26 @@ abstract final class ExpeditionNodeSignalCatalog {
   }
 }
 
-/// A code-native landmark for exactly one accepted current expedition node.
+/// A code-native landmark for exactly one accepted expedition node.
 ///
 /// This component does not render route order, adjacent nodes or availability.
 /// It pairs one exact node identity with the complete server-provided name;
-/// [completed] is presentation of the accepted expedition status only.
+/// [role] distinguishes accepted current state from an explicit next-node
+/// handoff, while [completed] presents accepted current expedition status only.
 class ExpeditionNodeSignal extends StatelessWidget {
   const ExpeditionNodeSignal({
     super.key,
     required this.nodeId,
     required this.nodeName,
     required this.completed,
+    this.role = ExpeditionNodeSignalRole.current,
     this.markSize = 42,
-  });
+  }) : assert(role == ExpeditionNodeSignalRole.current || !completed);
 
   final String nodeId;
   final String nodeName;
   final bool completed;
+  final ExpeditionNodeSignalRole role;
   final double markSize;
 
   @override
@@ -120,13 +125,20 @@ class ExpeditionNodeSignal extends StatelessWidget {
       ExpeditionNodeSignalTone.resonance => palette.resonance,
       ExpeditionNodeSignalTone.neutral => colors.onSurfaceVariant,
     };
+    final bool next = role == ExpeditionNodeSignalRole.next;
+    final String semanticLabel = next
+        ? 'Следующий узел «$nodeName»'
+        : 'Текущий узел «$nodeName»'
+              '${completed ? ', экспедиция завершена' : ''}';
 
     return Semantics(
-      key: Key('expedition-node-signal-$nodeId-${kind.name}'),
+      key: Key(
+        next
+            ? 'expedition-next-node-signal-$nodeId-${kind.name}'
+            : 'expedition-node-signal-$nodeId-${kind.name}',
+      ),
       container: true,
-      label:
-          'Текущий узел «$nodeName»'
-          '${completed ? ', экспедиция завершена' : ''}',
+      label: semanticLabel,
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -141,7 +153,11 @@ class ExpeditionNodeSignal extends StatelessWidget {
               children: <Widget>[
                 RepaintBoundary(
                   child: SizedBox.square(
-                    key: Key('expedition-node-mark-$nodeId-${kind.name}'),
+                    key: Key(
+                      next
+                          ? 'expedition-next-node-mark-$nodeId-${kind.name}'
+                          : 'expedition-node-mark-$nodeId-${kind.name}',
+                    ),
                     dimension: markSize,
                     child: CustomPaint(
                       painter: _ExpeditionNodeSignalPainter(
@@ -166,7 +182,10 @@ class ExpeditionNodeSignal extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (completed) ...<Widget>[
+                if (next) ...<Widget>[
+                  const SizedBox(width: 7),
+                  Icon(Icons.arrow_forward, size: 16, color: accent),
+                ] else if (completed) ...<Widget>[
                   const SizedBox(width: 7),
                   Icon(Icons.flag_outlined, size: 16, color: accent),
                 ],

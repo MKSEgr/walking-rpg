@@ -3,7 +3,9 @@ import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -790,6 +792,7 @@ class _CompletionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final EventNextNode? nextNode = result.nextNode;
     return _JourneyPanel(
       icon: Icons.emoji_events_outlined,
       visual: Column(
@@ -810,6 +813,27 @@ class _CompletionPanel extends StatelessWidget {
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ),
+          if (nextNode != null) ...<Widget>[
+            const SizedBox(height: 14),
+            Text(
+              'СЛЕДУЮЩИЙ УЗЕЛ',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: context.walkingRpgPalette.resonance,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ExpeditionNodeSignal(
+                nodeId: nextNode.nodeId,
+                nodeName: nextNode.name,
+                completed: false,
+                role: ExpeditionNodeSignalRole.next,
+                markSize: 46,
+              ),
+            ),
+          ],
         ],
       ),
       eyebrow: 'Первый сигнал расшифрован',

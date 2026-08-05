@@ -424,6 +424,13 @@ container announces the complete server-authored current-node name and literal
 completion state. The two-line label remains readable at compact width with
 enlarged system text.
 
+When an accepted event result explicitly contains `nextNode`, the same exact-ID
+landmark appears with a next-node role in the durable Home handoff and guided
+first-journey completion. An absent value remains absent, and a future ID keeps
+the neutral constellation. This handoff does not infer adjacency, route order
+or availability; it only repeats the server-provided ID and complete name, with
+separate next-node semantics and a decorative forward marker.
+
 ## Entry experience
 
 The authentication entry uses the same quiet frontier backdrop and first-

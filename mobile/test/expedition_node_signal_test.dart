@@ -54,7 +54,7 @@ void main() {
     );
   });
 
-  testWidgets('known and fallback landmarks use accepted copy in both themes', (
+  testWidgets('current and next landmarks use accepted copy in both themes', (
     WidgetTester tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(360, 220));
@@ -81,6 +81,7 @@ void main() {
                     nodeId: 'future-node',
                     nodeName: 'Внешний маяк',
                     completed: false,
+                    role: ExpeditionNodeSignalRole.next,
                   ),
                 ],
               ),
@@ -97,13 +98,13 @@ void main() {
       const Key('expedition-node-signal-dawn-relay-dawnRelay'),
     );
     final Finder fallback = find.byKey(
-      const Key('expedition-node-signal-future-node-unknown'),
+      const Key('expedition-next-node-signal-future-node-unknown'),
     );
     final Finder knownMark = find.byKey(
       const Key('expedition-node-mark-dawn-relay-dawnRelay'),
     );
     final Finder fallbackMark = find.byKey(
-      const Key('expedition-node-mark-future-node-unknown'),
+      const Key('expedition-next-node-mark-future-node-unknown'),
     );
     expect(known, findsOneWidget);
     expect(fallback, findsOneWidget);
@@ -122,7 +123,11 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Текущий узел «Внешний маяк»'),
+      find.bySemanticsLabel('Следующий узел «Внешний маяк»'),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: fallback, matching: find.byIcon(Icons.arrow_forward)),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
