@@ -167,6 +167,10 @@
   `long` wraparound: переполнение bucket sum сохраняется как
   `BUCKET_TOTAL_MISMATCH`, а недостижимый `8×` threshold не создаёт ложный
   `SUDDEN_MULTIPLIER_GROWTH`;
+- новая platform-команда теперь фиксирует active content version один раз:
+  route-impression validation, `snapshot.contentVersion`, catalog и durable
+  response используют одну версию, а конкурентная content publication видна
+  только следующей команде или read request;
 - новая platform-команда теперь фиксирует один effective remote config после
   user serialization и использует его для feature/provider gates, стоимости
   недельного маршрута, achievements, catalog и response; параллельная admin-

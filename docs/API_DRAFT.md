@@ -855,16 +855,18 @@ publication lock и не меняют активный snapshot.
 именем поля; это относится, в частности, к `energyToSpend` и `level`.
 
 После user-scoped serialization новая, ещё не обработанная команда читает
-effective remote config ровно один раз. Один и тот же snapshot используется для
-provider/feature gate, `weeklyRouteEnergy`, derived achievements и всех
-`content/userState/remoteConfig` секций response. Если admin-публикация
-завершилась, пока команда ожидала downstream lock, in-flight команда завершается
-целиком на исходной конфигурации, а следующая команда или read endpoint уже
-видит новую. Exact replay по-прежнему возвращает сохранённую business-проекцию;
-текущая доступность deployment provider может только fail-closed заменить
-capability field на `false` без повторной мутации. Сохранённое
-`sandboxPaymentsEnabled=false` не становится `true`, даже если более поздняя
-admin-публикация и текущий provider уже разрешают sandbox payments.
+effective remote config и active content version ровно по одному разу. Эти
+snapshot-ы используются для provider/feature gate, `weeklyRouteEnergy`, derived
+achievements, проверки route impression и всех `content/userState/remoteConfig`
+секций response. Если admin-публикация завершилась, пока команда ожидала
+downstream lock, in-flight команда завершается целиком на исходных runtime
+публикациях, а следующая команда или read endpoint уже видит новые. Durable
+response не может принять impression для одной content version и сохранить
+catalog другой версии. Exact replay по-прежнему возвращает сохранённую
+business-проекцию; текущая доступность deployment provider может только
+fail-closed заменить capability field на `false` без повторной мутации.
+Сохранённое `sandboxPaymentsEnabled=false` не становится `true`, даже если более
+поздняя admin-публикация и текущий provider уже разрешают sandbox payments.
 
 Правила первого пути:
 

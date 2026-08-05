@@ -165,8 +165,9 @@ public class PlatformService {
             }
         }
         // A waiting user transaction must see the preceding command commit, so
-        // keep READ_COMMITTED and freeze mutable runtime config explicitly.
+        // keep READ_COMMITTED and freeze mutable runtime publications explicitly.
         Map<String, Object> remoteConfig = effectiveRemoteConfig();
+        String activeContentVersion = repository.activeContentVersion();
         if ("RECORD_COMPASS_IMPRESSION".equals(commandType)) {
             return executeCompassImpression(
                     normalizedUserId,
@@ -174,6 +175,7 @@ public class PlatformService {
                     request.payload(),
                     scope,
                     fingerprint,
+                    activeContentVersion,
                     remoteConfig,
                     serverTime
             );
@@ -223,6 +225,7 @@ public class PlatformService {
                         normalizedUserId,
                         updated,
                         factsAfter,
+                        activeContentVersion,
                         remoteConfig,
                         serverTime
                 ),
@@ -336,13 +339,19 @@ public class PlatformService {
             Map<String, Object> payload,
             PlatformCommandScope scope,
             String fingerprint,
+            String activeContentVersion,
             Map<String, Object> remoteConfig,
             Instant serverTime
     ) {
         PlatformProgressFacts facts = progressFactsProvider.factsFor(userId);
         PlatformUserState state = repository.findState(userId)
                 .orElseGet(() -> initialState(userId, facts));
-        recordCompassImpression(userId, payload, serverTime);
+        recordCompassImpression(
+                userId,
+                payload,
+                activeContentVersion,
+                serverTime
+        );
         repository.recordEvent(
                 userId,
                 "platform_command_completed",
@@ -358,7 +367,14 @@ public class PlatformService {
                 scope.idempotencyKey(),
                 "Показ компаса зарегистрирован",
                 state.version(),
-                snapshot(userId, state, facts, remoteConfig, serverTime),
+                snapshot(
+                        userId,
+                        state,
+                        facts,
+                        activeContentVersion,
+                        remoteConfig,
+                        serverTime
+                ),
                 serverTime
         );
         String responseJson = writeResponse(response);
@@ -749,6 +765,7 @@ public class PlatformService {
     private void recordCompassImpression(
             String userId,
             Map<String, Object> payload,
+            String activeContentVersion,
             Instant occurredAt
     ) {
         String impression = payloadText(payload, "impression")
@@ -783,7 +800,7 @@ public class PlatformService {
                     );
                 }
                 if (!StarterExpeditionContent.CONTENT_VERSION.equals(
-                        repository.activeContentVersion()
+                        activeContentVersion
                 )) {
                     throw new PlatformValidationException(
                             "Резонансный маршрут ещё не активирован",
@@ -950,13 +967,22 @@ public class PlatformService {
             Instant serverTime
     ) {
         Map<String, Object> remoteConfig = effectiveRemoteConfig();
-        return snapshot(userId, state, facts, remoteConfig, serverTime);
+        String activeContentVersion = repository.activeContentVersion();
+        return snapshot(
+                userId,
+                state,
+                facts,
+                activeContentVersion,
+                remoteConfig,
+                serverTime
+        );
     }
 
     private PlatformSnapshotResponse snapshot(
             String userId,
             PlatformUserState state,
             PlatformProgressFacts facts,
+            String activeContentVersion,
             Map<String, Object> remoteConfig,
             Instant serverTime
     ) {
@@ -996,7 +1022,6 @@ public class PlatformService {
                 facts.hasSuccessfulActivitySync()
         );
 
-        String activeContentVersion = repository.activeContentVersion();
         return new PlatformSnapshotResponse(
                 activeContentVersion,
                 state.version(),
