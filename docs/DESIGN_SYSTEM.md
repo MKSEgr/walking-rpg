@@ -357,6 +357,29 @@ unchanged. The `960 x 540` WebP sources keep their focal silhouettes inside the
 middle of the frame, render behind a repaint boundary and scale proportionally
 at compact width before the height cap is applied on wider surfaces.
 
+## Event choice signals
+
+The open event choices on Home and in the guided first journey use compact
+code-native decision marks instead of visually identical text-only controls.
+The vocabulary distinguishes signal analysis, companion-led movement, core
+stabilization, living echo, field survey, resonance passage, hidden-current
+cartography and compass guidance.
+
+Every current mark is selected only from the exact server-owned
+`eventId / choiceId` pair. All 39 current pairs are covered; the accepted
+legacy `signal-source-v1 / trust-companion` pair keeps the companion mark for
+older chapter-v1 snapshots. A known choice ID inside a future event, a future
+choice inside a known event or any other unknown pair receives the neutral
+constellation. Titles and descriptions never select art.
+
+The literal accepted choice availability may only mute the mark on Home. It
+does not decide whether the owning button is enabled, and locked requirement
+copy remains explicit. Full server-provided title, description, XP, bond and
+material reward copy stays in the existing control semantics; the mark and
+optional item art are decorative. At compact width the mark and reward art
+move above the copy while the original callback, command key, idempotency,
+telemetry and authoritative reload boundaries remain unchanged.
+
 ## First chapter environment
 
 `ChapterVista` defines the code-native key art for the first chapter: layered

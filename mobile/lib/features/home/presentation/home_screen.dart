@@ -10,6 +10,7 @@ import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/crafting_assembly_signal.dart';
 import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
+import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
@@ -1856,6 +1857,7 @@ class _EventCard extends StatelessWidget {
                       ? null
                       : () => onChoose(choice),
                   child: _EventChoiceLabel(
+                    eventId: event.eventId,
                     choice: choice,
                     rewardText: _rewardText(choice),
                   ),
@@ -1892,33 +1894,34 @@ class _EventCard extends StatelessWidget {
 }
 
 class _EventChoiceLabel extends StatelessWidget {
-  const _EventChoiceLabel({required this.choice, required this.rewardText});
+  const _EventChoiceLabel({
+    required this.eventId,
+    required this.choice,
+    required this.rewardText,
+  });
 
+  final String eventId;
   final HomeEventChoice choice;
   final String rewardText;
 
   @override
   Widget build(BuildContext context) {
-    final HomeMaterialRewardPreview? material = choice.materialReward;
     final Widget copy = Column(
-      crossAxisAlignment: material == null
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(choice.title),
         Text(rewardText, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
-    if (material == null) {
-      return copy;
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        ExpeditionItemEmblem(itemId: material.itemId, size: 42),
-        const SizedBox(width: 10),
-        Expanded(child: copy),
-      ],
+    final HomeMaterialRewardPreview? material = choice.materialReward;
+    return EventChoiceSignalLayout(
+      eventId: eventId,
+      choiceId: choice.choiceId,
+      muted: !choice.isAvailable,
+      trailing: material == null
+          ? null
+          : ExpeditionItemEmblem(itemId: material.itemId, size: 42),
+      child: copy,
     );
   }
 }
