@@ -35,6 +35,11 @@ public class InMemoryPlatformRepository implements PlatformRepository {
     }
 
     @Override
+    public synchronized void acquireSquadLock(String squadId) {
+        // synchronized repository methods serialize the in-memory test implementation.
+    }
+
+    @Override
     public synchronized Optional<PlatformUserState> findState(String userId) {
         return Optional.ofNullable(states.get(userId));
     }

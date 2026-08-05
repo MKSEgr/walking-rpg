@@ -14,6 +14,8 @@ public interface PlatformRepository {
 
     void acquireUserLock(String userId);
 
+    void acquireSquadLock(String squadId);
+
     Optional<PlatformUserState> findState(String userId);
 
     PlatformUserState lockOrCreateState(

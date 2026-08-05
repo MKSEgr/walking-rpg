@@ -167,8 +167,8 @@ public class PlatformService {
         // keep READ_COMMITTED and freeze mutable runtime publications explicitly.
         Map<String, Object> remoteConfig = effectiveRemoteConfig();
         String activeContentVersion = repository.activeContentVersion();
-        Instant serverTime = now();
         if ("RECORD_COMPASS_IMPRESSION".equals(commandType)) {
+            Instant serverTime = now();
             return executeCompassImpression(
                     normalizedUserId,
                     commandType,
@@ -182,6 +182,13 @@ public class PlatformService {
         }
         requireProviderAvailability(commandType, remoteConfig);
         validateCommandPayloadBeforeState(commandType, request.payload());
+        acquireSquadMutationLock(
+                normalizedUserId,
+                commandType,
+                request.payload(),
+                scope
+        );
+        Instant serverTime = now();
 
         PlatformProgressFacts factsBefore = progressFactsProvider.factsFor(normalizedUserId);
         PlatformUserState current = repository.lockOrCreateState(
@@ -604,11 +611,35 @@ public class PlatformService {
         if (name.length() > 120) {
             throw new PlatformValidationException("Название отряда слишком длинное", "name");
         }
-        String squadId = UUID.nameUUIDFromBytes(
-                (userId + ":" + scope.idempotencyKey()).getBytes(StandardCharsets.UTF_8)
-        ).toString();
+        String squadId = deterministicSquadId(userId, scope);
         repository.createSquad(squadId, name, userId, occurredAt);
         return new Mutation(withSquad(state, squadId), "Отряд создан");
+    }
+
+    private void acquireSquadMutationLock(
+            String userId,
+            String commandType,
+            Map<String, Object> payload,
+            PlatformCommandScope scope
+    ) {
+        String squadId = switch (commandType) {
+            case "CREATE_SQUAD" -> deterministicSquadId(userId, scope);
+            case "JOIN_SQUAD" -> payloadUuid(payload, "squadId");
+            case "LEAVE_SQUAD" -> progressFactsProvider.factsFor(userId).squadId();
+            default -> null;
+        };
+        if (squadId != null) {
+            repository.acquireSquadLock(squadId);
+        }
+    }
+
+    private String deterministicSquadId(
+            String userId,
+            PlatformCommandScope scope
+    ) {
+        return UUID.nameUUIDFromBytes(
+                (userId + ":" + scope.idempotencyKey()).getBytes(StandardCharsets.UTF_8)
+        ).toString();
     }
 
     private Mutation joinSquad(

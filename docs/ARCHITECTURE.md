@@ -254,7 +254,10 @@ projection. Она не использует `REPEATABLE_READ`, потому ч�
 следующего request, а не смешивает две версии внутри одного durable command
 response. Command `serverTime` снимается после frozen runtime reads, поэтому
 route impression, принятый на новой active content version, не попадает в
-funnel с timestamp раньше наблюдаемой activation.
+funnel с timestamp раньше наблюдаемой activation. Для `CREATE_SQUAD`,
+`JOIN_SQUAD` и `LEAVE_SQUAD` после этих reads дополнительно захватывается общий
+squad lock, и только затем снимается единое время membership, platform state,
+audit event и durable response.
 Remote config и content release используют разные transaction-scoped advisory
 locks перед схемой `deactivate current → activate next`. Конкурентные admin
 requests одного типа сериализуются между backend instances, а независимые типы
@@ -373,9 +376,12 @@ backend продолжает менять только compatibility pointer и 
 - squad create/join/leave после subject и user boundary получают общий
   transaction-scoped lock по canonical `squadId`; входящий `JOIN_SQUAD.squadId`
   проверяется как полный UUID и нормализуется до создания platform state и
-  получения lock. Account deletion получает те же squad locks в стабильном
-  порядке до выбора нового владельца и удаления membership, поэтому
-  конкурентные выходы не оставляют отряд без участников;
+  получения lock. Новая команда снимает `serverTime` после этого lock и
+  использует его для membership, state, event и processed response; exact
+  replay сохраняет исходное время без повторного squad lock. Account deletion
+  получает те же squad locks в стабильном порядке до выбора нового владельца и
+  удаления membership, поэтому конкурентные выходы не оставляют отряд без
+  участников;
 - после account boundary user-scoped advisory lock сериализует crafting;
 - после exact replay новая craft-команда получает тот же user+expedition lock,
   что advance/resolution, и проверяет отсутствие pending event result до
@@ -488,6 +494,10 @@ backend продолжает менять только compatibility pointer и 
 26b. `serverTime` новой platform-команды фиксируется после frozen runtime reads;
      принятый route impression не может предшествовать content activation,
      которую использовали его validation, event и durable response.
+26c. Squad-команда фиксирует `serverTime` после canonical squad lock;
+     membership, state, audit event и processed response не могут предшествовать
+     уже завершённой мутации другого участника. Exact replay не получает lock
+     повторно и возвращает исходное post-lock время.
 27. Oversized или rate-limited anonymous telemetry/crash request не вызывает
     application service и не создаёт database state.
 28. Salted hashes direct client keys public ingress limiter-а bounded и

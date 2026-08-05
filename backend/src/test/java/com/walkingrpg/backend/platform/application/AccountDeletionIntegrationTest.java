@@ -27,6 +27,8 @@ import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceCommand;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceResult;
+import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
+import com.walkingrpg.backend.platform.api.PlatformCommandResponse;
 import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,6 +75,9 @@ class AccountDeletionIntegrationTest {
 
     @Autowired
     private PlatformAdminService service;
+
+    @Autowired
+    private PlatformService platformService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -358,6 +363,92 @@ class AccountDeletionIntegrationTest {
                 FROM app_user
                 WHERE user_id = ?
                 """, userId));
+    }
+
+    @Test
+    void shouldTimestampSquadJoinAfterWaitingForSquadLock() throws Exception {
+        String ownerId = "squad-time-owner";
+        String memberId = "squad-time-member";
+        Instant lockReleaseTime = NOW.plusSeconds(30);
+        platformService.execute(ownerId, new PlatformCommandRequest(
+                "CREATE_SQUAD",
+                "create-squad-time-boundary",
+                Map.of("name", "Serialized squad")
+        ));
+        String squadId = jdbcTemplate.queryForObject("""
+                SELECT squad_id::text
+                FROM roadmap_squad
+                WHERE owner_user_id = ?
+                """, String.class, ownerId);
+        clock.set(lockReleaseTime.minusSeconds(60));
+        PlatformCommandRequest request = new PlatformCommandRequest(
+                "JOIN_SQUAD",
+                "join-squad-after-lock",
+                Map.of("squadId", squadId)
+        );
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<PlatformCommandResponse> pending = null;
+
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (PreparedStatement lock = blocker.prepareStatement("""
+                        SELECT pg_advisory_xact_lock(
+                            hashtextextended(CAST(? AS uuid)::text, 61)
+                        )
+                        """)) {
+                    lock.setString(1, squadId);
+                    lock.execute();
+                }
+
+                pending = executor.submit(() -> platformService.execute(
+                        memberId,
+                        request
+                ));
+                awaitBlockedQuery("squad-membership-serialization");
+                clock.set(lockReleaseTime);
+                blocker.commit();
+
+                PlatformCommandResponse response = pending.get(5, TimeUnit.SECONDS);
+                assertEquals(lockReleaseTime, response.serverTime());
+                assertEquals(lockReleaseTime, timestamp("""
+                        SELECT joined_at
+                        FROM roadmap_squad_member
+                        WHERE squad_id = ?::uuid
+                          AND user_id = ?
+                        """, squadId, memberId));
+                assertEquals(lockReleaseTime, timestamp("""
+                        SELECT updated_at
+                        FROM roadmap_user_state
+                        WHERE user_id = ?
+                        """, memberId));
+                assertEquals(lockReleaseTime, timestamp("""
+                        SELECT created_at
+                        FROM processed_roadmap_command
+                        WHERE user_id = ?
+                          AND command_type = 'JOIN_SQUAD'
+                          AND idempotency_key = 'join-squad-after-lock'
+                        """, memberId));
+                assertEquals(lockReleaseTime, timestamp("""
+                        SELECT occurred_at
+                        FROM platform_event
+                        WHERE user_id = ?
+                          AND event_name = 'platform_command_completed'
+                        """, memberId));
+                clock.set(lockReleaseTime.plusSeconds(60));
+                assertEquals(response, platformService.execute(memberId, request));
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (pending != null && !pending.isDone()) {
+                        pending.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        }
     }
 
     @Test
