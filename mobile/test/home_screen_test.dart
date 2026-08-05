@@ -1302,6 +1302,18 @@ void main() {
       expect(
         find.descendant(
           of: pendingResult,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-echo-vault-v1-stabilize-core-'
+              'stabilize-active',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: pendingResult,
           matching: find.byKey(const Key('item-art-lumen-shard')),
         ),
         findsOneWidget,
@@ -1384,6 +1396,81 @@ void main() {
     expect(tester.widget<FilledButton>(choiceButton).onPressed, isNull);
     expect(resolutions, 0);
   });
+
+  testWidgets(
+    'resolved event keeps exact choice identity and future pairs neutral',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      Future<void> pump(HomeExpeditionEvent event) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: WalkingRpgTheme.dark(),
+            home: HomeScreen(
+              key: ValueKey<String>(event.eventId),
+              loader: () async => _pendingEventResultHome(
+                includePending: false,
+                unlockedEvent: event,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      await pump(
+        const HomeExpeditionEvent(
+          eventId: 'echo-vault-v1',
+          title: 'Хранилище эха',
+          summary: 'Архивное ядро стабилизировано.',
+          status: 'RESOLVED',
+          selectedChoiceId: 'stabilize-core',
+          selectedChoiceTitle: 'Стабилизировать ядро',
+          outcomeTitle: 'Стабильный резонанс',
+          outcomeSummary: 'Ядро перестало разрушаться.',
+        ),
+      );
+      final Finder known = find.byKey(
+        const Key(
+          'event-choice-signal-echo-vault-v1-stabilize-core-'
+          'stabilize-active',
+        ),
+      );
+      await tester.scrollUntilVisible(
+        known,
+        220,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(known, findsOneWidget);
+
+      await pump(
+        const HomeExpeditionEvent(
+          eventId: 'future-event-v2',
+          title: 'Новый сигнал',
+          summary: 'Сервер прислал новый тип события.',
+          status: 'RESOLVED',
+          selectedChoiceId: 'stabilize-core',
+          selectedChoiceTitle: 'Стабилизировать новый контур',
+          outcomeTitle: 'Новый результат',
+          outcomeSummary: 'Полный результат остаётся серверным текстом.',
+        ),
+      );
+      final Finder fallback = find.byKey(
+        const Key(
+          'event-choice-signal-future-event-v2-stabilize-core-unknown-active',
+        ),
+      );
+      await tester.scrollUntilVisible(
+        fallback,
+        220,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(fallback, findsOneWidget);
+      expect(find.text('Стабилизировать новый контур'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('home screen can retry after backend error', (
     WidgetTester tester,
@@ -1987,6 +2074,7 @@ HomeSnapshot _pendingEventResultHome({
   CachedReadMetadata? cacheMetadata,
   bool includePending = true,
   bool includeReadyEvent = false,
+  HomeExpeditionEvent? unlockedEvent,
 }) {
   return HomeSnapshot(
     localDate: '2026-07-26',
@@ -2008,7 +2096,9 @@ HomeSnapshot _pendingEventResultHome({
     requiredEnergy: 55,
     expeditionStatus: includeReadyEvent ? 'EVENT_READY' : 'IN_PROGRESS',
     expeditionVersion: 4,
-    unlockedEvent: includeReadyEvent ? _secondEventReady().unlockedEvent : null,
+    unlockedEvent:
+        unlockedEvent ??
+        (includeReadyEvent ? _secondEventReady().unlockedEvent : null),
     pilotName: 'Навигатор',
     pilotLevel: 1,
     pilotCurrentExperience: 90,

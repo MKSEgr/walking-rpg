@@ -1675,10 +1675,14 @@ class _PendingEventResultCard extends StatelessWidget {
             result.eventTitle,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 4),
-          Text(
-            result.choiceTitle,
-            style: Theme.of(context).textTheme.labelLarge,
+          const SizedBox(height: 12),
+          EventChoiceSignalLayout(
+            eventId: result.eventId,
+            choiceId: result.choiceId,
+            child: Text(
+              result.choiceTitle,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -1818,10 +1822,20 @@ class _EventCard extends StatelessWidget {
           Text(event.summary),
           if (event.isResolved) ...<Widget>[
             const SizedBox(height: 12),
-            Text(
-              event.selectedChoiceTitle ?? 'Выбор зафиксирован',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
+            if (event.selectedChoiceId != null)
+              EventChoiceSignalLayout(
+                eventId: event.eventId,
+                choiceId: event.selectedChoiceId!,
+                child: Text(
+                  event.selectedChoiceTitle ?? 'Выбор зафиксирован',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              )
+            else
+              Text(
+                event.selectedChoiceTitle ?? 'Выбор зафиксирован',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
             const SizedBox(height: 4),
             Text(
               event.outcomeTitle ?? 'Результат события',

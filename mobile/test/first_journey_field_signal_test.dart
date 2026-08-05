@@ -254,6 +254,15 @@ void main() {
       find.byKey(const Key('event-scene-signal-source-v1')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(
+        const Key(
+          'event-choice-signal-signal-source-v1-analyze-signal-'
+          'frequency-active',
+        ),
+      ),
+      findsOneWidget,
+    );
     await _bringIntoView(tester, find.byKey(const Key('first-journey-finish')));
     await _bringIntoView(
       tester,
