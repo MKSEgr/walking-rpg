@@ -792,11 +792,25 @@ class _CompletionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _JourneyPanel(
       icon: Icons.emoji_events_outlined,
-      visual: ExpeditionEventScene(
-        eventId: result.eventId,
-        eventTitle: result.eventTitle,
-        fallbackSemanticLabel:
-            'Сцена завершённого события «${result.eventTitle}»',
+      visual: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ExpeditionEventScene(
+            eventId: result.eventId,
+            eventTitle: result.eventTitle,
+            fallbackSemanticLabel:
+                'Сцена завершённого события «${result.eventTitle}»',
+          ),
+          const SizedBox(height: 12),
+          EventChoiceSignalLayout(
+            eventId: result.eventId,
+            choiceId: result.choiceId,
+            child: Text(
+              'Выбрано: ${result.choiceTitle}',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ),
+        ],
       ),
       eyebrow: 'Первый сигнал расшифрован',
       title: result.outcomeTitle,

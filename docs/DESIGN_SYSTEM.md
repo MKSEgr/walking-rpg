@@ -380,6 +380,13 @@ optional item art are decorative. At compact width the mark and reward art
 move above the copy while the original callback, command key, idempotency,
 telemetry and authoritative reload boundaries remain unchanged.
 
+After a choice is accepted, the same exact-pair mark follows its server-owned
+identity through the durable Home handoff, an accepted resolved event card and
+the guided first-journey completion. The mark never decides that a resolution
+succeeded, predicts the next node or derives an outcome or reward. Legacy
+resolved snapshots without a `selectedChoiceId` keep their complete text-only
+fallback; future event/choice pairs retain the neutral constellation.
+
 ## First chapter environment
 
 `ChapterVista` defines the code-native key art for the first chapter: layered
