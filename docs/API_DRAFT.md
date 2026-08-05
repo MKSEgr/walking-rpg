@@ -364,6 +364,13 @@ Risk assessment использует checked arithmetic для суммы `bucke
 она fail-closed учитывается как `BUCKET_TOTAL_MISMATCH`; переполнение порога не
 может скрыть mismatch или создать ложный multiplier signal.
 
+Для новой синхронизации `serverTime` фиксируется после общего user lock.
+Проверка `localDate`, device presence, shadow risk assessment, ENERGY ledger и
+durable response используют одно значение, поэтому ожидавший lock request не
+может быть датирован раньше уже завершённой serialized command. Exact replay
+возвращает исходный business response; новый request-scoped risk assessment
+попытки получает текущее post-lock время.
+
 `localDate` может быть текущей или прошлой датой в заявленной IANA `timeZone`.
 Дата, которая ещё не наступила по серверному времени в этой зоне, отклоняется
 до создания user/device/state/ledger с `400 VALIDATION_ERROR` и

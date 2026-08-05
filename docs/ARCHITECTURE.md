@@ -401,6 +401,11 @@ backend продолжает менять только compatibility pointer и 
 3. Тот же key с другим payload возвращает conflict.
 4. Wallet не становится отрицательным и меняется через ledger.
 5. Activity high-watermark пользователя общий для устройств и не уменьшается.
+5a. Время новой activity sync фиксируется после общего user lock; local-date
+    validation, device presence, risk assessment, ENERGY ledger и durable
+    response не могут предшествовать уже завершённой serialized command.
+    Exact replay сохраняет исходный business response, а новый request-scoped
+    risk assessment использует текущее post-lock время попытки.
 6. Inventory stack меняется через inventory ledger.
 7. Historical response не заменяется более новым snapshot.
 8. Process restart не меняет pending payload/key.
