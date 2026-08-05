@@ -391,7 +391,8 @@ backend продолжает менять только compatibility pointer и 
 - один transaction commit для связанных изменений;
 - capable pending result проверяется под тем же user+expedition serialization
   boundary до advance/resolution/new crafting mutation;
-- ACK заполняет `acknowledged_at` условным `UPDATE`, только пока поле `NULL`;
+- ACK после account-deletion subject lock фиксирует одно post-lock время и
+  заполняет им `acknowledged_at` условным `UPDATE`, только пока поле `NULL`;
   тот же commit создаёт ACK milestone, replay читает сохранённое время без
   повторной мутации, а БД запрещает последующую правку timestamp;
 - read endpoints не создают zero-state;
@@ -420,6 +421,10 @@ backend продолжает менять только compatibility pointer и 
     lock; progression, material ledger, expedition transition и durable result
     не могут предшествовать уже завершённой serialized mutation той же
     экспедиции. Exact replay сохраняет исходное post-lock время без награды.
+5d. Время нового event-result ACK фиксируется после account-deletion subject
+    lock; durable receipt и onboarding milestone не могут предшествовать уже
+    завершённой serialized account mutation. Exact replay сохраняет исходное
+    post-lock время без повторного ACK.
 6. Inventory stack меняется через inventory ledger.
 7. Historical response не заменяется более новым snapshot.
 8. Process restart не меняет pending payload/key.

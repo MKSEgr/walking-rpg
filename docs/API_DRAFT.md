@@ -620,6 +620,9 @@ Accept: application/json
 - acknowledgement захватывает account-deletion subject lock внутри своей
   транзакции до receipt lookup/update, поэтому concurrent deletion не может
   превратить stale command в частичный ACK или другой доменный ответ;
+- для новой мутации `serverTime` фиксируется после этого lock и становится
+  единым `acknowledgedAt` для receipt и временем ACK milestone; replay
+  возвращает сохранённое post-lock время независимо от текущих часов;
 - после успешного acknowledgement mobile перечитывает authoritative
   `GET /home`;
 - acknowledgement не начисляет награды и не меняет expedition/progression или

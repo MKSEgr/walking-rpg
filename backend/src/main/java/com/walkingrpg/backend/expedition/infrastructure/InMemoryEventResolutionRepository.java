@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventResultAcknowledgementResult;
@@ -55,8 +56,9 @@ public class InMemoryEventResolutionRepository implements EventResolutionReposit
     public synchronized Optional<EventResultAcknowledgementResult> acknowledgeResult(
             String userId,
             UUID receiptId,
-            Instant serverTime
+            Supplier<Instant> serverTimeSupplier
     ) {
+        Instant serverTime = serverTimeSupplier.get();
         return processed.entrySet().stream()
                 .filter(entry -> entry.getKey().userId().equals(userId))
                 .map(Map.Entry::getValue)

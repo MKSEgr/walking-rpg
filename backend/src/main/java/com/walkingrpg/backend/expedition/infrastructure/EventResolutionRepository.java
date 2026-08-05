@@ -1,8 +1,10 @@
 package com.walkingrpg.backend.expedition.infrastructure;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventResultAcknowledgementResult;
@@ -25,6 +27,15 @@ public interface EventResolutionRepository {
     Optional<EventResultAcknowledgementResult> acknowledgeResult(
             String userId,
             UUID receiptId,
-            Instant serverTime
+            Supplier<Instant> serverTimeSupplier
     );
+
+    default Optional<EventResultAcknowledgementResult> acknowledgeResult(
+            String userId,
+            UUID receiptId,
+            Instant serverTime
+    ) {
+        Objects.requireNonNull(serverTime, "serverTime");
+        return acknowledgeResult(userId, receiptId, () -> serverTime);
+    }
 }
