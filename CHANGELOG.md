@@ -163,6 +163,10 @@
 
 ### Changed
 
+- новые activity ENERGY ledger entries используют versioned operation source
+  `v2:<requestFingerprint>` вместо одного `deviceId + idempotencyKey`:
+  повторное использование key после retention durable receipt не возвращает
+  исторический wallet snapshot и не создаёт ложный ledger conflict;
 - activity high-watermark `updated_at` и durable operation `created_at` теперь
   используют тот же post-user-lock `serverTime`: Home `lastActivitySyncAt`,
   account export и retention ordering отражают фактическую сериализацию sync;

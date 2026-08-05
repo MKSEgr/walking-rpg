@@ -24,7 +24,11 @@ Activity sync уже рассчитывает `energyGranted`, но до это�
 3. Первая валюта — `ENERGY`.
 4. Начисление за шаги имеет `reasonCode = ACTIVITY_STEPS` и `sourceType = ACTIVITY_SYNC`.
 5. Уникальность `(userId, currencyCode, sourceType, sourceKey)` защищает от двойной ledger-записи.
-6. `sourceKey` для activity sync строится из length-prefixed `deviceId` и `idempotencyKey`.
+6. Исторический `sourceKey` для activity sync строился из length-prefixed
+   `deviceId` и `idempotencyKey`. Новые ledger entries используют
+   `v2:<requestFingerprint>`, где fingerprint уже канонически связывает user,
+   device, local date, business payload и key, но не содержит raw payload.
+   Это отделяет новую operation generation от старой после retention receipt.
 7. Wallet row блокируется `SELECT ... FOR UPDATE`; activity flow дополнительно использует user-level PostgreSQL advisory transaction lock.
 8. Activity state, wallet update, ledger insert и processed response сохраняются одной Spring transaction.
 9. При `energyGranted = 0` кошелёк создаётся/читается, но ledger entry не добавляется и версия экономики не увеличивается.
@@ -36,6 +40,12 @@ economyVersion     — версия wallet после исходной опер�
 ```
 
 11. Идемпотентный повтор возвращает сохранённый snapshot, а не перечитывает самый новый баланс.
+12. Exact replay и payload conflict гарантируются, пока существует
+    `processed_activity_sync`. После retention cleanup повторное использование
+    key обрабатывается как новая generation: дневной high-watermark исключает
+    повторную награду за уже принятые шаги, а fingerprint-based ledger source
+    исключает возврат исторического wallet snapshot или ложный conflict со
+    старой append-only записью.
 
 ## Почему wallet и ledger нужны одновременно
 
@@ -64,6 +74,8 @@ Flyway V2 восстанавливает ENERGY balance из ранее сохр
 
 - энергия переживает перезапуск;
 - повтор sync не создаёт двойное начисление;
+- reuse key после retention receipt не рассинхронизирует command response и
+  текущую wallet projection;
 - можно расследовать каждую операцию;
 - следующий срез может безопасно списывать энергию на экспедицию;
 - rollback не оставляет частичное состояние.

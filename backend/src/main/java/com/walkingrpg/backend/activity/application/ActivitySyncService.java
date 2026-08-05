@@ -95,7 +95,7 @@ public class ActivitySyncService {
         WalletSnapshot wallet = economyService.creditActivityEnergy(
                 command.userId(),
                 result.energyGranted(),
-                ledgerSourceKey(idempotencyScope),
+                ledgerSourceKey(requestFingerprint),
                 serverTime
         );
         ActivitySyncOutcome outcome = new ActivitySyncOutcome(
@@ -132,11 +132,9 @@ public class ActivitySyncService {
         }
     }
 
-    private String ledgerSourceKey(IdempotencyScope scope) {
-        return scope.deviceId().length()
-                + ":"
-                + scope.deviceId()
-                + ":"
-                + scope.idempotencyKey();
+    private String ledgerSourceKey(String requestFingerprint) {
+        // Processed receipts expire, while the append-only ledger survives.
+        // Bind its source to this request generation instead of the reusable key.
+        return "v2:" + requestFingerprint;
     }
 }

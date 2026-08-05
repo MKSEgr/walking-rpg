@@ -76,6 +76,12 @@ Shadow-mode risk evaluator проверяет aggregate bucket metadata checked
 арифметикой. Переполнение суммы является `BUCKET_TOTAL_MISMATCH`, а порог
 резкого `8×` роста вычисляется только когда multiplication представима в
 `long`; wraparound не может понизить или искусственно поднять risk score.
+Exact replay activity-команды действует в пределах retention durable receipt.
+Новая ENERGY ledger entry адресуется `v2:<requestFingerprint>`, поэтому reuse
+того же transport key после очистки receipt создаёт отдельную operation
+generation вместо возврата старого wallet snapshot. Дневной high-watermark
+остаётся долгоживущей защитой от повторного начисления принятых шагов; сырой
+health payload в append-only ledger не переносится.
 
 ## 5. Durable mobile commands
 
@@ -418,6 +424,10 @@ backend продолжает менять только compatibility pointer и 
 1. Клиент не задаёт accepted delta, rewards или баланс.
 2. Один idempotency key не создаёт повторное списание/начисление.
 3. Тот же key с другим payload возвращает conflict.
+3a. Для activity пункты 2–3 используют durable receipt внутри retention
+    window. После cleanup reuse key является новой operation generation;
+    versioned fingerprint-based ledger source не сталкивается со старой
+    записью, а дневной high-watermark не допускает повторной ENERGY.
 4. Wallet не становится отрицательным и меняется через ledger.
 5. Activity high-watermark пользователя общий для устройств и не уменьшается.
 5a. Время новой activity sync фиксируется после общего user lock; local-date

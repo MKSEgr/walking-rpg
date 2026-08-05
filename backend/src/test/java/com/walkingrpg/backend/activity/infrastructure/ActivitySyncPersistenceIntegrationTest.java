@@ -207,6 +207,78 @@ class ActivitySyncPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldKeepLedgerGenerationDistinctAfterReceiptRetention() {
+        ActivitySyncCommand original = command(
+                "retention-device",
+                1_000,
+                "retained-key",
+                LocalDate.of(2026, 7, 23),
+                ZoneId.of("Europe/Berlin")
+        );
+        assertEquals(10, service.synchronize(original).energyBalanceAfter());
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE economy_ledger
+                SET source_key = '16:retention-device:retained-key'
+                WHERE user_id = 'persistent-user'
+                  AND source_type = 'ACTIVITY_SYNC'
+                """));
+        assertEquals(15, service.synchronize(command(
+                "retention-device",
+                500,
+                "retention-top-up",
+                LocalDate.of(2026, 7, 24),
+                ZoneId.of("Europe/Berlin")
+        )).energyBalanceAfter());
+        assertEquals(1, jdbcTemplate.update("""
+                DELETE FROM processed_activity_sync
+                WHERE user_id = 'persistent-user'
+                  AND device_id = 'retention-device'
+                  AND idempotency_key = 'retained-key'
+                """));
+
+        ActivitySyncOutcome reused = service.synchronize(command(
+                "retention-device",
+                1_000,
+                "retained-key",
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin")
+        ));
+        ActivitySyncOutcome current = service.synchronize(command(
+                "retention-device",
+                1_000,
+                "retention-balance-probe",
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin")
+        ));
+
+        assertEquals(10, reused.activity().energyGranted());
+        assertEquals(25, reused.energyBalanceAfter());
+        assertEquals(3, reused.economyVersion());
+        assertEquals(reused.energyBalanceAfter(), current.energyBalanceAfter());
+        assertEquals(reused.economyVersion(), current.economyVersion());
+        assertEquals(25L, walletBalance());
+        assertEquals(25L, ledgerAmountSum());
+        assertEquals(3, rowCount("economy_ledger"));
+        assertEquals(3, jdbcTemplate.queryForObject("""
+                SELECT count(DISTINCT source_key)
+                FROM economy_ledger
+                WHERE source_type = 'ACTIVITY_SYNC'
+                """, Integer.class));
+        assertEquals(2, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM economy_ledger
+                WHERE source_type = 'ACTIVITY_SYNC'
+                  AND source_key ~ '^v2:[0-9a-f]{64}$'
+                """, Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM economy_ledger
+                WHERE source_type = 'ACTIVITY_SYNC'
+                  AND source_key = '16:retention-device:retained-key'
+                """, Integer.class));
+    }
+
+    @Test
     void shouldSerializeConcurrentRequestsAcrossDevicesForSameUser() throws Exception {
         executor = Executors.newFixedThreadPool(2);
         CountDownLatch ready = new CountDownLatch(2);
@@ -298,7 +370,8 @@ class ActivitySyncPersistenceIntegrationTest {
         assertEquals(lockReleaseTime, timestamp("""
                 SELECT created_at
                 FROM economy_ledger
-                WHERE source_key = '16:lock-time-device:lock-time-order'
+                WHERE source_type = 'ACTIVITY_SYNC'
+                  AND source_key ~ '^v2:[0-9a-f]{64}$'
                 """));
         assertEquals(lockReleaseTime, timestamp("""
                 SELECT created_at
