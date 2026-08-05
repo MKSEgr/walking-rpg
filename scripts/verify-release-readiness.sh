@@ -191,7 +191,7 @@ grep -Fq 'HIKARI_CONFIGURATION_FILE_PROPERTY' backend/src/main/java/com/walkingr
 grep -Fq '"spring.flyway.url"' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject alternate Flyway connection settings'
 grep -Fq 'FLYWAY_JDBC_PROPERTIES_PREFIX' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject Flyway driver property overrides'
 grep -Fq 'walking_rpg_local' backend/src/main/java/com/walkingrpg/backend/operations/ProductionRuntimeGuard.java || fail 'protected datasource must reject the local password'
-grep -Fq 'requireProviderAvailability(commandType);' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'purchase availability must be checked before new state mutation'
+grep -Fq 'requireProviderAvailability(commandType, remoteConfig);' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'purchase availability must use the frozen command config before new state mutation'
 grep -Fq 'withEffectiveRemoteConfig(readResponse(processed.responseJson()))' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'idempotent replay must re-project current provider capabilities'
 grep -Fq 'paymentProvider.isAvailable()' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'effective sandbox capability must include provider availability'
 grep -Fq 'config.put("backgroundHealthSyncEnabled", false);' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'background health must remain disabled'
@@ -248,6 +248,8 @@ grep -Fq 'shouldReplayCanonicalPlatformPayloadAfterRestartAndKeyReordering' back
 grep -Fq 'shouldIncludeRuntimeCatalogValuesInProjectionAndDigest' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformContentCatalogTest.java || fail 'platform catalog digest must cover effective runtime values'
 grep -Fq 'shouldProjectOneEffectiveConfigIntoSnapshotAndBootstrapCatalogs' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformServiceTest.java || fail 'platform snapshot and bootstrap must share one effective runtime catalog projection'
 grep -Fq 'shouldProjectPersistedRemoteConfigIntoEveryPlatformCatalog' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL platform catalogs must match persisted effective remote config'
+grep -Fq 'shouldUseOneEffectiveRemoteConfigForWholeCommand' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformServiceTest.java || fail 'platform commands must freeze one effective remote config in service coverage'
+grep -Fq 'shouldKeepInFlightCommandOnOneRemoteConfigPublication' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL platform commands must not mix concurrent remote-config publications'
 
 printf '%s\n' 'Checking production operational controls...'
 grep -Fq 'micrometer-registry-prometheus' backend/pom.xml || fail 'Prometheus registry is required'

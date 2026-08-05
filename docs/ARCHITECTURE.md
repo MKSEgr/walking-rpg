@@ -241,6 +241,12 @@ catalog, user-state threshold и remote config не расходятся при 
 или admin publication; runtime values участвуют в `catalogDigest`. Уже
 сохранённый command response остаётся immutable и replay-ится с исходной
 проекцией.
+Новая platform-команда после user lock также фиксирует один effective config и
+передаёт его через provider/feature gates, mutation, derived achievements и
+response projection. Она не использует `REPEATABLE_READ`, потому что ожидающая
+user lock транзакция обязана увидеть commit предыдущей команды; вместо этого
+runtime config замораживается явно. Конкурентная публикация применяется целиком
+со следующего request, а не смешивает две версии внутри одного command response.
 Remote config и content release используют разные transaction-scoped advisory
 locks перед схемой `deactivate current → activate next`. Конкурентные admin
 requests одного типа сериализуются между backend instances, а независимые типы
@@ -429,6 +435,9 @@ backend продолжает менять только compatibility pointer и 
 26. Replay сохранённой покупки возвращает прежний command outcome/user state
     без нового provider call или mutation; capability fields заново
     проецируются из текущего deployment и после disable могут стать `false`.
+26a. Новая platform-команда использует один effective remote config для всех
+     gates, mutation calculations, achievements и response projection;
+     concurrent publication становится видна только следующему request.
 27. Oversized или rate-limited anonymous telemetry/crash request не вызывает
     application service и не создаёт database state.
 28. Salted hashes direct client keys public ingress limiter-а bounded и

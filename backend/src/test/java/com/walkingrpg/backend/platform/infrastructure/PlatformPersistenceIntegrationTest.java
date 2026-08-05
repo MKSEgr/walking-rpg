@@ -171,6 +171,126 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldKeepInFlightCommandOnOneRemoteConfigPublication() throws Exception {
+        String userId = "in-flight-config-user";
+        Map<String, Object> previousRemoteConfig =
+                platformRepository.activeRemoteConfig();
+        platformService.execute(userId, new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "in-flight-config-seed",
+                Map.of("stepId", "welcome")
+        ));
+        economyService.creditActivityEnergy(
+                userId,
+                100,
+                "in-flight-config-energy",
+                NOW
+        );
+        platformAdminService.updateRemoteConfig(
+                "in-flight-config-test",
+                "in-flight-command-config-a",
+                commandRemoteConfig("command-season-a", 100, true)
+        );
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<PlatformCommandResponse> pending = null;
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (PreparedStatement lock = blocker.prepareStatement("""
+                        SELECT 1
+                        FROM economy_wallet
+                        WHERE user_id = ?
+                          AND currency_code = 'ENERGY'
+                        FOR UPDATE
+                        """)) {
+                    lock.setString(1, userId);
+                    try (ResultSet rows = lock.executeQuery()) {
+                        assertTrue(rows.next());
+                    }
+                }
+
+                pending = executor.submit(() -> platformService.execute(
+                        userId,
+                        new PlatformCommandRequest(
+                                "ADVANCE_WEEKLY_ROUTE",
+                                "in-flight-command-config",
+                                Map.of("energyToSpend", 100)
+                        )
+                ));
+                awaitBlockedQuery("FROM economy_wallet");
+
+                platformAdminService.updateRemoteConfig(
+                        "in-flight-config-test",
+                        "in-flight-command-config-b",
+                        commandRemoteConfig("command-season-b", 200, false)
+                );
+                blocker.commit();
+                PlatformCommandResponse response = pending.get(5, TimeUnit.SECONDS);
+
+                assertEquals(
+                        "command-season-a",
+                        response.snapshot().remoteConfig().get("seasonId")
+                );
+                assertEquals(
+                        100,
+                        response.snapshot().remoteConfig().get("weeklyRouteEnergy")
+                );
+                assertEquals(
+                        true,
+                        response.snapshot().remoteConfig().get("weeklyRouteEnabled")
+                );
+                assertEquals(
+                        100,
+                        response.snapshot().userState().get("weeklyRouteRequiredEnergy")
+                );
+                assertEquals(
+                        100,
+                        response.snapshot().userState().get("weeklyRouteProgress")
+                );
+                assertEquals(120, response.snapshot().userState().get("seasonXp"));
+                assertTrue(objectList(
+                        response.snapshot().userState().get("achievements")
+                ).contains("weekly-route-complete"));
+                assertEquals(
+                        "command-season-a",
+                        objectMap(response.snapshot().content().get("season"))
+                                .get("seasonId")
+                );
+                assertEquals(
+                        100,
+                        objectMap(response.snapshot().content().get("weeklyRoute"))
+                                .get("requiredEnergy")
+                );
+
+                PlatformSnapshotResponse afterPublication = platformService.getSnapshot(userId);
+                assertEquals(
+                        "command-season-b",
+                        afterPublication.remoteConfig().get("seasonId")
+                );
+                assertEquals(200, afterPublication.remoteConfig().get("weeklyRouteEnergy"));
+                assertEquals(false, afterPublication.remoteConfig().get("weeklyRouteEnabled"));
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (pending != null && !pending.isDone()) {
+                        pending.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        } finally {
+            platformAdminService.updateRemoteConfig(
+                    "in-flight-config-test",
+                    "in-flight-command-config-restored",
+                    previousRemoteConfig
+            );
+        }
+    }
+
+    @Test
     void shouldReplayPreStabilizationIndentedFingerprintAfterCompactRestart()
             throws Exception {
         assertEquals(0, rowCount("app_user"));
@@ -1736,6 +1856,21 @@ class PlatformPersistenceIntegrationTest {
         );
     }
 
+    private Map<String, Object> commandRemoteConfig(
+            String seasonId,
+            int weeklyRouteEnergy,
+            boolean weeklyRouteEnabled
+    ) {
+        return Map.of(
+                "backgroundHealthSyncEnabled", false,
+                "activityRetentionDays", 30,
+                "seasonId", seasonId,
+                "weeklyRouteEnergy", weeklyRouteEnergy,
+                "sandboxPaymentsEnabled", false,
+                "weeklyRouteEnabled", weeklyRouteEnabled
+        );
+    }
+
     private Map<String, Object> paymentRemoteConfig(boolean enabled) {
         return Map.of(
                 "backgroundHealthSyncEnabled", false,
@@ -1858,5 +1993,10 @@ class PlatformPersistenceIntegrationTest {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> objectMap(Object value) {
         return (Map<String, Object>) value;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> objectList(Object value) {
+        return (List<Object>) value;
     }
 }

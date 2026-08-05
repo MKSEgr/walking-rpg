@@ -163,6 +163,10 @@
 
 ### Changed
 
+- новая platform-команда теперь фиксирует один effective remote config после
+  user serialization и использует его для feature/provider gates, стоимости
+  недельного маршрута, achievements, catalog и response; параллельная admin-
+  публикация целиком применяется только к следующей команде или read request;
 - platform snapshot и content bootstrap теперь проецируют `seasonId` и
   `weeklyRouteEnergy` из одного effective remote config: catalog, user-state
   threshold и remote config больше не сообщают разные значения, а

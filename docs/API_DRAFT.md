@@ -850,6 +850,16 @@ publication lock и не меняют активный snapshot.
 ненулевой дробной частью не усекаются и возвращают `400 VALIDATION_ERROR` с
 именем поля; это относится, в частности, к `energyToSpend` и `level`.
 
+После user-scoped serialization новая, ещё не обработанная команда читает
+effective remote config ровно один раз. Один и тот же snapshot используется для
+provider/feature gate, `weeklyRouteEnergy`, derived achievements и всех
+`content/userState/remoteConfig` секций response. Если admin-публикация
+завершилась, пока команда ожидала downstream lock, in-flight команда завершается
+целиком на исходной конфигурации, а следующая команда или read endpoint уже
+видит новую. Exact replay по-прежнему возвращает сохранённую business-проекцию;
+текущая доступность deployment provider может только fail-closed заменить
+capability field на `false` без повторной мутации.
+
 Правила первого пути:
 
 - `SELECT_PET` атомарно меняет `activePetId` и отмечает `pet-selection`;
