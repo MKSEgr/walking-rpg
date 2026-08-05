@@ -412,6 +412,102 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldTimestampCommandAfterContentPublicationWhileWaitingForUserLock()
+            throws Exception {
+        String userId = "content-publication-time-user";
+        PlatformCommandRequest request = new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "content-publication-time-order",
+                Map.of("stepId", "welcome")
+        );
+        String previousContentVersion = scalarString("""
+                SELECT content_version
+                FROM content_release
+                WHERE is_active
+                """);
+        String publishedContentVersion = "command-time-content-v1";
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<PlatformCommandResponse> pending = null;
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (PreparedStatement lock = blocker.prepareStatement("""
+                        SELECT pg_advisory_xact_lock(hashtextextended(?, 17))
+                        """)) {
+                    lock.setString(1, userId.length() + ":" + userId);
+                    lock.execute();
+                }
+
+                pending = executor.submit(() -> platformService.execute(
+                        userId,
+                        request
+                ));
+                awaitBlockedQuery("hashtextextended");
+
+                Map<String, Object> publication = platformAdminService.publishContent(
+                        "content-time-test",
+                        publishedContentVersion,
+                        "Command timestamp publication ordering",
+                        Map.of("contentVersion", publishedContentVersion)
+                );
+                Instant publishedAt = (Instant) publication.get("createdAt");
+                blocker.commit();
+                PlatformCommandResponse response = pending.get(
+                        5,
+                        TimeUnit.SECONDS
+                );
+
+                assertEquals(
+                        publishedContentVersion,
+                        response.snapshot().contentVersion()
+                );
+                assertFalse(response.serverTime().isBefore(publishedAt));
+                Timestamp occurredAt = jdbcTemplate.queryForObject("""
+                        SELECT occurred_at
+                        FROM platform_event
+                        WHERE user_id = ?
+                          AND event_name = 'platform_command_completed'
+                        """, Timestamp.class, userId);
+                assertFalse(occurredAt.toInstant().isBefore(publishedAt));
+                assertEquals(response, platformService.execute(userId, request));
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (pending != null && !pending.isDone()) {
+                        pending.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        } finally {
+            restorePublicationState(new PublicationRestoration(
+                    "UPDATE content_release SET is_active = false WHERE is_active",
+                    """
+                    UPDATE content_release
+                    SET is_active = true
+                    WHERE content_version = ?
+                    """,
+                    """
+                    DELETE FROM content_release
+                    WHERE content_version LIKE ?
+                    """,
+                    previousContentVersion,
+                    "command-time-content-%",
+                    "SELECT count(*) FROM content_release WHERE is_active",
+                    """
+                    SELECT content_version
+                    FROM content_release
+                    WHERE is_active
+                    """,
+                    previousContentVersion
+            ));
+        }
+    }
+
+    @Test
     void shouldReplayPreStabilizationIndentedFingerprintAfterCompactRestart()
             throws Exception {
         assertEquals(0, rowCount("app_user"));

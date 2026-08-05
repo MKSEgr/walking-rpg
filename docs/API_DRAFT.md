@@ -862,7 +862,10 @@ achievements, проверки route impression и всех `content/userState/r
 downstream lock, in-flight команда завершается целиком на исходных runtime
 публикациях, а следующая команда или read endpoint уже видит новые. Durable
 response не может принять impression для одной content version и сохранить
-catalog другой версии. Exact replay по-прежнему возвращает сохранённую
+catalog другой версии. `serverTime` новой команды фиксируется после этих
+runtime reads: принятый route impression и его analytics event не могут быть
+датированы раньше content activation, которую они уже наблюдали. Exact replay
+по-прежнему возвращает сохранённую
 business-проекцию; текущая доступность deployment provider может только
 fail-closed заменить capability field на `false` без повторной мутации.
 Сохранённое `sandboxPaymentsEnabled=false` не становится `true`, даже если более

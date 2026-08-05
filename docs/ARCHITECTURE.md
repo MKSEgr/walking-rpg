@@ -252,7 +252,9 @@ projection. Она не использует `REPEATABLE_READ`, потому ч�
 транзакция обязана увидеть commit предыдущей команды; вместо этого runtime
 публикации замораживаются явно. Конкурентная публикация применяется целиком со
 следующего request, а не смешивает две версии внутри одного durable command
-response.
+response. Command `serverTime` снимается после frozen runtime reads, поэтому
+route impression, принятый на новой active content version, не попадает в
+funnel с timestamp раньше наблюдаемой activation.
 Remote config и content release используют разные transaction-scoped advisory
 locks перед схемой `deactivate current → activate next`. Конкурентные admin
 requests одного типа сериализуются между backend instances, а независимые типы
@@ -448,6 +450,9 @@ backend продолжает менять только compatibility pointer и 
      и active content version для gates, mutation calculations, impression
      validation, achievements и response projection; concurrent publication
      становится видна только следующему request.
+26b. `serverTime` новой platform-команды фиксируется после frozen runtime reads;
+     принятый route impression не может предшествовать content activation,
+     которую использовали его validation, event и durable response.
 27. Oversized или rate-limited anonymous telemetry/crash request не вызывает
     application service и не создаёт database state.
 28. Salted hashes direct client keys public ingress limiter-а bounded и

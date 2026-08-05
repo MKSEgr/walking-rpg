@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.HashMap;
@@ -72,6 +73,18 @@ class PlatformServiceTest {
             PaymentProvider paymentProvider,
             JsonMapper objectMapper
     ) {
+        return service(
+                paymentProvider,
+                objectMapper,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+    }
+
+    private PlatformService service(
+            PaymentProvider paymentProvider,
+            JsonMapper objectMapper,
+            Clock clock
+    ) {
         return new PlatformService(
                 platformRepository,
                 new PlatformContentCatalog(),
@@ -79,7 +92,7 @@ class PlatformServiceTest {
                 economyService,
                 paymentProvider,
                 objectMapper,
-                Clock.fixed(NOW, ZoneOffset.UTC),
+                clock,
                 new ProgressionService(
                         new InMemoryProgressionRepository(),
                         new StarterProgressionContent()
@@ -416,6 +429,31 @@ class PlatformServiceTest {
                 map(event("compass_route_impression").get("attributes"))
                         .get("contentVersion")
         );
+    }
+
+    @Test
+    void shouldTimestampCommandAfterFrozenContentPublication() {
+        MutableClock clock = new MutableClock(NOW.minusSeconds(30));
+        platformRepository = new ActivatingContentVersionRepository(clock, NOW);
+        service = service(
+                new SandboxPaymentProvider(),
+                JsonMapper.builder().findAndAddModules().build(),
+                clock
+        );
+
+        PlatformCommandResponse response = service.execute("content-time-user", command(
+                "RECORD_COMPASS_IMPRESSION",
+                "content-time-order",
+                Map.of(
+                        "impression", "ROUTE_AVAILABLE",
+                        "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                )
+        ));
+
+        assertEquals(StarterExpeditionContent.CONTENT_VERSION,
+                response.snapshot().contentVersion());
+        assertEquals(NOW, response.serverTime());
+        assertEquals(NOW, event("compass_route_impression").get("occurredAt"));
     }
 
     @Test
@@ -1267,6 +1305,61 @@ class PlatformServiceTest {
 
         private synchronized int contentVersionReads() {
             return contentVersionReads;
+        }
+    }
+
+    private static final class ActivatingContentVersionRepository
+            extends InMemoryPlatformRepository {
+        private final MutableClock clock;
+        private final Instant activatedAt;
+
+        private ActivatingContentVersionRepository(
+                MutableClock clock,
+                Instant activatedAt
+        ) {
+            this.clock = clock;
+            this.activatedAt = activatedAt;
+        }
+
+        @Override
+        public synchronized String activeContentVersion() {
+            clock.set(activatedAt);
+            return StarterExpeditionContent.CONTENT_VERSION;
+        }
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant current;
+        private final ZoneId zone;
+
+        private MutableClock(Instant current) {
+            this(current, ZoneOffset.UTC);
+        }
+
+        private MutableClock(Instant current, ZoneId zone) {
+            this.current = current;
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public synchronized Clock withZone(ZoneId requestedZone) {
+            return zone.equals(requestedZone)
+                    ? this
+                    : new MutableClock(current, requestedZone);
+        }
+
+        @Override
+        public synchronized Instant instant() {
+            return current;
+        }
+
+        private synchronized void set(Instant value) {
+            current = value;
         }
     }
 }

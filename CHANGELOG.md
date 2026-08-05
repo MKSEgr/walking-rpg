@@ -163,6 +163,9 @@
 
 ### Changed
 
+- `serverTime` новой platform-команды теперь фиксируется после user lock и
+  frozen runtime reads: route impression, принятый для новой active content
+  version, больше не сохраняется раньше наблюдаемой content activation;
 - anti-fraud bucket totals и sudden-growth threshold теперь вычисляются без
   `long` wraparound: переполнение bucket sum сохраняется как
   `BUCKET_TOTAL_MISMATCH`, а недостижимый `8×` threshold не создаёт ложный
