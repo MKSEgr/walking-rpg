@@ -35,7 +35,12 @@ public class InMemoryActivitySyncRepository implements ActivitySyncRepository {
     }
 
     @Override
-    public void saveState(ActivityDayKey key, ActivityDayState state, ZoneId timeZone) {
+    public void saveState(
+            ActivityDayKey key,
+            ActivityDayState state,
+            ZoneId timeZone,
+            Instant updatedAt
+    ) {
         states.put(key, state);
     }
 

@@ -85,7 +85,13 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
     }
 
     @Override
-    public void saveState(ActivityDayKey key, ActivityDayState state, ZoneId timeZone) {
+    public void saveState(
+            ActivityDayKey key,
+            ActivityDayState state,
+            ZoneId timeZone,
+            Instant updatedAt
+    ) {
+        Timestamp timestamp = Timestamp.from(updatedAt);
         jdbcTemplate.update("""
                 INSERT INTO activity_sync_state (
                     user_id,
@@ -95,18 +101,19 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                     time_zone,
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, now())
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT (user_id, local_date) DO UPDATE
                 SET accepted_total = EXCLUDED.accepted_total,
                     state_version = EXCLUDED.state_version,
                     time_zone = EXCLUDED.time_zone,
-                    updated_at = now()
+                    updated_at = EXCLUDED.updated_at
                 """,
                 key.userId(),
                 key.localDate(),
                 state.acceptedTotal(),
                 state.stateVersion(),
-                timeZone.getId()
+                timeZone.getId(),
+                timestamp
         );
     }
 
@@ -167,7 +174,7 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                     server_time,
                     created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 scope.userId(),
                 scope.deviceId(),
@@ -180,6 +187,7 @@ public class JdbcActivitySyncRepository implements ActivitySyncRepository {
                 outcome.economyVersion(),
                 result.riskStatus().name(),
                 result.stateVersion(),
+                Timestamp.from(result.serverTime()),
                 Timestamp.from(result.serverTime())
         );
     }

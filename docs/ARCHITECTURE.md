@@ -423,8 +423,10 @@ backend продолжает менять только compatibility pointer и 
 5a. Время новой activity sync фиксируется после общего user lock; local-date
     validation, device presence, risk assessment, ENERGY ledger и durable
     response не могут предшествовать уже завершённой serialized command.
-    Exact replay сохраняет исходный business response, а новый request-scoped
-    risk assessment использует текущее post-lock время попытки.
+    Activity high-watermark `updated_at`/Home `lastActivitySyncAt` и durable
+    operation `created_at`, используемый retention, получают то же post-lock
+    время. Exact replay сохраняет исходный business response, а новый
+    request-scoped risk assessment использует текущее post-lock время попытки.
 5b. Время нового expedition advance фиксируется после общего user+expedition
     lock; ENERGY debit/ledger, progress и durable response не могут
     предшествовать уже завершённой serialized mutation той же экспедиции.

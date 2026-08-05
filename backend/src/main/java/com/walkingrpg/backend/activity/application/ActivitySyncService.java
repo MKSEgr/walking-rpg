@@ -108,7 +108,8 @@ public class ActivitySyncService {
             repository.saveState(
                     dayKey,
                     new ActivityDayState(result.acceptedTotal(), result.stateVersion()),
-                    command.timeZone()
+                    command.timeZone(),
+                    serverTime
             );
         }
         repository.saveProcessed(
