@@ -2,6 +2,7 @@ package com.walkingrpg.backend.expedition.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import com.walkingrpg.backend.economy.application.EconomyService;
@@ -157,6 +158,40 @@ class ExpeditionAdvanceServiceTest {
         );
     }
 
+    @Test
+    void shouldTimestampAdvanceAfterExpeditionLock() {
+        MutableClock clock = new MutableClock(NOW.minusSeconds(30));
+        InMemoryExpeditionRepository repository =
+                new InMemoryExpeditionRepository() {
+                    @Override
+                    public void acquireLock(String userId, String expeditionId) {
+                        clock.set(NOW);
+                    }
+                };
+        EconomyService orderedEconomy = new EconomyService(
+                new InMemoryEconomyRepository()
+        );
+        orderedEconomy.creditActivityEnergy(
+                "user-1",
+                30,
+                "activity-lock-time",
+                NOW.minusSeconds(30)
+        );
+        ExpeditionAdvanceService orderedService = new ExpeditionAdvanceService(
+                repository,
+                new InMemoryEventResolutionRepository(),
+                orderedEconomy,
+                new StarterExpeditionContent(),
+                clock
+        );
+
+        ExpeditionAdvanceResult result = orderedService.advance(
+                command(10, "advance-lock-time")
+        );
+
+        assertEquals(NOW, result.serverTime());
+    }
+
     private ExpeditionAdvanceCommand command(long energy, String key) {
         return new ExpeditionAdvanceCommand(
                 "user-1",
@@ -164,5 +199,40 @@ class ExpeditionAdvanceServiceTest {
                 energy,
                 key
         );
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant current;
+        private final ZoneId zone;
+
+        private MutableClock(Instant current) {
+            this(current, ZoneOffset.UTC);
+        }
+
+        private MutableClock(Instant current, ZoneId zone) {
+            this.current = current;
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public synchronized Clock withZone(ZoneId requestedZone) {
+            return zone.equals(requestedZone)
+                    ? this
+                    : new MutableClock(current, requestedZone);
+        }
+
+        @Override
+        public synchronized Instant instant() {
+            return current;
+        }
+
+        private synchronized void set(Instant value) {
+            current = value;
+        }
     }
 }

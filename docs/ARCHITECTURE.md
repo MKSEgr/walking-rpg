@@ -380,6 +380,9 @@ backend продолжает менять только compatibility pointer и 
   expedition boundary; новая мутация получает shared expedition lock,
   проверяет pending receipt, блокирует принадлежащий unique item и одним
   commit сохраняет desired slot state с processed response;
+- новый expedition advance фиксирует `serverTime` после shared
+  user+expedition lock; debit/ledger, progress state и processed response
+  используют одно post-lock время, а exact replay сохраняет исходное;
 - event resolution не получает equipment advisory lock: после expedition lock
   он читает committed loadout, поэтому lock order не образует цикл;
 - один transaction commit для связанных изменений;
@@ -406,6 +409,10 @@ backend продолжает менять только compatibility pointer и 
     response не могут предшествовать уже завершённой serialized command.
     Exact replay сохраняет исходный business response, а новый request-scoped
     risk assessment использует текущее post-lock время попытки.
+5b. Время нового expedition advance фиксируется после общего user+expedition
+    lock; ENERGY debit/ledger, progress и durable response не могут
+    предшествовать уже завершённой serialized mutation той же экспедиции.
+    Exact replay сохраняет исходное post-lock время без повторной мутации.
 6. Inventory stack меняется через inventory ledger.
 7. Historical response не заменяется более новым snapshot.
 8. Process restart не меняет pending payload/key.
