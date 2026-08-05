@@ -4,7 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,10 +89,14 @@ class AccountDeletionIntegrationTest {
     @Autowired
     private BlockingPushDeliveryProvider blockingPushDeliveryProvider;
 
+    @Autowired
+    private MutableClock clock;
+
     @BeforeEach
     void cleanDatabase() {
         jdbcTemplate.execute("TRUNCATE TABLE account_deletion_receipt, app_user CASCADE");
         blockingPushDeliveryProvider.reset();
+        clock.set(NOW);
     }
 
     @Test
@@ -301,6 +308,56 @@ class AccountDeletionIntegrationTest {
         assertEquals(0, rowCount("app_user"));
         assertEquals(0, rowCount("platform_event"));
         assertEquals(1, rowCount("account_deletion_receipt"));
+    }
+
+    @Test
+    void shouldTimestampTelemetryAfterWaitingForAccountLock() throws Exception {
+        String userId = "telemetry-lock-time-user";
+        Instant lockReleaseTime = Instant.parse("2026-08-06T00:00:30Z");
+        clock.set(lockReleaseTime.minusSeconds(60));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        try (Connection blocker = dataSource.getConnection()) {
+            blocker.setAutoCommit(false);
+            try (PreparedStatement lock = blocker.prepareStatement("""
+                    SELECT pg_advisory_xact_lock(hashtextextended(?, 97))
+                    """)) {
+                lock.setString(1, userId.length() + ":" + userId);
+                lock.execute();
+            }
+
+            Future<?> pending = executor.submit(() -> service.recordEvent(
+                    userId,
+                    "retention_boundary",
+                    null,
+                    Map.of()
+            ));
+            awaitBlockedQuery("pg_advisory_xact_lock");
+            clock.set(lockReleaseTime);
+            blocker.commit();
+            pending.get(5, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT received_at
+                FROM platform_event
+                WHERE user_id = ?
+                  AND event_name = 'retention_boundary'
+                """, userId));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT occurred_at
+                FROM platform_event
+                WHERE user_id = ?
+                  AND event_name = 'retention_boundary'
+                """, userId));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT created_at
+                FROM app_user
+                WHERE user_id = ?
+                """, userId));
     }
 
     @Test
@@ -520,6 +577,14 @@ class AccountDeletionIntegrationTest {
         return count == null ? 0 : count;
     }
 
+    private Instant timestamp(String sql, Object... arguments) {
+        return jdbcTemplate.queryForObject(
+                sql,
+                (resultSet, rowNumber) -> resultSet.getTimestamp(1).toInstant(),
+                arguments
+        );
+    }
+
     private void awaitAccountExportMilestoneReadBlock() throws Exception {
         awaitBlockedQuery("FROM first_journey_milestone");
     }
@@ -551,6 +616,47 @@ class AccountDeletionIntegrationTest {
         @Primary
         BlockingPushDeliveryProvider blockingPushDeliveryProvider() {
             return new BlockingPushDeliveryProvider();
+        }
+
+        @Bean
+        @Primary
+        MutableClock mutableClock() {
+            return new MutableClock(NOW);
+        }
+    }
+
+    static final class MutableClock extends Clock {
+        private Instant current;
+        private final ZoneId zone;
+
+        private MutableClock(Instant current) {
+            this(current, ZoneOffset.UTC);
+        }
+
+        private MutableClock(Instant current, ZoneId zone) {
+            this.current = current;
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public synchronized Clock withZone(ZoneId requestedZone) {
+            return zone.equals(requestedZone)
+                    ? this
+                    : new MutableClock(current, requestedZone);
+        }
+
+        @Override
+        public synchronized Instant instant() {
+            return current;
+        }
+
+        private synchronized void set(Instant value) {
+            current = value;
         }
     }
 
