@@ -164,6 +164,9 @@ public class PlatformService {
                 );
             }
         }
+        // A waiting user transaction must see the preceding command commit, so
+        // keep READ_COMMITTED and freeze mutable runtime config explicitly.
+        Map<String, Object> remoteConfig = effectiveRemoteConfig();
         if ("RECORD_COMPASS_IMPRESSION".equals(commandType)) {
             return executeCompassImpression(
                     normalizedUserId,
@@ -171,10 +174,11 @@ public class PlatformService {
                     request.payload(),
                     scope,
                     fingerprint,
+                    remoteConfig,
                     serverTime
             );
         }
-        requireProviderAvailability(commandType);
+        requireProviderAvailability(commandType, remoteConfig);
         validateCommandPayloadBeforeState(commandType, request.payload());
 
         PlatformProgressFacts factsBefore = progressFactsProvider.factsFor(normalizedUserId);
@@ -191,9 +195,13 @@ public class PlatformService {
                 request.payload(),
                 scope,
                 factsBefore,
+                remoteConfig,
                 serverTime
         );
-        PlatformUserState updated = withDerivedAchievements(mutation.state());
+        PlatformUserState updated = withDerivedAchievements(
+                mutation.state(),
+                remoteConfig
+        );
         repository.saveState(normalizedUserId, updated, serverTime);
         repository.recordEvent(
                 normalizedUserId,
@@ -211,7 +219,13 @@ public class PlatformService {
                 scope.idempotencyKey(),
                 mutation.message(),
                 updated.version(),
-                snapshot(normalizedUserId, updated, factsAfter, serverTime),
+                snapshot(
+                        normalizedUserId,
+                        updated,
+                        factsAfter,
+                        remoteConfig,
+                        serverTime
+                ),
                 serverTime
         );
         String responseJson = writeResponse(response);
@@ -283,6 +297,7 @@ public class PlatformService {
             Map<String, Object> payload,
             PlatformCommandScope scope,
             PlatformProgressFacts facts,
+            Map<String, Object> remoteConfig,
             Instant occurredAt
     ) {
         return switch (commandType) {
@@ -294,7 +309,7 @@ public class PlatformService {
                     userId, state, payload, facts, occurredAt
             );
             case "ADVANCE_WEEKLY_ROUTE" -> advanceWeeklyRoute(
-                    userId, state, payload, scope, occurredAt
+                    userId, state, payload, scope, remoteConfig, occurredAt
             );
             case "CREATE_SQUAD" -> createSquad(userId, state, payload, scope, occurredAt);
             case "JOIN_SQUAD" -> joinSquad(userId, state, payload, occurredAt);
@@ -321,6 +336,7 @@ public class PlatformService {
             Map<String, Object> payload,
             PlatformCommandScope scope,
             String fingerprint,
+            Map<String, Object> remoteConfig,
             Instant serverTime
     ) {
         PlatformProgressFacts facts = progressFactsProvider.factsFor(userId);
@@ -342,7 +358,7 @@ public class PlatformService {
                 scope.idempotencyKey(),
                 "Показ компаса зарегистрирован",
                 state.version(),
-                snapshot(userId, state, facts, serverTime),
+                snapshot(userId, state, facts, remoteConfig, serverTime),
                 serverTime
         );
         String responseJson = writeResponse(response);
@@ -511,12 +527,14 @@ public class PlatformService {
             PlatformUserState state,
             Map<String, Object> payload,
             PlatformCommandScope scope,
+            Map<String, Object> remoteConfig,
             Instant occurredAt
     ) {
-        if (!featureEnabled("weeklyRouteEnabled")) {
+        if (!featureEnabled(remoteConfig, "weeklyRouteEnabled")) {
             throw new PlatformStateConflictException("Недельный маршрут отключён конфигурацией");
         }
         int requiredEnergy = configInt(
+                remoteConfig,
                 "weeklyRouteEnergy",
                 DEFAULT_WEEKLY_ROUTE_ENERGY,
                 10,
@@ -785,7 +803,10 @@ public class PlatformService {
         repository.recordEvent(userId, eventName, occurredAt, Map.copyOf(attributes));
     }
 
-    private PlatformUserState withDerivedAchievements(PlatformUserState state) {
+    private PlatformUserState withDerivedAchievements(
+            PlatformUserState state,
+            Map<String, Object> remoteConfig
+    ) {
         Set<String> achievements = new LinkedHashSet<>(state.achievements());
         if (state.completedOnboardingSteps().containsAll(content.onboardingSteps())) {
             achievements.add("onboarding-complete");
@@ -800,6 +821,7 @@ public class PlatformService {
             achievements.add("quest-runner");
         }
         int weeklyRequired = configInt(
+                remoteConfig,
                 "weeklyRouteEnergy",
                 DEFAULT_WEEKLY_ROUTE_ENERGY,
                 10,
@@ -928,6 +950,16 @@ public class PlatformService {
             Instant serverTime
     ) {
         Map<String, Object> remoteConfig = effectiveRemoteConfig();
+        return snapshot(userId, state, facts, remoteConfig, serverTime);
+    }
+
+    private PlatformSnapshotResponse snapshot(
+            String userId,
+            PlatformUserState state,
+            PlatformProgressFacts facts,
+            Map<String, Object> remoteConfig,
+            Instant serverTime
+    ) {
         int weeklyRouteEnergy = configInt(
                 remoteConfig,
                 "weeklyRouteEnergy",
@@ -1069,19 +1101,9 @@ public class PlatformService {
         };
     }
 
-    private boolean featureEnabled(String key) {
-        Object value = effectiveRemoteConfig().get(key);
+    private boolean featureEnabled(Map<String, Object> remoteConfig, String key) {
+        Object value = remoteConfig.get(key);
         return !(value instanceof Boolean enabled) || enabled;
-    }
-
-    private int configInt(String key, int defaultValue, int min, int max) {
-        return configInt(
-                effectiveRemoteConfig(),
-                key,
-                defaultValue,
-                min,
-                max
-        );
     }
 
     private int configInt(
@@ -1112,12 +1134,15 @@ public class PlatformService {
         return raw < min || raw > max ? defaultValue : raw;
     }
 
-    private void requireProviderAvailability(String commandType) {
+    private void requireProviderAvailability(
+            String commandType,
+            Map<String, Object> remoteConfig
+    ) {
         if (!isPurchaseCommand(commandType)) {
             return;
         }
         if (!paymentProvider.isAvailable()
-                || !featureEnabled("sandboxPaymentsEnabled")) {
+                || !featureEnabled(remoteConfig, "sandboxPaymentsEnabled")) {
             throw new PlatformStateConflictException(
                     "Покупки недоступны в текущей конфигурации"
             );
@@ -1148,6 +1173,10 @@ public class PlatformService {
         config.put(
                 "sandboxPaymentsEnabled",
                 paymentProvider.isAvailable()
+                        && responseConfig != null
+                        && Boolean.TRUE.equals(
+                                responseConfig.get("sandboxPaymentsEnabled")
+                        )
                         && activeConfig != null
                         && Boolean.TRUE.equals(activeConfig.get("sandboxPaymentsEnabled"))
         );

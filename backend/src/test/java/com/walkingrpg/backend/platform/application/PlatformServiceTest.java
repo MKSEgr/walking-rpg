@@ -322,6 +322,64 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldUseOneEffectiveRemoteConfigForWholeCommand() {
+        Map<String, Object> initialConfig = new LinkedHashMap<>(
+                remoteConfig(false, false)
+        );
+        initialConfig.put("seasonId", "command-season-a");
+        initialConfig.put("weeklyRouteEnergy", 100);
+        Map<String, Object> laterConfig = new LinkedHashMap<>(
+                remoteConfig(false, false)
+        );
+        laterConfig.put("seasonId", "command-season-b");
+        laterConfig.put("weeklyRouteEnergy", 200);
+        laterConfig.put("weeklyRouteEnabled", false);
+        FlippingRemoteConfigRepository repository = new FlippingRemoteConfigRepository(
+                initialConfig,
+                laterConfig
+        );
+        platformRepository = repository;
+        service = service(new SandboxPaymentProvider());
+        economyService.creditActivityEnergy("config-user", 100, "config-seed", NOW);
+
+        PlatformCommandResponse response = service.execute("config-user", command(
+                "ADVANCE_WEEKLY_ROUTE",
+                "frozen-command-config",
+                Map.of("energyToSpend", 100)
+        ));
+
+        assertEquals(1, repository.remoteConfigReads());
+        assertEquals(100, number(response.snapshot().userState(), "weeklyRouteProgress"));
+        assertEquals(100, number(
+                response.snapshot().userState(),
+                "weeklyRouteRequiredEnergy"
+        ));
+        assertEquals(120, number(response.snapshot().userState(), "seasonXp"));
+        assertTrue(collection(response.snapshot().userState(), "achievements")
+                .contains("weekly-route-complete"));
+        assertEquals(
+                "command-season-a",
+                response.snapshot().remoteConfig().get("seasonId")
+        );
+        assertEquals(
+                100,
+                response.snapshot().remoteConfig().get("weeklyRouteEnergy")
+        );
+        assertEquals(
+                true,
+                response.snapshot().remoteConfig().get("weeklyRouteEnabled")
+        );
+        assertEquals(
+                "command-season-a",
+                map(response.snapshot().content().get("season")).get("seasonId")
+        );
+        assertEquals(
+                100,
+                map(response.snapshot().content().get("weeklyRoute")).get("requiredEnergy")
+        );
+    }
+
+    @Test
     void shouldEvolvePetWhenBondThresholdIsReached() {
         factsProvider.set("user-1", new PlatformProgressFacts(0, 0, 60, null));
 
@@ -629,6 +687,29 @@ class PlatformServiceTest {
                         Map.of("cosmeticId", "trail-banner")
                 ))
         );
+    }
+
+    @Test
+    void shouldNotExpandReplayProviderCapabilityAfterEnable() {
+        platformRepository.setRemoteConfig(remoteConfig(false, false));
+        PlatformCommandRequest request = command(
+                "SELECT_PET",
+                "provider-capability-monotonic-replay",
+                Map.of("petId", "moss-v1")
+        );
+        PlatformCommandResponse completed = service.execute("provider-user", request);
+        int eventCount = platformRepository.eventCount();
+
+        platformRepository.setRemoteConfig(remoteConfig(true, false));
+        PlatformCommandResponse replayed = service.execute("provider-user", request);
+
+        assertFalse((Boolean) completed.snapshot().remoteConfig()
+                .get("sandboxPaymentsEnabled"));
+        assertEquals(completed, replayed);
+        assertTrue((Boolean) service.getSnapshot("provider-user").remoteConfig()
+                .get("sandboxPaymentsEnabled"));
+        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(eventCount, platformRepository.eventCount());
     }
 
     @Test
@@ -1100,6 +1181,31 @@ class PlatformServiceTest {
 
         private int calls() {
             return calls;
+        }
+    }
+
+    private static final class FlippingRemoteConfigRepository
+            extends InMemoryPlatformRepository {
+        private final Map<String, Object> first;
+        private final Map<String, Object> later;
+        private int remoteConfigReads;
+
+        private FlippingRemoteConfigRepository(
+                Map<String, Object> first,
+                Map<String, Object> later
+        ) {
+            this.first = Map.copyOf(first);
+            this.later = Map.copyOf(later);
+        }
+
+        @Override
+        public synchronized Map<String, Object> activeRemoteConfig() {
+            remoteConfigReads++;
+            return remoteConfigReads == 1 ? first : later;
+        }
+
+        private synchronized int remoteConfigReads() {
+            return remoteConfigReads;
         }
     }
 }

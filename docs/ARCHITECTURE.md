@@ -241,6 +241,12 @@ catalog, user-state threshold и remote config не расходятся при 
 или admin publication; runtime values участвуют в `catalogDigest`. Уже
 сохранённый command response остаётся immutable и replay-ится с исходной
 проекцией.
+Новая platform-команда после user lock также фиксирует один effective config и
+передаёт его через provider/feature gates, mutation, derived achievements и
+response projection. Она не использует `REPEATABLE_READ`, потому что ожидающая
+user lock транзакция обязана увидеть commit предыдущей команды; вместо этого
+runtime config замораживается явно. Конкурентная публикация применяется целиком
+со следующего request, а не смешивает две версии внутри одного command response.
 Remote config и content release используют разные transaction-scoped advisory
 locks перед схемой `deactivate current → activate next`. Конкурентные admin
 requests одного типа сериализуются между backend instances, а независимые типы
@@ -394,7 +400,10 @@ backend продолжает менять только compatibility pointer и 
    JSON object и настройки общего API `ObjectMapper` не меняют persistent
    business fingerprint, а array order остаётся значимым. Bounded upgrade
    candidates сохраняют replay rows предыдущего binary с compact/indented API
-   mapper hash, но никогда не становятся fingerprint новой команды.
+   mapper hash, но никогда не становятся fingerprint новой команды. Единственная
+   runtime-проекция provider capability монотонно fail-closed: исходный `false`
+   сохраняется, а исходный `true` может стать `false`, если текущие config или
+   provider больше не разрешают capability.
 10. Alias имени cosmetic purchase не меняет idempotency scope; тот же key с
     другим `cosmeticId` конфликтует до provider call.
 10a. Cosmetic ID не выбирает slot на клиенте; один пользователь имеет не более
@@ -429,6 +438,9 @@ backend продолжает менять только compatibility pointer и 
 26. Replay сохранённой покупки возвращает прежний command outcome/user state
     без нового provider call или mutation; capability fields заново
     проецируются из текущего deployment и после disable могут стать `false`.
+26a. Новая platform-команда использует один effective remote config для всех
+     gates, mutation calculations, achievements и response projection;
+     concurrent publication становится видна только следующему request.
 27. Oversized или rate-limited anonymous telemetry/crash request не вызывает
     application service и не создаёт database state.
 28. Salted hashes direct client keys public ingress limiter-а bounded и
@@ -525,6 +537,10 @@ Backend возвращает effective `sandboxPaymentsEnabled`: remote flag с�
 включённым только при доступном payment provider. Mobile строит purchase action
 только вне release build и для свежего snapshot с effective value `true`;
 cached snapshot остаётся read-only и не показывает эту action.
+Exact command replay дополнительно требует, чтобы capability была `true` в
+сохранённом response: более поздняя admin-публикация не расширяет ранее выданный
+`false`, а отключение config/provider по-прежнему может понизить `true` до
+`false`.
 `backgroundHealthSyncEnabled` также принудительно возвращается как `false`:
 этот срез не выдаёт foreground/resume fallback за production background
 delivery.
