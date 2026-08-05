@@ -11,6 +11,8 @@ void main() {
     testWidgets('profile cosmetics keep distinct exact-ID art in $name theme', (
       WidgetTester tester,
     ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
       await tester.pumpWidget(
         MaterialApp(
           theme: theme,
@@ -18,19 +20,27 @@ void main() {
             body: ListView(
               padding: const EdgeInsets.all(16),
               children: <Widget>[
-                const ProfileCosmeticFrame(
+                ProfileCosmeticFrame(
                   cosmeticId: ProfileCosmeticIds.trailBanner,
-                  child: const SizedBox(
-                    height: 120,
-                    child: ColoredBox(color: Colors.transparent),
+                  child: Semantics(
+                    image: true,
+                    label: 'Принятая глава со знаменем',
+                    child: const SizedBox(
+                      height: 120,
+                      child: ColoredBox(color: Colors.transparent),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                const ProfileCosmeticFrame(
+                ProfileCosmeticFrame(
                   cosmeticId: ProfileCosmeticIds.dawnFrame,
-                  child: const SizedBox(
-                    height: 120,
-                    child: ColoredBox(color: Colors.transparent),
+                  child: Semantics(
+                    image: true,
+                    label: 'Принятая глава в рамке рассвета',
+                    child: const SizedBox(
+                      height: 120,
+                      child: ColoredBox(color: Colors.transparent),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -67,7 +77,16 @@ void main() {
         find.byKey(const Key('profile-cosmetic-preview-dawn-frame')),
         findsOneWidget,
       );
+      expect(
+        find.bySemanticsLabel('Принятая глава со знаменем'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Принятая глава в рамке рассвета'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
+      semantics.dispose();
     });
   }
 

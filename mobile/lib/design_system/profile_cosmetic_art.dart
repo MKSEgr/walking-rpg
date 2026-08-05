@@ -45,28 +45,18 @@ class ProfileCosmeticFrame extends StatelessWidget {
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
-    return Stack(
+    return RepaintBoundary(
       key: Key('profile-cosmetic-frame-$cosmeticId'),
-      children: <Widget>[
-        child,
-        Positioned.fill(
-          child: IgnorePointer(
-            child: ExcludeSemantics(
-              child: RepaintBoundary(
-                child: CustomPaint(
-                  foregroundPainter: _ProfileCosmeticFramePainter(
-                    variant: variant,
-                    lumen: colors.primary,
-                    energy: palette.energy,
-                    resonance: palette.resonance,
-                    ink: palette.backdropTop,
-                  ),
-                ),
-              ),
-            ),
-          ),
+      child: CustomPaint(
+        foregroundPainter: _ProfileCosmeticFramePainter(
+          variant: variant,
+          lumen: colors.primary,
+          energy: palette.energy,
+          resonance: palette.resonance,
+          ink: palette.backdropTop,
         ),
-      ],
+        child: child,
+      ),
     );
   }
 }
