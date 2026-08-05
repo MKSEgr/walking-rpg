@@ -892,6 +892,7 @@ class _OnboardingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<String> steps = snapshot.content.onboardingSteps;
     final Set<String> completed = snapshot.userState.completedOnboardingSteps;
+    final int completedCount = steps.where(completed.contains).length;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final Widget icon = DecoratedBox(
       decoration: BoxDecoration(
@@ -922,7 +923,7 @@ class _OnboardingCard extends StatelessWidget {
       ],
     );
     final Widget progressBadge = ExpeditionBadge(
-      label: '${completed.length}/${steps.length}',
+      label: '$completedCount/${steps.length}',
       icon: Icons.alt_route,
     );
     return ExpeditionPanel(

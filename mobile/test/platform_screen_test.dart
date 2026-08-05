@@ -415,6 +415,45 @@ void main() {
     );
   });
 
+  testWidgets('keeps onboarding counts tied to the accepted step list', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final PlatformSnapshot initial = platformSnapshot(
+      completedOnboardingSteps: const <String>['welcome', 'retired-step'],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => initial,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder firstJourney = find.byKey(
+      const Key('first-journey-route-signal-1-6'),
+    );
+    await tester.scrollUntilVisible(
+      firstJourney,
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(firstJourney, findsOneWidget);
+    expect(find.text('1/6'), findsOneWidget);
+    expect(find.text('2/6'), findsNothing);
+    expect(
+      find.bySemanticsLabel('Первый путь: завершено 1 из 6 этапов'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testWidgets('authoritative generation reloads journal without losing input', (
     WidgetTester tester,
   ) async {
