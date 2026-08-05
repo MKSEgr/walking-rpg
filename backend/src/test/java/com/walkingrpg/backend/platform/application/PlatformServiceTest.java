@@ -380,6 +380,45 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldUseOneActiveContentVersionForWholeCommand() {
+        FlippingContentVersionRepository repository =
+                new FlippingContentVersionRepository(
+                        StarterExpeditionContent.CONTENT_VERSION,
+                        StarterExpeditionContent.LEGACY_CONTENT_VERSION
+                );
+        platformRepository = repository;
+        service = service(new SandboxPaymentProvider());
+
+        PlatformCommandResponse response = service.execute("content-user", command(
+                "RECORD_COMPASS_IMPRESSION",
+                "frozen-command-content",
+                Map.of(
+                        "impression", "ROUTE_AVAILABLE",
+                        "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+                )
+        ));
+
+        assertEquals(1, repository.contentVersionReads());
+        assertEquals(
+                StarterExpeditionContent.CONTENT_VERSION,
+                response.snapshot().contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.CONTENT_VERSION,
+                response.snapshot().content().get("contentVersion")
+        );
+        assertEquals(
+                StarterExpeditionContent.NODE_COUNT,
+                response.snapshot().content().get("chapterNodes")
+        );
+        assertEquals(
+                StarterExpeditionContent.CONTENT_VERSION,
+                map(event("compass_route_impression").get("attributes"))
+                        .get("contentVersion")
+        );
+    }
+
+    @Test
     void shouldEvolvePetWhenBondThresholdIsReached() {
         factsProvider.set("user-1", new PlatformProgressFacts(0, 0, 60, null));
 
@@ -1206,6 +1245,28 @@ class PlatformServiceTest {
 
         private synchronized int remoteConfigReads() {
             return remoteConfigReads;
+        }
+    }
+
+    private static final class FlippingContentVersionRepository
+            extends InMemoryPlatformRepository {
+        private final String first;
+        private final String later;
+        private int contentVersionReads;
+
+        private FlippingContentVersionRepository(String first, String later) {
+            this.first = first;
+            this.later = later;
+        }
+
+        @Override
+        public synchronized String activeContentVersion() {
+            contentVersionReads++;
+            return contentVersionReads == 1 ? first : later;
+        }
+
+        private synchronized int contentVersionReads() {
+            return contentVersionReads;
         }
     }
 }

@@ -291,6 +291,127 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldKeepInFlightCommandOnOneContentPublication() throws Exception {
+        String userId = "in-flight-content-user";
+        PlatformCommandRequest request = new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "in-flight-command-content",
+                Map.of("stepId", "health-permission")
+        );
+        platformService.execute(userId, new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "in-flight-content-seed",
+                Map.of("stepId", "welcome")
+        ));
+        String previousContentVersion = scalarString("""
+                SELECT content_version
+                FROM content_release
+                WHERE is_active
+                """);
+        String publishedContentVersion = "in-flight-command-content-b";
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<PlatformCommandResponse> pending = null;
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (PreparedStatement lock = blocker.prepareStatement("""
+                        SELECT 1
+                        FROM app_user
+                        WHERE user_id = ?
+                        FOR UPDATE
+                        """)) {
+                    lock.setString(1, userId);
+                    try (ResultSet rows = lock.executeQuery()) {
+                        assertTrue(rows.next());
+                    }
+                }
+
+                pending = executor.submit(() -> platformService.execute(
+                        userId,
+                        request
+                ));
+                awaitBlockedQuery("INSERT INTO app_user");
+
+                platformAdminService.publishContent(
+                        "in-flight-content-test",
+                        publishedContentVersion,
+                        "Concurrent command content publication",
+                        Map.of("contentVersion", publishedContentVersion)
+                );
+                blocker.commit();
+                PlatformCommandResponse response = pending.get(
+                        5,
+                        TimeUnit.SECONDS
+                );
+
+                assertEquals(
+                        previousContentVersion,
+                        response.snapshot().contentVersion()
+                );
+                assertEquals(
+                        previousContentVersion,
+                        response.snapshot().content().get("contentVersion")
+                );
+                assertEquals(
+                        previousContentVersion,
+                        jdbcTemplate.queryForObject("""
+                                SELECT response_json
+                                    -> 'snapshot'
+                                    ->> 'contentVersion'
+                                FROM processed_roadmap_command
+                                WHERE user_id = ?
+                                  AND command_type = ?
+                                  AND idempotency_key = ?
+                                """,
+                                String.class,
+                                userId,
+                                request.commandType(),
+                                request.idempotencyKey()
+                        )
+                );
+                assertEquals(response, platformService.execute(userId, request));
+                assertEquals(
+                        publishedContentVersion,
+                        platformService.getSnapshot(userId).contentVersion()
+                );
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (pending != null && !pending.isDone()) {
+                        pending.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        } finally {
+            restorePublicationState(new PublicationRestoration(
+                    "UPDATE content_release SET is_active = false WHERE is_active",
+                    """
+                    UPDATE content_release
+                    SET is_active = true
+                    WHERE content_version = ?
+                    """,
+                    """
+                    DELETE FROM content_release
+                    WHERE content_version LIKE ?
+                    """,
+                    previousContentVersion,
+                    "in-flight-command-content-%",
+                    "SELECT count(*) FROM content_release WHERE is_active",
+                    """
+                    SELECT content_version
+                    FROM content_release
+                    WHERE is_active
+                    """,
+                    previousContentVersion
+            ));
+        }
+    }
+
+    @Test
     void shouldReplayPreStabilizationIndentedFingerprintAfterCompactRestart()
             throws Exception {
         assertEquals(0, rowCount("app_user"));
