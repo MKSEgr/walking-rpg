@@ -116,7 +116,6 @@ public class PlatformService {
                 "commandType"
         ).toUpperCase(Locale.ROOT);
         String commandType = canonicalCommandType(requestedCommandType);
-        Instant serverTime = now();
         repository.acquireUserLock(normalizedUserId);
 
         PlatformCommandScope scope = new PlatformCommandScope(
@@ -168,6 +167,7 @@ public class PlatformService {
         // keep READ_COMMITTED and freeze mutable runtime publications explicitly.
         Map<String, Object> remoteConfig = effectiveRemoteConfig();
         String activeContentVersion = repository.activeContentVersion();
+        Instant serverTime = now();
         if ("RECORD_COMPASS_IMPRESSION".equals(commandType)) {
             return executeCompassImpression(
                     normalizedUserId,
