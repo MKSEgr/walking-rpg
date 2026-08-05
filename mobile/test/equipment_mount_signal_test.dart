@@ -29,6 +29,38 @@ void main() {
       EquipmentMountSignalCatalog.itemKindFor('future-instrument'),
       EquipmentMountItemKind.unknown,
     );
+    expect(
+      EquipmentMountSignalCatalog.stateFor(
+        slotId: 'NAVIGATION',
+        status: 'EMPTY',
+        itemId: null,
+      ),
+      EquipmentMountSignalState.navigationEmpty,
+    );
+    expect(
+      EquipmentMountSignalCatalog.stateFor(
+        slotId: 'NAVIGATION',
+        status: 'EQUIPPED',
+        itemId: 'resonance-compass',
+      ),
+      EquipmentMountSignalState.resonanceCompassMounted,
+    );
+    expect(
+      EquipmentMountSignalCatalog.stateFor(
+        slotId: 'NAVIGATION',
+        status: 'EQUIPPED',
+        itemId: 'future-instrument',
+      ),
+      EquipmentMountSignalState.neutral,
+    );
+    expect(
+      EquipmentMountSignalCatalog.stateFor(
+        slotId: 'future-slot',
+        status: 'EQUIPPED',
+        itemId: 'resonance-compass',
+      ),
+      EquipmentMountSignalState.neutral,
+    );
   });
 
   testWidgets(

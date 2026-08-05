@@ -7,6 +7,12 @@ enum EquipmentMountSignalKind { navigation, unknown }
 
 enum EquipmentMountItemKind { empty, resonanceCompass, unknown }
 
+enum EquipmentMountSignalState {
+  navigationEmpty,
+  resonanceCompassMounted,
+  neutral,
+}
+
 /// Presentation identities for server-authored equipment slots and items.
 ///
 /// Only exact stable IDs select a known mount or instrument. Player-facing
@@ -25,6 +31,20 @@ abstract final class EquipmentMountSignalCatalog {
       null => EquipmentMountItemKind.empty,
       'resonance-compass' => EquipmentMountItemKind.resonanceCompass,
       _ => EquipmentMountItemKind.unknown,
+    };
+  }
+
+  static EquipmentMountSignalState stateFor({
+    required String slotId,
+    required String status,
+    required String? itemId,
+  }) {
+    return switch ((slotId, status, itemId)) {
+      ('NAVIGATION', 'EMPTY', null) =>
+        EquipmentMountSignalState.navigationEmpty,
+      ('NAVIGATION', 'EQUIPPED', 'resonance-compass') =>
+        EquipmentMountSignalState.resonanceCompassMounted,
+      _ => EquipmentMountSignalState.neutral,
     };
   }
 }
@@ -57,6 +77,12 @@ class EquipmentMountSignal extends StatelessWidget {
     );
     final EquipmentMountItemKind itemKind =
         EquipmentMountSignalCatalog.itemKindFor(itemId);
+    final EquipmentMountSignalState state =
+        EquipmentMountSignalCatalog.stateFor(
+          slotId: slotId,
+          status: status,
+          itemId: itemId,
+        );
 
     return ExcludeSemantics(
       child: RepaintBoundary(
@@ -73,6 +99,7 @@ class EquipmentMountSignal extends StatelessWidget {
               painter: _EquipmentMountSignalPainter(
                 kind: kind,
                 itemKind: itemKind,
+                state: state,
                 mounted: status == 'EQUIPPED',
                 lumen: colors.primary,
                 energy: palette.energy,
@@ -94,6 +121,7 @@ class _EquipmentMountSignalPainter extends CustomPainter {
   const _EquipmentMountSignalPainter({
     required this.kind,
     required this.itemKind,
+    required this.state,
     required this.mounted,
     required this.lumen,
     required this.energy,
@@ -106,6 +134,7 @@ class _EquipmentMountSignalPainter extends CustomPainter {
 
   final EquipmentMountSignalKind kind;
   final EquipmentMountItemKind itemKind;
+  final EquipmentMountSignalState state;
   final bool mounted;
   final Color lumen;
   final Color energy;
@@ -127,11 +156,11 @@ class _EquipmentMountSignalPainter extends CustomPainter {
     final Color identityAccent = kind == EquipmentMountSignalKind.navigation
         ? resonance
         : foreground;
-    final Color stateAccent = mounted
-        ? itemKind == EquipmentMountItemKind.resonanceCompass
-              ? energy
-              : lumen
-        : identityAccent;
+    final Color stateAccent = switch (state) {
+      EquipmentMountSignalState.navigationEmpty => identityAccent,
+      EquipmentMountSignalState.resonanceCompassMounted => energy,
+      EquipmentMountSignalState.neutral => foreground,
+    };
     final RRect frame = RRect.fromRectAndRadius(
       (Offset.zero & size).deflate(unit * 0.025),
       Radius.circular(unit * 0.2),
@@ -369,6 +398,7 @@ class _EquipmentMountSignalPainter extends CustomPainter {
   bool shouldRepaint(covariant _EquipmentMountSignalPainter oldDelegate) {
     return oldDelegate.kind != kind ||
         oldDelegate.itemKind != itemKind ||
+        oldDelegate.state != state ||
         oldDelegate.mounted != mounted ||
         oldDelegate.lumen != lumen ||
         oldDelegate.energy != energy ||
