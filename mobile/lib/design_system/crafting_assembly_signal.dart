@@ -66,9 +66,7 @@ class CraftingAssemblySignal extends StatelessWidget {
     return ExcludeSemantics(
       child: RepaintBoundary(
         child: SizedBox(
-          key: Key(
-            'crafting-assembly-signal-$recipeId-${kind.name}-$status',
-          ),
+          key: Key('crafting-assembly-signal-$recipeId-${kind.name}-$status'),
           width: double.infinity,
           height: height,
           child: CustomPaint(
@@ -215,22 +213,14 @@ class _CraftingAssemblySignalPainter extends CustomPainter {
       ..color = identityAccent.withValues(alpha: 0.2);
     final Offset center = Offset(size.width * 0.53, size.height * 0.5);
     canvas.drawArc(
-      Rect.fromCenter(
-        center: center,
-        width: unit * 1.38,
-        height: unit * 0.72,
-      ),
+      Rect.fromCenter(center: center, width: unit * 1.38, height: unit * 0.72),
       math.pi * 0.12,
       math.pi * 0.58,
       false,
       field,
     );
     canvas.drawArc(
-      Rect.fromCenter(
-        center: center,
-        width: unit * 1.38,
-        height: unit * 0.72,
-      ),
+      Rect.fromCenter(center: center, width: unit * 1.38, height: unit * 0.72),
       math.pi * 1.1,
       math.pi * 0.48,
       false,
@@ -247,10 +237,7 @@ class _CraftingAssemblySignalPainter extends CustomPainter {
     }
     return List<Offset>.generate(count, (int index) {
       final double fraction = index / (count - 1);
-      return Offset(
-        size.width * 0.16,
-        size.height * (0.23 + fraction * 0.54),
-      );
+      return Offset(size.width * 0.16, size.height * (0.23 + fraction * 0.54));
     });
   }
 
@@ -383,10 +370,7 @@ class _CraftingAssemblySignalPainter extends CustomPainter {
       center,
       radius,
       Paint()
-        ..color = Color.alphaBlend(
-          resonance.withValues(alpha: 0.16),
-          surface,
-        ),
+        ..color = Color.alphaBlend(resonance.withValues(alpha: 0.16), surface),
     );
     canvas.drawCircle(center, radius, ring);
     canvas.drawCircle(center, radius * 0.62, ring);

@@ -10,9 +10,7 @@ void main() {
       CraftingAssemblySignalKind.resonanceCompass,
     );
     expect(
-      CraftingAssemblySignalCatalog.kindFor(
-        'Резонансный компас',
-      ),
+      CraftingAssemblySignalCatalog.kindFor('Резонансный компас'),
       CraftingAssemblySignalKind.unknown,
     );
     expect(
@@ -100,9 +98,7 @@ void main() {
       );
     }
     expect(
-      find.bySemanticsLabel(
-        RegExp('рецепт|ингредиент|материал'),
-      ),
+      find.bySemanticsLabel(RegExp('рецепт|ингредиент|материал')),
       findsNothing,
     );
     expect(tester.takeException(), isNull);
