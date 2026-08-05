@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
@@ -208,9 +209,10 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
     public Optional<EventResultAcknowledgementResult> acknowledgeResult(
             String userId,
             UUID receiptId,
-            Instant serverTime
+            Supplier<Instant> serverTimeSupplier
     ) {
         accountDeletionRegistry.requireActive(userId);
+        Instant serverTime = serverTimeSupplier.get();
         List<EventResultAcknowledgementResult> acknowledged = jdbcTemplate.query("""
                 UPDATE processed_event_resolution
                 SET acknowledged_at = GREATEST(server_time, ?)

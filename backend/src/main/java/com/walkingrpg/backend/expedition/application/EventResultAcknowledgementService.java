@@ -1,7 +1,6 @@
 package com.walkingrpg.backend.expedition.application;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -30,8 +29,11 @@ public class EventResultAcknowledgementService {
             UUID receiptId
     ) {
         requireText(userId, "userId");
-        Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
-        return repository.acknowledgeResult(userId, receiptId, serverTime)
+        return repository.acknowledgeResult(
+                        userId,
+                        receiptId,
+                        () -> clock.instant().truncatedTo(ChronoUnit.MICROS)
+                )
                 .orElseThrow(() -> new EventResultReceiptNotFoundException(receiptId));
     }
 

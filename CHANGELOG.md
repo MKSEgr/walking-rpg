@@ -163,6 +163,9 @@
 
 ### Changed
 
+- `serverTime` нового event-result acknowledgement теперь фиксируется после
+  account-deletion subject lock: durable ACK и первый onboarding milestone не
+  могут предшествовать уже завершённой serialized account mutation;
 - `serverTime` нового event resolution теперь фиксируется после общего
   user+expedition lock: progression, material reward, expedition transition и
   durable result не могут предшествовать уже завершённой serialized mutation;

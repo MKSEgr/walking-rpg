@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
@@ -350,6 +351,78 @@ class EventResolutionIntegrationTest {
     }
 
     @Test
+    void shouldTimestampAcknowledgementAfterWaitingForAccountLock()
+            throws Exception {
+        String userId = "ack-lock-time-user";
+        prepareFirstEvent(userId);
+        EventResolutionResult event = eventResolutionService.resolve(command(
+                userId,
+                StarterExpeditionContent.FIRST_EVENT_ID,
+                "analyze-signal",
+                "ack-lock-time-event"
+        ));
+        Instant lockReleaseTime = event.serverTime().plusSeconds(30);
+
+        MutableClock clock = new MutableClock(lockReleaseTime.minusSeconds(30));
+        EventResultAcknowledgementService orderedService =
+                new EventResultAcknowledgementService(
+                        eventResolutionRepository,
+                        clock
+                );
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        EventResultAcknowledgementResult result;
+        try {
+            try (Connection blocker = dataSource.getConnection()) {
+                blocker.setAutoCommit(false);
+                try (PreparedStatement lock = blocker.prepareStatement("""
+                        SELECT pg_advisory_xact_lock(hashtextextended(?, 97))
+                        """)) {
+                    lock.setString(1, accountLockKey(userId));
+                    lock.execute();
+                }
+
+                Future<EventResultAcknowledgementResult> pending = executor.submit(() ->
+                        transaction.execute(status ->
+                                orderedService.acknowledge(
+                                        userId,
+                                        event.receiptId()
+                                )
+                        )
+                );
+                awaitAdvisoryLockWait();
+                clock.set(lockReleaseTime);
+                blocker.commit();
+                result = pending.get(10, TimeUnit.SECONDS);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertEquals(lockReleaseTime, result.acknowledgedAt());
+        assertEquals(lockReleaseTime, result.serverTime());
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT acknowledged_at
+                FROM processed_event_resolution
+                WHERE user_id = ?
+                  AND receipt_id = ?
+                """, userId, event.receiptId()));
+        assertEquals(lockReleaseTime, timestamp("""
+                SELECT occurred_at
+                FROM first_journey_milestone
+                WHERE user_id = ?
+                  AND milestone = 'FIRST_EVENT_RESULT_ACKNOWLEDGED'
+                """, userId));
+
+        clock.set(lockReleaseTime.plusSeconds(30));
+        EventResultAcknowledgementResult replayed = transaction.execute(status ->
+                orderedService.acknowledge(userId, event.receiptId())
+        );
+        assertEquals(result, replayed);
+    }
+
+    @Test
     void shouldRecordLegacyAutoAcknowledgementWithoutInventingTiming() {
         String userId = "legacy-auto-ack-user";
         prepareFirstEvent(userId);
@@ -597,12 +670,12 @@ class EventResolutionIntegrationTest {
             public Optional<EventResultAcknowledgementResult> acknowledgeResult(
                     String userId,
                     UUID receiptId,
-                    Instant serverTime
+                    Supplier<Instant> serverTimeSupplier
             ) {
                 return eventResolutionRepository.acknowledgeResult(
                         userId,
                         receiptId,
-                        serverTime
+                        serverTimeSupplier
                 );
             }
         };
@@ -894,6 +967,10 @@ class EventResolutionIntegrationTest {
                 + userId
                 + ":"
                 + StarterExpeditionContent.EXPEDITION_ID;
+    }
+
+    private String accountLockKey(String userId) {
+        return userId.length() + ":" + userId;
     }
 
     private Instant timestamp(String sql, Object... arguments) {
