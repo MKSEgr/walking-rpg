@@ -157,6 +157,27 @@ supported and exactly matches the referenced server-catalog item; unknown IDs
 or cross-slot assignments reject the inconsistent snapshot instead of being
 silently reinterpreted by presentation.
 
+## First journey route signal
+
+The journal presents the accepted first-journey milestones as one quiet
+code-native route instead of a generic progress bar. Node order comes directly
+from `content.onboardingSteps`, while each completed state comes only from
+`completedOnboardingSteps`.
+
+The six current exact step IDs select welcome, Health permission, first sync,
+pet selection, first expedition and first decision marks. An unknown future ID
+receives a neutral constellation even when its display copy resembles a known
+step. The base trace preserves the accepted ordering; an illuminated segment
+appears only between two adjacent completed steps. It never selects a current
+step, predicts availability, completion timing or chapter topology.
+
+Painting is decorative and excluded from semantics. One summary exposes the
+literal completed count against the accepted step list, while every visible
+row states its own complete or incomplete status. The existing resume action,
+onboarding command ownership and authoritative reload remain unchanged. At
+compact width with enlarged text, the full-width signal stays above the
+vertical milestone list and two-line resume action.
+
 ## Pilot progression sigils
 
 The journal gives server-authored pilot skills and achievements a compact

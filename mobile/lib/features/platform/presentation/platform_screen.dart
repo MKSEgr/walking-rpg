@@ -10,6 +10,7 @@ import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
@@ -958,25 +959,34 @@ class _OnboardingCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          LinearProgressIndicator(value: snapshot.onboardingProgressValue),
+          FirstJourneyRouteSignal(steps: steps, completedSteps: completed),
           const SizedBox(height: 14),
           for (final String step in steps)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
-              child: Row(
-                children: <Widget>[
-                  Icon(
-                    completed.contains(step)
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    size: 20,
-                    color: completed.contains(step)
-                        ? colors.primary
-                        : colors.onSurfaceVariant,
+              child: Semantics(
+                key: Key('platform-onboarding-step-$step'),
+                container: true,
+                label:
+                    '${_onboardingNames[step] ?? step}: '
+                    '${completed.contains(step) ? 'завершено' : 'не завершено'}',
+                child: ExcludeSemantics(
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        completed.contains(step)
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        size: 20,
+                        color: completed.contains(step)
+                            ? colors.primary
+                            : colors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(_onboardingNames[step] ?? step)),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(_onboardingNames[step] ?? step)),
-                ],
+                ),
               ),
             ),
           if (!snapshot.userState.onboardingComplete) ...<Widget>[
