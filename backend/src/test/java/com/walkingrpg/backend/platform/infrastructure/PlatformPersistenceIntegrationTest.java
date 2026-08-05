@@ -1,5 +1,7 @@
 package com.walkingrpg.backend.platform.infrastructure;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,10 +12,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,6 +27,8 @@ import java.util.concurrent.TimeoutException;
 
 import javax.sql.DataSource;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivityBucket;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
@@ -141,7 +147,8 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
-    void shouldPersistPlatformStateAndReplayAfterServiceRestart() {
+    void shouldReplayPreStabilizationIndentedFingerprintAfterCompactRestart()
+            throws Exception {
         assertEquals(0, rowCount("app_user"));
         assertEquals(0, platformService.getSnapshot("platform-user").stateVersion());
         assertEquals(0, rowCount("app_user"));
@@ -153,6 +160,27 @@ class PlatformPersistenceIntegrationTest {
         );
         PlatformCommandResponse first = platformService.execute("platform-user", request);
 
+        ObjectMapper historicalObjectMapper = JsonMapper.builder()
+                .findAndAddModules()
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
+        String historicalFingerprint = previousApiMapperFingerprint(
+                historicalObjectMapper,
+                request.commandType(),
+                request.payload()
+        );
+        jdbcTemplate.update("""
+                UPDATE processed_roadmap_command
+                SET request_fingerprint = ?
+                WHERE user_id = ?
+                  AND command_type = ?
+                  AND idempotency_key = ?
+                """,
+                historicalFingerprint,
+                "platform-user",
+                request.commandType(),
+                request.idempotencyKey()
+        );
         PlatformService restarted = new PlatformService(
                 platformRepository,
                 contentCatalog,
@@ -171,6 +199,11 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(1, rowCount("processed_roadmap_command"));
         assertEquals(1, rowCount("platform_event"));
         assertEquals(1, milestoneCount("platform-user", "JOURNEY_STARTED"));
+        assertEquals(historicalFingerprint, scalarString("""
+                SELECT request_fingerprint
+                FROM processed_roadmap_command
+                WHERE user_id = 'platform-user'
+                """));
         assertEquals("welcome", jdbcTemplate.queryForObject("""
                 SELECT state_json -> 'completedOnboardingSteps' ->> 0
                 FROM roadmap_user_state
@@ -235,7 +268,6 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(2, rowCount("platform_event"));
         assertEquals(
                 PlatformCommandFingerprint.sha256(
-                        objectMapper,
                         "RECORD_COMPASS_IMPRESSION",
                         reorderedPayload
                 ),
@@ -294,7 +326,6 @@ class PlatformPersistenceIntegrationTest {
             assertEquals("BUY_COSMETIC", first.commandType());
             assertEquals(
                     PlatformCommandFingerprint.sha256(
-                            objectMapper,
                             "BUY_COSMETIC",
                             payload
                     ),
@@ -1778,6 +1809,21 @@ class PlatformPersistenceIntegrationTest {
 
     private String scalarString(String sql) {
         return jdbcTemplate.queryForObject(sql, String.class);
+    }
+
+    private String previousApiMapperFingerprint(
+            ObjectMapper mapper,
+            String commandType,
+            Map<String, Object> payload
+    ) throws Exception {
+        Map<String, Object> envelope = new TreeMap<>();
+        envelope.put("commandType", commandType);
+        envelope.put("payload", new TreeMap<>(payload));
+        byte[] bytes = mapper.writeValueAsString(envelope)
+                .getBytes(StandardCharsets.UTF_8);
+        return HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(bytes)
+        );
     }
 
     @SuppressWarnings("unchecked")

@@ -119,7 +119,6 @@ public class PlatformService {
                 request.idempotencyKey()
         );
         String fingerprint = PlatformCommandFingerprint.sha256(
-                objectMapper,
                 commandType,
                 request.payload()
         );
@@ -145,7 +144,6 @@ public class PlatformService {
                     .orElse(null);
             if (legacy != null) {
                 String legacyFingerprint = PlatformCommandFingerprint.sha256(
-                        objectMapper,
                         LEGACY_BUY_COSMETIC_COMMAND,
                         request.payload()
                 );
@@ -244,7 +242,6 @@ public class PlatformService {
                 canonicalScope.idempotencyKey()
         );
         String legacyFingerprint = PlatformCommandFingerprint.sha256(
-                objectMapper,
                 LEGACY_BUY_COSMETIC_COMMAND,
                 payload
         );
