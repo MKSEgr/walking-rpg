@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/design_system/crafting_assembly_signal.dart';
 import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
@@ -1231,10 +1232,11 @@ class _ExpeditionHero extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
-              ExpeditionBadge(
+              ExpeditionNodeSignal(
                 key: const Key('home-current-node-badge'),
-                label: snapshot.currentNodeName,
-                icon: completed ? Icons.flag_outlined : Icons.radar,
+                nodeId: snapshot.currentNodeId,
+                nodeName: snapshot.currentNodeName,
+                completed: completed,
               ),
               if (!hasCompanionPortrait)
                 ExpeditionBadge(

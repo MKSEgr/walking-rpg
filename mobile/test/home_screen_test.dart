@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
@@ -67,6 +68,22 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const Key('home-current-node-badge')), findsOneWidget);
+    final Finder nodeSignal = find.byType(ExpeditionNodeSignal);
+    expect(nodeSignal, findsOneWidget);
+    final ExpeditionNodeSignal signal = tester.widget<ExpeditionNodeSignal>(
+      nodeSignal,
+    );
+    expect(signal.nodeId, 'outer-beacon');
+    expect(signal.nodeName, 'Внешний маяк');
+    expect(signal.completed, isFalse);
+    expect(
+      find.byKey(const Key('expedition-node-mark-outer-beacon-outerBeacon')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Текущий узел «Внешний маяк»'),
+      findsOneWidget,
+    );
     final Finder companionBadge = find.byKey(
       const Key('home-active-companion-badge'),
     );
@@ -103,6 +120,36 @@ void main() {
       find.bySemanticsLabel('Рост спутника: Малыш, этап 1 из 3'),
       findsOneWidget,
     );
+
+    semantics.dispose();
+  });
+
+  testWidgets('future current node keeps neutral landmark despite known copy', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: HomeScreen(loader: () async => _futureNode()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('expedition-node-signal-future-node-v2-unknown')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('expedition-node-mark-future-node-v2-outerBeacon')),
+      findsNothing,
+    );
+    expect(
+      find.bySemanticsLabel('Текущий узел «Внешний маяк»'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
 
     semantics.dispose();
   });
@@ -242,6 +289,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+
+    final Finder nodeSignal = find.byKey(
+      const Key('expedition-node-signal-ash-orbit-ashOrbit'),
+    );
+    expect(nodeSignal, findsOneWidget);
+    expect(tester.getSize(nodeSignal).width, lessThanOrEqualTo(236));
 
     await _scrollAboveStickyAction(
       tester,
@@ -1508,6 +1561,34 @@ const DailyGoalPolicy _adaptiveGoalPolicy = DailyGoalPolicy(
   minimumGoal: 2000,
   maximumGoal: 12000,
 );
+
+HomeSnapshot _futureNode() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 3200,
+    dailyGoal: 6000,
+    availableEnergy: 16,
+    activityStateVersion: 2,
+    economyVersion: 2,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v2',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'future-node-v2',
+    currentNodeName: 'Внешний маяк',
+    expeditionProgress: 10,
+    requiredEnergy: 40,
+    expeditionStatus: 'IN_PROGRESS',
+    expeditionVersion: 22,
+    unlockedEvent: null,
+    pilotName: 'Навигатор',
+    pilotLevel: 2,
+    petName: 'Искра',
+    petLevel: 2,
+  );
+}
 
 HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
   return HomeSnapshot(
