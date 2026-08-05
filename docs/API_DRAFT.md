@@ -359,6 +359,10 @@ TOTAL_DECREASED
 сетевыми попытками. Поэтому backend создаёт отдельный shadow-mode risk
 assessment для каждого exact replay до возврата сохранённого response; replay
 не повторяет ENERGY credit и не меняет activity high-watermark.
+Risk assessment использует checked arithmetic для суммы `buckets[].steps` и
+порога резкого `8×` роста. Если сумма bucket-ов не помещается в signed `long`,
+она fail-closed учитывается как `BUCKET_TOTAL_MISMATCH`; переполнение порога не
+может скрыть mismatch или создать ложный multiplier signal.
 
 `localDate` может быть текущей или прошлой датой в заявленной IANA `timeZone`.
 Дата, которая ещё не наступила по серверному времени в этой зоне, отклоняется

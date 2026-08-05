@@ -262,6 +262,10 @@ state или ENERGY ledger entry. Числовые fixed offsets не замен
 `attestation` остаётся request-scoped: каждый exact replay повторно создаёт
 shadow-mode risk assessment до idempotency response lookup, но не меняет
 сохранённый response, activity high-watermark или ENERGY ledger.
+Сумма диагностических bucket-ов и `8×` sudden-growth threshold считаются с
+проверкой переполнения: не представимая в `long` сумма всегда даёт
+`BUCKET_TOTAL_MISMATCH`, а переполненный multiplier не превращается в ложный
+risk signal.
 
 ### Первая глава стартовой экспедиции
 

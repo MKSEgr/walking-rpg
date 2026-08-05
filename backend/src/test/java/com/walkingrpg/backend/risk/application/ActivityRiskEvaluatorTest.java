@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import com.walkingrpg.backend.activity.domain.ActivityBucket;
 import com.walkingrpg.backend.activity.domain.ActivityDayState;
@@ -92,6 +93,56 @@ class ActivityRiskEvaluatorTest {
         assertEquals(20, assessment.riskScore());
         assertEquals(ActivityRiskDecision.ACCEPT, assessment.decision());
         assertTrue(assessment.signals().contains("TOTAL_DECREASED"));
+    }
+
+    @Test
+    void shouldNotLetBucketSumOverflowHideMismatch() {
+        long wrappingBucketSteps = 192_153_584_101_141_162L;
+        List<ActivityBucket> buckets = IntStream.range(0, 96)
+                .mapToObj(index -> new ActivityBucket(
+                        Instant.MIN,
+                        Instant.MAX,
+                        index == 95
+                                ? wrappingBucketSteps + 64
+                                : wrappingBucketSteps
+                ))
+                .toList();
+
+        ActivityRiskAssessment assessment = evaluator.evaluate(
+                command(0, buckets, null),
+                ActivityDayState.initial(),
+                result(0, 0, ActivityRiskStatus.NO_NEW_ACTIVITY),
+                NOW
+        );
+
+        assertEquals(30, assessment.riskScore());
+        assertEquals(ActivityRiskDecision.REVIEW, assessment.decision());
+        assertEquals(
+                List.of("ATTESTATION_MISSING", "BUCKET_TOTAL_MISMATCH"),
+                assessment.signals()
+        );
+    }
+
+    @Test
+    void shouldNotInventMultiplierGrowthWhenThresholdExceedsLongRange() {
+        long previousTotal = Long.MAX_VALUE / 4;
+        long acceptedDelta = 20_000;
+        long authoritativeTotal = previousTotal + acceptedDelta;
+
+        ActivityRiskAssessment assessment = evaluator.evaluate(
+                command(authoritativeTotal, List.of(), "signed-attestation"),
+                new ActivityDayState(previousTotal, 1),
+                result(
+                        authoritativeTotal,
+                        acceptedDelta,
+                        ActivityRiskStatus.ACCEPTED
+                ),
+                NOW
+        );
+
+        assertEquals(45, assessment.riskScore());
+        assertEquals(ActivityRiskDecision.REVIEW, assessment.decision());
+        assertEquals(List.of("DAILY_TOTAL_EXTREME"), assessment.signals());
     }
 
     private ActivitySyncCommand command(
