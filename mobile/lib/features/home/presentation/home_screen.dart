@@ -8,6 +8,7 @@ import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibi
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/crafting_assembly_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
@@ -2134,6 +2135,16 @@ class _CraftingRecipeView extends StatelessWidget {
           highlighted: recipe.canCraft || recipe.isCrafted,
         ),
         const SizedBox(height: 12),
+        CraftingAssemblySignal(
+          recipeId: recipe.recipeId,
+          status: recipe.status,
+          ingredientAvailability: recipe.ingredients
+              .map(
+                (HomeCraftingIngredient ingredient) => ingredient.isAvailable,
+              )
+              .toList(growable: false),
+        ),
+        const SizedBox(height: 14),
         for (final HomeCraftingIngredient ingredient
             in recipe.ingredients) ...<Widget>[
           Semantics(

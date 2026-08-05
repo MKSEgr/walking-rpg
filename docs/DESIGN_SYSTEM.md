@@ -296,6 +296,24 @@ sources remain legible at `56-72 px`; compact item identities place art above
 copy and the existing full-width action instead of compressing text beside the
 image.
 
+## Crafting assembly signal
+
+The workshop gives the existing `resonance-compass-v1` recipe its own code-
+native assembly contour. Accepted ingredient nodes converge on a resonance
+instrument core and then on one output signal. The known contour is selected
+only from the exact server-owned `recipeId`; an unknown future recipe keeps a
+neutral constellation core even when its display name resembles the compass.
+
+Ingredient node illumination comes only from the literal accepted available
+and required quantities already shown in the adjacent rows. The output trace is
+illuminated only by the accepted `READY` or `CRAFTED` status; the client does not
+derive recipe readiness from the painted inputs. A decorative cap limits a
+large future ingredient list to four nodes and an overflow mark, while the full
+server list and every exact quantity remain visible and accessible below it.
+The signal is excluded from semantics and owns no craft action, impression,
+outbox, idempotency or authoritative-reload behavior. Its fixed-height field
+remains width-flexible at `320 px / 1.6×` text scale.
+
 ## Expedition event scenes
 
 Four pivotal first-chapter events establish the illustrated scene vocabulary:
