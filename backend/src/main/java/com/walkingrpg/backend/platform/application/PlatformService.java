@@ -1173,6 +1173,10 @@ public class PlatformService {
         config.put(
                 "sandboxPaymentsEnabled",
                 paymentProvider.isAvailable()
+                        && responseConfig != null
+                        && Boolean.TRUE.equals(
+                                responseConfig.get("sandboxPaymentsEnabled")
+                        )
                         && activeConfig != null
                         && Boolean.TRUE.equals(activeConfig.get("sandboxPaymentsEnabled"))
         );

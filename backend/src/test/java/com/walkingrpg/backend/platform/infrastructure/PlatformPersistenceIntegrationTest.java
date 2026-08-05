@@ -522,6 +522,76 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldNotExpandPersistedReplayProviderCapabilityAfterEnable() {
+        String userId = "provider-capability-replay-user";
+        PlatformCommandRequest request = new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "provider-capability-monotonic-replay",
+                Map.of("stepId", "welcome")
+        );
+        Map<String, Object> previousRemoteConfig =
+                platformRepository.activeRemoteConfig();
+        platformAdminService.updateRemoteConfig(
+                "provider-capability-replay-test",
+                "provider-capability-disabled",
+                paymentRemoteConfig(false)
+        );
+
+        try {
+            PlatformCommandResponse completed = platformService.execute(
+                    userId,
+                    request
+            );
+            long eventCount = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM platform_event
+                    WHERE user_id = ?
+                    """, Long.class, userId);
+            platformAdminService.updateRemoteConfig(
+                    "provider-capability-replay-test",
+                    "provider-capability-enabled",
+                    paymentRemoteConfig(true)
+            );
+            PlatformService restarted = new PlatformService(
+                    platformRepository,
+                    contentCatalog,
+                    progressFactsProvider,
+                    economyService,
+                    paymentProvider,
+                    objectMapper,
+                    clock,
+                    progressionService
+            );
+
+            PlatformCommandResponse replayed = restarted.execute(userId, request);
+
+            assertFalse((Boolean) completed.snapshot().remoteConfig()
+                    .get("sandboxPaymentsEnabled"));
+            assertEquals(completed, replayed);
+            assertTrue((Boolean) restarted.getSnapshot(userId).remoteConfig()
+                    .get("sandboxPaymentsEnabled"));
+            assertEquals(1, rowCount("processed_roadmap_command"));
+            assertEquals(eventCount, jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM platform_event
+                    WHERE user_id = ?
+                    """, Long.class, userId));
+            assertEquals("false", scalarString("""
+                    SELECT response_json -> 'snapshot' -> 'remoteConfig'
+                            ->> 'sandboxPaymentsEnabled'
+                    FROM processed_roadmap_command
+                    WHERE user_id = 'provider-capability-replay-user'
+                    """));
+        } finally {
+            platformAdminService.updateRemoteConfig(
+                    "provider-capability-replay-test",
+                    "provider-capability-restored",
+                    previousRemoteConfig
+            );
+        }
+    }
+
+    @Test
     void shouldPersistIndependentCosmeticSlotsAcrossServiceRestart() {
         String userId = "cosmetic-slot-user";
         Map<String, Object> previousRemoteConfig =

@@ -10,6 +10,7 @@ import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
@@ -130,6 +131,29 @@ void main() {
         'Глава из ${initial.content.chapterNodes} узлов · '
         'состояние ${initial.stateVersion}',
       ),
+      findsOneWidget,
+    );
+
+    final Finder firstJourney = find.byKey(
+      const Key('first-journey-route-signal-1-6'),
+    );
+    await tester.scrollUntilVisible(
+      firstJourney,
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.byType(FirstJourneyRouteSignal), findsOneWidget);
+    expect(firstJourney, findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Первый путь: завершено 1 из 6 этапов'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Познакомиться с навигатором: завершено'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Разрешить чтение активности: не завершено'),
       findsOneWidget,
     );
 
@@ -299,6 +323,7 @@ void main() {
 
     for (final Key key in const <Key>[
       Key('platform-onboarding-compact'),
+      Key('first-journey-route-signal-1-6'),
       Key('platform-weekly-route-compact'),
       Key('weekly-route-signal-weekly-route-1-firstSignal'),
       Key('platform-pet-compact-spark-v1'),
@@ -388,6 +413,45 @@ void main() {
       find.byKey(const Key('platform-pet-portrait-spark-v1')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('keeps onboarding counts tied to the accepted step list', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final PlatformSnapshot initial = platformSnapshot(
+      completedOnboardingSteps: const <String>['welcome', 'retired-step'],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => initial,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder firstJourney = find.byKey(
+      const Key('first-journey-route-signal-1-6'),
+    );
+    await tester.scrollUntilVisible(
+      firstJourney,
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(firstJourney, findsOneWidget);
+    expect(find.text('1/6'), findsOneWidget);
+    expect(find.text('2/6'), findsNothing);
+    expect(
+      find.bySemanticsLabel('Первый путь: завершено 1 из 6 этапов'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets('authoritative generation reloads journal without losing input', (

@@ -858,7 +858,9 @@ provider/feature gate, `weeklyRouteEnergy`, derived achievements и всех
 целиком на исходной конфигурации, а следующая команда или read endpoint уже
 видит новую. Exact replay по-прежнему возвращает сохранённую business-проекцию;
 текущая доступность deployment provider может только fail-closed заменить
-capability field на `false` без повторной мутации.
+capability field на `false` без повторной мутации. Сохранённое
+`sandboxPaymentsEnabled=false` не становится `true`, даже если более поздняя
+admin-публикация и текущий provider уже разрешают sandbox payments.
 
 Правила первого пути:
 

@@ -690,6 +690,29 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldNotExpandReplayProviderCapabilityAfterEnable() {
+        platformRepository.setRemoteConfig(remoteConfig(false, false));
+        PlatformCommandRequest request = command(
+                "SELECT_PET",
+                "provider-capability-monotonic-replay",
+                Map.of("petId", "moss-v1")
+        );
+        PlatformCommandResponse completed = service.execute("provider-user", request);
+        int eventCount = platformRepository.eventCount();
+
+        platformRepository.setRemoteConfig(remoteConfig(true, false));
+        PlatformCommandResponse replayed = service.execute("provider-user", request);
+
+        assertFalse((Boolean) completed.snapshot().remoteConfig()
+                .get("sandboxPaymentsEnabled"));
+        assertEquals(completed, replayed);
+        assertTrue((Boolean) service.getSnapshot("provider-user").remoteConfig()
+                .get("sandboxPaymentsEnabled"));
+        assertEquals(1, platformRepository.processedCommandCount());
+        assertEquals(eventCount, platformRepository.eventCount());
+    }
+
+    @Test
     void shouldProjectOnlyEffectiveProviderCapabilities() {
         platformRepository.setRemoteConfig(remoteConfig(true, true));
         PlatformService disabledService = service(new DisabledPaymentProvider());

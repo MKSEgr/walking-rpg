@@ -400,7 +400,10 @@ backend продолжает менять только compatibility pointer и 
    JSON object и настройки общего API `ObjectMapper` не меняют persistent
    business fingerprint, а array order остаётся значимым. Bounded upgrade
    candidates сохраняют replay rows предыдущего binary с compact/indented API
-   mapper hash, но никогда не становятся fingerprint новой команды.
+   mapper hash, но никогда не становятся fingerprint новой команды. Единственная
+   runtime-проекция provider capability монотонно fail-closed: исходный `false`
+   сохраняется, а исходный `true` может стать `false`, если текущие config или
+   provider больше не разрешают capability.
 10. Alias имени cosmetic purchase не меняет idempotency scope; тот же key с
     другим `cosmeticId` конфликтует до provider call.
 10a. Cosmetic ID не выбирает slot на клиенте; один пользователь имеет не более
@@ -534,6 +537,10 @@ Backend возвращает effective `sandboxPaymentsEnabled`: remote flag с�
 включённым только при доступном payment provider. Mobile строит purchase action
 только вне release build и для свежего snapshot с effective value `true`;
 cached snapshot остаётся read-only и не показывает эту action.
+Exact command replay дополнительно требует, чтобы capability была `true` в
+сохранённом response: более поздняя admin-публикация не расширяет ранее выданный
+`false`, а отключение config/provider по-прежнему может понизить `true` до
+`false`.
 `backgroundHealthSyncEnabled` также принудительно возвращается как `false`:
 этот срез не выдаёт foreground/resume fallback за production background
 delivery.
