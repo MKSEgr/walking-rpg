@@ -1213,6 +1213,7 @@ void main() {
   testWidgets(
     'home screen keeps result visible until acknowledgement and reloads',
     (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
       int loads = 0;
       String? sentEventId;
       String? sentChoiceId;
@@ -1319,7 +1320,20 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Стабильный резонанс'), findsOneWidget);
-      expect(find.text('Следующий узел: Пепельная орбита'), findsOneWidget);
+      expect(find.text('СЛЕДУЮЩИЙ УЗЕЛ'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: pendingResult,
+          matching: find.byKey(
+            const Key('expedition-next-node-signal-ash-orbit-ashOrbit'),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Следующий узел «Пепельная орбита»'),
+        findsOneWidget,
+      );
 
       final Finder acknowledgementButton = find.byKey(
         const Key('pending-event-result-acknowledge'),
@@ -1355,6 +1369,7 @@ void main() {
         scrollable: find.byType(Scrollable),
       );
       expect(find.text('Люминовый осколок × 2'), findsOneWidget);
+      semantics.dispose();
     },
   );
 

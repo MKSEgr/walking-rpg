@@ -263,6 +263,14 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const Key('expedition-next-node-signal-lumen-gate-lumenGate')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Следующий узел «Люминовые ворота»'),
+      findsOneWidget,
+    );
     await _bringIntoView(tester, find.byKey(const Key('first-journey-finish')));
     await _bringIntoView(
       tester,
