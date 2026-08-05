@@ -100,6 +100,8 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(tester.widget<Semantics>(known).properties.value, isNull);
+    expect(tester.widget<Semantics>(fallback).properties.value, isNull);
     expect(find.text('40 / 100 ENERGY'), findsOneWidget);
     expect(find.text('140 / 100 ENERGY'), findsOneWidget);
     expect(tester.takeException(), isNull);
