@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/profile_cosmetic_art.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/squad_formation_signal.dart';
@@ -857,6 +858,154 @@ void main() {
     );
     _expectNoLayoutException(tester);
 
+    semantics.dispose();
+  });
+
+  testWidgets(
+    'journal applies exact profile cosmetic and keeps compact previews readable',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      final PlatformSnapshot snapshot = platformSnapshot(
+        ownedCosmetics: const <String>[
+          'pilot-scarf',
+          ProfileCosmeticIds.trailBanner,
+          ProfileCosmeticIds.dawnFrame,
+        ],
+        equippedCosmetics: const <String, String>{
+          'PILOT': CharacterCosmeticIds.pilotScarf,
+          'PROFILE': ProfileCosmeticIds.dawnFrame,
+        },
+        includeProfileCosmetics: true,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WalkingRpgTheme.dark(),
+          builder: (BuildContext context, Widget? child) {
+            return MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.6)),
+              child: child!,
+            );
+          },
+          home: PlatformScreen(
+            loader: () async => snapshot,
+            homeLoader: () async => HomeSnapshot.demo,
+            recordExperimentExposures: false,
+            sandboxPaymentsSupported: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final ProfileCosmeticFrame frame = tester.widget<ProfileCosmeticFrame>(
+        find.byKey(const Key('platform-profile-cosmetic-frame')),
+      );
+      expect(frame.cosmeticId, ProfileCosmeticIds.dawnFrame);
+      expect(
+        find.byKey(const Key('profile-cosmetic-frame-dawn-frame')),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(
+        find.byKey(const Key('platform-chapter-vista')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel('Туманный сектор, визуальный образ первой главы'),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(
+        find.byKey(const Key('platform-journal-crew')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel(
+          'Экипаж маршрута: пилот Навигатор и Искра. '
+          'Экипировано: Шарф навигатора, Рамка рассвета',
+        ),
+        findsOneWidget,
+      );
+
+      for (final String cosmeticId in const <String>[
+        ProfileCosmeticIds.trailBanner,
+        ProfileCosmeticIds.dawnFrame,
+      ]) {
+        final Finder preview = find.byKey(
+          Key('platform-cosmetic-preview-$cosmeticId'),
+        );
+        await _bringIntoView(tester, preview);
+        expect(
+          tester.widget<ProfileCosmeticPreview>(preview).cosmeticId,
+          cosmeticId,
+        );
+        expect(
+          find.byKey(Key('profile-cosmetic-preview-$cosmeticId')),
+          findsOneWidget,
+        );
+        if (cosmeticId == ProfileCosmeticIds.trailBanner) {
+          expect(
+            find.byKey(const Key('platform-equip-cosmetic-trail-banner')),
+            findsOneWidget,
+          );
+        } else {
+          expect(
+            find.byKey(const Key('platform-equipped-cosmetic-dawn-frame')),
+            findsOneWidget,
+          );
+        }
+        _expectNoLayoutException(tester);
+      }
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('journal applies legacy profile cosmetic pointer', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final Map<String, dynamic> json = platformSnapshotJson(
+      ownedCosmetics: const <String>[ProfileCosmeticIds.dawnFrame],
+      activeCosmeticId: ProfileCosmeticIds.dawnFrame,
+      includeProfileCosmetics: true,
+    );
+    final Map<String, dynamic> userState = Map<String, dynamic>.from(
+      json['userState']! as Map<String, dynamic>,
+    )..remove('equippedCosmetics');
+    json['userState'] = userState;
+    final PlatformSnapshot snapshot = PlatformSnapshot.fromJson(json);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => snapshot,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+          sandboxPaymentsSupported: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ProfileCosmeticFrame frame = tester.widget<ProfileCosmeticFrame>(
+      find.byKey(const Key('platform-profile-cosmetic-frame')),
+    );
+    expect(frame.cosmeticId, ProfileCosmeticIds.dawnFrame);
+    expect(
+      find.byKey(const Key('profile-cosmetic-frame-dawn-frame')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Экипаж маршрута: пилот Навигатор и Искра. '
+        'Экипировано: Рамка рассвета',
+      ),
+      findsOneWidget,
+    );
+    _expectNoLayoutException(tester);
     semantics.dispose();
   });
 

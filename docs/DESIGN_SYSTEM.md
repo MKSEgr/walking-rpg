@@ -157,6 +157,16 @@ supported and exactly matches the referenced server-catalog item; unknown IDs
 or cross-slot assignments reject the inconsistent snapshot instead of being
 silently reinterpreted by presentation.
 
+The two existing `PROFILE` cosmetics now have their own code-native route
+identity. `trail-banner` places a compact three-signal expedition banner over
+the journal vista, while `dawn-frame` adds an ENERGY sunrise frame around the
+same accepted chapter image. Their catalog cards show matching previews rather
+than the generic sparkle icon. The treatment is selected only from the exact
+server-owned `equippedCosmetics.PROFILE` value; the cosmetic name never selects
+art. Unknown future profile IDs keep the unmodified vista and receive a neutral
+constellation preview. Neither treatment changes chapter semantics, progress,
+topology, availability or any command boundary.
+
 ## First journey route signal
 
 The journal presents the accepted first-journey milestones as one quiet
