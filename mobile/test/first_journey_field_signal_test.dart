@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
@@ -214,6 +215,15 @@ void main() {
     await _bringIntoView(
       tester,
       find.byKey(const Key('first-journey-advance')),
+    );
+    expect(find.byType(ExpeditionProgressSignal), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key(
+          'expedition-progress-signal-starter-expedition-v1-outerBeacon',
+        ),
+      ),
+      findsOneWidget,
     );
     _expectNoLayoutException(tester);
 

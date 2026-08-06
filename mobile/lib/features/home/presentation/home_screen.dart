@@ -14,6 +14,7 @@ import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
@@ -1286,10 +1287,10 @@ class _ExpeditionHero extends StatelessWidget {
             ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
           ),
           const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: snapshot.expeditionProgressValue,
-            minHeight: 9,
-            color: palette.energy,
+          ExpeditionProgressSignal(
+            expeditionId: snapshot.expeditionId,
+            progress: snapshot.expeditionProgress,
+            target: snapshot.requiredEnergy,
           ),
           const SizedBox(height: 10),
           Text(

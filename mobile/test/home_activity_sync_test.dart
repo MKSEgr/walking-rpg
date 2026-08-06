@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
@@ -138,6 +139,15 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const Key('home-route-energy-compact')), findsOneWidget);
+    expect(find.byType(ExpeditionProgressSignal), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key(
+          'expedition-progress-signal-starter-expedition-v1-outerBeacon',
+        ),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const Key('home-expedition-team-compact')),
       findsOneWidget,
