@@ -1305,6 +1305,27 @@ void main() {
           of: pendingResult,
           matching: find.byKey(
             const Key(
+              'progression-gain-signal-pilotExperience-navigator-v1-'
+              'navigator',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: pendingResult,
+          matching: find.byKey(
+            const Key('progression-gain-signal-petBond-spark-v1-spark'),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: pendingResult,
+          matching: find.byKey(
+            const Key(
               'event-choice-signal-echo-vault-v1-stabilize-core-'
               'stabilize-active',
             ),
@@ -1370,6 +1391,57 @@ void main() {
       );
       expect(find.text('Люминовый осколок × 2'), findsOneWidget);
       semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'pending result keeps future progression subjects fully neutral',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WalkingRpgTheme.dark(),
+          home: HomeScreen(
+            loader: () async => _pendingEventResultHome(
+              resultPilotId: 'future-pilot-v2',
+              resultPetId: 'future-pet-v2',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(
+          const Key(
+            'progression-gain-signal-pilotExperience-future-pilot-v2-unknown',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key('progression-gain-signal-petBond-future-pet-v2-unknown'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'progression-gain-signal-pilotExperience-future-pilot-v2-'
+            'navigator',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key('progression-gain-signal-petBond-future-pet-v2-spark'),
+        ),
+        findsNothing,
+      );
+      expect(find.text('+30 XP · всего 90'), findsOneWidget);
+      expect(find.text('+8 связи · Искра: 23'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -2090,6 +2162,8 @@ HomeSnapshot _pendingEventResultHome({
   bool includePending = true,
   bool includeReadyEvent = false,
   HomeExpeditionEvent? unlockedEvent,
+  String resultPilotId = 'navigator-v1',
+  String resultPetId = 'spark-v1',
 }) {
   return HomeSnapshot(
     localDate: '2026-07-26',
@@ -2131,7 +2205,7 @@ HomeSnapshot _pendingEventResultHome({
       ),
     ],
     pendingEventResult: includePending
-        ? const PendingEventResult(
+        ? PendingEventResult(
             receiptId: '22222222-2222-2222-2222-222222222222',
             eventId: 'echo-vault-v1',
             eventTitle: 'Хранилище эха',
@@ -2140,7 +2214,7 @@ HomeSnapshot _pendingEventResultHome({
             outcomeTitle: 'Стабильный резонанс',
             outcomeSummary: 'Ядро перестало разрушаться.',
             pilot: EventPilotReward(
-              pilotId: 'navigator-v1',
+              pilotId: resultPilotId,
               name: 'Навигатор',
               level: 1,
               experienceGained: 30,
@@ -2149,14 +2223,14 @@ HomeSnapshot _pendingEventResultHome({
               version: 2,
             ),
             pet: EventPetReward(
-              petId: 'spark-v1',
+              petId: resultPetId,
               name: 'Искра',
               level: 1,
               bondGained: 8,
               bond: 23,
               version: 2,
             ),
-            material: EventMaterialReward(
+            material: const EventMaterialReward(
               itemId: 'lumen-shard',
               name: 'Люминовый осколок',
               description: 'Стабильный фрагмент светового ядра.',
@@ -2164,7 +2238,7 @@ HomeSnapshot _pendingEventResultHome({
               quantityAfter: 2,
               version: 1,
             ),
-            nextNode: EventNextNode(
+            nextNode: const EventNextNode(
               nodeId: 'ash-orbit',
               name: 'Пепельная орбита',
             ),

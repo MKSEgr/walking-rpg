@@ -17,6 +17,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
@@ -1692,24 +1693,24 @@ class _PendingEventResultCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(result.outcomeSummary),
           const SizedBox(height: 16),
-          _RewardLine(
-            leading: const SizedBox.square(
-              dimension: 44,
-              child: Icon(Icons.person_outline, size: 20),
+          ProgressionGainSignalLayout(
+            kind: ProgressionGainKind.pilotExperience,
+            subjectId: result.pilot.pilotId,
+            child: Text(
+              '+${result.pilot.experienceGained} XP · '
+              'всего ${result.pilot.currentExperience}',
+              style: Theme.of(context).textTheme.labelLarge,
             ),
-            text:
-                '+${result.pilot.experienceGained} XP · '
-                'всего ${result.pilot.currentExperience}',
           ),
           const SizedBox(height: 8),
-          _RewardLine(
-            leading: const SizedBox.square(
-              dimension: 44,
-              child: Icon(Icons.pets_outlined, size: 20),
+          ProgressionGainSignalLayout(
+            kind: ProgressionGainKind.petBond,
+            subjectId: result.pet.petId,
+            child: Text(
+              '+${result.pet.bondGained} связи · '
+              '${result.pet.name}: ${result.pet.bond}',
+              style: Theme.of(context).textTheme.labelLarge,
             ),
-            text:
-                '+${result.pet.bondGained} связи · '
-                '${result.pet.name}: ${result.pet.bond}',
           ),
           if (material != null) ...<Widget>[
             const SizedBox(height: 8),

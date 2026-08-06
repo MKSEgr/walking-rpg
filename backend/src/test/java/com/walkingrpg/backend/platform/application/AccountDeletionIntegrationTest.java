@@ -22,7 +22,9 @@ import java.util.concurrent.TimeoutException;
 
 import javax.sql.DataSource;
 
+import com.zaxxer.hikari.HikariDataSource;
 import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.expedition.application.EventResultAcknowledgementService;
 import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
@@ -275,6 +277,69 @@ class AccountDeletionIntegrationTest {
     }
 
     @Test
+    void shouldExportWithOneConnectionAndReleaseSessionLock() {
+        String userId = "single-connection-export-user";
+        seedAccount(userId);
+
+        try (HikariDataSource singleConnectionPool = new HikariDataSource()) {
+            singleConnectionPool.setJdbcUrl(POSTGRES.getJdbcUrl());
+            singleConnectionPool.setUsername(POSTGRES.getUsername());
+            singleConnectionPool.setPassword(POSTGRES.getPassword());
+            singleConnectionPool.setMaximumPoolSize(1);
+            singleConnectionPool.setMinimumIdle(0);
+            singleConnectionPool.setConnectionTimeout(1_000);
+            singleConnectionPool.setPoolName("account-export-single-connection");
+            JdbcTemplate singleConnectionJdbcTemplate =
+                    new JdbcTemplate(singleConnectionPool);
+            singleConnectionJdbcTemplate.setQueryTimeout(5);
+            AccountDeletionRegistry deletionRegistry =
+                    new AccountDeletionRegistry(singleConnectionJdbcTemplate);
+            AccountExportSnapshotTransaction exportTransaction =
+                    new AccountExportSnapshotTransaction(
+                            singleConnectionJdbcTemplate,
+                            deletionRegistry
+                    );
+
+            Map<String, Object> snapshot = exportTransaction.read(
+                    userId,
+                    jdbc -> Map.of(
+                            "users",
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM app_user WHERE user_id = ?",
+                                    Integer.class,
+                                    userId
+                            ),
+                            "isolation",
+                            jdbc.queryForObject(
+                                    "SHOW transaction_isolation",
+                                    String.class
+                            ),
+                            "readOnly",
+                            jdbc.queryForObject(
+                                    "SHOW transaction_read_only",
+                                    String.class
+                            )
+                    )
+            );
+
+            assertEquals(1, snapshot.get("users"));
+            assertEquals("repeatable read", snapshot.get("isolation"));
+            assertEquals("on", snapshot.get("readOnly"));
+            assertEquals(
+                    "COMPLETED",
+                    service.requestAccountDeletion(
+                            userId,
+                            "single-connection-export-deletion",
+                            "DELETE"
+                    ).status()
+            );
+        }
+
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(1, rowCount("account_deletion_receipt"));
+    }
+
+    @Test
     void shouldSerializeAccountExportWithDeletionForSameSubject() throws Exception {
         String userId = "export-deletion-race-user";
         seedAccount(userId);
@@ -370,7 +435,7 @@ class AccountDeletionIntegrationTest {
                         () -> service.exportAccount(userId)
                 );
                 export = exportTask;
-                awaitBlockedQuery("pg_advisory_xact_lock");
+                awaitBlockedQuery("pg_advisory_lock");
                 assertThrows(
                         TimeoutException.class,
                         () -> exportTask.get(250, TimeUnit.MILLISECONDS)
