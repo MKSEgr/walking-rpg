@@ -472,6 +472,27 @@ the neutral constellation. This handoff does not infer adjacency, route order
 or availability; it only repeats the server-provided ID and complete name, with
 separate next-node semantics and a decorative forward marker.
 
+## Expedition progress signals
+
+The main Home route and the guided first expedition share one code-native
+ENERGY trace instead of returning to a generic progress bar. The exact
+server-owned `starter-expedition-v1` ID selects the outer-beacon contour; a
+future expedition ID keeps a neutral constellation even when its name or node
+copy resembles the first chapter.
+
+The illuminated trace uses only the literal accepted
+`progress / requiredEnergy` ratio already shown beside it. Its five samples are
+decorative positions along one continuous measure, not chapter nodes, event
+gates or client-owned milestones. Current node identity remains separate in the
+accepted snapshot, and the signal never predicts adjacency, completion or route
+availability.
+
+Painting is excluded from semantics. Existing complete progress, current-node,
+wallet and remaining-ENERGY copy stays accessible on both surfaces. The signal
+owns no advance/sync callback, command key, idempotency, cached read-only state
+or authoritative reload behavior, and its fixed-height field remains
+width-flexible at compact size with enlarged text.
+
 ## Entry experience
 
 The authentication entry uses the same quiet frontier backdrop and first-

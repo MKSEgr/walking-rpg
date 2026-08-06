@@ -5,6 +5,7 @@ import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -673,9 +674,10 @@ class _ExpeditionPanel extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: home.expeditionProgressValue,
-            minHeight: 9,
+          ExpeditionProgressSignal(
+            expeditionId: home.expeditionId,
+            progress: home.expeditionProgress,
+            target: home.requiredEnergy,
           ),
           const SizedBox(height: 8),
           Text('На балансе ${home.availableEnergy} · до маяка $remaining'),
