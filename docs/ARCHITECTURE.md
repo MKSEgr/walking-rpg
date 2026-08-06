@@ -417,7 +417,12 @@ backend продолжает менять только compatibility pointer и 
 - platform snapshot и content bootstrap читают связанные state/facts/content/
   remote-config секции из одного repeatable-read snapshot;
 - compass analytics читает eligible users, client impressions и gameplay
-  receipts из одного repeatable-read snapshot.
+  receipts из одного repeatable-read snapshot;
+- retention analytics один раз фиксирует `generatedAt` и для D1/D7/D30
+  независимо выбирает только когорты с полностью завершившимся целевым
+  UTC-днём. `retainedUsers / eligibleUsers` и onboarding counters читаются из
+  того же repeatable-read snapshot, поэтому рост новой когорты не занижает
+  зрелые retention rates и конкурентная запись не смешивает границы ответа.
 
 ## 9. Ключевые инварианты
 

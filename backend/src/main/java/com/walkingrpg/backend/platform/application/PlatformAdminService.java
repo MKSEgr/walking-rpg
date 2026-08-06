@@ -345,11 +345,13 @@ public class PlatformAdminService {
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> retentionSummary() {
+        Instant generatedAt = now();
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("cohortSize", queryLong("SELECT count(*) FROM app_user"));
-        result.put("d1", retentionAtDay(1));
-        result.put("d7", retentionAtDay(7));
-        result.put("d30", retentionAtDay(30));
+        result.put("generatedAt", generatedAt);
+        result.put("d1", retentionAtDay(1, generatedAt));
+        result.put("d7", retentionAtDay(7, generatedAt));
+        result.put("d30", retentionAtDay(30, generatedAt));
         result.put("onboarding", onboardingSummary());
         return result;
     }
@@ -755,39 +757,62 @@ public class PlatformAdminService {
         return retentionService.cleanup();
     }
 
-    private Map<String, Object> retentionAtDay(int day) {
-        Long retained = jdbcTemplate.queryForObject("""
-                SELECT count(*)
-                FROM app_user u
-                WHERE EXISTS (
-                    SELECT 1
-                    FROM activity_sync_state a
-                    WHERE a.user_id = u.user_id
-                      AND a.local_date = (u.created_at AT TIME ZONE 'UTC')::date + ?
-                ) OR EXISTS (
-                    SELECT 1
-                    FROM platform_event e
-                    WHERE e.user_id = u.user_id
-                      AND e.received_at >= (
-                          (
-                              (u.created_at AT TIME ZONE 'UTC')::date
-                              + CAST(? AS integer)
-                          )::timestamp AT TIME ZONE 'UTC'
-                      )
-                      AND e.received_at < (
-                          (
-                              (u.created_at AT TIME ZONE 'UTC')::date
-                              + CAST(? AS integer)
-                          )::timestamp AT TIME ZONE 'UTC'
-                      )
+    private Map<String, Object> retentionAtDay(int day, Instant generatedAt) {
+        RetentionCohort cohort = jdbcTemplate.queryForObject("""
+                WITH eligible_cohort AS (
+                    SELECT user_id, created_at
+                    FROM app_user
+                    WHERE (
+                        (
+                            (created_at AT TIME ZONE 'UTC')::date
+                            + CAST(? AS integer)
+                            + 1
+                        )::timestamp AT TIME ZONE 'UTC'
+                    ) <= ?
                 )
-                """, Long.class, day, day, day + 1);
-        long cohort = queryLong("SELECT count(*) FROM app_user");
-        long retainedValue = retained == null ? 0 : retained;
+                SELECT count(*) AS eligible_users,
+                       count(*) FILTER (
+                           WHERE EXISTS (
+                               SELECT 1
+                               FROM activity_sync_state a
+                               WHERE a.user_id = u.user_id
+                                 AND a.local_date =
+                                     (u.created_at AT TIME ZONE 'UTC')::date + ?
+                           ) OR EXISTS (
+                               SELECT 1
+                               FROM platform_event e
+                               WHERE e.user_id = u.user_id
+                                 AND e.received_at >= (
+                                     (
+                                         (u.created_at AT TIME ZONE 'UTC')::date
+                                         + CAST(? AS integer)
+                                     )::timestamp AT TIME ZONE 'UTC'
+                                 )
+                                 AND e.received_at < (
+                                     (
+                                         (u.created_at AT TIME ZONE 'UTC')::date
+                                         + CAST(? AS integer)
+                                     )::timestamp AT TIME ZONE 'UTC'
+                                 )
+                           )
+                       ) AS retained_users
+                FROM eligible_cohort u
+                """, (resultSet, rowNumber) -> new RetentionCohort(
+                resultSet.getLong("eligible_users"),
+                resultSet.getLong("retained_users")
+        ), day, Timestamp.from(generatedAt), day, day, day + 1);
+        if (cohort == null) {
+            throw new IllegalStateException(
+                    "Retention cohort query не вернул строку"
+            );
+        }
         return Map.of(
                 "day", day,
-                "retainedUsers", retainedValue,
-                "rate", cohort == 0 ? 0.0 : retainedValue * 1.0 / cohort
+                "eligibleUsers", cohort.eligibleUsers(),
+                "retainedUsers", cohort.retainedUsers(),
+                "rate", cohort.eligibleUsers() == 0
+                        ? 0.0
+                        : cohort.retainedUsers() * 1.0 / cohort.eligibleUsers()
         );
     }
 
@@ -933,6 +958,9 @@ public class PlatformAdminService {
 
     private Instant now() {
         return Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
+    }
+
+    private record RetentionCohort(long eligibleUsers, long retainedUsers) {
     }
 
     private String requireText(String value, String field) {

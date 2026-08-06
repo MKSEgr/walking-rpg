@@ -271,6 +271,53 @@ class PlatformAdminControllerTest {
     }
 
     @Test
+    void shouldReturnFullyObservedRetentionDenominators() throws Exception {
+        MockMvc mockMvc = mockMvc(FixedRequestIdentityProvider.admin(
+                "admin-subject",
+                "analytics-operator"
+        ));
+        Instant generatedAt = Instant.parse("2026-08-06T12:00:00Z");
+        when(service.retentionSummary()).thenReturn(Map.of(
+                "cohortSize", 4L,
+                "generatedAt", generatedAt,
+                "d1", Map.of(
+                        "day", 1,
+                        "eligibleUsers", 3L,
+                        "retainedUsers", 1L,
+                        "rate", 1.0 / 3.0
+                ),
+                "d7", Map.of(
+                        "day", 7,
+                        "eligibleUsers", 2L,
+                        "retainedUsers", 1L,
+                        "rate", 0.5
+                ),
+                "d30", Map.of(
+                        "day", 30,
+                        "eligibleUsers", 1L,
+                        "retainedUsers", 1L,
+                        "rate", 1.0
+                ),
+                "onboarding", Map.of(
+                        "startedUsers", 3L,
+                        "completedUsers", 2L
+                )
+        ));
+
+        mockMvc.perform(get("/api/v1/admin/platform/analytics/retention"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cohortSize").value(4))
+                .andExpect(jsonPath("$.generatedAt").value(generatedAt.toString()))
+                .andExpect(jsonPath("$.d1.eligibleUsers").value(3))
+                .andExpect(jsonPath("$.d1.retainedUsers").value(1))
+                .andExpect(jsonPath("$.d1.rate").value(1.0 / 3.0))
+                .andExpect(jsonPath("$.d7.eligibleUsers").value(2))
+                .andExpect(jsonPath("$.d30.eligibleUsers").value(1));
+
+        verify(service).retentionSummary();
+    }
+
+    @Test
     void shouldReturnFirstJourneyAnalyticsForSelectedCohort() throws Exception {
         MockMvc mockMvc = mockMvc(FixedRequestIdentityProvider.admin(
                 "admin-subject",
