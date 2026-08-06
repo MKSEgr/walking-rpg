@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
@@ -300,6 +301,19 @@ void main() {
     await _tap(tester, const Key('first-journey-choice-analyze-signal'));
     expect(find.text('Частота найдена'), findsOneWidget);
     expect(find.text('+5 связи · Мох'), findsOneWidget);
+    expect(find.byType(ProgressionGainSignal), findsNWidgets(2));
+    expect(
+      find.byKey(
+        const Key(
+          'progression-gain-signal-pilotExperience-navigator-v1-navigator',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('progression-gain-signal-petBond-moss-v1-moss')),
+      findsOneWidget,
+    );
 
     await _tap(tester, const Key('first-journey-finish'));
     expect(find.text('Основная экспедиция'), findsOneWidget);

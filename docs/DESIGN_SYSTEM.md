@@ -387,6 +387,27 @@ succeeded, predicts the next node or derives an outcome or reward. Legacy
 resolved snapshots without a `selectedChoiceId` keep their complete text-only
 fallback; future event/choice pairs retain the neutral constellation.
 
+## Event progression gain signals
+
+Accepted event results give pilot XP and companion bond their own code-native
+gain marks instead of returning to generic person, pet or check icons. The
+durable Home handoff and guided first-journey completion share the same
+vocabulary: `navigator-v1` uses the route-pointer mark, while `spark-v1`,
+`moss-v1` and `rune-v1` retain distinct spark, growth and echo identities.
+
+Dispatch requires both the exact reward channel (`pilotExperience` or
+`petBond`) and the exact server-owned subject ID. A known pet ID in the pilot
+channel, a known pilot ID in the companion channel or any future subject keeps
+the neutral constellation even when the visible name resembles current
+content. Names never select art.
+
+The signal is decorative and does not calculate the gained amount, resulting
+total, level, evolution stage or reward availability. Complete server-provided
+numbers and names remain the accessible source beside the mark; material
+rewards keep their exact item artwork. Compact result surfaces place the mark
+above wrapping copy, while wider surfaces keep both in one row. ACK, command,
+outcome and authoritative-reload boundaries remain unchanged.
+
 ## First chapter environment
 
 `ChapterVista` defines the code-native key art for the first chapter: layered
