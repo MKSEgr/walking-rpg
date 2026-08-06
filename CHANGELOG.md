@@ -163,6 +163,9 @@
 
 ### Changed
 
+- D1/D7/D30 retention rates теперь используют отдельные fully-observed
+  `eligibleUsers` на едином `generatedAt`: новые аккаунты с незавершённым
+  целевым UTC-днём больше не занижают зрелые cohort rates;
 - account export теперь на одном connection удерживает общий subject-level
   deletion lock до конца `REPEATABLE_READ` snapshot: deletion не может
   удалить строки во время выгрузки, уже удалённый subject получает

@@ -1786,6 +1786,57 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldExcludeIncompleteCohortsFromRetentionRates() {
+        Instant observedAt = clock.instant().truncatedTo(ChronoUnit.MICROS);
+        Instant matureCreatedAt = observedAt.minus(45, ChronoUnit.DAYS);
+        Instant daySevenCreatedAt = observedAt.minus(15, ChronoUnit.DAYS);
+        Instant dayOneCreatedAt = observedAt.minus(4, ChronoUnit.DAYS);
+        Instant recentCreatedAt = observedAt.minus(1, ChronoUnit.HOURS);
+        ensureUser("retention-mature", matureCreatedAt);
+        ensureUser("retention-day-seven", daySevenCreatedAt);
+        ensureUser("retention-day-one", dayOneCreatedAt);
+        ensureUser("retention-not-observed", recentCreatedAt);
+        recordPlatformEvent(
+                "retention-mature",
+                matureCreatedAt.plus(30, ChronoUnit.DAYS),
+                matureCreatedAt.plus(30, ChronoUnit.DAYS)
+        );
+        recordPlatformEvent(
+                "retention-day-seven",
+                daySevenCreatedAt.plus(7, ChronoUnit.DAYS),
+                daySevenCreatedAt.plus(7, ChronoUnit.DAYS)
+        );
+        recordPlatformEvent(
+                "retention-day-one",
+                dayOneCreatedAt.plus(1, ChronoUnit.DAYS),
+                dayOneCreatedAt.plus(1, ChronoUnit.DAYS)
+        );
+
+        Map<String, Object> summary = platformAdminService.retentionSummary();
+
+        assertEquals(4L, summary.get("cohortSize"));
+        assertTrue(summary.get("generatedAt") instanceof Instant);
+        assertEquals(Map.of(
+                "day", 1,
+                "eligibleUsers", 3L,
+                "retainedUsers", 1L,
+                "rate", 1.0 / 3.0
+        ), summary.get("d1"));
+        assertEquals(Map.of(
+                "day", 7,
+                "eligibleUsers", 2L,
+                "retainedUsers", 1L,
+                "rate", 0.5
+        ), summary.get("d7"));
+        assertEquals(Map.of(
+                "day", 30,
+                "eligibleUsers", 1L,
+                "retainedUsers", 1L,
+                "rate", 1.0
+        ), summary.get("d30"));
+    }
+
+    @Test
     void shouldUseServerReceiptTimeForTelemetryRetention() throws Exception {
         Instant cohortStartedAt = Instant.parse("2026-06-01T10:00:00Z");
         ensureUser("forged-client-time", cohortStartedAt);
@@ -1818,16 +1869,32 @@ class PlatformPersistenceIntegrationTest {
         Map<String, Object> summary = platformAdminService.retentionSummary();
 
         assertEquals(4L, summary.get("cohortSize"));
+        assertTrue(summary.get("generatedAt") instanceof Instant);
         assertEquals(
-                Map.of("day", 1, "retainedUsers", 1L, "rate", 0.25),
+                Map.of(
+                        "day", 1,
+                        "eligibleUsers", 4L,
+                        "retainedUsers", 1L,
+                        "rate", 0.25
+                ),
                 summary.get("d1")
         );
         assertEquals(
-                Map.of("day", 7, "retainedUsers", 1L, "rate", 0.25),
+                Map.of(
+                        "day", 7,
+                        "eligibleUsers", 4L,
+                        "retainedUsers", 1L,
+                        "rate", 0.25
+                ),
                 summary.get("d7")
         );
         assertEquals(
-                Map.of("day", 30, "retainedUsers", 1L, "rate", 0.25),
+                Map.of(
+                        "day", 30,
+                        "eligibleUsers", 4L,
+                        "retainedUsers", 1L,
+                        "rate", 0.25
+                ),
                 summary.get("d30")
         );
     }
@@ -1884,8 +1951,14 @@ class PlatformPersistenceIntegrationTest {
         }
 
         assertEquals(0L, duringInsert.get("cohortSize"));
+        assertTrue(duringInsert.get("generatedAt") instanceof Instant);
         assertEquals(
-                Map.of("day", 1, "retainedUsers", 0L, "rate", 0.0),
+                Map.of(
+                        "day", 1,
+                        "eligibleUsers", 0L,
+                        "retainedUsers", 0L,
+                        "rate", 0.0
+                ),
                 duringInsert.get("d1")
         );
         assertEquals(1, rowCount("app_user"));
@@ -1894,7 +1967,12 @@ class PlatformPersistenceIntegrationTest {
         Map<String, Object> afterInsert = platformAdminService.retentionSummary();
         assertEquals(1L, afterInsert.get("cohortSize"));
         assertEquals(
-                Map.of("day", 1, "retainedUsers", 1L, "rate", 1.0),
+                Map.of(
+                        "day", 1,
+                        "eligibleUsers", 1L,
+                        "retainedUsers", 1L,
+                        "rate", 1.0
+                ),
                 afterInsert.get("d1")
         );
     }

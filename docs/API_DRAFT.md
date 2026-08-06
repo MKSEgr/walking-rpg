@@ -1012,6 +1012,10 @@ UTC-дате `app_user.created_at`. Activity arm использует сохра
 Telemetry day проверяется полуинтервалом `[UTC day start, next UTC day start)`,
 который использует V16 index `(user_id, received_at)` без преобразования
 индексируемой колонки к `date`.
+Для каждого Dn `eligibleUsers` включает только пользователей, у которых к
+единому `generatedAt` полностью завершился соответствующий целевой UTC-день.
+Недавно созданные аккаунты с ещё не наблюдённым или частично наблюдённым днём
+не уменьшают rate; `cohortSize` по-прежнему показывает все текущие аккаунты.
 Все cohort/day/onboarding counters одного ответа читаются в одной
 `REPEATABLE_READ` транзакции и не смешивают состояния до и после конкурентной
 записи.
@@ -1019,9 +1023,10 @@ Telemetry day проверяется полуинтервалом `[UTC day star
 ```json
 {
   "cohortSize": 40,
-  "d1": {"day": 1, "retainedUsers": 24, "rate": 0.6},
-  "d7": {"day": 7, "retainedUsers": 14, "rate": 0.35},
-  "d30": {"day": 30, "retainedUsers": 8, "rate": 0.2},
+  "generatedAt": "2026-08-06T12:00:00Z",
+  "d1": {"day": 1, "eligibleUsers": 30, "retainedUsers": 24, "rate": 0.8},
+  "d7": {"day": 7, "eligibleUsers": 20, "retainedUsers": 14, "rate": 0.7},
+  "d30": {"day": 30, "eligibleUsers": 10, "retainedUsers": 8, "rate": 0.8},
   "onboarding": {"startedUsers": 32, "completedUsers": 19}
 }
 ```
