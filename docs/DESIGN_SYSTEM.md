@@ -130,10 +130,16 @@ form from the pet name.
 
 The Home companion signal pairs the portrait with explicit active-companion,
 level, named form, bond text and the non-interactive growth line. Journal pet
-cards repeat the same current marker beside the existing authoritative bond
-progress and evolution action. The composition becomes vertical on narrow
-layouts, remains a static presentation of the accepted snapshot and does not
-affect compass visibility, command execution or navigation lifecycle.
+cards repeat the same current marker beside a code-native bond field and the
+existing evolution action. Exact `spark-v1`, `moss-v1` and `rune-v1` IDs keep
+their spark, growth and echo identities; any future ID receives a neutral
+constellation instead of inheriting art from its name or species. The field
+uses only the literal accepted bond, evolution target, current server form and
+existing `canEvolve` result. Its four trace samples are decorative rather than
+invented thresholds, and an evolved companion keeps the literal bond without
+showing a fake next target. The composition becomes vertical on narrow layouts,
+remains a static presentation of the accepted snapshot and does not affect pet
+selection, evolution availability, command execution or navigation lifecycle.
 
 ## Character cosmetics
 

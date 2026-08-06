@@ -6,6 +6,7 @@ import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
+import 'package:walking_rpg_mobile/design_system/companion_bond_signal.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
@@ -815,6 +816,31 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(CompanionGrowthTrack), findsWidgets);
+    expect(find.byType(CompanionBondSignal), findsNWidgets(3));
+    expect(
+      find.byKey(
+        const Key('companion-bond-signal-spark-v1-spark-ready'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('companion-bond-signal-moss-v1-moss-growing')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Связь спутника «Искра»: 50 из 50. '
+        'Готова к эволюции',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Связь спутника «Мох»: 12 из 45',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(
       find.bySemanticsLabel('Рост спутника: Малыш, этап 1 из 3'),
       findsWidgets,
