@@ -191,7 +191,7 @@ Map<String, dynamic> platformSnapshotJson({
         },
       ],
       'season': <String, dynamic>{
-        'seasonId': 'season-1',
+        'seasonId': 'signal-season-1',
         'name': 'Сезон первого сигнала',
         'levels': 10,
       },

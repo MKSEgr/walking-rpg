@@ -249,6 +249,26 @@ below the beacon. Compact layout places the beacon above the server copy; wide
 layout keeps it beside that copy. Spend and reward commands, read-only state,
 remote-config availability and authoritative reload remain unchanged.
 
+## Season reward seals
+
+The weekly route gives its existing claimable season reward a compact
+code-native seal instead of returning to a generic gift icon. The persisted
+first-signal ID `signal-season-1` and its bounded local/default predecessor
+`season-1` select the same current identity only by exact match. Season names,
+prefixes and suffixes never select art, and any future season keeps the neutral
+constellation.
+
+The partial orbit repeats only the literal reward level against the accepted
+season level count. It does not discover the next reward, decide claimability,
+describe reward contents or infer completion from XP. The existing weekly card
+continues to decide whether the claim button is present and enabled from its
+accepted state, and its complete **«Награда уровня N»** label remains the only
+accessible content for the decorative seal.
+
+The seal owns no command, callback, idempotency, cached-state or authoritative-
+reload behavior. Its fixed square stays inside the existing wrapping claim
+control at compact width and in both themes.
+
 ## Squad formation signal
 
 The journal turns accepted squad membership into a quiet resonance formation
