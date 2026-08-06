@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -143,6 +144,17 @@ void main() {
       find.byKey(const Key('first-journey-progress-compact')),
       findsOneWidget,
     );
+    expect(find.byType(FirstJourneyRouteSignal), findsOneWidget);
+    expect(
+      find.byKey(const Key('first-journey-route-signal-0-6')),
+      findsOneWidget,
+    );
+    expect(find.text('0/6 ЭТАПОВ ПРОЙДЕНО'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Первый путь: завершено 0 из 6 этапов'),
+      findsNothing,
+    );
+    expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(
       find.byKey(const Key('first-journey-panel-compact')),
       findsOneWidget,
@@ -170,6 +182,11 @@ void main() {
       tester,
       progress: _progress(completedSteps: const <String>['welcome']),
     );
+    expect(
+      find.byKey(const Key('first-journey-route-signal-1-6')),
+      findsOneWidget,
+    );
+    expect(find.text('1/6 ЭТАПОВ ПРОЙДЕНО'), findsOneWidget);
     await _bringIntoView(tester, find.byKey(const Key('first-journey-sync')));
     _expectNoLayoutException(tester);
 
