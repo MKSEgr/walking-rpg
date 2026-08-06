@@ -355,6 +355,16 @@ TOTAL_DECREASED
 
 Повтор одного key и payload возвращает исходный response. Тот же key с другим business payload возвращает `409 IDEMPOTENCY_CONFLICT`.
 
+Exact replay и сравнение payload действуют, пока durable
+`processed_activity_sync` receipt находится в retention window. После его
+очистки прежний key больше не имеет сохранённого response и при повторном
+использовании начинает новую operation generation. ENERGY source identity для
+новых операций имеет вид `v2:<requestFingerprint>`, поэтому такая generation
+не сталкивается с append-only ledger entry удалённого receipt и возвращает
+актуальный wallet snapshot. Сохраняемый дневной high-watermark по-прежнему не
+позволяет повторно начислить уже принятые шаги; raw health payload в ledger не
+записывается.
+
 `attestation` не входит в business fingerprint и может быть перевыпущен между
 сетевыми попытками. Поэтому backend создаёт отдельный shadow-mode risk
 assessment для каждого exact replay до возврата сохранённого response; replay

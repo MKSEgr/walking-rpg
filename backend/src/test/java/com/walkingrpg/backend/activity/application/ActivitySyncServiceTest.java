@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.walkingrpg.backend.activity.domain.ActivityDayKey;
@@ -15,6 +16,8 @@ import com.walkingrpg.backend.activity.domain.ActivityRiskStatus;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCalculator;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
 import com.walkingrpg.backend.activity.domain.ActivitySyncOutcome;
+import com.walkingrpg.backend.activity.domain.IdempotencyScope;
+import com.walkingrpg.backend.activity.domain.ProcessedActivitySync;
 import com.walkingrpg.backend.activity.infrastructure.InMemoryActivitySyncRepository;
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
@@ -109,6 +112,54 @@ class ActivitySyncServiceTest {
                 ActivitySyncConflictException.class,
                 () -> service.synchronize(command(1_100, "reused-key"))
         );
+    }
+
+    @Test
+    void shouldKeepWalletConsistentWhenRetainedKeyIsReusedAfterReceiptCleanup() {
+        ExpiringProcessedRepository repository = new ExpiringProcessedRepository();
+        ActivitySyncService retentionAwareService = new ActivitySyncService(
+                repository,
+                new ActivitySyncCalculator(),
+                new EconomyService(new InMemoryEconomyRepository()),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        ActivitySyncCommand original = command(
+                1_000,
+                "retained-key",
+                LocalDate.of(2026, 7, 23),
+                ZoneId.of("Europe/Berlin")
+        );
+
+        assertEquals(
+                10,
+                retentionAwareService.synchronize(original).energyBalanceAfter()
+        );
+        assertEquals(15, retentionAwareService.synchronize(command(
+                500,
+                "retention-top-up",
+                LocalDate.of(2026, 7, 24),
+                ZoneId.of("Europe/Berlin")
+        )).energyBalanceAfter());
+        repository.expire(IdempotencyScope.from(original));
+
+        ActivitySyncOutcome reused = retentionAwareService.synchronize(command(
+                1_000,
+                "retained-key",
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin")
+        ));
+        ActivitySyncOutcome current = retentionAwareService.synchronize(command(
+                1_000,
+                "retention-balance-probe",
+                LocalDate.of(2026, 7, 25),
+                ZoneId.of("Europe/Berlin")
+        ));
+
+        assertEquals(10, reused.activity().energyGranted());
+        assertEquals(25, reused.energyBalanceAfter());
+        assertEquals(3, reused.economyVersion());
+        assertEquals(reused.energyBalanceAfter(), current.energyBalanceAfter());
+        assertEquals(reused.economyVersion(), current.economyVersion());
     }
 
     @Test
@@ -271,6 +322,34 @@ class ActivitySyncServiceTest {
 
         private synchronized void set(Instant value) {
             current = value;
+        }
+    }
+
+    private static final class ExpiringProcessedRepository
+            extends InMemoryActivitySyncRepository {
+
+        private IdempotencyScope expiredScope;
+
+        private void expire(IdempotencyScope scope) {
+            expiredScope = scope;
+        }
+
+        @Override
+        public Optional<ProcessedActivitySync> findProcessed(IdempotencyScope scope) {
+            return scope.equals(expiredScope)
+                    ? Optional.empty()
+                    : super.findProcessed(scope);
+        }
+
+        @Override
+        public void saveProcessed(
+                IdempotencyScope scope,
+                ProcessedActivitySync processedSync
+        ) {
+            super.saveProcessed(scope, processedSync);
+            if (scope.equals(expiredScope)) {
+                expiredScope = null;
+            }
         }
     }
 }
