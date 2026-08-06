@@ -1,8 +1,6 @@
 package com.walkingrpg.backend.platform.analytics;
 
-import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import com.walkingrpg.backend.crafting.application.StarterCraftingContent;
@@ -167,21 +165,17 @@ public class CompassJourneyAnalyticsService {
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final Clock clock;
 
-    public CompassJourneyAnalyticsService(
-            NamedParameterJdbcTemplate jdbcTemplate,
-            Clock clock
-    ) {
+    public CompassJourneyAnalyticsService(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.clock = clock;
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public CompassJourneyAnalyticsSnapshot summary(String cohortCode) {
         String normalizedCohort = normalizeCohort(cohortCode);
         MapSqlParameterSource parameters = parameters(normalizedCohort);
-        long eligibleUsers = eligibleUsers(parameters);
+        SnapshotObservation observation = observeSnapshot(parameters);
+        long eligibleUsers = observation.eligibleUsers();
         long instrumentedUsers = instrumentedUsers(parameters);
 
         CompassJourneyFunnel crafting = funnel(
@@ -220,17 +214,29 @@ public class CompassJourneyAnalyticsService {
                 ratio(instrumentedUsers, eligibleUsers),
                 funnels,
                 dataQuality,
-                Instant.now(clock).truncatedTo(ChronoUnit.MICROS)
+                observation.generatedAt()
         );
     }
 
-    private long eligibleUsers(MapSqlParameterSource parameters) {
-        Long result = jdbcTemplate.queryForObject("""
-                SELECT count(*)
+    private SnapshotObservation observeSnapshot(
+            MapSqlParameterSource parameters
+    ) {
+        SnapshotObservation observation = jdbcTemplate.queryForObject("""
+                SELECT count(*) AS eligible_users,
+                       statement_timestamp() AS generated_at
                 FROM app_user subject
                 WHERE
-                """ + COHORT_FILTER, parameters, Long.class);
-        return value(result);
+                """ + COHORT_FILTER, parameters, (resultSet, rowNumber) ->
+                new SnapshotObservation(
+                        resultSet.getLong("eligible_users"),
+                        resultSet.getTimestamp("generated_at").toInstant()
+                ));
+        if (observation == null) {
+            throw new IllegalStateException(
+                    "Compass journey snapshot observation query returned no row"
+            );
+        }
+        return observation;
     }
 
     private long instrumentedUsers(MapSqlParameterSource parameters) {
@@ -510,5 +516,8 @@ public class CompassJourneyAnalyticsService {
     }
 
     private record SourceCounts(long clientRecords, long authoritativeRecords) {
+    }
+
+    private record SnapshotObservation(long eligibleUsers, Instant generatedAt) {
     }
 }
