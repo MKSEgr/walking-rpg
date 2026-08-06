@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
@@ -350,13 +351,12 @@ class _JourneyProgressHeader extends StatelessWidget {
                 ],
               ),
             const SizedBox(height: 8),
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0, end: progress.progressValue),
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOutCubic,
-              builder: (BuildContext context, double value, Widget? child) {
-                return LinearProgressIndicator(value: value, minHeight: 8);
-              },
+            ExcludeSemantics(
+              child: FirstJourneyRouteSignal(
+                steps: FirstJourneyProgress.steps,
+                completedSteps: progress.completedSteps,
+                height: compact ? 88 : 96,
+              ),
             ),
           ],
         );

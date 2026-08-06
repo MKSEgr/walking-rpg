@@ -169,10 +169,12 @@ topology, availability or any command boundary.
 
 ## First journey route signal
 
-The journal presents the accepted first-journey milestones as one quiet
-code-native route instead of a generic progress bar. Node order comes directly
-from `content.onboardingSteps`, while each completed state comes only from
-`completedOnboardingSteps`.
+The journal and the guided first-journey header present the same milestones as
+one quiet code-native route instead of generic progress bars. Journal node
+order comes directly from `content.onboardingSteps`, while the guided flow uses
+its existing bounded `FirstJourneyProgress.steps` sequence. Journal completion
+comes only from `completedOnboardingSteps`; the guided header repeats the same
+effective completion facts that already choose its current screen.
 
 The six current exact step IDs select welcome, Health permission, first sync,
 pet selection, first expedition and first decision marks. An unknown future ID
@@ -181,12 +183,15 @@ step. The base trace preserves the accepted ordering; an illuminated segment
 appears only between two adjacent completed steps. It never selects a current
 step, predicts availability, completion timing or chapter topology.
 
-Painting is decorative and excluded from semantics. One summary exposes the
-literal completed count against the accepted step list, while every visible
-row states its own complete or incomplete status. The existing resume action,
-onboarding command ownership and authoritative reload remain unchanged. At
-compact width with enlarged text, the full-width signal stays above the
-vertical milestone list and two-line resume action.
+Painting is decorative. The journal signal owns one complete route summary,
+while every visible journal row states its own complete or incomplete status.
+In the guided header the painting is excluded from semantics because the
+existing `N/6 этапов пройдено` copy remains its one accessible summary. The
+guided signal does not choose a stage; it only mirrors the already accepted
+`FirstJourneyProgress.completedSteps`. Resume/continue actions, onboarding
+command ownership and authoritative reload remain unchanged. At compact width
+with enlarged text, the full-width signal stays above the journal milestone
+list or guided stage panel without compressing their two-line actions.
 
 ## Pilot progression sigils
 
