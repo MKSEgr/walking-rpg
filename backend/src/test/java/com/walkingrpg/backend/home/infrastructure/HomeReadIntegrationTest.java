@@ -1,9 +1,19 @@
 package com.walkingrpg.backend.home.infrastructure;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import javax.sql.DataSource;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
@@ -26,6 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -58,6 +69,9 @@ class HomeReadIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DataSource dataSource;
 
     @BeforeEach
     void cleanDatabase() {
@@ -251,6 +265,101 @@ class HomeReadIntegrationTest {
         assertEquals(2, legacySnapshot.pet().level());
         assertEquals(54, legacySnapshot.pet().bond());
         assertEquals(0, legacySnapshot.pet().evolutionStage());
+    }
+
+    @Test
+    void shouldAnchorHomeServerTimeToFirstDatabaseSnapshotStatement()
+            throws Exception {
+        HomeSnapshotResponse duringConcurrentSync;
+        Instant observationStartedAt;
+        Instant firstStatementFinishedAt;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<HomeSnapshotResponse> pending = null;
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (Statement lock = blocker.createStatement()) {
+                    lock.execute(
+                            "LOCK TABLE processed_event_resolution "
+                                    + "IN ACCESS EXCLUSIVE MODE"
+                    );
+                }
+
+                observationStartedAt = databaseTime();
+                pending = executor.submit(() -> homeService.getSnapshot(
+                        new HomeQuery("home-user", ACTIVITY_DATE)
+                ));
+                awaitBlockedQuery("FROM processed_event_resolution");
+                firstStatementFinishedAt = databaseTime();
+
+                activitySyncService.synchronize(command(1_000));
+                blocker.commit();
+                duringConcurrentSync = pending.get(5, TimeUnit.SECONDS);
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (pending != null && !pending.isDone()) {
+                        pending.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        }
+
+        assertEquals(0, duringConcurrentSync.dailySteps());
+        assertSnapshotBoundary(
+                observationStartedAt,
+                duringConcurrentSync.serverTime(),
+                firstStatementFinishedAt
+        );
+        assertEquals(
+                1_000,
+                homeService.getSnapshot(
+                        new HomeQuery("home-user", ACTIVITY_DATE)
+                ).dailySteps()
+        );
+    }
+
+    private Instant databaseTime() {
+        Timestamp timestamp = jdbcTemplate.queryForObject(
+                "SELECT statement_timestamp()",
+                Timestamp.class
+        );
+        if (timestamp == null) {
+            throw new IllegalStateException("Database clock returned no timestamp");
+        }
+        return timestamp.toInstant();
+    }
+
+    private void assertSnapshotBoundary(
+            Instant earliest,
+            Instant serverTime,
+            Instant latest
+    ) {
+        assertFalse(serverTime.isBefore(earliest));
+        assertFalse(serverTime.isAfter(latest));
+    }
+
+    private void awaitBlockedQuery(String queryFragment) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = jdbcTemplate.queryForObject("""
+                    SELECT count(*)
+                    FROM pg_stat_activity
+                    WHERE datname = current_database()
+                      AND wait_event_type = 'Lock'
+                      AND query LIKE ?
+                    """, Integer.class, "%" + queryFragment + "%");
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        throw new IllegalStateException(
+                "Expected query did not reach the blocked state: " + queryFragment
+        );
     }
 
     private int rowCount(String table) {

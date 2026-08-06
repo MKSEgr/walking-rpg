@@ -300,6 +300,9 @@ Authorization: Bearer <access-token>
 - `pendingEventResult` — nullable top-level receipt единственного
   неподтверждённого результата текущей экспедиции; он содержит immutable
   choice/reward snapshot и nullable `nextNode`;
+- `serverTime` приходит из первого PostgreSQL `statement_timestamp()` и
+  обозначает observation boundary того же `REPEATABLE_READ` snapshot, а не
+  время завершения последнего Home query или сериализации HTTP-ответа;
 - результат остаётся доступен после reload/restart, даже когда authoritative
   expedition уже перешла на следующий узел; после acknowledgement конкретного
   receipt он исчезает из pending projection;
@@ -849,7 +852,10 @@ push-регистрации устройства.
 Все user state, progress facts, squad, content и remote config в одном response
 читаются из единого `REPEATABLE_READ` snapshot. Параллельный activity sync или
 admin publish, завершившийся после фиксации snapshot, целиком попадает только в
-следующий platform response.
+следующий platform response. `serverTime` для platform snapshot и content
+bootstrap возвращается первым PostgreSQL `statement_timestamp()` и относится
+к границе именно этого snapshot; поздняя блокировка остальных секций не
+сдвигает метку к времени завершения response.
 
 Mutable runtime values не имеют второго источника истины внутри content
 projection: `content.season.seasonId` равен `remoteConfig.seasonId`, а

@@ -163,6 +163,11 @@
 
 ### Changed
 
+- production Home, live platform snapshot и content bootstrap теперь начинают
+  `REPEATABLE_READ` общим PostgreSQL `statement_timestamp()` и возвращают его
+  как `serverTime`: поздняя блокировка следующей секции и рассинхронизация JVM
+  clock больше не датируют старый snapshot временем после его observation
+  boundary; command timestamps и JSON shape не меняются;
 - retention, first-journey и compass analytics теперь получают `generatedAt`
   из PostgreSQL `statement_timestamp()` в том же первом statement, который
   фиксирует population count и `REPEATABLE_READ` snapshot: задержка следующих
