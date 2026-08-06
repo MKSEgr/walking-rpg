@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -21,7 +22,9 @@ import java.util.concurrent.TimeoutException;
 
 import javax.sql.DataSource;
 
+import com.zaxxer.hikari.HikariDataSource;
 import com.walkingrpg.backend.account.application.AccountDeletedException;
+import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.expedition.application.EventResultAcknowledgementService;
 import com.walkingrpg.backend.expedition.application.ExpeditionAdvanceService;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
@@ -50,6 +53,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -270,6 +274,201 @@ class AccountDeletionIntegrationTest {
 
         Map<String, Object> afterInsert = service.exportAccount(userId);
         assertEquals(2, ((List<?>) afterInsert.get("telemetry")).size());
+    }
+
+    @Test
+    void shouldExportWithOneConnectionAndReleaseSessionLock() {
+        String userId = "single-connection-export-user";
+        seedAccount(userId);
+
+        try (HikariDataSource singleConnectionPool = new HikariDataSource()) {
+            singleConnectionPool.setJdbcUrl(POSTGRES.getJdbcUrl());
+            singleConnectionPool.setUsername(POSTGRES.getUsername());
+            singleConnectionPool.setPassword(POSTGRES.getPassword());
+            singleConnectionPool.setMaximumPoolSize(1);
+            singleConnectionPool.setMinimumIdle(0);
+            singleConnectionPool.setConnectionTimeout(1_000);
+            singleConnectionPool.setPoolName("account-export-single-connection");
+            JdbcTemplate singleConnectionJdbcTemplate =
+                    new JdbcTemplate(singleConnectionPool);
+            singleConnectionJdbcTemplate.setQueryTimeout(5);
+            AccountDeletionRegistry deletionRegistry =
+                    new AccountDeletionRegistry(singleConnectionJdbcTemplate);
+            AccountExportSnapshotTransaction exportTransaction =
+                    new AccountExportSnapshotTransaction(
+                            singleConnectionJdbcTemplate,
+                            deletionRegistry
+                    );
+
+            Map<String, Object> snapshot = exportTransaction.read(
+                    userId,
+                    jdbc -> Map.of(
+                            "users",
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM app_user WHERE user_id = ?",
+                                    Integer.class,
+                                    userId
+                            ),
+                            "isolation",
+                            jdbc.queryForObject(
+                                    "SHOW transaction_isolation",
+                                    String.class
+                            ),
+                            "readOnly",
+                            jdbc.queryForObject(
+                                    "SHOW transaction_read_only",
+                                    String.class
+                            )
+                    )
+            );
+
+            assertEquals(1, snapshot.get("users"));
+            assertEquals("repeatable read", snapshot.get("isolation"));
+            assertEquals("on", snapshot.get("readOnly"));
+            assertEquals(
+                    "COMPLETED",
+                    service.requestAccountDeletion(
+                            userId,
+                            "single-connection-export-deletion",
+                            "DELETE"
+                    ).status()
+            );
+        }
+
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(1, rowCount("account_deletion_receipt"));
+    }
+
+    @Test
+    void shouldSerializeAccountExportWithDeletionForSameSubject() throws Exception {
+        String userId = "export-deletion-race-user";
+        seedAccount(userId);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<Map<String, Object>> export = null;
+        Future<AccountDeletionReceipt> deletion = null;
+
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (Statement lock = blocker.createStatement()) {
+                    lock.execute(
+                            "LOCK TABLE first_journey_milestone IN ACCESS EXCLUSIVE MODE"
+                    );
+                }
+
+                export = executor.submit(() -> service.exportAccount(userId));
+                awaitAccountExportMilestoneReadBlock();
+
+                Future<AccountDeletionReceipt> deletionTask = executor.submit(
+                        () -> service.requestAccountDeletion(
+                                userId,
+                                "export-race-deletion",
+                                "DELETE"
+                        )
+                );
+                deletion = deletionTask;
+                awaitBlockedQuery("pg_advisory_xact_lock");
+                assertThrows(
+                        TimeoutException.class,
+                        () -> deletionTask.get(250, TimeUnit.MILLISECONDS)
+                );
+
+                blocker.commit();
+                Map<String, Object> snapshot = export.get(5, TimeUnit.SECONDS);
+                assertEquals(1, ((List<?>) snapshot.get("user")).size());
+                assertEquals(
+                        1,
+                        ((List<?>) snapshot.get("firstJourneyMilestones")).size()
+                );
+                assertEquals(
+                        "COMPLETED",
+                        deletionTask.get(5, TimeUnit.SECONDS).status()
+                );
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (export != null && !export.isDone()) {
+                        export.cancel(true);
+                    }
+                    if (deletion != null && !deletion.isDone()) {
+                        deletion.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        }
+
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(0, rowCount("first_journey_milestone"));
+        assertEquals(1, rowCount("account_deletion_receipt"));
+        assertThrows(
+                AccountDeletedException.class,
+                () -> service.exportAccount(userId)
+        );
+    }
+
+    @Test
+    void shouldRejectExportAfterWaitingForConcurrentDeletion() throws Exception {
+        String userId = "deletion-export-race-user";
+        seedAccount(userId);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<AccountDeletionReceipt> deletion = null;
+        Future<Map<String, Object>> export = null;
+
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (Statement lock = blocker.createStatement()) {
+                    lock.execute("LOCK TABLE app_user IN ACCESS EXCLUSIVE MODE");
+                }
+
+                deletion = executor.submit(() -> service.requestAccountDeletion(
+                        userId,
+                        "deletion-before-export",
+                        "DELETE"
+                ));
+                awaitBlockedQuery("DELETE FROM app_user");
+
+                Future<Map<String, Object>> exportTask = executor.submit(
+                        () -> service.exportAccount(userId)
+                );
+                export = exportTask;
+                awaitBlockedQuery("pg_advisory_lock");
+                assertThrows(
+                        TimeoutException.class,
+                        () -> exportTask.get(250, TimeUnit.MILLISECONDS)
+                );
+
+                blocker.commit();
+                assertEquals(
+                        "COMPLETED",
+                        deletion.get(5, TimeUnit.SECONDS).status()
+                );
+                ExecutionException error = assertThrows(
+                        ExecutionException.class,
+                        () -> exportTask.get(5, TimeUnit.SECONDS)
+                );
+                assertInstanceOf(AccountDeletedException.class, error.getCause());
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (deletion != null && !deletion.isDone()) {
+                        deletion.cancel(true);
+                    }
+                    if (export != null && !export.isDone()) {
+                        export.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        }
+
+        assertEquals(0, rowCount("app_user"));
+        assertEquals(1, rowCount("account_deletion_receipt"));
     }
 
     @Test

@@ -189,6 +189,7 @@ class PlatformAdminServiceProviderTest {
                 deletionRegistry,
                 mock(PlatformPublicationTransactionLock.class),
                 mock(SquadTransactionLock.class),
+                mock(AccountExportSnapshotTransaction.class),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }

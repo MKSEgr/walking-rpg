@@ -315,8 +315,8 @@ grep -Fq '@Size(max = 64) Map<String, Object> attributes' backend/src/main/java/
 grep -Fq 'SERVER_RESERVED_EVENT_NAMES' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformAdminService.java || fail 'public telemetry must preserve server-owned event namespaces'
 grep -Fq '@Component("dbHealthContributor")' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'bounded database readiness must keep the canonical db contributor id'
 grep -Fq 'connection.isValid(VALIDATION_TIMEOUT_SECONDS)' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'database readiness validation must use a non-zero bounded timeout'
-MANUAL_TIMEOUTS=$(grep -RFl 'JdbcStatementTimeouts.apply(jdbcTemplate, statement);' backend/src/main/java | wc -l | tr -d ' ')
-[ "$MANUAL_TIMEOUTS" -eq 8 ] || fail 'all eight manual advisory-lock statements must inherit the JDBC timeout'
+MANUAL_TIMEOUTS=$(grep -RFo 'JdbcStatementTimeouts.apply(jdbcTemplate, statement);' backend/src/main/java | wc -l | tr -d ' ')
+[ "$MANUAL_TIMEOUTS" -eq 10 ] || fail 'all ten manual advisory-lock statements must inherit the JDBC timeout'
 grep -Fq 'platform-publication-serialization' backend/src/main/java/com/walkingrpg/backend/platform/infrastructure/PlatformPublicationTransactionLock.java || fail 'platform publications must keep their dedicated transaction-lock boundary'
 grep -Fq 'shouldSerializeConcurrentRemoteConfigPublications' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve remote-config publication serialization'
 grep -Fq 'shouldSerializeConcurrentContentPublications' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve content publication serialization'
@@ -331,6 +331,17 @@ if grep -RInF '.toUpperCase()' backend/src/main/java/com/walkingrpg/backend/plat
 fi
 grep -Fq 'squad-membership-serialization' backend/src/main/java/com/walkingrpg/backend/platform/infrastructure/SquadTransactionLock.java || fail 'squad membership mutations must keep their dedicated transaction-lock boundary'
 grep -Fq 'shouldSerializeOwnerDeletionWithLastMemberLeave' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve squad deletion/leave serialization'
+grep -Fq 'SELECT pg_advisory_lock(hashtextextended(?, 97))' backend/src/main/java/com/walkingrpg/backend/account/application/AccountDeletionRegistry.java || fail 'account export must acquire the deletion boundary before opening its snapshot transaction'
+grep -Fq 'Connection.TRANSACTION_REPEATABLE_READ' backend/src/main/java/com/walkingrpg/backend/platform/application/AccountExportSnapshotTransaction.java || fail 'account export must retain one repeatable-read snapshot'
+grep -Fq 'SingleConnectionDataSource(connection, true)' backend/src/main/java/com/walkingrpg/backend/platform/application/AccountExportSnapshotTransaction.java || fail 'account export snapshot reads must stay on the already locked connection'
+grep -Fq 'connection.abort(Runnable::run)' backend/src/main/java/com/walkingrpg/backend/platform/application/AccountExportSnapshotTransaction.java || fail 'failed account export lock cleanup must evict the unsafe connection'
+grep -Fq 'accountExportSnapshotTransaction.read(' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformAdminService.java || fail 'account export must delegate to the single-connection snapshot boundary'
+if grep -Fq 'PROPAGATION_REQUIRES_NEW' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformAdminService.java backend/src/main/java/com/walkingrpg/backend/platform/application/AccountExportSnapshotTransaction.java; then
+  fail 'account export must not reserve a nested transaction connection'
+fi
+grep -Fq 'shouldExportWithOneConnectionAndReleaseSessionLock' backend/src/test/java/com/walkingrpg/backend/platform/application/AccountDeletionIntegrationTest.java || fail 'PostgreSQL coverage must keep account export safe with a one-connection pool'
+grep -Fq 'shouldSerializeAccountExportWithDeletionForSameSubject' backend/src/test/java/com/walkingrpg/backend/platform/application/AccountDeletionIntegrationTest.java || fail 'PostgreSQL coverage must serialize account export with deletion'
+grep -Fq 'shouldRejectExportAfterWaitingForConcurrentDeletion' backend/src/test/java/com/walkingrpg/backend/platform/application/AccountDeletionIntegrationTest.java || fail 'PostgreSQL coverage must reject export after a concurrent deletion commit'
 grep -Fq 'shouldTimestampSquadCommandAfterSquadLock' backend/src/test/java/com/walkingrpg/backend/platform/application/PlatformServiceTest.java || fail 'platform squad service coverage must order timestamps after squad serialization'
 grep -Fq 'shouldTimestampSquadJoinAfterWaitingForSquadLock' backend/src/test/java/com/walkingrpg/backend/platform/application/AccountDeletionIntegrationTest.java || fail 'PostgreSQL squad timestamps must follow the production squad lock'
 grep -Fq 'validateCommandPayloadBeforeState(commandType, request.payload());' backend/src/main/java/com/walkingrpg/backend/platform/application/PlatformService.java || fail 'JOIN_SQUAD payload validation must run before platform state creation'

@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.function.Function;
 
 import tools.jackson.databind.json.JsonMapper;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
@@ -17,6 +18,8 @@ import com.walkingrpg.backend.platform.push.DisabledPushDeliveryProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -49,6 +52,7 @@ class PlatformAdminServiceTest {
                 deletionRegistry,
                 mock(PlatformPublicationTransactionLock.class),
                 mock(SquadTransactionLock.class),
+                mock(AccountExportSnapshotTransaction.class),
                 clock
         );
 
@@ -67,6 +71,37 @@ class PlatformAdminServiceTest {
                 eq("{}"),
                 eq(Timestamp.from(POST_LOCK_TIME))
         );
+    }
+
+    @Test
+    void shouldTimestampAccountExportInsideLockedSnapshot() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        AccountExportSnapshotTransaction exportTransaction =
+                mock(AccountExportSnapshotTransaction.class);
+        MutableClock clock = new MutableClock(PRE_LOCK_TIME);
+        doAnswer(invocation -> {
+            clock.set(POST_LOCK_TIME);
+            Function<JdbcTemplate, Map<String, Object>> reader =
+                    invocation.getArgument(1);
+            return reader.apply(jdbcTemplate);
+        }).when(exportTransaction).read(eq("export-lock-user"), any());
+        PlatformAdminService service = new PlatformAdminService(
+                jdbcTemplate,
+                JsonMapper.builder().findAndAddModules().build(),
+                new SandboxPaymentProvider(),
+                new DisabledPushDeliveryProvider(),
+                mock(ActivityRetentionService.class),
+                mock(AccountDeletionRegistry.class),
+                mock(PlatformPublicationTransactionLock.class),
+                mock(SquadTransactionLock.class),
+                exportTransaction,
+                clock
+        );
+
+        Map<String, Object> export = service.exportAccount("export-lock-user");
+
+        assertEquals(POST_LOCK_TIME, export.get("exportedAt"));
+        verify(exportTransaction).read(eq("export-lock-user"), any());
     }
 
     private static final class MutableClock extends Clock {

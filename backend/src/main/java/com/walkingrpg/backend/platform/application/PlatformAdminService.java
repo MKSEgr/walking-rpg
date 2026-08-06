@@ -53,6 +53,7 @@ public class PlatformAdminService {
     private final AccountDeletionRegistry accountDeletionRegistry;
     private final PlatformPublicationTransactionLock publicationTransactionLock;
     private final SquadTransactionLock squadTransactionLock;
+    private final AccountExportSnapshotTransaction accountExportSnapshotTransaction;
     private final Clock clock;
 
     public PlatformAdminService(
@@ -64,6 +65,7 @@ public class PlatformAdminService {
             AccountDeletionRegistry accountDeletionRegistry,
             PlatformPublicationTransactionLock publicationTransactionLock,
             SquadTransactionLock squadTransactionLock,
+            AccountExportSnapshotTransaction accountExportSnapshotTransaction,
             Clock clock
     ) {
         this.jdbcTemplate = jdbcTemplate;
@@ -74,6 +76,7 @@ public class PlatformAdminService {
         this.accountDeletionRegistry = accountDeletionRegistry;
         this.publicationTransactionLock = publicationTransactionLock;
         this.squadTransactionLock = squadTransactionLock;
+        this.accountExportSnapshotTransaction = accountExportSnapshotTransaction;
         this.clock = clock;
     }
 
@@ -428,9 +431,18 @@ public class PlatformAdminService {
         }, normalizeNullable(cohortCode), normalizeNullable(cohortCode));
     }
 
-    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> exportAccount(String userId) {
         String normalized = requireText(userId, "userId");
+        return accountExportSnapshotTransaction.read(
+                normalized,
+                snapshot -> readAccountExport(normalized, snapshot)
+        );
+    }
+
+    private Map<String, Object> readAccountExport(
+            String normalized,
+            JdbcTemplate jdbcTemplate
+    ) {
         Map<String, Object> export = new LinkedHashMap<>();
         export.put("exportedAt", now());
         export.put("user", jdbcTemplate.queryForList(
