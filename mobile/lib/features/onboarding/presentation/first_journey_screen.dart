@@ -3,8 +3,10 @@ import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
@@ -839,12 +841,41 @@ class _CompletionPanel extends StatelessWidget {
       eyebrow: 'Первый сигнал расшифрован',
       title: result.outcomeTitle,
       body: result.outcomeSummary,
-      highlights: <String>[
-        '+${result.pilot.experienceGained} XP пилота',
-        '+${result.pet.bondGained} связи · ${result.pet.name}',
-        if (result.material != null)
-          '+${result.material!.quantityGained} ${result.material!.name}',
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ProgressionGainSignalLayout(
+            kind: ProgressionGainKind.pilotExperience,
+            subjectId: result.pilot.pilotId,
+            child: Text(
+              '+${result.pilot.experienceGained} XP пилота',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ProgressionGainSignalLayout(
+            kind: ProgressionGainKind.petBond,
+            subjectId: result.pet.petId,
+            child: Text(
+              '+${result.pet.bondGained} связи · ${result.pet.name}',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ),
+          if (result.material != null) ...<Widget>[
+            const SizedBox(height: 8),
+            _JourneyRewardLine(
+              leading: ExpeditionItemEmblem(
+                itemId: result.material!.itemId,
+                size: 44,
+                highlighted: true,
+              ),
+              text:
+                  '+${result.material!.quantityGained} '
+                  '${result.material!.name}',
+            ),
+          ],
+        ],
+      ),
       action: FilledButton.icon(
         key: const Key('first-journey-finish'),
         onPressed: busy ? null : onFinish,
@@ -882,6 +913,27 @@ class _AlreadyCompletePanel extends StatelessWidget {
         label: const _JourneyActionLabel('Открыть экспедицию'),
       ),
       accent: true,
+    );
+  }
+}
+
+class _JourneyRewardLine extends StatelessWidget {
+  const _JourneyRewardLine({required this.leading, required this.text});
+
+  final Widget leading;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        leading,
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(text, style: Theme.of(context).textTheme.labelLarge),
+        ),
+      ],
     );
   }
 }
