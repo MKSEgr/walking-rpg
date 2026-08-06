@@ -163,6 +163,11 @@
 
 ### Changed
 
+- retention, first-journey и compass analytics теперь получают `generatedAt`
+  из PostgreSQL `statement_timestamp()` в том же первом statement, который
+  фиксирует population count и `REPEATABLE_READ` snapshot: задержка следующих
+  секций и рассинхронизация application clock больше не датируют один snapshot
+  раньше или позже его фактической observation boundary;
 - D1/D7/D30 retention rates теперь используют отдельные fully-observed
   `eligibleUsers` на едином `generatedAt`: новые аккаунты с незавершённым
   целевым UTC-днём больше не занижают зрелые cohort rates;

@@ -1,8 +1,6 @@
 package com.walkingrpg.backend.platform.analytics;
 
-import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import com.walkingrpg.backend.platform.application.PlatformValidationException;
@@ -29,17 +27,16 @@ public class FirstJourneyAnalyticsService {
             """;
 
     private final JdbcTemplate jdbcTemplate;
-    private final Clock clock;
 
-    public FirstJourneyAnalyticsService(JdbcTemplate jdbcTemplate, Clock clock) {
+    public FirstJourneyAnalyticsService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.clock = clock;
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public FirstJourneyAnalyticsSnapshot summary(String cohortCode) {
         String normalizedCohort = normalizeCohort(cohortCode);
-        long eligibleUsers = eligibleUsers(normalizedCohort);
+        SnapshotObservation observation = observeSnapshot(normalizedCohort);
+        long eligibleUsers = observation.eligibleUsers();
         long startedUsers = startedUsers(normalizedCohort);
         List<FirstJourneyStageMetric> stages = FirstJourneyMilestone.measuredStages()
                 .stream()
@@ -58,17 +55,27 @@ public class FirstJourneyAnalyticsService {
                 ratio(startedUsers, eligibleUsers),
                 stages,
                 dataQuality,
-                Instant.now(clock).truncatedTo(ChronoUnit.MICROS)
+                observation.generatedAt()
         );
     }
 
-    private long eligibleUsers(String cohortCode) {
-        Long result = jdbcTemplate.queryForObject("""
-                SELECT count(*)
+    private SnapshotObservation observeSnapshot(String cohortCode) {
+        SnapshotObservation observation = jdbcTemplate.queryForObject("""
+                SELECT count(*) AS eligible_users,
+                       statement_timestamp() AS generated_at
                 FROM app_user subject
                 WHERE
-                """ + COHORT_FILTER, Long.class, cohortCode, cohortCode);
-        return value(result);
+                """ + COHORT_FILTER, (resultSet, rowNumber) ->
+                new SnapshotObservation(
+                        resultSet.getLong("eligible_users"),
+                        resultSet.getTimestamp("generated_at").toInstant()
+                ), cohortCode, cohortCode);
+        if (observation == null) {
+            throw new IllegalStateException(
+                    "First journey snapshot observation query returned no row"
+            );
+        }
+        return observation;
     }
 
     private long startedUsers(String cohortCode) {
@@ -243,5 +250,8 @@ public class FirstJourneyAnalyticsService {
             Long medianSeconds,
             Long p90Seconds
     ) {
+    }
+
+    private record SnapshotObservation(long eligibleUsers, Instant generatedAt) {
     }
 }

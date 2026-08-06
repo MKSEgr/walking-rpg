@@ -345,15 +345,33 @@ public class PlatformAdminService {
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> retentionSummary() {
-        Instant generatedAt = now();
+        RetentionObservation observation = retentionObservation();
+        Instant generatedAt = observation.generatedAt();
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("cohortSize", queryLong("SELECT count(*) FROM app_user"));
+        result.put("cohortSize", observation.cohortSize());
         result.put("generatedAt", generatedAt);
         result.put("d1", retentionAtDay(1, generatedAt));
         result.put("d7", retentionAtDay(7, generatedAt));
         result.put("d30", retentionAtDay(30, generatedAt));
         result.put("onboarding", onboardingSummary());
         return result;
+    }
+
+    private RetentionObservation retentionObservation() {
+        RetentionObservation observation = jdbcTemplate.queryForObject("""
+                SELECT count(*) AS cohort_size,
+                       statement_timestamp() AS generated_at
+                FROM app_user
+                """, (resultSet, rowNumber) -> new RetentionObservation(
+                resultSet.getLong("cohort_size"),
+                resultSet.getTimestamp("generated_at").toInstant()
+        ));
+        if (observation == null) {
+            throw new IllegalStateException(
+                    "Retention snapshot observation query returned no row"
+            );
+        }
+        return observation;
     }
 
     @Transactional
@@ -961,6 +979,9 @@ public class PlatformAdminService {
     }
 
     private record RetentionCohort(long eligibleUsers, long retainedUsers) {
+    }
+
+    private record RetentionObservation(long cohortSize, Instant generatedAt) {
     }
 
     private String requireText(String value, String field) {

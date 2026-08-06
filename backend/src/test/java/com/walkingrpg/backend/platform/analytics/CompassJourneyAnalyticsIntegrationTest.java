@@ -34,6 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -44,8 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class CompassJourneyAnalyticsIntegrationTest {
 
     private static final Instant START = Instant.parse("2026-07-30T12:00:00Z");
-    private static final Instant GENERATED_AT =
-            Instant.parse("2026-07-30T18:00:00Z");
+    private static final Instant SKEWED_APPLICATION_TIME = Instant.EPOCH;
     private static final Instant ROUTE_ACTIVATED_AT = START.minusSeconds(1);
     private static final String COHORT = "compass-beta";
 
@@ -116,13 +116,19 @@ class CompassJourneyAnalyticsIntegrationTest {
 
         seedCompleteJourney("outside", START.plusSeconds(900));
 
+        Instant observationStartedAt = databaseTime();
         CompassJourneyAnalyticsSnapshot snapshot = service.summary(" compass-beta ");
+        Instant observationFinishedAt = databaseTime();
 
         assertEquals(COHORT, snapshot.cohortCode());
         assertEquals(4, snapshot.eligibleUsers());
         assertEquals(2, snapshot.instrumentedUsers());
         assertEquals(0.5, snapshot.instrumentationRate());
-        assertEquals(GENERATED_AT, snapshot.generatedAt());
+        assertSnapshotBoundary(
+                observationStartedAt,
+                snapshot.generatedAt(),
+                observationFinishedAt
+        );
 
         CompassJourneyFunnel crafting = funnel(
                 snapshot,
@@ -322,10 +328,10 @@ class CompassJourneyAnalyticsIntegrationTest {
                 )
         );
 
-        assertEquals(GENERATED_AT, published.get("createdAt"));
+        assertEquals(SKEWED_APPLICATION_TIME, published.get("createdAt"));
         assertEquals(activatedAt, published.get("activatedAt"));
         assertEquals(
-                GENERATED_AT,
+                SKEWED_APPLICATION_TIME,
                 jdbcTemplate.queryForObject("""
                         SELECT created_at
                         FROM content_release
@@ -362,15 +368,19 @@ class CompassJourneyAnalyticsIntegrationTest {
         addUser("snapshot-user", "snapshot-cohort");
 
         CompassJourneyAnalyticsSnapshot duringInsert;
+        Instant observationStartedAt;
+        Instant firstStatementFinishedAt;
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try (Connection blocker = dataSource.getConnection();
              Statement statement = blocker.createStatement()) {
             blocker.setAutoCommit(false);
             statement.execute("LOCK TABLE platform_event IN ACCESS EXCLUSIVE MODE");
 
+            observationStartedAt = databaseTime();
             Future<CompassJourneyAnalyticsSnapshot> pending =
                     executor.submit(() -> service.summary(null));
             awaitBlockedStageRead();
+            firstStatementFinishedAt = databaseTime();
 
             statement.executeUpdate("""
                     INSERT INTO platform_event (
@@ -396,6 +406,11 @@ class CompassJourneyAnalyticsIntegrationTest {
 
         assertEquals(1, duringInsert.eligibleUsers());
         assertEquals(0, duringInsert.instrumentedUsers());
+        assertSnapshotBoundary(
+                observationStartedAt,
+                duringInsert.generatedAt(),
+                firstStatementFinishedAt
+        );
         assertEquals(
                 0,
                 funnel(
@@ -412,6 +427,19 @@ class CompassJourneyAnalyticsIntegrationTest {
                         afterInsert,
                         CompassJourneyFunnelId.CRAFTING_EQUIPMENT
                 ).startedUsers()
+        );
+    }
+
+    @Test
+    void shouldAnchorRetentionGeneratedAtToDatabaseSnapshot() {
+        Instant observationStartedAt = databaseTime();
+        Map<String, Object> snapshot = adminService.retentionSummary();
+        Instant observationFinishedAt = databaseTime();
+
+        assertSnapshotBoundary(
+                observationStartedAt,
+                (Instant) snapshot.get("generatedAt"),
+                observationFinishedAt
         );
     }
 
@@ -731,6 +759,26 @@ class CompassJourneyAnalyticsIntegrationTest {
                 .orElseThrow();
     }
 
+    private Instant databaseTime() {
+        Timestamp timestamp = jdbcTemplate.queryForObject(
+                "SELECT statement_timestamp()",
+                Timestamp.class
+        );
+        if (timestamp == null) {
+            throw new IllegalStateException("Database clock returned no timestamp");
+        }
+        return timestamp.toInstant();
+    }
+
+    private void assertSnapshotBoundary(
+            Instant earliest,
+            Instant generatedAt,
+            Instant latest
+    ) {
+        assertFalse(generatedAt.isBefore(earliest));
+        assertFalse(generatedAt.isAfter(latest));
+    }
+
     private void awaitBlockedStageRead() throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (System.nanoTime() < deadline) {
@@ -757,7 +805,7 @@ class CompassJourneyAnalyticsIntegrationTest {
         @Bean
         @Primary
         Clock compassJourneyAnalyticsClock() {
-            return Clock.fixed(GENERATED_AT, ZoneOffset.UTC);
+            return Clock.fixed(SKEWED_APPLICATION_TIME, ZoneOffset.UTC);
         }
     }
 }

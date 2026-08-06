@@ -227,6 +227,14 @@ Route baseline существует только для активной `chapte
 Новая таблица не нужна: при объёме закрытой beta существующие immutable rows и
 индексы являются достаточной read boundary.
 
+Retention, first-journey и compass read models начинают `REPEATABLE_READ`
+с одного population query, который одновременно возвращает PostgreSQL
+`statement_timestamp()` как `generatedAt`. В PostgreSQL snapshot фиксируется
+на первом нетранзакционном statement, поэтому эта server-owned метка относится
+к тому же observation boundary, что и все последующие counters. Ожидание lock
+в поздней секции ответа и рассинхронизация JVM clock не сдвигают время уже
+зафиксированного snapshot.
+
 `roadmap_user_state.activePetId` — источник выбора питомца. Общий
 `ActivePetProvider` связывает platform state с home/progression: event reward
 берёт тот же per-user advisory lock, что и `SELECT_PET`, затем блокирует и
@@ -423,6 +431,8 @@ backend продолжает менять только compatibility pointer и 
   UTC-днём. `retainedUsers / eligibleUsers` и onboarding counters читаются из
   того же repeatable-read snapshot, поэтому рост новой когорты не занижает
   зрелые retention rates и конкурентная запись не смешивает границы ответа.
+  `generatedAt` и `cohortSize` возвращаются первым PostgreSQL statement и
+  поэтому описывают именно момент фиксации этого snapshot.
 
 ## 9. Ключевые инварианты
 

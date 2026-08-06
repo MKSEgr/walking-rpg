@@ -29,6 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @SpringBootTest
@@ -38,8 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class FirstJourneyAnalyticsIntegrationTest {
 
     private static final Instant START = Instant.parse("2026-07-29T16:00:00Z");
-    private static final Instant GENERATED_AT =
-            Instant.parse("2026-07-29T18:00:00Z");
+    private static final Instant SKEWED_APPLICATION_TIME = Instant.EPOCH;
 
     @Container
     static final PostgreSQLContainer POSTGRES =
@@ -104,14 +104,20 @@ class FirstJourneyAnalyticsIntegrationTest {
                 "AUTHORITATIVE"
         );
 
+        Instant observationStartedAt = databaseTime();
         FirstJourneyAnalyticsSnapshot snapshot = service.summary(" alpha-1 ");
+        Instant observationFinishedAt = databaseTime();
 
         assertEquals("alpha-1", snapshot.cohortCode());
         assertEquals(4, snapshot.eligibleUsers());
         assertEquals(3, snapshot.startedUsers());
         assertEquals(1, snapshot.notStartedUsers());
         assertEquals(0.75, snapshot.startRate());
-        assertEquals(GENERATED_AT, snapshot.generatedAt());
+        assertSnapshotBoundary(
+                observationStartedAt,
+                snapshot.generatedAt(),
+                observationFinishedAt
+        );
         assertEquals(11, snapshot.dataQuality().authoritativeMilestoneRecords());
         assertEquals(8, snapshot.dataQuality().backfilledMilestoneRecords());
 
@@ -246,6 +252,8 @@ class FirstJourneyAnalyticsIntegrationTest {
         addUser("snapshot-user", "snapshot-cohort");
 
         FirstJourneyAnalyticsSnapshot duringInsert;
+        Instant observationStartedAt;
+        Instant firstStatementFinishedAt;
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try (Connection blocker = dataSource.getConnection();
              Statement statement = blocker.createStatement()) {
@@ -255,9 +263,11 @@ class FirstJourneyAnalyticsIntegrationTest {
                     IN ACCESS EXCLUSIVE MODE
                     """);
 
+            observationStartedAt = databaseTime();
             Future<FirstJourneyAnalyticsSnapshot> pending =
                     executor.submit(() -> service.summary(null));
             awaitBlockedMilestoneRead();
+            firstStatementFinishedAt = databaseTime();
 
             statement.executeUpdate("""
                     INSERT INTO first_journey_milestone (
@@ -282,6 +292,11 @@ class FirstJourneyAnalyticsIntegrationTest {
         assertEquals(1, duringInsert.eligibleUsers());
         assertEquals(0, duringInsert.startedUsers());
         assertEquals(1, duringInsert.notStartedUsers());
+        assertSnapshotBoundary(
+                observationStartedAt,
+                duringInsert.generatedAt(),
+                firstStatementFinishedAt
+        );
 
         FirstJourneyAnalyticsSnapshot afterInsert = service.summary(null);
         assertEquals(1, afterInsert.eligibleUsers());
@@ -399,6 +414,26 @@ class FirstJourneyAnalyticsIntegrationTest {
                 .orElseThrow();
     }
 
+    private Instant databaseTime() {
+        Timestamp timestamp = jdbcTemplate.queryForObject(
+                "SELECT statement_timestamp()",
+                Timestamp.class
+        );
+        if (timestamp == null) {
+            throw new IllegalStateException("Database clock returned no timestamp");
+        }
+        return timestamp.toInstant();
+    }
+
+    private void assertSnapshotBoundary(
+            Instant earliest,
+            Instant generatedAt,
+            Instant latest
+    ) {
+        assertFalse(generatedAt.isBefore(earliest));
+        assertFalse(generatedAt.isAfter(latest));
+    }
+
     private void awaitBlockedMilestoneRead() throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (System.nanoTime() < deadline) {
@@ -425,7 +460,7 @@ class FirstJourneyAnalyticsIntegrationTest {
         @Bean
         @Primary
         Clock firstJourneyAnalyticsClock() {
-            return Clock.fixed(GENERATED_AT, ZoneOffset.UTC);
+            return Clock.fixed(SKEWED_APPLICATION_TIME, ZoneOffset.UTC);
         }
     }
 }

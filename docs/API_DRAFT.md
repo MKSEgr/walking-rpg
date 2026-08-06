@@ -1018,7 +1018,9 @@ Telemetry day проверяется полуинтервалом `[UTC day star
 не уменьшают rate; `cohortSize` по-прежнему показывает все текущие аккаунты.
 Все cohort/day/onboarding counters одного ответа читаются в одной
 `REPEATABLE_READ` транзакции и не смешивают состояния до и после конкурентной
-записи.
+записи. `cohortSize` и PostgreSQL `statement_timestamp()` читаются одним первым
+statement; возвращаемый `generatedAt` является временем фиксации snapshot, а
+не временем начала handler или завершения последней секции.
 
 ```json
 {
@@ -1066,6 +1068,10 @@ Admin-only read model первого пути. Опциональный `cohortC
   "generatedAt": "2026-07-29T17:00:00Z"
 }
 ```
+
+`eligibleUsers` и `generatedAt` читаются одним первым PostgreSQL statement.
+Поэтому метка относится к тому же `REPEATABLE_READ` snapshot, что funnel и
+data-quality counters, даже если одна из последующих секций ждёт lock.
 
 `reachedUsers` и `conversionFromStarted` допускают migration/compatibility
 backfill ради continuity coverage. `authoritativeReachedUsers` и
@@ -1143,6 +1149,11 @@ Admin-only агрегированный read model для beta-пути
   "generatedAt": "2026-07-30T18:00:00Z"
 }
 ```
+
+`eligibleUsers` и `generatedAt` читаются одним первым PostgreSQL statement.
+Application clock не участвует в метке: поздняя блокировка funnel query не
+может датировать уже зафиксированный `REPEATABLE_READ` snapshot временем
+завершения ответа.
 
 Состав funnel-ов и источники:
 
