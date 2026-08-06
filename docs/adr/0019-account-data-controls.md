@@ -35,6 +35,13 @@ Backend уже умел выгружать и удалять данные пол
   вместо округления.
 - Backend удаляет данные транзакционно и возвращает постоянную UUID-квитанцию.
   Повторный запрос возвращает ту же квитанцию.
+- Account export сначала захватывает subject-level lock в outer
+  `READ_COMMITTED` transaction и проверяет deletion registry. Пока этот lock
+  удерживается, отдельная read-only `REPEATABLE_READ` transaction формирует
+  единый snapshot всех секций. Поэтому export либо полностью завершается до
+  deletion, либо после уже сохранённой квитанции получает
+  `ACCOUNT_DELETED`; ответ со старым snapshot не приходит после завершённого
+  удаления.
 - Квитанция хранит SHA-256 subject и request key, timestamps и receipt UUID.
   Raw OIDC subject и экспортированные данные в ней не сохраняются.
 - Subject-level advisory lock захватывается внутри той же database transaction

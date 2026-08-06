@@ -17,6 +17,7 @@ import com.walkingrpg.backend.platform.payment.SandboxPaymentProvider;
 import com.walkingrpg.backend.platform.push.DisabledPushDeliveryProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -189,6 +190,7 @@ class PlatformAdminServiceProviderTest {
                 deletionRegistry,
                 mock(PlatformPublicationTransactionLock.class),
                 mock(SquadTransactionLock.class),
+                mock(PlatformTransactionManager.class),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }

@@ -26,8 +26,12 @@ import com.walkingrpg.backend.platform.push.PushDeliveryProvider;
 import com.walkingrpg.backend.platform.push.PushDeliveryResult;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 public class PlatformAdminService {
@@ -53,6 +57,7 @@ public class PlatformAdminService {
     private final AccountDeletionRegistry accountDeletionRegistry;
     private final PlatformPublicationTransactionLock publicationTransactionLock;
     private final SquadTransactionLock squadTransactionLock;
+    private final TransactionOperations accountExportSnapshotTransaction;
     private final Clock clock;
 
     public PlatformAdminService(
@@ -64,6 +69,7 @@ public class PlatformAdminService {
             AccountDeletionRegistry accountDeletionRegistry,
             PlatformPublicationTransactionLock publicationTransactionLock,
             SquadTransactionLock squadTransactionLock,
+            PlatformTransactionManager transactionManager,
             Clock clock
     ) {
         this.jdbcTemplate = jdbcTemplate;
@@ -74,6 +80,16 @@ public class PlatformAdminService {
         this.accountDeletionRegistry = accountDeletionRegistry;
         this.publicationTransactionLock = publicationTransactionLock;
         this.squadTransactionLock = squadTransactionLock;
+        TransactionTemplate accountExportSnapshotTransaction =
+                new TransactionTemplate(transactionManager);
+        accountExportSnapshotTransaction.setPropagationBehavior(
+                TransactionDefinition.PROPAGATION_REQUIRES_NEW
+        );
+        accountExportSnapshotTransaction.setIsolationLevel(
+                TransactionDefinition.ISOLATION_REPEATABLE_READ
+        );
+        accountExportSnapshotTransaction.setReadOnly(true);
+        this.accountExportSnapshotTransaction = accountExportSnapshotTransaction;
         this.clock = clock;
     }
 
@@ -428,9 +444,18 @@ public class PlatformAdminService {
         }, normalizeNullable(cohortCode), normalizeNullable(cohortCode));
     }
 
-    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Map<String, Object> exportAccount(String userId) {
         String normalized = requireText(userId, "userId");
+        // The outer transaction keeps this subject lock while the suspended
+        // REQUIRES_NEW transaction obtains one stable export snapshot.
+        accountDeletionRegistry.requireActive(normalized);
+        return accountExportSnapshotTransaction.execute(
+                status -> readAccountExport(normalized)
+        );
+    }
+
+    private Map<String, Object> readAccountExport(String normalized) {
         Map<String, Object> export = new LinkedHashMap<>();
         export.put("exportedAt", now());
         export.put("user", jdbcTemplate.queryForList(

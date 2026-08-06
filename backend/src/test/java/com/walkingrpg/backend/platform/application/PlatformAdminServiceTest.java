@@ -15,13 +15,23 @@ import com.walkingrpg.backend.platform.infrastructure.SquadTransactionLock;
 import com.walkingrpg.backend.platform.payment.SandboxPaymentProvider;
 import com.walkingrpg.backend.platform.push.DisabledPushDeliveryProvider;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class PlatformAdminServiceTest {
 
@@ -49,6 +59,7 @@ class PlatformAdminServiceTest {
                 deletionRegistry,
                 mock(PlatformPublicationTransactionLock.class),
                 mock(SquadTransactionLock.class),
+                mock(PlatformTransactionManager.class),
                 clock
         );
 
@@ -67,6 +78,53 @@ class PlatformAdminServiceTest {
                 eq("{}"),
                 eq(Timestamp.from(POST_LOCK_TIME))
         );
+    }
+
+    @Test
+    void shouldAcquireAccountBoundaryBeforeRepeatableExportSnapshot() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        AccountDeletionRegistry deletionRegistry =
+                mock(AccountDeletionRegistry.class);
+        PlatformTransactionManager transactionManager =
+                mock(PlatformTransactionManager.class);
+        TransactionStatus transactionStatus = mock(TransactionStatus.class);
+        when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
+        MutableClock clock = new MutableClock(PRE_LOCK_TIME);
+        doAnswer(invocation -> {
+            clock.set(POST_LOCK_TIME);
+            return null;
+        }).when(deletionRegistry).requireActive("export-lock-user");
+        PlatformAdminService service = new PlatformAdminService(
+                jdbcTemplate,
+                JsonMapper.builder().findAndAddModules().build(),
+                new SandboxPaymentProvider(),
+                new DisabledPushDeliveryProvider(),
+                mock(ActivityRetentionService.class),
+                deletionRegistry,
+                mock(PlatformPublicationTransactionLock.class),
+                mock(SquadTransactionLock.class),
+                transactionManager,
+                clock
+        );
+
+        Map<String, Object> export = service.exportAccount("export-lock-user");
+
+        assertEquals(POST_LOCK_TIME, export.get("exportedAt"));
+        ArgumentCaptor<TransactionDefinition> definition =
+                ArgumentCaptor.forClass(TransactionDefinition.class);
+        InOrder order = inOrder(deletionRegistry, transactionManager);
+        order.verify(deletionRegistry).requireActive("export-lock-user");
+        order.verify(transactionManager).getTransaction(definition.capture());
+        assertEquals(
+                TransactionDefinition.PROPAGATION_REQUIRES_NEW,
+                definition.getValue().getPropagationBehavior()
+        );
+        assertEquals(
+                TransactionDefinition.ISOLATION_REPEATABLE_READ,
+                definition.getValue().getIsolationLevel()
+        );
+        assertTrue(definition.getValue().isReadOnly());
+        verify(transactionManager).commit(transactionStatus);
     }
 
     private static final class MutableClock extends Clock {

@@ -163,6 +163,10 @@
 
 ### Changed
 
+- account export теперь удерживает общий subject-level deletion lock до конца
+  отдельного `REPEATABLE_READ` snapshot: deletion не может завершиться раньше
+  ответа со старыми account data, а уже удалённый subject получает
+  `ACCOUNT_DELETED` до чтения секций;
 - новые activity ENERGY ledger entries используют versioned operation source
   `v2:<requestFingerprint>` вместо одного `deviceId + idempotencyKey`:
   повторное использование key после retention durable receipt не возвращает

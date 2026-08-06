@@ -744,6 +744,10 @@ the validated access token. See ADR 0018.
 
 Экспорт читается только через authenticated API, временно staging-ится для
 системного share sheet и удаляется из sandbox приложения после передачи.
+Backend сначала удерживает account subject lock в outer transaction, а затем
+строит единый read-only `REPEATABLE_READ` snapshot во вложенной transaction.
+Удаление поэтому сериализуется с export целиком: оно либо ждёт готовый файл,
+либо уже существующая receipt отклоняет export без выдачи старого snapshot.
 Удаление использует отдельный idempotent command: два UI-подтверждения → fresh
 OIDC login той же owner identity → транзакционное удаление → durable receipt →
 fail-closed local logout/cleanup. Backend receipt не содержит raw subject, а

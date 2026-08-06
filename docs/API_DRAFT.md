@@ -45,9 +45,13 @@
 mobile outbox. Persistent loadout и его exact command snapshots входят в
 `equipment` и `equipmentOperations`; cosmetic loadout входит в
 `cosmeticEquipment`.
-Все секции одного файла читаются в одной read-only `REPEATABLE_READ`
-транзакции. Конкурентная игровая команда или удаление аккаунта не может
-смешать в одном экспорте состояния базы до и после своего commit.
+До формирования файла backend захватывает subject-level account lock и
+проверяет deletion registry. Все секции затем читаются в одной read-only
+`REPEATABLE_READ` транзакции, пока outer transaction продолжает удерживать
+lock. Конкурентная игровая команда не может смешать в одном экспорте состояния
+до и после своего commit, а удаление либо начинается после готового export,
+либо уже завершённая deletion receipt даёт `410 ACCOUNT_DELETED` без ответа со
+старым snapshot.
 
 ```http
 Authorization: Bearer <access-token>
