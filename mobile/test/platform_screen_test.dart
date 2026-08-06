@@ -15,6 +15,7 @@ import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/profile_cosmetic_art.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
+import 'package:walking_rpg_mobile/design_system/season_reward_seal.dart';
 import 'package:walking_rpg_mobile/design_system/squad_formation_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/design_system/weekly_route_signal.dart';
@@ -174,6 +175,11 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.byType(SeasonRewardSeal), findsOneWidget);
+    expect(
+      find.byKey(const Key('season-reward-seal-signal-season-1-2-firstSignal')),
+      findsOneWidget,
+    );
     semantics.dispose();
   });
 
@@ -327,6 +333,7 @@ void main() {
       Key('first-journey-route-signal-1-6'),
       Key('platform-weekly-route-compact'),
       Key('weekly-route-signal-weekly-route-1-firstSignal'),
+      Key('season-reward-seal-signal-season-1-2-firstSignal'),
       Key('platform-pet-compact-spark-v1'),
       Key('platform-skill-compact-steady-step'),
       Key('platform-quest-compact-walk-3000'),

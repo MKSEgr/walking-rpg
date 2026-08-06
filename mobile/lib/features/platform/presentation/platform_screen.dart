@@ -15,6 +15,7 @@ import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/profile_cosmetic_art.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
+import 'package:walking_rpg_mobile/design_system/season_reward_seal.dart';
 import 'package:walking_rpg_mobile/design_system/squad_formation_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/design_system/weekly_route_signal.dart';
@@ -1186,7 +1187,11 @@ class _WeeklyRouteCard extends StatelessWidget {
                   onPressed: busy
                       ? null
                       : () => onClaimSeasonReward(rewardLevel!),
-                  icon: const Icon(Icons.card_giftcard_outlined),
+                  icon: SeasonRewardSeal(
+                    seasonId: snapshot.content.season.seasonId,
+                    level: rewardLevel,
+                    totalLevels: snapshot.content.season.levels,
+                  ),
                   label: Text(
                     'Награда уровня $rewardLevel',
                     maxLines: 2,
