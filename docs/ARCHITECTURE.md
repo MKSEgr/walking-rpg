@@ -283,6 +283,9 @@ locks перед схемой `deactivate current → activate next`. Конку
 requests одного типа сериализуются между backend instances, а независимые типы
 публикаций не блокируют друг друга. Partial unique indexes остаются последней
 DB-защитой single-active инварианта, а не механизмом обработки штатной гонки.
+Version identifier каждой публикации trim-ится до lock; запись, immediate
+response и последующий authoritative read используют одно canonical значение,
+а не raw transport string с граничным whitespace.
 Content release допускается до application service и этого lock только с явно
 присутствующим непустым JSON object `content`; missing/null/empty payload не
 может зависеть от более поздней service-level защиты.

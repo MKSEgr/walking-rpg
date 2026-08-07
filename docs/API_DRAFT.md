@@ -888,6 +888,11 @@ content release, а два издателя одного типа заверша
 `500` из-за гонки partial unique index. `createdAt` фиксируется после получения
 lock и отражает фактический порядок публикации.
 
+`version` remote config и `contentVersion` content release нормализуются через
+trim до lock и записи. Immediate response возвращает тот же canonical identifier,
+который хранится в active row и появится в последующем authoritative read;
+граничный whitespace не может создать два представления одной публикации.
+
 `activityRetentionDays` и `weeklyRouteEnergy` принимают только точные целые
 JSON-числа в своих допустимых диапазонах. Дробные значения отклоняются до
 publication lock и не меняют активный snapshot.

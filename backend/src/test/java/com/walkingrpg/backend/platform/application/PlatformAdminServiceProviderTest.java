@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.platform.application;
 
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -22,8 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class PlatformAdminServiceProviderTest {
 
@@ -141,6 +146,40 @@ class PlatformAdminServiceProviderTest {
 
         assertEquals("config.weeklyRouteEnergy", exception.field());
         verifyNoInteractions(jdbcTemplate);
+    }
+
+    @Test
+    void publicationResponsesShouldUseCanonicalStoredVersions() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        when(jdbcTemplate.queryForObject(
+                anyString(),
+                eq(Timestamp.class),
+                any(Object[].class)
+        )).thenReturn(Timestamp.from(NOW));
+        PlatformAdminService service = service(
+                jdbcTemplate,
+                new DisabledPaymentProvider(),
+                new DisabledPushDeliveryProvider(),
+                mock(AccountDeletionRegistry.class)
+        );
+
+        Map<String, Object> remoteConfig = service.updateRemoteConfig(
+                "  release-operator  ",
+                "  canonical-config-v2  ",
+                remoteConfig(false)
+        );
+        Map<String, Object> contentRelease = service.publishContent(
+                "  release-operator  ",
+                "  canonical-content-v2  ",
+                "  Canonical publication response  ",
+                Map.of("chapterId", "signal-chapter-1")
+        );
+
+        assertEquals("canonical-config-v2", remoteConfig.get("version"));
+        assertEquals(
+                "canonical-content-v2",
+                contentRelease.get("contentVersion")
+        );
     }
 
     @Test

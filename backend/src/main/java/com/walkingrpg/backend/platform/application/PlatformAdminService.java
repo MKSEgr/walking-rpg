@@ -216,7 +216,7 @@ public class PlatformAdminService {
                 Timestamp.from(timestamp)
         );
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("version", version);
+        response.put("version", normalizedVersion);
         response.put("config", new LinkedHashMap<>(config));
         response.put("active", true);
         response.put("createdAt", timestamp);
@@ -265,7 +265,7 @@ public class PlatformAdminService {
                 Timestamp.from(timestamp)
         );
         return Map.of(
-                "contentVersion", version,
+                "contentVersion", normalizedVersion,
                 "active", true,
                 "createdAt", timestamp,
                 "activatedAt", activatedAt.toInstant()
