@@ -816,6 +816,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(CompanionGrowthTrack), findsWidgets);
+    expect(find.byType(CompanionBondSignal), findsWidgets);
     expect(
       find.byKey(const Key('companion-bond-signal-spark-v1-spark-ready')),
       findsOneWidget,
