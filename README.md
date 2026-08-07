@@ -4,6 +4,11 @@
 
 Главный документ проекта: **[PROJECT_VISION.md](PROJECT_VISION.md)**.
 
+Текущая delivery-оценка и операционный план:
+[project assessment](docs/PROJECT_ASSESSMENT_2026-08-07.md),
+[validation backlog](docs/VALIDATION_BACKLOG.md) и
+[prompt «следующая задача → PR»](docs/NEXT_TASK_TO_PR_PROMPT.md).
+
 ## Текущее состояние
 
 Первый технический игровой цикл уже работает сквозным образом:
