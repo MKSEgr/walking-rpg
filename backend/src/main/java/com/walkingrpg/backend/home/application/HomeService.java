@@ -43,6 +43,7 @@ import com.walkingrpg.backend.home.domain.PilotSnapshot;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.domain.InventoryItemDefinition;
+import com.walkingrpg.backend.shared.time.DatabaseSnapshotClock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -60,7 +61,7 @@ public class HomeService {
     private final EquipmentRepository equipmentRepository;
     private final StarterEquipmentContent equipmentContent;
     private final ExpeditionContentActivation contentActivation;
-    private final Clock clock;
+    private final DatabaseSnapshotClock snapshotClock;
 
     @Autowired
     public HomeService(
@@ -73,7 +74,7 @@ public class HomeService {
             EquipmentRepository equipmentRepository,
             StarterEquipmentContent equipmentContent,
             ExpeditionContentActivation contentActivation,
-            Clock clock
+            DatabaseSnapshotClock snapshotClock
     ) {
         this.repository = repository;
         this.starterContent = starterContent;
@@ -84,7 +85,33 @@ public class HomeService {
         this.equipmentRepository = equipmentRepository;
         this.equipmentContent = equipmentContent;
         this.contentActivation = contentActivation;
-        this.clock = clock;
+        this.snapshotClock = snapshotClock;
+    }
+
+    public HomeService(
+            HomeReadRepository repository,
+            StarterHomeContent starterContent,
+            DailyGoalService dailyGoalService,
+            StarterExpeditionContent expeditionContent,
+            StarterInventoryContent inventoryContent,
+            StarterCraftingContent craftingContent,
+            EquipmentRepository equipmentRepository,
+            StarterEquipmentContent equipmentContent,
+            ExpeditionContentActivation contentActivation,
+            Clock clock
+    ) {
+        this(
+                repository,
+                starterContent,
+                dailyGoalService,
+                expeditionContent,
+                inventoryContent,
+                craftingContent,
+                equipmentRepository,
+                equipmentContent,
+                contentActivation,
+                applicationClock(clock)
+        );
     }
 
     public HomeService(
@@ -132,6 +159,7 @@ public class HomeService {
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public HomeSnapshotResponse getSnapshot(HomeQuery query) {
+        Instant serverTime = snapshotClock.observe();
         boolean resonanceRouteActive = contentActivation.isActive(
                 StarterExpeditionContent.CONTENT_VERSION
         );
@@ -160,7 +188,7 @@ public class HomeService {
                 state.activityStateVersion(),
                 state.economyVersion(),
                 state.lastActivitySyncAt(),
-                Instant.now(clock).truncatedTo(ChronoUnit.MICROS),
+                serverTime,
                 expeditionContent.contentVersion(resonanceRouteActive),
                 pilotSnapshot(state),
                 petSnapshot(state),
@@ -175,6 +203,10 @@ public class HomeService {
                 ),
                 craftingSnapshots(state)
         );
+    }
+
+    private static DatabaseSnapshotClock applicationClock(Clock clock) {
+        return () -> Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
     }
 
     private PendingEventResultSnapshot pendingEventResult(

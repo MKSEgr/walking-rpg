@@ -6,6 +6,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -36,6 +37,7 @@ import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import com.walkingrpg.backend.progression.infrastructure.InMemoryProgressionRepository;
+import com.walkingrpg.backend.shared.time.DatabaseSnapshotClock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -85,6 +87,20 @@ class PlatformServiceTest {
             JsonMapper objectMapper,
             Clock clock
     ) {
+        return service(
+                paymentProvider,
+                objectMapper,
+                clock,
+                () -> Instant.now(clock).truncatedTo(ChronoUnit.MICROS)
+        );
+    }
+
+    private PlatformService service(
+            PaymentProvider paymentProvider,
+            JsonMapper objectMapper,
+            Clock clock,
+            DatabaseSnapshotClock snapshotClock
+    ) {
         return new PlatformService(
                 platformRepository,
                 new PlatformContentCatalog(),
@@ -96,7 +112,8 @@ class PlatformServiceTest {
                 new ProgressionService(
                         new InMemoryProgressionRepository(),
                         new StarterProgressionContent()
-                )
+                ),
+                snapshotClock
         );
     }
 
@@ -133,6 +150,26 @@ class PlatformServiceTest {
                 map(bootstrap.get("content")).get("contentVersion")
         );
         assertEquals(18, map(bootstrap.get("content")).get("chapterNodes"));
+    }
+
+    @Test
+    void shouldUseDatabaseObservationTimeForSnapshotAndBootstrap() {
+        Instant observationTime = NOW.minusSeconds(90);
+        PlatformService observedService = service(
+                new SandboxPaymentProvider(),
+                JsonMapper.builder().findAndAddModules().build(),
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                () -> observationTime
+        );
+
+        assertEquals(
+                observationTime,
+                observedService.getSnapshot("observation-user").serverTime()
+        );
+        assertEquals(
+                observationTime,
+                observedService.getContentBootstrap().get("serverTime")
+        );
     }
 
     @Test

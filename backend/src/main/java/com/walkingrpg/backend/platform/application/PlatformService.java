@@ -34,6 +34,7 @@ import com.walkingrpg.backend.platform.progress.PlatformProgressFacts;
 import com.walkingrpg.backend.platform.progress.PlatformProgressFactsProvider;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.domain.PetProgressState;
+import com.walkingrpg.backend.shared.time.DatabaseSnapshotClock;
 import com.walkingrpg.backend.shared.validation.CanonicalUuid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,7 @@ public class PlatformService {
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final ProgressionService progressionService;
+    private final DatabaseSnapshotClock snapshotClock;
 
     @Autowired
     public PlatformService(
@@ -68,7 +70,8 @@ public class PlatformService {
             PaymentProvider paymentProvider,
             ObjectMapper objectMapper,
             Clock clock,
-            ProgressionService progressionService
+            ProgressionService progressionService,
+            DatabaseSnapshotClock snapshotClock
     ) {
         this.repository = repository;
         this.content = content;
@@ -78,20 +81,46 @@ public class PlatformService {
         this.objectMapper = objectMapper;
         this.clock = clock;
         this.progressionService = progressionService;
+        this.snapshotClock = snapshotClock;
+    }
+
+    public PlatformService(
+            PlatformRepository repository,
+            PlatformContentCatalog content,
+            PlatformProgressFactsProvider progressFactsProvider,
+            EconomyService economyService,
+            PaymentProvider paymentProvider,
+            ObjectMapper objectMapper,
+            Clock clock,
+            ProgressionService progressionService
+    ) {
+        this(
+                repository,
+                content,
+                progressFactsProvider,
+                economyService,
+                paymentProvider,
+                objectMapper,
+                clock,
+                progressionService,
+                () -> Instant.now(clock).truncatedTo(ChronoUnit.MICROS)
+        );
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PlatformSnapshotResponse getSnapshot(String userId) {
         String normalizedUserId = requireText(userId, "userId");
+        Instant serverTime = snapshotClock.observe();
         PlatformProgressFacts facts = progressFactsProvider.factsFor(normalizedUserId);
         PlatformUserState state = repository.findState(normalizedUserId)
                 .map(value -> reconcile(value, facts, normalizedUserId))
                 .orElseGet(() -> initialState(normalizedUserId, facts));
-        return snapshot(normalizedUserId, state, facts, now());
+        return snapshot(normalizedUserId, state, facts, serverTime);
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Map<String, Object> getContentBootstrap() {
+        Instant serverTime = snapshotClock.observe();
         String activeContentVersion = repository.activeContentVersion();
         Map<String, Object> remoteConfig = effectiveRemoteConfig();
         Map<String, Object> response = new LinkedHashMap<>();
@@ -101,7 +130,7 @@ public class PlatformService {
                 publicCatalog(activeContentVersion, remoteConfig)
         );
         response.put("remoteConfig", remoteConfig);
-        response.put("serverTime", now());
+        response.put("serverTime", serverTime);
         return response;
     }
 

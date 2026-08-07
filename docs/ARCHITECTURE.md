@@ -259,6 +259,12 @@ catalog, user-state threshold и remote config не расходятся при 
 или admin publication; runtime values участвуют в `catalogDigest`. Уже
 сохранённый command response остаётся immutable и replay-ится с исходной
 проекцией.
+Production Home, live platform snapshot и bootstrap начинают read-only
+`REPEATABLE_READ` с общего PostgreSQL `statement_timestamp()`. Этот первый SQL
+фиксирует transaction snapshot, а его результат становится `serverTime` всего
+response. Поэтому ожидание lock в поздней state/content/event секции и
+рассинхронизация JVM clock не могут датировать старый snapshot более новым
+временем. Command responses сохраняют отдельную post-lock timestamp семантику.
 Новая platform-команда после user lock также фиксирует один effective config и
 одну active content version, затем передаёт их через provider/feature gates,
 mutation, route-impression validation, derived achievements и response
@@ -422,8 +428,10 @@ backend продолжает менять только compatibility pointer и 
   тот же commit создаёт ACK milestone, replay читает сохранённое время без
   повторной мутации, а БД запрещает последующую правку timestamp;
 - read endpoints не создают zero-state;
-- platform snapshot и content bootstrap читают связанные state/facts/content/
-  remote-config секции из одного repeatable-read snapshot;
+- Home, platform snapshot и content bootstrap читают связанные state/facts/
+  content/remote-config секции из одного repeatable-read snapshot; первый
+  PostgreSQL statement одновременно фиксирует snapshot и возвращаемый
+  `serverTime`;
 - compass analytics читает eligible users, client impressions и gameplay
   receipts из одного repeatable-read snapshot;
 - retention analytics один раз фиксирует `generatedAt` и для D1/D7/D30

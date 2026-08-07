@@ -171,6 +171,92 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldAnchorContentBootstrapServerTimeToFirstDatabaseSnapshotStatement()
+            throws Exception {
+        String previousContentVersion = scalarString("""
+                SELECT content_version
+                FROM content_release
+                WHERE is_active
+                """);
+        String publishedContentVersion = "bootstrap-snapshot-content-v2";
+        Map<String, Object> duringPublication;
+        Instant observationStartedAt;
+        Instant firstStatementFinishedAt;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Map<String, Object>> pending = null;
+        try (Connection blocker = dataSource.getConnection()) {
+            try {
+                blocker.setAutoCommit(false);
+                try (Statement lock = blocker.createStatement()) {
+                    lock.execute(
+                            "LOCK TABLE remote_config_snapshot "
+                                    + "IN ACCESS EXCLUSIVE MODE"
+                    );
+                }
+
+                observationStartedAt = databaseTime();
+                pending = executor.submit(() -> {
+                    return platformService.getContentBootstrap();
+                });
+                awaitBlockedQuery("FROM remote_config_snapshot");
+                firstStatementFinishedAt = databaseTime();
+
+                platformAdminService.publishContent(
+                        "bootstrap-snapshot-test",
+                        publishedContentVersion,
+                        "Concurrent bootstrap snapshot publication",
+                        Map.of("contentVersion", publishedContentVersion)
+                );
+                blocker.commit();
+                duringPublication = pending.get(5, TimeUnit.SECONDS);
+            } finally {
+                try {
+                    blocker.rollback();
+                } finally {
+                    if (pending != null && !pending.isDone()) {
+                        pending.cancel(true);
+                    }
+                    executor.shutdownNow();
+                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            }
+        } finally {
+            restorePublicationState(new PublicationRestoration(
+                    "UPDATE content_release SET is_active = false WHERE is_active",
+                    """
+                    UPDATE content_release
+                    SET is_active = true
+                    WHERE content_version = ?
+                    """,
+                    """
+                    DELETE FROM content_release
+                    WHERE content_version LIKE ?
+                    """,
+                    previousContentVersion,
+                    "bootstrap-snapshot-content-%",
+                    "SELECT count(*) FROM content_release WHERE is_active",
+                    """
+                    SELECT content_version
+                    FROM content_release
+                    WHERE is_active
+                    """,
+                    previousContentVersion
+            ));
+        }
+
+        assertEquals(previousContentVersion, duringPublication.get("contentVersion"));
+        assertEquals(
+                previousContentVersion,
+                objectMap(duringPublication.get("content")).get("contentVersion")
+        );
+        assertSnapshotBoundary(
+                observationStartedAt,
+                (Instant) duringPublication.get("serverTime"),
+                firstStatementFinishedAt
+        );
+    }
+
+    @Test
     void shouldKeepInFlightCommandOnOneRemoteConfigPublication() throws Exception {
         String userId = "in-flight-config-user";
         Map<String, Object> previousRemoteConfig =
@@ -1126,6 +1212,8 @@ class PlatformPersistenceIntegrationTest {
         String userId = "platform-snapshot-user";
         ensureUser(userId);
         PlatformSnapshotResponse duringConcurrentSync;
+        Instant observationStartedAt;
+        Instant firstStatementFinishedAt;
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<PlatformSnapshotResponse> pending = null;
         try (Connection blocker = dataSource.getConnection()) {
@@ -1138,8 +1226,10 @@ class PlatformPersistenceIntegrationTest {
                     );
                 }
 
+                observationStartedAt = databaseTime();
                 pending = executor.submit(() -> platformService.getSnapshot(userId));
                 awaitPlatformResolvedEventsReadBlock();
+                firstStatementFinishedAt = databaseTime();
 
                 jdbcTemplate.update("""
                         INSERT INTO activity_sync_state (
@@ -1176,6 +1266,11 @@ class PlatformPersistenceIntegrationTest {
         assertEquals(
                 false,
                 duringConcurrentSync.userState().get("hasSuccessfulActivitySync")
+        );
+        assertSnapshotBoundary(
+                observationStartedAt,
+                duringConcurrentSync.serverTime(),
+                firstStatementFinishedAt
         );
         assertEquals(1, rowCount("activity_sync_state"));
         assertTrue(Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
@@ -2261,6 +2356,26 @@ class PlatformPersistenceIntegrationTest {
                 Integer.class
         );
         return count == null ? 0 : count;
+    }
+
+    private Instant databaseTime() {
+        Timestamp timestamp = jdbcTemplate.queryForObject(
+                "SELECT statement_timestamp()",
+                Timestamp.class
+        );
+        if (timestamp == null) {
+            throw new IllegalStateException("Database clock returned no timestamp");
+        }
+        return timestamp.toInstant();
+    }
+
+    private void assertSnapshotBoundary(
+            Instant earliest,
+            Instant serverTime,
+            Instant latest
+    ) {
+        assertFalse(serverTime.isBefore(earliest));
+        assertFalse(serverTime.isAfter(latest));
     }
 
     private int milestoneCount(String userId, String milestone) {
