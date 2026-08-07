@@ -82,7 +82,7 @@ void main() {
             );
           },
           home: const Scaffold(
-            body: Padding(
+            body: SingleChildScrollView(
               padding: EdgeInsets.all(12),
               child: Column(
                 children: <Widget>[
