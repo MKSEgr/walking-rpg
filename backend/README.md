@@ -212,6 +212,10 @@ Admin content release всегда содержит непустой JSON object
 Missing/null/`{}` отклоняются request validation до application service и
 publication lock; успешный publication contract остаётся неизменным.
 
+Remote-config `version` и content-release `contentVersion` trim-ятся один раз
+до publication lock. Immediate admin response возвращает именно этот canonical
+identifier, совпадающий с активной строкой и последующим authoritative read.
+
 ## Authentication
 
 Backend по умолчанию запускается fail-closed в режиме `jwt`. Production identity берётся только из проверенного OIDC access token:

@@ -163,6 +163,10 @@
 
 ### Changed
 
+- admin publication responses теперь возвращают тот же trimmed canonical
+  version identifier, который записан как active remote config/content release:
+  surrounding whitespace больше не создаёт расхождение immediate response с
+  последующим authoritative read;
 - admin content release теперь сохраняет missing/null `content` до Bean
   Validation и требует непустой JSON object: повреждённая публикация
   отклоняется до application service и publication lock, а непустой content
