@@ -264,7 +264,7 @@ class ExpeditionProgressRing extends StatelessWidget {
     required this.label,
     this.tone = ExpeditionPanelTone.lumen,
     this.size = 116,
-  });
+  }) : assert(size > 0);
 
   final double progress;
   final String value;
@@ -285,56 +285,219 @@ class ExpeditionProgressRing extends StatelessWidget {
     final double safeProgress = progress.clamp(0, 1).toDouble();
 
     return Semantics(
+      container: true,
+      excludeSemantics: true,
       label: '$label, $value',
       value: '${(safeProgress * 100).round()}%',
       child: SizedBox.square(
         dimension: size,
-        child: Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            CircularProgressIndicator(
-              value: safeProgress,
-              strokeWidth: 9,
-              strokeCap: StrokeCap.round,
-              color: accent,
-              backgroundColor: colors.surfaceContainerHighest,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(15),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: accent.withValues(alpha: 0.09),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      value,
-                      maxLines: 1,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(color: accent),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      label.toUpperCase(),
-                      maxLines: 1,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.7,
-                      ),
-                    ),
-                  ],
+        child: RepaintBoundary(
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              CustomPaint(
+                painter: _ExpeditionProgressOrbitPainter(
+                  progress: safeProgress,
+                  accent: accent,
+                  movement: palette.energy,
+                  surface: colors.surfaceContainerHighest,
+                  route: palette.routeLine,
+                  outline: colors.outlineVariant,
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.all(19),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color.alphaBlend(
+                      accent.withValues(alpha: 0.09),
+                      colors.surfaceContainerHigh.withValues(alpha: 0.97),
+                    ),
+                    border: Border.all(color: accent.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        value,
+                        maxLines: 1,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(color: accent),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        label.toUpperCase(),
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.7,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+}
+
+class _ExpeditionProgressOrbitPainter extends CustomPainter {
+  const _ExpeditionProgressOrbitPainter({
+    required this.progress,
+    required this.accent,
+    required this.movement,
+    required this.surface,
+    required this.route,
+    required this.outline,
+  });
+
+  final double progress;
+  final Color accent;
+  final Color movement;
+  final Color surface;
+  final Color route;
+  final Color outline;
+
+  static const double _startAngle = math.pi * 0.72;
+  static const double _sweepAngle = math.pi * 1.56;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) {
+      return;
+    }
+
+    final double unit = size.shortestSide;
+    final Offset center = size.center(Offset.zero);
+    final double radius = unit * 0.42;
+    final Rect orbit = Rect.fromCircle(center: center, radius: radius);
+
+    final Paint field = Paint()
+      ..color = accent.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = unit * 0.012;
+    canvas
+      ..drawArc(
+        Rect.fromCircle(center: center, radius: unit * 0.49),
+        math.pi * 1.15,
+        math.pi * 0.34,
+        false,
+        field,
+      )
+      ..drawArc(
+        Rect.fromCircle(center: center, radius: unit * 0.33),
+        math.pi * 1.64,
+        math.pi * 0.42,
+        false,
+        field,
+      );
+
+    canvas.drawArc(
+      orbit,
+      _startAngle,
+      _sweepAngle,
+      false,
+      Paint()
+        ..color = Color.lerp(route, outline, 0.32)!.withValues(alpha: 0.78)
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = unit * 0.052,
+    );
+    if (progress > 0) {
+      canvas.drawArc(
+        orbit,
+        _startAngle,
+        _sweepAngle * progress,
+        false,
+        Paint()
+          ..color = accent.withValues(alpha: 0.98)
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = unit * 0.072,
+      );
+    }
+
+    for (final double fraction in const <double>[0, 0.25, 0.5, 0.75, 1]) {
+      final Offset point = _orbitPoint(center, radius, fraction);
+      final bool accepted = progress > 0 && fraction <= progress + 0.001;
+      final double nodeRadius = unit * (fraction == 1 ? 0.042 : 0.032);
+      canvas
+        ..drawCircle(
+          point,
+          nodeRadius,
+          Paint()..color = accepted ? accent : surface.withValues(alpha: 0.98),
+        )
+        ..drawCircle(
+          point,
+          nodeRadius,
+          Paint()
+            ..color = accepted ? accent : outline.withValues(alpha: 0.86)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = unit * 0.015,
+        );
+    }
+
+    final Offset current = _orbitPoint(center, radius, progress);
+    canvas
+      ..drawCircle(
+        current,
+        unit * 0.072,
+        Paint()..color = movement.withValues(alpha: 0.14),
+      )
+      ..drawCircle(
+        current,
+        unit * 0.029,
+        Paint()..color = progress > 0 ? movement : accent,
+      );
+
+    final Offset finish = _orbitPoint(center, radius, 1);
+    final Paint beacon = Paint()
+      ..color = movement.withValues(alpha: progress >= 1 ? 0.76 : 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = unit * 0.012;
+    canvas
+      ..drawArc(
+        Rect.fromCircle(center: finish, radius: unit * 0.076),
+        math.pi * 1.12,
+        math.pi * 0.76,
+        false,
+        beacon,
+      )
+      ..drawArc(
+        Rect.fromCircle(center: finish, radius: unit * 0.105),
+        math.pi * 1.16,
+        math.pi * 0.68,
+        false,
+        beacon,
+      );
+  }
+
+  Offset _orbitPoint(Offset center, double radius, double fraction) {
+    final double angle = _startAngle + (_sweepAngle * fraction);
+    return Offset(
+      center.dx + math.cos(angle) * radius,
+      center.dy + math.sin(angle) * radius,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ExpeditionProgressOrbitPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.accent != accent ||
+        oldDelegate.movement != movement ||
+        oldDelegate.surface != surface ||
+        oldDelegate.route != route ||
+        oldDelegate.outline != outline;
   }
 }
 
