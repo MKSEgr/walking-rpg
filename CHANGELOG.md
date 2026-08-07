@@ -163,6 +163,9 @@
 
 ### Changed
 
+- platform command теперь отличает явный пустой `payload: {}` от
+  отсутствующего/null payload: неполная команда отклоняется до application
+  service, state mutation и durable idempotency receipt;
 - activity sync теперь отличает явный ноль от отсутствующего/null
   `authoritativeTotal` и `buckets[].steps`: неполный payload отклоняется до
   user/device state, ENERGY и durable idempotency receipt, поэтому повреждённая
