@@ -365,6 +365,13 @@ TOTAL_DECREASED
 
 Повтор одного key и payload возвращает исходный response. Тот же key с другим business payload возвращает `409 IDEMPOTENCY_CONFLICT`.
 
+`authoritativeTotal` и `buckets[].steps` — обязательные JSON-поля с
+неотрицательным целым значением. Явный `0` допустим, но отсутствующее поле или
+`null` возвращает `400 VALIDATION_ERROR` до создания user/device state,
+activity high-watermark, ENERGY ledger или durable idempotency receipt. Поэтому
+повреждённая mobile-команда не может быть принята как успешный zero-sync и
+заблокировать исправленный retry тем же key.
+
 Exact replay и сравнение payload действуют, пока durable
 `processed_activity_sync` receipt находится в retention window. После его
 очистки прежний key больше не имеет сохранённого response и при повторном

@@ -8,6 +8,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 public record ActivityBucketRequest(
         @NotNull Instant from,
         @NotNull Instant to,
-        @PositiveOrZero long steps
+        @NotNull @PositiveOrZero Long steps
 ) {
 }

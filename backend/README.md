@@ -259,6 +259,11 @@ Backend принимает текущую и прошлую `localDate` в за�
 state или ENERGY ledger entry. Числовые fixed offsets не заменяют IANA/TZDB ID
 и отклоняются на request boundary.
 
+`authoritativeTotal` и `buckets[].steps` обязаны явно присутствовать в JSON.
+Явный `0` допустим; missing/null отклоняется до user/device state, ENERGY и
+idempotency receipt, поэтому неполный outbox payload не подтверждается как
+успешный zero-sync.
+
 `attestation` остаётся request-scoped: каждый exact replay повторно создаёт
 shadow-mode risk assessment до idempotency response lookup, но не меняет
 сохранённый response, activity high-watermark или ENERGY ledger.

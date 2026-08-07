@@ -163,6 +163,10 @@
 
 ### Changed
 
+- activity sync теперь отличает явный ноль от отсутствующего/null
+  `authoritativeTotal` и `buckets[].steps`: неполный payload отклоняется до
+  user/device state, ENERGY и durable idempotency receipt, поэтому повреждённая
+  outbox-команда не подтверждается как успешный zero-sync;
 - account export теперь фиксирует `exportedAt` первым PostgreSQL
   `statement_timestamp()` той же ручной read-only `REPEATABLE_READ`
   транзакции: рассинхронизация JVM clock и поздняя блокировка одной из секций

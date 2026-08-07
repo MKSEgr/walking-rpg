@@ -451,6 +451,9 @@ backend продолжает менять только compatibility pointer и 
     window. После cleanup reuse key является новой operation generation;
     versioned fingerprint-based ledger source не сталкивается со старой
     записью, а дневной high-watermark не допускает повторной ENERGY.
+3b. `authoritativeTotal` и каждый `buckets[].steps` должны явно присутствовать
+    как неотрицательные JSON-числа. Missing/null отклоняется на request boundary
+    до user/device state и durable receipt; явный ноль остаётся валидным.
 4. Wallet не становится отрицательным и меняется через ledger.
 5. Activity high-watermark пользователя общий для устройств и не уменьшается.
 5a. Время новой activity sync фиксируется после общего user lock; local-date

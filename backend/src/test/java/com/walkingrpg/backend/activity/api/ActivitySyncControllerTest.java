@@ -3,6 +3,7 @@ package com.walkingrpg.backend.activity.api;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncCommandFactory;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
@@ -68,6 +69,109 @@ class ActivitySyncControllerTest {
                 .andExpect(jsonPath("$.riskStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.stateVersion").value(1))
                 .andExpect(jsonPath("$.serverTime").value("2026-07-25T12:00:00Z"));
+    }
+
+    @Test
+    void shouldRejectMissingOrNullAuthoritativeTotalBeforeCreatingReceipt()
+            throws Exception {
+        for (String field : List.of("", "\"authoritativeTotal\": null,")) {
+            mockMvc.perform(post("/api/v1/activity/sync")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "localDate": "2026-07-25",
+                                      "timeZone": "Europe/Berlin",
+                                      %s
+                                      "buckets": [],
+                                      "idempotencyKey": "missing-total"
+                                    }
+                                    """.formatted(field)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.details.authoritativeTotal").exists())
+                    .andExpect(jsonPath("$.traceId").isNotEmpty());
+        }
+
+        mockMvc.perform(post("/api/v1/activity/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "localDate": "2026-07-25",
+                                  "timeZone": "Europe/Berlin",
+                                  "authoritativeTotal": 100,
+                                  "buckets": [],
+                                  "idempotencyKey": "missing-total"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.acceptedTotal").value(100))
+                .andExpect(jsonPath("$.energyGranted").value(1));
+    }
+
+    @Test
+    void shouldRejectMissingOrNullBucketStepsBeforeCreatingReceipt()
+            throws Exception {
+        for (String field : List.of("", ", \"steps\": null")) {
+            mockMvc.perform(post("/api/v1/activity/sync")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "localDate": "2026-07-25",
+                                      "timeZone": "Europe/Berlin",
+                                      "authoritativeTotal": 0,
+                                      "buckets": [{
+                                        "from": "2026-07-25T08:00:00Z",
+                                        "to": "2026-07-25T09:00:00Z"%s
+                                      }],
+                                      "idempotencyKey": "missing-bucket-steps"
+                                    }
+                                    """.formatted(field)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.details['buckets[0].steps']").exists())
+                    .andExpect(jsonPath("$.traceId").isNotEmpty());
+        }
+
+        mockMvc.perform(post("/api/v1/activity/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "localDate": "2026-07-25",
+                                  "timeZone": "Europe/Berlin",
+                                  "authoritativeTotal": 0,
+                                  "buckets": [{
+                                    "from": "2026-07-25T08:00:00Z",
+                                    "to": "2026-07-25T09:00:00Z",
+                                    "steps": 0
+                                  }],
+                                  "idempotencyKey": "missing-bucket-steps"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.acceptedTotal").value(0));
+    }
+
+    @Test
+    void shouldKeepExplicitZeroActivityNumbersValid() throws Exception {
+        mockMvc.perform(post("/api/v1/activity/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "localDate": "2026-07-25",
+                                  "timeZone": "Europe/Berlin",
+                                  "authoritativeTotal": 0,
+                                  "buckets": [{
+                                    "from": "2026-07-25T08:00:00Z",
+                                    "to": "2026-07-25T09:00:00Z",
+                                    "steps": 0
+                                  }],
+                                  "idempotencyKey": "explicit-zero"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.acceptedTotal").value(0))
+                .andExpect(jsonPath("$.acceptedDelta").value(0))
+                .andExpect(jsonPath("$.energyGranted").value(0));
     }
 
     @Test
