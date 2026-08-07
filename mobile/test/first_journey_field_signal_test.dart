@@ -195,6 +195,19 @@ void main() {
       progress: _progress(completedSteps: const <String>['welcome']),
       activityReward: firstJourneyActivityResult,
     );
+    expect(
+      find.byKey(const Key('first-journey-daily-route-orbit')),
+      findsOneWidget,
+    );
+    expect(find.byType(ExpeditionProgressRing), findsOneWidget);
+    expect(find.bySemanticsLabel('шаги, 50%'), findsOneWidget);
+    expect(
+      find.text(
+        'Принято 3000 из 6000 шагов дневного пути. '
+        'На балансе 30 ENERGY.',
+      ),
+      findsOneWidget,
+    );
     await _bringIntoView(
       tester,
       find.byKey(const Key('first-journey-activity-continue')),

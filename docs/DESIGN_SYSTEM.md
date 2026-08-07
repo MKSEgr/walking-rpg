@@ -512,6 +512,12 @@ instead of a generic Material activity ring. The center repeats the existing
 literal percentage, while the adjacent copy remains the source for exact daily
 steps, personal goal and policy explanation.
 
+The first-journey activity reward repeats that orbit only after a successful
+sync response. Its trace combines the response's literal `acceptedTotal` with
+the personal `dailyGoal` from the already accepted Home snapshot, and the
+adjacent copy exposes both values. It does not issue or imitate a second
+reward, infer ENERGY, or alter the onboarding command and refresh sequence.
+
 The five painted samples are decorative positions along one continuous daily
 measure. They are not reward tiers, ENERGY grants, streaks or client-owned
 milestones, and the highlighted trace uses only the already accepted bounded
