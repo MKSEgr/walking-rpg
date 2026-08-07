@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_navigation_glyph.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
@@ -73,6 +74,21 @@ void main() {
     expect(find.byType(NavigationRail), findsNothing);
     expect(
       tester
+          .widgetList<ExpeditionNavigationGlyph>(
+            find.byType(ExpeditionNavigationGlyph),
+          )
+          .map(
+            (ExpeditionNavigationGlyph glyph) =>
+                (glyph.destination, glyph.selected),
+          )
+          .toList(),
+      <(ExpeditionNavigationDestination, bool)>[
+        (ExpeditionNavigationDestination.expedition, true),
+        (ExpeditionNavigationDestination.journal, false),
+      ],
+    );
+    expect(
+      tester
           .getSize(find.byKey(const Key('main-navigation-bottom-dock')))
           .width,
       lessThanOrEqualTo(304),
@@ -83,6 +99,15 @@ void main() {
 
     expect(selections, <int>[1]);
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 1);
+    expect(
+      tester
+          .widgetList<ExpeditionNavigationGlyph>(
+            find.byType(ExpeditionNavigationGlyph),
+          )
+          .map((ExpeditionNavigationGlyph glyph) => glyph.selected)
+          .toList(),
+      <bool>[false, true],
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -115,6 +140,7 @@ void main() {
     expect(find.byKey(const Key('main-navigation-shell')), findsOneWidget);
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(ExpeditionNavigationGlyph), findsNWidgets(2));
     expect(find.text('ПОЛЕВОЙ ТЕРМИНАЛ'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const Key('main-navigation-rail'))).width,
@@ -130,6 +156,15 @@ void main() {
       1,
     );
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 1);
+    expect(
+      tester
+          .widgetList<ExpeditionNavigationGlyph>(
+            find.byType(ExpeditionNavigationGlyph),
+          )
+          .map((ExpeditionNavigationGlyph glyph) => glyph.selected)
+          .toList(),
+      <bool>[false, true],
+    );
 
     await tester.tap(find.byKey(const Key('navigation-platform-wide')));
     await tester.pump();

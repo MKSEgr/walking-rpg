@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_navigation_glyph.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
@@ -104,14 +105,26 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             destinations: const <NavigationDestination>[
               NavigationDestination(
                 key: Key('navigation-home'),
-                icon: Icon(Icons.explore_outlined),
-                selectedIcon: Icon(Icons.explore),
+                icon: ExpeditionNavigationGlyph(
+                  destination: ExpeditionNavigationDestination.expedition,
+                  selected: false,
+                ),
+                selectedIcon: ExpeditionNavigationGlyph(
+                  destination: ExpeditionNavigationDestination.expedition,
+                  selected: true,
+                ),
                 label: 'Экспедиция',
               ),
               NavigationDestination(
                 key: Key('navigation-platform'),
-                icon: Icon(Icons.menu_book_outlined),
-                selectedIcon: Icon(Icons.menu_book),
+                icon: ExpeditionNavigationGlyph(
+                  destination: ExpeditionNavigationDestination.journal,
+                  selected: false,
+                ),
+                selectedIcon: ExpeditionNavigationGlyph(
+                  destination: ExpeditionNavigationDestination.journal,
+                  selected: true,
+                ),
                 label: 'Журнал',
               ),
             ],
@@ -166,20 +179,18 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 ),
                 destinations: <NavigationRailDestination>[
                   NavigationRailDestination(
-                    icon: Icon(
-                      _selectedIndex == 0
-                          ? Icons.explore
-                          : Icons.explore_outlined,
+                    icon: ExpeditionNavigationGlyph(
                       key: const Key('navigation-home-wide'),
+                      destination: ExpeditionNavigationDestination.expedition,
+                      selected: _selectedIndex == 0,
                     ),
                     label: const Text('Экспедиция'),
                   ),
                   NavigationRailDestination(
-                    icon: Icon(
-                      _selectedIndex == 1
-                          ? Icons.menu_book
-                          : Icons.menu_book_outlined,
+                    icon: ExpeditionNavigationGlyph(
                       key: const Key('navigation-platform-wide'),
+                      destination: ExpeditionNavigationDestination.journal,
+                      selected: _selectedIndex == 1,
                     ),
                     label: const Text('Журнал'),
                   ),

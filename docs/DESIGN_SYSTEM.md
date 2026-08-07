@@ -846,6 +846,21 @@ navigation chrome adapts to the space assigned by its parent.
 - the shell does not add routes, content, commands or read-model assumptions;
 - compact and wide compositions are verified with enlarged system text.
 
+## Navigation destination glyphs
+
+The two stable player destinations use code-native route marks instead of the
+generic compass and book icons. **Expedition** follows a three-signal trail to
+one outer beacon, while **Journal** keeps the same signal vocabulary inside an
+open field log. The selected treatment changes both geometry and color: the
+route gains its beacon orbit, and the journal trace becomes fully connected.
+
+These marks represent navigation only. They do not read chapter progress,
+unread state, availability, a current node or any server-owned value. The
+owning `NavigationBar` or `NavigationRail` keeps the complete destination
+label, selected state and callback; glyph painting is excluded from semantics
+and input. Compact dock and wide rail reuse the same two widgets without
+changing the stable `IndexedStack` or destination lifecycle.
+
 ## Next visual slices
 
 1. Turn the expedition chapter into a visual route map only from an
