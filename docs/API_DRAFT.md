@@ -372,6 +372,13 @@ activity high-watermark, ENERGY ledger или durable idempotency receipt. По�
 повреждённая mobile-команда не может быть принята как успешный zero-sync и
 заблокировать исправленный retry тем же key.
 
+Оба поля проходят exact signed-`long` conversion непосредственно из JSON
+number. Математически целая decimal-запись (`100.0`) допустима, но ненулевая
+дробная часть, строковый JSON type (`"100"`) и значение вне диапазона `long`
+возвращают `400 VALIDATION_ERROR` до controller, state и receipt. Поэтому
+Jackson scalar coercion не может молча превратить отличающийся transport
+payload в другую business-команду.
+
 Exact replay и сравнение payload действуют, пока durable
 `processed_activity_sync` receipt находится в retention window. После его
 очистки прежний key больше не имеет сохранённого response и при повторном
@@ -460,6 +467,9 @@ response используют одно post-lock значение, поэтом�
 Правила:
 
 - `energyToSpend > 0`;
+- `energyToSpend` проходит тот же exact signed-`long` JSON-number contract:
+  целая decimal-запись допустима, дробное, строковое или выходящее за диапазон
+  значение отклоняется до ENERGY debit и durable receipt;
 - amount не превышает остаток до узла;
 - partial advance разрешён;
 - wallet не становится отрицательным;

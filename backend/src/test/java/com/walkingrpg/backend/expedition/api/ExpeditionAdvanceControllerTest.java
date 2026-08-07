@@ -3,6 +3,7 @@ package com.walkingrpg.backend.expedition.api;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import com.walkingrpg.backend.economy.application.EconomyService;
 import com.walkingrpg.backend.economy.infrastructure.InMemoryEconomyRepository;
@@ -68,6 +69,39 @@ class ExpeditionAdvanceControllerTest {
                 .andExpect(jsonPath("$.status").value("EVENT_READY"))
                 .andExpect(jsonPath("$.unlockedEvent.eventId").value("signal-source-v1"))
                 .andExpect(jsonPath("$.serverTime").value("2026-07-25T12:00:00Z"));
+    }
+
+    @Test
+    void shouldRequireExactIntegerEnergyBeforeCreatingReceipt() throws Exception {
+        for (String invalidEnergy : List.of(
+                "1.9",
+                "\"1\"",
+                "9223372036854775808"
+        )) {
+            mockMvc.perform(post("/api/v1/expeditions/starter-expedition-v1/advance")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "energyToSpend": %s,
+                                      "idempotencyKey": "exact-energy"
+                                    }
+                                    """.formatted(invalidEnergy)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.traceId").isNotEmpty());
+        }
+
+        mockMvc.perform(post("/api/v1/expeditions/starter-expedition-v1/advance")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "energyToSpend": 1.0,
+                                  "idempotencyKey": "exact-energy"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.energySpent").value(1))
+                .andExpect(jsonPath("$.energyBalanceAfter").value(67));
     }
 
     @Test

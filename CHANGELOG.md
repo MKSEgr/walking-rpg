@@ -163,6 +163,11 @@
 
 ### Changed
 
+- типизированные API integer-поля `authoritativeTotal`, `buckets[].steps` и
+  `energyToSpend` теперь используют exact signed-`long` JSON-number boundary:
+  ненулевая дробная часть, строковый type и переполнение отклоняются до
+  controller/state/ledger/receipt, а математически целая decimal-запись
+  сохраняет прежнее значение без Jackson truncation;
 - новые platform-команды теперь принимают exact payload keys своего canonical
   `commandType`: ignored client fields отклоняются до runtime/state/event writes
   и не создают ложные idempotency fingerprints; lookup старого receipt остаётся

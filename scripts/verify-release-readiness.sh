@@ -396,9 +396,18 @@ grep -Fq 'shouldKeepWalletConsistentWhenRetainedKeyIsReusedAfterReceiptCleanup' 
 grep -Fq 'shouldKeepLedgerGenerationDistinctAfterReceiptRetention' backend/src/test/java/com/walkingrpg/backend/activity/infrastructure/ActivitySyncPersistenceIntegrationTest.java || fail 'PostgreSQL activity ledger generations must remain distinct after receipt retention'
 grep -Fq '@NotNull @PositiveOrZero Long authoritativeTotal' backend/src/main/java/com/walkingrpg/backend/activity/api/ActivitySyncRequest.java || fail 'activity total must distinguish explicit zero from missing/null JSON'
 grep -Fq '@NotNull @PositiveOrZero Long steps' backend/src/main/java/com/walkingrpg/backend/activity/api/ActivityBucketRequest.java || fail 'activity bucket steps must distinguish explicit zero from missing/null JSON'
+grep -Fq '@NotNull @Positive Long energyToSpend' backend/src/main/java/com/walkingrpg/backend/expedition/api/ExpeditionAdvanceRequest.java || fail 'expedition energy must preserve missing/null validation before exact conversion'
+EXACT_JSON_LONG_FIELDS=$(grep -Fh '@JsonDeserialize(using = ExactJsonLongDeserializer.class)' \
+  backend/src/main/java/com/walkingrpg/backend/activity/api/ActivitySyncRequest.java \
+  backend/src/main/java/com/walkingrpg/backend/activity/api/ActivityBucketRequest.java \
+  backend/src/main/java/com/walkingrpg/backend/expedition/api/ExpeditionAdvanceRequest.java | wc -l | tr -d ' ')
+[ "$EXACT_JSON_LONG_FIELDS" -eq 3 ] || fail 'all three typed API integer fields must use the exact JSON long boundary'
+grep -Fq 'parser.getDecimalValue().longValueExact()' backend/src/main/java/com/walkingrpg/backend/shared/validation/ExactJsonLongDeserializer.java || fail 'exact JSON long conversion must reject fractions and overflow without truncation'
 grep -Fq 'shouldRejectMissingOrNullAuthoritativeTotalBeforeCreatingReceipt' backend/src/test/java/com/walkingrpg/backend/activity/api/ActivitySyncControllerTest.java || fail 'activity API coverage must reject missing/null authoritative totals'
 grep -Fq 'shouldRejectMissingOrNullBucketStepsBeforeCreatingReceipt' backend/src/test/java/com/walkingrpg/backend/activity/api/ActivitySyncControllerTest.java || fail 'activity API coverage must reject missing/null bucket steps'
 grep -Fq 'shouldKeepExplicitZeroActivityNumbersValid' backend/src/test/java/com/walkingrpg/backend/activity/api/ActivitySyncControllerTest.java || fail 'activity API coverage must preserve explicit zero values'
+grep -Fq 'shouldRequireExactIntegerActivityJsonNumbersBeforeCreatingReceipt' backend/src/test/java/com/walkingrpg/backend/activity/api/ActivitySyncControllerTest.java || fail 'activity API coverage must reject coerced, fractional and overflowing integers before receipts'
+grep -Fq 'shouldRequireExactIntegerEnergyBeforeCreatingReceipt' backend/src/test/java/com/walkingrpg/backend/expedition/api/ExpeditionAdvanceControllerTest.java || fail 'expedition API coverage must reject coerced, fractional and overflowing energy before debit'
 grep -Fq 'shouldTimestampAdvanceAfterExpeditionLock' backend/src/test/java/com/walkingrpg/backend/expedition/application/ExpeditionAdvanceServiceTest.java || fail 'expedition advance service coverage must order timestamps after expedition serialization'
 grep -Fq 'shouldTimestampAdvanceAfterWaitingForExpeditionLock' backend/src/test/java/com/walkingrpg/backend/expedition/infrastructure/ExpeditionAdvanceIntegrationTest.java || fail 'PostgreSQL expedition advance timestamps must follow the production expedition lock'
 grep -Fq 'shouldTimestampResolutionAfterExpeditionLock' backend/src/test/java/com/walkingrpg/backend/expedition/application/EventResolutionServiceTest.java || fail 'event resolution service coverage must order timestamps after expedition serialization'

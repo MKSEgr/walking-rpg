@@ -219,6 +219,13 @@ identifier, совпадающий с активной строкой и пос�
 JSON integers, а `seasonId` trim-ится до lock. Тот же canonical object попадает
 в БД, immediate response и следующий public bootstrap.
 
+Типизированные API-поля `authoritativeTotal`, `buckets[].steps` и
+`energyToSpend` используют общий exact signed-`long` JSON-number boundary.
+Математически целая decimal-запись допустима; ненулевая дробная часть, строковый
+JSON type и выход за диапазон отклоняются до controller, state/ledger mutation
+и durable receipt. Внутренний persistence `ObjectMapper` этой границей не
+меняется.
+
 ## Authentication
 
 Backend по умолчанию запускается fail-closed в режиме `jwt`. Production identity берётся только из проверенного OIDC access token:
@@ -279,6 +286,9 @@ state или ENERGY ledger entry. Числовые fixed offsets не замен
 idempotency receipt, поэтому неполный outbox payload не подтверждается как
 успешный zero-sync.
 
+Числа не проходят обычное Jackson-усечение/coercion: `1.9`, `"1"` и значение
+вне signed-`long` range отклоняются, а exact-integer `1.0` принимается как `1`.
+
 `attestation` остаётся request-scoped: каждый exact replay повторно создаёт
 shadow-mode risk assessment до idempotency response lookup, но не меняет
 сохранённый response, activity high-watermark или ENERGY ledger.
@@ -301,6 +311,10 @@ curl -X POST \
     "idempotencyKey": "starter-expedition-v1-advance-1"
   }'
 ```
+
+`energyToSpend` использует тот же exact JSON-number contract: `30.0` допустим,
+но ненулевая дробная часть, строка или значение вне signed-`long` range не
+доходят до списания ENERGY и idempotency receipt.
 
 Начало `chapter-1-v2`:
 
