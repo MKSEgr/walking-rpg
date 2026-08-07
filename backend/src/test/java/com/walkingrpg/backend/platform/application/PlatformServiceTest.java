@@ -324,6 +324,116 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldRejectUnexpectedPayloadFieldsBeforeRuntimeOrState() {
+        Map<String, Object> config = remoteConfig(false, false);
+        FlippingRemoteConfigRepository repository =
+                new FlippingRemoteConfigRepository(config, config);
+        platformRepository = repository;
+        service = service(new SandboxPaymentProvider());
+
+        PlatformValidationException selection = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("selection-user", command(
+                        "SELECT_PET",
+                        "selection-extra-field",
+                        Map.of(
+                                "petId", "moss-v1",
+                                "clientHint", "ignored-before-fix"
+                        )
+                ))
+        );
+        PlatformValidationException missingSelection = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("missing-selection-user", command(
+                        "SELECT_PET",
+                        "selection-missing-field",
+                        Map.of()
+                ))
+        );
+        PlatformValidationException leave = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("leave-user", command(
+                        "LEAVE_SQUAD",
+                        "leave-extra-field",
+                        Map.of("squadId", "client-owned")
+                ))
+        );
+        PlatformValidationException compass = assertThrows(
+                PlatformValidationException.class,
+                () -> service.execute("compass-user", command(
+                        "RECORD_COMPASS_IMPRESSION",
+                        "compass-extra-field",
+                        Map.of(
+                                "impression", "ROUTE_AVAILABLE",
+                                "contentVersion",
+                                StarterExpeditionContent.CONTENT_VERSION,
+                                "eventId", "client-owned"
+                        )
+                ))
+        );
+
+        assertEquals("payload", selection.field());
+        assertEquals("petId", missingSelection.field());
+        assertEquals("payload", leave.field());
+        assertEquals("payload", compass.field());
+        assertTrue(platformRepository.findState("selection-user").isEmpty());
+        assertTrue(platformRepository.findState("missing-selection-user").isEmpty());
+        assertTrue(platformRepository.findState("leave-user").isEmpty());
+        assertTrue(platformRepository.findState("compass-user").isEmpty());
+        assertEquals(0, platformRepository.processedCommandCount());
+        assertEquals(0, platformRepository.eventCount());
+        assertEquals(0, repository.remoteConfigReads());
+        assertEquals(0, factsProvider.calls());
+    }
+
+    @Test
+    void shouldReplayHistoricalReceiptBeforeExactPayloadShapeValidation()
+            throws Exception {
+        String userId = "historical-extra-payload-user";
+        String commandType = "RECORD_COMPASS_IMPRESSION";
+        String idempotencyKey = "historical-extra-payload";
+        Map<String, Object> canonicalPayload = Map.of(
+                "impression", "ROUTE_AVAILABLE",
+                "contentVersion", StarterExpeditionContent.CONTENT_VERSION
+        );
+        PlatformCommandResponse completed = service.execute(userId, command(
+                commandType,
+                idempotencyKey,
+                canonicalPayload
+        ));
+        Map<String, Object> historicalPayload = new LinkedHashMap<>(
+                canonicalPayload
+        );
+        historicalPayload.put("eventId", "ignored-before-fix");
+        JsonMapper mapper = JsonMapper.builder().findAndAddModules().build();
+        platformRepository.saveProcessed(
+                new PlatformCommandScope(
+                        userId,
+                        commandType,
+                        idempotencyKey
+                ),
+                new ProcessedPlatformCommand(
+                        PlatformCommandFingerprint.sha256(
+                                commandType,
+                                historicalPayload
+                        ),
+                        mapper.writeValueAsString(completed)
+                ),
+                NOW
+        );
+        int eventCount = platformRepository.eventCount();
+
+        PlatformCommandResponse replayed = service.execute(userId, command(
+                commandType,
+                idempotencyKey,
+                historicalPayload
+        ));
+
+        assertEquals(completed, replayed);
+        assertEquals(eventCount, platformRepository.eventCount());
+    }
+
+    @Test
     void shouldClaimReadyQuestAndRewardActivePet() {
         factsProvider.set("user-1", new PlatformProgressFacts(4_000, 0, 10, null));
 
