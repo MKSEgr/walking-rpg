@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size;
 public record ActivitySyncRequest(
         @NotNull LocalDate localDate,
         @NotBlank @Size(max = 64) String timeZone,
-        @PositiveOrZero long authoritativeTotal,
+        @NotNull @PositiveOrZero Long authoritativeTotal,
         @Size(max = 96) List<@Valid ActivityBucketRequest> buckets,
         @Size(max = 512) String syncCursor,
         @NotBlank @Size(max = 128) String idempotencyKey,
