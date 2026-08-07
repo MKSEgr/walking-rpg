@@ -6,6 +6,7 @@ import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
+import 'package:walking_rpg_mobile/design_system/companion_bond_signal.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
@@ -1225,9 +1226,6 @@ class _PetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-    final double bondProgress = (pet.bond / pet.evolutionBond)
-        .clamp(0.0, 1.0)
-        .toDouble();
     final Widget portrait = CompanionPortrait(
       key: Key('platform-pet-portrait-${pet.petId}'),
       petId: pet.petId,
@@ -1310,23 +1308,13 @@ class _PetCard extends StatelessWidget {
             currentStage: pet.evolutionStage,
           ),
           const SizedBox(height: 16),
-          Row(
-            children: <Widget>[
-              Text('Связь', style: Theme.of(context).textTheme.labelLarge),
-              const Spacer(),
-              Text(
-                pet.evolutionStage > 0
-                    ? '${pet.bond}'
-                    : '${pet.bond}/${pet.evolutionBond}',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: pet.canEvolve ? colors.primary : null,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 7),
-          LinearProgressIndicator(
-            value: pet.evolutionStage > 0 ? 1 : bondProgress,
+          CompanionBondSignal(
+            petId: pet.petId,
+            petName: pet.name,
+            bond: pet.bond,
+            evolutionBond: pet.evolutionBond,
+            canEvolve: pet.canEvolve,
+            evolved: pet.evolutionStage > 0,
           ),
           const SizedBox(height: 8),
           Text(
