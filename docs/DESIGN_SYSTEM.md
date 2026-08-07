@@ -77,7 +77,8 @@ selects Искра, Мох or Руна before the player does.
 - `ExpeditionPanel` is the default grouped surface. Tone communicates domain,
   not enabled/disabled state.
 - `ExpeditionBadge` is used for short state or location labels.
-- `ExpeditionProgressRing` is used only for one headline progress measure.
+- `ExpeditionProgressRing` is used only for one headline progress measure and
+  renders a broken route orbit rather than a generic fitness gauge.
 - the bottom navigation floats above content, while screens reserve enough
   bottom padding for it;
 - primary controls have a minimum height of 52 logical pixels;
@@ -503,6 +504,23 @@ wallet and remaining-ENERGY copy stays accessible on both surfaces. The signal
 owns no advance/sync callback, command key, idempotency, cached read-only state
 or authoritative reload behavior, and its fixed-height field remains
 width-flexible at compact size with enlarged text.
+
+## Daily route orbit
+
+Home presents the accepted daily walking ratio as one quiet broken route orbit
+instead of a generic Material activity ring. The center repeats the existing
+literal percentage, while the adjacent copy remains the source for exact daily
+steps, personal goal and policy explanation.
+
+The five painted samples are decorative positions along one continuous daily
+measure. They are not reward tiers, ENERGY grants, streaks or client-owned
+milestones, and the highlighted trace uses only the already accepted bounded
+`dailyProgress`. Goal calculation, Health synchronization, ENERGY issuance and
+the expedition action remain outside the component.
+
+The static painter owns one complete semantic summary and excludes its internal
+percentage copy from duplicate announcements. It keeps the same fixed square
+footprint in light and dark themes and in the existing compact Home reflow.
 
 ## Entry experience
 
