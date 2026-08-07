@@ -270,20 +270,24 @@ class HomeReadIntegrationTest {
     @Test
     void shouldAnchorHomeServerTimeToFirstDatabaseSnapshotStatement()
             throws Exception {
+        jdbcTemplate.update("""
+                INSERT INTO app_user (user_id, created_at, last_seen_at)
+                VALUES ('home-user', now(), now())
+                """);
+
         HomeSnapshotResponse duringConcurrentSync;
         Instant observationStartedAt;
         Instant firstStatementFinishedAt;
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<HomeSnapshotResponse> pending = null;
-        try (Connection blocker = dataSource.getConnection()) {
+        try (Connection blocker = dataSource.getConnection();
+             Statement statement = blocker.createStatement()) {
             try {
                 blocker.setAutoCommit(false);
-                try (Statement lock = blocker.createStatement()) {
-                    lock.execute(
-                            "LOCK TABLE processed_event_resolution "
-                                    + "IN ACCESS EXCLUSIVE MODE"
-                    );
-                }
+                statement.execute(
+                        "LOCK TABLE processed_event_resolution "
+                                + "IN ACCESS EXCLUSIVE MODE"
+                );
 
                 observationStartedAt = databaseTime();
                 pending = executor.submit(() -> homeService.getSnapshot(
@@ -292,7 +296,26 @@ class HomeReadIntegrationTest {
                 awaitBlockedQuery("FROM processed_event_resolution");
                 firstStatementFinishedAt = databaseTime();
 
-                activitySyncService.synchronize(command(1_000));
+                // Home reads intentionally hold the account-deletion guard lock.
+                // Commit the persistence fact directly so this test isolates the
+                // REPEATABLE READ boundary instead of deadlocking two services.
+                statement.executeUpdate("""
+                        INSERT INTO activity_sync_state (
+                            user_id,
+                            local_date,
+                            accepted_total,
+                            state_version,
+                            time_zone,
+                            updated_at
+                        ) VALUES (
+                            'home-user',
+                            DATE '2026-07-25',
+                            1000,
+                            1,
+                            'Europe/Berlin',
+                            statement_timestamp()
+                        )
+                        """);
                 blocker.commit();
                 duringConcurrentSync = pending.get(5, TimeUnit.SECONDS);
             } finally {
