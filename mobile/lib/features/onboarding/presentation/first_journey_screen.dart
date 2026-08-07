@@ -223,6 +223,7 @@ class FirstJourneyScreen extends StatelessWidget {
       return _ActivityRewardPanel(
         key: const ValueKey<String>('first-journey-energy-reward'),
         result: activity,
+        dailyGoal: progress.home.dailyGoal,
         busy: busy,
         onContinue: onContinueAfterActivity,
       );
@@ -444,11 +445,13 @@ class _ActivityRewardPanel extends StatelessWidget {
   const _ActivityRewardPanel({
     super.key,
     required this.result,
+    required this.dailyGoal,
     required this.busy,
     required this.onContinue,
   });
 
   final ActivitySyncResult result;
+  final int dailyGoal;
   final bool busy;
   final VoidCallback onContinue;
 
@@ -457,12 +460,25 @@ class _ActivityRewardPanel extends StatelessWidget {
     final String reward = result.energyGranted > 0
         ? '+${result.energyGranted} ENERGY'
         : 'Шаги подключены';
+    final double dailyProgress = dailyGoal <= 0
+        ? 0
+        : (result.acceptedTotal / dailyGoal).clamp(0, 1).toDouble();
+    final String dailyPercentage = '${(dailyProgress * 100).round()}%';
     return _JourneyPanel(
       icon: Icons.bolt,
+      visual: Center(
+        child: ExpeditionProgressRing(
+          key: const Key('first-journey-daily-route-orbit'),
+          progress: dailyProgress,
+          value: dailyPercentage,
+          label: 'шаги',
+          size: 108,
+        ),
+      ),
       eyebrow: 'Движение подтверждено',
       title: reward,
       body:
-          'Принято ${result.acceptedTotal} шагов. '
+          'Принято ${result.acceptedTotal} из $dailyGoal шагов дневного пути. '
           'На балансе ${result.energyBalanceAfter} ENERGY.',
       highlights: <String>[
         if (result.energyGranted == 0)
