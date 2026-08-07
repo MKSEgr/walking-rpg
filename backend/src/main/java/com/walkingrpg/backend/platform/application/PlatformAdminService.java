@@ -455,16 +455,21 @@ public class PlatformAdminService {
         String normalized = requireText(userId, "userId");
         return accountExportSnapshotTransaction.read(
                 normalized,
-                snapshot -> readAccountExport(normalized, snapshot)
+                (snapshot, exportedAt) -> readAccountExport(
+                        normalized,
+                        snapshot,
+                        exportedAt
+                )
         );
     }
 
     private Map<String, Object> readAccountExport(
             String normalized,
-            JdbcTemplate jdbcTemplate
+            JdbcTemplate jdbcTemplate,
+            Instant exportedAt
     ) {
         Map<String, Object> export = new LinkedHashMap<>();
-        export.put("exportedAt", now());
+        export.put("exportedAt", exportedAt);
         export.put("user", jdbcTemplate.queryForList(
                 "SELECT user_id, created_at, last_seen_at, "
                         + "has_successful_activity_sync "

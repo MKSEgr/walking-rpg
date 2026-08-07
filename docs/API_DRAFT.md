@@ -47,11 +47,14 @@ mobile outbox. Persistent loadout и его exact command snapshots входят
 `cosmeticEquipment`.
 До формирования файла backend на одном database connection захватывает
 session-level subject lock, затем на том же connection начинает read-only
-`REPEATABLE_READ`, проверяет deletion registry и читает все секции. Поэтому
-конкурентная игровая команда не смешивает в одном экспорте состояния до и после
-своего commit, а удаление либо сериализуется после export, либо уже завершённая
-deletion receipt даёт `410 ACCOUNT_DELETED`. Export не резервирует второй pool
-slot и работает при `DB_POOL_SIZE=1`.
+`REPEATABLE_READ`. Первый statement возвращает PostgreSQL
+`statement_timestamp()` как `exportedAt` и фиксирует snapshot; затем backend
+проверяет deletion registry и читает все секции. Поэтому конкурентная игровая
+команда не смешивает в одном экспорте состояния до и после своего commit,
+рассинхронизация JVM clock не сдвигает метку snapshot, а удаление либо
+сериализуется после export, либо уже завершённая deletion receipt даёт
+`410 ACCOUNT_DELETED`. Export не резервирует второй pool slot и работает при
+`DB_POOL_SIZE=1`.
 
 ```http
 Authorization: Bearer <access-token>

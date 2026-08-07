@@ -231,10 +231,13 @@ class AccountDeletionIntegrationTest {
     }
 
     @Test
-    void shouldExportAllSectionsFromOneRepeatableSnapshot() throws Exception {
+    void shouldAnchorAccountExportToOneDatabaseSnapshot() throws Exception {
         String userId = "consistent-export-user";
         seedAccount(userId);
+        clock.set(Instant.EPOCH);
         Map<String, Object> duringConcurrentInsert;
+        Instant observationStartedAt;
+        Instant firstStatementFinishedAt;
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         try (Connection blocker = dataSource.getConnection()) {
@@ -245,10 +248,12 @@ class AccountDeletionIntegrationTest {
                 );
             }
 
+            observationStartedAt = databaseTime();
             Future<Map<String, Object>> pending = executor.submit(
                     () -> service.exportAccount(userId)
             );
             awaitAccountExportMilestoneReadBlock();
+            firstStatementFinishedAt = databaseTime();
 
             try (PreparedStatement insertEvent = blocker.prepareStatement("""
                     INSERT INTO platform_event (
@@ -270,6 +275,11 @@ class AccountDeletionIntegrationTest {
         }
 
         assertEquals(1, ((List<?>) duringConcurrentInsert.get("telemetry")).size());
+        assertSnapshotBoundary(
+                observationStartedAt,
+                (Instant) duringConcurrentInsert.get("exportedAt"),
+                firstStatementFinishedAt
+        );
         assertEquals(2, rowCount("platform_event"));
 
         Map<String, Object> afterInsert = service.exportAccount(userId);
@@ -302,7 +312,7 @@ class AccountDeletionIntegrationTest {
 
             Map<String, Object> snapshot = exportTransaction.read(
                     userId,
-                    jdbc -> Map.of(
+                    (jdbc, exportedAt) -> Map.of(
                             "users",
                             jdbc.queryForObject(
                                     "SELECT count(*) FROM app_user WHERE user_id = ?",
@@ -318,13 +328,16 @@ class AccountDeletionIntegrationTest {
                             jdbc.queryForObject(
                                     "SHOW transaction_read_only",
                                     String.class
-                            )
+                            ),
+                            "exportedAt",
+                            exportedAt
                     )
             );
 
             assertEquals(1, snapshot.get("users"));
             assertEquals("repeatable read", snapshot.get("isolation"));
             assertEquals("on", snapshot.get("readOnly"));
+            assertInstanceOf(Instant.class, snapshot.get("exportedAt"));
             assertEquals(
                     "COMPLETED",
                     service.requestAccountDeletion(
@@ -873,6 +886,26 @@ class AccountDeletionIntegrationTest {
                 (resultSet, rowNumber) -> resultSet.getTimestamp(1).toInstant(),
                 arguments
         );
+    }
+
+    private Instant databaseTime() {
+        Timestamp timestamp = jdbcTemplate.queryForObject(
+                "SELECT statement_timestamp()",
+                Timestamp.class
+        );
+        if (timestamp == null) {
+            throw new IllegalStateException("Database clock returned no timestamp");
+        }
+        return timestamp.toInstant();
+    }
+
+    private void assertSnapshotBoundary(
+            Instant earliest,
+            Instant exportedAt,
+            Instant latest
+    ) {
+        assertFalse(exportedAt.isBefore(earliest));
+        assertFalse(exportedAt.isAfter(latest));
     }
 
     private void awaitAccountExportMilestoneReadBlock() throws Exception {

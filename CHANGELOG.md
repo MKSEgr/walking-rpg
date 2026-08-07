@@ -163,6 +163,10 @@
 
 ### Changed
 
+- account export теперь фиксирует `exportedAt` первым PostgreSQL
+  `statement_timestamp()` той же ручной read-only `REPEATABLE_READ`
+  транзакции: рассинхронизация JVM clock и поздняя блокировка одной из секций
+  больше не датируют единый export snapshot вне его observation boundary;
 - production Home, live platform snapshot и content bootstrap теперь начинают
   `REPEATABLE_READ` общим PostgreSQL `statement_timestamp()` и возвращают его
   как `serverTime`: поздняя блокировка следующей секции и рассинхронизация JVM

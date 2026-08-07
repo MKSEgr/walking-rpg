@@ -2,8 +2,9 @@ package com.walkingrpg.backend.platform.application;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Objects;
-import java.util.function.Function;
 
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import org.springframework.jdbc.core.ConnectionCallback;
@@ -25,7 +26,7 @@ public class AccountExportSnapshotTransaction {
         this.accountDeletionRegistry = accountDeletionRegistry;
     }
 
-    public <T> T read(String userId, Function<JdbcTemplate, T> reader) {
+    public <T> T read(String userId, SnapshotReader<T> reader) {
         Objects.requireNonNull(reader, "reader is required");
         return jdbcTemplate.execute((ConnectionCallback<T>) connection ->
                 read(connection, userId, reader));
@@ -34,7 +35,7 @@ public class AccountExportSnapshotTransaction {
     private <T> T read(
             Connection connection,
             String userId,
-            Function<JdbcTemplate, T> reader
+            SnapshotReader<T> reader
     ) throws SQLException {
         ConnectionState original = ConnectionState.capture(connection);
         if (!original.autoCommit()) {
@@ -53,8 +54,9 @@ public class AccountExportSnapshotTransaction {
             connection.setAutoCommit(false);
 
             JdbcTemplate snapshotJdbcTemplate = snapshotJdbcTemplate(connection);
+            Instant exportedAt = observeSnapshot(snapshotJdbcTemplate);
             subjectLock.requireActive(snapshotJdbcTemplate);
-            T result = reader.apply(snapshotJdbcTemplate);
+            T result = reader.read(snapshotJdbcTemplate, exportedAt);
             connection.commit();
             return result;
         } catch (SQLException | RuntimeException | Error exception) {
@@ -78,6 +80,19 @@ public class AccountExportSnapshotTransaction {
         );
         snapshot.setQueryTimeout(jdbcTemplate.getQueryTimeout());
         return snapshot;
+    }
+
+    private Instant observeSnapshot(JdbcTemplate snapshotJdbcTemplate) {
+        Timestamp timestamp = snapshotJdbcTemplate.queryForObject(
+                "SELECT statement_timestamp()",
+                Timestamp.class
+        );
+        if (timestamp == null) {
+            throw new IllegalStateException(
+                    "Account export snapshot returned no timestamp"
+            );
+        }
+        return timestamp.toInstant();
     }
 
     private static void rollback(Connection connection, Throwable failure) {
@@ -149,6 +164,12 @@ public class AccountExportSnapshotTransaction {
         }
         existing.addSuppressed(additional);
         return existing;
+    }
+
+    @FunctionalInterface
+    public interface SnapshotReader<T> {
+
+        T read(JdbcTemplate jdbcTemplate, Instant exportedAt);
     }
 
     private record ConnectionState(
