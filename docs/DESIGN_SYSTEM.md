@@ -505,6 +505,26 @@ owns no advance/sync callback, command key, idempotency, cached read-only state
 or authoritative reload behavior, and its fixed-height field remains
 width-flexible at compact size with enlarged text.
 
+## Activity intake signal
+
+The guided Health-permission step receives one static route-intake field so it
+no longer falls back to a generic walking icon while every adjacent first-
+journey stage carries its own expedition visual. Footfall marks enter a quiet
+route gate; lumen identifies the trusted route, ENERGY recalls why walking
+matters and resonance marks the privacy boundary.
+
+The signal represents only the product contract already stated by the screen:
+the app reads step count and does not read GPS. It accepts no step value,
+permission state, provider, risk result or synchronization outcome, and it
+never shows progress, success or a reward before the existing command returns.
+The system permission sheet, activity coordinator, idempotency boundary and
+authoritative refresh sequence remain unchanged.
+
+The painter is static, has one concise image semantic and does not intercept
+input. The existing body copy remains the detailed source for Health scope and
+the complete action label remains reachable at compact width with enlarged
+text.
+
 ## Daily route orbit
 
 Home presents the accepted daily walking ratio as one quiet broken route orbit

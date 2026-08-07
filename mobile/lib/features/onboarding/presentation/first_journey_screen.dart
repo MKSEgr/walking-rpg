@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/design_system/activity_intake_signal.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
@@ -414,13 +415,16 @@ class _ActivityPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _JourneyPanel(
       icon: Icons.directions_walk,
+      visual: const ActivityIntakeSignal(
+        key: Key('first-journey-activity-intake-signal'),
+      ),
       eyebrow: 'Шаг 1 · движение',
       title: 'Подключи шаги и получи первую ENERGY',
       body:
           'Системный экран запросит доступ только к количеству шагов. '
           'Walking RPG не читает геолокацию, пульс, сон, вес или медицинские записи.',
       highlights: const <String>[
-        'Только чтение STEPS.',
+        'Только количество шагов.',
         'Повторная синхронизация не выдаёт награду дважды.',
         '100 подтверждённых шагов = 1 ENERGY.',
       ],
