@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/design_system/activity_intake_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
@@ -187,6 +188,24 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('1/6 ЭТАПОВ ПРОЙДЕНО'), findsOneWidget);
+    final Finder intakeSignal = find.byKey(
+      const Key('first-journey-activity-intake-signal'),
+    );
+    expect(find.byType(ActivityIntakeSignal), findsOneWidget);
+    expect(intakeSignal, findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Сигнал подключения шагов: только количество шагов, '
+        'без геолокации',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: intakeSignal, matching: find.byType(CustomPaint)),
+      findsOneWidget,
+    );
+    expect(find.text('Только количество шагов.'), findsOneWidget);
+    await _bringIntoView(tester, intakeSignal);
     await _bringIntoView(tester, find.byKey(const Key('first-journey-sync')));
     _expectNoLayoutException(tester);
 
