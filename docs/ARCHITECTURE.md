@@ -473,6 +473,11 @@ backend продолжает менять только compatibility pointer и 
 3c. `PlatformCommandRequest.payload` должен явно присутствовать как JSON object.
     Missing/null отклоняется до application service и durable platform receipt;
     явный пустой object остаётся валидным для команд без собственных полей.
+3d. Типизированные `authoritativeTotal`, `buckets[].steps` и `energyToSpend`
+    принимаются только из JSON number через exact signed-`long` conversion.
+    Математически целая decimal-запись допустима; ненулевая дробная часть,
+    строковый JSON type и переполнение отклоняются до controller, state/ledger
+    mutation и durable receipt. Общий persistence `ObjectMapper` не меняется.
 4. Wallet не становится отрицательным и меняется через ledger.
 5. Activity high-watermark пользователя общий для устройств и не уменьшается.
 5a. Время новой activity sync фиксируется после общего user lock; local-date

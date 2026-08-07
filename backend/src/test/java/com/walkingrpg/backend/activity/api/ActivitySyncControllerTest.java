@@ -175,6 +175,88 @@ class ActivitySyncControllerTest {
     }
 
     @Test
+    void shouldRequireExactIntegerActivityJsonNumbersBeforeCreatingReceipt()
+            throws Exception {
+        for (String invalidTotal : List.of(
+                "1.9",
+                "\"1\"",
+                "9223372036854775808"
+        )) {
+            mockMvc.perform(post("/api/v1/activity/sync")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "localDate": "2026-07-25",
+                                      "timeZone": "Europe/Berlin",
+                                      "authoritativeTotal": %s,
+                                      "buckets": [],
+                                      "idempotencyKey": "exact-total"
+                                    }
+                                    """.formatted(invalidTotal)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.traceId").isNotEmpty());
+        }
+
+        mockMvc.perform(post("/api/v1/activity/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "localDate": "2026-07-25",
+                                  "timeZone": "Europe/Berlin",
+                                  "authoritativeTotal": 1.0,
+                                  "buckets": [],
+                                  "idempotencyKey": "exact-total"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.acceptedTotal").value(1));
+
+        for (String invalidSteps : List.of(
+                "0.5",
+                "\"0\"",
+                "9223372036854775808"
+        )) {
+            mockMvc.perform(post("/api/v1/activity/sync")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "localDate": "2026-07-25",
+                                      "timeZone": "Europe/Berlin",
+                                      "authoritativeTotal": 1,
+                                      "buckets": [{
+                                        "from": "2026-07-25T08:00:00Z",
+                                        "to": "2026-07-25T09:00:00Z",
+                                        "steps": %s
+                                      }],
+                                      "idempotencyKey": "exact-bucket-steps"
+                                    }
+                                    """.formatted(invalidSteps)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.traceId").isNotEmpty());
+        }
+
+        mockMvc.perform(post("/api/v1/activity/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "localDate": "2026-07-25",
+                                  "timeZone": "Europe/Berlin",
+                                  "authoritativeTotal": 1,
+                                  "buckets": [{
+                                    "from": "2026-07-25T08:00:00Z",
+                                    "to": "2026-07-25T09:00:00Z",
+                                    "steps": 0.0
+                                  }],
+                                  "idempotencyKey": "exact-bucket-steps"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.acceptedTotal").value(1));
+    }
+
+    @Test
     void shouldRejectUnknownTimeZoneWithStableErrorBody() throws Exception {
         mockMvc.perform(post("/api/v1/activity/sync")
                         .contentType(MediaType.APPLICATION_JSON)
