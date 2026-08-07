@@ -6,7 +6,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Map;
-import java.util.function.Function;
 
 import tools.jackson.databind.json.JsonMapper;
 import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
@@ -74,16 +73,15 @@ class PlatformAdminServiceTest {
     }
 
     @Test
-    void shouldTimestampAccountExportInsideLockedSnapshot() {
+    void shouldUseDatabaseObservationTimeForAccountExport() {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         AccountExportSnapshotTransaction exportTransaction =
                 mock(AccountExportSnapshotTransaction.class);
         MutableClock clock = new MutableClock(PRE_LOCK_TIME);
         doAnswer(invocation -> {
-            clock.set(POST_LOCK_TIME);
-            Function<JdbcTemplate, Map<String, Object>> reader =
+            AccountExportSnapshotTransaction.SnapshotReader<Map<String, Object>> reader =
                     invocation.getArgument(1);
-            return reader.apply(jdbcTemplate);
+            return reader.read(jdbcTemplate, POST_LOCK_TIME);
         }).when(exportTransaction).read(eq("export-lock-user"), any());
         PlatformAdminService service = new PlatformAdminService(
                 jdbcTemplate,
