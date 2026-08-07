@@ -6,6 +6,9 @@
 
 ### Added
 
+- `alpha-rc1` release dossier с immutable post-bootstrap `master` SHA/tree,
+  exact integrated push runs, build metadata и проверенными SHA-256 для
+  unsigned/no-codesign release artifacts;
 - idempotent `POST /api/v1/activity/sync` и PostgreSQL activity high-watermark;
 - ENERGY wallet и append-only credit/debit ledger;
 - production `GET /api/v1/home`;

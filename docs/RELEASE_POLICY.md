@@ -1,5 +1,8 @@
 # Release policy
 
+Current engineering baseline:
+[`alpha-rc1` release dossier](evidence/alpha-rc1-release-dossier.md).
+
 - Source changes enter `master` only through reviewed pull requests.
 - Standard CI validates behavior; `Release quality` validates packaging and policy.
 - CI candidates are unsigned/no-codesign and are never production artifacts.
