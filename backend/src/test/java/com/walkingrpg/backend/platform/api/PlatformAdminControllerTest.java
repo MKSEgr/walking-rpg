@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -267,6 +268,65 @@ class PlatformAdminControllerTest {
                 eq("release-operator"),
                 eq("config-v2"),
                 any()
+        );
+    }
+
+    @Test
+    void shouldRejectMissingNullOrEmptyContentReleaseBeforeService() throws Exception {
+        MockMvc mockMvc = mockMvc(FixedRequestIdentityProvider.admin(
+                "admin-subject",
+                "release-operator"
+        ));
+
+        for (String contentField : List.of(
+                "",
+                ", \"content\": null",
+                ", \"content\": {}"
+        )) {
+            mockMvc.perform(post("/api/v1/admin/platform/content-releases")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "contentVersion": "chapter-1-v3",
+                                      "releaseNotes": "Validated content release"%s
+                                    }
+                                    """.formatted(contentField)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.details.content").exists())
+                    .andExpect(jsonPath("$.traceId").isNotEmpty());
+        }
+
+        verifyNoInteractions(service);
+
+        when(service.publishContent(
+                "release-operator",
+                "chapter-1-v3",
+                "Validated content release",
+                Map.of("chapterId", "signal-chapter-1")
+        )).thenReturn(Map.of(
+                "contentVersion", "chapter-1-v3",
+                "active", true
+        ));
+
+        mockMvc.perform(post("/api/v1/admin/platform/content-releases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "contentVersion": "chapter-1-v3",
+                                  "releaseNotes": "Validated content release",
+                                  "content": {"chapterId": "signal-chapter-1"}
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.contentVersion").value("chapter-1-v3"))
+                .andExpect(jsonPath("$.active").value(true));
+
+        verify(service).publishContent(
+                "release-operator",
+                "chapter-1-v3",
+                "Validated content release",
+                Map.of("chapterId", "signal-chapter-1")
         );
     }
 

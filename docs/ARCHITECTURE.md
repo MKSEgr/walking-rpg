@@ -283,6 +283,9 @@ locks перед схемой `deactivate current → activate next`. Конку
 requests одного типа сериализуются между backend instances, а независимые типы
 публикаций не блокируют друг друга. Partial unique indexes остаются последней
 DB-защитой single-active инварианта, а не механизмом обработки штатной гонки.
+Content release допускается до application service и этого lock только с явно
+присутствующим непустым JSON object `content`; missing/null/empty payload не
+может зависеть от более поздней service-level защиты.
 V14 лишь stage-ит v2 и оставляет v1 активной. Пока оператор не активировал v2
 после полного drain старого backend pool, новый backend возвращает v1/18 nodes,
 не проецирует `follow-resonance` и отклоняет прямой переход. Exact replay

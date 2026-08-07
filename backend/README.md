@@ -208,6 +208,10 @@ Platform command всегда содержит явный JSON object `payload`.
 отклоняется до service, state mutation и idempotency receipt; `{}` остаётся
 валидным для команд без собственных полей.
 
+Admin content release всегда содержит непустой JSON object `content`.
+Missing/null/`{}` отклоняются request validation до application service и
+publication lock; успешный publication contract остаётся неизменным.
+
 ## Authentication
 
 Backend по умолчанию запускается fail-closed в режиме `jwt`. Production identity берётся только из проверенного OIDC access token:

@@ -163,6 +163,10 @@
 
 ### Changed
 
+- admin content release теперь сохраняет missing/null `content` до Bean
+  Validation и требует непустой JSON object: повреждённая публикация
+  отклоняется до application service и publication lock, а непустой content
+  сохраняет прежний успешный контракт;
 - platform command теперь отличает явный пустой `payload: {}` от
   отсутствующего/null payload: неполная команда отклоняется до application
   service, state mutation и durable idempotency receipt;
