@@ -163,6 +163,10 @@
 
 ### Changed
 
+- новые platform-команды теперь принимают exact payload keys своего canonical
+  `commandType`: ignored client fields отклоняются до runtime/state/event writes
+  и не создают ложные idempotency fingerprints; lookup старого receipt остаётся
+  раньше schema gate для безопасного exact replay исторических команд;
 - remote-config publication теперь один раз канонизирует exact-integer JSON
   numbers и trimmed `seasonId` до lock: active row, immediate admin response и
   последующий public bootstrap больше не представляют один config как `30.0`

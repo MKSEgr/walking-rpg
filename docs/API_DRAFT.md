@@ -925,6 +925,16 @@ lock; непустой content сохраняет прежний `201` response 
 durable idempotency receipt. Явный `{}` остаётся допустимым для команд без
 собственных полей, включая `LEAVE_SQUAD`.
 
+Новая команда принимает только точный набор полей своего `commandType`.
+Неожиданные ключи возвращают `400 VALIDATION_ERROR` с полем `payload` до чтения
+runtime publications, provider call, platform state или telemetry event. Это
+не позволяет проигнорированному client field менять durable fingerprint той же
+business-команды; для `RECORD_COMPASS_IMPRESSION` клиент, в частности, не может
+передать `eventId`, `choiceId` или timestamp. Lookup уже сохранённого receipt
+выполняется раньше этой проверки, поэтому exact replay исторической команды,
+которая была принята старым binary с лишним полем, остаётся доступен без новой
+мутации.
+
 Числовые поля payload имеют строгую целочисленную семантику. Значения с
 ненулевой дробной частью не усекаются и возвращают `400 VALIDATION_ERROR` с
 именем поля; это относится, в частности, к `energyToSpend` и `level`.

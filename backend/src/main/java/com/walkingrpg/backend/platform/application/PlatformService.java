@@ -50,6 +50,29 @@ public class PlatformService {
     private static final int DEFAULT_WEEKLY_ROUTE_ENERGY = 120;
     private static final String PURCHASE_COSMETIC_COMMAND = "PURCHASE_COSMETIC";
     private static final String LEGACY_BUY_COSMETIC_COMMAND = "BUY_COSMETIC";
+    private static final Map<String, List<String>> COMMAND_PAYLOAD_FIELDS =
+            Map.ofEntries(
+                    Map.entry("COMPLETE_ONBOARDING_STEP", List.of("stepId")),
+                    Map.entry("SELECT_PET", List.of("petId")),
+                    Map.entry("EVOLVE_PET", List.of("petId")),
+                    Map.entry("UNLOCK_SKILL", List.of("skillId")),
+                    Map.entry("CLAIM_QUEST", List.of("questId")),
+                    Map.entry("ADVANCE_WEEKLY_ROUTE", List.of("energyToSpend")),
+                    Map.entry("CREATE_SQUAD", List.of("name")),
+                    Map.entry("JOIN_SQUAD", List.of("squadId")),
+                    Map.entry("LEAVE_SQUAD", List.of()),
+                    Map.entry(PURCHASE_COSMETIC_COMMAND, List.of("cosmeticId")),
+                    Map.entry("EQUIP_COSMETIC", List.of("cosmeticId")),
+                    Map.entry("CLAIM_SEASON_REWARD", List.of("level")),
+                    Map.entry(
+                            "RECORD_EXPERIMENT_EXPOSURE",
+                            List.of("experimentId", "variant")
+                    ),
+                    Map.entry(
+                            "RECORD_COMPASS_IMPRESSION",
+                            List.of("impression", "contentVersion")
+                    )
+            );
 
     private final PlatformRepository repository;
     private final PlatformContentCatalog content;
@@ -192,6 +215,7 @@ public class PlatformService {
                 );
             }
         }
+        validateCommandPayloadBeforeState(commandType, request.payload());
         // A waiting user transaction must see the preceding command commit, so
         // keep READ_COMMITTED and freeze mutable runtime publications explicitly.
         Map<String, Object> remoteConfig = effectiveRemoteConfig();
@@ -210,7 +234,6 @@ public class PlatformService {
             );
         }
         requireProviderAvailability(commandType, remoteConfig);
-        validateCommandPayloadBeforeState(commandType, request.payload());
         acquireSquadMutationLock(
                 normalizedUserId,
                 commandType,
@@ -1375,8 +1398,30 @@ public class PlatformService {
             String commandType,
             Map<String, Object> payload
     ) {
-        if ("JOIN_SQUAD".equals(commandType)) {
-            payloadUuid(payload, "squadId");
+        List<String> expectedFields = COMMAND_PAYLOAD_FIELDS.get(commandType);
+        if (expectedFields == null) {
+            throw new PlatformValidationException(
+                    "Неизвестный commandType",
+                    "commandType"
+            );
+        }
+        if (payload == null) {
+            throw new PlatformValidationException(
+                    "Поле обязательно",
+                    "payload"
+            );
+        }
+        if (!expectedFields.containsAll(payload.keySet())) {
+            throw new PlatformValidationException(
+                    "payload должен содержать точный набор полей команды",
+                    "payload"
+            );
+        }
+        switch (commandType) {
+            case "ADVANCE_WEEKLY_ROUTE" -> payloadInt(payload, "energyToSpend");
+            case "CLAIM_SEASON_REWARD" -> payloadInt(payload, "level");
+            case "JOIN_SQUAD" -> payloadUuid(payload, "squadId");
+            default -> expectedFields.forEach(field -> payloadText(payload, field));
         }
     }
 

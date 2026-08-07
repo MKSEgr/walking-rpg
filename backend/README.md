@@ -451,6 +451,12 @@ Network Home регистрирует recipe/route state командой
 допустима только после cluster-wide активации `chapter-1-v2`. Exact replay не
 создаёт второе событие. Команда обходит reconciliation/persistence platform
 state, не материализует новые progress facts и не меняет `stateVersion`.
+Каждая новая platform-команда принимает только объявленные для её canonical
+типа payload keys. Лишние client fields, включая `eventId`, `choiceId` или
+timestamp для compass impression, отклоняются до runtime reads/state/events и
+не могут менять fingerprint при той же business mutation. Сохранённый receipt
+ищется раньше exact-shape gate, поэтому исторический exact payload продолжает
+replay-иться без второй записи.
 Cached/off-viewport/covered/background Home ничего не отправляет, а mobile
 обрабатывает команду в cache-neutral `TELEMETRY` lane отдельно от gameplay.
 Fingerprint platform payload рекурсивно сортирует JSON object keys, поэтому

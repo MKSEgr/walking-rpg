@@ -352,6 +352,12 @@ scalar values/types; bounded fallback принимает оба историче
 предыдущего shared API mapper. Новые rows сохраняют только выделенный compact
 canonical hash. Повтор после restart или на другом instance не меняет состояние
 второй раз и возвращает канонический сохранённый результат.
+Перед выполнением новой platform-команды exact command schema отклоняет ключи,
+которые её business logic не читает: ignored client data не может изменить
+fingerprint без изменения самой мутации. Receipt lookup остаётся до schema
+check, поэтому ранее сохранённые точные payload старого binary продолжают
+replay-иться, но новая команда с лишним полем не достигает runtime publications,
+provider, state или telemetry persistence.
 V10 расширяет event resolution receipt/delivery-mode/next-node/ACK state;
 исторические результаты получают receipt, но backfill-ятся acknowledged, чтобы
 не показывать старые награды повторно. Defaults и `BEFORE INSERT` trigger
@@ -504,6 +510,10 @@ backend продолжает менять только compatibility pointer и 
    runtime-проекция provider capability монотонно fail-closed: исходный `false`
    сохраняется, а исходный `true` может стать `false`, если текущие config или
    provider больше не разрешают capability.
+9a. Новая platform-команда принимает exact payload keys своего canonical
+    `commandType`; проигнорированное поле не может стать частью нового durable
+    fingerprint. Exact historical receipt проверяется раньше schema gate и
+    сохраняет replay compatibility без повторной мутации.
 10. Alias имени cosmetic purchase не меняет idempotency scope; тот же key с
     другим `cosmeticId` конфликтует до provider call.
 10a. Cosmetic ID не выбирает slot на клиенте; один пользователь имеет не более
