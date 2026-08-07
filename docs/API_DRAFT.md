@@ -892,6 +892,11 @@ lock и отражает фактический порядок публикац�
 JSON-числа в своих допустимых диапазонах. Дробные значения отклоняются до
 publication lock и не меняют активный snapshot.
 
+`POST /api/v1/admin/platform/content-releases` требует явно присутствующий
+непустой JSON object `content`. Missing, `null` и `{}` возвращают
+`400 VALIDATION_ERROR` с полем `content` до application service и publication
+lock; непустой content сохраняет прежний `201` response contract.
+
 ## `POST /api/v1/platform/commands`
 
 Все platform mutations используют одну restart-safe командную ручку:
