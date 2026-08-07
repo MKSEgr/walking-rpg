@@ -2,6 +2,14 @@
 
 CI создаёт технические release candidates. Подпись и публикация выполняются только во внешней защищённой среде.
 
+## Current engineering baseline
+
+`alpha-rc1` зафиксирован в
+[release dossier](evidence/alpha-rc1-release-dossier.md) на одном exact
+post-bootstrap `master` SHA/tree с зелёными integrated push checks и
+проверенными unsigned/no-codesign artifact digests. Dossier не заменяет
+production signing, physical-device, stage, real-restore или store evidence.
+
 ## Source gate
 
 - [ ] PR основан на актуальном `master`.
