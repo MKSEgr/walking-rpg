@@ -204,6 +204,10 @@ GET  /api/v1/admin/platform/analytics/first-journey?cohortCode=alpha-1
 GET  /api/v1/admin/platform/analytics/compass-journey?cohortCode=compass-beta
 ```
 
+Platform command всегда содержит явный JSON object `payload`. Missing/null
+отклоняется до service, state mutation и idempotency receipt; `{}` остаётся
+валидным для команд без собственных полей.
+
 ## Authentication
 
 Backend по умолчанию запускается fail-closed в режиме `jwt`. Production identity берётся только из проверенного OIDC access token:

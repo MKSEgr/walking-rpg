@@ -12,6 +12,6 @@ public record PlatformCommandRequest(
         @NotNull Map<String, Object> payload
 ) {
     public PlatformCommandRequest {
-        payload = payload == null ? Map.of() : Map.copyOf(payload);
+        payload = payload == null ? null : Map.copyOf(payload);
     }
 }

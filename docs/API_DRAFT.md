@@ -906,6 +906,11 @@ publication lock и не меняют активный snapshot.
 }
 ```
 
+`payload` обязан явно присутствовать как JSON object. Missing/null возвращает
+`400 VALIDATION_ERROR` до application service, изменения platform state и
+durable idempotency receipt. Явный `{}` остаётся допустимым для команд без
+собственных полей, включая `LEAVE_SQUAD`.
+
 Числовые поля payload имеют строгую целочисленную семантику. Значения с
 ненулевой дробной частью не усекаются и возвращают `400 VALIDATION_ERROR` с
 именем поля; это относится, в частности, к `energyToSpend` и `level`.

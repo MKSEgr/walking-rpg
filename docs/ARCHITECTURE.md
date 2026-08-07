@@ -454,6 +454,9 @@ backend продолжает менять только compatibility pointer и 
 3b. `authoritativeTotal` и каждый `buckets[].steps` должны явно присутствовать
     как неотрицательные JSON-числа. Missing/null отклоняется на request boundary
     до user/device state и durable receipt; явный ноль остаётся валидным.
+3c. `PlatformCommandRequest.payload` должен явно присутствовать как JSON object.
+    Missing/null отклоняется до application service и durable platform receipt;
+    явный пустой object остаётся валидным для команд без собственных полей.
 4. Wallet не становится отрицательным и меняется через ledger.
 5. Activity high-watermark пользователя общий для устройств и не уменьшается.
 5a. Время новой activity sync фиксируется после общего user lock; local-date

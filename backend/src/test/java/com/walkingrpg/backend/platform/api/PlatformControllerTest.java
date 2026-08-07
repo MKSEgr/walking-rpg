@@ -17,8 +17,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -123,6 +125,61 @@ class PlatformControllerTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.details.commandType").exists())
                 .andExpect(jsonPath("$.details.idempotencyKey").exists());
+    }
+
+    @Test
+    void shouldRejectMissingOrNullPayloadBeforeCommandReceipt() throws Exception {
+        PlatformSnapshotResponse snapshot = new PlatformSnapshotResponse(
+                "chapter-1-v1",
+                2,
+                Map.of("squadId", ""),
+                Map.of("chapterNodes", 18),
+                Map.of("weeklyRouteEnabled", true),
+                NOW
+        );
+        when(service.execute(eq("user-1"), any())).thenReturn(
+                new PlatformCommandResponse(
+                        "LEAVE_SQUAD",
+                        "leave-squad-1",
+                        "Пользователь покинул отряд",
+                        2,
+                        snapshot,
+                        NOW
+                )
+        );
+
+        for (String invalidBody : List.of(
+                """
+                        {
+                          "commandType": "LEAVE_SQUAD",
+                          "idempotencyKey": "leave-squad-1"
+                        }
+                        """,
+                """
+                        {
+                          "commandType": "LEAVE_SQUAD",
+                          "idempotencyKey": "leave-squad-1",
+                          "payload": null
+                        }
+                        """
+        )) {
+            mockMvc.perform(post("/api/v1/platform/commands")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(invalidBody))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.details.payload").exists());
+        }
+
+        performCommand("LEAVE_SQUAD", "leave-squad-1", "{}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.commandType").value("LEAVE_SQUAD"));
+
+        verify(service).execute(eq("user-1"), argThat(request ->
+                request.commandType().equals("LEAVE_SQUAD")
+                        && request.idempotencyKey().equals("leave-squad-1")
+                        && request.payload().isEmpty()
+        ));
     }
 
     @Test
