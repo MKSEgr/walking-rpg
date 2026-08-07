@@ -896,6 +896,10 @@ trim до lock и записи. Immediate response возвращает тот �
 `activityRetentionDays` и `weeklyRouteEnergy` принимают только точные целые
 JSON-числа в своих допустимых диапазонах. Дробные значения отклоняются до
 publication lock и не меняют активный snapshot.
+Допустимая decimal-запись целого числа канонизируется в JSON integer, а
+`seasonId` trim-ится до того же lock. Canonical config используется для записи,
+immediate admin response и последующего public bootstrap, поэтому `30.0` и
+`"  season-1  "` не создают разные представления одного active snapshot.
 
 `POST /api/v1/admin/platform/content-releases` требует явно присутствующий
 непустой JSON object `content`. Missing, `null` и `{}` возвращают

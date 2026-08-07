@@ -163,6 +163,10 @@
 
 ### Changed
 
+- remote-config publication теперь один раз канонизирует exact-integer JSON
+  numbers и trimmed `seasonId` до lock: active row, immediate admin response и
+  последующий public bootstrap больше не представляют один config как `30.0`
+  против `30` или как raw ID с граничными пробелами;
 - admin publication responses теперь возвращают тот же trimmed canonical
   version identifier, который записан как active remote config/content release:
   surrounding whitespace больше не создаёт расхождение immediate response с

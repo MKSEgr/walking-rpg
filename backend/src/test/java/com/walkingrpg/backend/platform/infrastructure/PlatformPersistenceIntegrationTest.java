@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.platform.infrastructure;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.Connection;
@@ -168,6 +169,75 @@ class PlatformPersistenceIntegrationTest {
         );
         assertEquals(snapshot.content(), bootstrapContent);
         assertEquals(snapshot.remoteConfig(), bootstrapConfig);
+    }
+
+    @Test
+    void shouldPersistAndReadCanonicalRemoteConfigValues() throws Exception {
+        String previousVersion = scalarString("""
+                SELECT config_version
+                FROM remote_config_snapshot
+                WHERE is_active
+                """);
+        String testVersion = "canonical-values-config-v2";
+        Map<String, Object> config = new LinkedHashMap<>(
+                publicationRemoteConfig("  canonical-season-v2  ")
+        );
+        config.put("activityRetentionDays", new BigDecimal("30.0"));
+        config.put("weeklyRouteEnergy", new BigDecimal("120.00"));
+
+        try {
+            Map<String, Object> publication = platformAdminService.updateRemoteConfig(
+                    "canonical-config-test",
+                    testVersion,
+                    config
+            );
+            Map<String, Object> publishedConfig = objectMap(
+                    publication.get("config")
+            );
+            Map<String, Object> bootstrapConfig = objectMap(
+                    platformService.getContentBootstrap().get("remoteConfig")
+            );
+
+            assertEquals(publicationRemoteConfig("canonical-season-v2"), publishedConfig);
+            assertEquals(publishedConfig, bootstrapConfig);
+            assertEquals("canonical-season-v2", scalarString("""
+                    SELECT config_json ->> 'seasonId'
+                    FROM remote_config_snapshot
+                    WHERE config_version = 'canonical-values-config-v2'
+                    """));
+            assertEquals("30", scalarString("""
+                    SELECT config_json ->> 'activityRetentionDays'
+                    FROM remote_config_snapshot
+                    WHERE config_version = 'canonical-values-config-v2'
+                    """));
+            assertEquals("120", scalarString("""
+                    SELECT config_json ->> 'weeklyRouteEnergy'
+                    FROM remote_config_snapshot
+                    WHERE config_version = 'canonical-values-config-v2'
+                    """));
+        } finally {
+            restorePublicationState(new PublicationRestoration(
+                    "UPDATE remote_config_snapshot SET is_active = false WHERE is_active",
+                    """
+                    UPDATE remote_config_snapshot
+                    SET is_active = true
+                    WHERE config_version = ?
+                    """,
+                    """
+                    DELETE FROM remote_config_snapshot
+                    WHERE config_version LIKE ?
+                    """,
+                    previousVersion,
+                    testVersion,
+                    "SELECT count(*) FROM remote_config_snapshot WHERE is_active",
+                    """
+                    SELECT config_version
+                    FROM remote_config_snapshot
+                    WHERE is_active
+                    """,
+                    previousVersion
+            ));
+        }
     }
 
     @Test

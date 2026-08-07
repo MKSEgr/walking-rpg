@@ -194,7 +194,7 @@ public class PlatformAdminService {
             String version,
             Map<String, Object> config
     ) {
-        validateRemoteConfig(config);
+        Map<String, Object> canonicalConfig = canonicalRemoteConfig(config);
         String normalizedVersion = requireText(version, "version");
         String normalizedActor = requireText(actor, "actor");
         publicationTransactionLock.lockRemoteConfig();
@@ -211,13 +211,13 @@ public class PlatformAdminService {
                     created_at = EXCLUDED.created_at
                 """,
                 normalizedVersion,
-                writeJson(config),
+                writeJson(canonicalConfig),
                 normalizedActor,
                 Timestamp.from(timestamp)
         );
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("version", normalizedVersion);
-        response.put("config", new LinkedHashMap<>(config));
+        response.put("config", new LinkedHashMap<>(canonicalConfig));
         response.put("active", true);
         response.put("createdAt", timestamp);
         return response;
@@ -862,47 +862,82 @@ public class PlatformAdminService {
         return value == null ? 0 : value;
     }
 
-    private void validateRemoteConfig(Map<String, Object> config) {
+    private Map<String, Object> canonicalRemoteConfig(
+            Map<String, Object> config
+    ) {
         if (config == null || !config.keySet().equals(REQUIRED_CONFIG_KEYS)) {
             throw new PlatformValidationException(
                     "config должен содержать полный обязательный набор полей",
                     "config"
             );
         }
-        requireBoolean(config, "backgroundHealthSyncEnabled");
-        requireBoolean(config, "sandboxPaymentsEnabled");
-        requireBoolean(config, "weeklyRouteEnabled");
-        if (Boolean.TRUE.equals(config.get("backgroundHealthSyncEnabled"))) {
+        boolean backgroundHealthSyncEnabled = requireBoolean(
+                config,
+                "backgroundHealthSyncEnabled"
+        );
+        boolean sandboxPaymentsEnabled = requireBoolean(
+                config,
+                "sandboxPaymentsEnabled"
+        );
+        boolean weeklyRouteEnabled = requireBoolean(
+                config,
+                "weeklyRouteEnabled"
+        );
+        if (backgroundHealthSyncEnabled) {
             throw new PlatformValidationException(
                     "backgroundHealthSyncEnabled пока не поддерживается",
                     "config.backgroundHealthSyncEnabled"
             );
         }
-        if (Boolean.TRUE.equals(config.get("sandboxPaymentsEnabled"))
-                && !paymentProvider.isAvailable()) {
+        if (sandboxPaymentsEnabled && !paymentProvider.isAvailable()) {
             throw new PlatformValidationException(
                     "sandboxPaymentsEnabled нельзя включить без payment provider",
                     "config.sandboxPaymentsEnabled"
             );
         }
-        requireInteger(config, "activityRetentionDays", 1, 3650);
-        requireInteger(config, "weeklyRouteEnergy", 10, 10_000);
+        int activityRetentionDays = requireInteger(
+                config,
+                "activityRetentionDays",
+                1,
+                3650
+        );
+        int weeklyRouteEnergy = requireInteger(
+                config,
+                "weeklyRouteEnergy",
+                10,
+                10_000
+        );
         Object seasonId = config.get("seasonId");
-        if (!(seasonId instanceof String value) || value.isBlank()) {
-            throw new PlatformValidationException("seasonId обязателен", "config.seasonId");
+        String normalizedSeasonId;
+        if (seasonId instanceof String value && !value.isBlank()) {
+            normalizedSeasonId = value.trim();
+        } else {
+            throw new PlatformValidationException(
+                    "seasonId обязателен",
+                    "config.seasonId"
+            );
         }
+        Map<String, Object> canonical = new LinkedHashMap<>();
+        canonical.put("backgroundHealthSyncEnabled", backgroundHealthSyncEnabled);
+        canonical.put("activityRetentionDays", activityRetentionDays);
+        canonical.put("seasonId", normalizedSeasonId);
+        canonical.put("weeklyRouteEnergy", weeklyRouteEnergy);
+        canonical.put("sandboxPaymentsEnabled", sandboxPaymentsEnabled);
+        canonical.put("weeklyRouteEnabled", weeklyRouteEnabled);
+        return Map.copyOf(canonical);
     }
 
-    private void requireBoolean(Map<String, Object> config, String key) {
-        if (!(config.get(key) instanceof Boolean)) {
+    private boolean requireBoolean(Map<String, Object> config, String key) {
+        if (!(config.get(key) instanceof Boolean value)) {
             throw new PlatformValidationException(
                     key + " должен быть boolean",
                     "config." + key
             );
         }
+        return value;
     }
 
-    private void requireInteger(
+    private int requireInteger(
             Map<String, Object> config,
             String key,
             long min,
@@ -918,6 +953,7 @@ public class PlatformAdminService {
                     "config." + key
             );
         }
+        return Math.toIntExact(value);
     }
 
     private Instant ensureUser(String userId) {

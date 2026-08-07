@@ -286,6 +286,10 @@ DB-защитой single-active инварианта, а не механизмо
 Version identifier каждой публикации trim-ится до lock; запись, immediate
 response и последующий authoritative read используют одно canonical значение,
 а не raw transport string с граничным whitespace.
+Remote-config publication также один раз строит canonical config до lock:
+exact-integer JSON numbers сохраняются как JSON integers, а `seasonId` без
+граничного whitespace. БД, immediate admin response и public effective config
+начинаются с одного представления вместо повторной нормализации только на read.
 Content release допускается до application service и этого lock только с явно
 присутствующим непустым JSON object `content`; missing/null/empty payload не
 может зависеть от более поздней service-level защиты.

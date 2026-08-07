@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.platform.application;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
@@ -146,6 +147,29 @@ class PlatformAdminServiceProviderTest {
 
         assertEquals("config.weeklyRouteEnergy", exception.field());
         verifyNoInteractions(jdbcTemplate);
+    }
+
+    @Test
+    void remoteConfigPublicationShouldUseCanonicalStoredValues() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        PlatformAdminService service = service(
+                jdbcTemplate,
+                new DisabledPaymentProvider(),
+                new DisabledPushDeliveryProvider(),
+                mock(AccountDeletionRegistry.class)
+        );
+        Map<String, Object> config = new LinkedHashMap<>(remoteConfig(false));
+        config.put("activityRetentionDays", new BigDecimal("30.0"));
+        config.put("seasonId", "  season-1  ");
+        config.put("weeklyRouteEnergy", new BigDecimal("120.00"));
+
+        Map<String, Object> response = service.updateRemoteConfig(
+                "release-operator",
+                "canonical-values-config-v2",
+                config
+        );
+
+        assertEquals(remoteConfig(false), response.get("config"));
     }
 
     @Test
