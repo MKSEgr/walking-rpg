@@ -215,6 +215,9 @@ publication lock; успешный publication contract остаётся неи�
 Remote-config `version` и content-release `contentVersion` trim-ятся один раз
 до publication lock. Immediate admin response возвращает именно этот canonical
 identifier, совпадающий с активной строкой и последующим authoritative read.
+Внутри remote config допустимые exact-integer JSON numbers записываются как
+JSON integers, а `seasonId` trim-ится до lock. Тот же canonical object попадает
+в БД, immediate response и следующий public bootstrap.
 
 ## Authentication
 
