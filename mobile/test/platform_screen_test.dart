@@ -818,9 +818,7 @@ void main() {
     expect(find.byType(CompanionGrowthTrack), findsWidgets);
     expect(find.byType(CompanionBondSignal), findsNWidgets(3));
     expect(
-      find.byKey(
-        const Key('companion-bond-signal-spark-v1-spark-ready'),
-      ),
+      find.byKey(const Key('companion-bond-signal-spark-v1-spark-ready')),
       findsOneWidget,
     );
     expect(
@@ -835,9 +833,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel(
-        'Связь спутника «Мох»: 12 из 45',
-      ),
+      find.bySemanticsLabel('Связь спутника «Мох»: 12 из 45'),
       findsOneWidget,
     );
     expect(find.byType(LinearProgressIndicator), findsNothing);

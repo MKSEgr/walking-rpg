@@ -132,18 +132,12 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel(
-        'Связь спутника «Тень»: 12 из 45',
-      ),
+      find.bySemanticsLabel('Связь спутника «Тень»: 12 из 45'),
       findsOneWidget,
     );
     for (final Finder field in <Finder>[
-      find.byKey(
-        const Key('companion-bond-field-spark-v1-spark-ready'),
-      ),
-      find.byKey(
-        const Key('companion-bond-field-future-pet-unknown-growing'),
-      ),
+      find.byKey(const Key('companion-bond-field-spark-v1-spark-ready')),
+      find.byKey(const Key('companion-bond-field-future-pet-unknown-growing')),
     ]) {
       expect(field, findsOneWidget);
       expect(tester.getSize(field).height, 52);
@@ -190,10 +184,7 @@ void main() {
     );
     expect(find.text('7'), findsOneWidget);
     expect(find.text('7/55'), findsNothing);
-    expect(
-      find.bySemanticsLabel('Связь спутника «Руна»: 7'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Связь спутника «Руна»: 7'), findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });

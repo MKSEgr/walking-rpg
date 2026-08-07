@@ -80,9 +80,8 @@ class CompanionBondSignal extends StatelessWidget {
         'Связь спутника «$petName»: $bond из $evolutionBond',
       CompanionBondStatus.ready =>
         'Связь спутника «$petName»: $bond из $evolutionBond. '
-        'Готова к эволюции',
-      CompanionBondStatus.evolved =>
-        'Связь спутника «$petName»: $bond',
+            'Готова к эволюции',
+      CompanionBondStatus.evolved => 'Связь спутника «$petName»: $bond',
     };
 
     return Semantics(
@@ -98,10 +97,7 @@ class CompanionBondSignal extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Text(
-                  'Связь',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
+                Text('Связь', style: Theme.of(context).textTheme.labelLarge),
                 const Spacer(),
                 Text(
                   amount,
@@ -293,10 +289,7 @@ class _CompanionBondSignalPainter extends CustomPainter {
           )
           ..drawArc(
             Rect.fromCenter(
-              center: Offset(
-                center.dx - unit * 0.07,
-                center.dy - unit * 0.09,
-              ),
+              center: Offset(center.dx - unit * 0.07, center.dy - unit * 0.09),
               width: unit * 0.18,
               height: unit * 0.13,
             ),
@@ -307,10 +300,7 @@ class _CompanionBondSignalPainter extends CustomPainter {
           )
           ..drawArc(
             Rect.fromCenter(
-              center: Offset(
-                center.dx + unit * 0.07,
-                center.dy - unit * 0.04,
-              ),
+              center: Offset(center.dx + unit * 0.07, center.dy - unit * 0.04),
               width: unit * 0.18,
               height: unit * 0.13,
             ),
