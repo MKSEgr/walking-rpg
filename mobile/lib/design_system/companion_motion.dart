@@ -84,6 +84,7 @@ class CompanionMotionPortrait extends StatelessWidget {
   String? get motionAssetPath => switch (petId) {
     'spark-v1' => 'assets/characters/companion_spark_motion_v1.png',
     'moss-v1' => 'assets/characters/companion_moss_motion_v1.png',
+    'rune-v1' => 'assets/characters/companion_rune_motion_v1.png',
     _ => null,
   };
 

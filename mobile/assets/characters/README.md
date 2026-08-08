@@ -23,6 +23,8 @@ portrait optimized for the `72-80 px` in-product presentation.
 | `companion_spark_motion_v1.json` | `spark-v1` / Искра | game clip manifest |
 | `companion_moss_motion_v1.png` | `moss-v1` / Мох | transparent motion atlas |
 | `companion_moss_motion_v1.json` | `moss-v1` / Мох | game clip manifest |
+| `companion_rune_motion_v1.png` | `rune-v1` / Навигатор visual canon | transparent motion atlas |
+| `companion_rune_motion_v1.json` | `rune-v1` / Навигатор visual canon | game clip manifest |
 
 The images are presentation only. Pet selection, active state, bond, level and
 evolution and equipped cosmetics remain server-authoritative. Known starter IDs
@@ -41,12 +43,16 @@ directions. The remaining cells are transparent by contract.
 
 Искра remains low and elastic, using her ears and tail fan to lead motion. Мох
 stays broad, deliberate and weighty; his gaze and head lead while the living
-sprout follows with restrained organic delay. The two atlases share rendering,
+sprout follows with restrained organic delay. The violet Навигатор companion
+hovers and glides, leading with the eyes and face plane while lateral facets and
+the curved tail/fan stabilize momentum. The three atlases share rendering,
 light logic and cell geometry without sharing silhouettes or locomotion.
 
-Home uses one non-looping idle pass for exact active `spark-v1` and `moss-v1`
-identities. Pet selection, evolution form, bond and active state still come from
-the accepted server snapshot; an atlas never chooses a pet or predicts
+Home uses one non-looping idle pass for exact active `spark-v1`, `moss-v1` and
+`rune-v1` identities. The violet companion remains `rune-v1` / «Руна» in the
+current server catalog until its naming migration is reviewed separately. Pet
+selection, evolution form, bond and active state still come from the accepted
+server snapshot; an atlas never chooses a pet, renames it or predicts
 progression. The existing stage portraits remain the authoritative form
 presentation in pet selection, growth and journal surfaces. Other pet IDs
 retain their static portrait until they receive their own reviewed motion
