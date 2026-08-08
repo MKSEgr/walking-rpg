@@ -33,26 +33,22 @@ enum CompanionMotionClip {
 }
 
 enum CompanionLookDirection {
-  north(0),
-  northNorthEast(1),
-  northEast(2),
-  eastNorthEast(3),
-  east(4),
-  eastSouthEast(5),
-  southEast(6),
-  southSouthEast(7),
-  south(8),
-  southSouthWest(9),
-  southWest(10),
-  westSouthWest(11),
-  west(12),
-  westNorthWest(13),
-  northWest(14),
-  northNorthWest(15);
-
-  const CompanionLookDirection(this.index);
-
-  final int index;
+  north,
+  northNorthEast,
+  northEast,
+  eastNorthEast,
+  east,
+  eastSouthEast,
+  southEast,
+  southSouthEast,
+  south,
+  southSouthWest,
+  southWest,
+  westSouthWest,
+  west,
+  westNorthWest,
+  northWest,
+  northNorthWest;
 
   int get row => index < 8 ? 9 : 10;
   int get column => index % 8;

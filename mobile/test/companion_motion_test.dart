@@ -71,10 +71,10 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: const CompanionMotionPortrait(
+          data: MediaQueryData(disableAnimations: true),
+          child: CompanionMotionPortrait(
             petId: 'spark-v1',
             name: 'Искра',
             species: 'люмин',
