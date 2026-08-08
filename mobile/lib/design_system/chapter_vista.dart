@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 /// Static first-chapter key art.
@@ -32,7 +33,7 @@ class ChapterVista extends StatelessWidget {
     final double? safeProgress = normalizedProgress;
     final String progressLabel = safeProgress == null
         ? ''
-        : ', маршрут ${(safeProgress * 100).round()}%';
+        : context.l10n.chapterProgressSemantics((safeProgress * 100).round());
 
     return Semantics(
       image: true,

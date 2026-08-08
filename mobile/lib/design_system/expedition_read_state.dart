@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 
 enum _ExpeditionReadStateKind { loading, failure }
@@ -51,8 +52,8 @@ class ExpeditionReadState extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final String statusLabel = _loading
-        ? 'Связь с маршрутом'
-        : 'Сигнал недоступен';
+        ? context.l10n.expeditionReadLoadingBadge
+        : context.l10n.expeditionReadFailureBadge;
 
     return Center(
       child: SingleChildScrollView(
@@ -170,7 +171,9 @@ class _ReadStateSignal extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final Color accent = loading ? colors.primary : colors.error;
     return Semantics(
-      label: loading ? 'Получение актуального состояния' : 'Связь потеряна',
+      label: loading
+          ? context.l10n.expeditionReadLoadingSemantics
+          : context.l10n.expeditionReadFailureSemantics,
       child: SizedBox.square(
         dimension: 72,
         child: Stack(

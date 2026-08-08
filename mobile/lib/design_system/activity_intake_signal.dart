@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show PathMetric, Tangent;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 /// Static field illustration for the step-reading trust boundary.
@@ -23,9 +24,7 @@ class ActivityIntakeSignal extends StatelessWidget {
     return Semantics(
       container: true,
       image: true,
-      label:
-          'Сигнал подключения шагов: только количество шагов, '
-          'без геолокации',
+      label: context.l10n.activitySignalSemantics,
       child: ExcludeSemantics(
         child: RepaintBoundary(
           child: SizedBox(

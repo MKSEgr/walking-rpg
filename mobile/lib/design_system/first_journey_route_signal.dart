@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 enum FirstJourneyRouteSignalKind {
@@ -69,8 +70,11 @@ class FirstJourneyRouteSignal extends StatelessWidget {
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final int completedCount = steps.where(completedSteps.contains).length;
     final String semanticLabel = steps.isEmpty
-        ? 'Первый путь: этапы пока не опубликованы'
-        : 'Первый путь: завершено $completedCount из ${steps.length} этапов';
+        ? context.l10n.firstJourneyRouteEmptySemantics
+        : context.l10n.firstJourneyRouteProgressSemantics(
+            completedCount,
+            steps.length,
+          );
 
     return Semantics(
       key: Key(

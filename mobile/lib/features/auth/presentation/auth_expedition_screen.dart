@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_locale_scope.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -42,8 +44,16 @@ class AuthExpeditionScreen extends StatelessWidget {
                   ),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1040),
-                    child: wide
-                        ? Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        const Align(
+                          alignment: Alignment.centerRight,
+                          child: AppLocaleMenuButton(),
+                        ),
+                        const SizedBox(height: 6),
+                        if (wide)
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: <Widget>[
                               const Expanded(child: _ExpeditionEntryStory()),
@@ -60,7 +70,8 @@ class AuthExpeditionScreen extends StatelessWidget {
                               ),
                             ],
                           )
-                        : Column(
+                        else
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: <Widget>[
                               const _ExpeditionEntryStory(compact: true),
@@ -74,6 +85,8 @@ class AuthExpeditionScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -96,15 +109,15 @@ class _ExpeditionEntryStory extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const ExpeditionBadge(
-          key: Key('auth-signal-badge'),
-          label: 'Сигнал маяка 01',
+        ExpeditionBadge(
+          key: const Key('auth-signal-badge'),
+          label: context.l10n.authSignalBadge,
           icon: Icons.sensors,
           tone: ExpeditionPanelTone.resonance,
         ),
         const SizedBox(height: 18),
         Text(
-          'Walking RPG',
+          context.l10n.appName,
           key: const Key('auth-title'),
           style: compact
               ? Theme.of(context).textTheme.headlineLarge
@@ -112,13 +125,12 @@ class _ExpeditionEntryStory extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Твой маршрут начинается с реальных шагов',
+          context.l10n.authTagline,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 10),
         Text(
-          'Шаги становятся ENERGY, ENERGY открывает путь, а каждое решение '
-          'оставляет след в экспедиции.',
+          context.l10n.authDescription,
           style: Theme.of(
             context,
           ).textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
@@ -126,21 +138,21 @@ class _ExpeditionEntryStory extends StatelessWidget {
         const SizedBox(height: 18),
         ChapterVista(
           key: const Key('auth-chapter-vista'),
-          semanticLabel: 'Туманный сектор и сигнальный маяк',
+          semanticLabel: context.l10n.authVistaSemanticLabel,
           height: compact ? 184 : 224,
         ),
         const SizedBox(height: 14),
-        const Wrap(
+        Wrap(
           spacing: 8,
           runSpacing: 8,
           children: <Widget>[
             ExpeditionBadge(
-              label: 'Без GPS',
+              label: context.l10n.authNoGps,
               icon: Icons.location_disabled,
               tone: ExpeditionPanelTone.neutral,
             ),
             ExpeditionBadge(
-              label: 'Только шаги · чтение',
+              label: context.l10n.authStepsReadOnly,
               icon: Icons.directions_walk,
               tone: ExpeditionPanelTone.neutral,
             ),
@@ -182,8 +194,8 @@ class _SignInPanel extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: ExpeditionBadge(
               label: reauthentication
-                  ? 'Требуется повторный вход'
-                  : 'Канал экспедиции',
+                  ? context.l10n.authReauthenticationBadge
+                  : context.l10n.authChannelBadge,
               icon: reauthentication
                   ? Icons.restart_alt
                   : Icons.shield_outlined,
@@ -194,16 +206,16 @@ class _SignInPanel extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            reauthentication ? 'Вернуться в экспедицию' : 'Открыть экспедицию',
+            reauthentication
+                ? context.l10n.authReturnTitle
+                : context.l10n.authOpenTitle,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
           Text(
             reauthentication
-                ? 'Сессия завершена. Войдите снова, чтобы продолжить '
-                      'синхронизацию и игровые действия.'
-                : 'Войдите через корпоративную учётную запись. Авторизация '
-                      'откроется в системном браузере.',
+                ? context.l10n.authReauthenticationBody
+                : context.l10n.authOpenBody,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
@@ -233,18 +245,14 @@ class _SignInPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: palette.panelBorder),
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(14),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Icon(Icons.open_in_browser_outlined, size: 21),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Пароль не вводится и не хранится в приложении.',
-                    ),
-                  ),
+                  const Icon(Icons.open_in_browser_outlined, size: 21),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(context.l10n.authPasswordNote)),
                 ],
               ),
             ),
@@ -260,7 +268,9 @@ class _SignInPanel extends StatelessWidget {
                   )
                 : const Icon(Icons.arrow_forward),
             label: Text(
-              busy ? 'Открываем защищённый вход...' : 'Войти в экспедицию',
+              busy
+                  ? context.l10n.authOpeningButton
+                  : context.l10n.authSignInButton,
             ),
           ),
         ],

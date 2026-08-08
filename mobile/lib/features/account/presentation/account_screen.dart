@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/core/localization/app_locale_scope.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_decision_dialog.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
@@ -127,6 +128,7 @@ class _AccountScreenState extends State<AccountScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        actions: const <Widget>[AppLocaleMenuButton()],
       ),
       body: ExpeditionBackdrop(
         child: SafeArea(

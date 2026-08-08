@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 enum ExpeditionNodeSignalKind {
@@ -127,9 +128,11 @@ class ExpeditionNodeSignal extends StatelessWidget {
     };
     final bool next = role == ExpeditionNodeSignalRole.next;
     final String semanticLabel = next
-        ? 'Следующий узел «$nodeName»'
-        : 'Текущий узел «$nodeName»'
-              '${completed ? ', экспедиция завершена' : ''}';
+        ? context.l10n.expeditionNextNodeSemantics(nodeName)
+        : context.l10n.expeditionCurrentNodeSemantics(
+            nodeName,
+            completed ? context.l10n.expeditionCompletedSemanticSuffix : '',
+          );
 
     return Semantics(
       key: Key(

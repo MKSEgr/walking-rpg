@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/core/localization/app_locale_scope.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
@@ -177,13 +179,9 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     }
     _notice = null;
     if (report.retryableFailures > 0) {
-      _notice =
-          'Часть сохранённых действий ждёт соединения. '
-          'Открой «Сохранённые действия» для безопасного повтора.';
+      _notice = context.l10n.firstJourneyPendingActionsNotice;
     } else if (report.permanentFailures > 0) {
-      _notice =
-          'Одно из ранее сохранённых действий отклонено сервером. '
-          'Проверь текущее состояние.';
+      _notice = context.l10n.firstJourneyRejectedActionNotice;
     }
     return _loadProgress();
   }
@@ -223,9 +221,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
       } on Object {
         if (mounted) {
           setState(() {
-            _notice =
-                'Игровой прогресс восстановлен. Служебная отметка '
-                'синхронизируется при следующем подключении.';
+            _notice = context.l10n.firstJourneyBackfillNotice;
           });
         }
         return;
@@ -249,9 +245,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
       final FirstJourneyActivitySynchronizer? synchronizer =
           widget.synchronizer;
       if (synchronizer == null) {
-        throw StateError(
-          'Источник шагов недоступен на этом устройстве или в этой сборке.',
-        );
+        throw StateError(context.l10n.firstJourneyStepSourceUnavailable);
       }
       final ActivitySyncResult result = await synchronizer();
       if (!mounted) {
@@ -285,7 +279,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
       final HomeSnapshot home = progress.home;
       final int energy = home.spendableEnergy;
       if (energy <= 0) {
-        throw StateError('Сначала синхронизируй новые шаги.');
+        throw StateError(context.l10n.firstJourneySyncStepsFirst);
       }
       final result = await widget.commandRuntime.advance(
         expeditionId: home.expeditionId,
@@ -307,7 +301,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     return _runAction(() async {
       final HomeExpeditionEvent? event = progress.home.unlockedEvent;
       if (event == null) {
-        throw StateError('Событие ещё не загружено.');
+        throw StateError(context.l10n.firstJourneyEventNotLoaded);
       }
       final EventResolutionResult result = await widget.commandRuntime.resolve(
         eventId: event.eventId,
@@ -411,8 +405,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     final String? receiptId = result.receiptId;
     if (receiptId == null || receiptId.isEmpty) {
       setState(() {
-        _errorMessage =
-            'Backend подтвердил durable handoff без result receipt.';
+        _errorMessage = context.l10n.firstJourneyMissingReceipt;
       });
       return;
     }
@@ -480,7 +473,7 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
       RegExp(r'^(Exception|StateError):\s*'),
       '',
     );
-    return text.isEmpty ? 'Не удалось выполнить действие.' : text;
+    return text.isEmpty ? context.l10n.firstJourneyActionFailed : text;
   }
 }
 
@@ -493,16 +486,14 @@ class _FirstJourneyLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Colors.transparent,
       body: ExpeditionBackdrop(
         child: SafeArea(
           child: ExpeditionReadState.loading(
-            key: Key('first-journey-loading-state'),
-            title: 'Восстанавливаем первый путь',
-            message:
-                'Проверяем сохранённые действия и получаем актуальное '
-                'состояние маршрута.',
+            key: const Key('first-journey-loading-state'),
+            title: context.l10n.firstJourneyLoadingTitle,
+            message: context.l10n.firstJourneyLoadingMessage,
           ),
         ),
       ),
@@ -534,7 +525,7 @@ class _FirstJourneyLoadError extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Первый путь'),
+        title: Text(context.l10n.firstJourneyTitle),
         actions: <Widget>[
           MobileCommandRecoveryAction(
             key: const Key('first-journey-load-recovery'),
@@ -542,8 +533,9 @@ class _FirstJourneyLoadError extends StatelessWidget {
             count: recoveryCount,
             unavailable: recoveryUnavailable,
           ),
+          const AppLocaleMenuButton(),
           IconButton(
-            tooltip: 'Аккаунт',
+            tooltip: context.l10n.accountTooltip,
             onPressed: onOpenAccount,
             icon: const Icon(Icons.account_circle_outlined),
           ),
@@ -553,16 +545,14 @@ class _FirstJourneyLoadError extends StatelessWidget {
         child: SafeArea(
           child: ExpeditionReadState.failure(
             key: const Key('first-journey-load-error-state'),
-            title: 'Не удалось восстановить первый путь',
-            message:
-                'Прогресс первого пути не принят. Повтори запрос или открой '
-                'основную экспедицию — первый путь можно продолжить позже.',
-            details: error?.toString() ?? 'Состояние недоступно.',
+            title: context.l10n.firstJourneyLoadFailureTitle,
+            message: context.l10n.firstJourneyLoadFailureMessage,
+            details: error?.toString() ?? context.l10n.stateUnavailable,
             primaryActionKey: const Key('first-journey-retry'),
-            primaryActionLabel: 'Повторить',
+            primaryActionLabel: context.l10n.retryButton,
             onPrimaryAction: onRetry,
             secondaryActionKey: const Key('first-journey-open-game'),
-            secondaryActionLabel: 'Открыть игру',
+            secondaryActionLabel: context.l10n.openGameButton,
             onSecondaryAction: onContinueLater,
           ),
         ),

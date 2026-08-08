@@ -1,0 +1,310 @@
+{
+  "@@locale": "en",
+  "appName": "Step Beyond",
+  "appNameRussian": "Шаг за пределы",
+  "languageChoiceBadge": "Language · Язык",
+  "languageChoiceTitle": "Выберите язык / Choose a language",
+  "languageChoiceBody": "Русский указан первым для российского alpha-теста. Выбор обязателен и его можно изменить позже. / Russian is listed first for the alpha test in Russia. Your choice is explicit and can be changed later.",
+  "russianLanguageNative": "Русский",
+  "russianLanguageDescription": "Интерфейс на русском языке",
+  "englishLanguageNative": "English",
+  "englishLanguageDescription": "Interface in English",
+  "languageContinue": "Продолжить / Continue",
+  "languageSaving": "Сохраняем / Saving...",
+  "languageSaveError": "The language choice could not be saved. Try again.",
+  "changeLanguageTooltip": "Change language",
+  "languageSheetTitle": "Language",
+  "languagePreferenceScope": "This device preference is not tied to an account and remains after sign-out.",
+  "accountTooltip": "Account",
+  "moreActionsTooltip": "More actions",
+
+  "authSignalBadge": "Beacon signal 01",
+  "authTagline": "Your route begins with real steps",
+  "authDescription": "Steps become ENERGY, ENERGY opens the route, and every decision leaves a mark on the expedition.",
+  "authVistaSemanticLabel": "Fog sector and signal beacon",
+  "authNoGps": "No GPS",
+  "authStepsReadOnly": "Steps · read only",
+  "authReauthenticationBadge": "Sign-in required again",
+  "authChannelBadge": "Expedition channel",
+  "authReturnTitle": "Return to the expedition",
+  "authOpenTitle": "Open the expedition",
+  "authReauthenticationBody": "Your session has ended. Sign in again to continue synchronization and game actions.",
+  "authOpenBody": "Sign in with your organization account. Authorization opens in the system browser.",
+  "authPasswordNote": "Your password is neither entered nor stored in the app.",
+  "authOpeningButton": "Opening secure sign-in...",
+  "authSignInButton": "Sign in to the expedition",
+  "authInitializingBadge": "Expedition channel",
+  "authInitializingTitle": "Restoring your route",
+  "authInitializingMessage": "Checking the secure session and local expedition state.",
+  "authStoppingBadge": "Safe shutdown",
+  "authStoppingTitle": "Closing the route",
+  "authStoppingMessage": "Finishing active operations and securely closing the session.",
+  "authIdentityBadge": "Access check",
+  "authIdentityTitle": "Confirming your route",
+  "authIdentityMessage": "Checking the secure session before opening the expedition.",
+  "configurationBlockedBadge": "Startup blocked",
+  "configurationBlockedTitle": "Authentication is not configured",
+  "configurationBlockedReleaseMessage": "Check the sign-in settings and restart the app.",
+  "configurationBlockedDebugMessage": "Check the app OIDC parameters.",
+
+  "firstJourneyTitle": "First journey",
+  "firstJourneySavedBadge": "Saved route",
+  "firstJourneySavedMessage": "A saved state is shown. Actions become available after reconnecting to the server.",
+  "firstJourneyRouteNoticeBadge": "Route signal",
+  "firstJourneyErrorBadge": "State needs attention",
+  "continueLater": "Continue later",
+  "firstJourneyProgressTitle": "Route to the first signal",
+  "firstJourneyCompletedSteps": "{completed}/{total} STAGES COMPLETED",
+  "@firstJourneyCompletedSteps": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "firstJourneyRouteEmptySemantics": "First journey: no stages have been published yet",
+  "firstJourneyRouteProgressSemantics": "First journey: {completed} of {total} stages completed",
+  "@firstJourneyRouteProgressSemantics": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "firstJourneyLoadingTitle": "Restoring the first journey",
+  "firstJourneyLoadingMessage": "Checking saved actions and retrieving the current route state.",
+  "firstJourneyLoadFailureTitle": "The first journey could not be restored",
+  "firstJourneyLoadFailureMessage": "The first-journey progress was not accepted. Retry or open the main expedition—you can continue the first journey later.",
+  "stateUnavailable": "State unavailable.",
+  "retryButton": "Retry",
+  "openGameButton": "Open game",
+  "expeditionReadLoadingBadge": "Connecting to the route",
+  "expeditionReadFailureBadge": "Signal unavailable",
+  "expeditionReadLoadingSemantics": "Retrieving the current state",
+  "expeditionReadFailureSemantics": "Connection lost",
+
+  "firstJourneyPendingActionsNotice": "Some saved actions are waiting for a connection. Open Saved actions to retry them safely.",
+  "firstJourneyRejectedActionNotice": "A previously saved action was rejected by the server. Check the current state.",
+  "firstJourneyBackfillNotice": "Game progress was restored. The service marker will synchronize on the next connection.",
+  "firstJourneyStepSourceUnavailable": "The step source is unavailable on this device or in this build.",
+  "firstJourneySyncStepsFirst": "Synchronize new steps first.",
+  "firstJourneyEventNotLoaded": "The event has not loaded yet.",
+  "firstJourneyMissingReceipt": "The backend confirmed a durable handoff without a result receipt.",
+  "firstJourneyActionFailed": "The action could not be completed.",
+
+  "welcomeVistaSemanticLabel": "Fog sector and outer beacon",
+  "welcomeEyebrow": "Signal found",
+  "welcomeTitle": "Your journey begins with real steps",
+  "welcomeBody": "You are the Navigator. Walks create ENERGY, ENERGY opens expedition nodes, and decisions change rewards and your bond with a companion.",
+  "welcomeHighlightWalk": "Walk now—play events whenever it suits you.",
+  "welcomeHighlightServer": "The server calculates rewards and does not trust client numbers.",
+  "welcomeHighlightGoal": "Your first goal adapts to your activity history.",
+  "welcomeStartButton": "Start the journey",
+
+  "activityEyebrow": "Step 1 · movement",
+  "activityTitle": "Connect steps and earn your first ENERGY",
+  "activityBody": "The system prompt requests access only to step count. Step Beyond does not read location, heart rate, sleep, weight or medical records.",
+  "activityHighlightCountOnly": "Step count only.",
+  "activityHighlightIdempotent": "Synchronizing again does not grant the reward twice.",
+  "activityHighlightRate": "100 confirmed steps = 1 ENERGY.",
+  "activityConnectingButton": "Connecting steps...",
+  "activityConnectButton": "Allow and synchronize",
+  "activitySignalSemantics": "Step connection signal: step count only, without location",
+  "activityStepsConnected": "Steps connected",
+  "stepsLabel": "steps",
+  "activityRewardEyebrow": "Movement confirmed",
+  "activityRewardBody": "Accepted {accepted} of {goal} daily-route steps. ENERGY balance: {balance}.",
+  "@activityRewardBody": {
+    "placeholders": {
+      "accepted": {"type": "int"},
+      "goal": {"type": "int"},
+      "balance": {"type": "int"}
+    }
+  },
+  "activityRewardNeedMore": "More confirmed steps are needed for the next ENERGY.",
+  "activityRewardAvailable": "New energy is already available for the expedition.",
+  "activityRiskStatus": "Risk check: {status}.",
+  "@activityRiskStatus": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "riskStatusAccepted": "accepted",
+  "riskStatusReview": "under review",
+  "riskStatusRejected": "rejected",
+  "choosePetButton": "Choose a companion",
+
+  "petEyebrow": "Step 2 · companion",
+  "petTitle": "Who will follow the signal with you?",
+  "petBody": "The choice is real: the active companion appears on the home screen and gains bond from event decisions.",
+  "petForm": "Form {stage}",
+  "@petForm": {
+    "placeholders": {
+      "stage": {"type": "int"}
+    }
+  },
+  "chooseCompanion": "Choose companion",
+  "companionBabyStage": "Baby",
+  "companionYoungStage": "Young",
+  "companionAdultStage": "Adult",
+  "companionFutureStage": "Form {stage}",
+  "@companionFutureStage": {
+    "placeholders": {
+      "stage": {"type": "int"}
+    }
+  },
+  "companionIllustratedForm": "{name} · form {stage}",
+  "@companionIllustratedForm": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "stage": {"type": "int"}
+    }
+  },
+  "companionActiveSemantic": "active companion",
+  "companionSparkHalo": "Spark Halo",
+  "companionPortraitSemantics": "{name}, {species}, {form}{active}{cosmetic}",
+  "@companionPortraitSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "species": {"type": "String"},
+      "form": {"type": "String"},
+      "active": {"type": "String"},
+      "cosmetic": {"type": "String"}
+    }
+  },
+
+  "expeditionVistaSemanticLabel": "{nodeName}, the first node in the fog sector",
+  "@expeditionVistaSemanticLabel": {
+    "placeholders": {
+      "nodeName": {"type": "String"}
+    }
+  },
+  "expeditionEyebrow": "Step 3 · first node",
+  "expeditionBody": "Direct ENERGY to the outer beacon. You can advance in parts: progress and balance are saved on the server.",
+  "expeditionBalance": "Balance {available} · {remaining} to the beacon",
+  "@expeditionBalance": {
+    "placeholders": {
+      "available": {"type": "int"},
+      "remaining": {"type": "int"}
+    }
+  },
+  "expeditionAdvanceButton": "Direct {energy} ENERGY",
+  "@expeditionAdvanceButton": {
+    "placeholders": {
+      "energy": {"type": "int"}
+    }
+  },
+  "expeditionSyncStepsButton": "Synchronize new steps",
+  "eventUpdatingEyebrow": "State updating",
+  "eventNotReadyTitle": "The beacon was reached, but the event has not loaded yet",
+  "eventNotReadyBody": "Retry after the connection is restored.",
+  "eventFallbackScene": "Event scene “{title}”",
+  "@eventFallbackScene": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "eventEyebrow": "Step 4 · decision",
+  "eventChoiceRewards": "+{experience} XP · +{bond} bond",
+  "@eventChoiceRewards": {
+    "placeholders": {
+      "experience": {"type": "int"},
+      "bond": {"type": "int"}
+    }
+  },
+  "eventCompletedScene": "Completed event scene “{title}”",
+  "@eventCompletedScene": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "eventSelectedChoice": "Selected: {choice}",
+  "@eventSelectedChoice": {
+    "placeholders": {
+      "choice": {"type": "String"}
+    }
+  },
+  "eventNextNodeLabel": "NEXT NODE",
+  "eventCompletionEyebrow": "First signal decoded",
+  "eventPilotExperience": "+{experience} pilot XP",
+  "@eventPilotExperience": {
+    "placeholders": {
+      "experience": {"type": "int"}
+    }
+  },
+  "eventPetBond": "+{bond} bond · {name}",
+  "@eventPetBond": {
+    "placeholders": {
+      "bond": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "openExpeditionButton": "Open expedition",
+  "journeyCompleteEyebrow": "First journey complete",
+  "journeyCompleteTitle": "Expedition unlocked",
+  "journeyCompleteBody": "Steps are connected, a companion is selected, and the first signal is already saved in the Route Journal.",
+
+  "chapterProgressSemantics": ", route {percent}%",
+  "@chapterProgressSemantics": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "expeditionCurrentNodeSemantics": "Current node “{nodeName}”{completion}",
+  "@expeditionCurrentNodeSemantics": {
+    "placeholders": {
+      "nodeName": {"type": "String"},
+      "completion": {"type": "String"}
+    }
+  },
+  "expeditionNextNodeSemantics": "Next node “{nodeName}”",
+  "@expeditionNextNodeSemantics": {
+    "placeholders": {
+      "nodeName": {"type": "String"}
+    }
+  },
+  "expeditionCompletedSemanticSuffix": ", expedition completed",
+  "signalSourceSceneSemantics": "Event scene “{title}”: the outer beacon sends repeating pulses through the fog.",
+  "@signalSourceSceneSemantics": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "echoVaultSceneSemantics": "Event scene “{title}”: the unstable archive core splits into a stabilization contour and a living echo thread.",
+  "@echoVaultSceneSemantics": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "mirrorDeltaSceneSemantics": "Event scene “{title}”: two reflected signals diverge above a hidden resonance current.",
+  "@mirrorDeltaSceneSemantics": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "resonancePocketSceneSemantics": "Event scene “{title}”: forgotten routes converge in a space held by the compass.",
+  "@resonancePocketSceneSemantics": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+
+  "petSparkName": "Spark",
+  "petSparkSpecies": "lumin",
+  "petSparkTrait": "Sensitive scout",
+  "petMossName": "Moss",
+  "petMossSpecies": "terra",
+  "petMossTrait": "Calm guardian",
+  "petRuneName": "Rune",
+  "petRuneSpecies": "echo",
+  "petRuneTrait": "Bold navigator",
+  "pilotNavigatorName": "Navigator",
+  "nodeOuterBeaconName": "Outer Beacon",
+  "nodeLumenGateName": "Lumen Gate",
+  "eventSignalSourceTitle": "Signal Source",
+  "eventSignalSourceSummary": "The beacon answers with a pulse.",
+  "choiceAnalyzeSignalTitle": "Analyze the signal",
+  "choiceAnalyzeSignalDescription": "The pilot will match the beacon frequencies.",
+  "choiceTrustCompanionTitle": "Trust the companion",
+  "choiceTrustCompanionDescription": "The companion will find a safe route.",
+  "outcomeSignalAnalyzedTitle": "Frequency found",
+  "outcomeSignalAnalyzedSummary": "The beacon opened a route to the next node."
+}
