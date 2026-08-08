@@ -60,6 +60,25 @@ Ears, gaze, head angle, tail fan and posture communicate emotion in that order.
 Locomotion stays low and elastic. The tail counterbalances running, jumping and
 landing; the ears trail lightly and recover without mechanical snapping.
 
+## Мох identity
+
+- Low, broad and weighty alien quadruped with a patient grounded stance.
+- A layered stone-and-bark shell carries living moss and one small physically
+  connected sprout; the growth never becomes a detached effect or accessory.
+- Calm dark intelligent eyes, a short blunt face and thick load-bearing limbs
+  keep the silhouette readable without baby-doll proportions.
+- Muted olive, lichen and deep blue-charcoal materials dominate. Restrained
+  amber warmth may appear only in natural seams, never as symbols or circuits.
+- Four sturdy animal feet, with no hands, clothing, tools, collar, weapons,
+  manufactured armor or readable shell markings.
+- Primary character: patient, protective, observant and quietly reassuring.
+
+Gaze, head angle, forefoot weight, shell posture and sprout movement communicate
+emotion in that order. Locomotion is deliberate and close to the ground; jumps
+compress deeply, travel only a short distance and land with visible weight. The
+sprout follows the body with soft organic delay rather than acting like an
+antenna or mechanical indicator.
+
 ## Motion asset contract
 
 - Transparent raster source with one whole-body pet per `192 x 208` cell.
@@ -76,10 +95,10 @@ landing; the ears trail lightly and recover without mechanical snapping.
 - Motion is presentation feedback only. It never selects a pet, advances an
   evolution, grants bond or replaces an authoritative server reload.
 
-The Искра v1 atlas and machine-readable cell map live in
-`mobile/assets/characters/companion_spark_motion_v1.{png,json}`. Future Мох and
+The Искра and Мох v1 atlases and machine-readable cell maps live in
+`mobile/assets/characters/companion_{spark,moss}_motion_v1.{png,json}`. Future
 Навигатор atlases must follow this contract and the shared style without
-copying Искра's silhouette or movement.
+copying Искра's silhouette or Мох's movement.
 
 ## Exclusions
 

@@ -67,6 +67,43 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('renders Мох from his exact-ID game motion atlas', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: const Scaffold(
+          body: CompanionMotionPortrait(
+            key: Key('moss-motion'),
+            petId: 'moss-v1',
+            name: 'Мох',
+            species: 'терра',
+            evolutionStage: 2,
+            play: false,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final CompanionMotionPortrait portrait = tester
+        .widget<CompanionMotionPortrait>(find.byKey(const Key('moss-motion')));
+    final Image image = tester.widget<Image>(find.byType(Image));
+    final AssetImage asset = image.image as AssetImage;
+    expect(portrait.hasMotionAsset, isTrue);
+    expect(
+      portrait.motionAssetPath,
+      'assets/characters/companion_moss_motion_v1.png',
+    );
+    expect(asset.assetName, portrait.motionAssetPath);
+    expect(
+      find.byKey(const Key('companion-motion-frame-moss-v1-0-0')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('keeps the first frame when reduced motion is enabled', (
     WidgetTester tester,
   ) async {
@@ -123,9 +160,9 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: CompanionMotionPortrait(
-          petId: 'moss-v1',
-          name: 'Мох',
-          species: 'терра',
+          petId: 'rune-v1',
+          name: 'Руна',
+          species: 'эхо',
           evolutionStage: 0,
         ),
       ),

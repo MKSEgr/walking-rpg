@@ -81,11 +81,18 @@ class CompanionMotionPortrait extends StatelessWidget {
   final bool play;
   final bool loop;
 
-  bool get hasMotionAsset => petId == 'spark-v1';
+  String? get motionAssetPath => switch (petId) {
+    'spark-v1' => 'assets/characters/companion_spark_motion_v1.png',
+    'moss-v1' => 'assets/characters/companion_moss_motion_v1.png',
+    _ => null,
+  };
+
+  bool get hasMotionAsset => motionAssetPath != null;
 
   @override
   Widget build(BuildContext context) {
-    if (!hasMotionAsset) {
+    final String? assetPath = motionAssetPath;
+    if (assetPath == null) {
       return CompanionPortrait(
         petId: petId,
         name: name,
@@ -130,7 +137,9 @@ class CompanionMotionPortrait extends StatelessWidget {
               dimension: size,
               child: Padding(
                 padding: EdgeInsets.all(size * 0.035),
-                child: _SparkMotionPlayer(
+                child: _CompanionMotionPlayer(
+                  petId: petId,
+                  assetPath: assetPath,
                   clip: clip,
                   lookDirection: lookDirection,
                   play: play,
@@ -145,24 +154,29 @@ class CompanionMotionPortrait extends StatelessWidget {
   }
 }
 
-class _SparkMotionPlayer extends StatefulWidget {
-  const _SparkMotionPlayer({
+class _CompanionMotionPlayer extends StatefulWidget {
+  const _CompanionMotionPlayer({
+    required this.petId,
+    required this.assetPath,
     required this.clip,
     required this.lookDirection,
     required this.play,
     required this.loop,
   });
 
+  final String petId;
+  final String assetPath;
   final CompanionMotionClip clip;
   final CompanionLookDirection? lookDirection;
   final bool play;
   final bool loop;
 
   @override
-  State<_SparkMotionPlayer> createState() => _SparkMotionPlayerState();
+  State<_CompanionMotionPlayer> createState() =>
+      _CompanionMotionPlayerState();
 }
 
-class _SparkMotionPlayerState extends State<_SparkMotionPlayer>
+class _CompanionMotionPlayerState extends State<_CompanionMotionPlayer>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   bool _reduceMotion = false;
@@ -188,9 +202,11 @@ class _SparkMotionPlayerState extends State<_SparkMotionPlayer>
   }
 
   @override
-  void didUpdateWidget(covariant _SparkMotionPlayer oldWidget) {
+  void didUpdateWidget(covariant _CompanionMotionPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.clip != widget.clip ||
+    if (oldWidget.petId != widget.petId ||
+        oldWidget.assetPath != widget.assetPath ||
+        oldWidget.clip != widget.clip ||
         oldWidget.lookDirection != widget.lookDirection ||
         oldWidget.play != widget.play ||
         oldWidget.loop != widget.loop) {
@@ -226,7 +242,9 @@ class _SparkMotionPlayerState extends State<_SparkMotionPlayer>
       builder: (BuildContext context, Widget? child) {
         final CompanionLookDirection? lookDirection = widget.lookDirection;
         if (lookDirection != null) {
-          return _SparkAtlasFrame(
+          return _CompanionAtlasFrame(
+            petId: widget.petId,
+            assetPath: widget.assetPath,
             row: lookDirection.row,
             column: lookDirection.column,
           );
@@ -235,22 +253,32 @@ class _SparkMotionPlayerState extends State<_SparkMotionPlayer>
           (_controller.value * widget.clip.frameCount).floor(),
           widget.clip.frameCount - 1,
         );
-        return _SparkAtlasFrame(row: widget.clip.row, column: frame);
+        return _CompanionAtlasFrame(
+          petId: widget.petId,
+          assetPath: widget.assetPath,
+          row: widget.clip.row,
+          column: frame,
+        );
       },
     );
   }
 }
 
-class _SparkAtlasFrame extends StatelessWidget {
-  const _SparkAtlasFrame({required this.row, required this.column});
+class _CompanionAtlasFrame extends StatelessWidget {
+  const _CompanionAtlasFrame({
+    required this.petId,
+    required this.assetPath,
+    required this.row,
+    required this.column,
+  });
 
-  static const String assetPath =
-      'assets/characters/companion_spark_motion_v1.png';
   static const double atlasWidth = 1536;
   static const double atlasHeight = 2288;
   static const double cellWidth = 192;
   static const double cellHeight = 208;
 
+  final String petId;
+  final String assetPath;
   final int row;
   final int column;
 
@@ -272,7 +300,7 @@ class _SparkAtlasFrame extends StatelessWidget {
             width: frameWidth,
             height: frameHeight,
             child: ClipRect(
-              key: Key('companion-motion-frame-spark-v1-$row-$column'),
+              key: Key('companion-motion-frame-$petId-$row-$column'),
               child: OverflowBox(
                 alignment: Alignment.topLeft,
                 minWidth: sheetWidth,
