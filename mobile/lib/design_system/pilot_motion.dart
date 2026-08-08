@@ -73,6 +73,8 @@ class PilotMotionPortrait extends StatelessWidget {
   static const String navigatorPilotId = 'navigator-v1';
   static const String navigatorMotionAssetPath =
       'assets/characters/pilot_navigator_motion_v1.png';
+  static const String navigatorScarfMotionAssetPath =
+      'assets/characters/pilot_navigator_scarf_motion_v1.png';
 
   final String pilotId;
   final String name;
@@ -89,10 +91,12 @@ class PilotMotionPortrait extends StatelessWidget {
   }
 
   String? get motionAssetPath {
-    if (pilotId != navigatorPilotId || hasNavigatorScarf) {
+    if (pilotId != navigatorPilotId) {
       return null;
     }
-    return navigatorMotionAssetPath;
+    return hasNavigatorScarf
+        ? navigatorScarfMotionAssetPath
+        : navigatorMotionAssetPath;
   }
 
   bool get hasMotionAsset => motionAssetPath != null;

@@ -64,8 +64,11 @@ The account dossier and journal retain the existing static portrait.
 
 ## Cosmetics and future pilots
 
-The base atlas never removes or approximates a server-owned cosmetic.
-`pilot-scarf` therefore keeps `pilot_navigator_scarf.webp` until a separately
-reviewed matching motion variant exists. Unknown future pilot identities keep
-the static portrait fallback; new IDs, selection rules or progression remain
+The base atlas never removes or approximates a server-owned cosmetic. The exact
+`navigator-v1` plus `pilot-scarf` presentation uses the separately versioned
+`pilot_navigator_scarf_motion_v1.{png,json}` atlas. Its compact deep-teal wrap
+follows the shoulders without becoming a cape or detached effect. The cosmetic
+catalog may play one non-looping idle pass; the account dossier and journal
+retain `pilot_navigator_scarf.webp`. Unknown future pilot identities keep the
+static portrait fallback; new IDs, selection rules or progression remain
 content/API work and must not be inferred from a display name.

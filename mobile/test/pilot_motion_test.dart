@@ -131,7 +131,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('keeps the scarf portrait until its own motion art exists', (
+  testWidgets('renders the Navigator scarf from its exact cosmetic atlas', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -143,17 +143,26 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final PilotMotionPortrait portrait = tester.widget<PilotMotionPortrait>(
       find.byType(PilotMotionPortrait),
     );
-    final PilotPortrait fallback = tester.widget<PilotPortrait>(
-      find.byType(PilotPortrait),
+    final Image image = tester.widget<Image>(find.byType(Image));
+    final AssetImage asset = image.image as AssetImage;
+    expect(portrait.hasMotionAsset, isTrue);
+    expect(
+      portrait.motionAssetPath,
+      PilotMotionPortrait.navigatorScarfMotionAssetPath,
     );
-    expect(portrait.hasMotionAsset, isFalse);
-    expect(fallback.hasNavigatorScarf, isTrue);
-    expect(fallback.illustrationAsset, PilotPortrait.scarfAssetPath);
+    expect(asset.assetName, PilotMotionPortrait.navigatorScarfMotionAssetPath);
+    expect(
+      find.byKey(const Key('pilot-motion-frame-navigator-v1-0-0')),
+      findsOneWidget,
+    );
+    expect(find.byType(PilotPortrait), findsNothing);
+
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 }

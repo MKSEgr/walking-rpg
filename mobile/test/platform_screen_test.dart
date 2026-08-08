@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/profile_cosmetic_art.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
@@ -855,9 +856,15 @@ void main() {
       const Key('platform-cosmetic-preview-pilot-scarf'),
     );
     await _bringIntoView(tester, pilotPreview);
-    final PilotPortrait scarf = tester.widget<PilotPortrait>(pilotPreview);
+    final PilotMotionPortrait scarf = tester.widget<PilotMotionPortrait>(
+      pilotPreview,
+    );
     expect(scarf.hasNavigatorScarf, isTrue);
-    expect(scarf.illustrationAsset, PilotPortrait.scarfAssetPath);
+    expect(scarf.hasMotionAsset, isTrue);
+    expect(
+      scarf.motionAssetPath,
+      PilotMotionPortrait.navigatorScarfMotionAssetPath,
+    );
     expect(
       find.byKey(const Key('platform-equipped-cosmetic-pilot-scarf')),
       findsOneWidget,

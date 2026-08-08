@@ -12,6 +12,8 @@ portrait optimized for the `72-80 px` in-product presentation.
 | `pilot_navigator_scarf.webp` | universal helmeted Navigator pilot | `pilot-scarf` |
 | `pilot_navigator_motion_v1.png` | `navigator-v1` / Navigator pilot | transparent motion atlas |
 | `pilot_navigator_motion_v1.json` | `navigator-v1` / Navigator pilot | game clip manifest |
+| `pilot_navigator_scarf_motion_v1.png` | `navigator-v1` / Navigator pilot | `pilot-scarf` motion atlas |
+| `pilot_navigator_scarf_motion_v1.json` | `navigator-v1` / Navigator pilot | `pilot-scarf` game clip manifest |
 | `companion_spark_stage0.webp` | `spark-v1` / Искра | stage 0, young |
 | `companion_spark_stage1.webp` | `spark-v1` / Искра | stage 1, adolescent |
 | `companion_spark.webp` | `spark-v1` / Искра | stage 2, adult |
@@ -80,16 +82,23 @@ navigation visor, grounded running and restrained hand-led gestures. Its full
 rules live in `docs/PILOT_ART_BIBLE.md`.
 
 Home may play one non-looping idle pass for the exact current universal pilot.
-The account dossier and journal retain the static production portrait. An
-equipped `pilot-scarf` also retains its illustrated scarf portrait rather than
-silently dropping the server-owned cosmetic; it needs its own reviewed motion
-variant before animation.
+The account dossier and journal retain the static production portrait. The
+exact `navigator-v1` plus `pilot-scarf` presentation has its own atlas, so the
+cosmetic catalog preview can play the same single idle pass without dropping or
+approximating the server-owned cosmetic. Unknown pilots still use the static
+portrait fallback.
 
 The raster was generated with the built-in image workflow from the existing
 pilot portrait identity anchor on a removable magenta key. A focused repair
 pass supplied the strict gesture rows, and a supplemental pass supplied the
 directional running and look rows. The selected frames were de-keyed, despilled
 and normalized into the versioned game contract.
+
+The scarf variant preserves that accepted base atlas. A built-in image pass
+produced only the approved deep-teal cloth layer on a removable magenta key;
+the layer was de-keyed, constrained to the pilot silhouette and normalized per
+cell before compositing, so the underlying visor, suit, poses and directions do
+not receive a second character redraw.
 
 All prompts specified the project palette, readable silhouettes at `80 px`, no
 text, logos or weapons, and no cyberpunk, fitness-dashboard, anime or chibi
