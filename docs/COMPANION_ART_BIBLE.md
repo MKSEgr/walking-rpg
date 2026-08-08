@@ -79,6 +79,25 @@ compress deeply, travel only a short distance and land with visible weight. The
 sprout follows the body with soft organic delay rather than acting like an
 antenna or mechanical indicator.
 
+## Навигатор identity
+
+- Compact levitating alien companion built around one faceted violet body and
+  a dark inset face with two intelligent cyan eyes.
+- Crown, back and lateral crystal planes create an asymmetric readable
+  silhouette; they are organic mineral anatomy, never manufactured armor.
+- A curved articulated crystal tail/fan and its stabilizer facets read as one
+  coherent connected orbit around the body, not ambient debris or particles.
+- Deep violet, indigo and blue-black dominate. Cyan light stays local to the
+  eyes and restrained anatomical seams; rare warm glints only mark discovery.
+- No legs, paws, hands, wings, clothing, tools, pilot equipment, weapons,
+  readable symbols, circuits or generic drone hardware.
+- Primary character: precise, curious, quietly intense and highly attentive.
+
+Gaze, face-plane angle, lateral stabilizers, crown overlap and tail/fan curvature
+communicate emotion in that order. Locomotion is a controlled hover and fast
+directional glide rather than walking. Vertical bursts keep the whole body
+intact, while stabilizers and the tail/fan counter the change in momentum.
+
 ## Motion asset contract
 
 - Transparent raster source with one whole-body pet per `192 x 208` cell.
@@ -95,10 +114,11 @@ antenna or mechanical indicator.
 - Motion is presentation feedback only. It never selects a pet, advances an
   evolution, grants bond or replaces an authoritative server reload.
 
-The Искра and Мох v1 atlases and machine-readable cell maps live in
-`mobile/assets/characters/companion_{spark,moss}_motion_v1.{png,json}`. Future
-Навигатор atlases must follow this contract and the shared style without
-copying Искра's silhouette or Мох's movement.
+The Искра, Мох and Навигатор v1 atlases and machine-readable cell maps live in
+`mobile/assets/characters/companion_{spark,moss,rune}_motion_v1.{png,json}`.
+The violet companion retains the current stable `rune-v1` presentation ID
+until the separate naming migration is reviewed; the atlas does not silently
+change catalog or API state.
 
 ## Exclusions
 

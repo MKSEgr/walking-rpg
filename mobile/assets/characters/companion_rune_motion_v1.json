@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "petId": "rune-v1",
+  "asset": "assets/characters/companion_rune_motion_v1.png",
+  "sha256": "264f58cbae149f6e3ead653d0bba147fd0b86c35a46aff202ba7b38cf9c96642",
+  "atlas": {
+    "width": 1536,
+    "height": 2288,
+    "columns": 8,
+    "rows": 11,
+    "cellWidth": 192,
+    "cellHeight": 208
+  },
+  "clips": {
+    "idle": { "row": 0, "frames": 6, "fps": 8, "loop": true },
+    "runRight": { "row": 1, "frames": 8, "fps": 12, "loop": true },
+    "runLeft": { "row": 2, "frames": 8, "fps": 12, "loop": true },
+    "greet": { "row": 3, "frames": 4, "fps": 8, "loop": false },
+    "jump": { "row": 4, "frames": 5, "fps": 10, "loop": false },
+    "tired": { "row": 5, "frames": 8, "fps": 8, "loop": false },
+    "waiting": { "row": 6, "frames": 6, "fps": 6, "loop": true },
+    "sensing": { "row": 7, "frames": 6, "fps": 8, "loop": true },
+    "inspect": { "row": 8, "frames": 6, "fps": 6, "loop": true }
+  },
+  "lookDirections": [
+    { "index": 0, "degrees": 0.0, "row": 9, "column": 0 },
+    { "index": 1, "degrees": 22.5, "row": 9, "column": 1 },
+    { "index": 2, "degrees": 45.0, "row": 9, "column": 2 },
+    { "index": 3, "degrees": 67.5, "row": 9, "column": 3 },
+    { "index": 4, "degrees": 90.0, "row": 9, "column": 4 },
+    { "index": 5, "degrees": 112.5, "row": 9, "column": 5 },
+    { "index": 6, "degrees": 135.0, "row": 9, "column": 6 },
+    { "index": 7, "degrees": 157.5, "row": 9, "column": 7 },
+    { "index": 8, "degrees": 180.0, "row": 10, "column": 0 },
+    { "index": 9, "degrees": 202.5, "row": 10, "column": 1 },
+    { "index": 10, "degrees": 225.0, "row": 10, "column": 2 },
+    { "index": 11, "degrees": 247.5, "row": 10, "column": 3 },
+    { "index": 12, "degrees": 270.0, "row": 10, "column": 4 },
+    { "index": 13, "degrees": 292.5, "row": 10, "column": 5 },
+    { "index": 14, "degrees": 315.0, "row": 10, "column": 6 },
+    { "index": 15, "degrees": 337.5, "row": 10, "column": 7 }
+  ]
+}

@@ -104,6 +104,43 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('renders the violet Navigator from the rune-v1 motion atlas', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: const Scaffold(
+          body: CompanionMotionPortrait(
+            key: Key('rune-motion'),
+            petId: 'rune-v1',
+            name: 'Руна',
+            species: 'эхо',
+            evolutionStage: 2,
+            play: false,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final CompanionMotionPortrait portrait = tester
+        .widget<CompanionMotionPortrait>(find.byKey(const Key('rune-motion')));
+    final Image image = tester.widget<Image>(find.byType(Image));
+    final AssetImage asset = image.image as AssetImage;
+    expect(portrait.hasMotionAsset, isTrue);
+    expect(
+      portrait.motionAssetPath,
+      'assets/characters/companion_rune_motion_v1.png',
+    );
+    expect(asset.assetName, portrait.motionAssetPath);
+    expect(
+      find.byKey(const Key('companion-motion-frame-rune-v1-0-0')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('keeps the first frame when reduced motion is enabled', (
     WidgetTester tester,
   ) async {
@@ -154,15 +191,15 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('keeps the existing portrait fallback for other pets', (
+  testWidgets('keeps the existing portrait fallback for unknown pets', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: CompanionMotionPortrait(
-          petId: 'rune-v1',
-          name: 'Руна',
-          species: 'эхо',
+          petId: 'future-v1',
+          name: 'Будущий спутник',
+          species: 'неизвестный вид',
           evolutionStage: 0,
         ),
       ),
@@ -173,7 +210,7 @@ void main() {
         .widget<CompanionMotionPortrait>(find.byType(CompanionMotionPortrait));
     expect(portrait.hasMotionAsset, isFalse);
     expect(find.byType(CompanionPortrait), findsOneWidget);
-    expect(find.byType(Image), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
