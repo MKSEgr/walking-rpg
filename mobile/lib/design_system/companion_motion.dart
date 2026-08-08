@@ -172,8 +172,7 @@ class _CompanionMotionPlayer extends StatefulWidget {
   final bool loop;
 
   @override
-  State<_CompanionMotionPlayer> createState() =>
-      _CompanionMotionPlayerState();
+  State<_CompanionMotionPlayer> createState() => _CompanionMotionPlayerState();
 }
 
 class _CompanionMotionPlayerState extends State<_CompanionMotionPlayer>
