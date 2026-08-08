@@ -87,7 +87,7 @@ void main() {
         await tester.pumpWidget(
           _LocalizedTestApp(locale: localeCase.locale, child: screens[index]),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(
           find.text(localeCase.expected[index]),
