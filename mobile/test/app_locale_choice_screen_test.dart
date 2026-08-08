@@ -57,8 +57,8 @@ void main() {
     await tester.pumpWidget(
       _LocalizedLocaleApp(
         controller: controller,
-        child: const Scaffold(
-          appBar: AppBar(actions: <Widget>[AppLocaleMenuButton()]),
+        child: Scaffold(
+          appBar: AppBar(actions: const <Widget>[AppLocaleMenuButton()]),
         ),
       ),
     );
