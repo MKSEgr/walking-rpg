@@ -14,6 +14,10 @@ from PIL import Image
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CHARACTER_ASSETS = REPOSITORY_ROOT / "mobile" / "assets" / "characters"
 SPARK_MANIFEST = CHARACTER_ASSETS / "companion_spark_motion_v1.json"
+MOTION_MANIFESTS = tuple(
+    sorted(CHARACTER_ASSETS.glob("companion_*_motion_v*.json"))
+)
+SUPPORTED_PET_IDS = {"spark-v1", "moss-v1", "rune-v1"}
 
 REQUIRED_CLIPS = {
     "idle",
@@ -56,11 +60,21 @@ def _validate_hash(path: Path, expected: Any) -> None:
         raise ValueError(f"{path} sha256 is {actual}, expected {expected}")
 
 
-def _validate_manifest(manifest: dict[str, Any]) -> None:
+def _validate_manifest(manifest: dict[str, Any], path: Path) -> None:
     if manifest.get("schemaVersion") != 1:
         raise ValueError("schemaVersion must be 1")
-    if manifest.get("petId") != "spark-v1":
-        raise ValueError("the Искра atlas must keep the stable petId spark-v1")
+    pet_id = manifest.get("petId")
+    if pet_id not in SUPPORTED_PET_IDS:
+        raise ValueError(f"petId must be one of {sorted(SUPPORTED_PET_IDS)}")
+    slug = pet_id.removesuffix("-v1")
+    expected_manifest = f"companion_{slug}_motion_v1.json"
+    if path.name != expected_manifest:
+        raise ValueError(
+            f"{path.name} must match the stable petId as {expected_manifest}"
+        )
+    expected_asset = f"assets/characters/companion_{slug}_motion_v1.png"
+    if manifest.get("asset") != expected_asset:
+        raise ValueError(f"asset must be {expected_asset}")
 
     clips = manifest.get("clips")
     if not isinstance(clips, dict) or set(clips) != REQUIRED_CLIPS:
@@ -110,7 +124,7 @@ def _expected_cells(
 
 def validate(path: Path = SPARK_MANIFEST) -> None:
     manifest = _load_manifest(path)
-    _validate_manifest(manifest)
+    _validate_manifest(manifest, path)
     asset_path = _asset_path(manifest)
     _validate_hash(asset_path, manifest.get("sha256"))
 
@@ -160,4 +174,7 @@ def validate(path: Path = SPARK_MANIFEST) -> None:
 
 
 if __name__ == "__main__":
-    validate()
+    if not MOTION_MANIFESTS:
+        raise ValueError("no companion motion manifests found")
+    for motion_manifest in MOTION_MANIFESTS:
+        validate(motion_manifest)

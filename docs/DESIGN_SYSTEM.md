@@ -132,15 +132,16 @@ Older cached responses that predate those additive fields keep the textual
 active-companion badge and icon fallback; the client never derives identity or
 form from the pet name.
 
-The first game-native motion candidate belongs only to the exact `spark-v1`
-identity. Its transparent raster atlas contains nine explicit clips and sixteen
-look directions behind a versioned manifest; no clip is selected from the pet
-name, species or inferred gameplay state. Home may play one idle pass when the
-accepted active pet is Искра, while pet choice and growth surfaces retain the
-stage-specific portraits. Reduced-motion settings hold the first frame, and
-continuous looping requires a deliberate scene-level opt-in. This candidate is
-material for the physical motion review in TASK-011, not evidence that the
-three-pet visual direction or motion tolerance has already been validated.
+The first game-native motion candidates belong only to the exact `spark-v1` and
+`moss-v1` identities. Each transparent raster atlas contains nine explicit clips
+and sixteen look directions behind a versioned manifest; no clip is selected
+from the pet name, species or inferred gameplay state. Home may play one idle
+pass when the accepted active pet is Искра or Мох, while pet choice and growth
+surfaces retain the stage-specific portraits. Reduced-motion settings hold the
+first frame, and continuous looping requires a deliberate scene-level opt-in.
+These candidates are material for the physical motion review in TASK-011, not
+evidence that the three-pet visual direction or motion tolerance has already
+been validated.
 
 The Home companion signal pairs the portrait with explicit active-companion,
 level, named form, bond text and the non-interactive growth line. Journal pet

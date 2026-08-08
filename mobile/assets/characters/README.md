@@ -21,6 +21,8 @@ portrait optimized for the `72-80 px` in-product presentation.
 | `companion_rune.webp` | `rune-v1` / Руна | stage 2, adult |
 | `companion_spark_motion_v1.png` | `spark-v1` / Искра | transparent motion atlas |
 | `companion_spark_motion_v1.json` | `spark-v1` / Искра | game clip manifest |
+| `companion_moss_motion_v1.png` | `moss-v1` / Мох | transparent motion atlas |
+| `companion_moss_motion_v1.json` | `moss-v1` / Мох | game clip manifest |
 
 The images are presentation only. Pet selection, active state, bond, level and
 evolution and equipped cosmetics remain server-authoritative. Known starter IDs
@@ -29,20 +31,26 @@ the code-native fallback until their own art ships. The `spark-halo` cosmetic
 is a Flutter light layer so it follows every age form without duplicating the
 underlying portraits. Unknown cosmetic IDs do not alter character art.
 
-## Искра motion atlas
+## Companion motion atlases
 
-The motion atlas is a game asset, not a chat avatar. It preserves the exact
-`spark-v1` identity in an `8 x 11` grid of `192 x 208` cells. The manifest maps
-73 occupied cells to nine game-facing clips (`idle`, directional running,
-greeting, jump, tired, waiting, sensing and inspection) plus sixteen clockwise
-look directions. The remaining cells are transparent by contract.
+The motion atlases are game assets, not chat avatars. Each preserves one exact
+stable identity in an `8 x 11` grid of `192 x 208` cells. Its manifest maps 73
+occupied cells to nine game-facing clips (`idle`, directional running, greeting,
+jump, tired, waiting, sensing and inspection) plus sixteen clockwise look
+directions. The remaining cells are transparent by contract.
 
-Home uses one non-looping idle pass for the exact active Искра identity. Pet
-selection, evolution form, bond and active state still come from the accepted
-server snapshot; the atlas never chooses a pet or predicts progression. The
-existing stage portraits remain the authoritative form presentation in pet
-selection, growth and journal surfaces. Other pet IDs retain their static
-portrait until they receive their own reviewed motion atlas.
+Искра remains low and elastic, using her ears and tail fan to lead motion. Мох
+stays broad, deliberate and weighty; his gaze and head lead while the living
+sprout follows with restrained organic delay. The two atlases share rendering,
+light logic and cell geometry without sharing silhouettes or locomotion.
+
+Home uses one non-looping idle pass for exact active `spark-v1` and `moss-v1`
+identities. Pet selection, evolution form, bond and active state still come from
+the accepted server snapshot; an atlas never chooses a pet or predicts
+progression. The existing stage portraits remain the authoritative form
+presentation in pet selection, growth and journal surfaces. Other pet IDs
+retain their static portrait until they receive their own reviewed motion
+atlas.
 
 Motion stops on the first frame when the platform requests reduced animation.
 Continuous playback is an explicit scene-level opt-in and is not used by the
