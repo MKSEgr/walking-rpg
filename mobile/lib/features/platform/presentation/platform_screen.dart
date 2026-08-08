@@ -12,6 +12,7 @@ import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/profile_cosmetic_art.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
@@ -1915,8 +1916,9 @@ class _CosmeticCard extends StatelessWidget {
         : null;
     final Widget icon = switch (cosmetic.cosmeticId) {
       CharacterCosmeticIds.pilotScarf => ExcludeSemantics(
-        child: PilotPortrait(
+        child: PilotMotionPortrait(
           key: Key('platform-cosmetic-preview-${cosmetic.cosmeticId}'),
+          pilotId: PilotMotionPortrait.navigatorPilotId,
           name: 'Навигатор',
           size: 52,
           equippedCosmeticIds: <String>{cosmetic.cosmeticId},

@@ -21,6 +21,9 @@ SUPPORTED_IDENTITIES = {
     "companion": ("petId", {"spark-v1", "moss-v1", "rune-v1"}),
     "pilot": ("pilotId", {"navigator-v1"}),
 }
+SUPPORTED_COSMETIC_VARIANTS = {
+    ("pilot", "navigator-v1", "pilot-scarf"): "navigator_scarf",
+}
 
 REQUIRED_CLIPS = {
     "idle",
@@ -83,7 +86,22 @@ def _validate_manifest(manifest: dict[str, Any], path: Path) -> str:
     if manifest.get("schemaVersion") != 1:
         raise ValueError("schemaVersion must be 1")
     kind, identity = _manifest_identity(manifest, path)
-    slug = identity.removesuffix("-v1")
+    required_cosmetic_id = manifest.get("requiredCosmeticId")
+    if required_cosmetic_id is None:
+        if "requiredCosmeticId" in manifest:
+            raise ValueError("requiredCosmeticId must be a non-empty string")
+        slug = identity.removesuffix("-v1")
+        variant_label = identity
+    else:
+        if not isinstance(required_cosmetic_id, str) or not required_cosmetic_id:
+            raise ValueError("requiredCosmeticId must be a non-empty string")
+        variant_key = (kind, identity, required_cosmetic_id)
+        slug = SUPPORTED_COSMETIC_VARIANTS.get(variant_key)
+        if slug is None:
+            raise ValueError(
+                "requiredCosmeticId must identify a supported motion variant"
+            )
+        variant_label = f"{identity} + {required_cosmetic_id}"
     expected_manifest = f"{kind}_{slug}_motion_v1.json"
     if path.name != expected_manifest:
         raise ValueError(
@@ -106,7 +124,7 @@ def _validate_manifest(manifest: dict[str, Any], path: Path) -> str:
     ]
     if indexes != list(range(16)):
         raise ValueError("lookDirections must be ordered from index 0 through 15")
-    return identity
+    return variant_label
 
 
 def _expected_cells(

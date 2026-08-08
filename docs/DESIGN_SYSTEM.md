@@ -177,9 +177,11 @@ generic sparkle icon. Preview portraits are decorative and excluded from
 semantics; the cosmetic name and action remain the accessible source.
 
 The base Navigator motion atlas never approximates or removes the scarf. A
-motion portrait receiving exact `pilot-scarf` state falls back to
-`pilot_navigator_scarf.webp` until a separately reviewed scarf motion asset
-exists. Unknown future pilot IDs keep the static portrait fallback.
+motion portrait receiving the exact `navigator-v1` plus `pilot-scarf` state
+uses the separately versioned scarf atlas; the cosmetic catalog may play one
+non-looping idle pass from it. The account dossier and journal retain
+`pilot_navigator_scarf.webp`, and unknown future pilot IDs keep the static
+portrait fallback.
 
 Portrait widgets accept a set of equipped cosmetic IDs so presentation is
 driven by the additive server-owned `equippedCosmetics` mapping. The journal
