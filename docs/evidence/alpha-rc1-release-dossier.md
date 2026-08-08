@@ -1,5 +1,7 @@
 # `alpha-rc1` release dossier
 
+[Русский перевод](alpha-rc1-release-dossier.ru.md)
+
 This dossier pins the first validation-programme baseline to one immutable
 post-bootstrap `master` commit and its integrated push checks. It is an
 engineering candidate record, not production-signing, device, stage or store
