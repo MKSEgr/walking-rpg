@@ -54,10 +54,11 @@
   "firstJourneyErrorBadge": "State needs attention",
   "continueLater": "Continue later",
   "firstJourneyProgressTitle": "Route to the first signal",
-  "firstJourneyCompletedSteps": "{count, plural, =0{No stages completed} =1{1 stage completed} other{{count} stages completed}}",
+  "firstJourneyCompletedSteps": "{completed}/{total} STAGES COMPLETED",
   "@firstJourneyCompletedSteps": {
     "placeholders": {
-      "count": {"type": "int"}
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
     }
   },
   "firstJourneyRouteEmptySemantics": "First journey: no stages have been published yet",

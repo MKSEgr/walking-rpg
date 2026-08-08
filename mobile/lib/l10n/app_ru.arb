@@ -54,7 +54,7 @@
   "firstJourneyErrorBadge": "Состояние требует проверки",
   "continueLater": "Продолжить позже",
   "firstJourneyProgressTitle": "Маршрут к первому сигналу",
-  "firstJourneyCompletedSteps": "{count, plural, =0{Этапы не пройдены} one{{count} этап пройден} few{{count} этапа пройдено} many{{count} этапов пройдено} other{{count} этапа пройдено}}",
+  "firstJourneyCompletedSteps": "{completed}/{total} ЭТАПОВ ПРОЙДЕНО",
   "firstJourneyRouteEmptySemantics": "Первый путь: этапы пока не опубликованы",
   "firstJourneyRouteProgressSemantics": "Первый путь: завершено {completed} из {total} этапов",
   "firstJourneyLoadingTitle": "Восстанавливаем первый путь",

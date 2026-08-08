@@ -365,6 +365,7 @@ class _JourneyProgressHeader extends StatelessWidget {
               ExpeditionBadge(
                 label: context.l10n.firstJourneyCompletedSteps(
                   progress.completedCount,
+                  FirstJourneyProgress.steps.length,
                 ),
                 icon: Icons.route_outlined,
                 allowWrap: true,
