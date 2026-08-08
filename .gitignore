@@ -27,6 +27,7 @@ mobile/.flutter-plugins-dependencies
 mobile/.packages
 mobile/build/
 mobile/coverage/
+mobile/lib/l10n/generated/
 mobile/android/.gradle/
 mobile/android/local.properties
 mobile/ios/Pods/

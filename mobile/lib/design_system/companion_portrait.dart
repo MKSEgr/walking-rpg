@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/illustrated_portrait.dart';
@@ -79,15 +81,17 @@ class CompanionPortrait extends StatelessWidget {
       CompanionIdentity.unknown => colors.onSurfaceVariant,
     };
     final int safeStage = safeEvolutionStage;
-    final String activeLabel = active ? ', активный спутник' : '';
-    final String cosmeticLabel = hasSparkHalo ? ', Ореол Искры' : '';
     final String? assetPath = illustrationAsset;
 
     return Semantics(
       image: true,
-      label:
-          '$name, $species, ${CompanionGrowth.formLabel(evolutionStage)}'
-          '$activeLabel$cosmeticLabel',
+      label: context.l10n.companionPortraitDescription(
+        name: name,
+        species: species,
+        stage: evolutionStage,
+        active: active,
+        hasSparkHalo: hasSparkHalo,
+      ),
       child: RepaintBoundary(
         child: SizedBox.square(
           dimension: size,

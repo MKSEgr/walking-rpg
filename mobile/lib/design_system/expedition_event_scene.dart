@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 abstract final class ExpeditionEventArtwork {
@@ -59,12 +61,9 @@ class ExpeditionEventScene extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final String? assetPath = ExpeditionEventArtwork.assetPathFor(eventId);
-    final String semanticLabel =
-        ExpeditionEventArtwork.semanticDescriptionFor(
-          eventId: eventId,
-          eventTitle: eventTitle,
-        ) ??
-        fallbackSemanticLabel;
+    final String semanticLabel = assetPath == null
+        ? fallbackSemanticLabel
+        : context.l10n.eventSceneDescription(eventId, eventTitle);
     final Color accent = switch (eventId) {
       'signal-source-v1' => colors.primary,
       'echo-vault-v1' => palette.energy,

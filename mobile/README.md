@@ -13,6 +13,26 @@ Flutter-клиент walking-RPG. Android- и iOS-host проекты зафик
 - нативные Android/iOS host-проекты;
 - dependency-light REST transport на `dart:io`.
 
+## Язык регистрации и первого пути
+
+Step Beyond поддерживает явный выбор русского или английского языка до входа.
+Русский показывается первым; системная locale, identity, health- и location-данные
+не используются для автоматического выбора.
+
+Настройка хранится в secure storage под ключом `step_beyond_locale_v1` как
+device-scoped preference. Она находится вне OIDC session envelope и owner-local
+cache/outbox, поэтому переживает restart, logout и смену аккаунта. Изменить язык
+обратно можно на экране входа, в «Первом пути» и через действие языка на экране
+аккаунта.
+
+Миграция для сборок без сохранённого значения fail-safe: используется русский
+fallback и показывается обязательный экран подтверждения. Неизвестное или
+повреждённое значение проходит тот же путь. Статическая копия auth/first-journey
+и presentation-mapping канонического стартового контента находятся в
+`lib/l10n/app_en.arb` и `lib/l10n/app_ru.arb`; неизвестный server-owned content
+показывается буквально и не влияет на IDs, команды или server-authoritative
+state.
+
 ## Источник активности
 
 Доменная граница:

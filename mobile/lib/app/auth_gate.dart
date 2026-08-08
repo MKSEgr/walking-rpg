@@ -11,6 +11,7 @@ import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_store.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
 import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
@@ -89,23 +90,19 @@ class _AuthGateState extends State<AuthGate> {
       builder: (BuildContext context, Widget? child) {
         switch (widget.controller.state) {
           case AuthLifecycleState.initializing:
-            return const ExpeditionBoundaryScreen.loading(
-              key: Key('auth-initializing-screen'),
-              badgeLabel: 'Канал экспедиции',
-              title: 'Восстанавливаем маршрут',
-              message:
-                  'Проверяем защищённую сессию и локальное состояние '
-                  'экспедиции.',
+            return ExpeditionBoundaryScreen.loading(
+              key: const Key('auth-initializing-screen'),
+              badgeLabel: context.l10n.authInitializingBadge,
+              title: context.l10n.authInitializingTitle,
+              message: context.l10n.authInitializingMessage,
               icon: Icons.shield_outlined,
             );
           case AuthLifecycleState.stoppingRuntime:
-            return const ExpeditionBoundaryScreen.loading(
-              key: Key('auth-stopping-screen'),
-              badgeLabel: 'Безопасное завершение',
-              title: 'Закрываем маршрут',
-              message:
-                  'Завершаем активные операции и защищённо закрываем '
-                  'сессию.',
+            return ExpeditionBoundaryScreen.loading(
+              key: const Key('auth-stopping-screen'),
+              badgeLabel: context.l10n.authStoppingBadge,
+              title: context.l10n.authStoppingTitle,
+              message: context.l10n.authStoppingMessage,
               icon: Icons.power_settings_new,
             );
           case AuthLifecycleState.unauthenticated:
@@ -115,13 +112,11 @@ class _AuthGateState extends State<AuthGate> {
           case AuthLifecycleState.authenticated:
             final AuthIdentity? identity = widget.controller.identity;
             if (identity == null) {
-              return const ExpeditionBoundaryScreen.loading(
-                key: Key('auth-identity-screen'),
-                badgeLabel: 'Проверка доступа',
-                title: 'Подтверждаем маршрут',
-                message:
-                    'Сверяем защищённую сессию перед открытием '
-                    'экспедиции.',
+              return ExpeditionBoundaryScreen.loading(
+                key: const Key('auth-identity-screen'),
+                badgeLabel: context.l10n.authIdentityBadge,
+                title: context.l10n.authIdentityTitle,
+                message: context.l10n.authIdentityMessage,
                 icon: Icons.verified_user_outlined,
               );
             }

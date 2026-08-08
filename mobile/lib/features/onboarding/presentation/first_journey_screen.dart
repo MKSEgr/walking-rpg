@@ -1,4 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_locale_controller.dart';
+import 'package:walking_rpg_mobile/core/localization/app_locale_scope.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/activity_intake_signal.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
@@ -18,7 +24,7 @@ import 'package:walking_rpg_mobile/features/onboarding/domain/first_journey_prog
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
 
-enum _FirstJourneyAppAction { account }
+enum _FirstJourneyAppAction { language, account }
 
 double _firstJourneyTextScale(BuildContext context) {
   return MediaQuery.textScalerOf(context).scale(16) / 16;
@@ -92,8 +98,8 @@ class FirstJourneyScreen extends StatelessWidget {
         );
         return Scaffold(
           appBar: AppBar(
-            title: const Text(
-              'Первый путь',
+            title: Text(
+              context.l10n.firstJourneyTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -105,10 +111,11 @@ class FirstJourneyScreen extends StatelessWidget {
                 unavailable: recoveryUnavailable,
               ),
               if (compactChrome)
-                _FirstJourneyAppActionsMenu(onOpenAccount: onOpenAccount)
-              else
+                _FirstJourneyAppActionsMenu(onOpenAccount: onOpenAccount),
+              if (!compactChrome) const AppLocaleMenuButton(),
+              if (!compactChrome)
                 IconButton(
-                  tooltip: 'Аккаунт',
+                  tooltip: context.l10n.accountTooltip,
                   onPressed: onOpenAccount,
                   icon: const Icon(Icons.account_circle_outlined),
                 ),
@@ -140,20 +147,21 @@ class FirstJourneyScreen extends StatelessWidget {
                             _JourneyProgressHeader(progress: progress),
                             if (progress.readOnly) ...<Widget>[
                               const SizedBox(height: 12),
-                              const ExpeditionNotice(
-                                key: Key('first-journey-read-only-signal'),
-                                label: 'Сохранённый путь',
+                              ExpeditionNotice(
+                                key: const Key(
+                                  'first-journey-read-only-signal',
+                                ),
+                                label: context.l10n.firstJourneySavedBadge,
                                 icon: Icons.cloud_off_outlined,
-                                message:
-                                    'Показано сохранённое состояние. Действия '
-                                    'станут доступны после подключения к серверу.',
+                                message: context.l10n.firstJourneySavedMessage,
                               ),
                             ],
                             if (notice != null) ...<Widget>[
                               const SizedBox(height: 12),
                               ExpeditionNotice(
                                 key: const Key('first-journey-notice-signal'),
-                                label: 'Сигнал маршрута',
+                                label:
+                                    context.l10n.firstJourneyRouteNoticeBadge,
                                 icon: Icons.info_outline,
                                 message: notice!,
                                 tone: ExpeditionNoticeTone.lumen,
@@ -163,7 +171,7 @@ class FirstJourneyScreen extends StatelessWidget {
                               const SizedBox(height: 12),
                               ExpeditionNotice(
                                 key: const Key('first-journey-error-signal'),
-                                label: 'Состояние требует проверки',
+                                label: context.l10n.firstJourneyErrorBadge,
                                 icon: Icons.sync_problem_outlined,
                                 message: errorMessage!,
                                 tone: ExpeditionNoticeTone.resonance,
@@ -193,7 +201,7 @@ class FirstJourneyScreen extends StatelessWidget {
                             TextButton(
                               key: const Key('first-journey-continue-later'),
                               onPressed: busy ? null : onContinueLater,
-                              child: const Text('Продолжить позже'),
+                              child: Text(context.l10n.continueLater),
                             ),
                           ],
                         ),
@@ -278,10 +286,18 @@ class _FirstJourneyAppActionsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<_FirstJourneyAppAction>(
       key: const Key('first-journey-more-actions'),
-      tooltip: 'Ещё действия',
+      tooltip: context.l10n.moreActionsTooltip,
       icon: const Icon(Icons.more_vert),
       onSelected: (_FirstJourneyAppAction action) {
         switch (action) {
+          case _FirstJourneyAppAction.language:
+            final AppLocaleController? controller = AppLocaleScope.maybeOf(
+              context,
+            );
+            if (controller != null) {
+              unawaited(showAppLocalePicker(context, controller));
+            }
+            break;
           case _FirstJourneyAppAction.account:
             onOpenAccount?.call();
             break;
@@ -290,14 +306,25 @@ class _FirstJourneyAppActionsMenu extends StatelessWidget {
       itemBuilder: (BuildContext context) =>
           <PopupMenuEntry<_FirstJourneyAppAction>>[
             PopupMenuItem<_FirstJourneyAppAction>(
+              key: const Key('first-journey-menu-language'),
+              value: _FirstJourneyAppAction.language,
+              child: Row(
+                children: <Widget>[
+                  const Icon(Icons.language, size: 21),
+                  const SizedBox(width: 12),
+                  Flexible(child: Text(context.l10n.changeLanguageTooltip)),
+                ],
+              ),
+            ),
+            PopupMenuItem<_FirstJourneyAppAction>(
               key: const Key('first-journey-menu-account'),
               value: _FirstJourneyAppAction.account,
               enabled: onOpenAccount != null,
-              child: const Row(
+              child: Row(
                 children: <Widget>[
-                  Icon(Icons.account_circle_outlined, size: 21),
-                  SizedBox(width: 12),
-                  Flexible(child: Text('Аккаунт')),
+                  const Icon(Icons.account_circle_outlined, size: 21),
+                  const SizedBox(width: 12),
+                  Flexible(child: Text(context.l10n.accountTooltip)),
                 ],
               ),
             ),
@@ -331,12 +358,14 @@ class _JourneyProgressHeader extends StatelessWidget {
           children: <Widget>[
             if (compact) ...<Widget>[
               Text(
-                'Маршрут к первому сигналу',
+                context.l10n.firstJourneyProgressTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               ExpeditionBadge(
-                label: '$count этапов пройдено',
+                label: context.l10n.firstJourneyCompletedSteps(
+                  progress.completedCount,
+                ),
                 icon: Icons.route_outlined,
                 allowWrap: true,
               ),
@@ -345,7 +374,7 @@ class _JourneyProgressHeader extends StatelessWidget {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      'Маршрут к первому сигналу',
+                      context.l10n.firstJourneyProgressTitle,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
@@ -381,25 +410,23 @@ class _WelcomePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _JourneyPanel(
       icon: Icons.radar,
-      visual: const ChapterVista(
-        key: Key('first-journey-chapter-vista'),
-        semanticLabel: 'Туманный сектор и внешний маяк',
+      visual: ChapterVista(
+        key: const Key('first-journey-chapter-vista'),
+        semanticLabel: context.l10n.welcomeVistaSemanticLabel,
       ),
-      eyebrow: 'Сигнал найден',
-      title: 'Твой путь начинается с реальных шагов',
-      body:
-          'Ты — Навигатор. Прогулки создают ENERGY, ENERGY открывает '
-          'узлы экспедиции, а решения меняют награды и связь с питомцем.',
-      highlights: const <String>[
-        'Ходи сейчас — проходи события, когда удобно.',
-        'Сервер считает награды и не доверяет цифрам клиента.',
-        'Первая цель подстроится под твою историю активности.',
+      eyebrow: context.l10n.welcomeEyebrow,
+      title: context.l10n.welcomeTitle,
+      body: context.l10n.welcomeBody,
+      highlights: <String>[
+        context.l10n.welcomeHighlightWalk,
+        context.l10n.welcomeHighlightServer,
+        context.l10n.welcomeHighlightGoal,
       ],
       action: FilledButton.icon(
         key: const Key('first-journey-start'),
         onPressed: busy ? null : onContinue,
         icon: const Icon(Icons.arrow_forward),
-        label: const _JourneyActionLabel('Начать путь'),
+        label: _JourneyActionLabel(context.l10n.welcomeStartButton),
       ),
     );
   }
@@ -418,15 +445,13 @@ class _ActivityPanel extends StatelessWidget {
       visual: const ActivityIntakeSignal(
         key: Key('first-journey-activity-intake-signal'),
       ),
-      eyebrow: 'Шаг 1 · движение',
-      title: 'Подключи шаги и получи первую ENERGY',
-      body:
-          'Системный экран запросит доступ только к количеству шагов. '
-          'Walking RPG не читает геолокацию, пульс, сон, вес или медицинские записи.',
-      highlights: const <String>[
-        'Только количество шагов.',
-        'Повторная синхронизация не выдаёт награду дважды.',
-        '100 подтверждённых шагов = 1 ENERGY.',
+      eyebrow: context.l10n.activityEyebrow,
+      title: context.l10n.activityTitle,
+      body: context.l10n.activityBody,
+      highlights: <String>[
+        context.l10n.activityHighlightCountOnly,
+        context.l10n.activityHighlightIdempotent,
+        context.l10n.activityHighlightRate,
       ],
       action: FilledButton.icon(
         key: const Key('first-journey-sync'),
@@ -438,7 +463,9 @@ class _ActivityPanel extends StatelessWidget {
               )
             : const Icon(Icons.health_and_safety_outlined),
         label: _JourneyActionLabel(
-          busy ? 'Подключаем шаги...' : 'Разрешить и синхронизировать',
+          busy
+              ? context.l10n.activityConnectingButton
+              : context.l10n.activityConnectButton,
         ),
       ),
     );
@@ -463,7 +490,7 @@ class _ActivityRewardPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final String reward = result.energyGranted > 0
         ? '+${result.energyGranted} ENERGY'
-        : 'Шаги подключены';
+        : context.l10n.activityStepsConnected;
     final double dailyProgress = dailyGoal <= 0
         ? 0
         : (result.acceptedTotal / dailyGoal).clamp(0, 1).toDouble();
@@ -475,27 +502,31 @@ class _ActivityRewardPanel extends StatelessWidget {
           key: const Key('first-journey-daily-route-orbit'),
           progress: dailyProgress,
           value: dailyPercentage,
-          label: 'шаги',
+          label: context.l10n.stepsLabel,
           size: 108,
         ),
       ),
-      eyebrow: 'Движение подтверждено',
+      eyebrow: context.l10n.activityRewardEyebrow,
       title: reward,
-      body:
-          'Принято ${result.acceptedTotal} из $dailyGoal шагов дневного пути. '
-          'На балансе ${result.energyBalanceAfter} ENERGY.',
+      body: context.l10n.activityRewardBody(
+        result.acceptedTotal,
+        dailyGoal,
+        result.energyBalanceAfter,
+      ),
       highlights: <String>[
         if (result.energyGranted == 0)
-          'До следующей ENERGY не хватает подтверждённых шагов.'
+          context.l10n.activityRewardNeedMore
         else
-          'Новая энергия уже доступна для экспедиции.',
-        'Риск-проверка: ${result.riskStatus}.',
+          context.l10n.activityRewardAvailable,
+        context.l10n.activityRiskStatus(
+          context.l10n.journeyRiskStatus(result.riskStatus),
+        ),
       ],
       action: FilledButton.icon(
         key: const Key('first-journey-activity-continue'),
         onPressed: busy ? null : onContinue,
         icon: const Icon(Icons.pets_outlined),
-        label: const _JourneyActionLabel('Выбрать питомца'),
+        label: _JourneyActionLabel(context.l10n.choosePetButton),
       ),
       accent: true,
     );
@@ -518,11 +549,9 @@ class _PetSelectionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _JourneyPanel(
       icon: Icons.pets,
-      eyebrow: 'Шаг 2 · спутник',
-      title: 'Кто пойдёт к сигналу вместе с тобой?',
-      body:
-          'Выбор настоящий: активный питомец появится на главном экране '
-          'и будет получать связь за решения событий.',
+      eyebrow: context.l10n.petEyebrow,
+      title: context.l10n.petTitle,
+      body: context.l10n.petBody,
       child: Column(
         children: pets
             .map(
@@ -555,6 +584,12 @@ class _PetChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final String petName = context.l10n.journeyPetName(pet.petId, pet.name);
+    final String petSpecies = context.l10n.journeyPetSpecies(
+      pet.petId,
+      pet.species,
+    );
+    final String petTrait = context.l10n.journeyPetTrait(pet.petId, pet.trait);
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = _usesCompactFirstJourneySection(
@@ -564,8 +599,8 @@ class _PetChoice extends StatelessWidget {
         final Widget portrait = CompanionPortrait(
           key: Key('first-journey-pet-portrait-${pet.petId}'),
           petId: pet.petId,
-          name: pet.name,
-          species: pet.species,
+          name: petName,
+          species: petSpecies,
           evolutionStage: pet.evolutionStage,
           active: pet.active,
           size: compact ? 72 : 78,
@@ -573,19 +608,19 @@ class _PetChoice extends StatelessWidget {
         final Widget details = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(pet.name, style: Theme.of(context).textTheme.titleMedium),
+            Text(petName, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 7),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: <Widget>[
                 ExpeditionBadge(
-                  label: pet.species,
+                  label: petSpecies,
                   icon: Icons.blur_circular,
                   allowWrap: compact,
                 ),
                 ExpeditionBadge(
-                  label: 'Форма ${pet.evolutionStage + 1}',
+                  label: context.l10n.petForm(pet.evolutionStage + 1),
                   icon: Icons.auto_awesome_outlined,
                   tone: pet.evolutionStage > 0
                       ? ExpeditionPanelTone.resonance
@@ -596,7 +631,7 @@ class _PetChoice extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              pet.trait,
+              petTrait,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
@@ -627,12 +662,12 @@ class _PetChoice extends StatelessWidget {
                         const SizedBox(height: 12),
                         details,
                         const SizedBox(height: 12),
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: <Widget>[
-                            Flexible(child: Text('Выбрать спутника')),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward_ios, size: 18),
+                            Flexible(child: Text(context.l10n.chooseCompanion)),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward_ios, size: 18),
                           ],
                         ),
                       ],
@@ -674,18 +709,20 @@ class _ExpeditionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool canAdvance = home.spendableEnergy > 0;
     final int remaining = home.remainingExpeditionEnergy;
+    final String nodeName = context.l10n.journeyNodeName(
+      home.currentNodeId,
+      home.currentNodeName,
+    );
     return _JourneyPanel(
       icon: Icons.explore_outlined,
       visual: ChapterVista(
         key: const Key('first-journey-expedition-vista'),
-        semanticLabel: '${home.currentNodeName}, первый узел туманного сектора',
+        semanticLabel: context.l10n.expeditionVistaSemanticLabel(nodeName),
         progress: home.expeditionProgressValue,
       ),
-      eyebrow: 'Шаг 3 · первый узел',
-      title: home.currentNodeName,
-      body:
-          'Направь ENERGY к внешнему маяку. Можно продвигаться частями: '
-          'прогресс и баланс сохраняются на сервере.',
+      eyebrow: context.l10n.expeditionEyebrow,
+      title: nodeName,
+      body: context.l10n.expeditionBody,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -700,7 +737,7 @@ class _ExpeditionPanel extends StatelessWidget {
             target: home.requiredEnergy,
           ),
           const SizedBox(height: 8),
-          Text('На балансе ${home.availableEnergy} · до маяка $remaining'),
+          Text(context.l10n.expeditionBalance(home.availableEnergy, remaining)),
           const SizedBox(height: 18),
           FilledButton.icon(
             key: const Key('first-journey-advance'),
@@ -717,8 +754,8 @@ class _ExpeditionPanel extends StatelessWidget {
                 : Icon(canAdvance ? Icons.bolt : Icons.directions_walk),
             label: _JourneyActionLabel(
               canAdvance
-                  ? 'Направить ${home.spendableEnergy} ENERGY'
-                  : 'Синхронизировать новые шаги',
+                  ? context.l10n.expeditionAdvanceButton(home.spendableEnergy)
+                  : context.l10n.expeditionSyncStepsButton,
             ),
           ),
         ],
@@ -743,23 +780,31 @@ class _EventPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final HomeExpeditionEvent? current = event;
     if (current == null) {
-      return const _JourneyPanel(
+      return _JourneyPanel(
         icon: Icons.sync_problem_outlined,
-        eyebrow: 'Состояние обновляется',
-        title: 'Маяк достигнут, но событие ещё не загружено',
-        body: 'Повтори загрузку после восстановления соединения.',
+        eyebrow: context.l10n.eventUpdatingEyebrow,
+        title: context.l10n.eventNotReadyTitle,
+        body: context.l10n.eventNotReadyBody,
       );
     }
+    final String eventTitle = context.l10n.journeyEventTitle(
+      current.eventId,
+      current.title,
+    );
+    final String eventSummary = context.l10n.journeyEventSummary(
+      current.eventId,
+      current.summary,
+    );
     return _JourneyPanel(
       icon: Icons.auto_awesome_outlined,
       visual: ExpeditionEventScene(
         eventId: current.eventId,
-        eventTitle: current.title,
-        fallbackSemanticLabel: 'Сцена события «${current.title}»',
+        eventTitle: eventTitle,
+        fallbackSemanticLabel: context.l10n.eventFallbackScene(eventTitle),
       ),
-      eyebrow: 'Шаг 4 · решение',
-      title: current.title,
-      body: current.summary,
+      eyebrow: context.l10n.eventEyebrow,
+      title: eventTitle,
+      body: eventSummary,
       child: Column(
         children: current.choices
             .map(
@@ -779,15 +824,27 @@ class _EventPanel extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          choice.title,
+                          context.l10n.journeyChoiceTitle(
+                            current.eventId,
+                            choice.choiceId,
+                            choice.title,
+                          ),
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: 4),
-                        Text(choice.description),
+                        Text(
+                          context.l10n.journeyChoiceDescription(
+                            current.eventId,
+                            choice.choiceId,
+                            choice.description,
+                          ),
+                        ),
                         const SizedBox(height: 6),
                         Text(
-                          '+${choice.pilotExperienceReward} XP · '
-                          '+${choice.petBondReward} связь',
+                          context.l10n.eventChoiceRewards(
+                            choice.pilotExperienceReward,
+                            choice.petBondReward,
+                          ),
                           style: Theme.of(context).textTheme.labelLarge,
                         ),
                       ],
@@ -817,6 +874,25 @@ class _CompletionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final EventNextNode? nextNode = result.nextNode;
+    final String eventTitle = context.l10n.journeyEventTitle(
+      result.eventId,
+      result.eventTitle,
+    );
+    final String choiceTitle = context.l10n.journeyChoiceTitle(
+      result.eventId,
+      result.choiceId,
+      result.choiceTitle,
+    );
+    final String outcomeTitle = context.l10n.journeyOutcomeTitle(
+      result.eventId,
+      result.choiceId,
+      result.outcomeTitle,
+    );
+    final String outcomeSummary = context.l10n.journeyOutcomeSummary(
+      result.eventId,
+      result.choiceId,
+      result.outcomeSummary,
+    );
     return _JourneyPanel(
       icon: Icons.emoji_events_outlined,
       visual: Column(
@@ -824,23 +900,22 @@ class _CompletionPanel extends StatelessWidget {
         children: <Widget>[
           ExpeditionEventScene(
             eventId: result.eventId,
-            eventTitle: result.eventTitle,
-            fallbackSemanticLabel:
-                'Сцена завершённого события «${result.eventTitle}»',
+            eventTitle: eventTitle,
+            fallbackSemanticLabel: context.l10n.eventCompletedScene(eventTitle),
           ),
           const SizedBox(height: 12),
           EventChoiceSignalLayout(
             eventId: result.eventId,
             choiceId: result.choiceId,
             child: Text(
-              'Выбрано: ${result.choiceTitle}',
+              context.l10n.eventSelectedChoice(choiceTitle),
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ),
           if (nextNode != null) ...<Widget>[
             const SizedBox(height: 14),
             Text(
-              'СЛЕДУЮЩИЙ УЗЕЛ',
+              context.l10n.eventNextNodeLabel,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: context.walkingRpgPalette.resonance,
                 letterSpacing: 0.8,
@@ -851,7 +926,10 @@ class _CompletionPanel extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: ExpeditionNodeSignal(
                 nodeId: nextNode.nodeId,
-                nodeName: nextNode.name,
+                nodeName: context.l10n.journeyNodeName(
+                  nextNode.nodeId,
+                  nextNode.name,
+                ),
                 completed: false,
                 role: ExpeditionNodeSignalRole.next,
                 markSize: 46,
@@ -860,9 +938,9 @@ class _CompletionPanel extends StatelessWidget {
           ],
         ],
       ),
-      eyebrow: 'Первый сигнал расшифрован',
-      title: result.outcomeTitle,
-      body: result.outcomeSummary,
+      eyebrow: context.l10n.eventCompletionEyebrow,
+      title: outcomeTitle,
+      body: outcomeSummary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -870,7 +948,7 @@ class _CompletionPanel extends StatelessWidget {
             kind: ProgressionGainKind.pilotExperience,
             subjectId: result.pilot.pilotId,
             child: Text(
-              '+${result.pilot.experienceGained} XP пилота',
+              context.l10n.eventPilotExperience(result.pilot.experienceGained),
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ),
@@ -879,7 +957,10 @@ class _CompletionPanel extends StatelessWidget {
             kind: ProgressionGainKind.petBond,
             subjectId: result.pet.petId,
             child: Text(
-              '+${result.pet.bondGained} связи · ${result.pet.name}',
+              context.l10n.eventPetBond(
+                result.pet.bondGained,
+                context.l10n.journeyPetName(result.pet.petId, result.pet.name),
+              ),
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ),
@@ -902,7 +983,7 @@ class _CompletionPanel extends StatelessWidget {
         key: const Key('first-journey-finish'),
         onPressed: busy ? null : onFinish,
         icon: const Icon(Icons.explore),
-        label: const _JourneyActionLabel('Открыть экспедицию'),
+        label: _JourneyActionLabel(context.l10n.openExpeditionButton),
       ),
       accent: true,
     );
@@ -923,16 +1004,14 @@ class _AlreadyCompletePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _JourneyPanel(
       icon: Icons.emoji_events_outlined,
-      eyebrow: 'Первый путь завершён',
-      title: 'Экспедиция открыта',
-      body:
-          'Шаги подключены, питомец выбран, а первый сигнал уже сохранён '
-          'в Путевом журнале.',
+      eyebrow: context.l10n.journeyCompleteEyebrow,
+      title: context.l10n.journeyCompleteTitle,
+      body: context.l10n.journeyCompleteBody,
       action: FilledButton.icon(
         key: const Key('first-journey-finish'),
         onPressed: busy ? null : onFinish,
         icon: const Icon(Icons.explore),
-        label: const _JourneyActionLabel('Открыть экспедицию'),
+        label: _JourneyActionLabel(context.l10n.openExpeditionButton),
       ),
       accent: true,
     );
