@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate committed companion motion atlases and their game manifests."""
+"""Validate committed crew motion atlases and their game manifests."""
 
 from __future__ import annotations
 
@@ -15,9 +15,12 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CHARACTER_ASSETS = REPOSITORY_ROOT / "mobile" / "assets" / "characters"
 SPARK_MANIFEST = CHARACTER_ASSETS / "companion_spark_motion_v1.json"
 MOTION_MANIFESTS = tuple(
-    sorted(CHARACTER_ASSETS.glob("companion_*_motion_v*.json"))
+    sorted(CHARACTER_ASSETS.glob("*_motion_v*.json"))
 )
-SUPPORTED_PET_IDS = {"spark-v1", "moss-v1", "rune-v1"}
+SUPPORTED_IDENTITIES = {
+    "companion": ("petId", {"spark-v1", "moss-v1", "rune-v1"}),
+    "pilot": ("pilotId", {"navigator-v1"}),
+}
 
 REQUIRED_CLIPS = {
     "idle",
@@ -60,19 +63,33 @@ def _validate_hash(path: Path, expected: Any) -> None:
         raise ValueError(f"{path} sha256 is {actual}, expected {expected}")
 
 
-def _validate_manifest(manifest: dict[str, Any], path: Path) -> None:
+def _manifest_identity(manifest: dict[str, Any], path: Path) -> tuple[str, str]:
+    kind = path.name.split("_", maxsplit=1)[0]
+    identity_contract = SUPPORTED_IDENTITIES.get(kind)
+    if identity_contract is None:
+        raise ValueError(
+            f"{path.name} must use a supported character asset prefix"
+        )
+    identity_field, supported_ids = identity_contract
+    identity = manifest.get(identity_field)
+    if identity not in supported_ids:
+        raise ValueError(
+            f"{identity_field} must be one of {sorted(supported_ids)}"
+        )
+    return kind, identity
+
+
+def _validate_manifest(manifest: dict[str, Any], path: Path) -> str:
     if manifest.get("schemaVersion") != 1:
         raise ValueError("schemaVersion must be 1")
-    pet_id = manifest.get("petId")
-    if pet_id not in SUPPORTED_PET_IDS:
-        raise ValueError(f"petId must be one of {sorted(SUPPORTED_PET_IDS)}")
-    slug = pet_id.removesuffix("-v1")
-    expected_manifest = f"companion_{slug}_motion_v1.json"
+    kind, identity = _manifest_identity(manifest, path)
+    slug = identity.removesuffix("-v1")
+    expected_manifest = f"{kind}_{slug}_motion_v1.json"
     if path.name != expected_manifest:
         raise ValueError(
-            f"{path.name} must match the stable petId as {expected_manifest}"
+            f"{path.name} must match the stable identity as {expected_manifest}"
         )
-    expected_asset = f"assets/characters/companion_{slug}_motion_v1.png"
+    expected_asset = f"assets/characters/{kind}_{slug}_motion_v1.png"
     if manifest.get("asset") != expected_asset:
         raise ValueError(f"asset must be {expected_asset}")
 
@@ -89,6 +106,7 @@ def _validate_manifest(manifest: dict[str, Any], path: Path) -> None:
     ]
     if indexes != list(range(16)):
         raise ValueError("lookDirections must be ordered from index 0 through 15")
+    return identity
 
 
 def _expected_cells(
@@ -124,7 +142,7 @@ def _expected_cells(
 
 def validate(path: Path = SPARK_MANIFEST) -> None:
     manifest = _load_manifest(path)
-    _validate_manifest(manifest, path)
+    identity = _validate_manifest(manifest, path)
     asset_path = _asset_path(manifest)
     _validate_hash(asset_path, manifest.get("sha256"))
 
@@ -168,13 +186,13 @@ def validate(path: Path = SPARK_MANIFEST) -> None:
                     )
 
     print(
-        f"Validated {manifest['petId']}: {len(expected)} frames, "
+        f"Validated {identity}: {len(expected)} frames, "
         f"{columns} x {rows} atlas, sha256 {manifest['sha256']}"
     )
 
 
 if __name__ == "__main__":
     if not MOTION_MANIFESTS:
-        raise ValueError("no companion motion manifests found")
+        raise ValueError("no crew motion manifests found")
     for motion_manifest in MOTION_MANIFESTS:
         validate(motion_manifest)

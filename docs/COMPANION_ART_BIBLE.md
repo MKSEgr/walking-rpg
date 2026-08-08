@@ -7,6 +7,10 @@ rules for production assets. It is the source for new companion artwork. The
 direction still requires physical-device and motion-tolerance evidence under
 TASK-011; committed art is not a substitute for that validation.
 
+The hooded figure uses the separate pilot rules in
+[PILOT_ART_BIBLE.md](PILOT_ART_BIBLE.md); manufactured pilot equipment is not a
+companion anatomy reference.
+
 ## Canonical starter lineup
 
 - **Искра** — the agile turquoise ground scout; stable server ID `spark-v1`.

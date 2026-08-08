@@ -10,6 +10,8 @@ portrait optimized for the `72-80 px` in-product presentation.
 |---|---|---|
 | `pilot_navigator.webp` | universal helmeted Navigator pilot | base |
 | `pilot_navigator_scarf.webp` | universal helmeted Navigator pilot | `pilot-scarf` |
+| `pilot_navigator_motion_v1.png` | `navigator-v1` / Navigator pilot | transparent motion atlas |
+| `pilot_navigator_motion_v1.json` | `navigator-v1` / Navigator pilot | game clip manifest |
 | `companion_spark_stage0.webp` | `spark-v1` / Искра | stage 0, young |
 | `companion_spark_stage1.webp` | `spark-v1` / Искра | stage 1, adolescent |
 | `companion_spark.webp` | `spark-v1` / Искра | stage 2, adult |
@@ -68,6 +70,26 @@ python3 mobile/tool/validate_companion_motion_assets.py
 ```
 
 The validator requires Pillow.
+
+## Navigator pilot motion atlas
+
+The base `navigator-v1` pilot uses the same `8 x 11`, `192 x 208` cell geometry
+and 73-frame semantic map as the companion candidates. The art remains a
+separate human identity: a practical hooded frontier suit, opaque turquoise
+navigation visor, grounded running and restrained hand-led gestures. Its full
+rules live in `docs/PILOT_ART_BIBLE.md`.
+
+Home may play one non-looping idle pass for the exact current universal pilot.
+The account dossier and journal retain the static production portrait. An
+equipped `pilot-scarf` also retains its illustrated scarf portrait rather than
+silently dropping the server-owned cosmetic; it needs its own reviewed motion
+variant before animation.
+
+The raster was generated with the built-in image workflow from the existing
+pilot portrait identity anchor on a removable magenta key. A focused repair
+pass supplied the strict gesture rows, and a supplemental pass supplied the
+directional running and look rows. The selected frames were de-keyed, despilled
+and normalized into the versioned game contract.
 
 All prompts specified the project palette, readable silhouettes at `80 px`, no
 text, logos or weapons, and no cyberpunk, fitness-dashboard, anime or chibi

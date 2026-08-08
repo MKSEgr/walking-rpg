@@ -12,7 +12,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
-import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
@@ -101,7 +101,12 @@ void main() {
     expect(portrait.petId, 'spark-v1');
     expect(portrait.evolutionStage, 0);
     expect(portrait.hasMotionAsset, isTrue);
-    expect(find.byType(PilotPortrait), findsOneWidget);
+    expect(find.byType(PilotMotionPortrait), findsOneWidget);
+    expect(find.byKey(const Key('home-pilot-motion-portrait')), findsOneWidget);
+    expect(
+      find.byKey(const Key('pilot-motion-frame-navigator-v1-0-5')),
+      findsOneWidget,
+    );
     expect(find.bySemanticsLabel('Пилот Навигатор'), findsNothing);
     expect(
       find.byKey(const Key('home-team-companion-portrait')),
