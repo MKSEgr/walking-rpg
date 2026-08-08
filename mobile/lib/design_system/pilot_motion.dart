@@ -1,10 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/character_motion_atlas.dart';
-import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
-import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
-enum CompanionMotionClip {
+enum PilotMotionClip {
   idle(row: 0, frameCount: 6, framesPerSecond: 8, loops: true),
   runRight(row: 1, frameCount: 8, framesPerSecond: 12, loops: true),
   runLeft(row: 2, frameCount: 8, framesPerSecond: 12, loops: true),
@@ -15,7 +17,7 @@ enum CompanionMotionClip {
   sensing(row: 7, frameCount: 6, framesPerSecond: 8, loops: true),
   inspect(row: 8, frameCount: 6, framesPerSecond: 6, loops: true);
 
-  const CompanionMotionClip({
+  const PilotMotionClip({
     required this.row,
     required this.frameCount,
     required this.framesPerSecond,
@@ -31,7 +33,7 @@ enum CompanionMotionClip {
       Duration(milliseconds: (frameCount * 1000 / framesPerSecond).round());
 }
 
-enum CompanionLookDirection {
+enum PilotLookDirection {
   north,
   northNorthEast,
   northEast,
@@ -54,38 +56,44 @@ enum CompanionLookDirection {
   double get degrees => index * 22.5;
 }
 
-class CompanionMotionPortrait extends StatelessWidget {
-  const CompanionMotionPortrait({
+class PilotMotionPortrait extends StatelessWidget {
+  const PilotMotionPortrait({
     super.key,
-    required this.petId,
+    required this.pilotId,
     required this.name,
-    required this.species,
-    required this.evolutionStage,
-    this.active = false,
-    this.size = 78,
-    this.clip = CompanionMotionClip.idle,
+    this.size = 72,
+    this.highlighted = false,
+    this.equippedCosmeticIds = const <String>{},
+    this.clip = PilotMotionClip.idle,
     this.lookDirection,
     this.play = true,
     this.loop = false,
   }) : assert(size > 0);
 
-  final String petId;
+  static const String navigatorPilotId = 'navigator-v1';
+  static const String navigatorMotionAssetPath =
+      'assets/characters/pilot_navigator_motion_v1.png';
+
+  final String pilotId;
   final String name;
-  final String species;
-  final int evolutionStage;
-  final bool active;
   final double size;
-  final CompanionMotionClip clip;
-  final CompanionLookDirection? lookDirection;
+  final bool highlighted;
+  final Set<String> equippedCosmeticIds;
+  final PilotMotionClip clip;
+  final PilotLookDirection? lookDirection;
   final bool play;
   final bool loop;
 
-  String? get motionAssetPath => switch (petId) {
-    'spark-v1' => 'assets/characters/companion_spark_motion_v1.png',
-    'moss-v1' => 'assets/characters/companion_moss_motion_v1.png',
-    'rune-v1' => 'assets/characters/companion_rune_motion_v1.png',
-    _ => null,
-  };
+  bool get hasNavigatorScarf {
+    return equippedCosmeticIds.contains(CharacterCosmeticIds.pilotScarf);
+  }
+
+  String? get motionAssetPath {
+    if (pilotId != navigatorPilotId || hasNavigatorScarf) {
+      return null;
+    }
+    return navigatorMotionAssetPath;
+  }
 
   bool get hasMotionAsset => motionAssetPath != null;
 
@@ -93,59 +101,58 @@ class CompanionMotionPortrait extends StatelessWidget {
   Widget build(BuildContext context) {
     final String? assetPath = motionAssetPath;
     if (assetPath == null) {
-      return CompanionPortrait(
-        petId: petId,
+      return PilotPortrait(
         name: name,
-        species: species,
-        evolutionStage: evolutionStage,
-        active: active,
         size: size,
+        highlighted: highlighted,
+        equippedCosmeticIds: equippedCosmeticIds,
       );
     }
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
-    final String activeLabel = active ? ', активный спутник' : '';
+    final double radius = size * 0.29;
+    final double inset = math.max(2.0, size * 0.035);
+    final PilotLookDirection? direction = lookDirection;
 
     return Semantics(
       image: true,
-      label:
-          '$name, $species, ${CompanionGrowth.formLabel(evolutionStage)}'
-          '$activeLabel',
+      label: 'Пилот $name',
       child: RepaintBoundary(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(size * 0.3),
-            border: Border.all(
-              color: (active ? colors.primary : palette.panelBorder).withValues(
-                alpha: active ? 0.86 : 0.72,
+        child: SizedBox.square(
+          dimension: size,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(
+                color: (highlighted ? colors.primary : palette.panelBorder)
+                    .withValues(alpha: highlighted ? 0.9 : 0.76),
+                width: highlighted ? 2.2 : 1.25,
               ),
-              width: active ? 2.2 : 1.25,
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: palette.shadow.withValues(alpha: 0.48),
+                  blurRadius: 7,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: palette.shadow.withValues(alpha: 0.48),
-                blurRadius: 7,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(size * 0.3),
-            child: SizedBox.square(
-              dimension: size,
-              child: Padding(
-                padding: EdgeInsets.all(size * 0.035),
+            child: Padding(
+              padding: EdgeInsets.all(inset),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  math.max(0.0, radius - inset),
+                ),
                 child: CharacterMotionAtlasPlayer(
                   assetPath: assetPath,
-                  frameKeyPrefix: 'companion-motion-frame-$petId',
+                  frameKeyPrefix: 'pilot-motion-frame-$pilotId',
                   clipRow: clip.row,
                   frameCount: clip.frameCount,
                   clipDuration: clip.duration,
                   clipLoops: clip.loops,
-                  lookRow: lookDirection?.row,
-                  lookColumn: lookDirection?.column,
+                  lookRow: direction?.row,
+                  lookColumn: direction?.column,
                   play: play,
                   loop: loop,
                 ),

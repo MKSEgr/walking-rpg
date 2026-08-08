@@ -124,10 +124,11 @@ an illustration from a name; stages beyond the illustrated set keep their
 literal form number and the last known portrait rather than receiving an
 invented age label.
 
-Portraits are static repaint boundaries, carry a complete semantic label and
-pair the active marker with text elsewhere in the card. Home carries the same
-identity into its expedition hero and crew card only when the accepted mobile
-snapshot contains the server-owned `petId`, species and `evolutionStage`.
+Selection, growth, journal and dossier portraits are static repaint boundaries,
+carry a complete semantic label and pair the active marker with text elsewhere
+in the card. Home carries the same companion identity into its expedition hero
+and crew card only when the accepted mobile snapshot contains the server-owned
+`petId`, species and `evolutionStage`.
 Older cached responses that predate those additive fields keep the textual
 active-companion badge and icon fallback; the client never derives identity or
 form from the pet name.
@@ -144,6 +145,14 @@ and continuous looping requires a deliberate scene-level opt-in. These
 candidates are material for the physical motion review in TASK-011, not
 evidence that the three-pet visual direction or motion tolerance has already
 been validated.
+
+The universal `navigator-v1` pilot now has a separate transparent motion atlas
+under the identity and movement rules in
+[PILOT_ART_BIBLE.md](PILOT_ART_BIBLE.md). Home plays one non-looping idle pass
+for that exact current presentation; the account dossier and journal keep their
+static portrait. The shared atlas player preserves reduced-motion behavior and
+frame geometry without treating pilot art as a companion species. No pilot ID,
+selection, progression, API or persistence state is changed by the asset.
 
 The Home companion signal pairs the portrait with explicit active-companion,
 level, named form, bond text and the non-interactive growth line. Journal pet
@@ -166,6 +175,11 @@ selects the illustrated scarf portrait for the universal Navigator, while
 of Искра. The cosmetics list shows these real character previews instead of a
 generic sparkle icon. Preview portraits are decorative and excluded from
 semantics; the cosmetic name and action remain the accessible source.
+
+The base Navigator motion atlas never approximates or removes the scarf. A
+motion portrait receiving exact `pilot-scarf` state falls back to
+`pilot_navigator_scarf.webp` until a separately reviewed scarf motion asset
+exists. Unknown future pilot IDs keep the static portrait fallback.
 
 Portrait widgets accept a set of equipped cosmetic IDs so presentation is
 driven by the additive server-owned `equippedCosmetics` mapping. The journal

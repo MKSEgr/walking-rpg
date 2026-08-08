@@ -18,7 +18,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
-import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
@@ -1436,7 +1436,12 @@ class _ExpeditionTeam extends StatelessWidget {
           '${snapshot.pilotNextLevelExperience}',
       icon: Icons.person_outline,
       portrait: ExcludeSemantics(
-        child: PilotPortrait(name: snapshot.pilotName, size: 72),
+        child: PilotMotionPortrait(
+          key: const Key('home-pilot-motion-portrait'),
+          pilotId: PilotMotionPortrait.navigatorPilotId,
+          name: snapshot.pilotName,
+          size: 72,
+        ),
       ),
     );
     final Widget pet = _CharacterCard(
