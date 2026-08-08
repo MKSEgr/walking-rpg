@@ -6,6 +6,7 @@ import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
+import 'package:walking_rpg_mobile/design_system/companion_motion.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/crafting_assembly_signal.dart';
@@ -1498,7 +1499,7 @@ class _ActiveCompanionCard extends StatelessWidget {
     final String species = snapshot.petSpecies!;
     final int evolutionStage = snapshot.petEvolutionStage!;
 
-    final Widget portrait = CompanionPortrait(
+    final Widget portrait = CompanionMotionPortrait(
       key: const Key('home-active-companion-portrait'),
       petId: petId,
       name: snapshot.petName,

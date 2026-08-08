@@ -100,6 +100,9 @@ that remains readable without relying on color:
 - Мох is a low, rounded terra guardian with a living sprout;
 - Руна is a faceted echo navigator framed by asymmetric signal waves.
 
+New companion production follows the canonical lineup, shared rendering rules
+and naming gap recorded in [COMPANION_ART_BIBLE.md](COMPANION_ART_BIBLE.md).
+
 The original four crew portraits are one coherent illustrated atlas: a
 universal helmeted Navigator pilot plus the adult forms of Искра, Мох and Руна.
 Each companion also has identity-preserving young and adolescent portraits.
@@ -128,6 +131,16 @@ snapshot contains the server-owned `petId`, species and `evolutionStage`.
 Older cached responses that predate those additive fields keep the textual
 active-companion badge and icon fallback; the client never derives identity or
 form from the pet name.
+
+The first game-native motion candidate belongs only to the exact `spark-v1`
+identity. Its transparent raster atlas contains nine explicit clips and sixteen
+look directions behind a versioned manifest; no clip is selected from the pet
+name, species or inferred gameplay state. Home may play one idle pass when the
+accepted active pet is Искра, while pet choice and growth surfaces retain the
+stage-specific portraits. Reduced-motion settings hold the first frame, and
+continuous looping requires a deliberate scene-level opt-in. This candidate is
+material for the physical motion review in TASK-011, not evidence that the
+three-pet visual direction or motion tolerance has already been validated.
 
 The Home companion signal pairs the portrait with explicit active-companion,
 level, named form, bond text and the non-interactive growth line. Journal pet

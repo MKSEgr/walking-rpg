@@ -6,6 +6,7 @@ import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
+import 'package:walking_rpg_mobile/design_system/companion_motion.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
@@ -96,11 +97,11 @@ void main() {
       const Key('home-active-companion-portrait'),
     );
     expect(portraitFinder, findsOneWidget);
-    final CompanionPortrait portrait = tester.widget<CompanionPortrait>(
-      portraitFinder,
-    );
+    final CompanionMotionPortrait portrait = tester
+        .widget<CompanionMotionPortrait>(portraitFinder);
     expect(portrait.petId, 'spark-v1');
     expect(portrait.evolutionStage, 0);
+    expect(portrait.hasMotionAsset, isTrue);
     expect(find.byType(PilotPortrait), findsOneWidget);
     expect(find.bySemanticsLabel('Пилот Навигатор'), findsNothing);
     expect(
@@ -109,7 +110,7 @@ void main() {
     );
     expect(
       find.byKey(const Key('companion-illustration-spark-v1-stage-0')),
-      findsNWidgets(2),
+      findsOneWidget,
     );
     expect(
       find.bySemanticsLabel('Искра, Люмин, Малыш · форма 1, активный спутник'),
