@@ -75,7 +75,9 @@ final class SecureInstallationIdStore implements InstallationIdProvider {
 
 String _generateInstallationId() {
   final Random random = Random.secure();
-  return List<int>.generate(16, (_) => random.nextInt(256), growable: false)
-      .map((int value) => value.toRadixString(16).padLeft(2, '0'))
-      .join();
+  return List<int>.generate(
+    16,
+    (_) => random.nextInt(256),
+    growable: false,
+  ).map((int value) => value.toRadixString(16).padLeft(2, '0')).join();
 }

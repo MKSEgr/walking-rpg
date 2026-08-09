@@ -3,8 +3,7 @@ import 'package:walking_rpg_mobile/core/auth/installation_id_store.dart';
 
 void main() {
   test('creates one installation ID and coalesces concurrent reads', () async {
-    final _MemoryInstallationIdStorage storage =
-        _MemoryInstallationIdStorage();
+    final _MemoryInstallationIdStorage storage = _MemoryInstallationIdStorage();
     final SecureInstallationIdStore store = SecureInstallationIdStore(
       storage: storage,
       generator: () => '0123456789abcdef0123456789abcdef',
@@ -21,16 +20,12 @@ void main() {
   });
 
   test('restores the same device-scoped value across app restart', () async {
-    final _MemoryInstallationIdStorage storage =
-        _MemoryInstallationIdStorage();
+    final _MemoryInstallationIdStorage storage = _MemoryInstallationIdStorage();
     final SecureInstallationIdStore first = SecureInstallationIdStore(
       storage: storage,
       generator: () => '0123456789abcdef0123456789abcdef',
     );
-    expect(
-      await first.installationId(),
-      '0123456789abcdef0123456789abcdef',
-    );
+    expect(await first.installationId(), '0123456789abcdef0123456789abcdef');
 
     final SecureInstallationIdStore afterRestart = SecureInstallationIdStore(
       storage: storage,
@@ -45,23 +40,22 @@ void main() {
   });
 
   test('replaces a malformed stored value before returning it', () async {
-    final _MemoryInstallationIdStorage storage =
-        _MemoryInstallationIdStorage(value: 'legacy-device-id');
+    final _MemoryInstallationIdStorage storage = _MemoryInstallationIdStorage(
+      value: 'legacy-device-id',
+    );
     final SecureInstallationIdStore store = SecureInstallationIdStore(
       storage: storage,
       generator: () => 'fedcba9876543210fedcba9876543210',
     );
 
-    expect(
-      await store.installationId(),
-      'fedcba9876543210fedcba9876543210',
-    );
+    expect(await store.installationId(), 'fedcba9876543210fedcba9876543210');
     expect(storage.value, 'fedcba9876543210fedcba9876543210');
   });
 
   test('never publishes an ID that secure storage did not persist', () async {
-    final _MemoryInstallationIdStorage storage =
-        _MemoryInstallationIdStorage(writeError: StateError('unavailable'));
+    final _MemoryInstallationIdStorage storage = _MemoryInstallationIdStorage(
+      writeError: StateError('unavailable'),
+    );
     final SecureInstallationIdStore store = SecureInstallationIdStore(
       storage: storage,
       generator: () => '0123456789abcdef0123456789abcdef',
@@ -71,8 +65,7 @@ void main() {
   });
 }
 
-final class _MemoryInstallationIdStorage
-    implements InstallationIdStorage {
+final class _MemoryInstallationIdStorage implements InstallationIdStorage {
   _MemoryInstallationIdStorage({this.value, this.writeError});
 
   String? value;
