@@ -37,6 +37,10 @@ for file in \
   docs/adr/0031-compass-beta-funnel.md \
   docs/adr/0032-server-authoritative-cosmetic-slots.md \
   docs/adr/0033-canonical-platform-command-fingerprints.md \
+  docs/adr/0035-auth0-alpha-authentication-contract.md \
+  auth0/README.md \
+  auth0/actions/step-beyond-token-contract.js \
+  auth0/actions/step-beyond-token-contract.test.js \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   backend/.env.production.example \
@@ -55,6 +59,7 @@ for file in \
   backend/src/main/java/com/walkingrpg/backend/security/SecurityModeGuard.java \
   backend/src/main/resources/META-INF/spring.factories \
   mobile/lib/core/auth/auth_session_controller.dart \
+  mobile/lib/core/auth/installation_id_store.dart \
   mobile/lib/features/home/data/auth_home_transports.dart \
   mobile/lib/features/platform/presentation/platform_screen.dart \
   mobile/lib/features/validation/application/validation_evidence_controller.dart \
@@ -105,6 +110,7 @@ grep -Fq 'spring-boot-starter-oauth2-resource-server' backend/pom.xml || fail 'O
 grep -Fq 'mode: ${AUTH_MODE:jwt}' backend/src/main/resources/application.yml || fail 'default authentication mode must fail closed as jwt'
 grep -Fq 'demo-endpoints-enabled: ${DEMO_ENDPOINTS_ENABLED:false}' backend/src/main/resources/application.yml || fail 'demo endpoint must be disabled by default'
 grep -Fq 'device-claim: ${OIDC_DEVICE_CLAIM:device_id}' backend/src/main/resources/application.yml || fail 'default device claim must be stable device_id'
+grep -Fq 'authentication-time-claim: ${OIDC_AUTHENTICATION_TIME_CLAIM:auth_time}' backend/src/main/resources/application.yml || fail 'authentication-time claim must be explicit and configurable'
 grep -Fq 'account-deletion-max-authentication-age: ${ACCOUNT_DELETION_MAX_AUTH_AGE:PT5M}' backend/src/main/resources/application.yml || fail 'account deletion must require recent authentication'
 grep -Fq 'shouldApplyClockSkewToExactFractionalAuthenticationTime' backend/src/test/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProviderTest.java || fail 'fractional auth_time regression must remain covered'
 grep -Fq 'shouldRejectLossyFloatingPointAuthenticationTime' backend/src/test/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProviderTest.java || fail 'lossy auth_time regression must remain covered'
@@ -124,6 +130,8 @@ if grep -Fq 'getSubject()' backend/src/main/java/com/walkingrpg/backend/security
   fail 'identity boundary must not coerce the raw OIDC subject through getSubject()'
 fi
 grep -Fq 'shouldRejectPresentMalformedOptionalIdentityClaims' backend/src/test/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProviderTest.java || fail 'present malformed optional identity claims must remain fail-closed'
+grep -Fq 'shouldReadAnExactNamespacedDeviceClaimBeforeNestedPaths' backend/src/test/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProviderTest.java || fail 'exact namespaced device claim regression must remain covered'
+grep -Fq 'shouldReadConfiguredNamespacedAuthenticationTimeForDeletion' backend/src/test/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProviderTest.java || fail 'configured fresh-auth claim regression must remain covered'
 grep -Fq 'if (!map.containsKey(part))' backend/src/main/java/com/walkingrpg/backend/security/SecurityContextRequestIdentityProvider.java || fail 'optional identity claim fallback must distinguish absent paths from malformed values'
 grep -Fq 'shouldRejectMalformedIdentityClaimsFromProtectedPrometheus' backend/src/test/java/com/walkingrpg/backend/security/JwtSecurityIntegrationTest.java || fail 'protected actuator identity validation regression must remain covered'
 grep -Fq 'identityProvider.requireValidatedIdentity();' backend/src/main/java/com/walkingrpg/backend/security/ActiveAccountFilter.java || fail 'actuator JWT claims must be validated without account lookup'
@@ -132,10 +140,15 @@ grep -Fq 'value.codePoints().anyMatch(Character::isISOControl)' backend/src/main
 grep -Fq 'enabled: ${DURABLE_EVENT_RESULT_HANDOFF_ENABLED:false}' backend/src/main/resources/application.yml || fail 'durable event-result handoff must require explicit cluster activation'
 grep -Fq 'private Mode mode = Mode.JWT;' backend/src/main/java/com/walkingrpg/backend/security/WalkingRpgSecurityProperties.java || fail 'security properties must fail closed as jwt'
 grep -Fq 'private String deviceClaim = "device_id";' backend/src/main/java/com/walkingrpg/backend/security/WalkingRpgSecurityProperties.java || fail 'security properties must default to stable device_id'
+grep -Fq 'private String authenticationTimeClaim = "auth_time";' backend/src/main/java/com/walkingrpg/backend/security/WalkingRpgSecurityProperties.java || fail 'security properties must default to auth_time outside protected profiles'
 grep -Eq '^[[:space:]]+mode: jwt$' backend/src/main/resources/application-stage.yml || fail 'stage profile must use jwt mode'
 grep -Eq '^[[:space:]]+demo-endpoints-enabled: false$' backend/src/main/resources/application-stage.yml || fail 'stage profile must disable demo endpoints'
+grep -Fq 'device-claim: ${OIDC_DEVICE_CLAIM}' backend/src/main/resources/application-stage.yml || fail 'stage profile must require an explicit device claim'
+grep -Fq 'authentication-time-claim: ${OIDC_AUTHENTICATION_TIME_CLAIM}' backend/src/main/resources/application-stage.yml || fail 'stage profile must require an explicit authentication-time claim'
 grep -Eq '^[[:space:]]+mode: jwt$' backend/src/main/resources/application-prod.yml || fail 'production profile must use jwt mode'
 grep -Eq '^[[:space:]]+demo-endpoints-enabled: false$' backend/src/main/resources/application-prod.yml || fail 'production profile must disable demo endpoints'
+grep -Fq 'device-claim: ${OIDC_DEVICE_CLAIM}' backend/src/main/resources/application-prod.yml || fail 'production profile must require an explicit device claim'
+grep -Fq 'authentication-time-claim: ${OIDC_AUTHENTICATION_TIME_CLAIM}' backend/src/main/resources/application-prod.yml || fail 'production profile must require an explicit authentication-time claim'
 grep -Eq '^[[:space:]]+mode: dev-header$' backend/src/main/resources/application-local.yml || fail 'local profile must explicitly opt into dev-header mode'
 grep -Fq 'matchIfMissing = false' backend/src/main/java/com/walkingrpg/backend/home/api/DemoHomeController.java || fail 'demo endpoint must be fail closed when the property is missing'
 grep -Fq 'class SecurityModeGuard implements InitializingBean' backend/src/main/java/com/walkingrpg/backend/security/SecurityModeGuard.java || fail 'runtime security mode guard is required'
@@ -520,6 +533,13 @@ grep -Fq 'flutter_secure_storage: 10.3.1' mobile/pubspec.yaml || fail 'secure to
 grep -Fq 'device_info_plus: 12.4.0' mobile/pubspec.yaml || fail 'validation OS metadata provider must be pinned'
 grep -Fq 'package_info_plus: 9.0.1' mobile/pubspec.yaml || fail 'runtime package metadata provider must be pinned'
 grep -Fq "defaultValue: 'oidc'" mobile/lib/core/config/app_environment.dart || fail 'mobile auth must fail closed as oidc'
+grep -Fq 'oidcAudience = String.fromEnvironment' mobile/lib/core/config/app_environment.dart || fail 'mobile OIDC audience must be a required build input'
+grep -Fq "'audience': configuration.audience" mobile/lib/core/auth/oidc_client.dart || fail 'authorization must request the exact API audience'
+grep -Fq "'ui_locales': locale" mobile/lib/core/auth/oidc_client.dart || fail 'Universal Login must receive the selected locale'
+grep -Fq "'ext-installation-id': _requireInstallationId" mobile/lib/core/auth/oidc_client.dart || fail 'authorization and refresh must carry a bounded installation ID'
+grep -Fq "step_beyond_installation_id_v1" mobile/lib/core/auth/installation_id_store.dart || fail 'installation identity storage must remain versioned'
+grep -Fq 'node --test auth0/actions/step-beyond-token-contract.test.js' .github/workflows/ci.yml || fail 'Auth0 token contract tests must run in CI'
+grep -Fq 'OIDC_AUDIENCE=$RELEASE_CANDIDATE_OIDC_AUDIENCE' .github/workflows/release-quality.yml || fail 'release candidates must embed the configured OIDC audience'
 grep -Fq 'Development-аутентификация запрещена в production build' mobile/lib/core/auth/auth_models.dart || fail 'release builds must reject development auth'
 grep -Fq '"appAuthRedirectScheme" to "com.walkingrpg.app"' mobile/android/app/build.gradle.kts || fail 'Android AppAuth redirect scheme is missing'
 grep -Fq 'android:allowBackup="false"' mobile/android/app/src/main/AndroidManifest.xml || fail 'Android secure storage backup must be disabled'

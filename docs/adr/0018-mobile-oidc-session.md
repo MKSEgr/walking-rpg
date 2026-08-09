@@ -26,6 +26,7 @@ Configuration is supplied through compile-time Dart defines:
 - `MOBILE_AUTH_MODE=oidc`;
 - `OIDC_ISSUER`;
 - `OIDC_CLIENT_ID`;
+- `OIDC_AUDIENCE`;
 - `OIDC_REDIRECT_URI`;
 - `OIDC_POST_LOGOUT_REDIRECT_URI`;
 - `OIDC_SCOPES` (defaults to `openid profile offline_access walking-rpg.user`);
@@ -44,11 +45,17 @@ Every backend request is sent through one authenticated transport that:
 4. retries the exact request once with the refreshed token;
 5. requires a new login after a second `401`.
 
-The backend derives the stable device identity from a signed token claim. Mobile no
-longer sends a production device identifier header.
+The selected `ru` or `en` locale is sent to Universal Login as `ui_locales`.
+The app also creates one random 128-bit lowercase hexadecimal installation ID in
+platform secure storage. It survives logout/account switch and rotates only when
+secure storage is missing or malformed. It is sent to the provider as
+`ext-installation-id` during authorization and refresh. A platform Keychain may
+retain it across reinstall; backend correctness does not depend on rotation. The
+provider validates it and copies it into the signed access-token device claim.
+Mobile never sends a production device identifier header to the backend.
 
 The local storage owner is a SHA-256 partition derived from the exact OIDC issuer
-identifier and access-token subject; the raw corporate subject is not used in cache
+identifier and access-token subject; the raw provider subject is not used in cache
 filenames. When an ID token is present, its issuer and subject must match the access token.
 
 ## Session lifecycle
@@ -79,10 +86,13 @@ builds. Production builds fail closed if development mode is selected.
 
 ## Consequences
 
-- The identity provider must register the native redirect and post-logout URIs.
+- The identity provider must register the native redirect and post-logout URIs and
+  expose the exact API audience selected in ADR 0035.
 - The provider must issue an ID token containing stable `iss` and `sub` claims, a
-  refresh token when `offline_access` is granted, and the `walking-rpg.user` scope
-  (or an equivalent configured user role) for game API access.
+  rotating refresh token when `offline_access` is granted, and the
+  `walking-rpg.user` scope for game API access.
+- The Auth0 Post Login Action owns the namespaced device and fresh-auth claims;
+  tenant deployment and physical-device validation remain external gates.
 - Android and iOS host projects must retain their redirect scheme configuration.
 - iOS disables the shared URL disk cache before AppAuth starts so token responses are not
   persisted in `cache.db`.

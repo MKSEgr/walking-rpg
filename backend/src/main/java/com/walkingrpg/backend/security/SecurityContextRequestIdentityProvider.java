@@ -152,7 +152,8 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
     }
 
     private Instant authenticationTime(Jwt jwt) {
-        Object claim = jwt.getClaims().get("auth_time");
+        String claimName = properties.getAuthenticationTimeClaim();
+        Object claim = jwt.getClaims().get(claimName);
         if (claim instanceof Instant instant) {
             return instant;
         }
@@ -165,7 +166,8 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
             }
         }
         throw freshAuthenticationRequired(
-                "JWT не содержит обязательный auth_time для удаления аккаунта"
+                "JWT не содержит обязательный authentication-time claim "
+                        + claimName
         );
     }
 
@@ -271,18 +273,23 @@ public class SecurityContextRequestIdentityProvider implements RequestIdentityPr
         if (claimName == null || claimName.isBlank()) {
             return Optional.empty();
         }
-        Object current = jwt.getClaims();
-        for (String part : claimName.split("\\.", -1)) {
-            if (part.isEmpty()) {
-                throw invalidIdentityClaim(claimName);
+        Object current;
+        if (jwt.getClaims().containsKey(claimName)) {
+            current = jwt.getClaims().get(claimName);
+        } else {
+            current = jwt.getClaims();
+            for (String part : claimName.split("\\.", -1)) {
+                if (part.isEmpty()) {
+                    throw invalidIdentityClaim(claimName);
+                }
+                if (!(current instanceof java.util.Map<?, ?> map)) {
+                    throw invalidIdentityClaim(claimName);
+                }
+                if (!map.containsKey(part)) {
+                    return Optional.empty();
+                }
+                current = map.get(part);
             }
-            if (!(current instanceof java.util.Map<?, ?> map)) {
-                throw invalidIdentityClaim(claimName);
-            }
-            if (!map.containsKey(part)) {
-                return Optional.empty();
-            }
-            current = map.get(part);
         }
         if (!(current instanceof String text)) {
             throw invalidIdentityClaim(claimName);

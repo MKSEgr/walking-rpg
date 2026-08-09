@@ -109,6 +109,7 @@ final class MobileAuthConfiguration {
       oidc: OidcConfiguration(
         issuer: issuer,
         clientId: _requireText(AppEnvironment.oidcClientId, 'OIDC_CLIENT_ID'),
+        audience: _requireText(AppEnvironment.oidcAudience, 'OIDC_AUDIENCE'),
         redirectUri: redirectUri,
         postLogoutRedirectUri: postLogoutRedirectUri,
         scopes: scopes,
@@ -129,6 +130,7 @@ final class OidcConfiguration {
   const OidcConfiguration({
     required this.issuer,
     required this.clientId,
+    required this.audience,
     required this.redirectUri,
     required this.postLogoutRedirectUri,
     required this.scopes,
@@ -137,6 +139,7 @@ final class OidcConfiguration {
 
   final Uri issuer;
   final String clientId;
+  final String audience;
   final Uri redirectUri;
   final Uri postLogoutRedirectUri;
   final List<String> scopes;

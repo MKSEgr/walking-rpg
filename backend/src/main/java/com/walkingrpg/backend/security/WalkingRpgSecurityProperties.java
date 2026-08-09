@@ -17,6 +17,7 @@ public class WalkingRpgSecurityProperties {
     private String rolesClaim = "roles";
     private String usernameClaim = "preferred_username";
     private String deviceClaim = "device_id";
+    private String authenticationTimeClaim = "auth_time";
     private String userRole = "walking-rpg-user";
     private String adminRole = "walking-rpg-admin";
     private String userScope = "walking-rpg.user";
@@ -61,6 +62,14 @@ public class WalkingRpgSecurityProperties {
 
     public void setDeviceClaim(String deviceClaim) {
         this.deviceClaim = deviceClaim;
+    }
+
+    public String getAuthenticationTimeClaim() {
+        return authenticationTimeClaim;
+    }
+
+    public void setAuthenticationTimeClaim(String authenticationTimeClaim) {
+        this.authenticationTimeClaim = authenticationTimeClaim;
     }
 
     public String getUserRole() {

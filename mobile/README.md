@@ -571,7 +571,8 @@ flow with PKCE. Required build-time values:
 ```bash
 --dart-define=MOBILE_AUTH_MODE=oidc
 --dart-define=API_BASE_URL=https://api.example.com
---dart-define=OIDC_ISSUER=https://identity.example.com/realms/walking-rpg
+--dart-define=OIDC_ISSUER=https://tenant-name.eu.auth0.com/
+--dart-define=OIDC_AUDIENCE=https://api.stepbeyond.game
 --dart-define=OIDC_CLIENT_ID=walking-rpg-mobile
 --dart-define=OIDC_SCOPES="openid profile offline_access walking-rpg.user"
 ```
@@ -586,9 +587,15 @@ com.walkingrpg.app:/logout
 The `walking-rpg.user` scope is required by the backend's default JWT
 authority mapping for every `/api/v1/**` endpoint.
 
+The selected Russian or English locale is passed to Universal Login. A random
+installation ID is kept in platform secure storage, survives logout and account
+switch, and is sent only to Auth0 so its Action can issue the signed namespaced
+device claim. See [ADR 0035](../docs/adr/0035-auth0-alpha-authentication-contract.md).
+
 Release-quality builds read optional repository variables
-`MOBILE_RELEASE_API_BASE_URL`, `MOBILE_RELEASE_OIDC_ISSUER`, and
-`MOBILE_RELEASE_OIDC_CLIENT_ID`. When they are absent, CI embeds reserved
+`MOBILE_RELEASE_API_BASE_URL`, `MOBILE_RELEASE_OIDC_ISSUER`,
+`MOBILE_RELEASE_OIDC_AUDIENCE`, and `MOBILE_RELEASE_OIDC_CLIENT_ID`. When they
+are absent, CI embeds reserved
 `.invalid` endpoints so unsigned technical artifacts remain configuration-valid
 without contacting a real identity system; production signing must provide the
 deployment values.

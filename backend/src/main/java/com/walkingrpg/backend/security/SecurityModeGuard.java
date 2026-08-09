@@ -72,6 +72,15 @@ public class SecurityModeGuard implements InitializingBean {
         }
 
         requireText(properties.getDeviceClaim(), "OIDC device claim");
+        requireText(
+                properties.getAuthenticationTimeClaim(),
+                "OIDC authentication-time claim"
+        );
+        if (properties.getDeviceClaim().equals(
+                properties.getAuthenticationTimeClaim()
+        )) {
+            throw invalid("Совпадают device и authentication-time claims");
+        }
         requireAccountDeletionAuthenticationAge(
                 properties.getAccountDeletionMaxAuthenticationAge()
         );

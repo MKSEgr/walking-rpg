@@ -203,6 +203,20 @@ class SecurityContextRequestIdentityProviderTest {
     }
 
     @Test
+    void shouldReadAnExactNamespacedDeviceClaimBeforeNestedPaths() {
+        properties.setDeviceClaim("https://api.stepbeyond.game/device_id");
+        Jwt jwt = jwtBuilder()
+                .claim(
+                        "https://api.stepbeyond.game/device_id",
+                        "0123456789abcdef0123456789abcdef"
+                )
+                .build();
+        authenticate(jwt);
+
+        assertEquals(64, provider.requireIdentity().requireDeviceId().length());
+    }
+
+    @Test
     void shouldRejectSessionIdWhenStableDeviceClaimIsMissing() {
         Jwt jwt = jwtBuilder()
                 .claim("sid", "rotating-session-id")
@@ -303,6 +317,30 @@ class SecurityContextRequestIdentityProviderTest {
                 );
         authenticate(jwtBuilder()
                 .claim("auth_time", NOW.minusSeconds(60).getEpochSecond())
+                .build());
+
+        assertEquals(
+                "subject-123",
+                guardedProvider.requireIdentityForAccountDeletion().userId()
+        );
+    }
+
+    @Test
+    void shouldReadConfiguredNamespacedAuthenticationTimeForDeletion() {
+        properties.setAuthenticationTimeClaim(
+                "https://api.stepbeyond.game/auth_time"
+        );
+        SecurityContextRequestIdentityProvider guardedProvider =
+                new SecurityContextRequestIdentityProvider(
+                        properties,
+                        mock(AccountDeletionRegistry.class),
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+        authenticate(jwtBuilder()
+                .claim(
+                        "https://api.stepbeyond.game/auth_time",
+                        NOW.minusSeconds(30).getEpochSecond()
+                )
                 .build());
 
         assertEquals(

@@ -22,6 +22,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test Auth0 token contract
+        run: node --test auth0/actions/step-beyond-token-contract.test.js
+
       - name: Validate repository scaffold
         run: bash ./scripts/verify-project.sh
 

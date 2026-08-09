@@ -220,6 +220,7 @@ OidcConfiguration _configuration() {
   return OidcConfiguration(
     issuer: Uri.parse('https://identity.example/realms/walking'),
     clientId: 'walking-mobile',
+    audience: 'https://api.stepbeyond.game',
     redirectUri: Uri.parse('com.walkingrpg.app:/oauthredirect'),
     postLogoutRedirectUri: Uri.parse('com.walkingrpg.app:/logout'),
     scopes: const <String>['openid', 'profile', 'offline_access'],

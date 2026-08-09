@@ -33,7 +33,8 @@
 - `dev-header` и demo endpoint разрешены только с профилем `local` или `test`;
 - защищённые `stage`/`prod` нельзя совмещать с `local`/`test`;
 - профили `stage`/`prod` обязаны работать в `jwt` и без demo endpoint;
-- device claim и user/admin authority mappings должны быть заданы и не должны совпадать.
+- device claim, authentication-time claim и user/admin authority mappings должны
+  быть заданы; device и authentication-time claims не должны совпадать.
 
 Некорректная комбинация завершает startup до открытия HTTP-порта. Запуск без local/test profile не откатывается молча к небезопасным заголовкам даже при ошибочной переменной окружения.
 
@@ -76,7 +77,16 @@ actor claim человекочитаемый actor совпадает с `sub`.
 
 ### Device identity
 
-Activity sync не принимает произвольный `X-Device-Id` в JWT-режиме. Backend берёт подписанный claim `walking-rpg.security.device-claim` — по умолчанию `device_id` — и хранит только SHA-256 от `issuer + sub + claim name + claim value`.
+Activity sync не принимает произвольный `X-Device-Id` в JWT-режиме. Backend берёт
+подписанный claim `walking-rpg.security.device-claim` — по умолчанию `device_id`
+для локальной совместимости — и хранит только SHA-256 от
+`issuer + sub + claim name + claim value`. Защищённые `stage`/`prod` профили
+требуют явное имя claim; контракт Auth0 использует
+`https://api.stepbeyond.game/device_id`.
+
+Namespaced claim сначала ищется как точный top-level JWT key, и только затем —
+как прежний dotted nested path. Поэтому точки в URI не меняют подписанное имя и
+не позволяют неоднозначно интерпретировать Auth0 custom claim.
 
 Значение должно идентифицировать установку приложения или устройство и оставаться стабильным при обновлении access token и обычном повторном входе. Оно хэшируется в точном виде без `trim`; неоднозначное значение с граничным whitespace или control characters отклоняется. Если настроенный claim присутствует, его пустое/нестроковое значение или malformed nested-path отклоняется, а не трактуется как отсутствие. Session claim `sid` не используется по умолчанию: он может меняться между сессиями и тем самым ломать device-scoped idempotency и high-watermark semantics.
 
@@ -123,7 +133,9 @@ Identity provider принимает только ожидаемые principal-�
 
 Ограничения текущего среза:
 
-- mobile OIDC Authorization Code + PKCE, secure token storage, refresh и logout реализуются следующим PR;
+- точный provider/mobile contract принят в
+  [ADR 0035](0035-auth0-alpha-authentication-contract.md), но tenant, credentials
+  и physical-device evidence остаются внешними blockers;
 - token revocation/introspection зависит от выбранного identity provider и его session policy;
 - telemetry/crash ingestion остаётся anonymous, но получает bounded
   per-process rate/body boundary из [ADR 0026](0026-production-operational-controls.md);
