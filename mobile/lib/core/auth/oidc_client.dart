@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
+import 'package:walking_rpg_mobile/core/auth/installation_id_store.dart';
 
 abstract interface class OidcAuthorizationClient {
   Future<OidcTokenResponseData> authorize(
@@ -20,17 +21,25 @@ abstract interface class OidcAuthorizationClient {
 }
 
 final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
-  const FlutterAppAuthOidcClient({
+  FlutterAppAuthOidcClient({
     FlutterAppAuth appAuth = const FlutterAppAuth(),
-  }) : _appAuth = appAuth;
+    required InstallationIdProvider installationIdProvider,
+    required String Function() uiLocalesProvider,
+  }) : _appAuth = appAuth,
+       _installationIdProvider = installationIdProvider,
+       _uiLocalesProvider = uiLocalesProvider;
 
   final FlutterAppAuth _appAuth;
+  final InstallationIdProvider _installationIdProvider;
+  final String Function() _uiLocalesProvider;
 
   @override
   Future<OidcTokenResponseData> authorize(
     OidcConfiguration configuration, {
     bool forceLogin = false,
   }) async {
+    final String installationId = await _installationIdProvider
+        .installationId();
     final AuthorizationTokenResponse response = await _translate(
       () => _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
@@ -39,9 +48,12 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
           issuer: configuration.issuer.toString(),
           scopes: configuration.scopes,
           promptValues: forceLogin ? const <String>['login'] : null,
-          additionalParameters: forceLogin
-              ? const <String, String>{'max_age': '0'}
-              : null,
+          additionalParameters: authorizationAdditionalParameters(
+            configuration: configuration,
+            installationId: installationId,
+            uiLocales: _uiLocalesProvider(),
+            forceLogin: forceLogin,
+          ),
           allowInsecureConnections: configuration.allowInsecureConnections,
         ),
       ),
@@ -61,6 +73,8 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
     OidcConfiguration configuration, {
     required String refreshToken,
   }) async {
+    final String installationId = await _installationIdProvider
+        .installationId();
     final TokenResponse response = await _translate(
       () => _appAuth.token(
         TokenRequest(
@@ -69,6 +83,9 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
           issuer: configuration.issuer.toString(),
           refreshToken: refreshToken,
           scopes: configuration.scopes,
+          additionalParameters: refreshAdditionalParameters(
+            installationId: installationId,
+          ),
           allowInsecureConnections: configuration.allowInsecureConnections,
         ),
       ),
@@ -105,6 +122,45 @@ final class FlutterAppAuthOidcClient implements OidcAuthorizationClient {
     return oauthError == null ||
         oauthError == 'server_error' ||
         oauthError == 'temporarily_unavailable';
+  }
+
+  @visibleForTesting
+  static Map<String, String> authorizationAdditionalParameters({
+    required OidcConfiguration configuration,
+    required String installationId,
+    required String uiLocales,
+    required bool forceLogin,
+  }) {
+    final String locale = uiLocales.trim().toLowerCase();
+    if (locale != 'ru' && locale != 'en') {
+      throw const AuthConfigurationException(
+        'OIDC ui_locales должен быть ru или en',
+      );
+    }
+    return <String, String>{
+      'audience': configuration.audience,
+      'ui_locales': locale,
+      'ext-installation-id': _requireInstallationId(installationId),
+      if (forceLogin) 'max_age': '0',
+    };
+  }
+
+  @visibleForTesting
+  static Map<String, String> refreshAdditionalParameters({
+    required String installationId,
+  }) {
+    return <String, String>{
+      'ext-installation-id': _requireInstallationId(installationId),
+    };
+  }
+
+  static String _requireInstallationId(String value) {
+    if (!RegExp(r'^[0-9a-f]{32}$').hasMatch(value)) {
+      throw const AuthConfigurationException(
+        'OIDC installation ID должен быть 128-bit lowercase hex',
+      );
+    }
+    return value;
   }
 
   OidcTokenResponseData _fromResponse({

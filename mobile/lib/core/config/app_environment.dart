@@ -15,6 +15,8 @@ abstract final class AppEnvironment {
 
   static const String oidcClientId = String.fromEnvironment('OIDC_CLIENT_ID');
 
+  static const String oidcAudience = String.fromEnvironment('OIDC_AUDIENCE');
+
   static const String oidcRedirectUri = String.fromEnvironment(
     'OIDC_REDIRECT_URI',
     defaultValue: 'com.walkingrpg.app:/oauthredirect',

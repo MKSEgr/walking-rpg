@@ -7,6 +7,7 @@ import 'package:walking_rpg_mobile/app/expedition_boundary_screen.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_controller.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_session_store.dart';
+import 'package:walking_rpg_mobile/core/auth/installation_id_store.dart';
 import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
 import 'package:walking_rpg_mobile/core/auth/owner_local_state_cleaner.dart';
 import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
@@ -49,7 +50,10 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
       final AuthSessionController controller = AuthSessionController(
         configuration: configuration,
         sessionStore: SecureAuthSessionStore(),
-        oidcClient: const FlutterAppAuthOidcClient(),
+        oidcClient: FlutterAppAuthOidcClient(
+          installationIdProvider: SecureInstallationIdStore(),
+          uiLocalesProvider: () => _localeController.selected.languageCode,
+        ),
         localStateCleaner: OwnerLocalStateCleaner(
           cache: cache,
           commandStore: commandStore,

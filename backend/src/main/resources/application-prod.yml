@@ -6,6 +6,8 @@ walking-rpg:
   security:
     mode: jwt
     demo-endpoints-enabled: false
+    device-claim: ${OIDC_DEVICE_CLAIM}
+    authentication-time-claim: ${OIDC_AUTHENTICATION_TIME_CLAIM}
 
 spring:
   security:

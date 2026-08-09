@@ -87,6 +87,24 @@ class SecurityModeGuardTest {
                 () -> guard(blankDevice).afterPropertiesSet()
         );
 
+        WalkingRpgSecurityProperties blankAuthenticationTime =
+                new WalkingRpgSecurityProperties();
+        blankAuthenticationTime.setAuthenticationTimeClaim(" ");
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(blankAuthenticationTime).afterPropertiesSet()
+        );
+
+        WalkingRpgSecurityProperties sameIdentityClaim =
+                new WalkingRpgSecurityProperties();
+        sameIdentityClaim.setAuthenticationTimeClaim(
+                sameIdentityClaim.getDeviceClaim()
+        );
+        assertThrows(
+                IllegalStateException.class,
+                () -> guard(sameIdentityClaim).afterPropertiesSet()
+        );
+
         WalkingRpgSecurityProperties missingUser = new WalkingRpgSecurityProperties();
         missingUser.setUserRole(" ");
         missingUser.setUserScope(null);

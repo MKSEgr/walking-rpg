@@ -51,3 +51,4 @@ NNNN-short-title.md
 - [0032 — server-authoritative cosmetic slots](0032-server-authoritative-cosmetic-slots.md)
 - [0033 — canonical platform command fingerprints](0033-canonical-platform-command-fingerprints.md)
 - [0034 — решения по продукту и выпуску alpha](0034-alpha-product-and-release-decisions.md)
+- [0035 — Auth0 contract for internal alpha](0035-auth0-alpha-authentication-contract.md)

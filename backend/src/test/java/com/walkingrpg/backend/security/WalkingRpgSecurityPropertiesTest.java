@@ -16,6 +16,7 @@ class WalkingRpgSecurityPropertiesTest {
         assertEquals(WalkingRpgSecurityProperties.Mode.JWT, properties.getMode());
         assertFalse(properties.isDemoEndpointsEnabled());
         assertEquals("device_id", properties.getDeviceClaim());
+        assertEquals("auth_time", properties.getAuthenticationTimeClaim());
         assertEquals(
                 Duration.ofMinutes(5),
                 properties.getAccountDeletionMaxAuthenticationAge()

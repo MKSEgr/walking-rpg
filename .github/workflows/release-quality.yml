@@ -16,7 +16,8 @@ permissions:
 
 env:
   RELEASE_CANDIDATE_API_BASE_URL: ${{ vars.MOBILE_RELEASE_API_BASE_URL || 'https://api.release-candidate.invalid' }}
-  RELEASE_CANDIDATE_OIDC_ISSUER: ${{ vars.MOBILE_RELEASE_OIDC_ISSUER || 'https://identity.release-candidate.invalid/realms/walking-rpg' }}
+  RELEASE_CANDIDATE_OIDC_ISSUER: ${{ vars.MOBILE_RELEASE_OIDC_ISSUER || 'https://identity.release-candidate.invalid/' }}
+  RELEASE_CANDIDATE_OIDC_AUDIENCE: ${{ vars.MOBILE_RELEASE_OIDC_AUDIENCE || 'https://api.release-candidate.invalid' }}
   RELEASE_CANDIDATE_OIDC_CLIENT_ID: ${{ vars.MOBILE_RELEASE_OIDC_CLIENT_ID || 'walking-rpg-mobile' }}
   RELEASE_CANDIDATE_OIDC_SCOPES: openid profile offline_access walking-rpg.user
   RELEASE_CANDIDATE_OIDC_REDIRECT_URI: com.walkingrpg.app:/oauthredirect
@@ -207,6 +208,7 @@ jobs:
             --dart-define=MOBILE_AUTH_MODE=oidc \
             "--dart-define=API_BASE_URL=$RELEASE_CANDIDATE_API_BASE_URL" \
             "--dart-define=OIDC_ISSUER=$RELEASE_CANDIDATE_OIDC_ISSUER" \
+            "--dart-define=OIDC_AUDIENCE=$RELEASE_CANDIDATE_OIDC_AUDIENCE" \
             "--dart-define=OIDC_CLIENT_ID=$RELEASE_CANDIDATE_OIDC_CLIENT_ID" \
             "--dart-define=OIDC_SCOPES=$RELEASE_CANDIDATE_OIDC_SCOPES" \
             "--dart-define=OIDC_REDIRECT_URI=$RELEASE_CANDIDATE_OIDC_REDIRECT_URI" \
@@ -268,6 +270,7 @@ jobs:
             --dart-define=MOBILE_AUTH_MODE=oidc \
             "--dart-define=API_BASE_URL=$RELEASE_CANDIDATE_API_BASE_URL" \
             "--dart-define=OIDC_ISSUER=$RELEASE_CANDIDATE_OIDC_ISSUER" \
+            "--dart-define=OIDC_AUDIENCE=$RELEASE_CANDIDATE_OIDC_AUDIENCE" \
             "--dart-define=OIDC_CLIENT_ID=$RELEASE_CANDIDATE_OIDC_CLIENT_ID" \
             "--dart-define=OIDC_SCOPES=$RELEASE_CANDIDATE_OIDC_SCOPES" \
             "--dart-define=OIDC_REDIRECT_URI=$RELEASE_CANDIDATE_OIDC_REDIRECT_URI" \

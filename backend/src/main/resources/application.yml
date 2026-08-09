@@ -167,6 +167,7 @@ walking-rpg:
     roles-claim: ${OIDC_ROLES_CLAIM:roles}
     username-claim: ${OIDC_USERNAME_CLAIM:preferred_username}
     device-claim: ${OIDC_DEVICE_CLAIM:device_id}
+    authentication-time-claim: ${OIDC_AUTHENTICATION_TIME_CLAIM:auth_time}
     user-role: ${OIDC_USER_ROLE:walking-rpg-user}
     admin-role: ${OIDC_ADMIN_ROLE:walking-rpg-admin}
     user-scope: ${OIDC_USER_SCOPE:walking-rpg.user}

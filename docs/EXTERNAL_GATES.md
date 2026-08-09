@@ -14,6 +14,19 @@
 
 Foreground durable outbox и resume fallback — `CODE_COMPLETE`. Гарантированная доставка ОС не заявляется до измерений на устройствах.
 
+## Identity / Auth0
+
+Auth0 EU contract, API audience, native PKCE parameters, stable installation ID,
+namespaced device/fresh-auth claims and fail-closed protected configuration —
+`CODE_COMPLETE` according to
+[ADR 0035](adr/0035-auth0-alpha-authentication-contract.md).
+
+Creation of the stage tenant/application/API, email OTP delivery, Apple/Google
+connections, protected values, deployed Action and real login/refresh/revoke/
+logout/account-switch evidence on physical iOS and Android —
+`EXTERNAL_VALIDATION_REQUIRED`. Repository tests and unsigned CI artifacts do
+not prove that any provider connection is active.
+
 ## Push
 
 Provider boundary, явная local/test-регистрация и fail-closed disabled
