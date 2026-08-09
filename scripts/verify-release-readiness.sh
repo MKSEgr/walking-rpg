@@ -17,6 +17,7 @@ for file in \
   docs/ROADMAP.md \
   docs/RELEASE_CHECKLIST.md \
   docs/EXTERNAL_GATES.md \
+  docs/DIGITALOCEAN_STAGE_RUNBOOK.md \
   docs/PROTECTED_MOBILE_SIGNING.md \
   docs/DEVICE_VALIDATION_PROTOCOL.md \
   docs/evidence/health-device-validation-template.md \
@@ -38,11 +39,17 @@ for file in \
   docs/adr/0032-server-authoritative-cosmetic-slots.md \
   docs/adr/0033-canonical-platform-command-fingerprints.md \
   docs/adr/0035-auth0-alpha-authentication-contract.md \
+  docs/adr/0036-digitalocean-alpha-stage.md \
+  docs/evidence/digitalocean-stage-deployment-template.md \
+  infra/digitalocean/app.yaml.template \
   auth0/README.md \
   auth0/actions/step-beyond-token-contract.js \
   auth0/actions/step-beyond-token-contract.test.js \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
+  .dockerignore \
+  backend/Dockerfile \
+  backend/docker-entrypoint.sh \
   backend/.env.production.example \
   backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java \
   backend/src/main/java/com/walkingrpg/backend/operations/ProductionEnvironmentPostProcessor.java \
@@ -97,6 +104,9 @@ for file in \
   scripts/ci/wait_for_required_checks.py \
   scripts/ci/test_wait_for_required_checks.py \
   scripts/operations/run-synthetic-backup-restore-drill.sh \
+  scripts/operations/render_digitalocean_stage_spec.py \
+  scripts/operations/test_render_digitalocean_stage_spec.py \
+  scripts/operations/test-backend-container-entrypoint.sh \
   scripts/operations/verify-backup-restore-evidence.py \
   scripts/operations/test_verify_backup_restore_evidence.py; do
   [ -f "$file" ] || fail "missing $file"
@@ -221,6 +231,58 @@ grep -Fq 'ProductionRuntimeGuardTest' .github/workflows/ci.yml || fail 'producti
 grep -Fq 'PlatformProviderConfigurationTest' .github/workflows/ci.yml || fail 'provider configuration tests must run in CI'
 grep -Fq 'PlatformAdminServiceProviderTest' .github/workflows/ci.yml || fail 'admin provider tests must run in CI'
 grep -Fq 'ProductionProviderIsolationMigrationTest' .github/workflows/ci.yml || fail 'provider isolation migration test must run in CI'
+
+printf '%s\n' 'Checking DigitalOcean protected stage contract...'
+for profile in stage prod; do
+  config="backend/src/main/resources/application-$profile.yml"
+  grep -Fq 'url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=verify-full' "$config" \
+    || fail "$profile profile must compose one verified-TLS JDBC URL from runtime bindings"
+  grep -Fq 'username: ${POSTGRES_USER}' "$config" \
+    || fail "$profile profile must require a runtime PostgreSQL user"
+  grep -Fq 'password: ${POSTGRES_PASSWORD}' "$config" \
+    || fail "$profile profile must require a runtime PostgreSQL password"
+done
+grep -Fq 'FROM eclipse-temurin:21-jdk-jammy AS build' backend/Dockerfile || fail 'protected backend container must build with Java 21'
+grep -Fq 'FROM eclipse-temurin:21-jre-jammy' backend/Dockerfile || fail 'protected backend container must use the Java 21 JRE runtime'
+grep -Fq 'USER walkingrpg:walkingrpg' backend/Dockerfile || fail 'protected backend container must run as a non-root user'
+grep -Fq 'ENTRYPOINT ["/usr/local/bin/walking-rpg-entrypoint"]' backend/Dockerfile || fail 'protected backend container must use the reviewed entrypoint'
+grep -Fq 'docker build --file Dockerfile --tag walking-rpg-backend:release-candidate ..' .github/workflows/release-quality.yml || fail 'release quality must build the protected backend container'
+grep -Fq 'SPRING_PROFILES_ACTIVE must be exactly stage or prod' backend/docker-entrypoint.sh || fail 'container entrypoint must reject unprotected profiles'
+grep -Fq 'POSTGRES_CA_CERT must contain a PEM certificate' backend/docker-entrypoint.sh || fail 'container entrypoint must reject a malformed database CA'
+grep -Fq 'root.crt' backend/docker-entrypoint.sh || fail 'container entrypoint must install the pgJDBC default root certificate'
+grep -Fq 'chmod 0600 "$temporary_certificate"' backend/docker-entrypoint.sh || fail 'container entrypoint must restrict database CA permissions'
+grep -Fq 'unset POSTGRES_CA_CERT' backend/docker-entrypoint.sh || fail 'container entrypoint must remove the CA from the JVM environment'
+[ -x backend/docker-entrypoint.sh ] || fail 'protected backend entrypoint must be executable'
+[ -x scripts/operations/render_digitalocean_stage_spec.py ] || fail 'DigitalOcean App Spec renderer must be executable'
+[ -x scripts/operations/test-backend-container-entrypoint.sh ] || fail 'container entrypoint test must be executable'
+grep -Fq 'name: walking-rpg-alpha-eu' infra/digitalocean/app.yaml.template || fail 'stage App Spec must keep the accepted environment name'
+grep -Fq 'region: fra' infra/digitalocean/app.yaml.template || fail 'stage App Spec must keep the accepted Frankfurt region'
+grep -Fq 'instance_size_slug: apps-s-1vcpu-1gb' infra/digitalocean/app.yaml.template || fail 'stage backend must keep the accepted 1 GiB size'
+grep -Fq 'deploy_on_push: false' infra/digitalocean/app.yaml.template || fail 'stage deployment must not follow a moving branch automatically'
+grep -Fq 'enhanced_threat_control_enabled: true' infra/digitalocean/app.yaml.template || fail 'stage ingress must keep reviewed Layer 7 protection'
+grep -Fq 'http_path: /readyz' infra/digitalocean/app.yaml.template || fail 'stage platform readiness must include PostgreSQL'
+grep -Fq 'http_path: /livez' infra/digitalocean/app.yaml.template || fail 'stage platform liveness must remain independent of PostgreSQL'
+grep -Fq 'value: ${alpha-db.PASSWORD}' infra/digitalocean/app.yaml.template || fail 'stage database password must use a bindable variable'
+grep -Fq 'value: ${alpha-db.CA_CERT}' infra/digitalocean/app.yaml.template || fail 'stage database CA must use a bindable variable'
+grep -Fq 'type: SECRET' infra/digitalocean/app.yaml.template || fail 'stage sensitive bindables must be encrypted at runtime'
+grep -Fq 'version: "17"' infra/digitalocean/app.yaml.template || fail 'stage database must use PostgreSQL 17'
+grep -Fq 'production: true' infra/digitalocean/app.yaml.template || fail 'stage must attach a managed database, not a dev database'
+if grep -Eq 'doadmin|defaultdb|sslmode=require' infra/digitalocean/app.yaml.template; then
+  fail 'stage App Spec must not use provider admin defaults or weakened TLS'
+fi
+bash scripts/operations/test-backend-container-entrypoint.sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+  scripts/operations/test_render_digitalocean_stage_spec.py
+STAGE_POSTGRES_CLUSTER_NAME=walking-rpg-alpha-pg-fra \
+STAGE_POSTGRES_DATABASE=walking_rpg \
+STAGE_POSTGRES_USER=walking_rpg_app \
+STAGE_OIDC_ISSUER_URI=https://walking-rpg-alpha.eu.auth0.com/ \
+STAGE_OIDC_JWK_SET_URI=https://walking-rpg-alpha.eu.auth0.com/.well-known/jwks.json \
+STAGE_OIDC_AUDIENCE=https://api.stepbeyond.game \
+  python3 scripts/operations/render_digitalocean_stage_spec.py \
+  | grep -Fq 'cluster_name: "walking-rpg-alpha-pg-fra"' \
+  || fail 'DigitalOcean App Spec renderer must produce the reviewed stage binding'
+
 grep -Fq 'quantity_delta <> 0' backend/src/main/resources/db/migration/V13__server_authoritative_crafting.sql || fail 'V13 inventory ledger must allow audited consumption but reject zero deltas'
 grep -Fq 'quantity_after >= 0' backend/src/main/resources/db/migration/V13__server_authoritative_crafting.sql || fail 'V13 inventory ledger must reject negative balances'
 grep -Fq 'CraftingIntegrationTest' .github/workflows/ci.yml || fail 'crafting integration test must run in CI'
@@ -595,7 +657,8 @@ if find . -type f -size +5M -not -path './.git/*' -not -path './backend/target/*
 fi
 
 printf '%s\n' 'Checking reproducible metadata...'
-TMP_DIR=$(mktemp -d)
+REPRO_TMPDIR=${TMPDIR:-$ROOT_DIR}
+TMP_DIR=$(mktemp -d "$REPRO_TMPDIR/walking-rpg-metadata.XXXXXXXXXX")
 trap 'rm -rf "$TMP_DIR"' EXIT
 for output in one two; do
   GIT_SHA=0000000000000000000000000000000000000000 \

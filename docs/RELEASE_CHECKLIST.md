@@ -49,6 +49,9 @@ production signing, physical-device, stage, real-restore или store evidence.
 - [ ] Datasource URL, username и password переданы защищённой средой; JDBC URL
       использует канонический DNS host и `sslmode=verify-full`, а DNS/TLS
       соединение с реальной БД подтверждено.
+- [ ] Provider CA получен только из защищённого runtime binding, установлен с
+      mode `0600` и не попал в logs/evidence; Trusted Sources ограничены
+      reviewed application.
 - [ ] `walking-rpg.providers.payment=disabled` и
       `walking-rpg.providers.push=disabled`; попытки отклоняются до новой state
       mutation.

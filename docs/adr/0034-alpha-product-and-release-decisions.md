@@ -42,20 +42,23 @@
 
 ### Stage и hosting
 
-- Статус: `BLOCKED`.
-- Не принято: stage name, hosting provider, region и окончательный deployment
-  contour.
-- Рассматриваемые варианты: AWS ECS/Fargate + PostgreSQL 17 RDS либо более
-  простой PaaS после фактического доказательства TLS
-  `sslmode=verify-full`, health checks, backup/PITR и rollback.
+- Статус решения: `ACCEPTED_FOR_IMPLEMENTATION`; реальное окружение остаётся
+  `EXTERNAL_VALIDATION_REQUIRED`.
+- Stage name: `walking-rpg-alpha-eu`.
+- Provider/region: DigitalOcean App Platform и Managed PostgreSQL 17 Standard,
+  Frankfurt (`fra`).
+- Contour: один backend instance 1 GiB и один PostgreSQL node без standby;
+  бюджетный gate — до `$30/month` без Auth0, домена, налогов и внешнего log
+  sink.
 - Hosting Owner: [@MKSEgr](https://github.com/MKSEgr).
 - Release Owner: [@MKSEgr](https://github.com/MKSEgr).
-- Следующее действие: Product Owner сравнивает стоимость, операционную нагрузку
-  и результаты короткого `verify-full` spike и принимает один вариант до начала
-  TASK-006.
-- Дата фиксации blocker-а: 2026-08-08.
-
-Предложенное ранее имя `walking-rpg-alpha-eu` не считается принятым решением.
+- Stop authority: Release Owner.
+- Полный обратимый контракт, риски и внешние gates зафиксированы в
+  [ADR 0036](0036-digitalocean-alpha-stage.md).
+- Следующее действие: merge repository contract, затем owner-approved paid
+  deployment и redacted evidence по TASK-006. До этого stage не считается
+  существующим или validated.
+- Дата изменения решения: 2026-08-09.
 
 ### Домен и public URLs
 
@@ -141,7 +144,7 @@ baseline разрешены только:
   заявляет его реализацию или validation.
 - Auth0, account types и public URLs остаются решениями/целями до реального
   redacted evidence соответствующих задач.
-- Stage-dependent задачи не должны подставлять AWS, Render, Frankfurt или иное
-  окружение вместо остающегося `BLOCKED` решения.
+- Stage-dependent задачи используют DigitalOcean contract из ADR 0036, но не
+  заявляют deployment или validation без внешнего evidence.
 - Обратимые решения пересматриваются отдельным PR с причиной, owner и датой.
 - `CODE_COMPLETE` не означает `VALIDATED`.

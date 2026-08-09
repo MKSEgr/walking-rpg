@@ -91,6 +91,12 @@ jobs:
           chmod +x mvnw
           ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 
+      - name: Verify protected container entrypoint
+        run: bash ../scripts/operations/test-backend-container-entrypoint.sh
+
+      - name: Build protected backend container
+        run: docker build --file Dockerfile --tag walking-rpg-backend:release-candidate ..
+
       - name: Record backend digest
         shell: bash
         run: |

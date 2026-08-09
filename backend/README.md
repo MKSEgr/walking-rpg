@@ -100,6 +100,15 @@ PUSH_PROVIDER=development
 Небезопасная конфигурация останавливает процесс на environment-preparation
 этапе, до сетевого подключения к БД или применения миграций.
 
+Reviewed DigitalOcean container получает `POSTGRES_HOST`, `POSTGRES_PORT`,
+`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` и `POSTGRES_CA_CERT` только
+через runtime bindables. Entry point устанавливает provider CA как
+`${HOME}/.postgresql/root.crt`, удаляет CA из JVM environment и затем запускает
+protected profile. Полный deployment contract и operator procedure находятся
+в [`docs/DIGITALOCEAN_STAGE_RUNBOOK.md`](../docs/DIGITALOCEAN_STAGE_RUNBOOK.md).
+Прямой JVM deployment может использовать `SPRING_DATASOURCE_*` из
+`.env.production.example`, но обязан отдельно установить тот же trusted CA.
+
 ## Тесты
 
 ```bash

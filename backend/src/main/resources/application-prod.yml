@@ -10,6 +10,10 @@ walking-rpg:
     authentication-time-claim: ${OIDC_AUTHENTICATION_TIME_CLAIM}
 
 spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=verify-full
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   security:
     oauth2:
       resourceserver:
