@@ -41,6 +41,11 @@ production signing, physical-device, stage, real-restore или store evidence.
       `auth_time`; stale/missing claim отклоняется deletion endpoint.
 - [ ] Mobile Authorization Code + PKCE, refresh, expiry и logout пройдены end-to-end.
 - [ ] Logout/account switch очищает локальную session, read cache и command outbox по согласованной политике.
+- [ ] Telegram connection использует back-channel OIDC, PKCE S256 и scopes
+      ровно `openid profile`; `phone` и `telegram:bot_access` не запрошены.
+- [ ] Telegram включён только для нужного Native Application, не promoted to
+      domain level; RU/EN login/cancel/reauth проверены на физических iOS и
+      Android без токенов или PII в evidence.
 
 ## Environment и provider gate
 

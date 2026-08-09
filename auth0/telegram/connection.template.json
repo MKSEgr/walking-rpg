@@ -1,0 +1,28 @@
+{
+  "name": "telegram",
+  "display_name": "Telegram",
+  "strategy": "oidc",
+  "show_as_button": true,
+  "is_domain_connection": false,
+  "authentication": {
+    "active": true
+  },
+  "options": {
+    "type": "back_channel",
+    "discovery_url": "https://oauth.telegram.org/.well-known/openid-configuration",
+    "client_id": "@@TELEGRAM_CLIENT_ID@@",
+    "client_secret": "@@TELEGRAM_CLIENT_SECRET@@",
+    "scopes": "openid profile",
+    "connection_settings": {
+      "pkce": "s256"
+    },
+    "attribute_map": {
+      "mapping_mode": "use_map",
+      "attributes": {
+        "name": "${context.tokenset.name}",
+        "username": "${context.tokenset.preferred_username}",
+        "picture": "${context.tokenset.picture}"
+      }
+    }
+  }
+}

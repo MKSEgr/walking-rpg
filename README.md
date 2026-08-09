@@ -64,6 +64,10 @@
   Java 21 container, managed PostgreSQL 17 bindables, pgJDBC CA delivery,
   раздельные `/livez`/`/readyz` probes и owner runbook; реальный paid stage
   остаётся external validation;
+- Auth0 Universal Login contract с email/Apple/Google и Telegram Enterprise
+  OIDC template; Telegram использует back-channel PKCE S256 и только
+  `openid profile`, а реальный bot/credential/device flow остаётся external
+  validation;
 - explicit Android API 36 target и fail-closed external protected-signing
   contract при unsigned/no-codesign обычном CI;
 - effective sandbox-payment capability, учитывающая backend provider

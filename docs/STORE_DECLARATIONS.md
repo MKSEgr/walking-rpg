@@ -18,6 +18,9 @@ Walking RPG превращает агрегированное количеств
 Могут обрабатываться:
 
 - pseudonymous account id из OIDC subject и хэшированный device/session id;
+- при входе через Telegram — базовый provider profile (имя, username и URL
+  изображения, если они доступны); phone и bot messaging permission не
+  запрашиваются;
 - aggregated daily steps, timezone и local date;
 - игровой прогресс, инвентарь и команды;
 - timestamps ключевых этапов первого пути и их data-quality source;
@@ -30,7 +33,8 @@ Walking RPG превращает агрегированное количеств
 Удаление внешней учётной записи у выбранного production identity provider
 остаётся отдельным launch-gate: до submission необходимо либо подключить его к
 этому flow, либо документировать, что OIDC identity не создаётся и не
-контролируется Walking RPG.
+контролируется Walking RPG. Удаление игровых данных или Auth0 identity не
+удаляет внешний Telegram account.
 
 ## Payments и push
 

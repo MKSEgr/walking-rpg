@@ -792,7 +792,10 @@ The mobile client is a public OAuth/OIDC client. It uses Authorization Code +
 PKCE, stores tokens only in platform secure storage, and derives an opaque local
 owner partition from canonical `issuer + subject`. API clients never accept or
 send user/device identity headers in OIDC mode; backend identity comes only from
-the validated access token. See ADR 0018.
+the validated Auth0 access token. Email, Apple, Google and Telegram terminate at
+Auth0 Universal Login; Telegram is an upstream Enterprise OIDC connection and
+its ID/access tokens never reach the native session or game API. See ADR 0018,
+ADR 0035 and ADR 0037.
 
 ### Account data-control boundary
 

@@ -52,6 +52,7 @@ validation сохранена и нормализована в issue
 | TASK-015 | [#160](https://github.com/MKSEgr/walking-rpg/issues/160) | E7 / W7.4 | P1 | Manual validation / release | Install, upgrade и distribution rollback evidence | #152, #158 |
 | TASK-016 | [#161](https://github.com/MKSEgr/walking-rpg/issues/161) | E5 / W5.2 | P1 gate | Product research / validation | Internal alpha первых десяти минут | #21, #153, #154, #155, #156, #157, #158, #160 |
 | TASK-017 | [#162](https://github.com/MKSEgr/walking-rpg/issues/162) | E5 / W5.3 | P1 gate | Product / release decision | `EXPAND`, `FIX_AND_RERUN` или `STOP` | #161, все release blockers resolved/rerun |
+| TASK-018 | [#175](https://github.com/MKSEgr/walking-rpg/issues/175) | E2 / W2.3 | P0 | Identity / config / validation | Telegram login через Auth0 без второго trust boundary | #150, #151, #153, #158 |
 
 ## Правило выбора следующей задачи
 
