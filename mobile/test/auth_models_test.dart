@@ -46,7 +46,7 @@ void main() {
 
   test('uses the provider profile name when a username is absent', () {
     final OidcConfiguration configuration = _configuration();
-    final String subject = 'oidc|telegram|123456789';
+    const String subject = 'oidc|telegram|123456789';
     final AuthSession session = AuthSession.fromResponse(
       configuration: configuration,
       response: OidcTokenResponseData(
