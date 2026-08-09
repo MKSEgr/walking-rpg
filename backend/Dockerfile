@@ -35,16 +35,23 @@ RUN groupadd --gid "${APP_GID}" walkingrpg \
        --home-dir /home/walkingrpg \
        --shell /usr/sbin/nologin \
        walkingrpg \
-    && install -d -o walkingrpg -g walkingrpg -m 0700 /app
+    && install -d -o walkingrpg -g walkingrpg -m 0700 /app \
+    && install -d -o root -g root -m 0755 /usr/local/share/walking-rpg \
+    && printf '%s\n' "${SOURCE_GIT_SHA}" \
+       > /usr/local/share/walking-rpg/source-git-sha \
+    && printf '%s\n' "${SOURCE_GIT_TREE}" \
+       > /usr/local/share/walking-rpg/source-git-tree \
+    && chmod 0444 \
+       /usr/local/share/walking-rpg/source-git-sha \
+       /usr/local/share/walking-rpg/source-git-tree \
+    && chmod 0555 /usr/local/share/walking-rpg
 
 COPY --from=build --chown=walkingrpg:walkingrpg --chmod=0444 \
     /workspace/walking-rpg-backend.jar /app/walking-rpg-backend.jar
 COPY --chown=root:root --chmod=0555 \
     backend/docker-entrypoint.sh /usr/local/bin/walking-rpg-entrypoint
 
-ENV HOME=/home/walkingrpg \
-    IMAGE_SOURCE_GIT_SHA=${SOURCE_GIT_SHA} \
-    IMAGE_SOURCE_GIT_TREE=${SOURCE_GIT_TREE}
+ENV HOME=/home/walkingrpg
 
 USER walkingrpg:walkingrpg
 EXPOSE 8080

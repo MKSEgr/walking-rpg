@@ -13,8 +13,11 @@ esac
 
 : "${EXPECTED_SOURCE_GIT_SHA:?EXPECTED_SOURCE_GIT_SHA is required}"
 : "${EXPECTED_SOURCE_GIT_TREE:?EXPECTED_SOURCE_GIT_TREE is required}"
-: "${IMAGE_SOURCE_GIT_SHA:?IMAGE_SOURCE_GIT_SHA is required}"
-: "${IMAGE_SOURCE_GIT_TREE:?IMAGE_SOURCE_GIT_TREE is required}"
+readonly IMAGE_PROVENANCE_DIRECTORY=/usr/local/share/walking-rpg
+IMAGE_SOURCE_GIT_SHA=$(cat "$IMAGE_PROVENANCE_DIRECTORY/source-git-sha") \
+  || fail 'container source Git SHA metadata is unreadable'
+IMAGE_SOURCE_GIT_TREE=$(cat "$IMAGE_PROVENANCE_DIRECTORY/source-git-tree") \
+  || fail 'container source Git tree metadata is unreadable'
 
 case "$EXPECTED_SOURCE_GIT_SHA" in
   *[!0-9a-f]*|'') fail 'EXPECTED_SOURCE_GIT_SHA must be lowercase hexadecimal' ;;
