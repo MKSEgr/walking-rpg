@@ -4,6 +4,11 @@ This runbook separates repository-verifiable A4b controls from actions that
 require a real protected environment. A green CI run is not production
 validation.
 
+The internal-alpha DigitalOcean topology, paid deployment sequence and
+environment-specific evidence contract are in
+[DIGITALOCEAN_STAGE_RUNBOOK.md](DIGITALOCEAN_STAGE_RUNBOOK.md). This document
+remains the provider-neutral application operations contract.
+
 ## Code-verifiable controls
 
 The release candidate must satisfy all of the following:

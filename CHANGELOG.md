@@ -163,6 +163,10 @@
 - ADR 0032 о server-authoritative cosmetic equipment и rolling compatibility;
 - ADR 0033 и recursive canonical JSON fingerprint для platform-команд с
   bounded replay compatibility для ранее сохранённых двухполевых payload;
+- ADR 0036 и DigitalOcean internal-alpha stage contract с non-root Java 21
+  container, PostgreSQL 17 `verify-full` CA delivery, reviewed App Spec,
+  раздельными platform probes, alert policy, redacted evidence template и
+  owner deployment/rollback runbook;
 
 ### Changed
 

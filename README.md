@@ -60,6 +60,10 @@
   команд с owner-scoped recovery center;
 - protected `stage`/`prod` backend profiles с fail-closed datasource и
   отключёнными sandbox payment/development push providers;
+- reviewed DigitalOcean `walking-rpg-alpha-eu` deployment contract: non-root
+  Java 21 container, managed PostgreSQL 17 bindables, pgJDBC CA delivery,
+  раздельные `/livez`/`/readyz` probes и owner runbook; реальный paid stage
+  остаётся external validation;
 - explicit Android API 36 target и fail-closed external protected-signing
   contract при unsigned/no-codesign обычном CI;
 - effective sandbox-payment capability, учитывающая backend provider

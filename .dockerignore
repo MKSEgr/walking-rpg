@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.vscode
+auth0
+build
+docs
+mobile
+scripts
+backend/target
+*.log
