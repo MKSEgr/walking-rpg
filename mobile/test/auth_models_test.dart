@@ -44,6 +44,33 @@ void main() {
     expect(first.identity.displayName, 'max.egorov');
   });
 
+  test('uses the provider profile name when a username is absent', () {
+    final OidcConfiguration configuration = _configuration();
+    final String subject = 'oidc|telegram|123456789';
+    final AuthSession session = AuthSession.fromResponse(
+      configuration: configuration,
+      response: OidcTokenResponseData(
+        accessToken: _jwt(<String, Object?>{
+          'iss': configuration.issuer.toString(),
+          'sub': subject,
+          'exp': 2000000000,
+        }),
+        accessTokenExpiration: DateTime.fromMillisecondsSinceEpoch(
+          2000000000 * 1000,
+          isUtc: true,
+        ),
+        idToken: _jwt(<String, Object?>{
+          'iss': configuration.issuer.toString(),
+          'sub': subject,
+          'name': 'Telegram Explorer',
+          'exp': 2000000000,
+        }),
+      ),
+    );
+
+    expect(session.identity.displayName, 'Telegram Explorer');
+  });
+
   test('rejects a token issued by another issuer', () {
     final OidcConfiguration configuration = _configuration();
 

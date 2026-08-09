@@ -20,10 +20,15 @@ Auth0 EU contract, API audience, native PKCE parameters, stable installation ID,
 namespaced device/fresh-auth claims and fail-closed protected configuration —
 `CODE_COMPLETE` according to
 [ADR 0035](adr/0035-auth0-alpha-authentication-contract.md).
+The secret-free Telegram OIDC connection contract, minimum `openid profile`
+scope, S256 upstream PKCE, RU/EN entry copy and evidence/rollback procedure are
+also `CODE_COMPLETE` according to
+[ADR 0037](adr/0037-telegram-login-through-auth0.md).
 
 Creation of the stage tenant/application/API, email OTP delivery, Apple/Google
-connections, protected values, deployed Action and real login/refresh/revoke/
-logout/account-switch evidence on physical iOS and Android —
+connections, Telegram bot/callback/credential/connection, protected values,
+deployed Action and real login/refresh/revoke/logout/account-switch evidence on
+physical iOS and Android —
 `EXTERNAL_VALIDATION_REQUIRED`. Repository tests and unsigned CI artifacts do
 not prove that any provider connection is active.
 

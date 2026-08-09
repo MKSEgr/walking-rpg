@@ -6,6 +6,10 @@
 
 ### Added
 
+- Telegram login contract через Auth0 Universal Login: Enterprise OIDC
+  back-channel, PKCE S256, scopes только `openid profile`, secret-free template
+  и CI tests, RU/EN entry copy, ADR/runbook и redacted physical evidence
+  matrix;
 - `alpha-rc1` release dossier с immutable post-bootstrap `master` SHA/tree,
   exact integrated push runs, build metadata и проверенными SHA-256 для
   unsigned/no-codesign release artifacts;

@@ -10,6 +10,11 @@ This review records the invariants required before the mobile OIDC session slice
 - OIDC issuer comparison is exact; trailing slashes and whitespace are not normalized into another issuer.
 - An ID token, when present, must describe the same issuer and subject as the access token.
 - Claim identifiers remain whitespace-sensitive so distinct backend subjects cannot collapse into one local owner partition.
+- Upstream providers terminate at Auth0 Universal Login. Telegram tokens are
+  never accepted by the mobile session or game API; the validated Auth0
+  issuer/subject remains the only production owner boundary.
+- Telegram requests only `openid profile`. Phone-number and bot direct-message
+  permissions are excluded from the reviewed connection contract.
 
 ## Session invalidation
 

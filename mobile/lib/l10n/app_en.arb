@@ -29,7 +29,7 @@
   "authReturnTitle": "Return to the expedition",
   "authOpenTitle": "Open the expedition",
   "authReauthenticationBody": "Your session has ended. Sign in again to continue synchronization and game actions.",
-  "authOpenBody": "Sign in with an email code, Apple, or Google. Authorization opens in the system browser.",
+  "authOpenBody": "Sign in with Telegram, an email code, Apple, or Google. Authorization opens in the system browser.",
   "authPasswordNote": "Your password is neither entered nor stored in the app.",
   "authOpeningButton": "Opening secure sign-in...",
   "authSignInButton": "Sign in to the expedition",

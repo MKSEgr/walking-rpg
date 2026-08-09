@@ -1,6 +1,7 @@
 # 0035 — Auth0 contract for internal alpha
 
-- Status: Accepted with external blockers
+- Status: Accepted with external blockers; provider set extended by
+  [ADR 0037](0037-telegram-login-through-auth0.md)
 - Decision date: 2026-08-09
 - Product / configuration owner: [@MKSEgr](https://github.com/MKSEgr)
 - Related task: [issue #150](https://github.com/MKSEgr/walking-rpg/issues/150)
@@ -30,10 +31,12 @@ not collect or store passwords. Enabled connections are:
 3. Google — enabled for the assigned Android validation group and optionally
    alongside Apple on iOS.
 
-SMS, local passwords, guest accounts, VK, Yandex and Telegram are out of alpha
-scope. A participant uses one assigned identity during alpha. Identities are not
-automatically linked by matching email; explicit account linking is a future
-decision because email equality alone is not proof of account ownership.
+At this decision date, SMS, local passwords, guest accounts, VK, Yandex and
+Telegram were out of alpha scope. ADR 0037 later adds Telegram through Auth0;
+MAX remains deferred. A participant uses one assigned identity during alpha.
+Identities are not automatically linked by matching email or other profile
+claims; explicit account linking is a future decision because attribute
+equality alone is not proof of account ownership.
 
 ## Environment matrix
 

@@ -20,6 +20,18 @@ Run the secret-free contract tests with:
 
     node --test auth0/actions/step-beyond-token-contract.test.js
 
+## Telegram OIDC connection
+
+Telegram is an upstream Auth0 Enterprise OIDC connection; the native app and
+backend continue trusting only Auth0. The reviewed connection template,
+minimal-scope policy, owner provisioning steps, validation matrix and rollback
+procedure are in [`telegram/README.md`](telegram/README.md) and
+[ADR 0037](../docs/adr/0037-telegram-login-through-auth0.md).
+
+Run its secret-free contract test with:
+
+    node --test auth0/telegram/telegram-oidc-connection.test.js
+
 The exact tenant domain, client IDs, connection credentials, SMTP settings and
 Management API credentials belong in Auth0 and the protected stage secret
 store, not in this directory. Follow

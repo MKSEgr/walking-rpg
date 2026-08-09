@@ -30,6 +30,7 @@ void main() {
     expect(find.text('КАНАЛ ЭКСПЕДИЦИИ'), findsOneWidget);
     expect(find.text('БЕЗ GPS'), findsOneWidget);
     expect(find.text('ТОЛЬКО ШАГИ · ЧТЕНИЕ'), findsOneWidget);
+    expect(find.textContaining('Telegram'), findsOneWidget);
     expect(
       find.bySemanticsLabel('Туманный сектор и сигнальный маяк'),
       findsOneWidget,

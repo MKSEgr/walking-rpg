@@ -40,11 +40,16 @@ for file in \
   docs/adr/0033-canonical-platform-command-fingerprints.md \
   docs/adr/0035-auth0-alpha-authentication-contract.md \
   docs/adr/0036-digitalocean-alpha-stage.md \
+  docs/adr/0037-telegram-login-through-auth0.md \
   docs/evidence/digitalocean-stage-deployment-template.md \
+  docs/evidence/telegram-login-validation-template.md \
   infra/digitalocean/app.yaml.template \
   auth0/README.md \
   auth0/actions/step-beyond-token-contract.js \
   auth0/actions/step-beyond-token-contract.test.js \
+  auth0/telegram/README.md \
+  auth0/telegram/connection.template.json \
+  auth0/telegram/telegram-oidc-connection.test.js \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   .dockerignore \
@@ -600,7 +605,19 @@ grep -Fq "'audience': configuration.audience" mobile/lib/core/auth/oidc_client.d
 grep -Fq "'ui_locales': locale" mobile/lib/core/auth/oidc_client.dart || fail 'Universal Login must receive the selected locale'
 grep -Fq "'ext-installation-id': _requireInstallationId" mobile/lib/core/auth/oidc_client.dart || fail 'authorization and refresh must carry a bounded installation ID'
 grep -Fq "step_beyond_installation_id_v1" mobile/lib/core/auth/installation_id_store.dart || fail 'installation identity storage must remain versioned'
-grep -Fq 'node --test auth0/actions/step-beyond-token-contract.test.js' .github/workflows/ci.yml || fail 'Auth0 token contract tests must run in CI'
+grep -Fq 'auth0/actions/step-beyond-token-contract.test.js' .github/workflows/ci.yml || fail 'Auth0 token contract tests must run in CI'
+grep -Fq 'auth0/telegram/telegram-oidc-connection.test.js' .github/workflows/ci.yml || fail 'Telegram OIDC connection tests must run in CI'
+grep -Fq 'https://oauth.telegram.org/.well-known/openid-configuration' auth0/telegram/connection.template.json || fail 'Telegram OIDC discovery must remain provider-owned'
+grep -Fq '"scopes": "openid profile"' auth0/telegram/connection.template.json || fail 'Telegram login must request only openid and profile'
+grep -Fq '"pkce": "s256"' auth0/telegram/connection.template.json || fail 'Telegram upstream OIDC must require PKCE S256'
+grep -Fq '"is_domain_connection": false' auth0/telegram/connection.template.json || fail 'Telegram connection must not be domain-level'
+grep -Fq '"show_as_button": true' auth0/telegram/connection.template.json || fail 'Telegram must be visible in Universal Login'
+if grep -Eq '"scopes"[[:space:]]*:[^\n]*(phone|telegram:bot_access)' auth0/telegram/connection.template.json; then
+  fail 'Telegram login must not request phone or bot direct-message access'
+fi
+node --test \
+  auth0/actions/step-beyond-token-contract.test.js \
+  auth0/telegram/telegram-oidc-connection.test.js
 grep -Fq 'OIDC_AUDIENCE=$RELEASE_CANDIDATE_OIDC_AUDIENCE' .github/workflows/release-quality.yml || fail 'release candidates must embed the configured OIDC audience'
 grep -Fq 'Development-аутентификация запрещена в production build' mobile/lib/core/auth/auth_models.dart || fail 'release builds must reject development auth'
 grep -Fq '"appAuthRedirectScheme" to "com.walkingrpg.app"' mobile/android/app/build.gradle.kts || fail 'Android AppAuth redirect scheme is missing'

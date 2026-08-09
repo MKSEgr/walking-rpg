@@ -27,8 +27,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Test Auth0 token contract
-        run: node --test auth0/actions/step-beyond-token-contract.test.js
+      - name: Test Auth0 identity contracts
+        run: >-
+          node --test
+          auth0/actions/step-beyond-token-contract.test.js
+          auth0/telegram/telegram-oidc-connection.test.js
 
       - name: Validate repository scaffold
         run: bash ./scripts/verify-project.sh

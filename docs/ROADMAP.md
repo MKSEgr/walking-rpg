@@ -91,7 +91,11 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] A/B assignment и exposure logging
 - [x] Release candidate CI и store review checklist
 - [x] Mobile OIDC Authorization Code + PKCE, secure session storage, refresh и logout
+- [x] Telegram OIDC connection contract через Auth0 Universal Login с S256,
+      минимальными scopes и secret-free CI checks
 - [ ] Production identity-provider client/redirect configuration — EXTERNAL_VALIDATION_REQUIRED
+- [ ] Telegram bot/callback/Auth0 connection и physical iOS/Android evidence —
+      EXTERNAL_VALIDATION_REQUIRED
 - [ ] Production APNs/FCM — EXTERNAL_VALIDATION_REQUIRED
 - [ ] App Store / Google Play billing — EXTERNAL_VALIDATION_REQUIRED
 - [ ] Production signing/submission/review — EXTERNAL_VALIDATION_REQUIRED

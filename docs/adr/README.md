@@ -53,3 +53,4 @@ NNNN-short-title.md
 - [0034 — решения по продукту и выпуску alpha](0034-alpha-product-and-release-decisions.md)
 - [0035 — Auth0 contract for internal alpha](0035-auth0-alpha-authentication-contract.md)
 - [0036 — DigitalOcean production-like stage для internal alpha](0036-digitalocean-alpha-stage.md)
+- [0037 — Telegram login through Auth0](0037-telegram-login-through-auth0.md)
