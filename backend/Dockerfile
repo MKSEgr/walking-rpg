@@ -20,6 +20,12 @@ FROM eclipse-temurin:21-jre-jammy
 
 ARG APP_UID=10001
 ARG APP_GID=10001
+ARG SOURCE_GIT_SHA=unknown
+ARG SOURCE_GIT_TREE=unknown
+
+LABEL org.opencontainers.image.source="https://github.com/MKSEgr/walking-rpg" \
+      org.opencontainers.image.revision="${SOURCE_GIT_SHA}" \
+      game.stepbeyond.source-tree="${SOURCE_GIT_TREE}"
 
 RUN groupadd --gid "${APP_GID}" walkingrpg \
     && useradd \
@@ -36,7 +42,9 @@ COPY --from=build --chown=walkingrpg:walkingrpg --chmod=0444 \
 COPY --chown=root:root --chmod=0555 \
     backend/docker-entrypoint.sh /usr/local/bin/walking-rpg-entrypoint
 
-ENV HOME=/home/walkingrpg
+ENV HOME=/home/walkingrpg \
+    IMAGE_SOURCE_GIT_SHA=${SOURCE_GIT_SHA} \
+    IMAGE_SOURCE_GIT_TREE=${SOURCE_GIT_TREE}
 
 USER walkingrpg:walkingrpg
 EXPOSE 8080

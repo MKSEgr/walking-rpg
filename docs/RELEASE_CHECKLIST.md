@@ -21,6 +21,10 @@ production signing, physical-device, stage, real-restore или store evidence.
 
 ## Artifact gate
 
+- [ ] Backend image опубликован protected manual workflow из approved
+      `master` SHA/tree; GHCR digest и receipt artifact checksum проверены.
+- [ ] Stage App Spec содержит этот immutable digest, не Git branch/image tag;
+      embedded source SHA/tree совпадают с approved runtime values.
 - [ ] Проверены metadata и SHA-256.
 - [ ] Проверены backend JAR и SHA-256.
 - [ ] Проверены Android unsigned AAB и SHA-256.
@@ -49,6 +53,8 @@ production signing, physical-device, stage, real-restore или store evidence.
 
 ## Environment и provider gate
 
+- [ ] `stage-release` требует approval Release Owner; backend GHCR package
+      доступен App Platform без credential literal в App Spec.
 - [ ] Backend запущен ровно с одним защищённым профилем `stage` или `prod`;
       `local`/`test` не активны.
 - [ ] Datasource URL, username и password переданы защищённой средой; JDBC URL

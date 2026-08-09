@@ -95,7 +95,13 @@ jobs:
         run: bash ../scripts/operations/test-backend-container-entrypoint.sh
 
       - name: Build protected backend container
-        run: docker build --file Dockerfile --tag walking-rpg-backend:release-candidate ..
+        run: |
+          docker build \
+            --file Dockerfile \
+            --tag walking-rpg-backend:release-candidate \
+            --build-arg "SOURCE_GIT_SHA=$(git -C .. rev-parse HEAD)" \
+            --build-arg "SOURCE_GIT_TREE=$(git -C .. rev-parse 'HEAD^{tree}')" \
+            ..
 
       - name: Record backend digest
         shell: bash

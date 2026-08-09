@@ -6,6 +6,8 @@
 
 ### Added
 
+- protected manual workflow для публикации exact `master` SHA/tree как Linux
+  AMD64 backend image в GHCR с immutable digest и redacted receipt;
 - Telegram login contract через Auth0 Universal Login: Enterprise OIDC
   back-channel, PKCE S256, scopes только `openid profile`, secret-free template
   и CI tests, RU/EN entry copy, ADR/runbook и redacted physical evidence
@@ -174,6 +176,11 @@
 
 ### Changed
 
+- DigitalOcean stage больше не собирает плавающий `master`: App Spec принимает
+  только `ghcr.io/mksegr/walking-rpg-backend` по immutable `sha256` digest, а
+  container startup сверяет embedded и approved source SHA/tree до Java/Flyway;
+- Telegram PKCE documentation и regression test явно разделяют protocol method
+  `S256` и корректный Auth0 Management API enum `s256`;
 - типизированные API integer-поля `authoritativeTotal`, `buckets[].steps` и
   `energyToSpend` теперь используют exact signed-`long` JSON-number boundary:
   ненулевая дробная часть, строковый type и переполнение отклоняются до

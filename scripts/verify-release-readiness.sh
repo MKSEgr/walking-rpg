@@ -251,8 +251,14 @@ grep -Fq 'FROM eclipse-temurin:21-jdk-jammy AS build' backend/Dockerfile || fail
 grep -Fq 'FROM eclipse-temurin:21-jre-jammy' backend/Dockerfile || fail 'protected backend container must use the Java 21 JRE runtime'
 grep -Fq 'USER walkingrpg:walkingrpg' backend/Dockerfile || fail 'protected backend container must run as a non-root user'
 grep -Fq 'ENTRYPOINT ["/usr/local/bin/walking-rpg-entrypoint"]' backend/Dockerfile || fail 'protected backend container must use the reviewed entrypoint'
-grep -Fq 'docker build --file Dockerfile --tag walking-rpg-backend:release-candidate ..' .github/workflows/release-quality.yml || fail 'release quality must build the protected backend container'
+grep -Fq -- '--tag walking-rpg-backend:release-candidate' .github/workflows/release-quality.yml || fail 'release quality must build the protected backend container'
+grep -Fq -- '--build-arg "SOURCE_GIT_SHA=$(git -C .. rev-parse HEAD)"' .github/workflows/release-quality.yml || fail 'release container build must embed its exact source commit'
+grep -Fq -- '--build-arg "SOURCE_GIT_TREE=$(git -C .. rev-parse '\''HEAD^{tree}'\'')"' .github/workflows/release-quality.yml || fail 'release container build must embed its exact source tree'
+grep -Fq 'IMAGE_SOURCE_GIT_SHA=${SOURCE_GIT_SHA}' backend/Dockerfile || fail 'protected backend image must embed its source commit'
+grep -Fq 'IMAGE_SOURCE_GIT_TREE=${SOURCE_GIT_TREE}' backend/Dockerfile || fail 'protected backend image must embed its source tree'
 grep -Fq 'SPRING_PROFILES_ACTIVE must be exactly stage or prod' backend/docker-entrypoint.sh || fail 'container entrypoint must reject unprotected profiles'
+grep -Fq 'container source Git SHA does not match the approved deployment SHA' backend/docker-entrypoint.sh || fail 'container entrypoint must bind runtime to the approved source commit'
+grep -Fq 'container source Git tree does not match the approved deployment tree' backend/docker-entrypoint.sh || fail 'container entrypoint must bind runtime to the approved source tree'
 grep -Fq 'POSTGRES_CA_CERT must contain a PEM certificate' backend/docker-entrypoint.sh || fail 'container entrypoint must reject a malformed database CA'
 grep -Fq 'root.crt' backend/docker-entrypoint.sh || fail 'container entrypoint must install the pgJDBC default root certificate'
 grep -Fq 'chmod 0600 "$temporary_certificate"' backend/docker-entrypoint.sh || fail 'container entrypoint must restrict database CA permissions'
@@ -263,7 +269,14 @@ grep -Fq 'unset POSTGRES_CA_CERT' backend/docker-entrypoint.sh || fail 'containe
 grep -Fq 'name: walking-rpg-alpha-eu' infra/digitalocean/app.yaml.template || fail 'stage App Spec must keep the accepted environment name'
 grep -Fq 'region: fra' infra/digitalocean/app.yaml.template || fail 'stage App Spec must keep the accepted Frankfurt region'
 grep -Fq 'instance_size_slug: apps-s-1vcpu-1gb' infra/digitalocean/app.yaml.template || fail 'stage backend must keep the accepted 1 GiB size'
-grep -Fq 'deploy_on_push: false' infra/digitalocean/app.yaml.template || fail 'stage deployment must not follow a moving branch automatically'
+grep -Fq 'registry_type: GHCR' infra/digitalocean/app.yaml.template || fail 'stage backend must use the reviewed container registry'
+grep -Fq 'repository: walking-rpg-backend' infra/digitalocean/app.yaml.template || fail 'stage backend must use the fixed image repository'
+grep -Fq 'digest: "@@BACKEND_IMAGE_DIGEST@@"' infra/digitalocean/app.yaml.template || fail 'stage backend must require an immutable image digest'
+grep -Fq 'value: "@@BACKEND_SOURCE_GIT_SHA@@"' infra/digitalocean/app.yaml.template || fail 'stage backend must require the approved source commit'
+grep -Fq 'value: "@@BACKEND_SOURCE_GIT_TREE@@"' infra/digitalocean/app.yaml.template || fail 'stage backend must require the approved source tree'
+if grep -Eq 'github:|branch:|deploy_on_push:|^[[:space:]]+tag:' infra/digitalocean/app.yaml.template; then
+  fail 'stage App Spec must not follow a moving source ref or image tag'
+fi
 grep -Fq 'enhanced_threat_control_enabled: true' infra/digitalocean/app.yaml.template || fail 'stage ingress must keep reviewed Layer 7 protection'
 grep -Fq 'http_path: /readyz' infra/digitalocean/app.yaml.template || fail 'stage platform readiness must include PostgreSQL'
 grep -Fq 'http_path: /livez' infra/digitalocean/app.yaml.template || fail 'stage platform liveness must remain independent of PostgreSQL'
@@ -275,10 +288,22 @@ grep -Fq 'production: true' infra/digitalocean/app.yaml.template || fail 'stage 
 if grep -Eq 'doadmin|defaultdb|sslmode=require' infra/digitalocean/app.yaml.template; then
   fail 'stage App Spec must not use provider admin defaults or weakened TLS'
 fi
+grep -Fq 'name: Publish backend release candidate' .github/workflows/publish-backend-release-candidate.yml || fail 'repository must define the protected backend image publisher'
+grep -Fq 'environment: stage-release' .github/workflows/publish-backend-release-candidate.yml || fail 'backend image publication must use the protected stage release environment'
+grep -Fq 'actions: read' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must have scoped workflow read permission'
+grep -Fq 'packages: write' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must have scoped package write permission'
+grep -Fq 'git merge-base --is-ancestor "$SOURCE_GIT_SHA" origin/master' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must reject commits outside master history'
+grep -Fq 'run.name === workflowName' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must require integrated push workflows'
+grep -Fq 'git status --porcelain=v1 --untracked-files=all' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must reject a modified build context'
+grep -Fq 'platforms: linux/amd64' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must target the App Platform architecture'
+grep -Fq 'IMAGE_DIGEST" =~ ^sha256:' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must require an immutable OCI digest'
 bash scripts/operations/test-backend-container-entrypoint.sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
   scripts/operations/test_render_digitalocean_stage_spec.py
 STAGE_POSTGRES_CLUSTER_NAME=walking-rpg-alpha-pg-fra \
+STAGE_BACKEND_IMAGE_DIGEST=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+STAGE_BACKEND_SOURCE_GIT_SHA=1111111111111111111111111111111111111111 \
+STAGE_BACKEND_SOURCE_GIT_TREE=2222222222222222222222222222222222222222 \
 STAGE_POSTGRES_DATABASE=walking_rpg \
 STAGE_POSTGRES_USER=walking_rpg_app \
 STAGE_OIDC_ISSUER_URI=https://walking-rpg-alpha.eu.auth0.com/ \

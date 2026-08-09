@@ -1,0 +1,199 @@
+name: Publish backend release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Approved 40-character commit SHA from master
+        required: true
+        type: string
+      source_tree:
+        description: Approved 40-character tree SHA from the release record
+        required: true
+        type: string
+
+concurrency:
+  group: publish-backend-release-candidate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish immutable backend image
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: stage-release
+    permissions:
+      actions: read
+      contents: read
+      packages: write
+    env:
+      SOURCE_GIT_SHA: ${{ inputs.source_sha }}
+      APPROVED_SOURCE_GIT_TREE: ${{ inputs.source_tree }}
+    steps:
+      - name: Validate immutable source inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_GIT_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$APPROVED_SOURCE_GIT_TREE" =~ ^[0-9a-f]{40}$ ]]
+          test "$SOURCE_GIT_SHA" != 0000000000000000000000000000000000000000
+          test "$APPROVED_SOURCE_GIT_TREE" != 0000000000000000000000000000000000000000
+
+      - name: Check out the approved commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+
+      - name: Verify source against master and release record
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual_sha="$(git rev-parse HEAD)"
+          actual_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$actual_sha" = "$SOURCE_GIT_SHA"
+          test "$actual_tree" = "$APPROVED_SOURCE_GIT_TREE"
+          git fetch --no-tags origin master
+          git merge-base --is-ancestor "$SOURCE_GIT_SHA" origin/master
+          printf 'source_sha=%s\n' "$actual_sha" >> "$GITHUB_OUTPUT"
+          printf 'source_tree=%s\n' "$actual_tree" >> "$GITHUB_OUTPUT"
+
+      - name: Require successful integrated push workflows
+        uses: actions/github-script@v7
+        env:
+          EXPECTED_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {owner, repo, head_sha: process.env.EXPECTED_SOURCE_SHA, per_page: 100},
+            );
+            const required = ['CI', 'Release quality'];
+            for (const workflowName of required) {
+              const successfulPush = runs.some((run) =>
+                run.name === workflowName &&
+                run.event === 'push' &&
+                run.conclusion === 'success'
+              );
+              if (!successfulPush) {
+                core.setFailed(
+                  `${workflowName} has no successful push run for ` +
+                    process.env.EXPECTED_SOURCE_SHA,
+                );
+              }
+            }
+
+      - name: Verify repository release policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/verify-release-readiness.sh
+          git diff --quiet
+          git diff --cached --quiet
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$APPROVED_SOURCE_GIT_TREE"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Select fixed image repository
+        id: image
+        shell: bash
+        run: echo 'name=ghcr.io/mksegr/walking-rpg-backend' >> "$GITHUB_OUTPUT"
+
+      - name: Build and publish approved linux/amd64 image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.image.outputs.name }}:${{ steps.source.outputs.source_sha }}
+          build-args: |
+            SOURCE_GIT_SHA=${{ steps.source.outputs.source_sha }}
+            SOURCE_GIT_TREE=${{ steps.source.outputs.source_tree }}
+
+      - name: Verify immutable digest and write redacted receipt
+        id: receipt
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          VERIFIED_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          VERIFIED_SOURCE_TREE: ${{ steps.source.outputs.source_tree }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker buildx imagetools inspect "$IMAGE_NAME@$IMAGE_DIGEST" >/dev/null
+          install -d -m 700 build/release
+          python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          from pathlib import Path
+
+          receipt = {
+              "schemaVersion": "walking-rpg-backend-image-receipt-v1",
+              "sourceGitSha": os.environ["VERIFIED_SOURCE_SHA"],
+              "sourceGitTree": os.environ["VERIFIED_SOURCE_TREE"],
+              "image": os.environ["IMAGE_NAME"],
+              "digest": os.environ["IMAGE_DIGEST"],
+              "platform": "linux/amd64",
+              "workflowRun": (
+                  f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
+                  f"/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+              ),
+              "publishedAt": datetime.datetime.now(datetime.UTC).isoformat().replace(
+                  "+00:00", "Z"
+              ),
+          }
+          path = Path("build/release/backend-image-receipt.json")
+          path.write_text(
+              json.dumps(receipt, ensure_ascii=True, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          sha256sum build/release/backend-image-receipt.json \
+            > build/release/backend-image-receipt.json.sha256
+          printf 'image_digest=%s\n' "$IMAGE_DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Upload backend image receipt
+        id: upload-receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-image-receipt-${{ steps.source.outputs.source_sha }}
+          path: |
+            build/release/backend-image-receipt.json
+            build/release/backend-image-receipt.json.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summarize immutable release input
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.receipt.outputs.image_digest }}
+          VERIFIED_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          VERIFIED_SOURCE_TREE: ${{ steps.source.outputs.source_tree }}
+          RECEIPT_ARTIFACT_DIGEST: ${{ steps.upload-receipt.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          {
+            printf '### Backend release candidate\n\n'
+            printf -- '- Source commit: `%s`\n' "$VERIFIED_SOURCE_SHA"
+            printf -- '- Source tree: `%s`\n' "$VERIFIED_SOURCE_TREE"
+            printf -- '- Image: `%s@%s`\n' "$IMAGE_NAME" "$IMAGE_DIGEST"
+            printf -- '- Receipt artifact digest: `%s`\n' "$RECEIPT_ARTIFACT_DIGEST"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -54,13 +54,17 @@ diagnostics/telemetry ingress, отдельный loopback management listener,
 backup/restore round-trip — `CODE_COMPLETE`.
 
 DigitalOcean alpha-stage decision, non-root Java 21 container, reviewed App
-Spec template, runtime CA delivery for pgJDBC, distinct `/livez`/`/readyz`
-platform probes and owner runbook are repository-verifiable according to
-[ADR 0036](adr/0036-digitalocean-alpha-stage.md). Merge и green CI переводят
-этот deployment wiring в `CODE_COMPLETE`, но не создают платный stage.
+Spec template with immutable GHCR digest, embedded source SHA/tree startup
+guard, runtime CA delivery for pgJDBC, distinct `/livez`/`/readyz` platform
+probes and owner runbook are repository-verifiable according to [ADR
+0036](adr/0036-digitalocean-alpha-stage.md). Merge и green CI переводят этот
+deployment wiring в `CODE_COMPLETE`, но не публикуют approved image и не
+создают платный stage.
 
-Production OIDC/database secrets, реальный TLS endpoint, least-privilege DB
-role, deployment, management network isolation, WAF/distributed limiter,
+Protected `stage-release` approval, public GHCR package, published image digest
+and verified receipt, production OIDC/database secrets, реальный TLS endpoint,
+least-privilege DB role, deployment, management network isolation,
+WAF/distributed limiter,
 monitoring/alerting, backup scheduling/encryption/retention, PITR/RPO/RTO
 policy и датированный restore реального backup —
 `EXTERNAL_VALIDATION_REQUIRED`. Наличие Flyway V14, успешный CI startup или

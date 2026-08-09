@@ -36,7 +36,7 @@ variables, database bindables, deployment rollback и built-in alerts. Это
 | Stage | `walking-rpg-alpha-eu` |
 | Backend | один App Platform service, `apps-s-1vcpu-1gb`, один instance |
 | Database | Managed PostgreSQL 17 Standard, один node, без standby |
-| Source | `MKSEgr/walking-rpg`, manual deployment, autodeploy disabled |
+| Source | public `ghcr.io/mksegr/walking-rpg-backend` image by immutable digest |
 | Owners | Hosting Owner и Release Owner — `@MKSEgr` |
 | Stop authority | Release Owner |
 | Budget gate | до `$30/month` без Auth0, домена, налогов и внешнего log sink |
@@ -79,10 +79,17 @@ variables, database bindables, deployment rollback и built-in alerts. Это
 
 ### Release and rollback boundary
 
-`deploy_on_push` выключен. Каждый deployment record обязан содержать App
-Platform deployment ID, exact `source_commit_hash`, source tree, UTC interval,
-public endpoint и предыдущий safe deployment ID. Последний Git branch head сам
-по себе не является deployment evidence.
+App Platform получает только опубликованный Linux AMD64 OCI image с exact
+`sha256:...` digest; Git branch и image tag не являются deployment input.
+Protected manual publisher проверяет full source SHA/tree, принадлежность
+commit истории `master`, зелёные integrated push workflows и создаёт redacted
+receipt. Image встраивает source SHA/tree, а entrypoint сравнивает их с
+approved runtime values до запуска Java/Flyway.
+
+Каждый deployment record обязан содержать App Platform deployment ID, image
+digest, publisher workflow/receipt, exact source SHA/tree, UTC interval, public
+endpoint и предыдущий safe deployment ID. Последний Git branch head или
+изменяемый image tag сам по себе не является deployment evidence.
 
 App rollback возвращает только ранее сохранённый deployment/config. Flyway
 migrations считаются forward-compatible; destructive schema rollback запрещён.
@@ -97,7 +104,10 @@ rollback.
   — fail-closed renderer Auth0/database identifiers.
 - [`backend/Dockerfile`](../../backend/Dockerfile) и
   [`backend/docker-entrypoint.sh`](../../backend/docker-entrypoint.sh) — Java 21
-  image, non-root runtime и pgJDBC CA delivery.
+  image, source provenance guard, non-root runtime и pgJDBC CA delivery.
+- [`publish-backend-release-candidate.yml`](../../.github/workflows/publish-backend-release-candidate.yml)
+  — manual protected publisher для exact master SHA/tree и immutable GHCR
+  digest.
 - [`DIGITALOCEAN_STAGE_RUNBOOK.md`](../DIGITALOCEAN_STAGE_RUNBOOK.md) — owner
   deployment, verification, stop и rollback procedure.
 
@@ -113,7 +123,9 @@ evidence.
 - alert notification destination;
 - фактические TLS, Trusted Sources, least-privilege, probe, log, alert, PITR и
   rollback checks;
-- новый exact release candidate после merged PR #165–#173 и этого изменения.
+- новый exact release candidate после merged PR #165–#173 и этого изменения;
+- owner-reviewed `stage-release` GitHub environment, опубликованный public GHCR
+  digest и проверенный receipt для нового exact release candidate.
 
 ## Принятые риски alpha
 
@@ -134,6 +146,7 @@ restore/rollback.
 ## Источники provider contract
 
 - [DigitalOcean App Spec](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)
+- [App Platform images and immutable digests](https://docs.digitalocean.com/products/app-platform/how-to/deploy-from-container-images/)
 - [App Platform bindable variables](https://docs.digitalocean.com/products/app-platform/how-to/use-environment-variables/)
 - [PostgreSQL `verify-full`](https://docs.digitalocean.com/products/databases/postgresql/how-to/connect/)
 - [PostgreSQL trusted sources and VPC guidance](https://docs.digitalocean.com/products/databases/postgresql/concepts/best-practices/)

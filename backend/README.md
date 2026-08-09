@@ -104,8 +104,12 @@ Reviewed DigitalOcean container получает `POSTGRES_HOST`, `POSTGRES_PORT
 `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` и `POSTGRES_CA_CERT` только
 через runtime bindables. Entry point устанавливает provider CA как
 `${HOME}/.postgresql/root.crt`, удаляет CA из JVM environment и затем запускает
-protected profile. Полный deployment contract и operator procedure находятся
-в [`docs/DIGITALOCEAN_STAGE_RUNBOOK.md`](../docs/DIGITALOCEAN_STAGE_RUNBOOK.md).
+protected profile. Image build встраивает exact source SHA/tree; entry point
+требует совпадения с `EXPECTED_SOURCE_GIT_SHA` и
+`EXPECTED_SOURCE_GIT_TREE` до запуска JVM/Flyway. Stage принимает image только
+по immutable OCI digest. Полный deployment contract и operator procedure
+находятся в
+[`docs/DIGITALOCEAN_STAGE_RUNBOOK.md`](../docs/DIGITALOCEAN_STAGE_RUNBOOK.md).
 Прямой JVM deployment может использовать `SPRING_DATASOURCE_*` из
 `.env.production.example`, но обязан отдельно установить тот же trusted CA.
 
