@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- protected backend publisher отклоняет historical `master` sources до
+  provenance-aware baseline и выдаёт receipt только после проверки exact
+  labels/files, non-root user и embedded entrypoint опубликованного image;
+
 ### Added
 
 - protected manual workflow для публикации exact `master` SHA/tree как Linux

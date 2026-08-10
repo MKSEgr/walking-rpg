@@ -41,7 +41,9 @@ Record owner approval for:
 
 Choose and record:
 
-- approved source SHA and tree;
+- approved source SHA and tree; the source must be commit
+  `31027db88250e83112434db8cfcd85ed2b31fa8a` or a descendant because that is
+  the first `master` commit containing the protected image provenance guard;
 - successor release-candidate name; do not move or relabel `alpha-rc1`;
 - immutable `ghcr.io/mksegr/walking-rpg-backend@sha256:...` digest and its
   successful publisher workflow/receipt;
@@ -81,11 +83,23 @@ Before the first publication, configure the GitHub environment
 **Publish backend release candidate** from the repository default branch and
 enter the approved full source commit and tree SHAs. The workflow fails unless:
 
+- the dispatch itself uses the current `master` ref and that ref has not moved
+  between dispatch and source verification;
 - both inputs are lowercase 40-character object IDs;
-- the checkout exactly matches both values and the commit is in `master`;
+- the checkout exactly matches both values, the commit is in `master` and it
+  descends from the pinned provenance-guard baseline `31027db…`;
+- the selected source still contains the root-owned provenance files and the
+  protected entrypoint's exact SHA/tree comparison contract;
 - integrated `CI` and `Release quality` push workflows succeeded for that
   commit;
-- release-readiness passes and the Linux AMD64 image is published by digest.
+- release-readiness passes and the Linux AMD64 image is published by digest;
+- the image pulled back by that digest reports Linux AMD64, the non-root user,
+  exact source labels/files, read-only root-owned provenance paths and a
+  byte-identical protected entrypoint before the workflow writes a receipt.
+
+Do not publish a source before `31027db…`, even if it is an ancestor of
+`master` and its historical CI was green. Those images predate the startup
+comparison and cannot satisfy the current receipt contract.
 
 The image repository is fixed to
 `ghcr.io/mksegr/walking-rpg-backend`. Because the source repository is public

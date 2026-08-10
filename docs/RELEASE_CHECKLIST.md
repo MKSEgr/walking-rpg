@@ -22,7 +22,9 @@ production signing, physical-device, stage, real-restore или store evidence.
 ## Artifact gate
 
 - [ ] Backend image опубликован protected manual workflow из approved
-      `master` SHA/tree; GHCR digest и receipt artifact checksum проверены.
+      `master` SHA/tree не раньше pinned provenance baseline `31027db…`; image
+      labels/files, non-root user и byte-identical protected entrypoint
+      проверены до выдачи receipt, GHCR digest и artifact checksum совпадают.
 - [ ] Stage App Spec содержит этот immutable digest, не Git branch/image tag;
       embedded source SHA/tree совпадают с approved runtime values.
 - [ ] Проверены metadata и SHA-256.

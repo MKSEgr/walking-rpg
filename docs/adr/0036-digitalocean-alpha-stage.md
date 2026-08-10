@@ -106,8 +106,9 @@ rollback.
   [`backend/docker-entrypoint.sh`](../../backend/docker-entrypoint.sh) — Java 21
   image, source provenance guard, non-root runtime и pgJDBC CA delivery.
 - [`publish-backend-release-candidate.yml`](../../.github/workflows/publish-backend-release-candidate.yml)
-  — manual protected publisher для exact master SHA/tree и immutable GHCR
-  digest.
+  — manual protected publisher для exact master SHA/tree не раньше pinned
+  provenance baseline; immutable GHCR digest повторно проверяется по embedded
+  labels/files, non-root user и entrypoint до выдачи receipt.
 - [`DIGITALOCEAN_STAGE_RUNBOOK.md`](../DIGITALOCEAN_STAGE_RUNBOOK.md) — owner
   deployment, verification, stop и rollback procedure.
 

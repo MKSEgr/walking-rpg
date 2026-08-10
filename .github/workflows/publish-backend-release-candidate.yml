@@ -32,13 +32,17 @@ jobs:
     env:
       SOURCE_GIT_SHA: ${{ inputs.source_sha }}
       APPROVED_SOURCE_GIT_TREE: ${{ inputs.source_tree }}
+      PROVENANCE_GUARD_BASELINE_SHA: 31027db88250e83112434db8cfcd85ed2b31fa8a
     steps:
       - name: Validate immutable source inputs
         shell: bash
         run: |
           set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/master'
+          test "$GITHUB_WORKFLOW_SHA" = "$GITHUB_SHA"
           [[ "$SOURCE_GIT_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$APPROVED_SOURCE_GIT_TREE" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PROVENANCE_GUARD_BASELINE_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$SOURCE_GIT_SHA" != 0000000000000000000000000000000000000000
           test "$APPROVED_SOURCE_GIT_TREE" != 0000000000000000000000000000000000000000
 
@@ -58,7 +62,23 @@ jobs:
           test "$actual_sha" = "$SOURCE_GIT_SHA"
           test "$actual_tree" = "$APPROVED_SOURCE_GIT_TREE"
           git fetch --no-tags origin master
+          test "$GITHUB_SHA" = "$(git rev-parse origin/master)"
+          git cat-file -e "$PROVENANCE_GUARD_BASELINE_SHA^{commit}"
+          git merge-base --is-ancestor \
+            "$PROVENANCE_GUARD_BASELINE_SHA" "$SOURCE_GIT_SHA"
           git merge-base --is-ancestor "$SOURCE_GIT_SHA" origin/master
+          grep -Fq \
+            '> /usr/local/share/walking-rpg/source-git-sha' \
+            backend/Dockerfile
+          grep -Fq \
+            'readonly IMAGE_PROVENANCE_DIRECTORY=/usr/local/share/walking-rpg' \
+            backend/docker-entrypoint.sh
+          grep -Fq \
+            'container source Git SHA does not match the approved deployment SHA' \
+            backend/docker-entrypoint.sh
+          grep -Fq \
+            'container source Git tree does not match the approved deployment tree' \
+            backend/docker-entrypoint.sh
           printf 'source_sha=%s\n' "$actual_sha" >> "$GITHUB_OUTPUT"
           printf 'source_tree=%s\n' "$actual_tree" >> "$GITHUB_OUTPUT"
 
@@ -126,13 +146,83 @@ jobs:
             SOURCE_GIT_SHA=${{ steps.source.outputs.source_sha }}
             SOURCE_GIT_TREE=${{ steps.source.outputs.source_tree }}
 
-      - name: Verify immutable digest and write redacted receipt
-        id: receipt
+      - name: Verify published image provenance contract
+        id: verify_image
         env:
           IMAGE_NAME: ${{ steps.image.outputs.name }}
           IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
           VERIFIED_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
           VERIFIED_SOURCE_TREE: ${{ steps.source.outputs.source_tree }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          image_reference="$IMAGE_NAME@$IMAGE_DIGEST"
+          inspection_directory="$(mktemp -d)"
+          container_id=''
+          cleanup() {
+            if [ -n "$container_id" ]; then
+              docker rm --force "$container_id" >/dev/null 2>&1 || true
+            fi
+            rm -rf -- "$inspection_directory"
+          }
+          trap cleanup EXIT HUP INT TERM
+
+          docker pull --platform linux/amd64 "$image_reference" >/dev/null
+          test "$(docker image inspect --format '{{.Os}}/{{.Architecture}}' \
+            "$image_reference")" = 'linux/amd64'
+          test "$(docker image inspect --format '{{.Config.User}}' \
+            "$image_reference")" = 'walkingrpg:walkingrpg'
+          test "$(docker image inspect --format '{{json .Config.Entrypoint}}' \
+            "$image_reference")" = '["/usr/local/bin/walking-rpg-entrypoint"]'
+          test "$(docker image inspect --format \
+            '{{index .Config.Labels "org.opencontainers.image.revision"}}' \
+            "$image_reference")" = "$VERIFIED_SOURCE_SHA"
+          test "$(docker image inspect --format \
+            '{{index .Config.Labels "game.stepbeyond.source-tree"}}' \
+            "$image_reference")" = "$VERIFIED_SOURCE_TREE"
+
+          container_id="$(docker create --platform linux/amd64 "$image_reference")"
+          docker cp \
+            "$container_id:/usr/local/share/walking-rpg/source-git-sha" \
+            "$inspection_directory/source-git-sha"
+          docker cp \
+            "$container_id:/usr/local/share/walking-rpg/source-git-tree" \
+            "$inspection_directory/source-git-tree"
+          docker cp \
+            "$container_id:/usr/local/bin/walking-rpg-entrypoint" \
+            "$inspection_directory/walking-rpg-entrypoint"
+
+          test "$(cat "$inspection_directory/source-git-sha")" = \
+            "$VERIFIED_SOURCE_SHA"
+          test "$(cat "$inspection_directory/source-git-tree")" = \
+            "$VERIFIED_SOURCE_TREE"
+          cmp -- \
+            backend/docker-entrypoint.sh \
+            "$inspection_directory/walking-rpg-entrypoint"
+          grep -Fq \
+            'container source Git SHA does not match the approved deployment SHA' \
+            "$inspection_directory/walking-rpg-entrypoint"
+          grep -Fq \
+            'container source Git tree does not match the approved deployment tree' \
+            "$inspection_directory/walking-rpg-entrypoint"
+          test "$(docker run --rm --entrypoint /usr/bin/stat "$image_reference" \
+            -c '%u:%g:%a' /usr/local/share/walking-rpg)" = '0:0:555'
+          test "$(docker run --rm --entrypoint /usr/bin/stat "$image_reference" \
+            -c '%u:%g:%a' /usr/local/share/walking-rpg/source-git-sha)" = \
+            '0:0:444'
+          test "$(docker run --rm --entrypoint /usr/bin/stat "$image_reference" \
+            -c '%u:%g:%a' /usr/local/bin/walking-rpg-entrypoint)" = '0:0:555'
+          printf 'image_digest=%s\n' "$IMAGE_DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Verify immutable digest and write redacted receipt
+        id: receipt
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.verify_image.outputs.image_digest }}
+          VERIFIED_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          VERIFIED_SOURCE_TREE: ${{ steps.source.outputs.source_tree }}
+          PROVENANCE_GUARD_BASELINE_SHA: ${{ env.PROVENANCE_GUARD_BASELINE_SHA }}
         shell: bash
         run: |
           set -euo pipefail
@@ -149,6 +239,9 @@ jobs:
               "schemaVersion": "walking-rpg-backend-image-receipt-v1",
               "sourceGitSha": os.environ["VERIFIED_SOURCE_SHA"],
               "sourceGitTree": os.environ["VERIFIED_SOURCE_TREE"],
+              "provenanceGuardBaselineSha": os.environ[
+                  "PROVENANCE_GUARD_BASELINE_SHA"
+              ],
               "image": os.environ["IMAGE_NAME"],
               "digest": os.environ["IMAGE_DIGEST"],
               "platform": "linux/amd64",
@@ -187,6 +280,7 @@ jobs:
           IMAGE_DIGEST: ${{ steps.receipt.outputs.image_digest }}
           VERIFIED_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
           VERIFIED_SOURCE_TREE: ${{ steps.source.outputs.source_tree }}
+          PROVENANCE_GUARD_BASELINE_SHA: ${{ env.PROVENANCE_GUARD_BASELINE_SHA }}
           RECEIPT_ARTIFACT_DIGEST: ${{ steps.upload-receipt.outputs.artifact-digest }}
         shell: bash
         run: |
@@ -194,6 +288,8 @@ jobs:
             printf '### Backend release candidate\n\n'
             printf -- '- Source commit: `%s`\n' "$VERIFIED_SOURCE_SHA"
             printf -- '- Source tree: `%s`\n' "$VERIFIED_SOURCE_TREE"
+            printf -- '- Provenance guard baseline: `%s`\n' \
+              "$PROVENANCE_GUARD_BASELINE_SHA"
             printf -- '- Image: `%s@%s`\n' "$IMAGE_NAME" "$IMAGE_DIGEST"
             printf -- '- Receipt artifact digest: `%s`\n' "$RECEIPT_ARTIFACT_DIGEST"
           } >> "$GITHUB_STEP_SUMMARY"
