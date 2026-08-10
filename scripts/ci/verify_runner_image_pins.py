@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
@@ -16,6 +17,7 @@ EXPECTED_PYYAML_VERSION = "6.0.3"
 APPROVED_RUNNER_LABELS = frozenset({"ubuntu-24.04", "macos-26"})
 STRING_TAG = "tag:yaml.org,2002:str"
 MERGE_TAG = "tag:yaml.org,2002:merge"
+JOB_ID_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
 
 
 def parser_version_error() -> str | None:
@@ -136,9 +138,14 @@ def _runner_errors(path: Path, root: Node) -> list[str]:
 
     errors: list[str] = []
     for job_key, job in jobs.value:
-        if not isinstance(job_key, ScalarNode) or job_key.tag != STRING_TAG:
+        if (
+            not isinstance(job_key, ScalarNode)
+            or JOB_ID_PATTERN.fullmatch(job_key.value) is None
+        ):
             errors.append(
-                f"{_location(path, job_key)}: workflow job id must be a string"
+                f"{_location(path, job_key)}: workflow job id must start with "
+                "a letter or underscore and contain only letters, digits, "
+                "hyphens or underscores"
             )
             continue
         job_name = job_key.value
