@@ -18,7 +18,8 @@ connection with these exact settings:
 - discovery URL
   `https://oauth.telegram.org/.well-known/openid-configuration`;
 - back-channel Authorization Code flow;
-- PKCE `S256`;
+- PKCE method `S256`, serialized as Auth0's lowercase connection setting
+  `connection_settings.pkce: "s256"`;
 - scopes exactly `openid profile`;
 - explicit ID-token mapping for `name`, `preferred_username` and `picture`;
 - visible Universal Login button;
@@ -28,6 +29,11 @@ connection with these exact settings:
 Telegram does not expose a separate UserInfo endpoint. The connection therefore
 maps only claims from the validated Telegram ID token and does not configure a
 `userinfo_scope`.
+
+Do not change the Auth0 option to uppercase `S256`: Telegram/OIDC discovery
+names the code-challenge method `S256`, while Auth0's Management API accepts
+the configuration enum `s256` (or `auto`). The committed explicit value keeps
+the intended SHA-256 method and is covered by the contract test.
 
 Do not add `phone` or `telegram:bot_access`. Step Beyond neither needs the
 user's phone number nor permission for the bot to send direct messages during

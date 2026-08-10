@@ -19,12 +19,11 @@ ingress:
 
 services:
   - name: backend
-    github:
-      repo: MKSEgr/walking-rpg
-      branch: master
-      deploy_on_push: false
-    source_dir: /
-    dockerfile_path: backend/Dockerfile
+    image:
+      registry_type: GHCR
+      registry: mksegr
+      repository: walking-rpg-backend
+      digest: "@@BACKEND_IMAGE_DIGEST@@"
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-1gb
     http_port: 8080
@@ -67,6 +66,14 @@ services:
     envs:
       - key: SPRING_PROFILES_ACTIVE
         value: stage
+        scope: RUN_TIME
+        type: GENERAL
+      - key: EXPECTED_SOURCE_GIT_SHA
+        value: "@@BACKEND_SOURCE_GIT_SHA@@"
+        scope: RUN_TIME
+        type: GENERAL
+      - key: EXPECTED_SOURCE_GIT_TREE
+        value: "@@BACKEND_SOURCE_GIT_TREE@@"
         scope: RUN_TIME
         type: GENERAL
       - key: POSTGRES_HOST

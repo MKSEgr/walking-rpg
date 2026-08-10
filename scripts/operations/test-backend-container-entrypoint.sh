@@ -2,9 +2,11 @@
 set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-ENTRYPOINT="$ROOT_DIR/backend/docker-entrypoint.sh"
+ENTRYPOINT_SOURCE="$ROOT_DIR/backend/docker-entrypoint.sh"
 TEST_TMPDIR=${TMPDIR:-$ROOT_DIR}
 TEST_ROOT=$(mktemp -d "$TEST_TMPDIR/walking-rpg-entrypoint.XXXXXXXXXX")
+ENTRYPOINT="$TEST_ROOT/walking-rpg-entrypoint"
+PROVENANCE_DIRECTORY="$TEST_ROOT/provenance"
 
 cleanup() {
   rm -rf -- "$TEST_ROOT"
@@ -25,11 +27,24 @@ chmod 0555 "$TEST_ROOT/bin/java"
 VALID_CA='-----BEGIN CERTIFICATE-----
 YWxwaGEtY2E=
 -----END CERTIFICATE-----'
+SOURCE_GIT_SHA=1111111111111111111111111111111111111111
+SOURCE_GIT_TREE=2222222222222222222222222222222222222222
+
+mkdir -p "$PROVENANCE_DIRECTORY"
+printf '%s\n' "$SOURCE_GIT_SHA" > "$PROVENANCE_DIRECTORY/source-git-sha"
+printf '%s\n' "$SOURCE_GIT_TREE" > "$PROVENANCE_DIRECTORY/source-git-tree"
+sed \
+  "s#^readonly IMAGE_PROVENANCE_DIRECTORY=.*#readonly IMAGE_PROVENANCE_DIRECTORY=$PROVENANCE_DIRECTORY#" \
+  "$ENTRYPOINT_SOURCE" > "$ENTRYPOINT"
+chmod 0555 "$ENTRYPOINT"
 
 HOME="$TEST_ROOT/home" \
 PATH="$TEST_ROOT/bin:$PATH" \
 ENTRYPOINT_TEST_ARGUMENTS="$TEST_ROOT/java-arguments" \
 SPRING_PROFILES_ACTIVE=stage \
+EXPECTED_SOURCE_GIT_SHA="$SOURCE_GIT_SHA" \
+EXPECTED_SOURCE_GIT_TREE="$SOURCE_GIT_TREE" \
+IMAGE_PROVENANCE_DIRECTORY=/runtime-override-must-be-ignored \
 POSTGRES_HOST=alpha-db.example.com \
 POSTGRES_PORT=25060 \
 POSTGRES_DB=walking_rpg \
@@ -52,6 +67,8 @@ if HOME="$TEST_ROOT/rejected-home" \
   PATH="$TEST_ROOT/bin:$PATH" \
   ENTRYPOINT_TEST_ARGUMENTS="$TEST_ROOT/rejected-arguments" \
   SPRING_PROFILES_ACTIVE=local \
+  EXPECTED_SOURCE_GIT_SHA="$SOURCE_GIT_SHA" \
+  EXPECTED_SOURCE_GIT_TREE="$SOURCE_GIT_TREE" \
   POSTGRES_HOST=alpha-db.example.com \
   POSTGRES_PORT=25060 \
   POSTGRES_DB=walking_rpg \
@@ -67,6 +84,8 @@ if HOME="$TEST_ROOT/rejected-ca-home" \
   PATH="$TEST_ROOT/bin:$PATH" \
   ENTRYPOINT_TEST_ARGUMENTS="$TEST_ROOT/rejected-ca-arguments" \
   SPRING_PROFILES_ACTIVE=stage \
+  EXPECTED_SOURCE_GIT_SHA="$SOURCE_GIT_SHA" \
+  EXPECTED_SOURCE_GIT_TREE="$SOURCE_GIT_TREE" \
   POSTGRES_HOST=alpha-db.example.com \
   POSTGRES_PORT=25060 \
   POSTGRES_DB=walking_rpg \
@@ -75,6 +94,25 @@ if HOME="$TEST_ROOT/rejected-ca-home" \
   POSTGRES_CA_CERT='not-a-certificate' \
     "$ENTRYPOINT" >/dev/null 2>&1; then
   echo 'entrypoint accepted an invalid CA certificate' >&2
+  exit 1
+fi
+
+if HOME="$TEST_ROOT/rejected-source-home" \
+  PATH="$TEST_ROOT/bin:$PATH" \
+  ENTRYPOINT_TEST_ARGUMENTS="$TEST_ROOT/rejected-source-arguments" \
+  SPRING_PROFILES_ACTIVE=stage \
+  EXPECTED_SOURCE_GIT_SHA=3333333333333333333333333333333333333333 \
+  EXPECTED_SOURCE_GIT_TREE="$SOURCE_GIT_TREE" \
+  IMAGE_PROVENANCE_DIRECTORY="$TEST_ROOT/forged-provenance" \
+  IMAGE_SOURCE_GIT_SHA=3333333333333333333333333333333333333333 \
+  POSTGRES_HOST=alpha-db.example.com \
+  POSTGRES_PORT=25060 \
+  POSTGRES_DB=walking_rpg \
+  POSTGRES_USER=walking_rpg_app \
+  POSTGRES_PASSWORD=not-a-real-password \
+  POSTGRES_CA_CERT="$VALID_CA" \
+    "$ENTRYPOINT" >/dev/null 2>&1; then
+  echo 'entrypoint accepted an image built from another source commit' >&2
   exit 1
 fi
 

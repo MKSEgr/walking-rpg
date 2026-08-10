@@ -13,7 +13,9 @@ identity data or health data.
 | UTC start / finish | `BLOCKED` |
 | Hosting / Release Owner | `@MKSEgr` |
 | Approved source SHA / tree | `BLOCKED` |
-| App deployment ID / source commit | `BLOCKED` |
+| GHCR image / immutable digest | `BLOCKED` |
+| Publisher workflow / receipt artifact digest | `BLOCKED` |
+| App deployment ID / deployed image digest | `BLOCKED` |
 | Previous safe deployment ID | `BLOCKED` |
 | Backend component / size / count | `backend` / `apps-s-1vcpu-1gb` / `1` |
 | PostgreSQL engine / topology | `17` / one Standard node, no standby |
@@ -23,7 +25,8 @@ identity data or health data.
 
 | Control | Result | Evidence link |
 |---|---|---|
-| Autodeploy disabled and exact source matched | `BLOCKED` | `BLOCKED` |
+| No Git branch/image tag; exact image digest matched | `BLOCKED` | `BLOCKED` |
+| Embedded source SHA/tree matched approved receipt at startup | `BLOCKED` | `BLOCKED` |
 | Custom DB/database role; no admin role in app | `BLOCKED` | `BLOCKED` |
 | Trusted Sources limited to reviewed app/drill source | `BLOCKED` | `BLOCKED` |
 | Canonical DNS + provider CA + `sslmode=verify-full` | `BLOCKED` | `BLOCKED` |

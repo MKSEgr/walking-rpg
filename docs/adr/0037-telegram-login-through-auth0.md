@@ -45,6 +45,11 @@ The Auth0 connection contract is committed as
 | Availability | only the environment's Step Beyond Native Application |
 | Domain promotion | disabled |
 
+`S256` above is the protocol method advertised by OIDC discovery. Auth0's
+connection JSON serializes that choice as the documented lowercase enum
+`connection_settings.pkce: "s256"`; changing this configuration property to
+uppercase is not part of the accepted contract.
+
 The connection must not request `phone` or `telegram:bot_access`. Authentication
 does not need a phone number and does not grant the bot permission to send
 messages. Client ID, Client Secret, Auth0 Management API tokens and rendered

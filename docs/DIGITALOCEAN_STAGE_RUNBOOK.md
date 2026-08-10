@@ -17,7 +17,7 @@ repository CI cannot execute these steps or mark TASK-006 validated.
 Stop immediately on any of the following:
 
 - App Spec contains an unresolved `@@...@@` token;
-- source commit differs from the approved candidate;
+- image digest or embedded source SHA/tree differs from the approved candidate;
 - database uses `sslmode=require`, an IP literal or a connection URL containing
   credentials;
 - protected container starts without the managed CA;
@@ -42,7 +42,9 @@ Record owner approval for:
 Choose and record:
 
 - approved source SHA and tree;
-- new release-candidate name; do not move `alpha-rc1`;
+- successor release-candidate name; do not move or relabel `alpha-rc1`;
+- immutable `ghcr.io/mksegr/walking-rpg-backend@sha256:...` digest and its
+  successful publisher workflow/receipt;
 - database cluster name, database name and custom user;
 - previous safe App Platform deployment ID, if this is an update;
 - maintenance window and planned UTC deployment interval.
@@ -67,12 +69,45 @@ as a Trusted Source. Do not disable Trusted Sources as a workaround. Attach the
 app to the database and allow only that app plus a time-bounded drill source
 when a restore check explicitly requires one.
 
-## 3. Render the reviewed App Spec
+## 3. Publish the approved backend image
+
+The App Platform source must be an OCI image digest, not a Git branch or image
+tag. A manual App Platform deployment from a branch pulls its current head,
+which can advance after approval and before Flyway starts. Digests identify the
+exact image before App Platform creates a deployment.
+
+Before the first publication, configure the GitHub environment
+`stage-release` with `@MKSEgr` as required reviewer. Dispatch
+**Publish backend release candidate** from the repository default branch and
+enter the approved full source commit and tree SHAs. The workflow fails unless:
+
+- both inputs are lowercase 40-character object IDs;
+- the checkout exactly matches both values and the commit is in `master`;
+- integrated `CI` and `Release quality` push workflows succeeded for that
+  commit;
+- release-readiness passes and the Linux AMD64 image is published by digest.
+
+The image repository is fixed to
+`ghcr.io/mksegr/walking-rpg-backend`. Because the source repository is public
+and the reviewed App Spec contains no registry credential, make this package
+public before applying the spec. Do not paste a GHCR token into the App Spec,
+issue, PR or evidence. If a future decision requires a private image, add a
+separate protected-credential design before changing this contract.
+
+Download the workflow's `backend-image-receipt-<source-sha>` artifact, verify
+its companion SHA-256 file, and record the workflow URL, artifact digest,
+source SHA/tree and returned `sha256:...` image digest. A Git tag or image tag
+is not a substitute for this digest.
+
+## 4. Render the reviewed App Spec
 
 Set only non-secret identifiers and public OIDC configuration in a private
 operator shell:
 
 ```bash
+export STAGE_BACKEND_IMAGE_DIGEST=sha256:REPLACE_WITH_64_LOWERCASE_HEX
+export STAGE_BACKEND_SOURCE_GIT_SHA=REPLACE_WITH_40_LOWERCASE_HEX
+export STAGE_BACKEND_SOURCE_GIT_TREE=REPLACE_WITH_40_LOWERCASE_HEX
 export STAGE_POSTGRES_CLUSTER_NAME=walking-rpg-alpha-pg-fra
 export STAGE_POSTGRES_DATABASE=walking_rpg
 export STAGE_POSTGRES_USER=walking_rpg_app
@@ -87,18 +122,23 @@ python3 scripts/operations/render_digitalocean_stage_spec.py > "$rendered_spec"
 
 Inspect the diff against `infra/digitalocean/app.yaml.template`. The rendered
 file must contain no credential or CA value: database secrets remain
-`${alpha-db.*}` bindable references. Delete the rendered file after applying
-it. Never commit it.
+`${alpha-db.*}` bindable references. It must contain the exact approved image
+digest and no `github`, `branch`, `tag` or `deploy_on_push` source. Delete the
+rendered file after applying it. Never commit it.
 
 Create/update the app using the reviewed spec through the DigitalOcean control
 plane or authenticated `doctl`. Creating resources is an owner-approved paid
 action; the repository workflow does not do it automatically.
 
-## 4. Bind database and identity
+## 5. Bind database and identity
 
 Confirm the resulting App Spec still has:
 
-- `deploy_on_push: false`;
+- fixed public GHCR repository and the approved immutable image digest, with no
+  moving Git branch or image tag;
+- `EXPECTED_SOURCE_GIT_SHA` and `EXPECTED_SOURCE_GIT_TREE` matching the image
+  publisher receipt; the protected entrypoint rejects any mismatch with the
+  provenance embedded during the image build;
 - one 1 GiB backend instance;
 - database component `alpha-db`, PostgreSQL 17, the custom database/user;
 - `POSTGRES_PASSWORD` and `POSTGRES_CA_CERT` as encrypted runtime bindables;
@@ -110,10 +150,12 @@ Confirm the resulting App Spec still has:
 Add the App as the database Trusted Source. No build step may connect to the
 database; all bindables are runtime-only.
 
-## 5. Deployment verification
+## 6. Deployment verification
 
-Record the App Platform deployment ID and `source_commit_hash`. Compare it with
-the approved 40-character SHA and tree before any tester receives a build.
+Record the App Platform deployment ID and the image digest retained in the
+deployed App Spec. Compare the digest with the approved publisher receipt
+before any tester receives a build. Confirm startup succeeded with the same
+embedded source SHA/tree; a mismatch must stop before Java and Flyway start.
 
 Verify from an external network:
 
@@ -156,7 +198,7 @@ true; latest successful Flyway version is repository-current. The JDBC startup
 guard, canonical host, provider CA and `sslmode=verify-full` configuration are
 recorded together because `pg_stat_ssl` alone cannot prove hostname checking.
 
-## 6. Observability gate
+## 7. Observability gate
 
 Before marking deployment validated:
 
@@ -174,7 +216,7 @@ Before marking deployment validated:
 Do not add a log token to the repository App Spec. Configure it as an encrypted
 provider value and retain only the destination name/policy in evidence.
 
-## 7. Backup, restore and rollback boundary
+## 8. Backup, restore and rollback boundary
 
 TASK-006 requires a usable rollback target but does not replace TASK-009 and
 TASK-010 drills:
@@ -192,7 +234,7 @@ Ordinary rollback never uses a destructive database restore. Once new content
 or schema has accepted writes incompatible with an older binary, use a forward
 fix.
 
-## 8. Evidence and completion
+## 9. Evidence and completion
 
 Fill
 [`digitalocean-stage-deployment-template.md`](evidence/digitalocean-stage-deployment-template.md)

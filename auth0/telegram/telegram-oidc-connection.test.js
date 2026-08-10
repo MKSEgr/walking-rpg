@@ -22,6 +22,7 @@ test('Telegram uses the reviewed Auth0 OIDC and PKCE boundary', () => {
     'https://oauth.telegram.org/.well-known/openid-configuration',
   );
   assert.deepEqual(connection.options.connection_settings, {pkce: 's256'});
+  assert.notEqual(connection.options.connection_settings.pkce, 'S256');
 });
 
 test('Telegram requests only the minimum identity scopes', () => {

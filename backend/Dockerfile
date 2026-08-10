@@ -20,6 +20,12 @@ FROM eclipse-temurin:21-jre-jammy
 
 ARG APP_UID=10001
 ARG APP_GID=10001
+ARG SOURCE_GIT_SHA=unknown
+ARG SOURCE_GIT_TREE=unknown
+
+LABEL org.opencontainers.image.source="https://github.com/MKSEgr/walking-rpg" \
+      org.opencontainers.image.revision="${SOURCE_GIT_SHA}" \
+      game.stepbeyond.source-tree="${SOURCE_GIT_TREE}"
 
 RUN groupadd --gid "${APP_GID}" walkingrpg \
     && useradd \
@@ -29,7 +35,16 @@ RUN groupadd --gid "${APP_GID}" walkingrpg \
        --home-dir /home/walkingrpg \
        --shell /usr/sbin/nologin \
        walkingrpg \
-    && install -d -o walkingrpg -g walkingrpg -m 0700 /app
+    && install -d -o walkingrpg -g walkingrpg -m 0700 /app \
+    && install -d -o root -g root -m 0755 /usr/local/share/walking-rpg \
+    && printf '%s\n' "${SOURCE_GIT_SHA}" \
+       > /usr/local/share/walking-rpg/source-git-sha \
+    && printf '%s\n' "${SOURCE_GIT_TREE}" \
+       > /usr/local/share/walking-rpg/source-git-tree \
+    && chmod 0444 \
+       /usr/local/share/walking-rpg/source-git-sha \
+       /usr/local/share/walking-rpg/source-git-tree \
+    && chmod 0555 /usr/local/share/walking-rpg
 
 COPY --from=build --chown=walkingrpg:walkingrpg --chmod=0444 \
     /workspace/walking-rpg-backend.jar /app/walking-rpg-backend.jar
