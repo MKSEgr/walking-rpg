@@ -25,6 +25,13 @@ Current engineering baseline:
   factory. Local Compose uses the same image as an exact readable
   `tag@sha256` reference; direct constructors, moving refs and digest drift are
   rejected by CI.
+- GitHub-hosted jobs use reviewed versioned `ubuntu-24.04` and `macos-26`
+  labels. Mutable `-latest`, expressions, collections and unreviewed runner
+  labels are rejected across every workflow; runner OS migrations require a
+  separate reviewed PR and the full platform matrix.
+- Hosted runner labels do not pin GitHub's weekly VM image release. The exact
+  image version remains recorded in each job log; full VM-image immutability
+  would require a separately governed self-hosted runner contract.
 - Protected signing uses the post-merge `master` SHA after its push checks
   pass. CODEOWNER provenance is linked through equality with the approved PR
   head tree, so squash/rebase merge does not create a false same-SHA claim.

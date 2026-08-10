@@ -16,6 +16,9 @@
 5. Не хранить signing material в репозитории.
 6. Разделять `CODE_COMPLETE`, `EXTERNAL_VALIDATION_REQUIRED` и `VALIDATED`.
 7. Требовать ручной owner approval перед protected signing/publishing.
+8. Выполнять protected jobs только на явно выбранных versioned runner labels:
+   `ubuntu-24.04` и `macos-26`; `-latest` и непросмотренные labels отклонять
+   структурным repository gate во всех workflow.
 
 ## Последствия
 
@@ -23,3 +26,6 @@
 - CI-артефакты сами по себе не публикуемы;
 - store/device readiness подтверждается checklist и evidence;
 - повторная генерация metadata для тех же inputs побайтно идентична.
+- major OS/architecture runner boundary не меняется через migration alias без
+  review; weekly GitHub-hosted image updates остаются явно зафиксированным
+  ограничением и отражаются exact image version в job log.

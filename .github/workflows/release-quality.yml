@@ -26,7 +26,7 @@ env:
 jobs:
   readiness:
     name: Release quality · policy and metadata
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Check out repository
@@ -83,7 +83,7 @@ jobs:
 
   backend-package:
     name: Release quality · backend package
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -140,7 +140,7 @@ jobs:
 
   backup-restore-drill:
     name: Release quality · synthetic backup/restore drill
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       EXPECTED_SOURCE_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -203,7 +203,7 @@ jobs:
 
   android-release:
     name: Release quality · Android unsigned AAB
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     defaults:
       run:
@@ -271,7 +271,7 @@ jobs:
 
   ios-release:
     name: Release quality · iOS no-codesign app
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 40
     defaults:
       run:

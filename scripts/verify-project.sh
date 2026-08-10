@@ -18,7 +18,9 @@ for file in \
   "$ROOT_DIR/scripts/ci/verify_postgres_image_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_postgres_image_pins.py" \
   "$ROOT_DIR/scripts/ci/verify_action_pins.py" \
-  "$ROOT_DIR/scripts/ci/test_verify_action_pins.py"; do
+  "$ROOT_DIR/scripts/ci/test_verify_action_pins.py" \
+  "$ROOT_DIR/scripts/ci/verify_runner_image_pins.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_runner_image_pins.py"; do
   if [ ! -f "$file" ]; then
     echo "Missing: $file" >&2
     exit 1
@@ -36,6 +38,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_postgres_ima
 printf '%s\n' "Checking immutable GitHub Action references..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_action_pins.py"
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_action_pins.py"
+
+printf '%s\n' "Checking explicit GitHub-hosted runner OS labels..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_runner_image_pins.py"
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_runner_image_pins.py"
 
 printf '%s\n' "Project structure is complete."
 
