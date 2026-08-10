@@ -14,6 +14,12 @@ Current engineering baseline:
   are disposable and never satisfy production signing evidence.
 - Each release metadata/backend/mobile candidate set must be built from one
   exact source commit and Git tree.
+- Protected backend build stages use reviewed human-readable Temurin tags bound
+  to exact multi-platform OCI index digests; tag-only, digest-only, variable and
+  platform-expression refs are rejected by CI.
+- The publisher independently requires its current JDK/JRE pins in the selected
+  source before registry login. Historical source with older pins is not
+  rebuilt; rollback selects an already published immutable application digest.
 - Protected signing uses the post-merge `master` SHA after its push checks
   pass. CODEOWNER provenance is linked through equality with the approved PR
   head tree, so squash/rebase merge does not create a false same-SHA claim.

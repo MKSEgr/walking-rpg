@@ -105,6 +105,8 @@ for file in \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
   scripts/ci/action-pin-policy-requirements.txt \
+  scripts/ci/verify_backend_base_pins.py \
+  scripts/ci/test_verify_backend_base_pins.py \
   scripts/ci/verify-android-release-config.sh \
   scripts/ci/verify_action_pins.py \
   scripts/ci/test_verify_action_pins.py \
@@ -145,6 +147,10 @@ for workflow in \
 done
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_action_pins.py
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_action_pins.py
+
+printf '%s\n' 'Checking immutable backend container base images...'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_backend_base_pins.py
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_backend_base_pins.py
 
 printf '%s\n' 'Checking authentication boundary...'
 grep -Fq 'spring-boot-starter-security' backend/pom.xml || fail 'Spring Security starter is required'
@@ -274,8 +280,8 @@ for profile in stage prod; do
   grep -Fq 'password: ${POSTGRES_PASSWORD}' "$config" \
     || fail "$profile profile must require a runtime PostgreSQL password"
 done
-grep -Fq 'FROM eclipse-temurin:21-jdk-jammy AS build' backend/Dockerfile || fail 'protected backend container must build with Java 21'
-grep -Fq 'FROM eclipse-temurin:21-jre-jammy' backend/Dockerfile || fail 'protected backend container must use the Java 21 JRE runtime'
+grep -Fq 'FROM eclipse-temurin:21-jdk-jammy@sha256:55fb9bf738f5d9b4a6c01b39337e3070d3e27370dd3c478fd1d5d3cd2233c6d8 AS build' backend/Dockerfile || fail 'protected backend build stage must use the reviewed Temurin JDK index digest'
+grep -Fq 'FROM eclipse-temurin:21-jre-jammy@sha256:3097cbbebb7d490494a98aed2301f284b38f79eba158eef098c6fc8c8af11c23' backend/Dockerfile || fail 'protected backend runtime stage must use the reviewed Temurin JRE index digest'
 grep -Fq 'USER walkingrpg:walkingrpg' backend/Dockerfile || fail 'protected backend container must run as a non-root user'
 grep -Fq 'ENTRYPOINT ["/usr/local/bin/walking-rpg-entrypoint"]' backend/Dockerfile || fail 'protected backend container must use the reviewed entrypoint'
 grep -Fq -- '--tag walking-rpg-backend:release-candidate' .github/workflows/release-quality.yml || fail 'release quality must build the protected backend container'

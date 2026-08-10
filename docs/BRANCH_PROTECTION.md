@@ -40,11 +40,28 @@ Parser закреплён exact version и wheel SHA-256 в
 Rollback возвращает предыдущий reviewed SHA отдельным PR и также требует всех
 проверок.
 
+## Immutable backend base images
+
+Protected `backend/Dockerfile` сохраняет человекочитаемые Eclipse Temurin tags,
+но обе стадии закрепляет на reviewed multi-platform OCI index digest в форме
+`tag@sha256:<64 lowercase hex>`. `scripts/ci/verify_backend_base_pins.py`
+запускается в standard CI и `Release quality`: он требует ровно две стадии в
+согласованном порядке, build alias и exact reviewed JDK/JRE refs. Moving tag,
+digest-only ref, переменная, platform expression, дополнительная стадия или
+другой digest закрывают gate ошибкой.
+
+Обновление base image выполняется отдельным CODEOWNER-reviewed PR. Для каждого
+tag сверяются OCI index digest и upstream metadata, после чего одновременно
+обновляются Dockerfile, policy constants и независимые constants защищённого
+publisher. Старый source с другими pins не пересобирается: rollback использует
+уже опубликованный immutable application image digest.
+
 ## Перед merge
 
 - head PR не изменялся после последнего approval;
 - standard CI зелёный;
 - для release-срезов `Release quality` зелёный;
 - remote Action refs прошли immutable-pin policy;
+- protected backend base images прошли exact-digest policy;
 - временные workflow/overlay-файлы отсутствуют;
 - merge выполняется через `Squash and merge`.

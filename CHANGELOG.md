@@ -6,6 +6,8 @@
 
 ### Fixed
 
+- protected backend JDK/JRE stages закреплены reviewed OCI index digests, а
+  CI и publisher отклоняют moving, malformed или superseded base refs;
 - immutable Action policy структурно разбирает YAML и больше не пропускает
   mutable `uses` через quoted keys, flow mappings или escaped spellings;
 - all remote GitHub Actions, including the protected backend publisher, are

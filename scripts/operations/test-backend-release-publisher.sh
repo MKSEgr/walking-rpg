@@ -3,6 +3,7 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 WORKFLOW="$ROOT_DIR/.github/workflows/publish-backend-release-candidate.yml"
+DOCKERFILE="$ROOT_DIR/backend/Dockerfile"
 
 fail() {
   printf 'Backend publisher contract test failed: %s\n' "$1" >&2
@@ -18,6 +19,29 @@ baseline_count=$(grep -Ec \
 baseline_sha=$(sed -n \
   's/^      PROVENANCE_GUARD_BASELINE_SHA: \([0-9a-f]\{40\}\)$/\1/p' \
   "$WORKFLOW")
+
+jdk_pin_count=$(grep -Ec \
+  '^      APPROVED_JDK_BASE_IMAGE: eclipse-temurin:21-jdk-jammy@sha256:[0-9a-f]{64}$' \
+  "$WORKFLOW" || true)
+[ "$jdk_pin_count" -eq 1 ] \
+  || fail 'workflow must declare exactly one reviewed JDK base image pin'
+jre_pin_count=$(grep -Ec \
+  '^      APPROVED_JRE_BASE_IMAGE: eclipse-temurin:21-jre-jammy@sha256:[0-9a-f]{64}$' \
+  "$WORKFLOW" || true)
+[ "$jre_pin_count" -eq 1 ] \
+  || fail 'workflow must declare exactly one reviewed JRE base image pin'
+
+jdk_base_image=$(sed -n \
+  's/^      APPROVED_JDK_BASE_IMAGE: \(eclipse-temurin:21-jdk-jammy@sha256:[0-9a-f]\{64\}\)$/\1/p' \
+  "$WORKFLOW")
+jre_base_image=$(sed -n \
+  's/^      APPROVED_JRE_BASE_IMAGE: \(eclipse-temurin:21-jre-jammy@sha256:[0-9a-f]\{64\}\)$/\1/p' \
+  "$WORKFLOW")
+[ "$(sed -n '1p' "$DOCKERFILE")" = "FROM $jdk_base_image AS build" ] \
+  || fail 'publisher JDK pin must match the protected Dockerfile'
+grep -Fxq "FROM $jre_base_image" "$DOCKERFILE" \
+  || fail 'publisher JRE pin must match the protected Dockerfile'
+
 git -C "$ROOT_DIR" cat-file -e "$baseline_sha^{commit}" \
   || fail 'pinned provenance baseline is not a repository commit'
 git -C "$ROOT_DIR" merge-base --is-ancestor "$baseline_sha" HEAD \
@@ -51,6 +75,23 @@ grep -Fq 'test "$GITHUB_SHA" = "$(git rev-parse origin/master)"' "$WORKFLOW" \
   || fail 'publisher must reject a master ref that moved after dispatch'
 grep -Fq '"$PROVENANCE_GUARD_BASELINE_SHA" "$SOURCE_GIT_SHA"' "$WORKFLOW" \
   || fail 'publisher must reject source commits before the provenance baseline'
+grep -Fq 'base_instruction_count="$(grep -Eic' "$WORKFLOW" \
+  || fail 'publisher must enumerate every historical source base instruction'
+grep -Fq 'test "$base_instruction_count" -eq 2' "$WORKFLOW" \
+  || fail 'publisher must reject additional historical source stages'
+grep -Fq 'expected_base_instructions="$(printf ' "$WORKFLOW" \
+  || fail 'publisher must require its current reviewed JDK base pin'
+grep -Fq "'FROM %s AS build\\nFROM %s\\n'" "$WORKFLOW" \
+  || fail 'publisher must compare both historical base instructions in order'
+grep -Fq '"$APPROVED_JDK_BASE_IMAGE" "$APPROVED_JRE_BASE_IMAGE")"' \
+  "$WORKFLOW" \
+  || fail 'publisher must require its current reviewed JRE base pin'
+base_guard_line=$(grep -n -F 'base_instruction_count=' "$WORKFLOW" \
+  | cut -d: -f1)
+registry_login_line=$(grep -n -F 'name: Log in to GitHub Container Registry' \
+  "$WORKFLOW" | cut -d: -f1)
+[ "$base_guard_line" -lt "$registry_login_line" ] \
+  || fail 'publisher must verify historical base pins before registry login'
 grep -Fq 'docker pull --platform linux/amd64 "$image_reference"' "$WORKFLOW" \
   || fail 'publisher must inspect the image returned by the registry'
 grep -Fq \
