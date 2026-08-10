@@ -33,6 +33,8 @@ jobs:
       SOURCE_GIT_SHA: ${{ inputs.source_sha }}
       APPROVED_SOURCE_GIT_TREE: ${{ inputs.source_tree }}
       PROVENANCE_GUARD_BASELINE_SHA: 31027db88250e83112434db8cfcd85ed2b31fa8a
+      APPROVED_JDK_BASE_IMAGE: eclipse-temurin:21-jdk-jammy@sha256:55fb9bf738f5d9b4a6c01b39337e3070d3e27370dd3c478fd1d5d3cd2233c6d8
+      APPROVED_JRE_BASE_IMAGE: eclipse-temurin:21-jre-jammy@sha256:3097cbbebb7d490494a98aed2301f284b38f79eba158eef098c6fc8c8af11c23
     steps:
       - name: Validate immutable source inputs
         shell: bash
@@ -43,6 +45,8 @@ jobs:
           [[ "$SOURCE_GIT_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$APPROVED_SOURCE_GIT_TREE" =~ ^[0-9a-f]{40}$ ]]
           [[ "$PROVENANCE_GUARD_BASELINE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$APPROVED_JDK_BASE_IMAGE" =~ ^eclipse-temurin:21-jdk-jammy@sha256:[0-9a-f]{64}$ ]]
+          [[ "$APPROVED_JRE_BASE_IMAGE" =~ ^eclipse-temurin:21-jre-jammy@sha256:[0-9a-f]{64}$ ]]
           test "$SOURCE_GIT_SHA" != 0000000000000000000000000000000000000000
           test "$APPROVED_SOURCE_GIT_TREE" != 0000000000000000000000000000000000000000
 
@@ -67,6 +71,14 @@ jobs:
           git merge-base --is-ancestor \
             "$PROVENANCE_GUARD_BASELINE_SHA" "$SOURCE_GIT_SHA"
           git merge-base --is-ancestor "$SOURCE_GIT_SHA" origin/master
+          base_instruction_count="$(grep -Eic \
+            '^[[:space:]]*from[[:space:]]+' backend/Dockerfile)"
+          test "$base_instruction_count" -eq 2
+          actual_base_instructions="$(grep -Ei \
+            '^[[:space:]]*from[[:space:]]+' backend/Dockerfile)"
+          expected_base_instructions="$(printf 'FROM %s AS build\nFROM %s\n' \
+            "$APPROVED_JDK_BASE_IMAGE" "$APPROVED_JRE_BASE_IMAGE")"
+          test "$actual_base_instructions" = "$expected_base_instructions"
           grep -Fq \
             '> /usr/local/share/walking-rpg/source-git-sha' \
             backend/Dockerfile

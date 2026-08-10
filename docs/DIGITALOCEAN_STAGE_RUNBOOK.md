@@ -88,6 +88,9 @@ enter the approved full source commit and tree SHAs. The workflow fails unless:
 - both inputs are lowercase 40-character object IDs;
 - the checkout exactly matches both values, the commit is in `master` and it
   descends from the pinned provenance-guard baseline `31027db…`;
+- the selected Dockerfile contains exactly the current reviewed JDK/JRE
+  `tag@sha256` OCI index pins; an older source with mutable or superseded base
+  refs is rejected before registry login and build;
 - the selected source still contains the root-owned provenance files and the
   protected entrypoint's exact SHA/tree comparison contract;
 - integrated `CI` and `Release quality` push workflows succeeded for that
@@ -109,6 +112,15 @@ direct upstream release tag, inspect its release notes and diff, and require a
 separate CODEOWNER-approved PR plus the complete release gate. Never switch the
 publisher back to a branch or moving tag. If an update fails, restore the
 previous reviewed SHA in another PR and rerun every gate before publication.
+
+Treat a Temurin base-image update as release code too. Resolve the tag to its
+multi-platform OCI index digest through both Docker Hub metadata and the
+registry manifest response; do not substitute an architecture-specific child
+manifest. Update both Dockerfile pins, the CI policy constants and the
+publisher's independent reviewed constants in one CODEOWNER-approved PR, then
+require the complete release gate and real backend container build. Rollback
+uses an already published application image digest; never rebuild historical
+source against a moved or superseded base tag.
 
 The image repository is fixed to
 `ghcr.io/mksegr/walking-rpg-backend`. Because the source repository is public

@@ -13,6 +13,8 @@ for file in \
   "$ROOT_DIR/mobile/ios/Runner/Runner.entitlements" \
   "$ROOT_DIR/docs/ARCHITECTURE.md" \
   "$ROOT_DIR/scripts/ci/action-pin-policy-requirements.txt" \
+  "$ROOT_DIR/scripts/ci/verify_backend_base_pins.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_backend_base_pins.py" \
   "$ROOT_DIR/scripts/ci/verify_action_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_action_pins.py"; do
   if [ ! -f "$file" ]; then
@@ -20,6 +22,10 @@ for file in \
     exit 1
   fi
 done
+
+printf '%s\n' "Checking immutable backend container base images..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_backend_base_pins.py"
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_backend_base_pins.py"
 
 printf '%s\n' "Checking immutable GitHub Action references..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_action_pins.py"

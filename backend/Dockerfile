@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk-jammy AS build
+FROM eclipse-temurin:21-jdk-jammy@sha256:55fb9bf738f5d9b4a6c01b39337e3070d3e27370dd3c478fd1d5d3cd2233c6d8 AS build
 
 WORKDIR /workspace/backend
 
@@ -16,7 +16,7 @@ RUN ./mvnw --batch-mode --no-transfer-progress -DskipTests package \
     && find target -maxdepth 1 -type f -name '*.jar' ! -name '*.original' \
        -exec cp '{}' /workspace/walking-rpg-backend.jar ';'
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jre-jammy@sha256:3097cbbebb7d490494a98aed2301f284b38f79eba158eef098c6fc8c8af11c23
 
 ARG APP_UID=10001
 ARG APP_GID=10001
