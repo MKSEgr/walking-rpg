@@ -112,6 +112,7 @@ for file in \
   scripts/operations/render_digitalocean_stage_spec.py \
   scripts/operations/test_render_digitalocean_stage_spec.py \
   scripts/operations/test-backend-container-entrypoint.sh \
+  scripts/operations/test-backend-release-publisher.sh \
   scripts/operations/verify-backup-restore-evidence.py \
   scripts/operations/test_verify_backup_restore_evidence.py; do
   [ -f "$file" ] || fail "missing $file"
@@ -294,12 +295,14 @@ grep -Fq 'name: Publish backend release candidate' .github/workflows/publish-bac
 grep -Fq 'environment: stage-release' .github/workflows/publish-backend-release-candidate.yml || fail 'backend image publication must use the protected stage release environment'
 grep -Fq 'actions: read' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must have scoped workflow read permission'
 grep -Fq 'packages: write' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must have scoped package write permission'
+grep -Fq 'PROVENANCE_GUARD_BASELINE_SHA: 31027db88250e83112434db8cfcd85ed2b31fa8a' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must pin the first provenance-aware master commit'
 grep -Fq 'git merge-base --is-ancestor "$SOURCE_GIT_SHA" origin/master' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must reject commits outside master history'
 grep -Fq 'run.name === workflowName' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must require integrated push workflows'
 grep -Fq 'git status --porcelain=v1 --untracked-files=all' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must reject a modified build context'
 grep -Fq 'platforms: linux/amd64' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must target the App Platform architecture'
 grep -Fq 'IMAGE_DIGEST" =~ ^sha256:' .github/workflows/publish-backend-release-candidate.yml || fail 'backend publisher must require an immutable OCI digest'
 bash scripts/operations/test-backend-container-entrypoint.sh
+bash scripts/operations/test-backend-release-publisher.sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
   scripts/operations/test_render_digitalocean_stage_spec.py
 STAGE_POSTGRES_CLUSTER_NAME=walking-rpg-alpha-pg-fra \

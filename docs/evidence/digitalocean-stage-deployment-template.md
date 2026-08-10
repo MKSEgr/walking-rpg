@@ -13,6 +13,7 @@ identity data or health data.
 | UTC start / finish | `BLOCKED` |
 | Hosting / Release Owner | `@MKSEgr` |
 | Approved source SHA / tree | `BLOCKED` |
+| Publisher provenance baseline SHA | `BLOCKED` |
 | GHCR image / immutable digest | `BLOCKED` |
 | Publisher workflow / receipt artifact digest | `BLOCKED` |
 | App deployment ID / deployed image digest | `BLOCKED` |
@@ -26,6 +27,8 @@ identity data or health data.
 | Control | Result | Evidence link |
 |---|---|---|
 | No Git branch/image tag; exact image digest matched | `BLOCKED` | `BLOCKED` |
+| Source descended from the publisher provenance baseline | `BLOCKED` | `BLOCKED` |
+| Published image labels/files/user/entrypoint matched | `BLOCKED` | `BLOCKED` |
 | Embedded source SHA/tree matched approved receipt at startup | `BLOCKED` | `BLOCKED` |
 | Custom DB/database role; no admin role in app | `BLOCKED` | `BLOCKED` |
 | Trusted Sources limited to reviewed app/drill source | `BLOCKED` | `BLOCKED` |
