@@ -148,7 +148,10 @@ class VerifyBuildToolWrapperPinsTest(unittest.TestCase):
         )
 
     def _run_maven_fixture(
-        self, *, configured_checksums: tuple[str, ...] | None
+        self,
+        *,
+        configured_checksums: tuple[str, ...] | None,
+        force_jar_extractor: bool = False,
     ) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -198,6 +201,37 @@ class VerifyBuildToolWrapperPinsTest(unittest.TestCase):
         environment["MAVEN_USER_HOME"] = str(cache)
         environment["FAKE_MAVEN_MARKER"] = str(marker)
         environment["TMPDIR"] = str(temporary_root)
+        if force_jar_extractor:
+            restricted_path = root / "jar-only-path"
+            restricted_path.mkdir()
+            for command in (
+                "chmod",
+                "curl",
+                "dirname",
+                "grep",
+                "mkdir",
+                "mktemp",
+                "mv",
+                "python3",
+                "rm",
+                "sed",
+                "sh",
+                "sha256sum",
+            ):
+                executable_path = shutil.which(command)
+                self.assertIsNotNone(executable_path, command)
+                (restricted_path / command).symlink_to(executable_path)
+            jar = restricted_path / "jar"
+            jar.write_text(
+                "#!/bin/sh\n"
+                "set -eu\n"
+                "test \"$1\" = xf\n"
+                "printf '%s\\n' 'fixture jar extractor selected' >&2\n"
+                "exec python3 -m zipfile -e \"$2\" .\n",
+                encoding="utf-8",
+            )
+            jar.chmod(jar.stat().st_mode | stat.S_IXUSR)
+            environment["PATH"] = str(restricted_path)
         result = subprocess.run(
             [str(wrapper), "alpha", "beta"],
             cwd=project,
@@ -215,14 +249,29 @@ class VerifyBuildToolWrapperPinsTest(unittest.TestCase):
         self.assertEqual("fixture:alpha beta\n", result.stdout)
         self.assertTrue(marker.is_file())
 
-    def test_maven_shell_rejects_mismatch_before_install_or_execution(self):
-        result, marker, cache = self._run_maven_fixture(
-            configured_checksums=("0" * 64,)
+    def test_maven_shell_uses_jdk_jar_when_unzip_is_unavailable(self):
+        result, marker, _ = self._run_maven_fixture(
+            configured_checksums=None,
+            force_jar_extractor=True,
         )
-        self.assertNotEqual(0, result.returncode)
-        self.assertIn("Maven distribution SHA-256 mismatch", result.stderr)
-        self.assertFalse(marker.exists())
-        self.assertFalse(any(cache.rglob("bin/mvn")))
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("fixture jar extractor selected", result.stderr)
+        self.assertEqual("fixture:alpha beta\n", result.stdout)
+        self.assertTrue(marker.is_file())
+
+    def test_maven_shell_rejects_mismatch_before_install_or_execution(self):
+        for force_jar_extractor in (False, True):
+            with self.subTest(force_jar_extractor=force_jar_extractor):
+                result, marker, cache = self._run_maven_fixture(
+                    configured_checksums=("0" * 64,),
+                    force_jar_extractor=force_jar_extractor,
+                )
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("Maven distribution SHA-256 mismatch", result.stderr)
+                self.assertNotIn("fixture jar extractor selected", result.stderr)
+                self.assertFalse(marker.exists())
+                self.assertFalse(any(cache.rglob("bin/mvn")))
 
     def test_maven_shell_rejects_missing_duplicate_and_malformed_checksums(self):
         invalid = (

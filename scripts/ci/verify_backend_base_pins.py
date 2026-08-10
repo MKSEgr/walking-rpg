@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject mutable or superseded base images in the protected Dockerfile."""
+"""Reject mutable container inputs in the protected backend Dockerfile."""
 
 from __future__ import annotations
 
@@ -13,6 +13,11 @@ DEFAULT_DOCKERFILE = ROOT / "backend" / "Dockerfile"
 FROM_START = re.compile(r"^\s*from(?:\s|$)", re.IGNORECASE)
 FROM_INSTRUCTION = re.compile(
     r"^FROM\s+(?P<image>\S+)(?:\s+AS\s+(?P<alias>[0-9A-Za-z_.-]+))?$",
+    re.IGNORECASE,
+)
+FORBIDDEN_PACKAGE_MANAGER = re.compile(
+    r"(?<![0-9A-Za-z_.-])(?:apt-get|apt|apk|dnf|yum|microdnf)"
+    r"(?![0-9A-Za-z_.-])",
     re.IGNORECASE,
 )
 
@@ -51,8 +56,24 @@ def _from_lines(source: str) -> tuple[tuple[int, str], ...]:
     )
 
 
+def _package_manager_lines(source: str) -> tuple[int, ...]:
+    normalized = source.replace("\\\r\n", "").replace("\\\n", "")
+    return tuple(
+        line_number
+        for line_number, line in enumerate(normalized.splitlines(), start=1)
+        if not line.lstrip().startswith("#")
+        and FORBIDDEN_PACKAGE_MANAGER.search(line) is not None
+    )
+
+
 def validate_dockerfile_source(source: str, path: Path) -> list[str]:
     errors: list[str] = []
+    for line_number in _package_manager_lines(source):
+        errors.append(
+            f"{path}:{line_number}: protected build must not fetch mutable "
+            "OS packages through a package manager"
+        )
+
     instructions = _from_lines(source)
     if len(instructions) != len(APPROVED_STAGES):
         errors.append(
@@ -115,7 +136,10 @@ def main() -> int:
         for error in errors:
             print(f"Backend base image pin policy error: {error}")
         return 1
-    print("Backend base image pin policy passed for 2 protected stages.")
+    print(
+        "Backend container input policy passed for 2 protected stages "
+        "without package-manager fetches."
+    )
     return 0
 
 

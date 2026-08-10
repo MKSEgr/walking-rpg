@@ -59,6 +59,9 @@ SHELL_REQUIRED_SNIPPETS = (
     'ACTUAL_SHA256_SUM=$(shasum -a 256 "$ARCHIVE"',
     'if [ "$ACTUAL_SHA256_SUM" != "$DISTRIBUTION_SHA256_SUM" ]; then',
     'echo "Maven distribution SHA-256 mismatch"',
+    "elif command -v jar >/dev/null 2>&1; then",
+    '(cd "$TMP_DIR" && jar xf "$ARCHIVE")',
+    'chmod 0555 "$TMP_DIR/apache-maven-$MAVEN_VERSION/bin/mvn"',
 )
 POWERSHELL_REQUIRED_SNIPPETS = (
     '$DistributionSha256Sum = $Properties["distributionSha256Sum"]',
@@ -116,9 +119,18 @@ def validate_launcher_sources(shell_source: str, powershell_source: str) -> list
     shell_verify = shell_source.find(
         'if [ "$ACTUAL_SHA256_SUM" != "$DISTRIBUTION_SHA256_SUM" ]; then'
     )
-    shell_extract = shell_source.find('unzip -q "$ARCHIVE"')
-    if shell_verify < 0 or shell_extract < 0 or shell_verify > shell_extract:
-        errors.append(f"{MAVEN_SHELL}: checksum comparison must precede extraction")
+    shell_extractors = (
+        shell_source.find('unzip -q "$ARCHIVE"'),
+        shell_source.find('jar xf "$ARCHIVE"'),
+    )
+    if (
+        shell_verify < 0
+        or any(extractor < 0 for extractor in shell_extractors)
+        or any(shell_verify > extractor for extractor in shell_extractors)
+    ):
+        errors.append(
+            f"{MAVEN_SHELL}: checksum comparison must precede every extraction path"
+        )
 
     for snippet in POWERSHELL_REQUIRED_SNIPPETS:
         if snippet not in powershell_source:
