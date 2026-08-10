@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.platform.infrastructure;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -85,7 +86,7 @@ class PlatformPersistenceIntegrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:17-alpine");
+            PostgresTestContainer.create();
 
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {

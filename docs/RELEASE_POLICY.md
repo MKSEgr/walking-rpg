@@ -20,6 +20,11 @@ Current engineering baseline:
 - The publisher independently requires its current JDK/JRE pins in the selected
   source before registry login. Historical source with older pins is not
   rebuilt; rollback selects an already published immutable application digest.
+- PostgreSQL integration, migration, operational and synthetic restore tests
+  use one reviewed multi-platform OCI index digest through the shared test
+  factory. Local Compose uses the same image as an exact readable
+  `tag@sha256` reference; direct constructors, moving refs and digest drift are
+  rejected by CI.
 - Protected signing uses the post-merge `master` SHA after its push checks
   pass. CODEOWNER provenance is linked through equality with the approved PR
   head tree, so squash/rebase merge does not create a false same-SHA claim.

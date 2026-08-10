@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.operations;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +36,6 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 import tools.jackson.databind.ObjectMapper;
 
@@ -48,14 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Testcontainers
 class BackupRestoreDrillIntegrationTest {
 
-    private static final String POSTGRES_IMAGE_TAG = "postgres:17.10-alpine3.24";
-    private static final String POSTGRES_IMAGE_DIGEST =
-            "sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193";
-    private static final String POSTGRES_IMAGE =
-            "postgres@" + POSTGRES_IMAGE_DIGEST;
-    private static final DockerImageName POSTGRES_DOCKER_IMAGE =
-            DockerImageName.parse(POSTGRES_IMAGE)
-                    .asCompatibleSubstituteFor("postgres");
+    private static final String POSTGRES_IMAGE_TAG = PostgresTestContainer.IMAGE_TAG;
+    private static final String POSTGRES_IMAGE_DIGEST = PostgresTestContainer.IMAGE_DIGEST;
+    private static final String POSTGRES_IMAGE = PostgresTestContainer.IMAGE;
     private static final String SYNTHETIC_USERNAME = "backup_restore_drill";
     private static final String SYNTHETIC_PASSWORD = "synthetic-backup-restore-only";
     private static final String SOURCE_DATABASE = "walking_rpg_drill_source";
@@ -187,7 +182,7 @@ class BackupRestoreDrillIntegrationTest {
     }
 
     private static PostgreSQLContainer postgres(String databaseName) {
-        return new PostgreSQLContainer(POSTGRES_DOCKER_IMAGE)
+        return PostgresTestContainer.create()
                 .withDatabaseName(databaseName)
                 .withUsername(SYNTHETIC_USERNAME)
                 .withPassword(SYNTHETIC_PASSWORD)

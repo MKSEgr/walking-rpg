@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.equipment.infrastructure;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -66,7 +67,7 @@ class EquipmentIntegrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:17-alpine");
+            PostgresTestContainer.create();
 
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {

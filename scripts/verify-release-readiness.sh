@@ -53,6 +53,7 @@ for file in \
   docs/PRODUCTION_OPERATIONS_RUNBOOK.md \
   docs/evidence/backup-restore-drill-template.md \
   .dockerignore \
+  compose.yaml \
   backend/Dockerfile \
   backend/docker-entrypoint.sh \
   backend/.env.production.example \
@@ -92,6 +93,7 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/OperationalEndpointsIntegrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/testsupport/PostgresTestContainer.java \
   backend/src/test/java/com/walkingrpg/backend/operations/PostgresDrillManifest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/PostgresDrillManifestTest.java \
   backend/src/test/java/com/walkingrpg/backend/platform/config/PlatformProviderConfigurationTest.java \
@@ -107,6 +109,8 @@ for file in \
   scripts/ci/action-pin-policy-requirements.txt \
   scripts/ci/verify_backend_base_pins.py \
   scripts/ci/test_verify_backend_base_pins.py \
+  scripts/ci/verify_postgres_image_pins.py \
+  scripts/ci/test_verify_postgres_image_pins.py \
   scripts/ci/verify-android-release-config.sh \
   scripts/ci/verify_action_pins.py \
   scripts/ci/test_verify_action_pins.py \
@@ -151,6 +155,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_action_pins.py
 printf '%s\n' 'Checking immutable backend container base images...'
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_backend_base_pins.py
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_backend_base_pins.py
+
+printf '%s\n' 'Checking immutable PostgreSQL test infrastructure...'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_postgres_image_pins.py
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_postgres_image_pins.py
 
 printf '%s\n' 'Checking authentication boundary...'
 grep -Fq 'spring-boot-starter-security' backend/pom.xml || fail 'Spring Security starter is required'
@@ -580,8 +588,10 @@ for test_name in \
 done
 
 printf '%s\n' 'Checking synthetic backup/restore drill...'
-grep -Fq 'postgres:17.10-alpine3.24' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'backup drill PostgreSQL tag must be pinned'
-grep -Fq 'sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'backup drill PostgreSQL digest must be pinned'
+grep -Fq 'postgres:17.10-alpine3.24' backend/src/test/java/com/walkingrpg/backend/testsupport/PostgresTestContainer.java || fail 'shared PostgreSQL test tag must be pinned'
+grep -Fq 'sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193' backend/src/test/java/com/walkingrpg/backend/testsupport/PostgresTestContainer.java || fail 'shared PostgreSQL test digest must be pinned'
+grep -Fq 'PostgresTestContainer.IMAGE_TAG' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'backup drill PostgreSQL tag must come from the shared factory'
+grep -Fq 'PostgresTestContainer.IMAGE_DIGEST' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'backup drill PostgreSQL digest must come from the shared factory'
 grep -Fq '"productionValidated", false' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'synthetic evidence must never claim production validation'
 grep -Fq 'evidence.put("sourceGitSha", sourceGitSha);' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'synthetic evidence must record the exact tested commit'
 grep -Fq 'evidence.put("sourceTreeClean", true);' backend/src/test/java/com/walkingrpg/backend/operations/BackupRestoreDrillIntegrationTest.java || fail 'synthetic evidence must assert a clean source tree'

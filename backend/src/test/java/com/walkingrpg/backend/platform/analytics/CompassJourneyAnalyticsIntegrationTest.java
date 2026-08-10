@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.platform.analytics;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -51,7 +52,7 @@ class CompassJourneyAnalyticsIntegrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:17-alpine");
+            PostgresTestContainer.create();
 
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {
