@@ -6,6 +6,9 @@
 
 ### Fixed
 
+- PostgreSQL integration/migration tests and local Compose now share one
+  reviewed PostgreSQL 17 OCI index digest; CI rejects mutable or divergent
+  Testcontainers and Compose image refs;
 - protected backend JDK/JRE stages закреплены reviewed OCI index digests, а
   CI и publisher отклоняют moving, malformed или superseded base refs;
 - immutable Action policy структурно разбирает YAML и больше не пропускает

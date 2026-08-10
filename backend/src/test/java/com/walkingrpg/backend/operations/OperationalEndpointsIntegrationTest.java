@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.operations;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,7 +20,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,12 +36,7 @@ class OperationalEndpointsIntegrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer(
-                    DockerImageName.parse(
-                            "postgres@sha256:"
-                                    + "742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193"
-                    ).asCompatibleSubstituteFor("postgres")
-            );
+            PostgresTestContainer.create();
 
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {

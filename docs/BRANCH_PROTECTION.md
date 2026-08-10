@@ -56,6 +56,21 @@ tag сверяются OCI index digest и upstream metadata, после чег�
 publisher. Старый source с другими pins не пересобирается: rollback использует
 уже опубликованный immutable application image digest.
 
+## Immutable PostgreSQL test infrastructure
+
+Все Java integration/migration/operations tests создают PostgreSQL через
+`PostgresTestContainer`, который хранит один reviewed PostgreSQL 17 tag и
+multi-platform OCI index digest. Локальный `compose.yaml` использует тот же
+образ в форме `tag@sha256:<64 lowercase hex>`.
+
+`scripts/ci/verify_postgres_image_pins.py` структурно проверяет Compose и
+сканирует все Java test sources. Новый прямой `PostgreSQLContainer`
+constructor, image literal вне factory, moving/digest-only/variable ref,
+YAML alias, duplicate key или digest drift закрывают standard CI и
+`Release quality` ошибкой. Обновление PostgreSQL выполняется отдельным
+CODEOWNER-reviewed PR вместе с проверкой runner architectures и полным
+PostgreSQL integration/restore контуром.
+
 ## Перед merge
 
 - head PR не изменялся после последнего approval;
@@ -63,5 +78,6 @@ publisher. Старый source с другими pins не пересобира�
 - для release-срезов `Release quality` зелёный;
 - remote Action refs прошли immutable-pin policy;
 - protected backend base images прошли exact-digest policy;
+- PostgreSQL Testcontainers и Compose прошли общий exact-digest policy;
 - временные workflow/overlay-файлы отсутствуют;
 - merge выполняется через `Squash and merge`.

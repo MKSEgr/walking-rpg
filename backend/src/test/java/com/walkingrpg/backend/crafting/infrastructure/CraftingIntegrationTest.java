@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.crafting.infrastructure;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -62,7 +63,7 @@ class CraftingIntegrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:17-alpine");
+            PostgresTestContainer.create();
 
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {

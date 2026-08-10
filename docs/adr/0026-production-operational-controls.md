@@ -197,6 +197,12 @@ with the packaged tooling. It does not prove production credentials, roles,
 ACLs, backup scheduling, encryption, retention, object storage, PITR, RPO/RTO
 or restoration of an actual dated backup.
 
+The same reviewed PostgreSQL tag and multi-platform index digest are also the
+single source for every Java Testcontainers integration/migration test and the
+local Compose service. A repository policy scans new test sources and the YAML
+structure so a moving tag, direct constructor, variable, alias or divergent
+digest cannot silently create a second database-test baseline.
+
 ## Consequences
 
 - A single anonymous client or request cannot consume unbounded process memory

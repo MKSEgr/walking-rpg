@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.migration;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -21,7 +22,7 @@ class RoadmapPlatformMigrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:17-alpine");
+            PostgresTestContainer.create();
 
     @Test
     void shouldUpgradeCompletedSecondNodeWithoutChangingHistoricalReward() throws Exception {

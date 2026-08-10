@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.activity.infrastructure;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -56,7 +57,7 @@ class ActivitySyncPersistenceIntegrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:17-alpine");
+            PostgresTestContainer.create();
 
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {

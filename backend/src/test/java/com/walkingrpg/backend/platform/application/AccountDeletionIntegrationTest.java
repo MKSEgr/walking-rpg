@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.platform.application;
 
+import com.walkingrpg.backend.testsupport.PostgresTestContainer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -68,7 +69,7 @@ class AccountDeletionIntegrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:17-alpine");
+            PostgresTestContainer.create();
 
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {
