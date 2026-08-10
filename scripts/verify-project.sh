@@ -21,6 +21,8 @@ for file in \
   "$ROOT_DIR/scripts/ci/test_verify_action_pins.py" \
   "$ROOT_DIR/scripts/ci/verify_runner_image_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_runner_image_pins.py" \
+  "$ROOT_DIR/scripts/ci/verify_workflow_toolchain_pins.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_workflow_toolchain_pins.py" \
   "$ROOT_DIR/scripts/ci/verify_build_tool_wrapper_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_build_tool_wrapper_pins.py"; do
   if [ ! -f "$file" ]; then
@@ -44,6 +46,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_action_pins.
 printf '%s\n' "Checking explicit GitHub-hosted runner OS labels..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_runner_image_pins.py"
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_runner_image_pins.py"
+
+printf '%s\n' "Checking exact GitHub workflow toolchains..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_workflow_toolchain_pins.py"
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_workflow_toolchain_pins.py"
 
 printf '%s\n' "Checking immutable build-tool wrapper downloads..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_build_tool_wrapper_pins.py"

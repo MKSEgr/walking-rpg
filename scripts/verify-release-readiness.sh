@@ -116,6 +116,8 @@ for file in \
   scripts/ci/test_verify_action_pins.py \
   scripts/ci/verify_runner_image_pins.py \
   scripts/ci/test_verify_runner_image_pins.py \
+  scripts/ci/verify_workflow_toolchain_pins.py \
+  scripts/ci/test_verify_workflow_toolchain_pins.py \
   scripts/ci/verify_build_tool_wrapper_pins.py \
   scripts/ci/test_verify_build_tool_wrapper_pins.py \
   scripts/ci/verify_backend_test_selection.py \
@@ -159,6 +161,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_action_pins.py
 printf '%s\n' 'Checking explicit GitHub-hosted runner OS labels...'
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_runner_image_pins.py
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_runner_image_pins.py
+
+printf '%s\n' 'Checking exact GitHub workflow toolchains...'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_workflow_toolchain_pins.py
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_workflow_toolchain_pins.py
 
 printf '%s\n' 'Checking immutable build-tool wrapper downloads...'
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_build_tool_wrapper_pins.py
