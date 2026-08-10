@@ -62,6 +62,26 @@ Exact image release и Included Software URL сохраняются в Actions j
 побайтово контролируемой VM в будущем потребуется отдельный self-hosted image
 contract; текущая политика не создаёт ложного утверждения об этом.
 
+## Immutable build-tool wrapper downloads
+
+Maven и Gradle wrapper properties связывают exact versioned distribution URL с
+reviewed lowercase SHA-256. Unix и PowerShell Maven launchers вычисляют SHA-256
+до распаковки и используют checksum-bound cache directory, поэтому ранее
+скачанный непроверенный cache не считается доверенным. Gradle Wrapper применяет
+штатный `distributionSha256Sum` до установки distribution.
+
+`scripts/ci/verify_build_tool_wrapper_pins.py` запускается в standard CI и
+`Release quality`. Gate требует exact Maven/Gradle property sets, отклоняет
+missing/duplicate/malformed или изменённые URL/checksum и сверяет tracked
+official Gradle 2.10 bootstrap JAR (поддерживающий checksum property) с его
+опубликованным checksum. Regression suite
+исполняет реальный временный Maven fixture: корректный ZIP запускается, а
+несовпадающий checksum не может установить или выполнить fixture.
+
+Обновление Maven, Gradle или wrapper JAR выполняется одним CODEOWNER-reviewed
+PR после независимой сверки upstream checksum и полного backend/Android build
+matrix. Изменение только URL, только checksum или только bootstrap JAR запрещено.
+
 ## Immutable backend base images
 
 Protected `backend/Dockerfile` сохраняет человекочитаемые Eclipse Temurin tags,
@@ -100,6 +120,7 @@ PostgreSQL integration/restore контуром.
 - для release-срезов `Release quality` зелёный;
 - remote Action refs прошли immutable-pin policy;
 - GitHub-hosted jobs прошли explicit runner-image policy;
+- Maven/Gradle distributions и Gradle wrapper JAR прошли checksum policy;
 - protected backend base images прошли exact-digest policy;
 - PostgreSQL Testcontainers и Compose прошли общий exact-digest policy;
 - временные workflow/overlay-файлы отсутствуют;
