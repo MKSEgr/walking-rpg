@@ -11,12 +11,18 @@ for file in \
   "$ROOT_DIR/mobile/android/app/src/main/AndroidManifest.xml" \
   "$ROOT_DIR/mobile/ios/Runner/Info.plist" \
   "$ROOT_DIR/mobile/ios/Runner/Runner.entitlements" \
-  "$ROOT_DIR/docs/ARCHITECTURE.md"; do
+  "$ROOT_DIR/docs/ARCHITECTURE.md" \
+  "$ROOT_DIR/scripts/ci/verify_action_pins.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_action_pins.py"; do
   if [ ! -f "$file" ]; then
     echo "Missing: $file" >&2
     exit 1
   fi
 done
+
+printf '%s\n' "Checking immutable GitHub Action references..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_action_pins.py"
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_action_pins.py"
 
 printf '%s\n' "Project structure is complete."
 

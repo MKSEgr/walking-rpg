@@ -14,6 +14,9 @@ production signing, physical-device, stage, real-restore или store evidence.
 
 - [ ] PR основан на актуальном `master`.
 - [ ] Standard CI и `Release quality` зелёные.
+- [ ] Каждый remote GitHub Action закреплён на reviewed full commit SHA из
+      прямого upstream repository; version-comment не используется как
+      исполняемый ref.
 - [ ] CODEOWNER одобрил последний push.
 - [ ] Review threads закрыты.
 - [ ] В diff нет export/apply/overlay-файлов.

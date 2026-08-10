@@ -92,6 +92,9 @@ enter the approved full source commit and tree SHAs. The workflow fails unless:
   protected entrypoint's exact SHA/tree comparison contract;
 - integrated `CI` and `Release quality` push workflows succeeded for that
   commit;
+- every remote Action used by the publisher is bound to a reviewed full commit
+  SHA from its direct upstream repository; adjacent release comments are not
+  execution inputs;
 - release-readiness passes and the Linux AMD64 image is published by digest;
 - the image pulled back by that digest reports Linux AMD64, the non-root user,
   exact source labels/files, read-only root-owned provenance paths and a
@@ -100,6 +103,12 @@ enter the approved full source commit and tree SHAs. The workflow fails unless:
 Do not publish a source before `31027db…`, even if it is an ancestor of
 `master` and its historical CI was green. Those images predate the startup
 comparison and cannot satisfy the current receipt contract.
+
+Treat an Action update as release code: verify the proposed SHA against the
+direct upstream release tag, inspect its release notes and diff, and require a
+separate CODEOWNER-approved PR plus the complete release gate. Never switch the
+publisher back to a branch or moving tag. If an update fails, restore the
+previous reviewed SHA in another PR and rerun every gate before publication.
 
 The image repository is fixed to
 `ghcr.io/mksegr/walking-rpg-backend`. Because the source repository is public

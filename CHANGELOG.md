@@ -6,6 +6,9 @@
 
 ### Fixed
 
+- all remote GitHub Actions, including the protected backend publisher, are
+  pinned to reviewed full upstream commit SHAs and enforced by a negative-test
+  policy gate instead of trusting mutable major tags;
 - protected backend publisher отклоняет historical `master` sources до
   provenance-aware baseline и выдаёт receipt только после проверки exact
   labels/files, non-root user и embedded entrypoint опубликованного image;

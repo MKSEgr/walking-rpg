@@ -105,6 +105,8 @@ for file in \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
   scripts/ci/verify-android-release-config.sh \
+  scripts/ci/verify_action_pins.py \
+  scripts/ci/test_verify_action_pins.py \
   scripts/ci/verify_backend_test_selection.py \
   scripts/ci/wait_for_required_checks.py \
   scripts/ci/test_wait_for_required_checks.py \
@@ -119,6 +121,10 @@ for file in \
 done
 
 grep -Eq '^\* +@MKSEgr$' .github/CODEOWNERS || fail 'CODEOWNERS must assign all files to @MKSEgr'
+
+printf '%s\n' 'Checking immutable GitHub Action references...'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_action_pins.py
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_action_pins.py
 
 printf '%s\n' 'Checking authentication boundary...'
 grep -Fq 'spring-boot-starter-security' backend/pom.xml || fail 'Spring Security starter is required'
@@ -580,7 +586,7 @@ if grep -Fq 'timeout --foreground' scripts/operations/run-synthetic-backup-resto
   fail 'foreground timeout would leave forked test processes outside the hard budget'
 fi
 grep -Fq '      clean \' scripts/operations/run-synthetic-backup-restore-drill.sh || fail 'backup drill must discard stale Maven build output'
-RELEASE_CHECKOUT_COUNT=$(grep -Fc 'uses: actions/checkout@v4' .github/workflows/release-quality.yml)
+RELEASE_CHECKOUT_COUNT=$(grep -Fc 'uses: actions/checkout@' .github/workflows/release-quality.yml)
 EXACT_RELEASE_CHECKOUT_COUNT=$(grep -Fc 'ref: ${{ github.event.pull_request.head.sha || github.sha }}' .github/workflows/release-quality.yml)
 [ "$RELEASE_CHECKOUT_COUNT" -eq 5 ] || fail 'Release quality must keep exactly five source checkout steps'
 [ "$EXACT_RELEASE_CHECKOUT_COUNT" -eq "$RELEASE_CHECKOUT_COUNT" ] || fail 'every Release quality checkout must bind to the exact workflow source SHA'
