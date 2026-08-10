@@ -104,6 +104,7 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/migration/CosmeticSlotStateMigrationTest.java \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
+  scripts/ci/action-pin-policy-requirements.txt \
   scripts/ci/verify-android-release-config.sh \
   scripts/ci/verify_action_pins.py \
   scripts/ci/test_verify_action_pins.py \
@@ -123,6 +124,25 @@ done
 grep -Eq '^\* +@MKSEgr$' .github/CODEOWNERS || fail 'CODEOWNERS must assign all files to @MKSEgr'
 
 printf '%s\n' 'Checking immutable GitHub Action references...'
+grep -Fq 'PyYAML==6.0.3' scripts/ci/action-pin-policy-requirements.txt \
+  || fail 'action pin policy must use the reviewed PyYAML version'
+grep -Fq \
+  'sha256:ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc' \
+  scripts/ci/action-pin-policy-requirements.txt \
+  || fail 'action pin policy parser wheel must use the reviewed SHA-256'
+for workflow in \
+  .github/workflows/ci.yml \
+  .github/workflows/release-quality.yml \
+  .github/workflows/publish-backend-release-candidate.yml; do
+  grep -Fq \
+    'actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0' \
+    "$workflow" \
+    || fail "$workflow must pin the reviewed Python setup Action"
+  grep -Fq -- '--require-hashes' "$workflow" \
+    || fail "$workflow must enforce parser artifact hashes"
+  grep -Fq 'action-pin-policy-requirements.txt' "$workflow" \
+    || fail "$workflow must install the pinned action policy parser"
+done
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_action_pins.py
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_action_pins.py
 

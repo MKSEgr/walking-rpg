@@ -27,8 +27,12 @@ serbin70 / automation
 Remote GitHub Actions во всех workflow закрепляются на полном 40-символьном
 commit SHA. Релизный tag рядом с SHA — только review/update metadata; workflow
 его не исполняет. `scripts/ci/verify_action_pins.py` запускается в standard CI
-и `Release quality` и отклоняет branch, moving tag, shortened SHA, expression
-или Docker action без immutable digest.
+и `Release quality`, структурно разбирает все YAML mappings и отклоняет branch,
+moving tag, shortened SHA, expression или Docker action без immutable digest.
+Quoted keys, flow mappings и другие валидные YAML spellings не обходят gate.
+Parser закреплён exact version и wheel SHA-256 в
+`scripts/ci/action-pin-policy-requirements.txt`; несовпадение версии закрывает
+проверку ошибкой.
 
 Обновление Action выполняется отдельным reviewable PR: SHA сверяется с tag в
 прямом upstream repository, изучаются release notes и diff, после чего заново

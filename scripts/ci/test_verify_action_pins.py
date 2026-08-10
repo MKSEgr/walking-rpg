@@ -36,6 +36,18 @@ class VerifyActionPinsTest(unittest.TestCase):
 
         self.assertEqual([], errors)
 
+    def test_accepts_structurally_parsed_flow_and_quoted_uses_keys(self):
+        errors = self.validate(
+            "jobs:\n"
+            "  test:\n"
+            "    steps:\n"
+            f"      - {{ uses: actions/checkout@{self.full_sha} }} # v4.4.0\n"
+            f'      - "uses": "actions/setup-java@{self.full_sha}" # v4.9.1\n'
+            f"      - 'uses': './.github/actions/local-check'\n"
+        )
+
+        self.assertEqual([], errors)
+
     def test_rejects_mutable_ambiguous_and_malformed_remote_references(self):
         invalid_references = {
             "moving major tag": "actions/checkout@v4 # v4.4.0",
@@ -55,6 +67,31 @@ class VerifyActionPinsTest(unittest.TestCase):
                     f"      - uses: {reference}\n"
                 )
                 self.assertTrue(errors)
+
+    def test_rejects_mutable_refs_hidden_by_valid_yaml_key_spellings(self):
+        invalid_declarations = {
+            "flow mapping": "      - { uses: actions/checkout@v4 }\n",
+            "double-quoted key": (
+                '      - "uses": actions/checkout@main # v4.4.0\n'
+            ),
+            "single-quoted key": (
+                "      - 'uses': actions/checkout@1234567 # v4.4.0\n"
+            ),
+            "escaped key": (
+                '      - "us\\u0065s": actions/checkout@v4 # v4.4.0\n'
+            ),
+            "explicit string key": (
+                "      - !!str uses: actions/checkout@v4 # v4.4.0\n"
+            ),
+        }
+
+        for description, declaration in invalid_declarations.items():
+            with self.subTest(description=description):
+                errors = self.validate(
+                    "jobs:\n  test:\n    steps:\n" + declaration
+                )
+                self.assertTrue(errors)
+                self.assertIn("remote action must use", errors[0])
 
     def test_scans_both_yaml_extensions(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -80,7 +117,62 @@ class VerifyActionPinsTest(unittest.TestCase):
         )
 
         self.assertEqual(1, len(errors))
-        self.assertIn("malformed uses declaration", errors[0])
+        self.assertIn("remote action must use", errors[0])
+
+    def test_rejects_invalid_yaml_and_non_string_uses_values(self):
+        invalid_yaml = self.validate(
+            "jobs:\n  test:\n    steps:\n      - uses: [unterminated\n"
+        )
+        non_string = self.validate(
+            "jobs:\n  test:\n    steps:\n      - uses: 42\n"
+        )
+
+        self.assertEqual(1, len(invalid_yaml))
+        self.assertIn("invalid workflow YAML", invalid_yaml[0])
+        self.assertEqual(1, len(non_string))
+        self.assertIn("uses value must be a string", non_string[0])
+
+    def test_rejects_alias_and_multiline_uses_values(self):
+        errors = self.validate(
+            "action: &action actions/checkout@"
+            f"{self.full_sha} # v4.4.0\n"
+            "jobs:\n"
+            "  test:\n"
+            "    steps:\n"
+            "      - uses: *action\n"
+        )
+
+        self.assertEqual(1, len(errors))
+        self.assertIn("uses value must be an inline string", errors[0])
+
+    def test_rejects_mutable_duplicate_uses_key(self):
+        errors = self.validate(
+            "jobs:\n"
+            "  test:\n"
+            "    steps:\n"
+            f"      - {{ uses: actions/checkout@{self.full_sha}, "
+            "uses: actions/checkout@v4 } # v4.4.0\n"
+        )
+
+        self.assertEqual(1, len(errors))
+        self.assertIn("remote action must use", errors[0])
+
+    def test_rejects_multiple_yaml_documents(self):
+        errors = self.validate("jobs: {}\n---\njobs: {}\n")
+
+        self.assertEqual(1, len(errors))
+        self.assertIn("exactly one YAML document", errors[0])
+
+    def test_fails_closed_on_unexpected_parser_version(self):
+        original = MODULE.yaml.__version__
+        MODULE.yaml.__version__ = "0.0.0"
+        try:
+            errors = self.validate("jobs: {}\n")
+        finally:
+            MODULE.yaml.__version__ = original
+
+        self.assertEqual(1, len(errors))
+        self.assertIn("requires PyYAML", errors[0])
 
 
 if __name__ == "__main__":

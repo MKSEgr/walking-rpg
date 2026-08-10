@@ -6,6 +6,8 @@
 
 ### Fixed
 
+- immutable Action policy структурно разбирает YAML и больше не пропускает
+  mutable `uses` через quoted keys, flow mappings или escaped spellings;
 - all remote GitHub Actions, including the protected backend publisher, are
   pinned to reviewed full upstream commit SHAs and enforced by a negative-test
   policy gate instead of trusting mutable major tags;
