@@ -20,6 +20,11 @@ FORBIDDEN_PACKAGE_MANAGER = re.compile(
     r"(?![0-9A-Za-z_.-])",
     re.IGNORECASE,
 )
+PARSER_DIRECTIVE = re.compile(
+    r"^[ \t]*#[ \t]*(?P<key>[A-Za-z][A-Za-z0-9-]*)[ \t]*="
+    r"[ \t]*(?P<value>.*?)[ \t]*$"
+)
+SUPPORTED_PARSER_DIRECTIVES = frozenset(("check", "escape", "syntax"))
 
 
 @dataclass(frozen=True)
@@ -56,13 +61,63 @@ def _from_lines(source: str) -> tuple[tuple[int, str], ...]:
     )
 
 
+def _dockerfile_escape(source: str) -> str:
+    escape = "\\"
+    for line in source.splitlines():
+        if not line.strip():
+            break
+        match = PARSER_DIRECTIVE.fullmatch(line)
+        if match is None:
+            break
+        key = match.group("key").lower()
+        if key not in SUPPORTED_PARSER_DIRECTIVES:
+            break
+        if key == "escape" and match.group("value") in ("\\", "`"):
+            escape = match.group("value")
+    return escape
+
+
+def _logical_instruction_lines(source: str) -> tuple[tuple[int, str], ...]:
+    escape = _dockerfile_escape(source)
+    continuation = re.compile(rf"{re.escape(escape)}[ \t]*$")
+    instructions: list[tuple[int, str]] = []
+    current = ""
+    start_line = 0
+    awaiting_continuation = False
+
+    for line_number, physical_line in enumerate(
+        source.splitlines(keepends=True), start=1
+    ):
+        line = physical_line.rstrip("\r\n")
+        if line.lstrip().startswith("#"):
+            continue
+        if not line.strip():
+            continue
+        if start_line == 0:
+            start_line = line_number
+
+        match = continuation.search(line)
+        if match is not None:
+            current += line[: match.start()]
+            awaiting_continuation = True
+            continue
+
+        current += line
+        instructions.append((start_line, current))
+        current = ""
+        start_line = 0
+        awaiting_continuation = False
+
+    if start_line != 0:
+        instructions.append((start_line, current))
+    return tuple(instructions)
+
+
 def _package_manager_lines(source: str) -> tuple[int, ...]:
-    normalized = source.replace("\\\r\n", "").replace("\\\n", "")
     return tuple(
         line_number
-        for line_number, line in enumerate(normalized.splitlines(), start=1)
-        if not line.lstrip().startswith("#")
-        and FORBIDDEN_PACKAGE_MANAGER.search(line) is not None
+        for line_number, line in _logical_instruction_lines(source)
+        if FORBIDDEN_PACKAGE_MANAGER.search(line) is not None
     )
 
 

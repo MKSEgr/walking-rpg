@@ -106,8 +106,57 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     any("must not fetch mutable OS packages" in error for error in errors)
                 )
 
-    def test_rejects_package_manager_split_across_continuation(self):
-        source = VALID.replace("RUN true", "RUN apt-\\\nget update", 1)
+    def test_rejects_package_manager_split_across_active_escape_directive(self):
+        cases = (
+            ("", "\\"),
+            ("# escape=\\\n\n", "\\"),
+            ("# escape=`\n\n", "`"),
+            ("# syntax=docker/dockerfile:1\n#\tEsCaPe = `\n\n", "`"),
+        )
+        for prefix, escape in cases:
+            with self.subTest(prefix=prefix, escape=escape):
+                command = f"RUN apt-{escape}\nget update"
+                source = prefix + VALID.replace("RUN true", command, 1)
+
+                errors = self.validate(source)
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        for error in errors
+                    )
+                )
+
+    def test_rejects_package_manager_split_around_continuation_comment(self):
+        for escape_directive, escape in (("", "\\"), ("# escape=`\n\n", "`")):
+            with self.subTest(escape=escape):
+                command = f"RUN apt-{escape}\n# removed by Dockerfile parser\nget update"
+                source = escape_directive + VALID.replace("RUN true", command, 1)
+
+                errors = self.validate(source)
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        for error in errors
+                    )
+                )
+
+    def test_rejects_package_manager_split_around_empty_continuation_line(self):
+        source = VALID.replace("RUN true", "RUN apt-\\\n\nget update", 1)
+
+        errors = self.validate(source)
+
+        self.assertTrue(
+            any("must not fetch mutable OS packages" in error for error in errors)
+        )
+
+    def test_escape_directive_after_comment_does_not_change_default(self):
+        source = (
+            "# ordinary comment ends parser-directive processing\n"
+            "# escape=`\n"
+            + VALID.replace("RUN true", "RUN apt-\\\nget update", 1)
+        )
 
         errors = self.validate(source)
 
