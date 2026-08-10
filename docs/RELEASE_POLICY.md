@@ -32,6 +32,11 @@ Current engineering baseline:
 - Hosted runner labels do not pin GitHub's weekly VM image release. The exact
   image version remains recorded in each job log; full VM-image immutability
   would require a separately governed self-hosted runner contract.
+- Maven 3.9.16 and Gradle 9.1.0 wrapper downloads are bound to reviewed
+  SHA-256 checksums. Both Maven launchers verify the archive before extraction;
+  Gradle uses its native `distributionSha256Sum`, and CI also pins the tracked
+  official wrapper JAR bytes. A build-tool upgrade must update URL, checksum
+  and policy constants in one reviewed PR.
 - Protected signing uses the post-merge `master` SHA after its push checks
   pass. CODEOWNER provenance is linked through equality with the approved PR
   head tree, so squash/rebase merge does not create a false same-SHA claim.

@@ -6,6 +6,9 @@
 
 ### Fixed
 
+- Maven and Gradle wrapper distributions are now bound to reviewed SHA-256
+  checksums before extraction; CI also rejects wrapper URL/checksum drift and
+  modified Gradle bootstrap JAR bytes;
 - protected GitHub jobs now use reviewed `ubuntu-24.04` and `macos-26`
   runner labels; CI rejects mutable `-latest`, expressions and unreviewed OS
   labels across every workflow;

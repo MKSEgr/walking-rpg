@@ -19,6 +19,9 @@
 8. Выполнять protected jobs только на явно выбранных versioned runner labels:
    `ubuntu-24.04` и `macos-26`; `-latest` и непросмотренные labels отклонять
    структурным repository gate во всех workflow.
+9. Связать Maven/Gradle wrapper distribution URLs с reviewed SHA-256,
+   проверять Maven ZIP до extraction в обоих launchers и закрепить tracked
+   Gradle wrapper JAR отдельным fail-closed repository gate.
 
 ## Последствия
 
@@ -29,3 +32,6 @@
 - major OS/architecture runner boundary не меняется через migration alias без
   review; weekly GitHub-hosted image updates остаются явно зафиксированным
   ограничением и отражаются exact image version в job log.
+- build-tool distribution не может незаметно измениться при том же source SHA;
+  upgrade URL/checksum/bootstrap bytes требует отдельного reviewed PR и полной
+  backend/mobile platform matrix.
