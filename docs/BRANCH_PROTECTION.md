@@ -40,6 +40,28 @@ Parser закреплён exact version и wheel SHA-256 в
 Rollback возвращает предыдущий reviewed SHA отдельным PR и также требует всех
 проверок.
 
+## Explicit GitHub-hosted runner images
+
+Protected workflows используют только reviewed versioned labels
+`ubuntu-24.04` и `macos-26`. Alias `ubuntu-latest`/`macos-latest` запрещены:
+GitHub постепенно переводит их на новые major OS images, поэтому один source
+SHA мог бы без изменения репозитория получить другую ОС, architecture или
+Xcode toolchain.
+
+`scripts/ci/verify_runner_image_pins.py` структурно разбирает каждый `.yml` и
+`.yaml` workflow в `.github/workflows` и каждый job. Gate отклоняет непросмотренный
+label, expression, collection, пропущенный `runs-on`, YAML alias/merge key,
+duplicate key и несколько YAML documents. Parser использует тот же exact
+PyYAML wheel, что immutable Action policy. Обновление runner OS выполняется
+отдельным CODEOWNER-reviewed PR после зелёной platform matrix; silent fallback
+на `-latest` запрещён.
+
+Versioned hosted label фиксирует major OS/architecture boundary, но не exact
+weekly VM image release: GitHub обновляет software внутри поддерживаемого image.
+Exact image release и Included Software URL сохраняются в Actions job log. Для
+побайтово контролируемой VM в будущем потребуется отдельный self-hosted image
+contract; текущая политика не создаёт ложного утверждения об этом.
+
 ## Immutable backend base images
 
 Protected `backend/Dockerfile` сохраняет человекочитаемые Eclipse Temurin tags,
@@ -77,6 +99,7 @@ PostgreSQL integration/restore контуром.
 - standard CI зелёный;
 - для release-срезов `Release quality` зелёный;
 - remote Action refs прошли immutable-pin policy;
+- GitHub-hosted jobs прошли explicit runner-image policy;
 - protected backend base images прошли exact-digest policy;
 - PostgreSQL Testcontainers и Compose прошли общий exact-digest policy;
 - временные workflow/overlay-файлы отсутствуют;

@@ -114,6 +114,8 @@ for file in \
   scripts/ci/verify-android-release-config.sh \
   scripts/ci/verify_action_pins.py \
   scripts/ci/test_verify_action_pins.py \
+  scripts/ci/verify_runner_image_pins.py \
+  scripts/ci/test_verify_runner_image_pins.py \
   scripts/ci/verify_backend_test_selection.py \
   scripts/ci/wait_for_required_checks.py \
   scripts/ci/test_wait_for_required_checks.py \
@@ -151,6 +153,10 @@ for workflow in \
 done
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_action_pins.py
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_action_pins.py
+
+printf '%s\n' 'Checking explicit GitHub-hosted runner OS labels...'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_runner_image_pins.py
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_runner_image_pins.py
 
 printf '%s\n' 'Checking immutable backend container base images...'
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_backend_base_pins.py

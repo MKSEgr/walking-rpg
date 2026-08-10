@@ -22,7 +22,7 @@ permissions:
 jobs:
   publish:
     name: Publish immutable backend image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     environment: stage-release
     permissions:

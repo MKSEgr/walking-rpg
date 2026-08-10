@@ -6,6 +6,9 @@
 
 ### Fixed
 
+- protected GitHub jobs now use reviewed `ubuntu-24.04` and `macos-26`
+  runner labels; CI rejects mutable `-latest`, expressions and unreviewed OS
+  labels across every workflow;
 - PostgreSQL integration/migration tests and local Compose now share one
   reviewed PostgreSQL 17 OCI index digest; CI rejects mutable or divergent
   Testcontainers and Compose image refs;
