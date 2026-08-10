@@ -2,10 +2,6 @@ FROM eclipse-temurin:21-jdk-jammy@sha256:55fb9bf738f5d9b4a6c01b39337e3070d3e2737
 
 WORKDIR /workspace/backend
 
-RUN apt-get update \
-    && apt-get install --yes --no-install-recommends curl unzip \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY backend/.mvn .mvn
 COPY backend/mvnw backend/pom.xml ./
 RUN chmod 0555 mvnw \

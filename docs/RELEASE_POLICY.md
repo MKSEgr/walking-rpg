@@ -17,6 +17,9 @@ Current engineering baseline:
 - Protected backend build stages use reviewed human-readable Temurin tags bound
   to exact multi-platform OCI index digests; tag-only, digest-only, variable and
   platform-expression refs are rejected by CI.
+- The protected Dockerfile performs no live OS package-manager installation.
+  Its pinned Temurin JDK supplies the reviewed downloader and `jar` extractor;
+  the Maven archive is verified before either `unzip` or `jar` can read it.
 - The publisher independently requires its current JDK/JRE pins in the selected
   source before registry login. Historical source with older pins is not
   rebuilt; rollback selects an already published immutable application digest.

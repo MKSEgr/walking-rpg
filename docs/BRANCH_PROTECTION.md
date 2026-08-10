@@ -92,6 +92,12 @@ Protected `backend/Dockerfile` сохраняет человекочитаемы
 digest-only ref, переменная, platform expression, дополнительная стадия или
 другой digest закрывают gate ошибкой.
 
+Protected build также не выполняет `apt`/`apk`/`dnf`/`yum` installation из
+живого OS repository metadata. Закреплённый Temurin JDK уже предоставляет
+downloader и `jar`; Maven launcher сверяет SHA-256 ZIP до выбора `unzip` или
+JDK `jar`. Gate отклоняет возврат package-manager fetch, а regression fixture
+принудительно выполняет fallback без системного `unzip`.
+
 Обновление base image выполняется отдельным CODEOWNER-reviewed PR. Для каждого
 tag сверяются OCI index digest и upstream metadata, после чего одновременно
 обновляются Dockerfile, policy constants и независимые constants защищённого

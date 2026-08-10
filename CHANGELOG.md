@@ -6,6 +6,9 @@
 
 ### Fixed
 
+- protected backend image build no longer installs mutable OS packages from
+  live apt metadata; the checksum-verified Maven ZIP falls back to the pinned
+  JDK `jar` extractor when `unzip` is unavailable;
 - Maven and Gradle wrapper distributions are now bound to reviewed SHA-256
   checksums before extraction; CI also rejects wrapper URL/checksum drift and
   modified Gradle bootstrap JAR bytes;

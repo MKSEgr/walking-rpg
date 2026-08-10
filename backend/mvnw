@@ -79,13 +79,17 @@ if [ ! -x "$MAVEN_BIN" ]; then
     exit 1
   fi
 
-  if ! command -v unzip >/dev/null 2>&1; then
-    echo "unzip is required for the first wrapper run" >&2
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -q "$ARCHIVE" -d "$TMP_DIR"
+  elif command -v jar >/dev/null 2>&1; then
+    (cd "$TMP_DIR" && jar xf "$ARCHIVE")
+  else
+    echo "unzip or jar is required for the first wrapper run" >&2
     rm -rf "$TMP_DIR"
     exit 1
   fi
 
-  unzip -q "$ARCHIVE" -d "$TMP_DIR"
+  chmod 0555 "$TMP_DIR/apache-maven-$MAVEN_VERSION/bin/mvn"
   rm -rf "$INSTALL_DIR"
   mv "$TMP_DIR/apache-maven-$MAVEN_VERSION" "$INSTALL_DIR"
   rm -rf "$TMP_DIR"

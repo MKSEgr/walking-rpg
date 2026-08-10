@@ -22,6 +22,9 @@
 9. Связать Maven/Gradle wrapper distribution URLs с reviewed SHA-256,
    проверять Maven ZIP до extraction в обоих launchers и закрепить tracked
    Gradle wrapper JAR отдельным fail-closed repository gate.
+10. Не устанавливать mutable OS packages при сборке protected backend image:
+    использовать downloader и `jar` из digest-pinned Temurin JDK, сохраняя
+    checksum verification до любого extraction path.
 
 ## Последствия
 
@@ -35,3 +38,5 @@
 - build-tool distribution не может незаметно измениться при том же source SHA;
   upgrade URL/checksum/bootstrap bytes требует отдельного reviewed PR и полной
   backend/mobile platform matrix.
+- protected backend build не зависит от текущего apt repository metadata;
+  возврат package-manager fetch отклоняется release policy.

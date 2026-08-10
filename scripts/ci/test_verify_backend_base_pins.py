@@ -90,6 +90,40 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
         )
         self.assertTrue(self.validate(source))
 
+    def test_rejects_mutable_os_package_manager_commands(self):
+        commands = (
+            "RUN apt-get update",
+            "RUN /usr/bin/apt install curl",
+            "RUN apk add curl",
+            "RUN dnf install curl",
+            "RUN yum install curl",
+            "RUN microdnf install curl",
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                errors = self.validate(VALID.replace("RUN true", command, 1))
+                self.assertTrue(
+                    any("must not fetch mutable OS packages" in error for error in errors)
+                )
+
+    def test_rejects_package_manager_split_across_continuation(self):
+        source = VALID.replace("RUN true", "RUN apt-\\\nget update", 1)
+
+        errors = self.validate(source)
+
+        self.assertTrue(
+            any("must not fetch mutable OS packages" in error for error in errors)
+        )
+
+    def test_allows_package_manager_words_in_comments(self):
+        source = VALID.replace(
+            "RUN true",
+            "# apt-get is intentionally unavailable in this protected build\nRUN true",
+            1,
+        )
+
+        self.assertEqual([], self.validate(source))
+
 
 if __name__ == "__main__":
     unittest.main()
