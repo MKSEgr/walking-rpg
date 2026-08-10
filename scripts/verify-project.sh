@@ -12,6 +12,7 @@ for file in \
   "$ROOT_DIR/mobile/ios/Runner/Info.plist" \
   "$ROOT_DIR/mobile/ios/Runner/Runner.entitlements" \
   "$ROOT_DIR/docs/ARCHITECTURE.md" \
+  "$ROOT_DIR/scripts/ci/action-pin-policy-requirements.txt" \
   "$ROOT_DIR/scripts/ci/verify_action_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_action_pins.py"; do
   if [ ! -f "$file" ]; then
