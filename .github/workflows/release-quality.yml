@@ -38,7 +38,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          python-version: '3.12'
+          python-version: '3.12.13'
 
       - name: Install pinned action policy parser
         shell: bash
@@ -58,7 +58,7 @@ jobs:
       - name: Generate deterministic build metadata
         env:
           FLUTTER_VERSION: 3.44.7
-          JAVA_VERSION: 21
+          JAVA_VERSION: '21.0.11+10'
         shell: bash
         run: |
           set -euo pipefail
@@ -99,7 +99,7 @@ jobs:
         uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '21.0.11+10'
           cache: maven
           cache-dependency-path: backend/pom.xml
 
@@ -155,7 +155,7 @@ jobs:
         uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '21.0.11+10'
           cache: maven
           cache-dependency-path: backend/pom.xml
 
@@ -219,7 +219,7 @@ jobs:
         uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '17.0.19+10'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0

@@ -6,6 +6,9 @@
 
 ### Fixed
 
+- protected workflow setup steps now resolve reviewed exact Node.js, Python
+  and Temurin patch/build versions; a structural CI gate rejects ranges,
+  missing inputs, duplicate/aliased YAML and occurrence drift;
 - protected backend image build no longer installs mutable OS packages from
   live apt metadata; the checksum-verified Maven ZIP falls back to the pinned
   JDK `jar` extractor when `unzip` is unavailable;
