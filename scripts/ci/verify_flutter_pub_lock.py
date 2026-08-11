@@ -47,8 +47,9 @@ SIMPLE_WRAPPERS = frozenset(
     {"builtin", "command", "exec", "fvm", "nohup", "time", "xargs"}
 )
 RESERVED_PREFIXES = frozenset(
-    {"!", "do", "elif", "else", "if", "then", "until", "while"}
+    {"!", "do", "elif", "else", "if", "then", "until", "while", "{", "}"}
 )
+COMMAND_SUBSTITUTION_PLACEHOLDER = "__reviewed_command_substitution__"
 
 
 def _location(path: Path, node: Node) -> str:
@@ -262,12 +263,11 @@ def _skip_options(
 
 def _command_from_segment(tokens: Sequence[str]) -> tuple[str, ...] | None:
     index = 0
-    while index < len(tokens) and tokens[index] in RESERVED_PREFIXES:
-        index += 1
-    while index < len(tokens) and ASSIGNMENT.fullmatch(tokens[index]):
-        index += 1
-
     for _ in range(12):
+        while index < len(tokens) and tokens[index] in RESERVED_PREFIXES:
+            index += 1
+        while index < len(tokens) and ASSIGNMENT.fullmatch(tokens[index]):
+            index += 1
         if index >= len(tokens):
             return None
         executable = _basename(tokens[index])
@@ -339,6 +339,153 @@ def _tokenize_script(source: str) -> tuple[list[str], str | None]:
         return [], str(error)
 
 
+def _backtick_end(source: str, start: int) -> int | None:
+    index = start
+    while index < len(source):
+        if source[index] == "\\":
+            index += 2
+        elif source[index] == "`":
+            return index
+        else:
+            index += 1
+    return None
+
+
+def _dollar_paren_end(source: str, start: int) -> int | None:
+    index = start
+    quote: str | None = None
+    paren_depth = 0
+    while index < len(source):
+        character = source[index]
+        if quote == "'":
+            if character == "'":
+                quote = None
+            index += 1
+            continue
+        if character == "\\":
+            index += 2
+            continue
+        if quote == '"':
+            if character == '"':
+                quote = None
+                index += 1
+            elif source.startswith("$(", index) and not source.startswith(
+                "$((", index
+            ):
+                nested_end = _dollar_paren_end(source, index + 2)
+                if nested_end is None:
+                    return None
+                index = nested_end + 1
+            elif character == "`":
+                nested_end = _backtick_end(source, index + 1)
+                if nested_end is None:
+                    return None
+                index = nested_end + 1
+            else:
+                index += 1
+            continue
+        if character in {"'", '"'}:
+            quote = character
+            index += 1
+        elif character == "`":
+            nested_end = _backtick_end(source, index + 1)
+            if nested_end is None:
+                return None
+            index = nested_end + 1
+        elif source.startswith("$(", index) and not source.startswith("$((", index):
+            nested_end = _dollar_paren_end(source, index + 2)
+            if nested_end is None:
+                return None
+            index = nested_end + 1
+        elif character == "(":
+            paren_depth += 1
+            index += 1
+        elif character == ")":
+            if paren_depth == 0:
+                return index
+            paren_depth -= 1
+            index += 1
+        else:
+            index += 1
+    return None
+
+
+def _extract_command_substitutions(
+    source: str,
+) -> tuple[list[str], str, list[str]]:
+    substitutions: list[str] = []
+    masked: list[str] = []
+    errors: list[str] = []
+    index = 0
+    quote: str | None = None
+    while index < len(source):
+        character = source[index]
+        if quote == "'":
+            masked.append(character)
+            if character == "'":
+                quote = None
+            index += 1
+            continue
+        if character == "\\":
+            masked.append(source[index : index + 2])
+            index += 2
+            continue
+        if quote == '"' and character == '"':
+            quote = None
+            masked.append(character)
+            index += 1
+            continue
+        if quote is None and character in {"'", '"'}:
+            quote = character
+            masked.append(character)
+            index += 1
+            continue
+        if (
+            quote is None
+            and character == "#"
+            and (index == 0 or source[index - 1] in " \t\r\n;&|()")
+        ):
+            line_end = source.find("\n", index)
+            if line_end == -1:
+                masked.append(source[index:])
+                break
+            masked.append(source[index : line_end + 1])
+            index = line_end + 1
+            continue
+        if source.startswith("$(", index) and not source.startswith("$((", index):
+            end = _dollar_paren_end(source, index + 2)
+            if end is None:
+                errors.append("unterminated shell command substitution")
+                masked.append(source[index:])
+                break
+            substitutions.append(source[index + 2 : end])
+            masked.append(COMMAND_SUBSTITUTION_PLACEHOLDER)
+            index = end + 1
+            continue
+        if character == "`":
+            end = _backtick_end(source, index + 1)
+            if end is None:
+                errors.append("unterminated legacy shell command substitution")
+                masked.append(source[index:])
+                break
+            substitutions.append(source[index + 1 : end])
+            masked.append(COMMAND_SUBSTITUTION_PLACEHOLDER)
+            index = end + 1
+            continue
+        masked.append(character)
+        index += 1
+    return substitutions, "".join(masked), errors
+
+
+def _nested_shell_sources(source: str) -> tuple[str, ...]:
+    # shlex preserves some expansion escapes that the invoking shell consumes
+    # before passing a command string to `sh -c` or `eval`. Inspect both forms.
+    deescaped = re.sub(r"\\+(?=(?:\$\(|`))", "", source)
+    if deescaped == source:
+        return (source,)
+    return source, deescaped
+
+
 def _shell_commands(
     source: str,
     *,
@@ -346,9 +493,10 @@ def _shell_commands(
 ) -> tuple[list[tuple[str, ...]], list[str]]:
     if depth > 4:
         return [], ["nested shell command depth exceeds the reviewed limit"]
-    tokens, token_error = _tokenize_script(source)
+    substitutions, masked_source, errors = _extract_command_substitutions(source)
+    tokens, token_error = _tokenize_script(masked_source)
     if token_error is not None:
-        return [], [f"unable to parse run script: {token_error}"]
+        return [], errors + [f"unable to parse run script: {token_error}"]
 
     segments: list[list[str]] = [[]]
     for token in tokens:
@@ -359,7 +507,10 @@ def _shell_commands(
             segments[-1].append(token)
 
     commands: list[tuple[str, ...]] = []
-    errors: list[str] = []
+    for substitution in substitutions:
+        nested, nested_errors = _shell_commands(substitution, depth=depth + 1)
+        commands.extend(nested)
+        errors.extend(nested_errors)
     for segment in segments:
         command = _command_from_segment(segment)
         if command is None:
@@ -379,13 +530,21 @@ def _shell_commands(
             if command_index >= len(command):
                 errors.append(f"{executable} -c must provide a command string")
                 continue
-            nested, nested_errors = _shell_commands(command[command_index], depth=depth + 1)
-            commands.extend(nested)
-            errors.extend(nested_errors)
+            for nested_source in _nested_shell_sources(command[command_index]):
+                nested, nested_errors = _shell_commands(
+                    nested_source,
+                    depth=depth + 1,
+                )
+                commands.extend(nested)
+                errors.extend(nested_errors)
         elif executable == "eval" and len(command) > 1:
-            nested, nested_errors = _shell_commands(" ".join(command[1:]), depth=depth + 1)
-            commands.extend(nested)
-            errors.extend(nested_errors)
+            for nested_source in _nested_shell_sources(" ".join(command[1:])):
+                nested, nested_errors = _shell_commands(
+                    nested_source,
+                    depth=depth + 1,
+                )
+                commands.extend(nested)
+                errors.extend(nested_errors)
         else:
             commands.append(command)
     return commands, errors
