@@ -62,6 +62,34 @@ Exact image release и Included Software URL сохраняются в Actions j
 побайтово контролируемой VM в будущем потребуется отдельный self-hosted image
 contract; текущая политика не создаёт ложного утверждения об этом.
 
+## Frozen Flutter pub dependencies
+
+`mobile/pubspec.lock` хранится в Git и связывается с reviewed SHA-256 в
+`scripts/ci/verify_flutter_pub_lock.py`. Все hosted packages обязаны иметь одну
+exact semantic version, источник `https://pub.dev` и lowercase SHA-256 content
+hash; Flutter SDK packages разрешены только как явно описанные SDK entries.
+`pubspec_overrides.yaml`, tracked `.dart_tool/` и альтернативные package sources
+в protected build запрещены.
+
+Все пять protected Flutter jobs выполняют ровно `flutter pub get
+--enforce-lockfile` после checkout и установки reviewed Flutter toolchain, но до
+analyze/test/build. Все последующие Flutter consumers используют `--no-pub`,
+чтобы не запустить второй неявный mutable resolver. Структурный gate проверяет
+оба workflow YAML расширения,
+отклоняет обычный `pub get`, `pub upgrade`, `dart pub`, wrapped/path-qualified и
+дополнительные resolver commands, consumer без `--no-pub`,
+conditional/continue-on-error bypass, неверный working directory, duplicate
+keys, aliases/merge keys и несколько YAML documents. Комментарии и строки,
+переданные `echo`/`printf`, командами не считаются.
+
+Намеренное обновление graph выполняется отдельным CODEOWNER-reviewed PR. В
+`mobile/` запускается обычный `flutter pub get` или целевой `flutter pub
+upgrade <package>`, после чего проверяются изменения `pubspec.lock`, обновляется
+`APPROVED_LOCK_SHA256` и заново проходит полная Flutter/Android/iOS matrix.
+Возврат к unlocked resolution при ошибке запрещён. Это соответствует
+production/CI контракту Dart:
+https://dart.dev/tools/pub/cmd/pub-get#enforce-lockfile.
+
 ## Frozen iOS CocoaPods dependencies
 
 `mobile/ios/Podfile.lock` хранится в Git и связывается с reviewed SHA-256 в
@@ -70,13 +98,14 @@ contract; текущая политика не создаёт ложного у�
 checksum и CocoaPods `1.17.0`. Каталоги `Pods/` и `.symlinks/` остаются
 generated и не коммитятся.
 
-Оба protected iOS job после `flutter pub get` выполняют `pod install
---deployment`, затем строят приложение и проверяют, что lockfile не изменился.
+Оба protected iOS job после `flutter pub get --enforce-lockfile` выполняют `pod
+install --deployment`, затем строят приложение и проверяют, что lockfile не
+изменился.
 Структурный gate отклоняет отсутствующий/изменённый/ignored lockfile,
 невалидный YAML, duplicate keys, aliases/merge keys, непросмотренный CocoaPods,
 stale Podfile checksum, внешние plugin sources, обычный `pod install`, `pod
 update`, conditional/continue-on-error bypass и изменение порядка
-`pub get → frozen pods → iOS build → lock diff`.
+`frozen pub get → frozen pods → iOS build → lock diff`.
 
 Обновление pod graph выполняется только отдельным CODEOWNER-reviewed PR:
 lockfile намеренно регенерируется на reviewed macOS/Flutter/CocoaPods baseline,
@@ -150,6 +179,8 @@ PostgreSQL integration/restore контуром.
 - для release-срезов `Release quality` зелёный;
 - remote Action refs прошли immutable-pin policy;
 - GitHub-hosted jobs прошли explicit runner-image policy;
+- Flutter package graph закреплён tracked lockfile и установлен с
+  `--enforce-lockfile`;
 - CocoaPods graph закреплён tracked lockfile и установлен в deployment mode;
 - Maven/Gradle distributions и Gradle wrapper JAR прошли checksum policy;
 - protected backend base images прошли exact-digest policy;

@@ -36,6 +36,15 @@ Current engineering baseline:
   `3.12.13`, Temurin `17.0.19+10` and Temurin `21.0.11+10` versions. CI
   structurally rejects version ranges, missing setup inputs, non-Temurin Java
   distributions and changes to the reviewed occurrence matrix.
+- Flutter/Dart dependencies are resolved only from the tracked reviewed
+  `mobile/pubspec.lock`. Every protected Flutter job runs exactly `flutter pub
+  get --enforce-lockfile` before consuming packages, and every subsequent
+  Flutter analyze/test/build command uses `--no-pub`. CI rejects stale or
+  changed lock bytes, non-pub.dev hosted sources, invalid versions/content
+  hashes, overrides, mutable/additional or implicit resolver commands and
+  conditional bypasses. An intentional dependency update must change the lock
+  and its policy digest in one reviewed PR and pass the full mobile platform
+  matrix.
 - iOS native dependencies are resolved only from the tracked reviewed
   `mobile/ios/Podfile.lock`. Both protected iOS jobs run CocoaPods `1.17.0` in
   deployment mode after Flutter plugin generation and fail if the lock is

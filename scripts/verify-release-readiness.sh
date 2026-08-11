@@ -79,6 +79,7 @@ for file in \
   mobile/lib/features/validation/application/validation_evidence_exporter.dart \
   mobile/lib/features/validation/domain/device_validation_evidence.dart \
   mobile/lib/features/validation/validation_center_policy.dart \
+  mobile/pubspec.lock \
   mobile/ios/Podfile.lock \
   backend/src/main/resources/application-local.yml \
   backend/src/main/resources/application-stage.yml \
@@ -119,6 +120,8 @@ for file in \
   scripts/ci/test_verify_runner_image_pins.py \
   scripts/ci/verify_workflow_toolchain_pins.py \
   scripts/ci/test_verify_workflow_toolchain_pins.py \
+  scripts/ci/verify_flutter_pub_lock.py \
+  scripts/ci/test_verify_flutter_pub_lock.py \
   scripts/ci/verify_ios_pod_lock.py \
   scripts/ci/test_verify_ios_pod_lock.py \
   scripts/ci/verify_build_tool_wrapper_pins.py \
@@ -168,6 +171,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_runner_image_pins.py
 printf '%s\n' 'Checking exact GitHub workflow toolchains...'
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_workflow_toolchain_pins.py
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_workflow_toolchain_pins.py
+
+printf '%s\n' 'Checking frozen Flutter pub dependencies...'
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_flutter_pub_lock.py
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_verify_flutter_pub_lock.py
 
 printf '%s\n' 'Checking frozen iOS CocoaPods dependencies...'
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/verify_ios_pod_lock.py

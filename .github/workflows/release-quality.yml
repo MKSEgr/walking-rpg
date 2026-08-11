@@ -229,11 +229,11 @@ jobs:
           cache: true
 
       - name: Install dependencies
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: Build unsigned release-candidate AAB
         run: |
-          flutter build appbundle --release \
+          flutter build appbundle --release --no-pub \
             --dart-define=MOBILE_AUTH_MODE=oidc \
             "--dart-define=API_BASE_URL=$RELEASE_CANDIDATE_API_BASE_URL" \
             "--dart-define=OIDC_ISSUER=$RELEASE_CANDIDATE_OIDC_ISSUER" \
@@ -291,7 +291,7 @@ jobs:
           cache: true
 
       - name: Install dependencies
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: Install locked iOS pods
         shell: bash
@@ -304,7 +304,7 @@ jobs:
 
       - name: Build iOS release candidate without signing
         run: |
-          flutter build ios --release --no-codesign \
+          flutter build ios --release --no-codesign --no-pub \
             --dart-define=MOBILE_AUTH_MODE=oidc \
             "--dart-define=API_BASE_URL=$RELEASE_CANDIDATE_API_BASE_URL" \
             "--dart-define=OIDC_ISSUER=$RELEASE_CANDIDATE_OIDC_ISSUER" \
