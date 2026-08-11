@@ -199,6 +199,26 @@ class VerifyFlutterPubLockTest(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertTrue(self.validate_workflows(files))
 
+    def test_rejects_resolvers_in_substitutions_and_shell_groups(self):
+        commands = (
+            'echo "$(flutter pub upgrade)"',
+            'value="$(sh -lc \'dart pub get\')"',
+            "echo `flutter packages upgrade`",
+            r'bash -c "echo \"\$(flutter pub upgrade)\""',
+            "{ sudo /opt/flutter/bin/flutter pub upgrade; }",
+            "time { env MODE=ci dart pub get; }",
+        )
+        for command in commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  unprotected:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                f"          {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertTrue(self.validate_workflows(files))
+
     def test_allows_comments_and_non_executable_textual_mentions(self):
         files = self.valid_workflows()
         files["ci.yml"] += (
@@ -207,6 +227,9 @@ class VerifyFlutterPubLockTest(unittest.TestCase):
             "      - run: |\n"
             "          echo 'do not run flutter pub get'\n"
             "          printf '%s\\n' 'dart pub upgrade'\n"
+            "          echo '$(flutter pub upgrade)'\n"
+            "          printf '%s\\n' '`dart pub get`'\n"
+            "          # echo \"$(flutter pub upgrade)\"\n"
             "          # sudo /opt/flutter/bin/flutter pub get\n"
         )
         self.assertEqual([], self.validate_workflows(files))
