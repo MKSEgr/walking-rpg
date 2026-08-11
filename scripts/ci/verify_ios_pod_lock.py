@@ -51,7 +51,7 @@ POD_DECLARATION = re.compile(
     r"^(?P<name>[A-Za-z0-9_.+-]+(?:/[A-Za-z0-9_.+-]+)?) "
     r"\((?P<version>[^)]+)\)$"
 )
-POD_COMMAND = re.compile(r"(?m)(?:^|[;&|]\s*)pod\s+(?:install|update)\b")
+POD_COMMAND = re.compile(r"(?m)\bpod[ \t]+(?:install|update)\b")
 PLUGIN_PATH = re.compile(
     r"^(?:Flutter|\.symlinks/plugins/[A-Za-z0-9_.+-]+/(?:ios|darwin))$"
 )

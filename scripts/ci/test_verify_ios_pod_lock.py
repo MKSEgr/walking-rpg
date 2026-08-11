@@ -203,6 +203,25 @@ class VerifyIosPodLockTest(unittest.TestCase):
             with self.subTest(files=files):
                 self.assertTrue(self.validate_workflows(files))
 
+    def test_rejects_wrapped_indented_and_path_qualified_pod_commands(self):
+        commands = (
+            "bundle exec pod update",
+            "sudo pod install",
+            "  pod update",
+            "/usr/local/bin/pod install",
+        )
+        for command in commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  unprotected:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                "          true\n"
+                f"          {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertTrue(self.validate_workflows(files))
+
     def test_rejects_wrong_runner_working_directory_and_job_bypass(self):
         replacements = (
             ("runs-on: macos-26", "runs-on: macos-latest"),
