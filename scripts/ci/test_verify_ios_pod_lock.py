@@ -226,6 +226,55 @@ class VerifyIosPodLockTest(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertTrue(self.validate_workflows(files))
 
+    def test_ignores_non_executable_pod_mentions(self):
+        files = self.valid_workflows()
+        files["ci.yml"] += (
+            "  documentation:\n"
+            "    steps:\n"
+            "      - run: |\n"
+            "          message=\"do not run pod update\"\n"
+            "          echo \"$message\"\n"
+            "          printf '%s\\n' 'pod install'\n"
+            "          echo \"$(printf '%s' 'pod update')\"\n"
+            "          bash -c \"echo 'pod install'\"\n"
+            "          eval \"printf '%s' 'pod update'\"\n"
+            "          echo '$(pod update)'\n"
+            "          true # pod install --deployment\n"
+            "          # pod update\n"
+        )
+        self.assertEqual([], self.validate_workflows(files))
+
+    def test_rejects_nested_pod_commands_and_unparseable_shell(self):
+        commands = (
+            'echo "$(pod update)"',
+            "echo \"`pod install`\"",
+            "bash -lc 'pod update'",
+            "eval 'pod install'",
+            "{ /opt/homebrew/bin/pod update; }",
+            "env MODE=ci sudo -u root bundle exec pod install",
+            "true && command pod update",
+            'bash -c "echo \\$(pod install)"',
+        )
+        for command in commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  unprotected:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                f"          {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertTrue(self.validate_workflows(files))
+
+        malformed = self.valid_workflows()
+        malformed["ci.yml"] += (
+            "  malformed:\n"
+            "    steps:\n"
+            "      - run: |\n"
+            "          echo \"unterminated\n"
+        )
+        self.assertTrue(self.validate_workflows(malformed))
+
     def test_rejects_wrong_runner_working_directory_and_job_bypass(self):
         replacements = (
             ("runs-on: macos-26", "runs-on: macos-latest"),

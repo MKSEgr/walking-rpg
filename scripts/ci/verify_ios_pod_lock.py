@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import hashlib
 import re
+import shlex
 import subprocess
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import yaml
@@ -47,11 +48,20 @@ REQUIRED_LOCK_KEYS = {
     "COCOAPODS",
 }
 MERGE_TAG = "tag:yaml.org,2002:merge"
+CONTROL_CHARACTERS = frozenset(";&|()\n")
+ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=.*$", re.DOTALL)
+SHELLS = frozenset({"bash", "dash", "sh", "zsh"})
+SIMPLE_WRAPPERS = frozenset(
+    {"builtin", "command", "exec", "fvm", "nohup", "time", "xargs"}
+)
+RESERVED_PREFIXES = frozenset(
+    {"!", "do", "elif", "else", "if", "then", "until", "while", "{", "}"}
+)
+COMMAND_SUBSTITUTION_PLACEHOLDER = "__reviewed_command_substitution__"
 POD_DECLARATION = re.compile(
     r"^(?P<name>[A-Za-z0-9_.+-]+(?:/[A-Za-z0-9_.+-]+)?) "
     r"\((?P<version>[^)]+)\)$"
 )
-POD_COMMAND = re.compile(r"(?m)\bpod[ \t]+(?:install|update)\b")
 PLUGIN_PATH = re.compile(
     r"^(?:Flutter|\.symlinks/plugins/[A-Za-z0-9_.+-]+/(?:ios|darwin))$"
 )
@@ -128,6 +138,324 @@ def _load_yaml(path: Path, source: str) -> tuple[object | None, list[str]]:
         return yaml.safe_load(source), []
     except yaml.YAMLError as error:
         return None, [_yaml_error(path, error)]
+
+
+def _basename(value: str) -> str:
+    return value.rsplit("/", 1)[-1]
+
+
+def _skip_options(
+    tokens: Sequence[str],
+    index: int,
+    options_with_values: frozenset[str] = frozenset(),
+) -> int:
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--":
+            return index + 1
+        if not token.startswith("-") or token == "-":
+            return index
+        index += 1
+        if token in options_with_values and index < len(tokens):
+            index += 1
+    return index
+
+
+def _command_from_segment(tokens: Sequence[str]) -> tuple[str, ...] | None:
+    index = 0
+    for _ in range(12):
+        while index < len(tokens) and tokens[index] in RESERVED_PREFIXES:
+            index += 1
+        while index < len(tokens) and ASSIGNMENT.fullmatch(tokens[index]):
+            index += 1
+        if index >= len(tokens):
+            return None
+        executable = _basename(tokens[index])
+        if executable == "env":
+            index = _skip_options(
+                tokens,
+                index + 1,
+                frozenset({"-C", "-S", "--chdir", "--split-string", "-u", "--unset"}),
+            )
+            while index < len(tokens) and ASSIGNMENT.fullmatch(tokens[index]):
+                index += 1
+            continue
+        if executable == "sudo":
+            index = _skip_options(
+                tokens,
+                index + 1,
+                frozenset(
+                    {
+                        "-C",
+                        "-D",
+                        "-g",
+                        "-h",
+                        "-p",
+                        "-R",
+                        "-T",
+                        "-u",
+                        "--chdir",
+                        "--group",
+                        "--host",
+                        "--prompt",
+                        "--role",
+                        "--type",
+                        "--user",
+                    }
+                ),
+            )
+            continue
+        if executable == "nice":
+            index = _skip_options(
+                tokens,
+                index + 1,
+                frozenset({"-n", "--adjustment"}),
+            )
+            continue
+        if executable == "bundle" and index + 1 < len(tokens):
+            if tokens[index + 1] == "exec":
+                index = _skip_options(tokens, index + 2)
+                continue
+        if executable in SIMPLE_WRAPPERS:
+            index = _skip_options(tokens, index + 1)
+            continue
+        return tuple(tokens[index:])
+    return None
+
+
+def _tokenize_script(source: str) -> tuple[list[str], str | None]:
+    normalized = source.replace("\\\r\n", " ").replace("\\\n", " ")
+    try:
+        lexer = shlex.shlex(
+            normalized,
+            posix=True,
+            punctuation_chars=";&|()\n",
+        )
+        lexer.whitespace = " \t\r"
+        lexer.whitespace_split = True
+        lexer.commenters = "#"
+        return list(lexer), None
+    except ValueError as error:
+        return [], str(error)
+
+
+def _backtick_end(source: str, start: int) -> int | None:
+    index = start
+    while index < len(source):
+        if source[index] == "\\":
+            index += 2
+        elif source[index] == "`":
+            return index
+        else:
+            index += 1
+    return None
+
+
+def _dollar_paren_end(source: str, start: int) -> int | None:
+    index = start
+    quote: str | None = None
+    paren_depth = 0
+    while index < len(source):
+        character = source[index]
+        if quote == "'":
+            if character == "'":
+                quote = None
+            index += 1
+            continue
+        if character == "\\":
+            index += 2
+            continue
+        if quote == '"':
+            if character == '"':
+                quote = None
+                index += 1
+            elif source.startswith("$(", index) and not source.startswith(
+                "$((", index
+            ):
+                nested_end = _dollar_paren_end(source, index + 2)
+                if nested_end is None:
+                    return None
+                index = nested_end + 1
+            elif character == "`":
+                nested_end = _backtick_end(source, index + 1)
+                if nested_end is None:
+                    return None
+                index = nested_end + 1
+            else:
+                index += 1
+            continue
+        if character in {"'", '"'}:
+            quote = character
+            index += 1
+        elif character == "`":
+            nested_end = _backtick_end(source, index + 1)
+            if nested_end is None:
+                return None
+            index = nested_end + 1
+        elif source.startswith("$(", index) and not source.startswith("$((", index):
+            nested_end = _dollar_paren_end(source, index + 2)
+            if nested_end is None:
+                return None
+            index = nested_end + 1
+        elif character == "(":
+            paren_depth += 1
+            index += 1
+        elif character == ")":
+            if paren_depth == 0:
+                return index
+            paren_depth -= 1
+            index += 1
+        else:
+            index += 1
+    return None
+
+
+def _extract_command_substitutions(
+    source: str,
+) -> tuple[list[str], str, list[str]]:
+    substitutions: list[str] = []
+    masked: list[str] = []
+    errors: list[str] = []
+    index = 0
+    quote: str | None = None
+    while index < len(source):
+        character = source[index]
+        if quote == "'":
+            masked.append(character)
+            if character == "'":
+                quote = None
+            index += 1
+            continue
+        if character == "\\":
+            masked.append(source[index : index + 2])
+            index += 2
+            continue
+        if quote == '"' and character == '"':
+            quote = None
+            masked.append(character)
+            index += 1
+            continue
+        if quote is None and character in {"'", '"'}:
+            quote = character
+            masked.append(character)
+            index += 1
+            continue
+        if (
+            quote is None
+            and character == "#"
+            and (index == 0 or source[index - 1] in " \t\r\n;&|()")
+        ):
+            line_end = source.find("\n", index)
+            if line_end == -1:
+                masked.append(source[index:])
+                break
+            masked.append(source[index : line_end + 1])
+            index = line_end + 1
+            continue
+        if source.startswith("$(", index) and not source.startswith("$((", index):
+            end = _dollar_paren_end(source, index + 2)
+            if end is None:
+                errors.append("unterminated shell command substitution")
+                masked.append(source[index:])
+                break
+            substitutions.append(source[index + 2 : end])
+            masked.append(COMMAND_SUBSTITUTION_PLACEHOLDER)
+            index = end + 1
+            continue
+        if character == "`":
+            end = _backtick_end(source, index + 1)
+            if end is None:
+                errors.append("unterminated legacy shell command substitution")
+                masked.append(source[index:])
+                break
+            substitutions.append(source[index + 1 : end])
+            masked.append(COMMAND_SUBSTITUTION_PLACEHOLDER)
+            index = end + 1
+            continue
+        masked.append(character)
+        index += 1
+    return substitutions, "".join(masked), errors
+
+
+def _nested_shell_sources(source: str) -> tuple[str, ...]:
+    # shlex preserves some expansion escapes that the invoking shell consumes
+    # before passing a command string to `sh -c` or `eval`. Inspect both forms.
+    deescaped = re.sub(r"\\+(?=(?:\$\(|`))", "", source)
+    if deescaped == source:
+        return (source,)
+    return source, deescaped
+
+
+def _shell_commands(
+    source: str,
+    *,
+    depth: int = 0,
+) -> tuple[list[tuple[str, ...]], list[str]]:
+    if depth > 4:
+        return [], ["nested shell command depth exceeds the reviewed limit"]
+    substitutions, masked_source, errors = _extract_command_substitutions(source)
+    tokens, token_error = _tokenize_script(masked_source)
+    if token_error is not None:
+        return [], errors + [f"unable to parse run script: {token_error}"]
+
+    segments: list[list[str]] = [[]]
+    for token in tokens:
+        if token and set(token) <= CONTROL_CHARACTERS:
+            if segments[-1]:
+                segments.append([])
+        else:
+            segments[-1].append(token)
+
+    commands: list[tuple[str, ...]] = []
+    for substitution in substitutions:
+        nested, nested_errors = _shell_commands(substitution, depth=depth + 1)
+        commands.extend(nested)
+        errors.extend(nested_errors)
+    for segment in segments:
+        command = _command_from_segment(segment)
+        if command is None:
+            continue
+        executable = _basename(command[0])
+        command_index = None
+        if executable in SHELLS:
+            for index, argument in enumerate(command[1:], start=1):
+                if argument == "-c" or (
+                    argument.startswith("-")
+                    and not argument.startswith("--")
+                    and "c" in argument[1:]
+                ):
+                    command_index = index + 1
+                    break
+        if command_index is not None:
+            if command_index >= len(command):
+                errors.append(f"{executable} -c must provide a command string")
+                continue
+            for nested_source in _nested_shell_sources(command[command_index]):
+                nested, nested_errors = _shell_commands(
+                    nested_source,
+                    depth=depth + 1,
+                )
+                commands.extend(nested)
+                errors.extend(nested_errors)
+        elif executable == "eval" and len(command) > 1:
+            for nested_source in _nested_shell_sources(" ".join(command[1:])):
+                nested, nested_errors = _shell_commands(
+                    nested_source,
+                    depth=depth + 1,
+                )
+                commands.extend(nested)
+                errors.extend(nested_errors)
+        else:
+            commands.append(command)
+    return commands, errors
+
+
+def _is_pod_dependency_command(command: Sequence[str]) -> bool:
+    return (
+        len(command) >= 2
+        and _basename(command[0]) == "pod"
+        and command[1] in {"install", "update"}
+    )
 
 
 def _pod_names(pods: object, path: Path) -> tuple[set[str], list[str]]:
@@ -409,7 +737,15 @@ def validate_workflows(
             if isinstance(steps, list):
                 for index, step in enumerate(steps):
                     if isinstance(step, Mapping) and isinstance(step.get("run"), str):
-                        if POD_COMMAND.search(step["run"]):
+                        commands, shell_errors = _shell_commands(step["run"])
+                        errors.extend(
+                            f"{path.name}.jobs.{job_name}.steps[{index}] {error}"
+                            for error in shell_errors
+                        )
+                        if any(
+                            _is_pod_dependency_command(command)
+                            for command in commands
+                        ):
                             pod_command_locations.append((path.name, job_name, index))
             if expected_jobs.get(path.name) == job_name:
                 seen_jobs.add((path.name, job_name))
