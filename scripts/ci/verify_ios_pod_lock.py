@@ -309,7 +309,7 @@ def _job_errors(path: Path, job_name: str, job: object) -> list[str]:
             errors.append(f"{prefix}.steps[{index}] must be a mapping")
             continue
         lines = _script_lines(step.get("run"))
-        if lines == ("flutter pub get",):
+        if lines == ("flutter pub get --enforce-lockfile",):
             dependency_indexes.append(index)
         if any(line.startswith("flutter build ios ") for line in lines):
             build_indexes.append(index)
@@ -335,7 +335,9 @@ def _job_errors(path: Path, job_name: str, job: object) -> list[str]:
                 )
 
     if len(dependency_indexes) != 1:
-        errors.append(f"{prefix} must run flutter pub get exactly once")
+        errors.append(
+            f"{prefix} must run flutter pub get --enforce-lockfile exactly once"
+        )
     if len(install_indexes) != 1:
         errors.append(f"{prefix} must install locked iOS pods exactly once")
     if len(build_indexes) != 1:

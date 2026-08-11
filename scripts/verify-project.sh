@@ -24,6 +24,8 @@ for file in \
   "$ROOT_DIR/scripts/ci/test_verify_runner_image_pins.py" \
   "$ROOT_DIR/scripts/ci/verify_workflow_toolchain_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_workflow_toolchain_pins.py" \
+  "$ROOT_DIR/scripts/ci/verify_flutter_pub_lock.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_flutter_pub_lock.py" \
   "$ROOT_DIR/scripts/ci/verify_ios_pod_lock.py" \
   "$ROOT_DIR/scripts/ci/test_verify_ios_pod_lock.py" \
   "$ROOT_DIR/scripts/ci/verify_build_tool_wrapper_pins.py" \
@@ -54,6 +56,10 @@ printf '%s\n' "Checking exact GitHub workflow toolchains..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_workflow_toolchain_pins.py"
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_workflow_toolchain_pins.py"
 
+printf '%s\n' "Checking frozen Flutter pub dependencies..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_flutter_pub_lock.py"
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_flutter_pub_lock.py"
+
 printf '%s\n' "Checking frozen iOS CocoaPods dependencies..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_ios_pod_lock.py"
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_ios_pod_lock.py"
@@ -71,7 +77,12 @@ else
 fi
 
 if command -v flutter >/dev/null 2>&1; then
-  (cd "$ROOT_DIR/mobile" && flutter pub get && flutter analyze && flutter test)
+  (
+    cd "$ROOT_DIR/mobile" &&
+      flutter pub get --enforce-lockfile &&
+      flutter analyze --no-pub &&
+      flutter test --no-pub
+  )
 else
   echo "Flutter is not installed; mobile checks skipped."
 fi

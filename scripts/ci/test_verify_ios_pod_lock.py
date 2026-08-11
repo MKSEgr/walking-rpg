@@ -73,7 +73,7 @@ class VerifyIosPodLockTest(unittest.TestCase):
             "        working-directory: mobile\n"
             "    steps:\n"
             "      - name: Install dependencies\n"
-            "        run: flutter pub get\n"
+            "        run: flutter pub get --enforce-lockfile\n"
             "      - name: Install locked iOS pods\n"
             "        shell: bash\n"
             "        run: |\n"
@@ -186,9 +186,13 @@ class VerifyIosPodLockTest(unittest.TestCase):
         cases.append(missing)
         reordered = self.valid_workflows()
         reordered["ci.yml"] = reordered["ci.yml"].replace(
-            "      - name: Install dependencies\n        run: flutter pub get\n",
+            "      - name: Install dependencies\n"
+            "        run: flutter pub get --enforce-lockfile\n",
             "",
-        ) + "      - name: Late dependencies\n        run: flutter pub get\n"
+        ) + (
+            "      - name: Late dependencies\n"
+            "        run: flutter pub get --enforce-lockfile\n"
+        )
         cases.append(reordered)
         conditional = self.valid_workflows()
         conditional["ci.yml"] = conditional["ci.yml"].replace(
