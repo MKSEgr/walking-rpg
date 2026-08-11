@@ -62,6 +62,30 @@ Exact image release и Included Software URL сохраняются в Actions j
 побайтово контролируемой VM в будущем потребуется отдельный self-hosted image
 contract; текущая политика не создаёт ложного утверждения об этом.
 
+## Frozen iOS CocoaPods dependencies
+
+`mobile/ios/Podfile.lock` хранится в Git и связывается с reviewed SHA-256 в
+`scripts/ci/verify_ios_pod_lock.py`. Lock фиксирует полный native pod graph,
+включая транзитивные зависимости Flutter plugins, spec checksums, Podfile
+checksum и CocoaPods `1.17.0`. Каталоги `Pods/` и `.symlinks/` остаются
+generated и не коммитятся.
+
+Оба protected iOS job после `flutter pub get` выполняют `pod install
+--deployment`, затем строят приложение и проверяют, что lockfile не изменился.
+Структурный gate отклоняет отсутствующий/изменённый/ignored lockfile,
+невалидный YAML, duplicate keys, aliases/merge keys, непросмотренный CocoaPods,
+stale Podfile checksum, внешние plugin sources, обычный `pod install`, `pod
+update`, conditional/continue-on-error bypass и изменение порядка
+`pub get → frozen pods → iOS build → lock diff`.
+
+Обновление pod graph выполняется только отдельным CODEOWNER-reviewed PR:
+lockfile намеренно регенерируется на reviewed macOS/Flutter/CocoaPods baseline,
+одновременно обновляется policy digest и заново проходит simulator/release
+matrix. Невозможность установить frozen graph считается ошибкой, а не поводом
+вернуться к unlocked resolution. CocoaPods также рекомендует всегда хранить
+`Podfile` и `Podfile.lock` под version control:
+https://guides.cocoapods.org/using/using-cocoapods.
+
 ## Immutable build-tool wrapper downloads
 
 Maven и Gradle wrapper properties связывают exact versioned distribution URL с
@@ -126,6 +150,7 @@ PostgreSQL integration/restore контуром.
 - для release-срезов `Release quality` зелёный;
 - remote Action refs прошли immutable-pin policy;
 - GitHub-hosted jobs прошли explicit runner-image policy;
+- CocoaPods graph закреплён tracked lockfile и установлен в deployment mode;
 - Maven/Gradle distributions и Gradle wrapper JAR прошли checksum policy;
 - protected backend base images прошли exact-digest policy;
 - PostgreSQL Testcontainers и Compose прошли общий exact-digest policy;
