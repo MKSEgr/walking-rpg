@@ -275,6 +275,94 @@ class VerifyIosPodLockTest(unittest.TestCase):
         )
         self.assertTrue(self.validate_workflows(malformed))
 
+    def test_rejects_pod_commands_after_prefix_redirections(self):
+        commands = (
+            ">/tmp/pod.log pod update",
+            "2>/dev/null pod install",
+            "> /tmp/pod.log command pod update",
+            "3>>/tmp/pod.log env MODE=ci sudo pod install",
+            "&>/tmp/pod.log /usr/local/bin/pod update",
+        )
+        for command in commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  unprotected:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                f"          {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertTrue(self.validate_workflows(files))
+
+    def test_rejects_pod_commands_wrapped_by_xargs_value_options(self):
+        commands = (
+            "printf x | xargs -n 1 pod install",
+            "printf x | xargs --max-args 1 pod update",
+            "printf x | xargs -P 2 command pod install",
+            "printf x | xargs -J % /usr/local/bin/pod update %",
+            "printf x | xargs -tn1 pod install",
+            "printf x | xargs --max-args=1 pod update",
+        )
+        for command in commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  unprotected:\n"
+                "    steps:\n"
+                f"      - run: {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertTrue(self.validate_workflows(files))
+
+    def test_ignores_literal_here_document_bodies(self):
+        files = self.valid_workflows()
+        files["ci.yml"] += (
+            "  documentation-here-documents:\n"
+            "    steps:\n"
+            "      - run: |\n"
+            "          cat <<'QUOTED'\n"
+            "          pod update\n"
+            "          $(pod install)\n"
+            "          `pod update`\n"
+            "          QUOTED\n"
+            "          cat <<PLAIN\n"
+            "          pod install\n"
+            "          \\$(pod update)\n"
+            "          PLAIN\n"
+            "          cat <<-TABBED\n"
+            "          \tpod update\n"
+            "          TABBED\n"
+            "          cat <<'FIRST' <<SECOND\n"
+            "          pod update\n"
+            "          FIRST\n"
+            "          pod install\n"
+            "          SECOND\n"
+        )
+
+        self.assertEqual([], self.validate_workflows(files))
+
+    def test_rejects_executable_here_document_substitutions_and_errors(self):
+        scripts = (
+            "cat <<EOF\n$(pod update)\nEOF",
+            "cat <<EOF\n'$(pod install)'\nEOF",
+            "cat <<EOF\n`pod update`\nEOF",
+            "cat <<'FIRST' <<SECOND\npod update\nFIRST\n$(pod install)\nSECOND",
+            'bash -c "cat <<EOF\n$(pod update)\nEOF\ntrue"',
+            "cat <<EOF\nunterminated",
+        )
+        for script in scripts:
+            files = self.valid_workflows()
+            indented = "".join(
+                f"          {line}\n" for line in script.splitlines()
+            )
+            files["ci.yml"] += (
+                "  unprotected:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                f"{indented}"
+            )
+            with self.subTest(script=script):
+                self.assertTrue(self.validate_workflows(files))
+
     def test_rejects_wrong_runner_working_directory_and_job_bypass(self):
         replacements = (
             ("runs-on: macos-26", "runs-on: macos-latest"),

@@ -50,9 +50,28 @@ REQUIRED_LOCK_KEYS = {
 MERGE_TAG = "tag:yaml.org,2002:merge"
 CONTROL_CHARACTERS = frozenset(";&|()\n")
 ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=.*$", re.DOTALL)
+REDIRECTION_FD = re.compile(r"^(?:[0-9]+|\{[A-Za-z_][A-Za-z0-9_]*\})$")
+REDIRECTION_OPERATORS = frozenset(
+    {"<", ">", "<<", "<<-", "<<<", ">>", "<>", ">|", "<&", ">&", "&>", "&>>"}
+)
 SHELLS = frozenset({"bash", "dash", "sh", "zsh"})
 SIMPLE_WRAPPERS = frozenset(
-    {"builtin", "command", "exec", "fvm", "nohup", "time", "xargs"}
+    {"builtin", "command", "exec", "fvm", "nohup", "time"}
+)
+XARGS_SHORT_OPTIONS_WITH_VALUES = frozenset(
+    {"a", "d", "E", "I", "J", "L", "n", "P", "R", "S", "s"}
+)
+XARGS_SHORT_OPTIONS_WITH_OPTIONAL_VALUES = frozenset({"e", "i", "l"})
+XARGS_LONG_OPTIONS_WITH_VALUES = frozenset(
+    {
+        "--arg-file",
+        "--delimiter",
+        "--max-args",
+        "--max-chars",
+        "--max-lines",
+        "--max-procs",
+        "--process-slot-var",
+    }
 )
 RESERVED_PREFIXES = frozenset(
     {"!", "do", "elif", "else", "if", "then", "until", "while", "{", "}"}
@@ -161,13 +180,68 @@ def _skip_options(
     return index
 
 
+def _skip_redirection(tokens: Sequence[str], index: int) -> int | None:
+    operator_index = index
+    if (
+        REDIRECTION_FD.fullmatch(tokens[index])
+        and index + 1 < len(tokens)
+        and tokens[index + 1] in REDIRECTION_OPERATORS
+    ):
+        operator_index += 1
+    elif tokens[index] not in REDIRECTION_OPERATORS:
+        return None
+
+    target_index = operator_index + 1
+    if target_index >= len(tokens):
+        return len(tokens)
+    return target_index + 1
+
+
+def _skip_xargs_options(tokens: Sequence[str], index: int) -> int:
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--":
+            return index + 1
+        if not token.startswith("-") or token == "-":
+            return index
+
+        index += 1
+        if token.startswith("--"):
+            option, separator, _ = token.partition("=")
+            if (
+                not separator
+                and option in XARGS_LONG_OPTIONS_WITH_VALUES
+                and index < len(tokens)
+            ):
+                index += 1
+            continue
+
+        cluster = token[1:]
+        for position, option in enumerate(cluster):
+            if option in XARGS_SHORT_OPTIONS_WITH_VALUES:
+                if position == len(cluster) - 1 and index < len(tokens):
+                    index += 1
+                break
+            if option in XARGS_SHORT_OPTIONS_WITH_OPTIONAL_VALUES:
+                break
+    return index
+
+
 def _command_from_segment(tokens: Sequence[str]) -> tuple[str, ...] | None:
     index = 0
-    for _ in range(12):
-        while index < len(tokens) and tokens[index] in RESERVED_PREFIXES:
-            index += 1
-        while index < len(tokens) and ASSIGNMENT.fullmatch(tokens[index]):
-            index += 1
+    for _ in range(16):
+        while index < len(tokens):
+            if (
+                tokens[index] in RESERVED_PREFIXES
+                or ASSIGNMENT.fullmatch(tokens[index])
+            ):
+                index += 1
+                continue
+            redirection_end = _skip_redirection(tokens, index)
+            if redirection_end is not None:
+                index = redirection_end
+                continue
+            break
         if index >= len(tokens):
             return None
         executable = _basename(tokens[index])
@@ -216,6 +290,9 @@ def _command_from_segment(tokens: Sequence[str]) -> tuple[str, ...] | None:
             if tokens[index + 1] == "exec":
                 index = _skip_options(tokens, index + 2)
                 continue
+        if executable == "xargs":
+            index = _skip_xargs_options(tokens, index + 1)
+            continue
         if executable in SIMPLE_WRAPPERS:
             index = _skip_options(tokens, index + 1)
             continue
@@ -229,7 +306,7 @@ def _tokenize_script(source: str) -> tuple[list[str], str | None]:
         lexer = shlex.shlex(
             normalized,
             posix=True,
-            punctuation_chars=";&|()\n",
+            punctuation_chars=";&|()<>\n",
         )
         lexer.whitespace = " \t\r"
         lexer.whitespace_split = True
@@ -237,6 +314,155 @@ def _tokenize_script(source: str) -> tuple[list[str], str | None]:
         return list(lexer), None
     except ValueError as error:
         return [], str(error)
+
+
+def _here_document_declarations(
+    line: str,
+) -> tuple[list[tuple[str, bool, bool]], list[str]]:
+    declarations: list[tuple[str, bool, bool]] = []
+    errors: list[str] = []
+    index = 0
+    quote: str | None = None
+    while index < len(line):
+        character = line[index]
+        if character in "\r\n":
+            break
+        if quote == "'":
+            if character == "'":
+                quote = None
+            index += 1
+            continue
+        if quote == '"':
+            if character == "\\":
+                index += 2
+            elif character == '"':
+                quote = None
+                index += 1
+            else:
+                index += 1
+            continue
+        if character == "\\":
+            index += 2
+            continue
+        if character in {"'", '"'}:
+            quote = character
+            index += 1
+            continue
+        if character == "#" and (
+            index == 0 or line[index - 1] in " \t\r\n;&|()<>"
+        ):
+            break
+        if line.startswith("<<<", index):
+            index += 3
+            continue
+        if not line.startswith("<<", index):
+            index += 1
+            continue
+
+        index += 2
+        strip_tabs = index < len(line) and line[index] == "-"
+        if strip_tabs:
+            index += 1
+        while index < len(line) and line[index] in " \t":
+            index += 1
+
+        delimiter: list[str] = []
+        delimiter_quote: str | None = None
+        quoted = False
+        consumed = False
+        while index < len(line):
+            character = line[index]
+            if delimiter_quote == "'":
+                consumed = True
+                if character == "'":
+                    delimiter_quote = None
+                else:
+                    delimiter.append(character)
+                index += 1
+                continue
+            if delimiter_quote == '"':
+                consumed = True
+                if character == "\\" and index + 1 < len(line):
+                    quoted = True
+                    delimiter.append(line[index + 1])
+                    index += 2
+                elif character == '"':
+                    delimiter_quote = None
+                    index += 1
+                else:
+                    delimiter.append(character)
+                    index += 1
+                continue
+            if character in " \t\r\n;&|()<>":
+                break
+            consumed = True
+            if character in {"'", '"'}:
+                quoted = True
+                delimiter_quote = character
+                index += 1
+            elif character == "\\":
+                quoted = True
+                if index + 1 >= len(line) or line[index + 1] in "\r\n":
+                    errors.append("here-document delimiter ends with an escape")
+                    index = len(line)
+                else:
+                    delimiter.append(line[index + 1])
+                    index += 2
+            else:
+                delimiter.append(character)
+                index += 1
+
+        if delimiter_quote is not None:
+            errors.append("unterminated quote in here-document delimiter")
+        elif not consumed:
+            errors.append("here-document redirection must provide a delimiter")
+        else:
+            declarations.append(("".join(delimiter), strip_tabs, quoted))
+    return declarations, errors
+
+
+def _mask_here_document_line(line: str) -> str:
+    content = line.rstrip("\r\n")
+    return " " * len(content) + line[len(content) :]
+
+
+def _strip_here_document_bodies(
+    source: str,
+) -> tuple[str, list[str], list[str]]:
+    lines = source.splitlines(keepends=True)
+    masked: list[str] = []
+    expanding_bodies: list[str] = []
+    errors: list[str] = []
+    line_index = 0
+    while line_index < len(lines):
+        header = lines[line_index]
+        declarations, declaration_errors = _here_document_declarations(header)
+        errors.extend(declaration_errors)
+        masked.append(header)
+        line_index += 1
+
+        for delimiter, strip_tabs, quoted in declarations:
+            body: list[str] = []
+            found = False
+            while line_index < len(lines):
+                line = lines[line_index]
+                candidate = line.rstrip("\r\n")
+                if strip_tabs:
+                    candidate = candidate.lstrip("\t")
+                masked.append(_mask_here_document_line(line))
+                line_index += 1
+                if candidate == delimiter:
+                    found = True
+                    break
+                body.append(line)
+            if not found:
+                errors.append(
+                    f"unterminated here-document delimiter {delimiter!r}"
+                )
+                return "".join(masked), expanding_bodies, errors
+            if not quoted:
+                expanding_bodies.append("".join(body))
+    return "".join(masked), expanding_bodies, errors
 
 
 def _backtick_end(source: str, start: int) -> int | None:
@@ -308,6 +534,40 @@ def _dollar_paren_end(source: str, start: int) -> int | None:
         else:
             index += 1
     return None
+
+
+def _expanding_here_document_substitutions(
+    source: str,
+) -> tuple[list[str], list[str]]:
+    substitutions: list[str] = []
+    errors: list[str] = []
+    index = 0
+    while index < len(source):
+        if source[index] == "\\":
+            index += 2
+            continue
+        if source.startswith("$(", index) and not source.startswith("$((", index):
+            end = _dollar_paren_end(source, index + 2)
+            if end is None:
+                errors.append(
+                    "unterminated shell command substitution in here-document"
+                )
+                break
+            substitutions.append(source[index + 2 : end])
+            index = end + 1
+            continue
+        if source[index] == "`":
+            end = _backtick_end(source, index + 1)
+            if end is None:
+                errors.append(
+                    "unterminated legacy command substitution in here-document"
+                )
+                break
+            substitutions.append(source[index + 1 : end])
+            index = end + 1
+            continue
+        index += 1
+    return substitutions, errors
 
 
 def _extract_command_substitutions(
@@ -393,7 +653,17 @@ def _shell_commands(
 ) -> tuple[list[tuple[str, ...]], list[str]]:
     if depth > 4:
         return [], ["nested shell command depth exceeds the reviewed limit"]
-    substitutions, masked_source, errors = _extract_command_substitutions(source)
+    masked_source, expanding_bodies, errors = _strip_here_document_bodies(source)
+    substitutions, masked_source, substitution_errors = (
+        _extract_command_substitutions(masked_source)
+    )
+    errors.extend(substitution_errors)
+    for body in expanding_bodies:
+        body_substitutions, body_errors = (
+            _expanding_here_document_substitutions(body)
+        )
+        substitutions.extend(body_substitutions)
+        errors.extend(body_errors)
     tokens, token_error = _tokenize_script(masked_source)
     if token_error is not None:
         return [], errors + [f"unable to parse run script: {token_error}"]
