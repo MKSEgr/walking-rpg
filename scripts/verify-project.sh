@@ -9,6 +9,7 @@ for file in \
   "$ROOT_DIR/backend/pom.xml" \
   "$ROOT_DIR/mobile/pubspec.yaml" \
   "$ROOT_DIR/mobile/android/app/src/main/AndroidManifest.xml" \
+  "$ROOT_DIR/mobile/ios/Podfile.lock" \
   "$ROOT_DIR/mobile/ios/Runner/Info.plist" \
   "$ROOT_DIR/mobile/ios/Runner/Runner.entitlements" \
   "$ROOT_DIR/docs/ARCHITECTURE.md" \
@@ -23,6 +24,8 @@ for file in \
   "$ROOT_DIR/scripts/ci/test_verify_runner_image_pins.py" \
   "$ROOT_DIR/scripts/ci/verify_workflow_toolchain_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_workflow_toolchain_pins.py" \
+  "$ROOT_DIR/scripts/ci/verify_ios_pod_lock.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_ios_pod_lock.py" \
   "$ROOT_DIR/scripts/ci/verify_build_tool_wrapper_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_build_tool_wrapper_pins.py"; do
   if [ ! -f "$file" ]; then
@@ -50,6 +53,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_runner_image
 printf '%s\n' "Checking exact GitHub workflow toolchains..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_workflow_toolchain_pins.py"
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_workflow_toolchain_pins.py"
+
+printf '%s\n' "Checking frozen iOS CocoaPods dependencies..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_ios_pod_lock.py"
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_ios_pod_lock.py"
 
 printf '%s\n' "Checking immutable build-tool wrapper downloads..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_build_tool_wrapper_pins.py"

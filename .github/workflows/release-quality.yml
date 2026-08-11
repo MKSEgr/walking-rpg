@@ -293,6 +293,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Install locked iOS pods
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ios
+          test "$(pod --version)" = '1.17.0'
+          pod install --deployment
+          git diff --exit-code -- Podfile.lock
+
       - name: Build iOS release candidate without signing
         run: |
           flutter build ios --release --no-codesign \
@@ -304,6 +313,10 @@ jobs:
             "--dart-define=OIDC_SCOPES=$RELEASE_CANDIDATE_OIDC_SCOPES" \
             "--dart-define=OIDC_REDIRECT_URI=$RELEASE_CANDIDATE_OIDC_REDIRECT_URI" \
             "--dart-define=OIDC_POST_LOGOUT_REDIRECT_URI=$RELEASE_CANDIDATE_OIDC_POST_LOGOUT_REDIRECT_URI"
+
+      - name: Verify iOS pod lock unchanged
+        shell: bash
+        run: git diff --exit-code -- ios/Podfile.lock
 
       - name: Archive and digest no-codesign app
         shell: bash

@@ -272,6 +272,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Install locked iOS pods
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ios
+          test "$(pod --version)" = '1.17.0'
+          pod install --deployment
+          git diff --exit-code -- Podfile.lock
+
       - name: Build iOS simulator app for diagnostics
         id: ios-build
         shell: bash
@@ -281,6 +290,10 @@ jobs:
           status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
+
+      - name: Verify iOS pod lock unchanged
+        shell: bash
+        run: git diff --exit-code -- ios/Podfile.lock
 
       - name: Upload iOS build diagnostics
         if: steps.ios-build.outputs.status != '0'

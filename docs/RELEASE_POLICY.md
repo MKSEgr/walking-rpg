@@ -36,6 +36,12 @@ Current engineering baseline:
   `3.12.13`, Temurin `17.0.19+10` and Temurin `21.0.11+10` versions. CI
   structurally rejects version ranges, missing setup inputs, non-Temurin Java
   distributions and changes to the reviewed occurrence matrix.
+- iOS native dependencies are resolved only from the tracked reviewed
+  `mobile/ios/Podfile.lock`. Both protected iOS jobs run CocoaPods `1.17.0` in
+  deployment mode after Flutter plugin generation and fail if the lock is
+  missing, stale, ignored, structurally invalid or changed by the build.
+  `Pods/` and plugin symlinks remain untracked generated output; an intentional
+  pod update must change the lock and its policy digest in one reviewed PR.
 - Hosted runner labels do not pin GitHub's weekly VM image release. The exact
   image version remains recorded in each job log; full VM-image immutability
   would require a separately governed self-hosted runner contract.
