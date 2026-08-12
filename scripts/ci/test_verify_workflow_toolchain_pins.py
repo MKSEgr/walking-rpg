@@ -102,6 +102,67 @@ class VerifyWorkflowToolchainPinsTest(unittest.TestCase):
                     any("reviewed exact version" in error for error in errors)
                 )
 
+    def test_rejects_broad_versions_for_case_variant_setup_actions(self):
+        cases = (
+            ("Actions/Setup-Node", "node-version", "22", ""),
+            ("ACTIONS/setup-python", "python-version", "3.12", ""),
+            (
+                "actions/SETUP-JAVA",
+                "java-version",
+                "21",
+                "          distribution: temurin\n",
+            ),
+        )
+        for action, input_name, version, extra in cases:
+            with self.subTest(action=action, version=version):
+                errors = self.validate(
+                    "jobs:\n  test:\n    steps:\n"
+                    + self.setup_step(
+                        action,
+                        input_name,
+                        version,
+                        extra=extra,
+                    )
+                )
+                self.assertTrue(
+                    any("reviewed exact version" in error for error in errors)
+                )
+
+    def test_counts_reviewed_case_variant_actions_canonically(self):
+        workflow = (
+            "jobs:\n  test:\n    steps:\n"
+            + self.setup_step("Actions/Setup-Node", "node-version", "22.23.1")
+            + self.setup_step(
+                "ACTIONS/setup-python", "python-version", "3.12.13"
+            )
+            + self.setup_step(
+                "actions/SETUP-JAVA",
+                "java-version",
+                "21.0.11+10",
+                extra="          distribution: temurin\n",
+            )
+        )
+        expected = {
+            ("actions/setup-node", "22.23.1"): 1,
+            ("actions/setup-python", "3.12.13"): 1,
+            ("actions/setup-java", "21.0.11+10"): 1,
+        }
+
+        self.assertEqual(
+            [],
+            self.validate(workflow, expected_counts=expected),
+        )
+
+    def test_ignores_non_toolchain_action_lookalikes(self):
+        workflow = (
+            "jobs:\n  test:\n    steps:\n"
+            "      - uses: ./Actions/setup-node\n"
+            "      - uses: docker://actions/setup-python:latest\n"
+            f"      - uses: example/setup-java@{self.full_sha}\n"
+        )
+
+        self.assertEqual([], self.validate(workflow))
+
     def test_rejects_missing_version_or_with_mapping(self):
         workflows = (
             "jobs:\n  test:\n    steps:\n"

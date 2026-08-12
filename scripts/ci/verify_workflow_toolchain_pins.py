@@ -75,6 +75,10 @@ def _mapping_values(mapping: MappingNode, name: str) -> tuple[tuple[ScalarNode, 
     )
 
 
+def _canonical_action(value: str) -> str:
+    return value.partition("@")[0].lower()
+
+
 def _structure_errors(path: Path, root: Node) -> list[str]:
     errors: list[str] = []
     pending: list[Node] = [root]
@@ -168,7 +172,7 @@ def _setup_steps(root: Node) -> tuple[tuple[MappingNode, ScalarNode], ...]:
             if uses:
                 value = uses[0][1]
                 if isinstance(value, ScalarNode) and value.tag == STRING_TAG:
-                    action = value.value.partition("@")[0]
+                    action = _canonical_action(value.value)
                     if action in TOOLCHAIN_INPUTS:
                         declarations.append((node, value))
             for key, value in node.value:
@@ -192,7 +196,7 @@ def _toolchain_errors(
     counts: Counter[tuple[str, str]] = Counter()
 
     for step, uses in _setup_steps(root):
-        action = uses.value.partition("@")[0]
+        action = _canonical_action(uses.value)
         input_name, approved_versions = TOOLCHAIN_INPUTS[action]
         version, input_errors = _literal_input(
             path,
