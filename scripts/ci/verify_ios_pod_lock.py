@@ -539,6 +539,9 @@ def _dollar_paren_end(source: str, start: int) -> int | None:
 def _expanding_here_document_substitutions(
     source: str,
 ) -> tuple[list[str], list[str]]:
+    # Bash removes these pairs before expanding an unquoted here-document.
+    # Preserve adjacency: `$\` + newline + `(` becomes an executable `$(`.
+    source = source.replace("\\\r\n", "").replace("\\\n", "")
     substitutions: list[str] = []
     errors: list[str] = []
     index = 0
@@ -570,7 +573,7 @@ def _expanding_here_document_substitutions(
     return substitutions, errors
 
 
-def _extract_command_substitutions(
+def _extract_executable_substitutions(
     source: str,
 ) -> tuple[list[str], str, list[str]]:
     substitutions: list[str] = []
@@ -622,6 +625,16 @@ def _extract_command_substitutions(
             masked.append(COMMAND_SUBSTITUTION_PLACEHOLDER)
             index = end + 1
             continue
+        if quote is None and source.startswith(("<(", ">("), index):
+            end = _dollar_paren_end(source, index + 2)
+            if end is None:
+                errors.append("unterminated shell process substitution")
+                masked.append(source[index:])
+                break
+            substitutions.append(source[index + 2 : end])
+            masked.append(COMMAND_SUBSTITUTION_PLACEHOLDER)
+            index = end + 1
+            continue
         if character == "`":
             end = _backtick_end(source, index + 1)
             if end is None:
@@ -655,7 +668,7 @@ def _shell_commands(
         return [], ["nested shell command depth exceeds the reviewed limit"]
     masked_source, expanding_bodies, errors = _strip_here_document_bodies(source)
     substitutions, masked_source, substitution_errors = (
-        _extract_command_substitutions(masked_source)
+        _extract_executable_substitutions(masked_source)
     )
     errors.extend(substitution_errors)
     for body in expanding_bodies:
