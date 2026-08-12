@@ -23,14 +23,14 @@ TOOLCHAIN_INPUTS = {
     "actions/setup-python": ("python-version", frozenset({"3.12.13"})),
     "actions/setup-java": (
         "java-version",
-        frozenset({"17.0.19+10", "21.0.11+10"}),
+        frozenset({"17.0.19+10", "21.0.12+8.0.LTS"}),
     ),
 }
 EXPECTED_TOOLCHAIN_COUNTS = {
     ("actions/setup-node", "22.23.1"): 1,
     ("actions/setup-python", "3.12.13"): 3,
     ("actions/setup-java", "17.0.19+10"): 2,
-    ("actions/setup-java", "21.0.11+10"): 3,
+    ("actions/setup-java", "21.0.12+8.0.LTS"): 3,
 }
 
 

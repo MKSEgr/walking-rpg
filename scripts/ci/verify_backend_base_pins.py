@@ -38,6 +38,18 @@ class ApprovedStage:
         return f"FROM {self.image}{suffix}"
 
 
+@dataclass(frozen=True)
+class HereDocument:
+    delimiter: str
+    strip_tabs: bool
+
+
+@dataclass(frozen=True)
+class DockerfileScan:
+    logical_lines: tuple[tuple[int, str], ...]
+    errors: tuple[tuple[int, str], ...]
+
+
 # These are reviewed multi-platform OCI index digests. Keep the publisher's
 # independent constants aligned so historical sources cannot weaken this gate.
 APPROVED_STAGES = (
@@ -77,21 +89,150 @@ def _dockerfile_escape(source: str) -> str:
     return escape
 
 
-def _logical_instruction_lines(source: str) -> tuple[tuple[int, str], ...]:
+def _here_document_declarations(
+    line: str,
+) -> tuple[tuple[HereDocument, ...], tuple[str, ...]]:
+    declarations: list[HereDocument] = []
+    errors: list[str] = []
+    index = 0
+    quote: str | None = None
+
+    while index < len(line):
+        character = line[index]
+        if quote == "'":
+            if character == "'":
+                quote = None
+            index += 1
+            continue
+        if quote == '"':
+            if character == "\\":
+                index += 2
+            elif character == '"':
+                quote = None
+                index += 1
+            else:
+                index += 1
+            continue
+        if character == "\\":
+            index += 2
+            continue
+        if character in {"'", '"'}:
+            quote = character
+            index += 1
+            continue
+        if character == "#" and (
+            index == 0 or line[index - 1] in " \t;&|()<>"
+        ):
+            break
+        if line.startswith("<<<", index):
+            index += 3
+            continue
+        if not line.startswith("<<", index):
+            index += 1
+            continue
+
+        index += 2
+        strip_tabs = index < len(line) and line[index] == "-"
+        if strip_tabs:
+            index += 1
+        while index < len(line) and line[index] in " \t":
+            index += 1
+
+        delimiter: list[str] = []
+        delimiter_quote: str | None = None
+        consumed = False
+        while index < len(line):
+            character = line[index]
+            if delimiter_quote == "'":
+                consumed = True
+                if character == "'":
+                    delimiter_quote = None
+                else:
+                    delimiter.append(character)
+                index += 1
+                continue
+            if delimiter_quote == '"':
+                consumed = True
+                if character == "\\" and index + 1 < len(line):
+                    delimiter.append(line[index + 1])
+                    index += 2
+                elif character == '"':
+                    delimiter_quote = None
+                    index += 1
+                else:
+                    delimiter.append(character)
+                    index += 1
+                continue
+            if character in " \t;&|()<>":
+                break
+            consumed = True
+            if character in {"'", '"'}:
+                delimiter_quote = character
+                index += 1
+            elif character == "\\":
+                if index + 1 >= len(line):
+                    errors.append("here-document delimiter ends with an escape")
+                    index = len(line)
+                else:
+                    delimiter.append(line[index + 1])
+                    index += 2
+            else:
+                delimiter.append(character)
+                index += 1
+
+        if delimiter_quote is not None:
+            errors.append("unterminated quote in here-document delimiter")
+        elif not consumed:
+            errors.append("here-document redirection must provide a delimiter")
+        else:
+            declarations.append(HereDocument("".join(delimiter), strip_tabs))
+
+    return tuple(declarations), tuple(errors)
+
+
+def _shell_logical_lines(
+    body: list[tuple[int, str]], strip_tabs: bool
+) -> tuple[tuple[int, str], ...]:
+    logical_lines: list[tuple[int, str]] = []
+    current = ""
+    start_line = 0
+
+    for line_number, raw_line in body:
+        line = raw_line.lstrip("\t") if strip_tabs else raw_line
+        if start_line == 0:
+            start_line = line_number
+
+        trailing_backslashes = len(line) - len(line.rstrip("\\"))
+        if trailing_backslashes % 2 == 1:
+            current += line[:-1]
+            continue
+
+        current += line
+        if current.strip() and not current.lstrip().startswith("#"):
+            logical_lines.append((start_line, current))
+        current = ""
+        start_line = 0
+
+    if start_line != 0 and current.strip():
+        logical_lines.append((start_line, current))
+    return tuple(logical_lines)
+
+
+def _logical_instruction_lines(source: str) -> DockerfileScan:
     escape = _dockerfile_escape(source)
     continuation = re.compile(rf"{re.escape(escape)}[ \t]*$")
     instructions: list[tuple[int, str]] = []
+    errors: list[tuple[int, str]] = []
+    physical_lines = source.splitlines()
     current = ""
     start_line = 0
-    awaiting_continuation = False
+    line_index = 0
 
-    for line_number, physical_line in enumerate(
-        source.splitlines(keepends=True), start=1
-    ):
-        line = physical_line.rstrip("\r\n")
-        if line.lstrip().startswith("#"):
-            continue
-        if not line.strip():
+    while line_index < len(physical_lines):
+        line = physical_lines[line_index]
+        line_number = line_index + 1
+        line_index += 1
+        if line.lstrip().startswith("#") or not line.strip():
             continue
         if start_line == 0:
             start_line = line_number
@@ -99,31 +240,60 @@ def _logical_instruction_lines(source: str) -> tuple[tuple[int, str], ...]:
         match = continuation.search(line)
         if match is not None:
             current += line[: match.start()]
-            awaiting_continuation = True
             continue
 
         current += line
         instructions.append((start_line, current))
+        declarations, declaration_errors = _here_document_declarations(current)
+        errors.extend((start_line, error) for error in declaration_errors)
         current = ""
         start_line = 0
-        awaiting_continuation = False
+
+        for declaration in declarations:
+            body: list[tuple[int, str]] = []
+            found = False
+            while line_index < len(physical_lines):
+                body_line = physical_lines[line_index]
+                body_line_number = line_index + 1
+                line_index += 1
+                candidate = (
+                    body_line.lstrip("\t")
+                    if declaration.strip_tabs
+                    else body_line
+                )
+                if candidate == declaration.delimiter:
+                    found = True
+                    break
+                body.append((body_line_number, body_line))
+
+            instructions.extend(
+                _shell_logical_lines(body, declaration.strip_tabs)
+            )
+            if not found:
+                errors.append(
+                    (
+                        line_number,
+                        "unterminated here-document delimiter "
+                        f"{declaration.delimiter!r}",
+                    )
+                )
+                return DockerfileScan(tuple(instructions), tuple(errors))
 
     if start_line != 0:
         instructions.append((start_line, current))
-    return tuple(instructions)
-
-
-def _package_manager_lines(source: str) -> tuple[int, ...]:
-    return tuple(
-        line_number
-        for line_number, line in _logical_instruction_lines(source)
-        if FORBIDDEN_PACKAGE_MANAGER.search(line) is not None
-    )
+    return DockerfileScan(tuple(instructions), tuple(errors))
 
 
 def validate_dockerfile_source(source: str, path: Path) -> list[str]:
     errors: list[str] = []
-    for line_number in _package_manager_lines(source):
+    scan = _logical_instruction_lines(source)
+    for line_number, message in scan.errors:
+        errors.append(
+            f"{path}:{line_number}: cannot safely parse Dockerfile: {message}"
+        )
+    for line_number, line in scan.logical_lines:
+        if FORBIDDEN_PACKAGE_MANAGER.search(line) is None:
+            continue
         errors.append(
             f"{path}:{line_number}: protected build must not fetch mutable "
             "OS packages through a package manager"

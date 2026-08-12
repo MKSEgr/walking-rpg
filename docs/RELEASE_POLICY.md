@@ -33,7 +33,7 @@ Current engineering baseline:
   labels are rejected across every workflow; runner OS migrations require a
   separate reviewed PR and the full platform matrix.
 - Workflow setup steps use reviewed exact Node.js `22.23.1`, CPython
-  `3.12.13`, Temurin `17.0.19+10` and Temurin `21.0.11+10` versions. CI
+  `3.12.13`, Temurin `17.0.19+10` and Temurin `21.0.12+8.0.LTS` versions. CI
   structurally rejects version ranges, missing setup inputs, non-Temurin Java
   distributions and changes to the reviewed occurrence matrix.
 - Flutter/Dart dependencies are resolved only from the tracked reviewed
