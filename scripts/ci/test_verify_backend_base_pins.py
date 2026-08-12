@@ -151,6 +151,89 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
             any("must not fetch mutable OS packages" in error for error in errors)
         )
 
+    def test_rejects_shell_continuations_inside_run_heredoc(self):
+        cases = (
+            ("", "RUN <<EOF\napt-\\\nget update\nEOF"),
+            ("# escape=`\n\n", "RUN <<'EOF'\napt-\\\nget update\nEOF"),
+            (
+                "# escape=`\n\n",
+                "RUN <<-\"EOF\"\n\tapt-\\\n\tget update\n\tEOF",
+            ),
+        )
+        for prefix, command in cases:
+            with self.subTest(prefix=prefix, command=command):
+                errors = self.validate(
+                    prefix + VALID.replace("RUN true", command, 1)
+                )
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        for error in errors
+                    )
+                )
+
+    def test_rejects_shell_continuations_in_multiple_run_heredocs(self):
+        command = (
+            "RUN <<FIRST <<SECOND\n"
+            "true\n"
+            "FIRST\n"
+            "apt-\\\n"
+            "get update\n"
+            "SECOND"
+        )
+        source = "# escape=`\n\n" + VALID.replace("RUN true", command, 1)
+
+        errors = self.validate(source)
+
+        self.assertTrue(
+            any("must not fetch mutable OS packages" in error for error in errors)
+        )
+
+    def test_allows_package_manager_words_in_run_heredoc_comments(self):
+        command = (
+            "RUN <<EOF\n"
+            "# apt-get is intentionally unavailable in this protected build\n"
+            "true\n"
+            "EOF"
+        )
+        source = "# escape=`\n\n" + VALID.replace("RUN true", command, 1)
+
+        self.assertEqual([], self.validate(source))
+
+    def test_ignores_quoted_and_here_string_markers(self):
+        commands = (
+            "RUN printf '%s\\n' '<<EOF'",
+            "RUN printf '%s\\n' \"<<EOF\"",
+            "RUN printf '%s\\n' value # <<EOF",
+            "RUN printf x <<< input",
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+    def test_rejects_malformed_run_heredocs(self):
+        commands = (
+            "RUN <<EOF\ntrue",
+            "RUN <<\ntrue",
+            "RUN <<'EOF\ntrue",
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                errors = self.validate(VALID.replace("RUN true", command, 1))
+
+                self.assertTrue(
+                    any("cannot safely parse Dockerfile" in error for error in errors)
+                )
+
+    def test_allows_shell_continuation_at_run_heredoc_end(self):
+        command = "RUN <<EOF\nprintf done\\\nEOF"
+        source = "# escape=`\n\n" + VALID.replace("RUN true", command, 1)
+
+        self.assertEqual([], self.validate(source))
+
     def test_escape_directive_after_comment_does_not_change_default(self):
         source = (
             "# ordinary comment ends parser-directive processing\n"
