@@ -63,7 +63,7 @@ class VerifyWorkflowToolchainPinsTest(unittest.TestCase):
             + self.setup_step(
                 "actions/setup-java",
                 "java-version",
-                "21.0.11+10",
+                "21.0.12+8.0.LTS",
                 extra="          distribution: 'temurin'\n",
             )
         )
@@ -78,6 +78,12 @@ class VerifyWorkflowToolchainPinsTest(unittest.TestCase):
                 "actions/setup-java",
                 "java-version",
                 "17",
+                "          distribution: temurin\n",
+            ),
+            (
+                "actions/setup-java",
+                "java-version",
+                "21.0.11+10",
                 "          distribution: temurin\n",
             ),
             (
@@ -138,14 +144,14 @@ class VerifyWorkflowToolchainPinsTest(unittest.TestCase):
             + self.setup_step(
                 "actions/SETUP-JAVA",
                 "java-version",
-                "21.0.11+10",
+                "21.0.12+8.0.LTS",
                 extra="          distribution: temurin\n",
             )
         )
         expected = {
             ("actions/setup-node", "22.23.1"): 1,
             ("actions/setup-python", "3.12.13"): 1,
-            ("actions/setup-java", "21.0.11+10"): 1,
+            ("actions/setup-java", "21.0.12+8.0.LTS"): 1,
         }
 
         self.assertEqual(
@@ -207,7 +213,7 @@ class VerifyWorkflowToolchainPinsTest(unittest.TestCase):
                     + self.setup_step(
                         "actions/setup-java",
                         "java-version",
-                        "21.0.11+10",
+                        "21.0.12+8.0.LTS",
                         extra=declaration,
                     )
                 )
