@@ -30,7 +30,9 @@ if args and args[0] == "-c":
     raise SystemExit(0)
 
 if args[:2] == ["-m", "venv"]:
-    target = Path(args[2]) / "bin" / "python"
+    target = Path(args[2]) / os.environ.get(
+        "FAKE_VENV_PYTHON", "bin/python"
+    )
     target.parent.mkdir(parents=True)
     shutil.copyfile(__file__, target)
     target.chmod(target.stat().st_mode | stat.S_IXUSR)
@@ -81,6 +83,38 @@ class BootstrapActionPinPolicyTest(unittest.TestCase):
             self.assertEqual(str(REQUIREMENTS), pip[pip.index("-r") + 1])
             self.assertTrue((venv / "bin" / "python").is_file())
 
+    def test_bootstraps_windows_virtualenv_layout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            python, log = self.fake_python(root)
+            venv = root / "action-pin-policy"
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PYTHON": str(python),
+                    "ACTION_PIN_POLICY_VENV": str(venv),
+                    "FAKE_PYTHON_LOG": str(log),
+                    "FAKE_VERSION_OK": "1",
+                    "FAKE_VENV_PYTHON": "Scripts/python.exe",
+                }
+            )
+
+            subprocess.run(
+                ["sh", str(BOOTSTRAP)],
+                check=True,
+                capture_output=True,
+                text=True,
+                env=environment,
+            )
+
+            invocations = [
+                json.loads(line)
+                for line in log.read_text(encoding="utf-8").splitlines()
+            ]
+            pip = next(args for args in invocations if args[:2] == ["-m", "pip"])
+            self.assertIn("--require-hashes", pip)
+            self.assertTrue((venv / "Scripts" / "python.exe").is_file())
+
     def test_rejects_unpinned_python_minor_before_creating_venv(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -121,6 +155,11 @@ class BootstrapActionPinPolicyTest(unittest.TestCase):
             '"$ROOT_DIR/scripts/ci/test_verify_action_pins.py"',
             source,
         )
+        self.assertIn(
+            '"$ACTION_PIN_POLICY_VENV/Scripts/python.exe"',
+            source,
+        )
+        self.assertIn("ACTION_POLICY_PYTHON=$candidate", source)
 
     def test_verify_project_uses_pinned_parser_for_every_yaml_policy(self):
         source = VERIFY_PROJECT.read_text(encoding="utf-8")

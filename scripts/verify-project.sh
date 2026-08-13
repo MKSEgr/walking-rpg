@@ -47,7 +47,19 @@ if ! "$ACTION_POLICY_PYTHON" -c \
   PYTHON="$ACTION_POLICY_PYTHON" \
     ACTION_PIN_POLICY_VENV="$ACTION_PIN_POLICY_VENV" \
     sh "$ROOT_DIR/scripts/bootstrap-action-pin-policy.sh"
-  ACTION_POLICY_PYTHON="$ACTION_PIN_POLICY_VENV/bin/python"
+  ACTION_POLICY_PYTHON=
+  for candidate in \
+    "$ACTION_PIN_POLICY_VENV/bin/python" \
+    "$ACTION_PIN_POLICY_VENV/Scripts/python.exe"; do
+    if [ -x "$candidate" ]; then
+      ACTION_POLICY_PYTHON=$candidate
+      break
+    fi
+  done
+  if [ -z "$ACTION_POLICY_PYTHON" ]; then
+    echo "Action pin policy virtualenv has no supported Python executable." >&2
+    exit 1
+  fi
 fi
 
 printf '%s\n' "Checking immutable backend container base images..."
