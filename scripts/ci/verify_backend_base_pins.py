@@ -96,6 +96,7 @@ def _here_document_declarations(
     errors: list[str] = []
     index = 0
     quote: str | None = None
+    parenthesized_expansions: list[tuple[str, int]] = []
 
     while index < len(line):
         character = line[index]
@@ -124,10 +125,34 @@ def _here_document_declarations(
             index == 0 or line[index - 1] in " \t;&|()<>"
         ):
             break
+        if line.startswith("$((", index):
+            parenthesized_expansions.append(("arithmetic", 2))
+            index += 3
+            continue
+        if parenthesized_expansions and line.startswith("$(", index):
+            parenthesized_expansions.append(("command", 1))
+            index += 2
+            continue
+        if parenthesized_expansions and character == "(":
+            kind, depth = parenthesized_expansions[-1]
+            parenthesized_expansions[-1] = (kind, depth + 1)
+            index += 1
+            continue
+        if parenthesized_expansions and character == ")":
+            kind, depth = parenthesized_expansions[-1]
+            if depth == 1:
+                parenthesized_expansions.pop()
+            else:
+                parenthesized_expansions[-1] = (kind, depth - 1)
+            index += 1
+            continue
         if line.startswith("<<<", index):
             index += 3
             continue
-        if not line.startswith("<<", index):
+        if (
+            parenthesized_expansions
+            and parenthesized_expansions[-1][0] == "arithmetic"
+        ) or not line.startswith("<<", index):
             index += 1
             continue
 

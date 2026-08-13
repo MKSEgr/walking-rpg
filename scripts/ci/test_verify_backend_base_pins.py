@@ -190,6 +190,41 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
             any("must not fetch mutable OS packages" in error for error in errors)
         )
 
+    def test_ignores_shift_operators_inside_arithmetic_expansions(self):
+        commands = (
+            "RUN echo $((1 << 2))",
+            "RUN echo $(((1 << 2) + (8 >> 1)))",
+            "RUN echo $((1 << $(printf 1)))",
+            'RUN test "$((8 >> 1))" = 4',
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+    def test_arithmetic_shift_does_not_hide_a_later_run_heredoc(self):
+        source = VALID.replace("RUN true", "RUN echo $((1 << 2))", 1)
+        source = source.replace(
+            "RUN true",
+            "RUN <<EOF\napt-\\\nget update\nEOF",
+            1,
+        )
+
+        errors = self.validate(source)
+
+        self.assertTrue(
+            any("must not fetch mutable OS packages" in error for error in errors)
+        )
+
+    def test_finds_heredoc_inside_arithmetic_command_substitution(self):
+        declarations, errors = MODULE._here_document_declarations(
+            "RUN echo $(( $(cat <<EOF) << 1 ))"
+        )
+
+        self.assertEqual((), errors)
+        self.assertEqual((MODULE.HereDocument("EOF", False),), declarations)
+
     def test_allows_package_manager_words_in_run_heredoc_comments(self):
         command = (
             "RUN <<EOF\n"
