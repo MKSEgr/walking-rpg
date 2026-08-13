@@ -231,6 +231,38 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     [], self.validate(VALID.replace("RUN true", command, 1))
                 )
 
+    def test_ignores_case_pattern_parentheses_inside_arithmetic_substitutions(self):
+        commands = (
+            "RUN echo $(( $(case x in a) echo 0 ;; x) echo 1 ;; esac) << 2 ))",
+            "RUN echo $(( $(case x in (a) echo 0 ;; (x) echo 1 ;; esac) << 2 ))",
+            "RUN echo $(( $(case 1 in 1) echo 1 ;; esac) << 2 ))",
+            (
+                "RUN echo $(( $(case x in x) case y in y) echo 1 ;; esac ;; "
+                "esac) << 2 ))"
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+    def test_does_not_treat_case_arguments_as_case_statements(self):
+        declarations, errors = MODULE._here_document_declarations(
+            "RUN echo $(( $(printf '%s' case x in a) << 2 ))"
+        )
+
+        self.assertEqual((), errors)
+        self.assertEqual((), declarations)
+
+    def test_finds_heredoc_inside_case_body_in_arithmetic_substitution(self):
+        declarations, errors = MODULE._here_document_declarations(
+            "RUN echo $(( $(case x in a) cat <<EOF ;; esac) << 2 ))"
+        )
+
+        self.assertEqual((), errors)
+        self.assertEqual((MODULE.HereDocument("EOF", False),), declarations)
+
     def test_arithmetic_shift_does_not_hide_a_later_run_heredoc(self):
         source = VALID.replace("RUN true", "RUN echo $((1 << 2))", 1)
         source = source.replace(
