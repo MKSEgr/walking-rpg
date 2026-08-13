@@ -55,7 +55,25 @@ final class SecureInstallationIdStore implements InstallationIdProvider {
 
   @override
   Future<String> installationId() {
-    return _initialization ??= _readOrCreate();
+    final Future<String>? initialization = _initialization;
+    if (initialization != null) {
+      return initialization;
+    }
+
+    final Future<String> pending = _readOrCreate();
+    _initialization = pending;
+    return _clearAfterError(pending);
+  }
+
+  Future<String> _clearAfterError(Future<String> pending) async {
+    try {
+      return await pending;
+    } on Object {
+      if (identical(_initialization, pending)) {
+        _initialization = null;
+      }
+      rethrow;
+    }
   }
 
   Future<String> _readOrCreate() async {
