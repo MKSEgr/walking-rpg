@@ -241,6 +241,9 @@ jobs:
             -c '%u:%g:%a' /usr/local/share/walking-rpg/source-git-sha)" = \
             '0:0:444'
           test "$(docker run --rm --entrypoint /usr/bin/stat "$image_reference" \
+            -c '%u:%g:%a' /usr/local/share/walking-rpg/source-git-tree)" = \
+            '0:0:444'
+          test "$(docker run --rm --entrypoint /usr/bin/stat "$image_reference" \
             -c '%u:%g:%a' /usr/local/bin/walking-rpg-entrypoint)" = '0:0:555'
           printf 'image_digest=%s\n' "$IMAGE_DIGEST" >> "$GITHUB_OUTPUT"
 

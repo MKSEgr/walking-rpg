@@ -3,6 +3,8 @@ import sys
 import unittest
 from pathlib import Path
 
+import yaml
+
 
 SCRIPT = Path(__file__).with_name("verify_backend_base_pins.py")
 SPEC = importlib.util.spec_from_file_location("verify_backend_base_pins", SCRIPT)
@@ -14,6 +16,12 @@ SPEC.loader.exec_module(MODULE)
 JDK = MODULE.APPROVED_STAGES[0].image
 JRE = MODULE.APPROVED_STAGES[1].image
 VALID = f"FROM {JDK} AS build\nRUN true\nFROM {JRE}\nRUN true\n"
+PUBLISH_WORKFLOW = (
+    SCRIPT.parents[2]
+    / ".github"
+    / "workflows"
+    / "publish-backend-release-candidate.yml"
+)
 
 
 class VerifyBackendBasePinsTest(unittest.TestCase):
@@ -23,6 +31,26 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
 
     def test_accepts_reviewed_tag_and_index_digest_pins(self):
         self.assertEqual([], self.validate(VALID))
+
+    def test_publisher_requires_read_only_root_owned_provenance_files(self):
+        workflow = yaml.safe_load(PUBLISH_WORKFLOW.read_text(encoding="utf-8"))
+        steps = workflow["jobs"]["publish"]["steps"]
+        verification = next(
+            step
+            for step in steps
+            if step.get("name") == "Verify published image provenance contract"
+        )["run"]
+
+        for filename in ("source-git-sha", "source-git-tree"):
+            with self.subTest(filename=filename):
+                expected = (
+                    'test "$(docker run --rm --entrypoint /usr/bin/stat '
+                    '"$image_reference" \\\n'
+                    "  -c '%u:%g:%a' /usr/local/share/walking-rpg/"
+                    f'{filename})" = \\\n'
+                    "  '0:0:444'"
+                )
+                self.assertIn(expected, verification)
 
     def test_rejects_moving_tag_only_references(self):
         for image in (
