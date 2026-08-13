@@ -44,7 +44,7 @@ class VerifyRunnerImagePinsTest(unittest.TestCase):
         self.assertEqual([], errors)
 
     def test_accepts_yaml_1_2_string_job_ids_tagged_as_booleans_by_pyyaml(self):
-        for job_id in ("on", "off", "yes", "no"):
+        for job_id in ("on", "off", "yes", "no", "ON", "Off", "YES", "No"):
             with self.subTest(job_id=job_id):
                 errors = self.validate(
                     f"jobs:\n  {job_id}:\n"
@@ -52,6 +52,17 @@ class VerifyRunnerImagePinsTest(unittest.TestCase):
                 )
 
                 self.assertEqual([], errors)
+
+    def test_rejects_yaml_1_2_boolean_and_null_job_ids(self):
+        for job_id in ("true", "false", "null", "True", "FALSE", "NULL"):
+            with self.subTest(job_id=job_id):
+                errors = self.validate(
+                    f"jobs:\n  {job_id}:\n"
+                    "    runs-on: ubuntu-24.04\n"
+                )
+
+                self.assertEqual(1, len(errors))
+                self.assertIn("workflow job id must be a YAML 1.2 string", errors[0])
 
     def test_rejects_job_ids_outside_github_identifier_syntax(self):
         job_ids = ("123", "-leading", '"has space"', '"contains.dot"')
@@ -64,7 +75,7 @@ class VerifyRunnerImagePinsTest(unittest.TestCase):
                 )
 
                 self.assertEqual(1, len(errors))
-                self.assertIn("workflow job id must start with", errors[0])
+                self.assertIn("workflow job id must be a YAML 1.2 string", errors[0])
 
     def test_rejects_mutable_and_unreviewed_runner_labels(self):
         labels = (
