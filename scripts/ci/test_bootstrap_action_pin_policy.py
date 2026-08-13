@@ -122,6 +122,26 @@ class BootstrapActionPinPolicyTest(unittest.TestCase):
             source,
         )
 
+    def test_verify_project_uses_pinned_parser_for_every_yaml_policy(self):
+        source = VERIFY_PROJECT.read_text(encoding="utf-8")
+
+        for policy in (
+            "verify_postgres_image_pins.py",
+            "test_verify_postgres_image_pins.py",
+            "verify_action_pins.py",
+            "test_verify_action_pins.py",
+        ):
+            with self.subTest(policy=policy):
+                invocation = (
+                    '"$ACTION_POLICY_PYTHON" '
+                    f'"$ROOT_DIR/scripts/ci/{policy}"'
+                )
+                self.assertIn(invocation, source)
+                self.assertNotIn(
+                    f'python3 "$ROOT_DIR/scripts/ci/{policy}"',
+                    source,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

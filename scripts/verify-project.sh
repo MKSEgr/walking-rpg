@@ -55,8 +55,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_backend_base_pins
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_backend_base_pins.py"
 
 printf '%s\n' "Checking immutable PostgreSQL test infrastructure..."
-PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_postgres_image_pins.py"
-PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_postgres_image_pins.py"
+PYTHONDONTWRITEBYTECODE=1 \
+  "$ACTION_POLICY_PYTHON" "$ROOT_DIR/scripts/ci/verify_postgres_image_pins.py"
+PYTHONDONTWRITEBYTECODE=1 \
+  "$ACTION_POLICY_PYTHON" "$ROOT_DIR/scripts/ci/test_verify_postgres_image_pins.py"
 
 printf '%s\n' "Checking immutable GitHub Action references..."
 PYTHONDONTWRITEBYTECODE=1 \
