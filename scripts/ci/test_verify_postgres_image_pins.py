@@ -182,6 +182,35 @@ class VerifyPostgresImagePinsTest(unittest.TestCase):
                 "return new PostgreSQLContainer(DOCKER_IMAGE);",
                 "return null;",
             ),
+            VALID_FACTORY.replace(
+                "public static final String IMAGE_DIGEST =\n"
+                f'            "{MODULE.APPROVED_DIGEST}";',
+                "public static final String IMAGE_DIGEST =\n"
+                '            System.getenv("POSTGRES_IMAGE_DIGEST");\n'
+                "    private static final String REVIEWED_DIGEST =\n"
+                f'            "{MODULE.APPROVED_DIGEST}";',
+            ),
+            VALID_FACTORY.replace(
+                "private static final DockerImageName DOCKER_IMAGE =\n"
+                "            DockerImageName.parse(IMAGE)",
+                "private static final String REVIEWED_PARSER =\n"
+                '            "DockerImageName.parse(IMAGE)";\n\n'
+                "    private static final DockerImageName DOCKER_IMAGE =\n"
+                '            DockerImageName.parse(System.getenv("POSTGRES_IMAGE"))',
+            ),
+            (
+                "import static org.testcontainers.utility.DockerImageName.parse;\n\n"
+                + VALID_FACTORY.replace(
+                    "    public static PostgreSQLContainer create() {\n"
+                    "        return new PostgreSQLContainer(DOCKER_IMAGE);\n"
+                    "    }",
+                    "    private static final DockerImageName ALTERNATE_IMAGE =\n"
+                    '            parse(System.getenv("POSTGRES_IMAGE"));\n\n'
+                    "    public static PostgreSQLContainer create() {\n"
+                    "        return new PostgreSQLContainer(ALTERNATE_IMAGE);\n"
+                    "    }",
+                )
+            ),
         )
         for factory in invalid:
             with self.subTest(factory=factory):
