@@ -226,6 +226,43 @@ class VerifyIosPodLockTest(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertTrue(self.validate_workflows(files))
 
+    def test_rejects_pod_commands_after_cocoapods_options(self):
+        commands = (
+            "pod --silent update",
+            "pod --verbose install",
+            "pod --no-ansi update",
+            "pod --allow-root install",
+            "pod --project-directory=/tmp update",
+            "pod -- install",
+            "bundle exec pod --no-silent update",
+            "/usr/local/bin/pod --no-verbose install",
+        )
+        for command in commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  unprotected:\n"
+                "    steps:\n"
+                f"      - run: {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertTrue(self.validate_workflows(files))
+
+    def test_ignores_non_dependency_pod_option_invocations(self):
+        commands = (
+            "pod --silent env",
+            "pod --verbose",
+            "pod -- --silent update",
+        )
+        for command in commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  harmless:\n"
+                "    steps:\n"
+                f"      - run: {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertEqual([], self.validate_workflows(files))
+
     def test_ignores_non_executable_pod_mentions(self):
         files = self.valid_workflows()
         files["ci.yml"] += (

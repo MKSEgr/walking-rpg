@@ -734,11 +734,22 @@ def _shell_commands(
 
 
 def _is_pod_dependency_command(command: Sequence[str]) -> bool:
-    return (
-        len(command) >= 2
-        and _basename(command[0]) == "pod"
-        and command[1] in {"install", "update"}
-    )
+    if not command or _basename(command[0]) != "pod":
+        return False
+
+    # CocoaPods uses CLAide, which selects the first positional argument as
+    # the subcommand. Options may therefore precede `install` or `update`.
+    # After `--`, CLAide treats the very next token as positional even when it
+    # starts with a dash, so only skip option-looking tokens before it.
+    options_enabled = True
+    for argument in command[1:]:
+        if options_enabled and argument == "--":
+            options_enabled = False
+            continue
+        if options_enabled and argument.startswith("--"):
+            continue
+        return argument in {"install", "update"}
+    return False
 
 
 def _pod_names(pods: object, path: Path) -> tuple[set[str], list[str]]:
