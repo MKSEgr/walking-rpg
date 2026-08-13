@@ -47,6 +47,7 @@ POSTGRES_CONTAINER_SUBCLASS = re.compile(
     re.DOTALL,
 )
 POSTGRES_IMAGE_LITERAL = re.compile(r'"postgres(?::|@)[^"\r\n]*"')
+JAVA_HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
 
 
 def parser_version_error() -> str | None:
@@ -156,6 +157,54 @@ def validate_compose(path: Path) -> list[str]:
     return validate_compose_source(source, path)
 
 
+def _translate_java_unicode_escapes(source: str) -> str:
+    """Apply the JLS 3.3 translation that precedes Java tokenization."""
+    result: list[str] = []
+    index = 0
+    trailing_backslashes = 0
+    previous_from_escape = False
+
+    while index < len(source):
+        character = source[index]
+        if character != "\\":
+            result.append(character)
+            trailing_backslashes = 0
+            previous_from_escape = False
+            index += 1
+            continue
+
+        eligible = previous_from_escape or trailing_backslashes % 2 == 0
+        marker_end = index + 1
+        if eligible and marker_end < len(source) and source[marker_end] == "u":
+            while marker_end < len(source) and source[marker_end] == "u":
+                marker_end += 1
+            digits = source[marker_end : marker_end + 4]
+            if len(digits) != 4 or any(
+                digit not in JAVA_HEX_DIGITS for digit in digits
+            ):
+                line = source.count("\n", 0, index) + 1
+                line_start = source.rfind("\n", 0, index) + 1
+                column = index - line_start + 1
+                raise ValueError(
+                    f"line {line}, column {column}: malformed Java Unicode escape"
+                )
+            translated = chr(int(digits, 16))
+            result.append(translated)
+            trailing_backslashes = (
+                trailing_backslashes + 1 if translated == "\\" else 0
+            )
+            previous_from_escape = True
+            index = marker_end + 4
+            continue
+
+        result.append(character)
+        trailing_backslashes += 1
+        previous_from_escape = False
+        index += 1
+
+    return "".join(result)
+
+
 def _sanitize_java(source: str, *, remove_literals: bool) -> str:
     """Remove comments and optionally literals while preserving token positions."""
     result = list(source)
@@ -163,8 +212,9 @@ def _sanitize_java(source: str, *, remove_literals: bool) -> str:
     length = len(source)
     while index < length:
         if source.startswith("//", index):
-            end = source.find("\n", index + 2)
-            end = length if end < 0 else end
+            end = index + 2
+            while end < length and source[end] not in "\r\n":
+                end += 1
             for position in range(index, end):
                 result[position] = " "
             index = end
@@ -257,6 +307,10 @@ def _token_sequence_count(tokens: tuple[str, ...], expected: tuple[str, ...]) ->
 
 
 def _validate_factory(source: str, path: Path) -> list[str]:
+    try:
+        source = _translate_java_unicode_escapes(source)
+    except ValueError as error:
+        return [f"{path}: {error}"]
     contract_source = _sanitize_java(source, remove_literals=False)
     tokens = _java_tokens(source)
     required_sequences = (
@@ -343,6 +397,12 @@ def validate_java_sources(test_root: Path, factory_path: Path) -> list[str]:
             continue
         if path == factory_path:
             errors.extend(_validate_factory(source, path))
+            continue
+
+        try:
+            source = _translate_java_unicode_escapes(source)
+        except ValueError as error:
+            errors.append(f"{path}: {error}")
             continue
 
         contract_source = _sanitize_java(source, remove_literals=False)

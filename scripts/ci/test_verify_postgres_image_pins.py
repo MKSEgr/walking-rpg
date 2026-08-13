@@ -216,6 +216,46 @@ class VerifyPostgresImagePinsTest(unittest.TestCase):
             with self.subTest(factory=factory):
                 self.assertTrue(self.validate_java(factory=factory))
 
+    def test_rejects_unicode_escape_comment_terminator_bypass(self):
+        for terminator in (r"\u000d", r"\uuuu000a"):
+            with self.subTest(terminator=terminator):
+                replacement = (
+                    "public static final String IMAGE =\n"
+                    f"            // {terminator} "
+                    'System.getenv("POSTGRES_IMAGE"); '
+                    "public static final String DECOY =\n"
+                    '            "postgres@" + IMAGE_DIGEST;'
+                )
+                bypass = VALID_FACTORY.replace(
+                    'public static final String IMAGE = "postgres@" + IMAGE_DIGEST;',
+                    replacement,
+                )
+
+                errors = self.validate_java(factory=bypass)
+
+                self.assertTrue(
+                    any("IMAGE declaration" in error for error in errors),
+                    errors,
+                )
+
+    def test_translates_only_eligible_java_unicode_escapes(self):
+        self.assertEqual(
+            r"\\u000d",
+            MODULE._translate_java_unicode_escapes(r"\\u000d"),
+        )
+        self.assertEqual(
+            "\\\r",
+            MODULE._translate_java_unicode_escapes(r"\u005c\u000d"),
+        )
+        self.assertEqual(
+            r"\u000d",
+            MODULE._translate_java_unicode_escapes(r"\u005cu000d"),
+        )
+
+    def test_rejects_malformed_eligible_java_unicode_escape(self):
+        with self.assertRaisesRegex(ValueError, "malformed Java Unicode escape"):
+            MODULE._translate_java_unicode_escapes(r"class Example { \u00GG }")
+
 
 if __name__ == "__main__":
     unittest.main()
