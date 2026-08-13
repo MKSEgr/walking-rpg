@@ -275,6 +275,53 @@ class VerifyIosPodLockTest(unittest.TestCase):
         )
         self.assertTrue(self.validate_workflows(malformed))
 
+    def test_rejects_pod_commands_in_process_substitutions(self):
+        commands = (
+            "cat <(pod update)",
+            "tee >(pod install)",
+            "diff <(command pod update) <(printf safe)",
+            "cat <(bash -c 'pod update')",
+            "bash -c 'cat <(bundle exec pod install)'",
+        )
+        for command in commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  unprotected:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                f"          {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertTrue(self.validate_workflows(files))
+
+    def test_ignores_literal_and_rejects_malformed_process_substitutions(self):
+        safe_commands = (
+            "printf '%s\\n' '<(pod update)'",
+            "printf '%s\\n' \" >(pod install) \"",
+            "cat <<< 'pod update'",
+            "cat <()",
+            "printf '%s\\n' '$((1 + 2))'",
+        )
+        for command in safe_commands:
+            files = self.valid_workflows()
+            files["ci.yml"] += (
+                "  harmless:\n"
+                "    steps:\n"
+                f"      - run: {command}\n"
+            )
+            with self.subTest(command=command):
+                self.assertEqual([], self.validate_workflows(files))
+
+        for command in ("cat <(pod update",):
+            malformed = self.valid_workflows()
+            malformed["ci.yml"] += (
+                "  malformed:\n"
+                "    steps:\n"
+                f"      - run: '{command}'\n"
+            )
+            with self.subTest(command=command):
+                self.assertTrue(self.validate_workflows(malformed))
+
     def test_rejects_pod_commands_after_prefix_redirections(self):
         commands = (
             ">/tmp/pod.log pod update",
@@ -362,6 +409,34 @@ class VerifyIosPodLockTest(unittest.TestCase):
             )
             with self.subTest(script=script):
                 self.assertTrue(self.validate_workflows(files))
+
+    def test_rejects_continued_here_document_substitution_openers(self):
+        script = "cat <<EOF\n$\\\n(pod update)\nEOF"
+        files = self.valid_workflows()
+        indented = "".join(
+            f"          {line}\n" for line in script.splitlines()
+        )
+        files["ci.yml"] += (
+            "  unprotected:\n"
+            "    steps:\n"
+            "      - run: |\n"
+            f"{indented}"
+        )
+
+        self.assertTrue(self.validate_workflows(files))
+
+    def test_normalizes_only_unescaped_here_document_continuations(self):
+        substitutions, errors = MODULE._expanding_here_document_substitutions(
+            "$\\\r\n(command pod install)"
+        )
+        self.assertEqual([], errors)
+        self.assertEqual(["command pod install"], substitutions)
+
+        substitutions, errors = MODULE._expanding_here_document_substitutions(
+            "$\\\\\n(pod update)"
+        )
+        self.assertEqual([], errors)
+        self.assertEqual([], substitutions)
 
     def test_rejects_wrong_runner_working_directory_and_job_bypass(self):
         replacements = (
