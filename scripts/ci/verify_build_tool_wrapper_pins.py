@@ -33,20 +33,26 @@ APPROVED_MAVEN_PROPERTIES = {
         "5af3b743dd8b876b5c45da33b676251e5f1687712644abb4ee519ca56e1d89ce"
     ),
 }
+APPROVED_GRADLE_DISTRIBUTION_SHA256 = (
+    "b84e04fa845fecba48551f425957641074fcc00a88a84d2aae5808743b35fc85"
+)
+APPROVED_GRADLE_CACHE_PATH = (
+    f"wrapper/dists/sha256-{APPROVED_GRADLE_DISTRIBUTION_SHA256}"
+)
 # Distribution and wrapper JAR values come from Gradle's release-checksums
 # reference. The existing official 2.10 bootstrap JAR already supports the
-# distribution checksum property and remains independently pinned here.
+# distribution checksum property and remains independently pinned here. The
+# checksum-bound namespace invalidates installations cached before that
+# property was added, because this wrapper trusts an existing `.ok` marker.
 APPROVED_GRADLE_PROPERTIES = {
     "distributionBase": "GRADLE_USER_HOME",
-    "distributionPath": "wrapper/dists",
+    "distributionPath": APPROVED_GRADLE_CACHE_PATH,
     "zipStoreBase": "GRADLE_USER_HOME",
-    "zipStorePath": "wrapper/dists",
+    "zipStorePath": APPROVED_GRADLE_CACHE_PATH,
     "distributionUrl": (
         "https\\://services.gradle.org/distributions/gradle-9.1.0-all.zip"
     ),
-    "distributionSha256Sum": (
-        "b84e04fa845fecba48551f425957641074fcc00a88a84d2aae5808743b35fc85"
-    ),
+    "distributionSha256Sum": APPROVED_GRADLE_DISTRIBUTION_SHA256,
 }
 APPROVED_GRADLE_WRAPPER_SHA256 = (
     "16caeaf66d57a0d1d2087fef6a97efa62de8da69afa5b908f40db35afc4342da"

@@ -96,6 +96,30 @@ class VerifyBuildToolWrapperPinsTest(unittest.TestCase):
                         )
                     )
 
+    def test_gradle_cache_namespace_is_bound_to_distribution_checksum(self):
+        expected = MODULE.APPROVED_GRADLE_PROPERTIES
+        checksum = expected["distributionSha256Sum"]
+        checksum_cache = f"wrapper/dists/sha256-{checksum}"
+
+        self.assertEqual(checksum_cache, expected["distributionPath"])
+        self.assertEqual(checksum_cache, expected["zipStorePath"])
+
+        for key in ("distributionPath", "zipStorePath"):
+            with self.subTest(key=key):
+                legacy_cache = dict(expected)
+                legacy_cache[key] = "wrapper/dists"
+                errors = MODULE.validate_properties_source(
+                    properties_source(legacy_cache),
+                    expected,
+                    Path("gradle-wrapper.properties"),
+                )
+                self.assertTrue(
+                    any(
+                        f"{key} must equal the reviewed value" in error
+                        for error in errors
+                    )
+                )
+
     def test_rejects_unknown_or_noncanonical_properties(self):
         expected = MODULE.APPROVED_MAVEN_PROPERTIES
         source = properties_source(expected) + "networkTimeout=10000\n"
