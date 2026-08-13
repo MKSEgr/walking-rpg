@@ -25,6 +25,7 @@ PARSER_DIRECTIVE = re.compile(
     r"[ \t]*(?P<value>.*?)[ \t]*$"
 )
 SUPPORTED_PARSER_DIRECTIVES = frozenset(("check", "escape", "syntax"))
+SHELL_WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,13 @@ class ApprovedStage:
 class HereDocument:
     delimiter: str
     strip_tabs: bool
+
+
+@dataclass
+class ShellCase:
+    expansion_level: int
+    phase: str = "awaiting-in"
+    pattern_parentheses: int = 0
 
 
 @dataclass(frozen=True)
@@ -97,6 +105,8 @@ def _here_document_declarations(
     index = 0
     quote: str | None = None
     parenthesized_expansions: list[tuple[str, int]] = []
+    shell_cases: list[ShellCase] = []
+    command_starts: dict[int, bool] = {}
 
     while index < len(line):
         character = line[index]
@@ -131,17 +141,103 @@ def _here_document_declarations(
             continue
         if parenthesized_expansions and line.startswith("$(", index):
             parenthesized_expansions.append(("command", 1))
+            command_starts[len(parenthesized_expansions)] = True
             index += 2
             continue
+        active_case = (
+            shell_cases[-1]
+            if shell_cases
+            and shell_cases[-1].expansion_level
+            == len(parenthesized_expansions)
+            else None
+        )
+        word = SHELL_WORD.match(line, index)
+        if parenthesized_expansions and word is not None:
+            value = word.group()
+            expansion_level = len(parenthesized_expansions)
+            in_command = parenthesized_expansions[-1][0] == "command"
+            if active_case is None:
+                if (
+                    in_command
+                    and command_starts.get(expansion_level, False)
+                    and value == "case"
+                ):
+                    shell_cases.append(
+                        ShellCase(expansion_level)
+                    )
+            elif active_case.phase == "awaiting-in" and value == "in":
+                active_case.phase = "pattern"
+            elif active_case.phase == "pattern" and value == "esac":
+                shell_cases.pop()
+                command_starts[expansion_level] = False
+            elif active_case.phase == "body":
+                if value == "esac":
+                    shell_cases.pop()
+                    command_starts[expansion_level] = False
+                elif command_starts.get(expansion_level, False) and value == "case":
+                    shell_cases.append(
+                        ShellCase(expansion_level)
+                    )
+            if in_command and active_case is None and value != "case":
+                command_starts[expansion_level] = value in {
+                    "do",
+                    "elif",
+                    "else",
+                    "then",
+                }
+            elif in_command and active_case is not None and active_case.phase == "body":
+                command_starts[expansion_level] = False
+            index = word.end()
+            continue
+        if (
+            active_case is not None
+            and active_case.phase == "body"
+            and (
+                line.startswith(";;&", index)
+                or line.startswith(";;", index)
+                or line.startswith(";&", index)
+            )
+        ):
+            active_case.phase = "pattern"
+            command_starts[len(parenthesized_expansions)] = False
+            index += 3 if line.startswith(";;&", index) else 2
+            continue
+        if (
+            parenthesized_expansions
+            and parenthesized_expansions[-1][0] == "command"
+            and character in ";|&"
+        ):
+            command_starts[len(parenthesized_expansions)] = True
+            index += 1
+            continue
         if parenthesized_expansions and character == "(":
+            if active_case is not None and active_case.phase == "pattern":
+                active_case.pattern_parentheses += 1
             kind, depth = parenthesized_expansions[-1]
             parenthesized_expansions[-1] = (kind, depth + 1)
             index += 1
             continue
         if parenthesized_expansions and character == ")":
+            if active_case is not None and active_case.phase == "pattern":
+                if active_case.pattern_parentheses == 0:
+                    active_case.phase = "body"
+                    command_starts[len(parenthesized_expansions)] = True
+                    index += 1
+                    continue
+                active_case.pattern_parentheses -= 1
+                if active_case.pattern_parentheses == 0:
+                    active_case.phase = "body"
+                    command_starts[len(parenthesized_expansions)] = True
             kind, depth = parenthesized_expansions[-1]
             if depth == 1:
+                closing_level = len(parenthesized_expansions)
                 parenthesized_expansions.pop()
+                command_starts.pop(closing_level, None)
+                shell_cases = [
+                    statement
+                    for statement in shell_cases
+                    if statement.expansion_level < closing_level
+                ]
             else:
                 parenthesized_expansions[-1] = (kind, depth - 1)
             index += 1
