@@ -155,7 +155,21 @@ class VerifyActionPinsTest(unittest.TestCase):
         )
 
         self.assertEqual(1, len(errors))
-        self.assertIn("remote action must use", errors[0])
+        self.assertIn("multiple uses declarations", errors[0])
+
+    def test_rejects_multiple_uses_declarations_sharing_release_comment(self):
+        errors = self.validate(
+            "jobs: {test: {steps: ["
+            f"{{uses: owner/one@{self.full_sha}}}, "
+            f"{{uses: owner/two@{self.full_sha}}}"
+            "]}} # v1.2.3\n"
+        )
+
+        self.assertEqual(1, len(errors))
+        self.assertIn(
+            "multiple uses declarations must be on separate lines",
+            errors[0],
+        )
 
     def test_rejects_multiple_yaml_documents(self):
         errors = self.validate("jobs: {}\n---\njobs: {}\n")

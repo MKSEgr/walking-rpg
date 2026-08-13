@@ -151,7 +151,24 @@ def validate_workflows(workflow_directory: Path) -> list[str]:
             errors.append(f"{path}: workflow must contain exactly one YAML document")
             continue
 
-        for key, value in _uses_nodes(documents[0]):
+        declarations = _uses_nodes(documents[0])
+        declaration_counts: dict[int, int] = {}
+        for key, _ in declarations:
+            line = key.start_mark.line
+            declaration_counts[line] = declaration_counts.get(line, 0) + 1
+
+        ambiguous_lines = {
+            line for line, count in declaration_counts.items() if count > 1
+        }
+        for line in sorted(ambiguous_lines):
+            errors.append(
+                f"{path}:{line + 1}: multiple uses declarations must be on "
+                "separate lines so each release comment is unambiguous"
+            )
+
+        for key, value in declarations:
+            if key.start_mark.line in ambiguous_lines:
+                continue
             location = f"{path}:{key.start_mark.line + 1}:{key.start_mark.column + 1}"
             if not isinstance(value, ScalarNode) or value.tag != "tag:yaml.org,2002:str":
                 errors.append(f"{location}: uses value must be a string")
