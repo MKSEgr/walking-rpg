@@ -63,25 +63,81 @@ void main() {
 
     await expectLater(store.installationId(), throwsA(isA<StateError>()));
   });
+
+  test('retries and coalesces after a transient read failure', () async {
+    final _MemoryInstallationIdStorage storage = _MemoryInstallationIdStorage(
+      readError: StateError('temporarily unavailable'),
+    );
+    final SecureInstallationIdStore store = SecureInstallationIdStore(
+      storage: storage,
+      generator: () => '0123456789abcdef0123456789abcdef',
+    );
+
+    await expectLater(store.installationId(), throwsA(isA<StateError>()));
+    final List<String> values = await Future.wait(<Future<String>>[
+      store.installationId(),
+      store.installationId(),
+      store.installationId(),
+    ]);
+
+    expect(values.toSet(), <String>{'0123456789abcdef0123456789abcdef'});
+    expect(storage.readCount, 2);
+    expect(storage.writeCount, 1);
+  });
+
+  test('generates a new ID after a transient storage write failure', () async {
+    final _MemoryInstallationIdStorage storage = _MemoryInstallationIdStorage(
+      writeError: StateError('temporarily unavailable'),
+    );
+    final Iterator<String> generated = <String>[
+      '0123456789abcdef0123456789abcdef',
+      'fedcba9876543210fedcba9876543210',
+    ].iterator;
+    final SecureInstallationIdStore store = SecureInstallationIdStore(
+      storage: storage,
+      generator: () {
+        expect(generated.moveNext(), isTrue);
+        return generated.current;
+      },
+    );
+
+    await expectLater(store.installationId(), throwsA(isA<StateError>()));
+
+    expect(await store.installationId(), 'fedcba9876543210fedcba9876543210');
+    expect(storage.value, 'fedcba9876543210fedcba9876543210');
+    expect(storage.readCount, 2);
+    expect(storage.writeCount, 2);
+  });
 }
 
 final class _MemoryInstallationIdStorage implements InstallationIdStorage {
-  _MemoryInstallationIdStorage({this.value, this.writeError});
+  _MemoryInstallationIdStorage({this.value, this.readError, this.writeError});
 
   String? value;
-  final Object? writeError;
+  Object? readError;
+  Object? writeError;
+  int readCount = 0;
   int writeCount = 0;
 
   @override
-  Future<String?> read({required String key}) async => value;
-
-  @override
-  Future<void> write({required String key, required String value}) async {
-    final Object? error = writeError;
+  Future<String?> read({required String key}) async {
+    readCount += 1;
+    final Object? error = readError;
+    readError = null;
     if (error != null) {
       throw error;
     }
+    return value;
+  }
+
+  @override
+  Future<void> write({required String key, required String value}) async {
     writeCount += 1;
+    final Object? error = writeError;
+    writeError = null;
+    if (error != null) {
+      throw error;
+    }
     this.value = value;
   }
 }
