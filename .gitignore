@@ -19,6 +19,7 @@ backend/.mvn/wrapper/dists/
 # Python tooling
 __pycache__/
 *.py[cod]
+.venv/
 
 # Flutter / Dart
 mobile/.dart_tool/

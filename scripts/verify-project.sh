@@ -13,7 +13,9 @@ for file in \
   "$ROOT_DIR/mobile/ios/Runner/Info.plist" \
   "$ROOT_DIR/mobile/ios/Runner/Runner.entitlements" \
   "$ROOT_DIR/docs/ARCHITECTURE.md" \
+  "$ROOT_DIR/scripts/bootstrap-action-pin-policy.sh" \
   "$ROOT_DIR/scripts/ci/action-pin-policy-requirements.txt" \
+  "$ROOT_DIR/scripts/ci/test_bootstrap_action_pin_policy.py" \
   "$ROOT_DIR/scripts/ci/verify_backend_base_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_backend_base_pins.py" \
   "$ROOT_DIR/scripts/ci/verify_postgres_image_pins.py" \
@@ -36,6 +38,18 @@ for file in \
   fi
 done
 
+ACTION_POLICY_PYTHON=${ACTION_POLICY_PYTHON:-python3}
+ACTION_PIN_POLICY_VENV=${ACTION_PIN_POLICY_VENV:-"$ROOT_DIR/.venv/action-pin-policy"}
+if ! "$ACTION_POLICY_PYTHON" -c \
+  'import yaml; raise SystemExit(yaml.__version__ != "6.0.3")' \
+  >/dev/null 2>&1; then
+  printf '%s\n' "Bootstrapping pinned GitHub Action policy parser..."
+  PYTHON="$ACTION_POLICY_PYTHON" \
+    ACTION_PIN_POLICY_VENV="$ACTION_PIN_POLICY_VENV" \
+    sh "$ROOT_DIR/scripts/bootstrap-action-pin-policy.sh"
+  ACTION_POLICY_PYTHON="$ACTION_PIN_POLICY_VENV/bin/python"
+fi
+
 printf '%s\n' "Checking immutable backend container base images..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_backend_base_pins.py"
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_backend_base_pins.py"
@@ -45,8 +59,12 @@ PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_postgres_image_pi
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_postgres_image_pins.py"
 
 printf '%s\n' "Checking immutable GitHub Action references..."
-PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_action_pins.py"
-PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_action_pins.py"
+PYTHONDONTWRITEBYTECODE=1 \
+  "$ACTION_POLICY_PYTHON" "$ROOT_DIR/scripts/ci/verify_action_pins.py"
+PYTHONDONTWRITEBYTECODE=1 \
+  "$ACTION_POLICY_PYTHON" "$ROOT_DIR/scripts/ci/test_verify_action_pins.py"
+PYTHONDONTWRITEBYTECODE=1 \
+  "$ACTION_POLICY_PYTHON" "$ROOT_DIR/scripts/ci/test_bootstrap_action_pin_policy.py"
 
 printf '%s\n' "Checking explicit GitHub-hosted runner OS labels..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_runner_image_pins.py"
