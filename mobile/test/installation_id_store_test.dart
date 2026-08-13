@@ -103,10 +103,7 @@ void main() {
 
     await expectLater(store.installationId(), throwsA(isA<StateError>()));
 
-    expect(
-      await store.installationId(),
-      'fedcba9876543210fedcba9876543210',
-    );
+    expect(await store.installationId(), 'fedcba9876543210fedcba9876543210');
     expect(storage.value, 'fedcba9876543210fedcba9876543210');
     expect(storage.readCount, 2);
     expect(storage.writeCount, 2);
@@ -114,11 +111,7 @@ void main() {
 }
 
 final class _MemoryInstallationIdStorage implements InstallationIdStorage {
-  _MemoryInstallationIdStorage({
-    this.value,
-    this.readError,
-    this.writeError,
-  });
+  _MemoryInstallationIdStorage({this.value, this.readError, this.writeError});
 
   String? value;
   Object? readError;
