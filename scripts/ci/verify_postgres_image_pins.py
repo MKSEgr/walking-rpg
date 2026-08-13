@@ -206,20 +206,106 @@ def _sanitize_java(source: str, *, remove_literals: bool) -> str:
     return "".join(result)
 
 
+def _java_tokens(source: str) -> tuple[str, ...]:
+    """Tokenize the policy-relevant Java subset without trusting decoy text."""
+    source = _sanitize_java(source, remove_literals=False)
+    tokens: list[str] = []
+    index = 0
+    while index < len(source):
+        if source[index].isspace():
+            index += 1
+            continue
+        if source.startswith('"""', index):
+            end = source.find('"""', index + 3)
+            end = len(source) if end < 0 else end + 3
+            tokens.append(source[index:end])
+            index = end
+            continue
+        if source[index] in {'"', "'"}:
+            quote = source[index]
+            end = index + 1
+            while end < len(source):
+                if source[end] == "\\":
+                    end += 2
+                    continue
+                end += 1
+                if source[end - 1] == quote:
+                    break
+            tokens.append(source[index : min(end, len(source))])
+            index = end
+            continue
+        if source[index].isalpha() or source[index] in {"_", "$"}:
+            end = index + 1
+            while end < len(source) and (
+                source[end].isalnum() or source[end] in {"_", "$"}
+            ):
+                end += 1
+            tokens.append(source[index:end])
+            index = end
+            continue
+        tokens.append(source[index])
+        index += 1
+    return tuple(tokens)
+
+
+def _token_sequence_count(tokens: tuple[str, ...], expected: tuple[str, ...]) -> int:
+    width = len(expected)
+    return sum(
+        tokens[index : index + width] == expected
+        for index in range(len(tokens) - width + 1)
+    )
+
+
 def _validate_factory(source: str, path: Path) -> list[str]:
     contract_source = _sanitize_java(source, remove_literals=False)
-    required = (
-        f'public static final String IMAGE_TAG = "{APPROVED_TAG}";',
-        f'"{APPROVED_DIGEST}";',
-        'public static final String IMAGE = "postgres@" + IMAGE_DIGEST;',
-        "DockerImageName.parse(IMAGE)",
-        '.asCompatibleSubstituteFor("postgres")',
+    tokens = _java_tokens(source)
+    required_sequences = (
+        (
+            "IMAGE_TAG declaration",
+            (
+                "public", "static", "final", "String", "IMAGE_TAG", "=",
+                f'"{APPROVED_TAG}"', ";",
+            ),
+        ),
+        (
+            "IMAGE_DIGEST declaration",
+            (
+                "public", "static", "final", "String", "IMAGE_DIGEST", "=",
+                f'"{APPROVED_DIGEST}"', ";",
+            ),
+        ),
+        (
+            "IMAGE declaration",
+            (
+                "public", "static", "final", "String", "IMAGE", "=",
+                '"postgres@"', "+", "IMAGE_DIGEST", ";",
+            ),
+        ),
+        (
+            "DOCKER_IMAGE declaration",
+            (
+                "private", "static", "final", "DockerImageName",
+                "DOCKER_IMAGE", "=", "DockerImageName", ".", "parse", "(",
+                "IMAGE", ")", ".", "asCompatibleSubstituteFor", "(",
+                '"postgres"', ")", ";",
+            ),
+        ),
+        (
+            "create method",
+            (
+                "public", "static", "PostgreSQLContainer", "create", "(", ")",
+                "{", "return", "new", "PostgreSQLContainer", "(",
+                "DOCKER_IMAGE", ")", ";", "}",
+            ),
+        ),
     )
-    errors = [
-        f"{path}: shared factory is missing reviewed contract {fragment}"
-        for fragment in required
-        if fragment not in contract_source
-    ]
+    errors: list[str] = []
+    for description, expected in required_sequences:
+        if _token_sequence_count(tokens, expected) != 1:
+            errors.append(
+                f"{path}: shared factory must contain exactly one reviewed "
+                f"{description}"
+            )
     code = _sanitize_java(source, remove_literals=True)
     if len(DIRECT_POSTGRES_CONSTRUCTOR.findall(code)) != 1:
         errors.append(
@@ -278,7 +364,9 @@ def validate_java_sources(test_root: Path, factory_path: Path) -> list[str]:
             )
         if "PostgreSQLContainer" in code:
             if FACTORY_IMPORT not in code:
-                errors.append(f"{path}: PostgreSQL tests must import the shared factory")
+                errors.append(
+                    f"{path}: PostgreSQL tests must import the shared factory"
+                )
             if FACTORY_CALL not in code:
                 errors.append(f"{path}: PostgreSQL tests must use the shared factory")
             if "DockerImageName.parse(" in code:
