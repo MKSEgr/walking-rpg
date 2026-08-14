@@ -7,7 +7,7 @@ import re
 import shlex
 import sys
 from dataclasses import dataclass
-from fnmatch import fnmatchcase
+from fnmatch import translate as translate_fnmatch
 from pathlib import Path
 
 
@@ -47,6 +47,12 @@ SHELL_ASSIGNMENT = re.compile(
 SHELL_PERSISTENT_ASSIGNMENT_COMMANDS = frozenset(
     ("declare", "export", "local", "readonly", "typeset")
 )
+SHELL_GLOB_LITERAL_SENTINELS = {
+    "*": "\ue000",
+    "?": "\ue001",
+    "[": "\ue002",
+    "]": "\ue003",
+}
 
 
 @dataclass(frozen=True)
@@ -169,11 +175,53 @@ def _variable_references(value: str) -> frozenset[str]:
     return frozenset(references)
 
 
+def _protect_quoted_glob_characters(value: str) -> str:
+    protected: list[str] = []
+    quote: str | None = None
+    index = 0
+    while index < len(value):
+        character = value[index]
+        if quote is not None:
+            if character == quote:
+                quote = None
+                protected.append(character)
+            else:
+                protected.append(
+                    SHELL_GLOB_LITERAL_SENTINELS.get(character, character)
+                )
+            index += 1
+            continue
+        if character in {"'", '"'}:
+            quote = character
+            protected.append(character)
+            index += 1
+            continue
+        if character == "\\" and index + 1 < len(value):
+            protected.append(character)
+            index += 1
+            character = value[index]
+            protected.append(
+                SHELL_GLOB_LITERAL_SENTINELS.get(character, character)
+            )
+            index += 1
+            continue
+        protected.append(character)
+        index += 1
+    return "".join(protected)
+
+
+def _restore_quoted_glob_characters(value: str) -> str:
+    for character, sentinel in SHELL_GLOB_LITERAL_SENTINELS.items():
+        value = value.replace(sentinel, character)
+    return value
+
+
 def _resolve_variable_expansion(
     expansion: VariableExpansion,
     variables: dict[str, DockerVariable],
     *,
     depth: int,
+    preserve_glob_literals: bool,
 ) -> DockerVariable:
     variable = variables.get(expansion.name)
     known_value = "" if variable is None else variable.value
@@ -184,7 +232,10 @@ def _resolve_variable_expansion(
         return DockerVariable(known_value, package_manager)
     if modifier.startswith(":-"):
         fallback = _resolve_docker_variable(
-            modifier[2:], variables, depth=depth + 1
+            modifier[2:],
+            variables,
+            depth=depth + 1,
+            preserve_glob_literals=preserve_glob_literals,
         )
         if known_value:
             return DockerVariable(known_value, package_manager)
@@ -195,7 +246,10 @@ def _resolve_variable_expansion(
         return fallback
     if modifier.startswith(":+"):
         alternate = _resolve_docker_variable(
-            modifier[2:], variables, depth=depth + 1
+            modifier[2:],
+            variables,
+            depth=depth + 1,
+            preserve_glob_literals=preserve_glob_literals,
         )
         if known_value is None:
             return DockerVariable(None, alternate.package_manager)
@@ -216,6 +270,7 @@ def _resolve_variable_expansion(
             modifier[len(trim_operator) :],
             variables,
             depth=depth + 1,
+            preserve_glob_literals=True,
         )
         if known_value is None or pattern.value is None:
             return DockerVariable(None, True)
@@ -237,7 +292,7 @@ def _trim_variable_value(value: str, pattern: str, operator: str) -> str:
             (
                 value[end:]
                 for end in ends
-                if fnmatchcase(value[:end], pattern)
+                if _shell_pattern_matches(value[:end], pattern)
             ),
             value,
         )
@@ -247,7 +302,7 @@ def _trim_variable_value(value: str, pattern: str, operator: str) -> str:
             (
                 value[end:]
                 for end in ends
-                if fnmatchcase(value[:end], pattern)
+                if _shell_pattern_matches(value[:end], pattern)
             ),
             value,
         )
@@ -257,7 +312,7 @@ def _trim_variable_value(value: str, pattern: str, operator: str) -> str:
             (
                 value[:start]
                 for start in starts
-                if fnmatchcase(value[start:], pattern)
+                if _shell_pattern_matches(value[start:], pattern)
             ),
             value,
         )
@@ -267,10 +322,17 @@ def _trim_variable_value(value: str, pattern: str, operator: str) -> str:
         (
             value[:start]
             for start in starts
-            if fnmatchcase(value[start:], pattern)
+            if _shell_pattern_matches(value[start:], pattern)
         ),
         value,
     )
+
+
+def _shell_pattern_matches(value: str, pattern: str) -> bool:
+    translated = translate_fnmatch(pattern)
+    for character, sentinel in SHELL_GLOB_LITERAL_SENTINELS.items():
+        translated = translated.replace(sentinel, re.escape(character))
+    return re.match(translated, value) is not None
 
 
 def _resolve_docker_variable(
@@ -278,6 +340,7 @@ def _resolve_docker_variable(
     variables: dict[str, DockerVariable],
     *,
     depth: int = 0,
+    preserve_glob_literals: bool = False,
 ) -> DockerVariable:
     if depth > 20:
         return DockerVariable(None, True)
@@ -293,7 +356,10 @@ def _resolve_docker_variable(
             FORBIDDEN_PACKAGE_MANAGER.search(literal) is not None
         )
         replacement = _resolve_variable_expansion(
-            expansion, variables, depth=depth
+            expansion,
+            variables,
+            depth=depth,
+            preserve_glob_literals=preserve_glob_literals,
         )
         package_manager = package_manager or replacement.package_manager
         if replacement.value is None:
@@ -308,6 +374,8 @@ def _resolve_docker_variable(
         FORBIDDEN_PACKAGE_MANAGER.search(literal) is not None
     )
     resolved_value = None if unresolved else "".join(resolved)
+    if resolved_value is not None and not preserve_glob_literals:
+        resolved_value = _restore_quoted_glob_characters(resolved_value)
     return DockerVariable(
         resolved_value,
         package_manager
@@ -329,7 +397,11 @@ def _environment_assignments(instruction: str) -> tuple[tuple[str, str], ...]:
     if match is None:
         return ()
     try:
-        words = shlex.split(match.group("body"), comments=False, posix=True)
+        words = shlex.split(
+            _protect_quoted_glob_characters(match.group("body")),
+            comments=False,
+            posix=True,
+        )
     except ValueError:
         return ()
     if not words:
@@ -429,6 +501,7 @@ def _shell_line_uses_package_manager_assignment(
         instruction = HEREDOC_INSTRUCTION.match(line)
         if instruction is not None:
             line = line[instruction.end() :]
+    line = _protect_quoted_glob_characters(line)
     try:
         lexer = shlex.shlex(
             line,

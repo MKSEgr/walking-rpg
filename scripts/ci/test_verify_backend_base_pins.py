@@ -426,6 +426,51 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     [], self.validate(VALID.replace("RUN true", command, 1))
                 )
 
+    def test_preserves_trim_pattern_quoting(self):
+        safe_commands = (
+            (
+                'RUN VALUE=Xfooapt-get; COMMAND=${VALUE#"Xfoo*"}; '
+                "$COMMAND done"
+            ),
+            (
+                "RUN VALUE=Xfooapt-get; COMMAND=${VALUE#'Xfoo*'}; "
+                "$COMMAND done"
+            ),
+            (
+                r"RUN VALUE=Xfooapt-get; COMMAND=${VALUE#Xfoo\*}; "
+                "$COMMAND done"
+            ),
+            (
+                'RUN VALUE=Xfooapt-get; COMMAND=${VALUE#"Xfoo?"}; '
+                "$COMMAND done"
+            ),
+            (
+                'RUN VALUE=Xfooapt-get; COMMAND=${VALUE#"Xfoo[ab]"}; '
+                "$COMMAND done"
+            ),
+        )
+        for command in safe_commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+        dangerous_commands = (
+            (
+                'RUN VALUE=Xfooapt-get; COMMAND=${VALUE#"Xfoo"*}; '
+                "$COMMAND update"
+            ),
+            (
+                'RUN PATTERN="Xfoo*"; VALUE=Xfooapt-get; '
+                "COMMAND=${VALUE#$PATTERN}; $COMMAND update"
+            ),
+        )
+        for command in dangerous_commands:
+            with self.subTest(command=command):
+                self.assertTrue(
+                    self.validate(VALID.replace("RUN true", command, 1))
+                )
+
     def test_rejects_package_managers_composed_inside_run(self):
         commands = (
             (
