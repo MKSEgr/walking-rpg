@@ -209,6 +209,20 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     any("must not fetch mutable OS packages" in error for error in errors)
                 )
 
+    def test_allows_package_manager_names_outside_run_instructions(self):
+        instructions = (
+            "ARG PACKAGE_MANAGER=apt-get",
+            "ENV PACKAGE_MANAGER=apt-get",
+            'LABEL org.step-beyond.policy="apt-get is unavailable"',
+            "COPY apt-get /tmp/policy",
+        )
+        for instruction in instructions:
+            with self.subTest(instruction=instruction):
+                self.assertEqual(
+                    [],
+                    self.validate(VALID.replace("RUN true", instruction, 1)),
+                )
+
     def test_rejects_package_manager_split_across_active_escape_directive(self):
         cases = (
             ("", "\\"),
