@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -99,6 +100,45 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
         errors = self.validate(source)
         self.assertTrue(errors)
         self.assertTrue(any("unexpected additional" in error for error in errors))
+
+    def test_rejects_additional_stage_split_across_logical_lines(self):
+        source = VALID + "FRO\\\nM alpine\n"
+
+        errors = self.validate(source)
+
+        self.assertTrue(any("found 3" in error for error in errors))
+        self.assertTrue(any("unexpected additional" in error for error in errors))
+
+    def test_does_not_count_from_text_inside_run_heredoc(self):
+        source = VALID.replace(
+            "RUN true",
+            "RUN <<'EOF'\nFROM alpine\nEOF",
+            1,
+        )
+
+        self.assertEqual([], self.validate(source))
+
+    def test_publisher_runs_current_master_policy_for_historical_source(self):
+        workflow = yaml.safe_load(PUBLISH_WORKFLOW.read_text(encoding="utf-8"))
+        steps = workflow["jobs"]["publish"]["steps"]
+        verification = next(
+            step
+            for step in steps
+            if step.get("name") == "Verify source against master and release record"
+        )["run"]
+
+        self.assertIn(
+            'git show \\\n  "$GITHUB_SHA:scripts/ci/verify_backend_base_pins.py" |\n'
+            "  PYTHONDONTWRITEBYTECODE=1 python3 - backend/Dockerfile",
+            verification,
+        )
+
+    def test_cli_accepts_explicit_dockerfile_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            dockerfile = Path(directory) / "Dockerfile"
+            dockerfile.write_text(VALID, encoding="utf-8")
+
+            self.assertEqual(0, MODULE.main((str(dockerfile),)))
 
     def test_rejects_reordered_stages(self):
         source = f"FROM {JRE}\nFROM {JDK} AS build\n"

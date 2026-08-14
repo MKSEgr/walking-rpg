@@ -71,6 +71,9 @@ jobs:
           git merge-base --is-ancestor \
             "$PROVENANCE_GUARD_BASELINE_SHA" "$SOURCE_GIT_SHA"
           git merge-base --is-ancestor "$SOURCE_GIT_SHA" origin/master
+          git show \
+            "$GITHUB_SHA:scripts/ci/verify_backend_base_pins.py" |
+            PYTHONDONTWRITEBYTECODE=1 python3 - backend/Dockerfile
           base_instruction_count="$(grep -Eic \
             '^[[:space:]]*from[[:space:]]+' backend/Dockerfile)"
           test "$base_instruction_count" -eq 2

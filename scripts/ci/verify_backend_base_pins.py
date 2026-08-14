@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -55,6 +56,7 @@ class ShellCase:
 @dataclass(frozen=True)
 class DockerfileScan:
     logical_lines: tuple[tuple[int, str], ...]
+    dockerfile_instructions: tuple[tuple[int, str], ...]
     errors: tuple[tuple[int, str], ...]
 
 
@@ -73,10 +75,12 @@ APPROVED_STAGES = (
 )
 
 
-def _from_lines(source: str) -> tuple[tuple[int, str], ...]:
+def _from_lines(
+    instructions: tuple[tuple[int, str], ...],
+) -> tuple[tuple[int, str], ...]:
     return tuple(
         (line_number, line.strip())
-        for line_number, line in enumerate(source.splitlines(), start=1)
+        for line_number, line in instructions
         if FROM_START.match(line)
     )
 
@@ -342,7 +346,8 @@ def _shell_logical_lines(
 def _logical_instruction_lines(source: str) -> DockerfileScan:
     escape = _dockerfile_escape(source)
     continuation = re.compile(rf"{re.escape(escape)}[ \t]*$")
-    instructions: list[tuple[int, str]] = []
+    logical_lines: list[tuple[int, str]] = []
+    dockerfile_instructions: list[tuple[int, str]] = []
     errors: list[tuple[int, str]] = []
     physical_lines = source.splitlines()
     current = ""
@@ -364,7 +369,9 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
             continue
 
         current += line
-        instructions.append((start_line, current))
+        instruction = (start_line, current)
+        logical_lines.append(instruction)
+        dockerfile_instructions.append(instruction)
         declarations, declaration_errors = _here_document_declarations(current)
         errors.extend((start_line, error) for error in declaration_errors)
         current = ""
@@ -387,7 +394,7 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                     break
                 body.append((body_line_number, body_line))
 
-            instructions.extend(
+            logical_lines.extend(
                 _shell_logical_lines(body, declaration.strip_tabs)
             )
             if not found:
@@ -398,11 +405,21 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                         f"{declaration.delimiter!r}",
                     )
                 )
-                return DockerfileScan(tuple(instructions), tuple(errors))
+                return DockerfileScan(
+                    tuple(logical_lines),
+                    tuple(dockerfile_instructions),
+                    tuple(errors),
+                )
 
     if start_line != 0:
-        instructions.append((start_line, current))
-    return DockerfileScan(tuple(instructions), tuple(errors))
+        instruction = (start_line, current)
+        logical_lines.append(instruction)
+        dockerfile_instructions.append(instruction)
+    return DockerfileScan(
+        tuple(logical_lines),
+        tuple(dockerfile_instructions),
+        tuple(errors),
+    )
 
 
 def validate_dockerfile_source(source: str, path: Path) -> list[str]:
@@ -420,7 +437,7 @@ def validate_dockerfile_source(source: str, path: Path) -> list[str]:
             "OS packages through a package manager"
         )
 
-    instructions = _from_lines(source)
+    instructions = _from_lines(scan.dockerfile_instructions)
     if len(instructions) != len(APPROVED_STAGES):
         errors.append(
             f"{path}: expected exactly {len(APPROVED_STAGES)} FROM instructions, "
@@ -476,8 +493,18 @@ def validate_dockerfile(path: Path) -> list[str]:
     return validate_dockerfile_source(source, path)
 
 
-def main() -> int:
-    errors = validate_dockerfile(DEFAULT_DOCKERFILE)
+def main(arguments: tuple[str, ...] | None = None) -> int:
+    if arguments is None:
+        arguments = tuple(sys.argv[1:])
+    if len(arguments) > 1:
+        print(
+            "Backend base image pin policy error: usage: "
+            "verify_backend_base_pins.py [Dockerfile]"
+        )
+        return 2
+
+    dockerfile = Path(arguments[0]) if arguments else DEFAULT_DOCKERFILE
+    errors = validate_dockerfile(dockerfile)
     if errors:
         for error in errors:
             print(f"Backend base image pin policy error: {error}")
