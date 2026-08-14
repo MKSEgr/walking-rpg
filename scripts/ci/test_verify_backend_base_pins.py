@@ -295,6 +295,31 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
         self.assertEqual((), errors)
         self.assertEqual((), declarations)
 
+    def test_does_not_treat_case_token_prefixes_as_case_statements(self):
+        prefixes = ("case=foo", "case-command", "1case")
+        for prefix in prefixes:
+            with self.subTest(prefix=prefix):
+                command = (
+                    f"RUN echo $(( $({prefix}; : in; printf 1) )); sh <<EOF\n"
+                    "apt-\\\n"
+                    "get update\n"
+                    "EOF"
+                )
+                source = "# escape=`\n\n" + VALID.replace(
+                    "RUN true",
+                    command,
+                    1,
+                )
+
+                errors = self.validate(source)
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        for error in errors
+                    )
+                )
+
     def test_finds_heredoc_inside_case_body_in_arithmetic_substitution(self):
         declarations, errors = MODULE._here_document_declarations(
             "RUN echo $(( $(case x in a) cat <<EOF ;; esac) << 2 ))"
