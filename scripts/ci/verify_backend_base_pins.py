@@ -27,6 +27,7 @@ PARSER_DIRECTIVE = re.compile(
 )
 SUPPORTED_PARSER_DIRECTIVES = frozenset(("check", "escape", "syntax"))
 SHELL_WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+SHELL_TOKEN_BOUNDARIES = frozenset(" \t\r\n;&|()<>")
 
 
 @dataclass(frozen=True)
@@ -58,6 +59,13 @@ class DockerfileScan:
     logical_lines: tuple[tuple[int, str], ...]
     dockerfile_instructions: tuple[tuple[int, str], ...]
     errors: tuple[tuple[int, str], ...]
+
+
+def _is_complete_shell_word(line: str, start: int, end: int) -> bool:
+    return (
+        (start == 0 or line[start - 1] in SHELL_TOKEN_BOUNDARIES)
+        and (end == len(line) or line[end] in SHELL_TOKEN_BOUNDARIES)
+    )
 
 
 # These are reviewed multi-platform OCI index digests. Keep the publisher's
@@ -158,12 +166,18 @@ def _here_document_declarations(
         word = SHELL_WORD.match(line, index)
         if parenthesized_expansions and word is not None:
             value = word.group()
+            complete_word = _is_complete_shell_word(
+                line,
+                word.start(),
+                word.end(),
+            )
             expansion_level = len(parenthesized_expansions)
             in_command = parenthesized_expansions[-1][0] == "command"
             if active_case is None:
                 if (
                     in_command
                     and command_starts.get(expansion_level, False)
+                    and complete_word
                     and value == "case"
                 ):
                     shell_cases.append(
@@ -178,7 +192,11 @@ def _here_document_declarations(
                 if value == "esac":
                     shell_cases.pop()
                     command_starts[expansion_level] = False
-                elif command_starts.get(expansion_level, False) and value == "case":
+                elif (
+                    command_starts.get(expansion_level, False)
+                    and complete_word
+                    and value == "case"
+                ):
                     shell_cases.append(
                         ShellCase(expansion_level)
                     )
