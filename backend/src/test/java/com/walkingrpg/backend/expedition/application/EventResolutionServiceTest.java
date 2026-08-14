@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.walkingrpg.backend.equipment.application.EquipmentService;
 import com.walkingrpg.backend.equipment.application.StarterEquipmentContent;
@@ -44,7 +44,7 @@ class EventResolutionServiceTest {
     private StarterExpeditionContent content;
     private InMemoryEquipmentRepository equipmentRepository;
     private EquipmentService equipmentService;
-    private AtomicBoolean resonanceRouteActive;
+    private AtomicReference<String> activeContentVersion;
     private EventResolutionService service;
 
     @BeforeEach
@@ -54,7 +54,9 @@ class EventResolutionServiceTest {
         inventoryRepository = new InMemoryInventoryRepository();
         content = new StarterExpeditionContent();
         equipmentRepository = new InMemoryEquipmentRepository();
-        resonanceRouteActive = new AtomicBoolean(true);
+        activeContentVersion = new AtomicReference<>(
+                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION
+        );
         equipmentService = new EquipmentService(
                 equipmentRepository,
                 new StarterEquipmentContent(),
@@ -78,7 +80,7 @@ class EventResolutionServiceTest {
                 new InventoryService(inventoryRepository),
                 content,
                 equipmentService,
-                ignored -> resonanceRouteActive.get(),
+                version -> version.equals(activeContentVersion.get()),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -408,6 +410,89 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldEnterStormRiftAndRejoinAtEmberStation() {
+        var stormArchive = content.requireNode(
+                StarterExpeditionContent.STORM_ARCHIVE_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(stormArchive, 24),
+                NOW
+        );
+
+        assertThrows(
+                EventChoiceUnavailableException.class,
+                () -> service.resolve(command(
+                        StarterExpeditionContent.STORM_ARCHIVE_EVENT_ID,
+                        StarterExpeditionContent.STORM_RIFT_CHOICE_ID,
+                        "locked-storm-rift"
+                ))
+        );
+
+        UUID itemInstanceId = UUID.fromString(
+                "12345678-90ab-cdef-1234-567890abcdef"
+        );
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                itemInstanceId,
+                StarterInventoryContent.RESONANCE_COMPASS_ID
+        );
+        equipmentService.change(new EquipmentCommand(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                EquipmentAction.EQUIP,
+                itemInstanceId,
+                "equip-storm-compass"
+        ));
+
+        EventResolutionResult entered = service.resolve(command(
+                StarterExpeditionContent.STORM_ARCHIVE_EVENT_ID,
+                StarterExpeditionContent.STORM_RIFT_CHOICE_ID,
+                "enter-storm-rift"
+        ));
+
+        assertEquals(
+                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
+                entered.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.STORM_RIFT_NODE_ID,
+                entered.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.ION_BLOOM_ID,
+                entered.material().itemId());
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                entered.receiptId(),
+                NOW
+        );
+
+        var stormRift = content.requireNode(
+                StarterExpeditionContent.STORM_RIFT_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(stormRift, 26),
+                NOW
+        );
+        EventResolutionResult returned = service.resolve(command(
+                StarterExpeditionContent.STORM_RIFT_EVENT_ID,
+                "decode-lightning-script",
+                "leave-storm-rift"
+        ));
+
+        assertEquals(
+                StarterExpeditionContent.EMBER_STATION_NODE_ID,
+                returned.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.ECHO_THREAD_ID,
+                returned.material().itemId());
+        assertEquals(2, returned.material().quantityGained());
+    }
+
+    @Test
     void shouldReplayRouteResultAfterClusterActivationChanges() {
         var mirrorNode = content.requireNode(
                 StarterExpeditionContent.MIRROR_DELTA_NODE_ID
@@ -440,12 +525,12 @@ class EventResolutionServiceTest {
         );
 
         EventResolutionResult first = service.resolve(command);
-        resonanceRouteActive.set(false);
+        activeContentVersion.set(StarterExpeditionContent.LEGACY_CONTENT_VERSION);
         EventResolutionResult replayed = service.resolve(command);
 
         assertSame(first, replayed);
         assertEquals(
-                StarterExpeditionContent.CONTENT_VERSION,
+                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
                 replayed.contentVersion()
         );
         assertEquals(

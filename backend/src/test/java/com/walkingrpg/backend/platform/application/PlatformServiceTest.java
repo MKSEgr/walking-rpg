@@ -1119,10 +1119,32 @@ class PlatformServiceTest {
         assertEquals(4, platformRepository.eventCount());
 
         platformRepository.setContentVersion(
+                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION
+        );
+        service.execute("user-1", command(
+                "RECORD_COMPASS_IMPRESSION",
+                "compass-route-available-v3",
+                Map.of(
+                        "impression", "ROUTE_AVAILABLE",
+                        "contentVersion",
+                        StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION
+                )
+        ));
+        assertTrue(platformRepository.events().stream()
+                .filter(event -> "compass_route_impression".equals(
+                        event.get("eventName")
+                ))
+                .map(event -> map(event.get("attributes")))
+                .anyMatch(attributes -> "chapter-1-v3".equals(
+                        attributes.get("contentVersion")
+                )));
+        assertEquals(6, platformRepository.eventCount());
+
+        platformRepository.setContentVersion(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION
         );
         assertEquals(routeResponse, service.execute("user-1", routeRequest));
-        assertEquals(4, platformRepository.eventCount());
+        assertEquals(6, platformRepository.eventCount());
 
         assertThrows(PlatformIdempotencyConflictException.class, () ->
                 service.execute("user-1", command(

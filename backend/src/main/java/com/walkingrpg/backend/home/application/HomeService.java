@@ -160,8 +160,8 @@ public class HomeService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public HomeSnapshotResponse getSnapshot(HomeQuery query) {
         Instant serverTime = snapshotClock.observe();
-        boolean resonanceRouteActive = contentActivation.isActive(
-                StarterExpeditionContent.CONTENT_VERSION
+        String activeContentVersion = expeditionContent.activeContentVersion(
+                contentActivation
         );
         ExpeditionDefinition initialDefinition = expeditionContent.initialDefinition();
         DailyGoal dailyGoal = dailyGoalService.calculate(
@@ -189,7 +189,7 @@ public class HomeService {
                 state.economyVersion(),
                 state.lastActivitySyncAt(),
                 serverTime,
-                expeditionContent.contentVersion(resonanceRouteActive),
+                activeContentVersion,
                 pilotSnapshot(state),
                 petSnapshot(state),
                 inventorySnapshots(state),
@@ -199,7 +199,7 @@ public class HomeService {
                         currentDefinition,
                         state,
                         equipment,
-                        resonanceRouteActive
+                        activeContentVersion
                 ),
                 craftingSnapshots(state)
         );
@@ -344,7 +344,7 @@ public class HomeService {
             ExpeditionDefinition definition,
             HomeRuntimeState state,
             List<EquipmentSlotState> equipment,
-            boolean resonanceRouteActive
+            String activeContentVersion
     ) {
         long requiredEnergy = state.expeditionRequiredEnergy() > 0
                 ? state.expeditionRequiredEnergy()
@@ -368,7 +368,7 @@ public class HomeService {
                         definition,
                         state,
                         equipment,
-                        resonanceRouteActive
+                        activeContentVersion
                 )
         );
     }
@@ -377,7 +377,7 @@ public class HomeService {
             ExpeditionDefinition definition,
             HomeRuntimeState state,
             List<EquipmentSlotState> equipment,
-            boolean resonanceRouteActive
+            String activeContentVersion
     ) {
         if (state.unlockedEventId() == null) {
             return null;
@@ -388,7 +388,7 @@ public class HomeService {
             return null;
         }
         List<ExpeditionEventChoiceSnapshot> projectedChoices = expeditionContent
-                .eventChoices(state.unlockedEventId(), resonanceRouteActive)
+                .eventChoices(state.unlockedEventId(), activeContentVersion)
                 .stream()
                 .map(choice -> choiceSnapshot(choice, equipment))
                 .toList();

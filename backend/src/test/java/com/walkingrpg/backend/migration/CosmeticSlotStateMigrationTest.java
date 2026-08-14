@@ -33,7 +33,7 @@ class CosmeticSlotStateMigrationTest {
         Flyway flyway = flyway();
         flyway.migrate();
 
-        assertEquals("17", flyway.info().current().getVersion().getVersion());
+        assertEquals("18", flyway.info().current().getVersion().getVersion());
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             assertEquals(3, scalarLong(statement, """
                     SELECT count(*)

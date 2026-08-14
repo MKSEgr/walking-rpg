@@ -82,8 +82,8 @@ public class ExpeditionAdvanceService {
             return processed.result();
         }
         requireNoPendingResult(command.userId(), command.expeditionId());
-        boolean resonanceRouteActive = contentActivation.isActive(
-                StarterExpeditionContent.CONTENT_VERSION
+        String activeContentVersion = content.activeContentVersion(
+                contentActivation
         );
 
         ExpeditionProgressState current = repository.findState(
@@ -105,7 +105,7 @@ public class ExpeditionAdvanceService {
                 node
         );
         ExpeditionAdvanceResult result = new ExpeditionAdvanceResult(
-                content.contentVersion(resonanceRouteActive),
+                activeContentVersion,
                 node.expeditionId(),
                 node.name(),
                 command.energyToSpend(),

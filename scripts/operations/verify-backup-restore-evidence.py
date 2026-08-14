@@ -15,6 +15,7 @@ from typing import Any
 
 EVIDENCE_SCHEMA = "walking-rpg-backup-restore-evidence-v1"
 SYNTHETIC_SCOPE = "SYNTHETIC_CI"
+FLYWAY_VERSION = "18"
 POSTGRES_IMAGE_TAG = "postgres:17.10-alpine3.24"
 POSTGRES_IMAGE_DIGEST = (
     "sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193"
@@ -353,8 +354,15 @@ def validate_schema(
         for version in (latest, source_version, restored_version)
     ):
         fail("Flyway versions must be numeric strings")
-    if latest != "17" or source_version != latest or restored_version != latest:
-        fail("Flyway source/restore versions must match repository V17")
+    if (
+        latest != FLYWAY_VERSION
+        or source_version != latest
+        or restored_version != latest
+    ):
+        fail(
+            "Flyway source/restore versions must match repository "
+            f"V{FLYWAY_VERSION}"
+        )
     require_bool(
         flyway.get("validationSuccessful"),
         True,
@@ -364,15 +372,27 @@ def validate_schema(
     manifests = require_dict(evidence.get("manifests"), "manifests")
     require_exact_keys(manifests, MANIFEST_KEYS, "manifests")
     if manifests.get("tableCount") != len(EXPECTED_TABLES):
-        fail("manifests.tableCount must match the exact V17 schema")
+        fail(
+            "manifests.tableCount must match the exact "
+            f"V{FLYWAY_VERSION} schema"
+        )
     if manifests.get("applicationTableCount") != len(EXPECTED_TABLES) - 1:
-        fail("manifests.applicationTableCount must match the exact V17 schema")
+        fail(
+            "manifests.applicationTableCount must match the exact "
+            f"V{FLYWAY_VERSION} schema"
+        )
     if manifests.get("fixtureCoveredApplicationTableCount") != len(
         EXPECTED_TABLES
     ) - 1:
-        fail("the synthetic fixture must cover every V17 application table")
+        fail(
+            "the synthetic fixture must cover every "
+            f"V{FLYWAY_VERSION} application table"
+        )
     if manifests.get("sequenceCount") != 3:
-        fail("manifests.sequenceCount must match the exact V17 schema")
+        fail(
+            "manifests.sequenceCount must match the exact "
+            f"V{FLYWAY_VERSION} schema"
+        )
 
     row_counts = require_dict(
         manifests.get("tableRowCounts"),

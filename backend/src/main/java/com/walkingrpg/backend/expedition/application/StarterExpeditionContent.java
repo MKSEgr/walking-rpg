@@ -21,9 +21,11 @@ public class StarterExpeditionContent {
 
     public static final String LEGACY_CONTENT_VERSION = "chapter-1-v1";
     public static final String CONTENT_VERSION = "chapter-1-v2";
+    public static final String STORM_RIFT_CONTENT_VERSION = "chapter-1-v3";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
+    public static final int STORM_RIFT_NODE_COUNT = 20;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -39,6 +41,11 @@ public class StarterExpeditionContent {
     public static final String RESONANCE_ROUTE_NODE_ID = "resonance-pocket";
     public static final String RESONANCE_ROUTE_EVENT_ID = "resonance-pocket-v1";
     public static final String STORM_ARCHIVE_NODE_ID = "storm-archive";
+    public static final String STORM_ARCHIVE_EVENT_ID = "storm-archive-v1";
+    public static final String STORM_RIFT_CHOICE_ID = "enter-storm-rift";
+    public static final String STORM_RIFT_NODE_ID = "storm-scriptorium";
+    public static final String STORM_RIFT_EVENT_ID = "storm-scriptorium-v1";
+    public static final String EMBER_STATION_NODE_ID = "ember-station";
     public static final String FINAL_NODE_ID = "dawn-relay";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
@@ -84,9 +91,10 @@ public class StarterExpeditionContent {
                         MIRROR_DELTA_EVENT_ID,
                         "Раздвоенный сигнал", "Два одинаковых сигнала ведут к разным берегам."),
                 new NodeSpec(STORM_ARCHIVE_NODE_ID, "Грозовой архив", 100,
-                        "storm-archive-v1",
+                        STORM_ARCHIVE_EVENT_ID,
                         "Память грозы", "Архив сохраняет маршруты внутри коротких разрядов."),
-                new NodeSpec("ember-station", "Угольная станция", 105, "ember-station-v1",
+                new NodeSpec(EMBER_STATION_NODE_ID, "Угольная станция", 105,
+                        "ember-station-v1",
                         "Последний жар", "Станция почти остыла, но её ядро ещё можно запустить."),
                 new NodeSpec("aurora-bridge", "Мост сияния", 110, "aurora-bridge-v1",
                         "Полоса света", "Мост строится из лучей, когда шаги совпадают с ритмом маяков."),
@@ -110,7 +118,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    CONTENT_VERSION,
+                    STORM_RIFT_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -167,6 +175,32 @@ public class StarterExpeditionContent {
         mirrorChoices.add(resonanceRouteChoice(inventoryContent));
         choices.put(MIRROR_DELTA_EVENT_ID, List.copyOf(mirrorChoices));
 
+        NodeSpec stormRiftSpec = new NodeSpec(
+                STORM_RIFT_NODE_ID,
+                "Грозовой скрипторий",
+                40,
+                STORM_RIFT_EVENT_ID,
+                "Живая запись грозы",
+                "Внутри разлома молнии складываются в строки, которые меняют маршрут при каждом раскате."
+        );
+        ExpeditionDefinition stormRiftDefinition = definition(stormRiftSpec);
+        definitions.add(stormRiftDefinition);
+        byId.put(stormRiftDefinition.currentNodeId(), stormRiftDefinition);
+        byEvent.put(stormRiftDefinition.event().eventId(), stormRiftDefinition);
+        choices.put(STORM_RIFT_EVENT_ID, stormRiftChoices(inventoryContent));
+
+        ExpeditionDefinition emberStation = byId.get(EMBER_STATION_NODE_ID);
+        defaultNext.put(STORM_RIFT_EVENT_ID, emberStation);
+        choiceNext.put(
+                new EventChoiceKey(STORM_ARCHIVE_EVENT_ID, STORM_RIFT_CHOICE_ID),
+                stormRiftDefinition
+        );
+        List<ExpeditionEventChoiceDefinition> stormArchiveChoices = new ArrayList<>(
+                choices.get(STORM_ARCHIVE_EVENT_ID)
+        );
+        stormArchiveChoices.add(stormRiftChoice(inventoryContent));
+        choices.put(STORM_ARCHIVE_EVENT_ID, List.copyOf(stormArchiveChoices));
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -209,7 +243,11 @@ public class StarterExpeditionContent {
             String eventId,
             String choiceId
     ) {
-        return nextNodeAfterEvent(eventId, choiceId, true);
+        return nextNodeAfterEvent(
+                eventId,
+                choiceId,
+                STORM_RIFT_CONTENT_VERSION
+        );
     }
 
     public Optional<ExpeditionDefinition> nextNodeAfterEvent(
@@ -217,7 +255,19 @@ public class StarterExpeditionContent {
             String choiceId,
             boolean resonanceRouteActive
     ) {
-        requireChoice(eventId, choiceId, resonanceRouteActive);
+        return nextNodeAfterEvent(
+                eventId,
+                choiceId,
+                resonanceRouteActive ? CONTENT_VERSION : LEGACY_CONTENT_VERSION
+        );
+    }
+
+    public Optional<ExpeditionDefinition> nextNodeAfterEvent(
+            String eventId,
+            String choiceId,
+            String activeContentVersion
+    ) {
+        requireChoice(eventId, choiceId, activeContentVersion);
         ExpeditionDefinition explicit = choiceNextNode.get(
                 new EventChoiceKey(eventId, choiceId)
         );
@@ -230,7 +280,7 @@ public class StarterExpeditionContent {
             String eventId,
             String choiceId
     ) {
-        return requireChoice(eventId, choiceId, true);
+        return requireChoice(eventId, choiceId, STORM_RIFT_CONTENT_VERSION);
     }
 
     public ExpeditionEventChoiceDefinition requireChoice(
@@ -238,7 +288,19 @@ public class StarterExpeditionContent {
             String choiceId,
             boolean resonanceRouteActive
     ) {
-        return eventChoices(eventId, resonanceRouteActive).stream()
+        return requireChoice(
+                eventId,
+                choiceId,
+                resonanceRouteActive ? CONTENT_VERSION : LEGACY_CONTENT_VERSION
+        );
+    }
+
+    public ExpeditionEventChoiceDefinition requireChoice(
+            String eventId,
+            String choiceId,
+            String activeContentVersion
+    ) {
+        return eventChoices(eventId, activeContentVersion).stream()
                 .filter(choice -> choice.choiceId().equals(choiceId))
                 .findFirst()
                 .orElseThrow(() -> new EventResolutionValidationException(
@@ -248,23 +310,42 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, true);
+        return eventChoices(eventId, STORM_RIFT_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
             String eventId,
             boolean resonanceRouteActive
     ) {
+        return eventChoices(
+                eventId,
+                resonanceRouteActive ? CONTENT_VERSION : LEGACY_CONTENT_VERSION
+        );
+    }
+
+    public List<ExpeditionEventChoiceDefinition> eventChoices(
+            String eventId,
+            String activeContentVersion
+    ) {
         requireEvent(eventId);
         List<ExpeditionEventChoiceDefinition> choices = choicesByEventId.get(eventId);
-        if (resonanceRouteActive || !MIRROR_DELTA_EVENT_ID.equals(eventId)) {
-            return choices;
+        if (MIRROR_DELTA_EVENT_ID.equals(eventId)
+                && !supportsResonanceRoute(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !RESONANCE_ROUTE_CHOICE_ID.equals(
+                            choice.choiceId()
+                    ))
+                    .toList();
         }
-        return choices.stream()
-                .filter(choice -> !RESONANCE_ROUTE_CHOICE_ID.equals(
-                        choice.choiceId()
-                ))
-                .toList();
+        if (STORM_ARCHIVE_EVENT_ID.equals(eventId)
+                && !supportsStormRift(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !STORM_RIFT_CHOICE_ID.equals(
+                            choice.choiceId()
+                    ))
+                    .toList();
+        }
+        return choices;
     }
 
     public ExpeditionDefinition definition() {
@@ -280,16 +361,35 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return CONTENT_VERSION;
+        return STORM_RIFT_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
         return resonanceRouteActive ? CONTENT_VERSION : LEGACY_CONTENT_VERSION;
     }
 
+    public String activeContentVersion(ExpeditionContentActivation activation) {
+        if (activation.isActive(STORM_RIFT_CONTENT_VERSION)) {
+            return STORM_RIFT_CONTENT_VERSION;
+        }
+        if (activation.isActive(CONTENT_VERSION)) {
+            return CONTENT_VERSION;
+        }
+        return LEGACY_CONTENT_VERSION;
+    }
+
+    public static boolean supportsResonanceRoute(String contentVersion) {
+        return CONTENT_VERSION.equals(contentVersion)
+                || STORM_RIFT_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsStormRift(String contentVersion) {
+        return STORM_RIFT_CONTENT_VERSION.equals(contentVersion);
+    }
+
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                CONTENT_VERSION,
+                STORM_RIFT_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -356,6 +456,68 @@ public class StarterExpeditionContent {
                         "Питомец удержал проход, пока компас извлёк фрагмент света из ещё не открытого рассвета.",
                         28,
                         20,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                1
+                        )
+                )
+        );
+    }
+
+    private ExpeditionEventChoiceDefinition stormRiftChoice(
+            StarterInventoryContent inventoryContent
+    ) {
+        return new ExpeditionEventChoiceDefinition(
+                STORM_RIFT_CHOICE_ID,
+                "Войти в грозовой разлом",
+                "Удержать разлом экипированным компасом и пройти внутрь архива.",
+                "Путь сквозь молнию",
+                "Компас синхронизировал разряды и открыл дорогу в грозовой скрипторий.",
+                42,
+                18,
+                reward(
+                        inventoryContent,
+                        StarterInventoryContent.ION_BLOOM_ID,
+                        1
+                ),
+                new ExpeditionChoiceEquipmentRequirement(
+                        StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                        "Навигационный прибор",
+                        inventoryContent.require(
+                                StarterInventoryContent.RESONANCE_COMPASS_ID
+                        ),
+                        "Экипируйте резонансный компас, чтобы стабилизировать грозовой разлом."
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> stormRiftChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        "decode-lightning-script",
+                        "Расшифровать письмена",
+                        "Сопоставить вспышки с картой архива и сохранить устойчивую последовательность.",
+                        "Грозовой шифр",
+                        "Навигатор прочитал живую запись и собрал нити эха между строками молний.",
+                        45,
+                        14,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ECHO_THREAD_ID,
+                                2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        "chase-rolling-thunder",
+                        "Догнать раскат",
+                        "Позволить питомцу вести отряд за самым глубоким эхом разлома.",
+                        "Сердце грозы",
+                        "Питомец настиг раскат и вынес из него фрагмент рассветного света.",
+                        30,
+                        24,
                         reward(
                                 inventoryContent,
                                 StarterInventoryContent.DAWN_FRAGMENT_ID,

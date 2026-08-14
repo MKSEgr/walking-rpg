@@ -284,16 +284,11 @@ public class PlatformContentCatalog {
             );
         }
         String normalizedSeasonId = seasonId.trim();
-        boolean resonanceRouteActive = StarterExpeditionContent.CONTENT_VERSION.equals(
-                activeContentVersion
-        );
         Map<String, Object> catalog = new LinkedHashMap<>();
         catalog.put("contentVersion", activeContentVersion);
         catalog.put(
                 "chapterNodes",
-                resonanceRouteActive
-                        ? StarterExpeditionContent.NODE_COUNT
-                        : StarterExpeditionContent.LEGACY_NODE_COUNT
+                chapterNodeCount(activeContentVersion)
         );
         catalog.put("onboardingSteps", onboardingSteps);
         catalog.put("pets", pets);
@@ -321,6 +316,16 @@ public class PlatformContentCatalog {
         ));
         catalog.put("catalogDigest", digest(catalog));
         return Map.copyOf(catalog);
+    }
+
+    private int chapterNodeCount(String contentVersion) {
+        if (StarterExpeditionContent.supportsStormRift(contentVersion)) {
+            return StarterExpeditionContent.STORM_RIFT_NODE_COUNT;
+        }
+        if (StarterExpeditionContent.supportsResonanceRoute(contentVersion)) {
+            return StarterExpeditionContent.NODE_COUNT;
+        }
+        return StarterExpeditionContent.LEGACY_NODE_COUNT;
     }
 
     private static Map<String, Object> achievement(String id, String name) {

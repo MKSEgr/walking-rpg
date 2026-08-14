@@ -292,7 +292,7 @@ class CompassJourneyAnalyticsIntegrationTest {
     }
 
     @Test
-    void shouldKeepRouteBaselineAcrossSameVersionRepublish() {
+    void shouldKeepRouteBaselineAcrossRepublishAndNextChapterRelease() {
         addUser("waiting-republish", COHORT);
         stageRouteContent();
         addMirrorReached(
@@ -362,6 +362,36 @@ class CompassJourneyAnalyticsIntegrationTest {
                 ).medianSecondsFromStart()
         );
         assertEquals(0, after.dataQuality().routeTargetsWithoutStartUsers());
+
+        adminService.publishContent(
+                "analytics-test",
+                "chapter-1-v3",
+                "Новый маршрут сохраняет прежний resonance funnel.",
+                Map.of(
+                        "contentVersion", "chapter-1-v3",
+                        "chapterId", "signal-chapter-1",
+                        "nodeCount", 20,
+                        "topology", "storm-rift-v1"
+                )
+        );
+        assertFalse(jdbcTemplate.queryForObject("""
+                SELECT is_active
+                FROM content_release
+                WHERE content_version = 'chapter-1-v2'
+                """, Boolean.class));
+
+        CompassJourneyFunnel afterNextRelease = funnel(
+                service.summary(COHORT),
+                CompassJourneyFunnelId.RESONANCE_ROUTE
+        );
+        assertEquals(1, afterNextRelease.startedUsers());
+        assertEquals(
+                30L,
+                stage(
+                        afterNextRelease,
+                        CompassJourneyStage.RESONANCE_ROUTE_CHOSEN
+                ).medianSecondsFromStart()
+        );
     }
 
     @Test

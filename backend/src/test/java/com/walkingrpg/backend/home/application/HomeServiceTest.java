@@ -80,7 +80,10 @@ class HomeServiceTest {
         assertEquals("spark-v1", snapshot.pet().petId());
         assertEquals("Искра", snapshot.pet().name());
         assertEquals(0, snapshot.pet().evolutionStage());
-        assertEquals(StarterExpeditionContent.CONTENT_VERSION, snapshot.contentVersion());
+        assertEquals(
+                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
+                snapshot.contentVersion()
+        );
         assertEquals("starter-expedition-v1", snapshot.expedition().expeditionId());
         assertEquals(0, snapshot.inventory().size());
         assertEquals(1, snapshot.craftingRecipes().size());

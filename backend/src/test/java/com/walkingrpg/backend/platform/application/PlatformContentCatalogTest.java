@@ -38,6 +38,24 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeStormRiftNodeOnlyInChapterV3Catalog() {
+        Map<String, Object> stormRiftCatalog = publicCatalog(
+                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION
+        );
+        Map<String, Object> resonanceCatalog = publicCatalog(
+                StarterExpeditionContent.CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v3", stormRiftCatalog.get("contentVersion"));
+        assertEquals(20, stormRiftCatalog.get("chapterNodes"));
+        assertEquals(19, resonanceCatalog.get("chapterNodes"));
+        assertNotEquals(
+                stormRiftCatalog.get("catalogDigest"),
+                resonanceCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

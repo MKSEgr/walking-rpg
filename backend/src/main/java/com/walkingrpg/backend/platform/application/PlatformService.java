@@ -855,7 +855,9 @@ public class PlatformService {
                 .toUpperCase(Locale.ROOT);
         String contentVersion = payloadText(payload, "contentVersion");
         if (!StarterExpeditionContent.LEGACY_CONTENT_VERSION.equals(contentVersion)
-                && !StarterExpeditionContent.CONTENT_VERSION.equals(contentVersion)) {
+                && !StarterExpeditionContent.supportsResonanceRoute(
+                        contentVersion
+                )) {
             throw new PlatformValidationException(
                     "Неизвестная версия контента для impression",
                     "contentVersion"
@@ -876,13 +878,15 @@ public class PlatformService {
                 attributes.put("status", impression.substring("RECIPE_".length()));
             }
             case "ROUTE_LOCKED", "ROUTE_AVAILABLE" -> {
-                if (!StarterExpeditionContent.CONTENT_VERSION.equals(contentVersion)) {
+                if (!StarterExpeditionContent.supportsResonanceRoute(
+                        contentVersion
+                )) {
                     throw new PlatformValidationException(
                             "Резонансный маршрут отсутствует в этой версии контента",
                             "contentVersion"
                     );
                 }
-                if (!StarterExpeditionContent.CONTENT_VERSION.equals(
+                if (!StarterExpeditionContent.supportsResonanceRoute(
                         activeContentVersion
                 )) {
                     throw new PlatformValidationException(
