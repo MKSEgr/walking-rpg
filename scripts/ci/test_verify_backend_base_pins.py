@@ -328,6 +328,62 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
 
         self.assertEqual([], self.validate(source))
 
+    def test_rejects_package_managers_composed_inside_run(self):
+        commands = (
+            (
+                "RUN PREFIX=ap; SUFFIX=t-get; "
+                "PACKAGE_MANAGER=${PREFIX}${SUFFIX}; "
+                "$PACKAGE_MANAGER update"
+            ),
+            (
+                "RUN PREFIX=dn SUFFIX=f PACKAGE_MANAGER=${PREFIX}${SUFFIX}; "
+                "${PACKAGE_MANAGER} install curl"
+            ),
+            (
+                "RUN <<'EOF'\n"
+                "PREFIX=ap\n"
+                "SUFFIX=t-get\n"
+                "PACKAGE_MANAGER=${PREFIX}${SUFFIX}\n"
+                "$PACKAGE_MANAGER update\n"
+                "EOF"
+            ),
+            (
+                "RUN <<'EOF'\n"
+                "export PREFIX=dn\n"
+                "readonly SUFFIX=f\n"
+                "export PACKAGE_MANAGER=${PREFIX}${SUFFIX}\n"
+                "${PACKAGE_MANAGER} install curl\n"
+                "EOF"
+            ),
+            (
+                "ENV PREFIX=ap\n"
+                "RUN PACKAGE_MANAGER=${PREFIX}t-get; "
+                "$PACKAGE_MANAGER update"
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                errors = self.validate(
+                    VALID.replace("RUN true", command, 1)
+                )
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        for error in errors
+                    )
+                )
+
+    def test_allows_safe_commands_composed_inside_run(self):
+        command = (
+            "RUN PREFIX=print; SUFFIX=f; COMMAND=${PREFIX}${SUFFIX}; "
+            "$COMMAND done"
+        )
+
+        self.assertEqual(
+            [], self.validate(VALID.replace("RUN true", command, 1))
+        )
+
     def test_allows_overwritten_or_out_of_stage_package_manager_aliases(self):
         cases = (
             VALID.replace(
