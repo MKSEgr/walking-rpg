@@ -140,6 +140,19 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
 
         self.assertEqual([], self.validate(source))
 
+    def test_allows_package_manager_words_in_copy_heredoc(self):
+        source = VALID.replace(
+            "RUN true",
+            (
+                "COPY <<'EOF' /tmp/package-manager-policy.txt\n"
+                "apt-get is intentionally unavailable in this image\n"
+                "EOF"
+            ),
+            1,
+        )
+
+        self.assertEqual([], self.validate(source))
+
     def test_publisher_runs_current_master_policy_for_historical_source(self):
         workflow = yaml.safe_load(PUBLISH_WORKFLOW.read_text(encoding="utf-8"))
         steps = workflow["jobs"]["publish"]["steps"]

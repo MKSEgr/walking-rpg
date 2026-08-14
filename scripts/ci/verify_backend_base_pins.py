@@ -12,7 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DOCKERFILE = ROOT / "backend" / "Dockerfile"
 FROM_START = re.compile(r"^\s*from(?:\s|$)", re.IGNORECASE)
-HEREDOC_INSTRUCTION = re.compile(r"^\s*(?:copy|run)(?:\s|$)", re.IGNORECASE)
+HEREDOC_INSTRUCTION = re.compile(
+    r"^\s*(?P<instruction>copy|run)(?:\s|$)", re.IGNORECASE
+)
 FROM_INSTRUCTION = re.compile(
     r"^FROM\s+(?P<image>\S+)(?:\s+AS\s+(?P<alias>[0-9A-Za-z_.-]+))?$",
     re.IGNORECASE,
@@ -395,7 +397,8 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
         instruction = (start_line, current)
         logical_lines.append(instruction)
         dockerfile_instructions.append(instruction)
-        if HEREDOC_INSTRUCTION.match(current):
+        heredoc_instruction = HEREDOC_INSTRUCTION.match(current)
+        if heredoc_instruction is not None:
             declarations, declaration_errors = _here_document_declarations(current)
         else:
             declarations, declaration_errors = (), ()
@@ -420,9 +423,10 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                     break
                 body.append((body_line_number, body_line))
 
-            logical_lines.extend(
-                _shell_logical_lines(body, declaration.strip_tabs)
-            )
+            if heredoc_instruction.group("instruction").lower() == "run":
+                logical_lines.extend(
+                    _shell_logical_lines(body, declaration.strip_tabs)
+                )
             if not found:
                 errors.append(
                     (
