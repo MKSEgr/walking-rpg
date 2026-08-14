@@ -40,10 +40,6 @@ ARG_INSTRUCTION = re.compile(
     re.IGNORECASE,
 )
 ENV_INSTRUCTION = re.compile(r"^\s*env(?:\s|$)(?P<body>.*)$", re.IGNORECASE)
-SHELL_VARIABLE_REFERENCE = re.compile(
-    r"\$(?:\{(?P<braced>[A-Za-z_][A-Za-z0-9_]*)(?:[^}]*)\}"
-    r"|(?P<plain>[A-Za-z_][A-Za-z0-9_]*))"
-)
 SHELL_ASSIGNMENT = re.compile(
     r"(?P<name>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>.*)"
 )
@@ -83,6 +79,14 @@ class DockerVariable:
 
 
 @dataclass(frozen=True)
+class VariableExpansion:
+    start: int
+    end: int
+    name: str
+    modifier: str
+
+
+@dataclass(frozen=True)
 class ShellLine:
     line_number: int
     text: str
@@ -104,93 +108,157 @@ def _is_complete_shell_word(line: str, start: int, end: int) -> bool:
     )
 
 
+def _variable_expansions(value: str) -> tuple[VariableExpansion, ...]:
+    expansions: list[VariableExpansion] = []
+    index = 0
+    while index < len(value):
+        if value[index] != "$":
+            index += 1
+            continue
+
+        if value.startswith("${", index):
+            name = SHELL_WORD.match(value, index + 2)
+            if name is None:
+                index += 2
+                continue
+            depth = 1
+            cursor = name.end()
+            while cursor < len(value):
+                if value.startswith("${", cursor):
+                    depth += 1
+                    cursor += 2
+                    continue
+                if value[cursor] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        expansions.append(
+                            VariableExpansion(
+                                index,
+                                cursor + 1,
+                                name.group(),
+                                value[name.end() : cursor],
+                            )
+                        )
+                        index = cursor + 1
+                        break
+                cursor += 1
+            else:
+                index += 2
+            continue
+
+        name = SHELL_WORD.match(value, index + 1)
+        if name is None:
+            index += 1
+            continue
+        expansions.append(
+            VariableExpansion(index, name.end(), name.group(), "")
+        )
+        index = name.end()
+    return tuple(expansions)
+
+
 def _variable_references(value: str) -> frozenset[str]:
-    return frozenset(
-        match.group("braced") or match.group("plain")
-        for match in SHELL_VARIABLE_REFERENCE.finditer(value)
+    references: set[str] = set()
+    pending = [value]
+    while pending:
+        for expansion in _variable_expansions(pending.pop()):
+            references.add(expansion.name)
+            if expansion.modifier:
+                pending.append(expansion.modifier)
+    return frozenset(references)
+
+
+def _resolve_variable_expansion(
+    expansion: VariableExpansion,
+    variables: dict[str, DockerVariable],
+    *,
+    depth: int,
+) -> DockerVariable:
+    variable = variables.get(expansion.name)
+    known_value = "" if variable is None else variable.value
+    package_manager = False if variable is None else variable.package_manager
+    modifier = expansion.modifier
+
+    if not modifier:
+        return DockerVariable(known_value, package_manager)
+    if modifier.startswith(":-"):
+        fallback = _resolve_docker_variable(
+            modifier[2:], variables, depth=depth + 1
+        )
+        if known_value:
+            return DockerVariable(known_value, package_manager)
+        if known_value is None:
+            return DockerVariable(
+                None, package_manager or fallback.package_manager
+            )
+        return fallback
+    if modifier.startswith(":+"):
+        alternate = _resolve_docker_variable(
+            modifier[2:], variables, depth=depth + 1
+        )
+        if known_value is None:
+            return DockerVariable(None, alternate.package_manager)
+        if not known_value:
+            return DockerVariable("", False)
+        return alternate
+
+    modifier_value = _resolve_docker_variable(
+        modifier, variables, depth=depth + 1
+    )
+    return DockerVariable(
+        None, package_manager or modifier_value.package_manager
     )
 
 
-def _resolve_variable_value(
+def _resolve_docker_variable(
     value: str,
     variables: dict[str, DockerVariable],
     *,
     depth: int = 0,
-) -> str | None:
+) -> DockerVariable:
     if depth > 20:
-        return None
+        return DockerVariable(None, True)
+
+    resolved: list[str] = []
+    package_manager = False
     unresolved = False
-
-    def replace(match: re.Match[str]) -> str:
-        nonlocal unresolved
-        name = match.group("braced") or match.group("plain")
-        variable = variables.get(name)
-        known_value = (
-            "" if variable is None else variable.value
+    position = 0
+    for expansion in _variable_expansions(value):
+        literal = value[position : expansion.start]
+        resolved.append(literal)
+        package_manager = package_manager or (
+            FORBIDDEN_PACKAGE_MANAGER.search(literal) is not None
         )
-        token = match.group()
-        modifier = (
-            token[2 + len(name) : -1]
-            if match.group("braced") is not None
-            else ""
+        replacement = _resolve_variable_expansion(
+            expansion, variables, depth=depth
         )
-
-        if modifier.startswith(":-"):
-            if known_value:
-                return known_value
-            if known_value is None:
-                unresolved = True
-                return token
-            fallback = _resolve_variable_value(
-                modifier[2:], variables, depth=depth + 1
-            )
-            if fallback is None:
-                unresolved = True
-                return token
-            return fallback
-        if modifier.startswith(":+"):
-            if known_value is None:
-                unresolved = True
-                return token
-            if not known_value:
-                return ""
-            alternate = _resolve_variable_value(
-                modifier[2:], variables, depth=depth + 1
-            )
-            if alternate is None:
-                unresolved = True
-                return token
-            return alternate
-        if modifier:
+        package_manager = package_manager or replacement.package_manager
+        if replacement.value is None:
             unresolved = True
-            return token
-        if known_value is None:
-            unresolved = True
-            return token
-        return known_value
+        else:
+            resolved.append(replacement.value)
+        position = expansion.end
 
-    resolved = SHELL_VARIABLE_REFERENCE.sub(replace, value)
-    return None if unresolved else resolved
+    literal = value[position:]
+    resolved.append(literal)
+    package_manager = package_manager or (
+        FORBIDDEN_PACKAGE_MANAGER.search(literal) is not None
+    )
+    resolved_value = None if unresolved else "".join(resolved)
+    return DockerVariable(
+        resolved_value,
+        package_manager
+        or (
+            resolved_value is not None
+            and FORBIDDEN_PACKAGE_MANAGER.search(resolved_value) is not None
+        ),
+    )
 
 
 def _docker_variable(
     value: str, variables: dict[str, DockerVariable]
 ) -> DockerVariable:
-    resolved = _resolve_variable_value(value, variables)
-    references = _variable_references(value)
-    inherited_package_manager = any(
-        variables.get(name, DockerVariable(None, False)).package_manager
-        for name in references
-    )
-    return DockerVariable(
-        resolved,
-        FORBIDDEN_PACKAGE_MANAGER.search(value) is not None
-        or inherited_package_manager
-        or (
-            resolved is not None
-            and FORBIDDEN_PACKAGE_MANAGER.search(resolved) is not None
-        ),
-    )
+    return _resolve_docker_variable(value, variables)
 
 
 def _environment_assignments(instruction: str) -> tuple[tuple[str, str], ...]:
