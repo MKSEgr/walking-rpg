@@ -60,7 +60,7 @@ class ShellCase:
 
 @dataclass(frozen=True)
 class DockerfileScan:
-    logical_lines: tuple[tuple[int, str], ...]
+    shell_lines: tuple[tuple[int, str], ...]
     dockerfile_instructions: tuple[tuple[int, str], ...]
     errors: tuple[tuple[int, str], ...]
 
@@ -371,7 +371,7 @@ def _shell_logical_lines(
 def _logical_instruction_lines(source: str) -> DockerfileScan:
     escape = _dockerfile_escape(source)
     continuation = re.compile(rf"{re.escape(escape)}[ \t]*$")
-    logical_lines: list[tuple[int, str]] = []
+    shell_lines: list[tuple[int, str]] = []
     dockerfile_instructions: list[tuple[int, str]] = []
     errors: list[tuple[int, str]] = []
     physical_lines = source.splitlines()
@@ -395,9 +395,14 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
 
         current += line
         instruction = (start_line, current)
-        logical_lines.append(instruction)
         dockerfile_instructions.append(instruction)
         heredoc_instruction = HEREDOC_INSTRUCTION.match(current)
+        run_instruction = (
+            heredoc_instruction is not None
+            and heredoc_instruction.group("instruction").lower() == "run"
+        )
+        if run_instruction:
+            shell_lines.append(instruction)
         if heredoc_instruction is not None:
             declarations, declaration_errors = _here_document_declarations(current)
         else:
@@ -423,8 +428,8 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                     break
                 body.append((body_line_number, body_line))
 
-            if heredoc_instruction.group("instruction").lower() == "run":
-                logical_lines.extend(
+            if run_instruction:
+                shell_lines.extend(
                     _shell_logical_lines(body, declaration.strip_tabs)
                 )
             if not found:
@@ -436,17 +441,22 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                     )
                 )
                 return DockerfileScan(
-                    tuple(logical_lines),
+                    tuple(shell_lines),
                     tuple(dockerfile_instructions),
                     tuple(errors),
                 )
 
     if start_line != 0:
         instruction = (start_line, current)
-        logical_lines.append(instruction)
         dockerfile_instructions.append(instruction)
+        heredoc_instruction = HEREDOC_INSTRUCTION.match(current)
+        if (
+            heredoc_instruction is not None
+            and heredoc_instruction.group("instruction").lower() == "run"
+        ):
+            shell_lines.append(instruction)
     return DockerfileScan(
-        tuple(logical_lines),
+        tuple(shell_lines),
         tuple(dockerfile_instructions),
         tuple(errors),
     )
@@ -459,7 +469,7 @@ def validate_dockerfile_source(source: str, path: Path) -> list[str]:
         errors.append(
             f"{path}:{line_number}: cannot safely parse Dockerfile: {message}"
         )
-    for line_number, line in scan.logical_lines:
+    for line_number, line in scan.shell_lines:
         if FORBIDDEN_PACKAGE_MANAGER.search(line) is None:
             continue
         errors.append(
