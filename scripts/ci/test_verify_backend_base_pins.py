@@ -381,6 +381,51 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     [], self.validate(VALID.replace("RUN true", command, 1))
                 )
 
+    def test_rejects_package_managers_revealed_by_trim_modifiers(self):
+        commands = (
+            (
+                "RUN VALUE=apt-getX; PACKAGE_MANAGER=${VALUE%X}; "
+                "$PACKAGE_MANAGER update"
+            ),
+            (
+                "RUN VALUE=Xdnf; PACKAGE_MANAGER=${VALUE#X}; "
+                "$PACKAGE_MANAGER install curl"
+            ),
+            (
+                "RUN VALUE=apt-getXX; PACKAGE_MANAGER=${VALUE%%X*}; "
+                "$PACKAGE_MANAGER update"
+            ),
+            (
+                "RUN VALUE=XXdnf; PACKAGE_MANAGER=${VALUE##*X}; "
+                "$PACKAGE_MANAGER install curl"
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                errors = self.validate(
+                    VALID.replace("RUN true", command, 1)
+                )
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        for error in errors
+                    )
+                )
+
+    def test_allows_safe_commands_resolved_by_trim_modifiers(self):
+        commands = (
+            "RUN VALUE=printfX; COMMAND=${VALUE%X}; $COMMAND done",
+            "RUN VALUE=Xprintf; COMMAND=${VALUE#X}; $COMMAND done",
+            "RUN VALUE=printfXX; COMMAND=${VALUE%%X*}; $COMMAND done",
+            "RUN VALUE=XXprintf; COMMAND=${VALUE##*X}; $COMMAND done",
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
     def test_rejects_package_managers_composed_inside_run(self):
         commands = (
             (
