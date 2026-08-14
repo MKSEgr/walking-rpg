@@ -44,6 +44,12 @@ SHELL_VARIABLE_REFERENCE = re.compile(
     r"\$(?:\{(?P<braced>[A-Za-z_][A-Za-z0-9_]*)(?:[^}]*)\}"
     r"|(?P<plain>[A-Za-z_][A-Za-z0-9_]*))"
 )
+SHELL_ASSIGNMENT = re.compile(
+    r"(?P<name>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>.*)"
+)
+SHELL_PERSISTENT_ASSIGNMENT_COMMANDS = frozenset(
+    ("declare", "export", "local", "readonly", "typeset")
+)
 
 
 @dataclass(frozen=True)
@@ -80,7 +86,8 @@ class DockerVariable:
 class ShellLine:
     line_number: int
     text: str
-    package_manager_aliases: frozenset[str]
+    variables: tuple[tuple[str, DockerVariable], ...]
+    run_start: bool
 
 
 @dataclass(frozen=True)
@@ -231,6 +238,94 @@ def _effective_package_manager_aliases(
             argument_values, environment_values
         ).items()
         if variable.package_manager
+    )
+
+
+def _variable_snapshot(
+    argument_values: dict[str, DockerVariable],
+    environment_values: dict[str, DockerVariable],
+) -> tuple[tuple[str, DockerVariable], ...]:
+    return tuple(
+        sorted(_effective_variables(argument_values, environment_values).items())
+    )
+
+
+def _shell_command_uses_package_manager_assignment(
+    tokens: list[str], variables: dict[str, DockerVariable]
+) -> bool:
+    if not tokens:
+        return False
+
+    command_variables = dict(variables)
+    assignments: list[tuple[str, DockerVariable]] = []
+    index = 0
+    while index < len(tokens):
+        assignment = SHELL_ASSIGNMENT.fullmatch(tokens[index])
+        if assignment is None:
+            break
+        variable = _docker_variable(
+            assignment.group("value"), command_variables
+        )
+        command_variables[assignment.group("name")] = variable
+        assignments.append((assignment.group("name"), variable))
+        index += 1
+
+    dangerous = any(variable.package_manager for _, variable in assignments)
+    if index == len(tokens):
+        variables.update(assignments)
+        return dangerous
+
+    if tokens[index] not in SHELL_PERSISTENT_ASSIGNMENT_COMMANDS:
+        return dangerous
+
+    for token in tokens[index + 1 :]:
+        assignment = SHELL_ASSIGNMENT.fullmatch(token)
+        if assignment is None:
+            continue
+        variable = _docker_variable(assignment.group("value"), variables)
+        variables[assignment.group("name")] = variable
+        dangerous = dangerous or variable.package_manager
+    return dangerous
+
+
+def _shell_line_uses_package_manager_assignment(
+    line: str,
+    variables: dict[str, DockerVariable],
+    *,
+    run_start: bool,
+) -> bool:
+    if run_start:
+        instruction = HEREDOC_INSTRUCTION.match(line)
+        if instruction is not None:
+            line = line[instruction.end() :]
+    try:
+        lexer = shlex.shlex(
+            line,
+            posix=True,
+            punctuation_chars=";&|()",
+        )
+        lexer.whitespace_split = True
+        lexer.commenters = ""
+        tokens = list(lexer)
+    except ValueError:
+        return False
+
+    dangerous = False
+    command: list[str] = []
+    for token in tokens:
+        if token and all(character in ";&|()" for character in token):
+            dangerous = (
+                _shell_command_uses_package_manager_assignment(
+                    command, variables
+                )
+                or dangerous
+            )
+            command = []
+        else:
+            command.append(token)
+    return (
+        _shell_command_uses_package_manager_assignment(command, variables)
+        or dangerous
     )
 
 
@@ -628,9 +723,8 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                 ShellLine(
                     start_line,
                     current,
-                    _effective_package_manager_aliases(
-                        argument_values, environment_values
-                    ),
+                    _variable_snapshot(argument_values, environment_values),
+                    True,
                 )
             )
         if heredoc_instruction is not None:
@@ -659,11 +753,11 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                 body.append((body_line_number, body_line))
 
             if run_instruction:
-                aliases = _effective_package_manager_aliases(
+                variables = _variable_snapshot(
                     argument_values, environment_values
                 )
                 shell_lines.extend(
-                    ShellLine(line_number, text, aliases)
+                    ShellLine(line_number, text, variables, False)
                     for line_number, text in _shell_logical_lines(
                         body, declaration.strip_tabs
                     )
@@ -705,9 +799,8 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                 ShellLine(
                     start_line,
                     current,
-                    _effective_package_manager_aliases(
-                        argument_values, environment_values
-                    ),
+                    _variable_snapshot(argument_values, environment_values),
+                    True,
                 )
             )
     return DockerfileScan(
@@ -724,22 +817,42 @@ def validate_dockerfile_source(source: str, path: Path) -> list[str]:
         errors.append(
             f"{path}:{line_number}: cannot safely parse Dockerfile: {message}"
         )
+    shell_variables: dict[str, DockerVariable] = {}
     for shell_line in scan.shell_lines:
+        if shell_line.run_start:
+            shell_variables = dict(shell_line.variables)
+        package_manager_aliases = frozenset(
+            name
+            for name, variable in shell_variables.items()
+            if variable.package_manager
+        )
         aliases = _variable_references(shell_line.text).intersection(
-            shell_line.package_manager_aliases
+            package_manager_aliases
+        )
+        composed_assignment = _shell_line_uses_package_manager_assignment(
+            shell_line.text,
+            shell_variables,
+            run_start=shell_line.run_start,
         )
         if (
             FORBIDDEN_PACKAGE_MANAGER.search(shell_line.text) is None
             and not aliases
+            and not composed_assignment
         ):
             continue
         alias_suffix = (
             f" via alias ${sorted(aliases)[0]}" if aliases else ""
         )
+        assignment_suffix = (
+            " via a composed shell assignment"
+            if composed_assignment and not aliases
+            else ""
+        )
         errors.append(
             f"{path}:{shell_line.line_number}: protected build must not fetch "
             "mutable OS packages through a package manager"
             f"{alias_suffix}"
+            f"{assignment_suffix}"
         )
 
     instructions = _from_lines(scan.dockerfile_instructions)
