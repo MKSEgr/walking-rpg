@@ -287,6 +287,23 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     [], self.validate(VALID.replace("RUN true", command, 1))
                 )
 
+    def test_does_not_end_case_on_esac_command_arguments(self):
+        arguments = ("esac", "esac=value", "esac-command", "1esac")
+        for argument in arguments:
+            with self.subTest(argument=argument):
+                command = (
+                    "RUN echo $(( $(case x in "
+                    f"x) echo {argument} ;; "
+                    "y) echo 0 ;; "
+                    "z) echo 1 ;; "
+                    "esac) << 2 ))"
+                )
+
+                self.assertEqual(
+                    [],
+                    self.validate(VALID.replace("RUN true", command, 1)),
+                )
+
     def test_does_not_treat_case_arguments_as_case_statements(self):
         declarations, errors = MODULE._here_document_declarations(
             "RUN echo $(( $(printf '%s' case x in a) << 2 ))"
