@@ -175,13 +175,60 @@ def _variable_references(value: str) -> frozenset[str]:
     return frozenset(references)
 
 
+def _trim_pattern_spans(value: str) -> tuple[tuple[int, int], ...]:
+    spans: list[tuple[int, int]] = []
+    pending = [(value, 0)]
+    while pending:
+        fragment, offset = pending.pop()
+        for expansion in _variable_expansions(fragment):
+            modifier_start = expansion.start + 2 + len(expansion.name)
+            trim_operator = next(
+                (
+                    operator
+                    for operator in ("##", "%%", "#", "%")
+                    if expansion.modifier.startswith(operator)
+                ),
+                None,
+            )
+            if trim_operator is not None:
+                spans.append(
+                    (
+                        offset + modifier_start + len(trim_operator),
+                        offset + expansion.end - 1,
+                    )
+                )
+            if expansion.modifier:
+                pending.append(
+                    (expansion.modifier, offset + modifier_start)
+                )
+    return tuple(sorted(spans))
+
+
 def _protect_quoted_glob_characters(value: str) -> str:
     protected: list[str] = []
     quote: str | None = None
+    pattern_starts = dict(_trim_pattern_spans(value))
+    pattern_quotes: list[tuple[int, str | None]] = []
     index = 0
     while index < len(value):
+        while pattern_quotes and pattern_quotes[-1][0] == index:
+            _, quote = pattern_quotes.pop()
+        pattern_end = pattern_starts.get(index)
+        if pattern_end is not None and quote != "'":
+            pattern_quotes.append((pattern_end, quote))
+            quote = None
+
         character = value[index]
         if quote is not None:
+            if (
+                quote == '"'
+                and character == "\\"
+                and index + 1 < len(value)
+                and value[index + 1] in {'$', '`', '"', "\\", "\n"}
+            ):
+                protected.extend((character, value[index + 1]))
+                index += 2
+                continue
             if character == quote:
                 quote = None
                 protected.append(character)
