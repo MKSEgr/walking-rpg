@@ -328,6 +328,59 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
 
         self.assertEqual([], self.validate(source))
 
+    def test_rejects_nested_expansions_inside_modifier_words(self):
+        cases = (
+            (
+                "ENV PREFIX=ap\n"
+                "ENV PACKAGE_MANAGER=${UNSET:-${PREFIX}t-get}\n"
+                "RUN $PACKAGE_MANAGER update"
+            ),
+            (
+                "ENV PREFIX=dn\n"
+                "ENV PRESENT=1\n"
+                "ENV PACKAGE_MANAGER=${PRESENT:+${PREFIX}f}\n"
+                "RUN ${PACKAGE_MANAGER} install curl"
+            ),
+            (
+                "ENV PREFIX=ap\n"
+                "ENV PACKAGE_MANAGER=${UNSET:-${OTHER:-${PREFIX}t-get}}\n"
+                "RUN $PACKAGE_MANAGER update"
+            ),
+        )
+        for command in cases:
+            with self.subTest(command=command):
+                errors = self.validate(
+                    VALID.replace("RUN true", command, 1)
+                )
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        and "alias $PACKAGE_MANAGER" in error
+                        for error in errors
+                    )
+                )
+
+    def test_allows_discarded_package_manager_alternate_conditions(self):
+        cases = (
+            (
+                "ENV PREFIX=ap\n"
+                "ENV MANAGER=${PREFIX}t-get\n"
+                "ENV COMMAND=${MANAGER:+printf}\n"
+                "RUN $COMMAND done"
+            ),
+            (
+                "ENV EMPTY=\n"
+                "ENV COMMAND=${EMPTY:+apt-get}\n"
+                "RUN $COMMAND done"
+            ),
+        )
+        for command in cases:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
     def test_rejects_package_managers_composed_inside_run(self):
         commands = (
             (
