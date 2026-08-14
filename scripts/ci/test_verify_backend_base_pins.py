@@ -255,6 +255,79 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     )
                 )
 
+    def test_rejects_package_manager_aliases_composed_from_safe_fragments(self):
+        cases = (
+            VALID.replace(
+                "RUN true",
+                "ENV PREFIX=ap\n"
+                "ENV SUFFIX=t-get\n"
+                "ENV PACKAGE_MANAGER=${PREFIX}${SUFFIX}\n"
+                "RUN $PACKAGE_MANAGER update",
+                1,
+            ),
+            VALID.replace(
+                "RUN true",
+                "ARG PREFIX=dn\n"
+                "ENV PACKAGE_MANAGER=${PREFIX}f\n"
+                "RUN ${PACKAGE_MANAGER} update",
+                1,
+            ),
+            VALID.replace(
+                "RUN true",
+                "ENV EMPTY=\n"
+                "ENV PREFIX=${EMPTY:-ap}\n"
+                "ENV PACKAGE_MANAGER=${PREFIX}t-get\n"
+                "RUN $PACKAGE_MANAGER update",
+                1,
+            ),
+            VALID.replace(
+                "RUN true",
+                "ENV PRESENT=1\n"
+                "ENV PREFIX=${PRESENT:+dn}\n"
+                "ENV PACKAGE_MANAGER=${PREFIX}f\n"
+                "RUN $PACKAGE_MANAGER update",
+                1,
+            ),
+            VALID.replace(
+                "RUN true",
+                "ARG EMPTY\n"
+                "ENV PACKAGE_MANAGER=ap${EMPTY}t-get\n"
+                "RUN $PACKAGE_MANAGER update",
+                1,
+            ),
+            (
+                "ARG PREFIX=mic\n"
+                f"FROM {JDK} AS build\n"
+                "ARG PREFIX\n"
+                "ENV PACKAGE_MANAGER=${PREFIX}rodnf\n"
+                "RUN $PACKAGE_MANAGER install curl\n"
+                f"FROM {JRE}\nRUN true\n"
+            ),
+        )
+        for source in cases:
+            with self.subTest(source=source):
+                errors = self.validate(source)
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        and "alias $PACKAGE_MANAGER" in error
+                        for error in errors
+                    )
+                )
+
+    def test_allows_aliases_composed_into_non_package_manager_commands(self):
+        source = VALID.replace(
+            "RUN true",
+            "ENV PREFIX=print\n"
+            "ENV SUFFIX=f\n"
+            "ENV COMMAND=${PREFIX}${SUFFIX}\n"
+            "RUN $COMMAND done",
+            1,
+        )
+
+        self.assertEqual([], self.validate(source))
+
     def test_allows_overwritten_or_out_of_stage_package_manager_aliases(self):
         cases = (
             VALID.replace(
