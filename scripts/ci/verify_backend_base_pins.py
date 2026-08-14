@@ -189,7 +189,11 @@ def _here_document_declarations(
                 shell_cases.pop()
                 command_starts[expansion_level] = False
             elif active_case.phase == "body":
-                if value == "esac":
+                if (
+                    command_starts.get(expansion_level, False)
+                    and complete_word
+                    and value == "esac"
+                ):
                     shell_cases.pop()
                     command_starts[expansion_level] = False
                 elif (
