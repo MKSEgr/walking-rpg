@@ -660,6 +660,29 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                 'RUN PREFIX=ap; SUFFIX=t-get; '
                 'bash --rcfile /dev/null -c "${PREFIX}${SUFFIX} update"'
             ),
+            (
+                "RUN PREFIX=ap SUFFIX=t-get "
+                "eval '${PREFIX}${SUFFIX} update'"
+            ),
+            (
+                "RUN PREFIX=dn SUFFIX=f "
+                "sh -c '${PREFIX}${SUFFIX} install curl'"
+            ),
+            (
+                "ENV PREFIX=ap\nENV SUFFIX=t-get\n"
+                "RUN bash -eo pipefail -c "
+                "'${PREFIX}${SUFFIX} update'"
+            ),
+            (
+                "ENV PREFIX=dn\nENV SUFFIX=f\n"
+                "RUN bash -eO extglob -c "
+                "'${PREFIX}${SUFFIX} install curl'"
+            ),
+            (
+                "ENV PREFIX=ap\nENV SUFFIX=t-get\n"
+                "RUN bash -eoc pipefail "
+                "'${PREFIX}${SUFFIX} update'"
+            ),
         )
         for command in commands:
             with self.subTest(command=command):
@@ -673,6 +696,8 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
             "RUN sh -c 'printf done'",
             "RUN dash -- script.sh",
             "RUN bash -O extglob -c 'printf done'",
+            "RUN bash -eo pipefail -c 'printf done'",
+            "RUN bash -eO extglob -c 'printf done'",
             (
                 "RUN PREFIX=ap; SUFFIX=t-get; "
                 "eval 'printf \"%s\\n\" \"${PREFIX}${SUFFIX}\"'"

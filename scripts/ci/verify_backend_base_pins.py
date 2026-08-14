@@ -50,9 +50,8 @@ SHELL_PERSISTENT_ASSIGNMENT_COMMANDS = frozenset(
 SHELL_COMMAND_INTERPRETERS = frozenset(
     ("ash", "bash", "dash", "ksh", "sh", "zsh")
 )
-SHELL_OPTIONS_WITH_ARGUMENT = frozenset(
-    ("-o", "+o", "-O", "+O", "--init-file", "--rcfile")
-)
+SHELL_SHORT_OPTIONS_WITH_ARGUMENT = frozenset(("o", "O"))
+SHELL_LONG_OPTIONS_WITH_ARGUMENT = frozenset(("--init-file", "--rcfile"))
 MAX_SHELL_REPARSE_DEPTH = 20
 SHELL_GLOB_LITERAL_SENTINELS = {
     "*": "\ue000",
@@ -542,6 +541,7 @@ def _shell_command_uses_package_manager_assignment(
             tokens,
             index,
             variables,
+            execution_variables=command_variables,
             reparse_depth=reparse_depth,
         )
         or dangerous
@@ -565,6 +565,7 @@ def _shell_executable_uses_package_manager(
     index: int,
     variables: dict[str, DockerVariable],
     *,
+    execution_variables: dict[str, DockerVariable],
     reparse_depth: int,
 ) -> bool:
     while index < len(tokens):
@@ -659,7 +660,7 @@ def _shell_executable_uses_package_manager(
                     return True
                 break
 
-            child_variables = dict(variables)
+            child_variables = dict(execution_variables)
             while index < len(tokens):
                 resolved = _docker_variable(tokens[index], variables)
                 if resolved.package_manager or resolved.value is None:
@@ -675,13 +676,13 @@ def _shell_executable_uses_package_manager(
                     is not None,
                 )
                 index += 1
-            variables = child_variables
+            execution_variables = child_variables
             continue
 
         if command == "eval":
             return _reparsed_shell_command_uses_package_manager(
                 tokens[index:],
-                variables,
+                execution_variables,
                 reparse_depth=reparse_depth,
             )
 
@@ -693,22 +694,33 @@ def _shell_executable_uses_package_manager(
                 option = resolved_option.value
                 if option == "--":
                     return False
-                if option in SHELL_OPTIONS_WITH_ARGUMENT:
+                if option in SHELL_LONG_OPTIONS_WITH_ARGUMENT:
                     if index + 1 >= len(tokens):
                         return True
                     index += 2
                     continue
                 if option in {"-", "+"} or not option.startswith(("-", "+")):
                     return False
-                if not option.startswith("--") and "c" in option[1:]:
-                    if index + 1 >= len(tokens):
+                if option.startswith("--"):
+                    index += 1
+                    continue
+
+                short_options = option[1:]
+                index += 1
+                for short_option in short_options:
+                    if short_option not in SHELL_SHORT_OPTIONS_WITH_ARGUMENT:
+                        continue
+                    if index >= len(tokens):
+                        return True
+                    index += 1
+                if "c" in short_options:
+                    if index >= len(tokens):
                         return True
                     return _reparsed_shell_command_uses_package_manager(
-                        [tokens[index + 1]],
-                        variables,
+                        [tokens[index]],
+                        execution_variables,
                         reparse_depth=reparse_depth,
                     )
-                index += 1
             return False
 
         return False
