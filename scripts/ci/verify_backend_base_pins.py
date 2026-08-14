@@ -7,6 +7,7 @@ import re
 import shlex
 import sys
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 
@@ -202,11 +203,73 @@ def _resolve_variable_expansion(
             return DockerVariable("", False)
         return alternate
 
-    modifier_value = _resolve_docker_variable(
-        modifier, variables, depth=depth + 1
+    trim_operator = next(
+        (
+            operator
+            for operator in ("##", "%%", "#", "%")
+            if modifier.startswith(operator)
+        ),
+        None,
     )
-    return DockerVariable(
-        None, package_manager or modifier_value.package_manager
+    if trim_operator is not None:
+        pattern = _resolve_docker_variable(
+            modifier[len(trim_operator) :],
+            variables,
+            depth=depth + 1,
+        )
+        if known_value is None or pattern.value is None:
+            return DockerVariable(None, True)
+        trimmed = _trim_variable_value(
+            known_value, pattern.value, trim_operator
+        )
+        return DockerVariable(
+            trimmed,
+            FORBIDDEN_PACKAGE_MANAGER.search(trimmed) is not None,
+        )
+
+    return DockerVariable(None, True)
+
+
+def _trim_variable_value(value: str, pattern: str, operator: str) -> str:
+    if operator == "#":
+        ends = range(len(value) + 1)
+        return next(
+            (
+                value[end:]
+                for end in ends
+                if fnmatchcase(value[:end], pattern)
+            ),
+            value,
+        )
+    if operator == "##":
+        ends = range(len(value), -1, -1)
+        return next(
+            (
+                value[end:]
+                for end in ends
+                if fnmatchcase(value[:end], pattern)
+            ),
+            value,
+        )
+    if operator == "%":
+        starts = range(len(value), -1, -1)
+        return next(
+            (
+                value[:start]
+                for start in starts
+                if fnmatchcase(value[start:], pattern)
+            ),
+            value,
+        )
+
+    starts = range(len(value) + 1)
+    return next(
+        (
+            value[:start]
+            for start in starts
+            if fnmatchcase(value[start:], pattern)
+        ),
+        value,
     )
 
 
