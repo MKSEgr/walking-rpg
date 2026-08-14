@@ -223,6 +223,57 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     self.validate(VALID.replace("RUN true", instruction, 1)),
                 )
 
+    def test_rejects_package_manager_aliases_used_by_run(self):
+        cases = (
+            ("ARG PACKAGE_MANAGER=apt-get", "RUN $PACKAGE_MANAGER update"),
+            ("ENV PACKAGE_MANAGER=apt-get", "RUN ${PACKAGE_MANAGER} update"),
+            (
+                "ARG BASE_MANAGER=apt-get\n"
+                "ENV PACKAGE_MANAGER=$BASE_MANAGER",
+                "RUN $PACKAGE_MANAGER update",
+            ),
+            (
+                "ENV PACKAGE_MANAGER=/usr/bin/apt",
+                "RUN <<EOF\n$PACKAGE_MANAGER update\nEOF",
+            ),
+        )
+        for definition, command in cases:
+            with self.subTest(definition=definition, command=command):
+                source = VALID.replace(
+                    "RUN true",
+                    f"{definition}\n{command}",
+                    1,
+                )
+
+                errors = self.validate(source)
+
+                self.assertTrue(
+                    any(
+                        "must not fetch mutable OS packages" in error
+                        and "alias $PACKAGE_MANAGER" in error
+                        for error in errors
+                    )
+                )
+
+    def test_allows_overwritten_or_out_of_stage_package_manager_aliases(self):
+        cases = (
+            VALID.replace(
+                "RUN true",
+                "ENV PACKAGE_MANAGER=apt-get\n"
+                "ENV PACKAGE_MANAGER=printf\n"
+                "RUN $PACKAGE_MANAGER done",
+                1,
+            ),
+            VALID.replace(
+                f"FROM {JRE}\nRUN true",
+                f"ENV PACKAGE_MANAGER=apt-get\nFROM {JRE}\n"
+                "RUN $PACKAGE_MANAGER update",
+            ),
+        )
+        for source in cases:
+            with self.subTest(source=source):
+                self.assertEqual([], self.validate(source))
+
     def test_rejects_package_manager_split_across_active_escape_directive(self):
         cases = (
             ("", "\\"),
