@@ -562,6 +562,61 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     )
                 )
 
+    def test_rejects_package_managers_composed_as_run_executables(self):
+        commands = (
+            "RUN PREFIX=ap; SUFFIX=t-get; ${PREFIX}${SUFFIX} update",
+            (
+                "RUN PREFIX=dn; SUFFIX=f; "
+                "/usr/bin/${PREFIX}${SUFFIX} install curl"
+            ),
+            (
+                "RUN PREFIX=ap SUFFIX=t-get; "
+                "command -p ${PREFIX}${SUFFIX} update"
+            ),
+            (
+                "RUN PREFIX=dn; SUFFIX=f; "
+                "exec /usr/bin/${PREFIX}${SUFFIX} install curl"
+            ),
+            (
+                "RUN PREFIX=ap; SUFFIX=t-get; "
+                "nohup ${PREFIX}${SUFFIX} update"
+            ),
+            (
+                "RUN PREFIX=ap; SUFFIX=t-get; "
+                "env -i COMMAND=${PREFIX}${SUFFIX} "
+                "sh -c '$COMMAND update'"
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertTrue(
+                    self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+    def test_allows_safe_composed_run_executables_and_arguments(self):
+        commands = (
+            "RUN PREFIX=print; SUFFIX=f; ${PREFIX}${SUFFIX} done",
+            "RUN PREFIX=ap; SUFFIX=t-get; printf ${PREFIX}${SUFFIX}",
+            "RUN PREFIX=ap; SUFFIX=t-get; command -v ${PREFIX}${SUFFIX}",
+            (
+                "RUN PREFIX=print; SUFFIX=f; "
+                "PREFIX=ap SUFFIX=t-get ${PREFIX}${SUFFIX} done"
+            ),
+            (
+                "RUN PREFIX=print; SUFFIX=f; "
+                "env COMMAND=${PREFIX}${SUFFIX} sh -c '$COMMAND done'"
+            ),
+            (
+                "RUN PREFIX=ap; SUFFIX=t-get; "
+                "env --unset=${PREFIX}${SUFFIX} printf done"
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
     def test_allows_safe_commands_composed_inside_run(self):
         command = (
             "RUN PREFIX=print; SUFFIX=f; COMMAND=${PREFIX}${SUFFIX}; "

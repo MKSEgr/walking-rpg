@@ -525,6 +525,13 @@ def _shell_command_uses_package_manager_assignment(
         variables.update(assignments)
         return dangerous
 
+    dangerous = (
+        _shell_executable_uses_package_manager(
+            tokens, index, variables
+        )
+        or dangerous
+    )
+
     if tokens[index] not in SHELL_PERSISTENT_ASSIGNMENT_COMMANDS:
         return dangerous
 
@@ -536,6 +543,117 @@ def _shell_command_uses_package_manager_assignment(
         variables[assignment.group("name")] = variable
         dangerous = dangerous or variable.package_manager
     return dangerous
+
+
+def _shell_executable_uses_package_manager(
+    tokens: list[str],
+    index: int,
+    variables: dict[str, DockerVariable],
+) -> bool:
+    while index < len(tokens):
+        executable = _docker_variable(tokens[index], variables)
+        if executable.package_manager or executable.value is None:
+            return True
+        command = executable.value.rsplit("/", 1)[-1]
+        index += 1
+
+        if command == "command":
+            while index < len(tokens):
+                resolved_option = _docker_variable(tokens[index], variables)
+                if resolved_option.value is None:
+                    return True
+                option = resolved_option.value
+                if option == "--":
+                    index += 1
+                    break
+                if option == "-p":
+                    index += 1
+                    continue
+                if option in {"-v", "-V"}:
+                    return False
+                if option.startswith("-"):
+                    return True
+                break
+            continue
+
+        if command == "exec":
+            while index < len(tokens):
+                resolved_option = _docker_variable(tokens[index], variables)
+                if resolved_option.value is None:
+                    return True
+                option = resolved_option.value
+                if option == "--":
+                    index += 1
+                    break
+                if option == "-a":
+                    if index + 1 >= len(tokens):
+                        return True
+                    index += 2
+                    continue
+                if option.startswith("-") and set(option[1:]) <= {"c", "l"}:
+                    index += 1
+                    continue
+                if option.startswith("-"):
+                    return True
+                break
+            continue
+
+        if command == "nohup":
+            if index < len(tokens):
+                resolved_option = _docker_variable(tokens[index], variables)
+                if resolved_option.value is None:
+                    return True
+                if resolved_option.value == "--":
+                    index += 1
+                elif resolved_option.value.startswith("-"):
+                    return resolved_option.value not in {
+                        "--help",
+                        "--version",
+                    }
+            continue
+
+        if command == "env":
+            while index < len(tokens):
+                resolved_option = _docker_variable(tokens[index], variables)
+                if resolved_option.value is None:
+                    return True
+                option = resolved_option.value
+                if option in {"--", "-"}:
+                    index += 1
+                    break
+                if option in {"-i", "--ignore-environment"}:
+                    index += 1
+                    continue
+                if option in {"-u", "--unset", "-C", "--chdir", "-a", "--argv0"}:
+                    if index + 1 >= len(tokens):
+                        return True
+                    index += 2
+                    continue
+                if option.startswith(
+                    ("--unset=", "--chdir=", "--argv0=")
+                ):
+                    index += 1
+                    continue
+                if option in {"-S", "--split-string"} or option.startswith(
+                    "--split-string="
+                ):
+                    return True
+                if option.startswith("-"):
+                    return True
+                break
+
+            while index < len(tokens):
+                resolved = _docker_variable(tokens[index], variables)
+                if resolved.package_manager or resolved.value is None:
+                    return True
+                assignment = SHELL_ASSIGNMENT.fullmatch(resolved.value)
+                if assignment is None:
+                    break
+                index += 1
+            continue
+
+        return False
+    return False
 
 
 def _shell_line_uses_package_manager_assignment(
