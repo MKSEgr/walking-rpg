@@ -34,6 +34,9 @@ SUPPORTED_PARSER_DIRECTIVES = frozenset(("check", "escape", "syntax"))
 SHELL_WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 SHELL_TOKEN_BOUNDARIES = frozenset(" \t\r\n;&|()<>")
 SHELL_COMMAND_START_WORDS = frozenset(("do", "elif", "else", "then"))
+SHELL_CONTROL_PREFIX_WORDS = frozenset(
+    ("!", "{", "do", "elif", "else", "if", "then", "until", "while")
+)
 DOCKERFILE_VARIABLE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 ARG_INSTRUCTION = re.compile(
     r"^\s*arg\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
@@ -170,14 +173,36 @@ def _variable_expansions(value: str) -> tuple[VariableExpansion, ...]:
     return tuple(expansions)
 
 
-def _variable_references(value: str) -> frozenset[str]:
+def _variable_references(
+    value: str,
+    variables: dict[str, DockerVariable],
+) -> frozenset[str]:
     references: set[str] = set()
     pending = [value]
     while pending:
         for expansion in _variable_expansions(pending.pop()):
+            variable = variables.get(expansion.name)
+            known_value = "" if variable is None else variable.value
+            modifier = expansion.modifier
+            if not modifier:
+                references.add(expansion.name)
+                continue
+            if modifier.startswith(":-"):
+                if known_value:
+                    references.add(expansion.name)
+                elif known_value is None:
+                    references.add(expansion.name)
+                    pending.append(modifier[2:])
+                else:
+                    pending.append(modifier[2:])
+                continue
+            if modifier.startswith(":+"):
+                if known_value is None or known_value:
+                    pending.append(modifier[2:])
+                continue
+
             references.add(expansion.name)
-            if expansion.modifier:
-                pending.append(expansion.modifier)
+            pending.append(modifier)
     return frozenset(references)
 
 
@@ -187,6 +212,14 @@ def _trim_pattern_spans(value: str) -> tuple[tuple[int, int], ...]:
     while pending:
         fragment, offset = pending.pop()
         for expansion in _variable_expansions(fragment):
+            expansion_start = offset + expansion.start
+            backslashes = 0
+            cursor = expansion_start - 1
+            while cursor >= 0 and value[cursor] == "\\":
+                backslashes += 1
+                cursor -= 1
+            if backslashes % 2 == 1:
+                continue
             modifier_start = expansion.start + 2 + len(expansion.name)
             trim_operator = next(
                 (
@@ -261,6 +294,40 @@ def _protect_quoted_glob_characters(value: str) -> str:
         protected.append(character)
         index += 1
     return "".join(protected)
+
+
+def _strip_inline_shell_comment(value: str) -> str:
+    quote: str | None = None
+    index = 0
+    while index < len(value):
+        character = value[index]
+        if quote == "'":
+            if character == "'":
+                quote = None
+            index += 1
+            continue
+        if quote == '"':
+            if character == "\\" and index + 1 < len(value):
+                index += 2
+            elif character == '"':
+                quote = None
+                index += 1
+            else:
+                index += 1
+            continue
+        if character == "\\":
+            index += 2
+            continue
+        if character in {"'", '"'}:
+            quote = character
+            index += 1
+            continue
+        if character == "#" and (
+            index == 0 or value[index - 1] in SHELL_TOKEN_BOUNDARIES
+        ):
+            return value[:index]
+        index += 1
+    return value
 
 
 def _restore_quoted_glob_characters(value: str) -> str:
@@ -569,11 +636,18 @@ def _shell_executable_uses_package_manager(
     reparse_depth: int,
 ) -> bool:
     while index < len(tokens):
-        executable = _docker_variable(tokens[index], variables)
+        executable_token = tokens[index]
+        executable = _docker_variable(executable_token, variables)
         if executable.package_manager or executable.value is None:
             return True
         command = executable.value.rsplit("/", 1)[-1]
         index += 1
+
+        if (
+            executable_token == command
+            and command in SHELL_CONTROL_PREFIX_WORDS
+        ):
+            continue
 
         if command == "command":
             while index < len(tokens):
@@ -631,25 +705,41 @@ def _shell_executable_uses_package_manager(
             continue
 
         if command == "env":
+            ignore_environment = False
+            unset_names: list[str] = []
             while index < len(tokens):
                 resolved_option = _docker_variable(tokens[index], variables)
                 if resolved_option.value is None:
                     return True
                 option = resolved_option.value
-                if option in {"--", "-"}:
+                if option == "--":
+                    index += 1
+                    break
+                if option == "-":
+                    ignore_environment = True
                     index += 1
                     break
                 if option in {"-i", "--ignore-environment"}:
+                    ignore_environment = True
                     index += 1
                     continue
                 if option in {"-u", "--unset", "-C", "--chdir", "-a", "--argv0"}:
                     if index + 1 >= len(tokens):
                         return True
+                    if option in {"-u", "--unset"}:
+                        resolved_name = _docker_variable(
+                            tokens[index + 1], variables
+                        )
+                        if resolved_name.value is None:
+                            return True
+                        unset_names.append(resolved_name.value)
                     index += 2
                     continue
                 if option.startswith(
                     ("--unset=", "--chdir=", "--argv0=")
                 ):
+                    if option.startswith("--unset="):
+                        unset_names.append(option.partition("=")[2])
                     index += 1
                     continue
                 if option in {"-S", "--split-string"} or option.startswith(
@@ -660,7 +750,11 @@ def _shell_executable_uses_package_manager(
                     return True
                 break
 
-            child_variables = dict(execution_variables)
+            child_variables = (
+                {} if ignore_environment else dict(execution_variables)
+            )
+            for name in unset_names:
+                child_variables.pop(name, None)
             while index < len(tokens):
                 resolved = _docker_variable(tokens[index], variables)
                 if resolved.package_manager or resolved.value is None:
@@ -759,12 +853,15 @@ def _shell_line_uses_package_manager_assignment(
     *,
     run_start: bool,
     reparse_depth: int = 0,
+    subshell_scopes: list[dict[str, DockerVariable]] | None = None,
 ) -> bool:
     if run_start:
         instruction = HEREDOC_INSTRUCTION.match(line)
         if instruction is not None:
             line = line[instruction.end() :]
-    line = _protect_quoted_glob_characters(line)
+    line = _protect_quoted_glob_characters(
+        _strip_inline_shell_comment(line)
+    )
     try:
         lexer = shlex.shlex(
             line,
@@ -779,6 +876,8 @@ def _shell_line_uses_package_manager_assignment(
 
     dangerous = False
     command: list[str] = []
+    if subshell_scopes is None:
+        subshell_scopes = []
     for token in tokens:
         if token and all(character in ";&|()" for character in token):
             dangerous = (
@@ -790,6 +889,13 @@ def _shell_line_uses_package_manager_assignment(
                 or dangerous
             )
             command = []
+            for character in token:
+                if character == "(":
+                    subshell_scopes.append(dict(variables))
+                elif character == ")" and subshell_scopes:
+                    outer_variables = subshell_scopes.pop()
+                    variables.clear()
+                    variables.update(outer_variables)
         else:
             command.append(token)
     return (
@@ -1291,24 +1397,31 @@ def validate_dockerfile_source(source: str, path: Path) -> list[str]:
             f"{path}:{line_number}: cannot safely parse Dockerfile: {message}"
         )
     shell_variables: dict[str, DockerVariable] = {}
+    shell_subshell_scopes: list[dict[str, DockerVariable]] = []
     for shell_line in scan.shell_lines:
         if shell_line.run_start:
             shell_variables = dict(shell_line.variables)
+            shell_subshell_scopes = []
         package_manager_aliases = frozenset(
             name
             for name, variable in shell_variables.items()
             if variable.package_manager
         )
-        aliases = _variable_references(shell_line.text).intersection(
+        shell_text = _strip_inline_shell_comment(shell_line.text)
+        aliases = _variable_references(
+            shell_text,
+            shell_variables,
+        ).intersection(
             package_manager_aliases
         )
         composed_assignment = _shell_line_uses_package_manager_assignment(
-            shell_line.text,
+            shell_text,
             shell_variables,
             run_start=shell_line.run_start,
+            subshell_scopes=shell_subshell_scopes,
         )
         if (
-            FORBIDDEN_PACKAGE_MANAGER.search(shell_line.text) is None
+            FORBIDDEN_PACKAGE_MANAGER.search(shell_text) is None
             and not aliases
             and not composed_assignment
         ):
