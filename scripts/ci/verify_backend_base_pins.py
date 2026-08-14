@@ -47,6 +47,13 @@ SHELL_ASSIGNMENT = re.compile(
 SHELL_PERSISTENT_ASSIGNMENT_COMMANDS = frozenset(
     ("declare", "export", "local", "readonly", "typeset")
 )
+SHELL_COMMAND_INTERPRETERS = frozenset(
+    ("ash", "bash", "dash", "ksh", "sh", "zsh")
+)
+SHELL_OPTIONS_WITH_ARGUMENT = frozenset(
+    ("-o", "+o", "-O", "+O", "--init-file", "--rcfile")
+)
+MAX_SHELL_REPARSE_DEPTH = 20
 SHELL_GLOB_LITERAL_SENTINELS = {
     "*": "\ue000",
     "?": "\ue001",
@@ -501,10 +508,15 @@ def _variable_snapshot(
 
 
 def _shell_command_uses_package_manager_assignment(
-    tokens: list[str], variables: dict[str, DockerVariable]
+    tokens: list[str],
+    variables: dict[str, DockerVariable],
+    *,
+    reparse_depth: int = 0,
 ) -> bool:
     if not tokens:
         return False
+    if reparse_depth > MAX_SHELL_REPARSE_DEPTH:
+        return True
 
     command_variables = dict(variables)
     assignments: list[tuple[str, DockerVariable]] = []
@@ -527,7 +539,10 @@ def _shell_command_uses_package_manager_assignment(
 
     dangerous = (
         _shell_executable_uses_package_manager(
-            tokens, index, variables
+            tokens,
+            index,
+            variables,
+            reparse_depth=reparse_depth,
         )
         or dangerous
     )
@@ -549,6 +564,8 @@ def _shell_executable_uses_package_manager(
     tokens: list[str],
     index: int,
     variables: dict[str, DockerVariable],
+    *,
+    reparse_depth: int,
 ) -> bool:
     while index < len(tokens):
         executable = _docker_variable(tokens[index], variables)
@@ -642,6 +659,7 @@ def _shell_executable_uses_package_manager(
                     return True
                 break
 
+            child_variables = dict(variables)
             while index < len(tokens):
                 resolved = _docker_variable(tokens[index], variables)
                 if resolved.package_manager or resolved.value is None:
@@ -649,11 +667,78 @@ def _shell_executable_uses_package_manager(
                 assignment = SHELL_ASSIGNMENT.fullmatch(resolved.value)
                 if assignment is None:
                     break
+                child_variables[assignment.group("name")] = DockerVariable(
+                    assignment.group("value"),
+                    FORBIDDEN_PACKAGE_MANAGER.search(
+                        assignment.group("value")
+                    )
+                    is not None,
+                )
                 index += 1
+            variables = child_variables
             continue
+
+        if command == "eval":
+            return _reparsed_shell_command_uses_package_manager(
+                tokens[index:],
+                variables,
+                reparse_depth=reparse_depth,
+            )
+
+        if command in SHELL_COMMAND_INTERPRETERS:
+            while index < len(tokens):
+                resolved_option = _docker_variable(tokens[index], variables)
+                if resolved_option.value is None:
+                    return True
+                option = resolved_option.value
+                if option == "--":
+                    return False
+                if option in SHELL_OPTIONS_WITH_ARGUMENT:
+                    if index + 1 >= len(tokens):
+                        return True
+                    index += 2
+                    continue
+                if option in {"-", "+"} or not option.startswith(("-", "+")):
+                    return False
+                if not option.startswith("--") and "c" in option[1:]:
+                    if index + 1 >= len(tokens):
+                        return True
+                    return _reparsed_shell_command_uses_package_manager(
+                        [tokens[index + 1]],
+                        variables,
+                        reparse_depth=reparse_depth,
+                    )
+                index += 1
+            return False
 
         return False
     return False
+
+
+def _reparsed_shell_command_uses_package_manager(
+    tokens: list[str],
+    variables: dict[str, DockerVariable],
+    *,
+    reparse_depth: int,
+) -> bool:
+    if not tokens:
+        return False
+    if reparse_depth >= MAX_SHELL_REPARSE_DEPTH:
+        return True
+
+    resolved_tokens: list[str] = []
+    for token in tokens:
+        resolved = _docker_variable(token, variables)
+        if resolved.value is None:
+            return True
+        resolved_tokens.append(resolved.value)
+
+    return _shell_line_uses_package_manager_assignment(
+        " ".join(resolved_tokens),
+        dict(variables),
+        run_start=False,
+        reparse_depth=reparse_depth + 1,
+    )
 
 
 def _shell_line_uses_package_manager_assignment(
@@ -661,6 +746,7 @@ def _shell_line_uses_package_manager_assignment(
     variables: dict[str, DockerVariable],
     *,
     run_start: bool,
+    reparse_depth: int = 0,
 ) -> bool:
     if run_start:
         instruction = HEREDOC_INSTRUCTION.match(line)
@@ -685,7 +771,9 @@ def _shell_line_uses_package_manager_assignment(
         if token and all(character in ";&|()" for character in token):
             dangerous = (
                 _shell_command_uses_package_manager_assignment(
-                    command, variables
+                    command,
+                    variables,
+                    reparse_depth=reparse_depth,
                 )
                 or dangerous
             )
@@ -693,7 +781,11 @@ def _shell_line_uses_package_manager_assignment(
         else:
             command.append(token)
     return (
-        _shell_command_uses_package_manager_assignment(command, variables)
+        _shell_command_uses_package_manager_assignment(
+            command,
+            variables,
+            reparse_depth=reparse_depth,
+        )
         or dangerous
     )
 

@@ -617,6 +617,77 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     [], self.validate(VALID.replace("RUN true", command, 1))
                 )
 
+    def test_rejects_composed_commands_reparsed_by_shells(self):
+        commands = (
+            (
+                'RUN PREFIX=ap; SUFFIX=t-get; '
+                'eval "${PREFIX}${SUFFIX} update"'
+            ),
+            (
+                'RUN PREFIX=dn; SUFFIX=f; '
+                'eval "${PREFIX}${SUFFIX}" install curl'
+            ),
+            (
+                'RUN PREFIX=ap; SUFFIX=t-get; '
+                'sh -c "${PREFIX}${SUFFIX} update"'
+            ),
+            (
+                'RUN PREFIX=dn; SUFFIX=f; '
+                '/bin/dash -ec "${PREFIX}${SUFFIX} install curl"'
+            ),
+            (
+                'RUN PREFIX=ap; SUFFIX=t-get; '
+                'bash -O extglob -c "${PREFIX}${SUFFIX} update"'
+            ),
+            (
+                'RUN PREFIX=ap; SUFFIX=t-get; '
+                'command sh -c "${PREFIX}${SUFFIX} update"'
+            ),
+            (
+                'RUN PREFIX=dn; SUFFIX=f; '
+                'exec /bin/sh -c "${PREFIX}${SUFFIX} install curl"'
+            ),
+            (
+                'RUN PREFIX=ap; SUFFIX=t-get; '
+                'nohup sh -c "${PREFIX}${SUFFIX} update"'
+            ),
+            (
+                'RUN PREFIX=dn; SUFFIX=f; '
+                "env -i PREFIX=${PREFIX} SUFFIX=${SUFFIX} "
+                "sh -c '${PREFIX}${SUFFIX} install curl'"
+            ),
+            (
+                'RUN PREFIX=ap; SUFFIX=t-get; '
+                'bash --rcfile /dev/null -c "${PREFIX}${SUFFIX} update"'
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertTrue(
+                    self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+    def test_allows_safe_commands_reparsed_by_shells(self):
+        commands = (
+            "RUN eval 'printf done'",
+            "RUN sh -c 'printf done'",
+            "RUN dash -- script.sh",
+            "RUN bash -O extglob -c 'printf done'",
+            (
+                "RUN PREFIX=ap; SUFFIX=t-get; "
+                "eval 'printf \"%s\\n\" \"${PREFIX}${SUFFIX}\"'"
+            ),
+            (
+                'RUN PREFIX=ap; SUFFIX=t-get; '
+                'sh -c "printf %s ${PREFIX}${SUFFIX}"'
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
     def test_allows_safe_commands_composed_inside_run(self):
         command = (
             "RUN PREFIX=print; SUFFIX=f; COMMAND=${PREFIX}${SUFFIX}; "
