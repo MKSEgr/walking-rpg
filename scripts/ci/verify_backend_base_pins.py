@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,6 +33,17 @@ SUPPORTED_PARSER_DIRECTIVES = frozenset(("check", "escape", "syntax"))
 SHELL_WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 SHELL_TOKEN_BOUNDARIES = frozenset(" \t\r\n;&|()<>")
 SHELL_COMMAND_START_WORDS = frozenset(("do", "elif", "else", "then"))
+DOCKERFILE_VARIABLE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+ARG_INSTRUCTION = re.compile(
+    r"^\s*arg\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
+    r"(?:=(?P<value>.*))?$",
+    re.IGNORECASE,
+)
+ENV_INSTRUCTION = re.compile(r"^\s*env(?:\s|$)(?P<body>.*)$", re.IGNORECASE)
+SHELL_VARIABLE_REFERENCE = re.compile(
+    r"\$(?:\{(?P<braced>[A-Za-z_][A-Za-z0-9_]*)(?:[^}]*)\}"
+    r"|(?P<plain>[A-Za-z_][A-Za-z0-9_]*))"
+)
 
 
 @dataclass(frozen=True)
@@ -59,8 +71,15 @@ class ShellCase:
 
 
 @dataclass(frozen=True)
+class ShellLine:
+    line_number: int
+    text: str
+    package_manager_aliases: frozenset[str]
+
+
+@dataclass(frozen=True)
 class DockerfileScan:
-    shell_lines: tuple[tuple[int, str], ...]
+    shell_lines: tuple[ShellLine, ...]
     dockerfile_instructions: tuple[tuple[int, str], ...]
     errors: tuple[tuple[int, str], ...]
 
@@ -70,6 +89,113 @@ def _is_complete_shell_word(line: str, start: int, end: int) -> bool:
         (start == 0 or line[start - 1] in SHELL_TOKEN_BOUNDARIES)
         and (end == len(line) or line[end] in SHELL_TOKEN_BOUNDARIES)
     )
+
+
+def _variable_references(value: str) -> frozenset[str]:
+    return frozenset(
+        match.group("braced") or match.group("plain")
+        for match in SHELL_VARIABLE_REFERENCE.finditer(value)
+    )
+
+
+def _value_uses_package_manager(
+    value: str, package_manager_aliases: frozenset[str]
+) -> bool:
+    return (
+        FORBIDDEN_PACKAGE_MANAGER.search(value) is not None
+        or not _variable_references(value).isdisjoint(package_manager_aliases)
+    )
+
+
+def _environment_assignments(instruction: str) -> tuple[tuple[str, str], ...]:
+    match = ENV_INSTRUCTION.fullmatch(instruction)
+    if match is None:
+        return ()
+    try:
+        words = shlex.split(match.group("body"), comments=False, posix=True)
+    except ValueError:
+        return ()
+    if not words:
+        return ()
+
+    if "=" not in words[0]:
+        name = words[0]
+        if DOCKERFILE_VARIABLE.fullmatch(name) is None:
+            return ()
+        return ((name, " ".join(words[1:])),)
+
+    assignments: list[tuple[str, str]] = []
+    for word in words:
+        name, separator, value = word.partition("=")
+        if not separator or DOCKERFILE_VARIABLE.fullmatch(name) is None:
+            return ()
+        assignments.append((name, value))
+    return tuple(assignments)
+
+
+def _effective_package_manager_aliases(
+    argument_status: dict[str, bool], environment_status: dict[str, bool]
+) -> frozenset[str]:
+    aliases = {
+        name
+        for name, dangerous in argument_status.items()
+        if dangerous and name not in environment_status
+    }
+    aliases.update(
+        name for name, dangerous in environment_status.items() if dangerous
+    )
+    return frozenset(aliases)
+
+
+def _update_package_manager_aliases(
+    instruction: str,
+    *,
+    seen_from: bool,
+    global_argument_status: dict[str, bool],
+    argument_status: dict[str, bool],
+    environment_status: dict[str, bool],
+) -> None:
+    argument = ARG_INSTRUCTION.fullmatch(instruction)
+    if argument is not None:
+        name = argument.group("name")
+        value = argument.group("value")
+        if not seen_from:
+            aliases = frozenset(
+                name
+                for name, dangerous in global_argument_status.items()
+                if dangerous
+            )
+            global_argument_status[name] = (
+                False
+                if value is None
+                else _value_uses_package_manager(value, aliases)
+            )
+        elif value is None:
+            argument_status[name] = argument_status.get(
+                name, global_argument_status.get(name, False)
+            )
+        else:
+            aliases = _effective_package_manager_aliases(
+                argument_status, environment_status
+            ) | frozenset(
+                name
+                for name, dangerous in global_argument_status.items()
+                if dangerous
+            )
+            argument_status[name] = _value_uses_package_manager(value, aliases)
+        return
+
+    assignments = _environment_assignments(instruction)
+    if not assignments:
+        return
+    aliases = _effective_package_manager_aliases(
+        argument_status, environment_status
+    )
+    updates = {
+        name: _value_uses_package_manager(value, aliases)
+        for name, value in assignments
+    }
+    environment_status.update(updates)
 
 
 # These are reviewed multi-platform OCI index digests. Keep the publisher's
@@ -371,13 +497,17 @@ def _shell_logical_lines(
 def _logical_instruction_lines(source: str) -> DockerfileScan:
     escape = _dockerfile_escape(source)
     continuation = re.compile(rf"{re.escape(escape)}[ \t]*$")
-    shell_lines: list[tuple[int, str]] = []
+    shell_lines: list[ShellLine] = []
     dockerfile_instructions: list[tuple[int, str]] = []
     errors: list[tuple[int, str]] = []
     physical_lines = source.splitlines()
     current = ""
     start_line = 0
     line_index = 0
+    seen_from = False
+    global_argument_status: dict[str, bool] = {}
+    argument_status: dict[str, bool] = {}
+    environment_status: dict[str, bool] = {}
 
     while line_index < len(physical_lines):
         line = physical_lines[line_index]
@@ -396,13 +526,33 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
         current += line
         instruction = (start_line, current)
         dockerfile_instructions.append(instruction)
+        if FROM_START.match(current):
+            seen_from = True
+            argument_status = {}
+            environment_status = {}
+        else:
+            _update_package_manager_aliases(
+                current,
+                seen_from=seen_from,
+                global_argument_status=global_argument_status,
+                argument_status=argument_status,
+                environment_status=environment_status,
+            )
         heredoc_instruction = HEREDOC_INSTRUCTION.match(current)
         run_instruction = (
             heredoc_instruction is not None
             and heredoc_instruction.group("instruction").lower() == "run"
         )
         if run_instruction:
-            shell_lines.append(instruction)
+            shell_lines.append(
+                ShellLine(
+                    start_line,
+                    current,
+                    _effective_package_manager_aliases(
+                        argument_status, environment_status
+                    ),
+                )
+            )
         if heredoc_instruction is not None:
             declarations, declaration_errors = _here_document_declarations(current)
         else:
@@ -429,8 +579,14 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                 body.append((body_line_number, body_line))
 
             if run_instruction:
+                aliases = _effective_package_manager_aliases(
+                    argument_status, environment_status
+                )
                 shell_lines.extend(
-                    _shell_logical_lines(body, declaration.strip_tabs)
+                    ShellLine(line_number, text, aliases)
+                    for line_number, text in _shell_logical_lines(
+                        body, declaration.strip_tabs
+                    )
                 )
             if not found:
                 errors.append(
@@ -449,12 +605,31 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
     if start_line != 0:
         instruction = (start_line, current)
         dockerfile_instructions.append(instruction)
+        if FROM_START.match(current):
+            argument_status = {}
+            environment_status = {}
+        else:
+            _update_package_manager_aliases(
+                current,
+                seen_from=seen_from,
+                global_argument_status=global_argument_status,
+                argument_status=argument_status,
+                environment_status=environment_status,
+            )
         heredoc_instruction = HEREDOC_INSTRUCTION.match(current)
         if (
             heredoc_instruction is not None
             and heredoc_instruction.group("instruction").lower() == "run"
         ):
-            shell_lines.append(instruction)
+            shell_lines.append(
+                ShellLine(
+                    start_line,
+                    current,
+                    _effective_package_manager_aliases(
+                        argument_status, environment_status
+                    ),
+                )
+            )
     return DockerfileScan(
         tuple(shell_lines),
         tuple(dockerfile_instructions),
@@ -469,12 +644,22 @@ def validate_dockerfile_source(source: str, path: Path) -> list[str]:
         errors.append(
             f"{path}:{line_number}: cannot safely parse Dockerfile: {message}"
         )
-    for line_number, line in scan.shell_lines:
-        if FORBIDDEN_PACKAGE_MANAGER.search(line) is None:
+    for shell_line in scan.shell_lines:
+        aliases = _variable_references(shell_line.text).intersection(
+            shell_line.package_manager_aliases
+        )
+        if (
+            FORBIDDEN_PACKAGE_MANAGER.search(shell_line.text) is None
+            and not aliases
+        ):
             continue
+        alias_suffix = (
+            f" via alias ${sorted(aliases)[0]}" if aliases else ""
+        )
         errors.append(
-            f"{path}:{line_number}: protected build must not fetch mutable "
-            "OS packages through a package manager"
+            f"{path}:{shell_line.line_number}: protected build must not fetch "
+            "mutable OS packages through a package manager"
+            f"{alias_suffix}"
         )
 
     instructions = _from_lines(scan.dockerfile_instructions)
