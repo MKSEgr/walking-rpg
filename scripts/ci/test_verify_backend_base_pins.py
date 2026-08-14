@@ -109,10 +109,32 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
         self.assertTrue(any("found 3" in error for error in errors))
         self.assertTrue(any("unexpected additional" in error for error in errors))
 
+    def test_rejects_stage_after_unsupported_heredoc_marker(self):
+        source = (
+            VALID
+            + "ENV X=<<'HEALTHCHECK NONE'\n"
+            + "FRO\\\nM alpine\n"
+            + "HEALTHCHECK NONE\n"
+        )
+
+        errors = self.validate(source)
+
+        self.assertTrue(any("found 3" in error for error in errors))
+        self.assertTrue(any("unexpected additional" in error for error in errors))
+
     def test_does_not_count_from_text_inside_run_heredoc(self):
         source = VALID.replace(
             "RUN true",
             "RUN <<'EOF'\nFROM alpine\nEOF",
+            1,
+        )
+
+        self.assertEqual([], self.validate(source))
+
+    def test_does_not_count_from_text_inside_copy_heredoc(self):
+        source = VALID.replace(
+            "RUN true",
+            "COPY <<'EOF' /tmp/example\nFROM alpine\nEOF",
             1,
         )
 

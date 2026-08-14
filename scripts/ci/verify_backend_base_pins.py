@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DOCKERFILE = ROOT / "backend" / "Dockerfile"
 FROM_START = re.compile(r"^\s*from(?:\s|$)", re.IGNORECASE)
+HEREDOC_INSTRUCTION = re.compile(r"^\s*(?:copy|run)(?:\s|$)", re.IGNORECASE)
 FROM_INSTRUCTION = re.compile(
     r"^FROM\s+(?P<image>\S+)(?:\s+AS\s+(?P<alias>[0-9A-Za-z_.-]+))?$",
     re.IGNORECASE,
@@ -394,7 +395,10 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
         instruction = (start_line, current)
         logical_lines.append(instruction)
         dockerfile_instructions.append(instruction)
-        declarations, declaration_errors = _here_document_declarations(current)
+        if HEREDOC_INSTRUCTION.match(current):
+            declarations, declaration_errors = _here_document_declarations(current)
+        else:
+            declarations, declaration_errors = (), ()
         errors.extend((start_line, error) for error in declaration_errors)
         current = ""
         start_line = 0
