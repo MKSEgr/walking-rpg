@@ -71,6 +71,12 @@ class ShellCase:
 
 
 @dataclass(frozen=True)
+class DockerVariable:
+    value: str | None
+    package_manager: bool
+
+
+@dataclass(frozen=True)
 class ShellLine:
     line_number: int
     text: str
@@ -98,12 +104,85 @@ def _variable_references(value: str) -> frozenset[str]:
     )
 
 
-def _value_uses_package_manager(
-    value: str, package_manager_aliases: frozenset[str]
-) -> bool:
-    return (
+def _resolve_variable_value(
+    value: str,
+    variables: dict[str, DockerVariable],
+    *,
+    depth: int = 0,
+) -> str | None:
+    if depth > 20:
+        return None
+    unresolved = False
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal unresolved
+        name = match.group("braced") or match.group("plain")
+        variable = variables.get(name)
+        known_value = (
+            "" if variable is None else variable.value
+        )
+        token = match.group()
+        modifier = (
+            token[2 + len(name) : -1]
+            if match.group("braced") is not None
+            else ""
+        )
+
+        if modifier.startswith(":-"):
+            if known_value:
+                return known_value
+            if known_value is None:
+                unresolved = True
+                return token
+            fallback = _resolve_variable_value(
+                modifier[2:], variables, depth=depth + 1
+            )
+            if fallback is None:
+                unresolved = True
+                return token
+            return fallback
+        if modifier.startswith(":+"):
+            if known_value is None:
+                unresolved = True
+                return token
+            if not known_value:
+                return ""
+            alternate = _resolve_variable_value(
+                modifier[2:], variables, depth=depth + 1
+            )
+            if alternate is None:
+                unresolved = True
+                return token
+            return alternate
+        if modifier:
+            unresolved = True
+            return token
+        if known_value is None:
+            unresolved = True
+            return token
+        return known_value
+
+    resolved = SHELL_VARIABLE_REFERENCE.sub(replace, value)
+    return None if unresolved else resolved
+
+
+def _docker_variable(
+    value: str, variables: dict[str, DockerVariable]
+) -> DockerVariable:
+    resolved = _resolve_variable_value(value, variables)
+    references = _variable_references(value)
+    inherited_package_manager = any(
+        variables.get(name, DockerVariable(None, False)).package_manager
+        for name in references
+    )
+    return DockerVariable(
+        resolved,
         FORBIDDEN_PACKAGE_MANAGER.search(value) is not None
-        or not _variable_references(value).isdisjoint(package_manager_aliases)
+        or inherited_package_manager
+        or (
+            resolved is not None
+            and FORBIDDEN_PACKAGE_MANAGER.search(resolved) is not None
+        ),
     )
 
 
@@ -133,69 +212,70 @@ def _environment_assignments(instruction: str) -> tuple[tuple[str, str], ...]:
     return tuple(assignments)
 
 
+def _effective_variables(
+    argument_values: dict[str, DockerVariable],
+    environment_values: dict[str, DockerVariable],
+) -> dict[str, DockerVariable]:
+    variables = dict(argument_values)
+    variables.update(environment_values)
+    return variables
+
+
 def _effective_package_manager_aliases(
-    argument_status: dict[str, bool], environment_status: dict[str, bool]
+    argument_values: dict[str, DockerVariable],
+    environment_values: dict[str, DockerVariable],
 ) -> frozenset[str]:
-    aliases = {
+    return frozenset(
         name
-        for name, dangerous in argument_status.items()
-        if dangerous and name not in environment_status
-    }
-    aliases.update(
-        name for name, dangerous in environment_status.items() if dangerous
+        for name, variable in _effective_variables(
+            argument_values, environment_values
+        ).items()
+        if variable.package_manager
     )
-    return frozenset(aliases)
 
 
-def _update_package_manager_aliases(
+def _update_dockerfile_variables(
     instruction: str,
     *,
     seen_from: bool,
-    global_argument_status: dict[str, bool],
-    argument_status: dict[str, bool],
-    environment_status: dict[str, bool],
+    global_argument_values: dict[str, DockerVariable],
+    argument_values: dict[str, DockerVariable],
+    environment_values: dict[str, DockerVariable],
 ) -> None:
     argument = ARG_INSTRUCTION.fullmatch(instruction)
     if argument is not None:
         name = argument.group("name")
         value = argument.group("value")
         if not seen_from:
-            aliases = frozenset(
-                name
-                for name, dangerous in global_argument_status.items()
-                if dangerous
-            )
-            global_argument_status[name] = (
-                False
+            global_argument_values[name] = (
+                DockerVariable("", False)
                 if value is None
-                else _value_uses_package_manager(value, aliases)
+                else _docker_variable(value, global_argument_values)
             )
         elif value is None:
-            argument_status[name] = argument_status.get(
-                name, global_argument_status.get(name, False)
+            argument_values[name] = argument_values.get(
+                name,
+                global_argument_values.get(name, DockerVariable("", False)),
             )
         else:
-            aliases = _effective_package_manager_aliases(
-                argument_status, environment_status
-            ) | frozenset(
-                name
-                for name, dangerous in global_argument_status.items()
-                if dangerous
+            variables = dict(global_argument_values)
+            variables.update(
+                _effective_variables(argument_values, environment_values)
             )
-            argument_status[name] = _value_uses_package_manager(value, aliases)
+            argument_values[name] = _docker_variable(value, variables)
         return
 
     assignments = _environment_assignments(instruction)
     if not assignments:
         return
-    aliases = _effective_package_manager_aliases(
-        argument_status, environment_status
+    variables = _effective_variables(
+        argument_values, environment_values
     )
     updates = {
-        name: _value_uses_package_manager(value, aliases)
+        name: _docker_variable(value, variables)
         for name, value in assignments
     }
-    environment_status.update(updates)
+    environment_values.update(updates)
 
 
 # These are reviewed multi-platform OCI index digests. Keep the publisher's
@@ -505,9 +585,9 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
     start_line = 0
     line_index = 0
     seen_from = False
-    global_argument_status: dict[str, bool] = {}
-    argument_status: dict[str, bool] = {}
-    environment_status: dict[str, bool] = {}
+    global_argument_values: dict[str, DockerVariable] = {}
+    argument_values: dict[str, DockerVariable] = {}
+    environment_values: dict[str, DockerVariable] = {}
 
     while line_index < len(physical_lines):
         line = physical_lines[line_index]
@@ -528,15 +608,15 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
         dockerfile_instructions.append(instruction)
         if FROM_START.match(current):
             seen_from = True
-            argument_status = {}
-            environment_status = {}
+            argument_values = {}
+            environment_values = {}
         else:
-            _update_package_manager_aliases(
+            _update_dockerfile_variables(
                 current,
                 seen_from=seen_from,
-                global_argument_status=global_argument_status,
-                argument_status=argument_status,
-                environment_status=environment_status,
+                global_argument_values=global_argument_values,
+                argument_values=argument_values,
+                environment_values=environment_values,
             )
         heredoc_instruction = HEREDOC_INSTRUCTION.match(current)
         run_instruction = (
@@ -549,7 +629,7 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                     start_line,
                     current,
                     _effective_package_manager_aliases(
-                        argument_status, environment_status
+                        argument_values, environment_values
                     ),
                 )
             )
@@ -580,7 +660,7 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
 
             if run_instruction:
                 aliases = _effective_package_manager_aliases(
-                    argument_status, environment_status
+                    argument_values, environment_values
                 )
                 shell_lines.extend(
                     ShellLine(line_number, text, aliases)
@@ -606,15 +686,15 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
         instruction = (start_line, current)
         dockerfile_instructions.append(instruction)
         if FROM_START.match(current):
-            argument_status = {}
-            environment_status = {}
+            argument_values = {}
+            environment_values = {}
         else:
-            _update_package_manager_aliases(
+            _update_dockerfile_variables(
                 current,
                 seen_from=seen_from,
-                global_argument_status=global_argument_status,
-                argument_status=argument_status,
-                environment_status=environment_status,
+                global_argument_values=global_argument_values,
+                argument_values=argument_values,
+                environment_values=environment_values,
             )
         heredoc_instruction = HEREDOC_INSTRUCTION.match(current)
         if (
@@ -626,7 +706,7 @@ def _logical_instruction_lines(source: str) -> DockerfileScan:
                     start_line,
                     current,
                     _effective_package_manager_aliases(
-                        argument_status, environment_status
+                        argument_values, environment_values
                     ),
                 )
             )
