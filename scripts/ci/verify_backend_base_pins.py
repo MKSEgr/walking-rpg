@@ -28,6 +28,7 @@ PARSER_DIRECTIVE = re.compile(
 SUPPORTED_PARSER_DIRECTIVES = frozenset(("check", "escape", "syntax"))
 SHELL_WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 SHELL_TOKEN_BOUNDARIES = frozenset(" \t\r\n;&|()<>")
+SHELL_COMMAND_START_WORDS = frozenset(("do", "elif", "else", "then"))
 
 
 @dataclass(frozen=True)
@@ -205,14 +206,13 @@ def _here_document_declarations(
                         ShellCase(expansion_level)
                     )
             if in_command and active_case is None and value != "case":
-                command_starts[expansion_level] = value in {
-                    "do",
-                    "elif",
-                    "else",
-                    "then",
-                }
+                command_starts[expansion_level] = (
+                    complete_word and value in SHELL_COMMAND_START_WORDS
+                )
             elif in_command and active_case is not None and active_case.phase == "body":
-                command_starts[expansion_level] = False
+                command_starts[expansion_level] = (
+                    complete_word and value in SHELL_COMMAND_START_WORDS
+                )
             index = word.end()
             continue
         if (
