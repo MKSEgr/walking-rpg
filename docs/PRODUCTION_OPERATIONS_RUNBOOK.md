@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V18 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V19 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -264,7 +264,7 @@ preflight by copying mutable `created_at`.
 
 Activation sequence:
 
-1. apply Flyway through V18 and deploy the new backend while v1 remains active;
+1. apply Flyway through V19 and deploy the new backend while v1 remains active;
 2. verify bootstrap reports v1 with 18 nodes and Home exposes no
    `follow-resonance`, including in `lockedChoices`;
 3. remove every old backend instance from traffic and wait for its graceful
@@ -342,6 +342,50 @@ Then verify bootstrap reports v3 with 20 nodes and a non-production account at
 available with it. Before rollback, require zero progress rows at
 `storm-scriptorium` and zero `enter-storm-rift` resolution rows; otherwise use
 a forward fix on a v3-capable binary.
+
+## `chapter-1-v4` activation
+
+Flyway V19 stages `chapter-1-v4` inactive and leaves the current release
+unchanged. Activate it only after every pre-V19 backend has drained; those
+instances do not know `root-memory` or `light-canopy` and cannot serve a
+persisted v4 route state.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v4",
+  "releaseNotes": "Первая глава: развилка Сада пустоты через память корней и световую крону.",
+  "content": {
+    "contentVersion": "chapter-1-v4",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 22,
+    "topology": "void-orchard-fork-v1"
+  }
+}
+```
+
+Then verify bootstrap reports v4 with 22 nodes. A non-production account at
+`void-orchard-v1` must see both `descend-root-echo` and
+`climb-light-canopy`; each choice must enter its own optional node, whose two
+server-owned resolutions return to `star-well`.
+
+Before rollback, drain writes and require both counts to be zero:
+
+```sql
+SELECT
+    (SELECT count(*)
+     FROM expedition_progress
+     WHERE current_node_id IN ('root-memory', 'light-canopy'))
+        AS active_orchard_states,
+    (SELECT count(*)
+     FROM processed_event_resolution
+     WHERE event_id = 'void-orchard-v1'
+       AND choice_id IN ('descend-root-echo', 'climb-light-canopy'))
+        AS persisted_orchard_results;
+```
+
+Once either count is non-zero, use a forward fix on a v4-capable binary.
 
 ## Rollback
 

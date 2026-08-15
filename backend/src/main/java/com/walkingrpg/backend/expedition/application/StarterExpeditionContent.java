@@ -22,10 +22,12 @@ public class StarterExpeditionContent {
     public static final String LEGACY_CONTENT_VERSION = "chapter-1-v1";
     public static final String CONTENT_VERSION = "chapter-1-v2";
     public static final String STORM_RIFT_CONTENT_VERSION = "chapter-1-v3";
+    public static final String VOID_ORCHARD_CONTENT_VERSION = "chapter-1-v4";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
     public static final int STORM_RIFT_NODE_COUNT = 20;
+    public static final int VOID_ORCHARD_NODE_COUNT = 22;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -45,7 +47,16 @@ public class StarterExpeditionContent {
     public static final String STORM_RIFT_CHOICE_ID = "enter-storm-rift";
     public static final String STORM_RIFT_NODE_ID = "storm-scriptorium";
     public static final String STORM_RIFT_EVENT_ID = "storm-scriptorium-v1";
+    public static final String VOID_ORCHARD_NODE_ID = "void-orchard";
+    public static final String VOID_ORCHARD_EVENT_ID = "void-orchard-v1";
+    public static final String ROOT_ECHO_CHOICE_ID = "descend-root-echo";
+    public static final String ROOT_MEMORY_NODE_ID = "root-memory";
+    public static final String ROOT_MEMORY_EVENT_ID = "root-memory-v1";
+    public static final String LIGHT_CANOPY_CHOICE_ID = "climb-light-canopy";
+    public static final String LIGHT_CANOPY_NODE_ID = "light-canopy";
+    public static final String LIGHT_CANOPY_EVENT_ID = "light-canopy-v1";
     public static final String EMBER_STATION_NODE_ID = "ember-station";
+    public static final String STAR_WELL_NODE_ID = "star-well";
     public static final String FINAL_NODE_ID = "dawn-relay";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
@@ -98,9 +109,10 @@ public class StarterExpeditionContent {
                         "Последний жар", "Станция почти остыла, но её ядро ещё можно запустить."),
                 new NodeSpec("aurora-bridge", "Мост сияния", 110, "aurora-bridge-v1",
                         "Полоса света", "Мост строится из лучей, когда шаги совпадают с ритмом маяков."),
-                new NodeSpec("void-orchard", "Сад пустоты", 115, "void-orchard-v1",
+                new NodeSpec(VOID_ORCHARD_NODE_ID, "Сад пустоты", 115,
+                        VOID_ORCHARD_EVENT_ID,
                         "Невидимый плод", "Сад проявляется только по следу питомца."),
-                new NodeSpec("star-well", "Звёздный колодец", 120, "star-well-v1",
+                new NodeSpec(STAR_WELL_NODE_ID, "Звёздный колодец", 120, "star-well-v1",
                         "Глубина света", "Колодец возвращает эхо каждого пройденного сектора."),
                 new NodeSpec("horizon-spire", "Шпиль горизонта", 125, "horizon-spire-v1",
                         "Высота маршрута", "С вершины виден последний ретранслятор главы."),
@@ -118,7 +130,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    STORM_RIFT_CONTENT_VERSION,
+                    VOID_ORCHARD_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -201,6 +213,52 @@ public class StarterExpeditionContent {
         stormArchiveChoices.add(stormRiftChoice(inventoryContent));
         choices.put(STORM_ARCHIVE_EVENT_ID, List.copyOf(stormArchiveChoices));
 
+        NodeSpec rootMemorySpec = new NodeSpec(
+                ROOT_MEMORY_NODE_ID,
+                "Память корней",
+                45,
+                ROOT_MEMORY_EVENT_ID,
+                "Архив под садом",
+                "Корни удерживают голоса прежних путников и меняют проход в ответ на шаги."
+        );
+        ExpeditionDefinition rootMemoryDefinition = definition(rootMemorySpec);
+        definitions.add(rootMemoryDefinition);
+        byId.put(rootMemoryDefinition.currentNodeId(), rootMemoryDefinition);
+        byEvent.put(rootMemoryDefinition.event().eventId(), rootMemoryDefinition);
+        choices.put(ROOT_MEMORY_EVENT_ID, rootMemoryChoices(inventoryContent));
+
+        NodeSpec lightCanopySpec = new NodeSpec(
+                LIGHT_CANOPY_NODE_ID,
+                "Световая крона",
+                45,
+                LIGHT_CANOPY_EVENT_ID,
+                "Плод возможного пути",
+                "Над садом созрел световой плод, внутри которого мерцает ещё не пройденный маршрут."
+        );
+        ExpeditionDefinition lightCanopyDefinition = definition(lightCanopySpec);
+        definitions.add(lightCanopyDefinition);
+        byId.put(lightCanopyDefinition.currentNodeId(), lightCanopyDefinition);
+        byEvent.put(lightCanopyDefinition.event().eventId(), lightCanopyDefinition);
+        choices.put(LIGHT_CANOPY_EVENT_ID, lightCanopyChoices(inventoryContent));
+
+        ExpeditionDefinition starWell = byId.get(STAR_WELL_NODE_ID);
+        defaultNext.put(ROOT_MEMORY_EVENT_ID, starWell);
+        defaultNext.put(LIGHT_CANOPY_EVENT_ID, starWell);
+        choiceNext.put(
+                new EventChoiceKey(VOID_ORCHARD_EVENT_ID, ROOT_ECHO_CHOICE_ID),
+                rootMemoryDefinition
+        );
+        choiceNext.put(
+                new EventChoiceKey(VOID_ORCHARD_EVENT_ID, LIGHT_CANOPY_CHOICE_ID),
+                lightCanopyDefinition
+        );
+        List<ExpeditionEventChoiceDefinition> voidOrchardChoices = new ArrayList<>(
+                choices.get(VOID_ORCHARD_EVENT_ID)
+        );
+        voidOrchardChoices.add(rootEchoChoice(inventoryContent));
+        voidOrchardChoices.add(lightCanopyChoice(inventoryContent));
+        choices.put(VOID_ORCHARD_EVENT_ID, List.copyOf(voidOrchardChoices));
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -246,7 +304,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                STORM_RIFT_CONTENT_VERSION
+                VOID_ORCHARD_CONTENT_VERSION
         );
     }
 
@@ -280,7 +338,7 @@ public class StarterExpeditionContent {
             String eventId,
             String choiceId
     ) {
-        return requireChoice(eventId, choiceId, STORM_RIFT_CONTENT_VERSION);
+        return requireChoice(eventId, choiceId, VOID_ORCHARD_CONTENT_VERSION);
     }
 
     public ExpeditionEventChoiceDefinition requireChoice(
@@ -310,7 +368,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, STORM_RIFT_CONTENT_VERSION);
+        return eventChoices(eventId, VOID_ORCHARD_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -345,6 +403,13 @@ public class StarterExpeditionContent {
                     ))
                     .toList();
         }
+        if (VOID_ORCHARD_EVENT_ID.equals(eventId)
+                && !supportsVoidOrchardFork(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !ROOT_ECHO_CHOICE_ID.equals(choice.choiceId()))
+                    .filter(choice -> !LIGHT_CANOPY_CHOICE_ID.equals(choice.choiceId()))
+                    .toList();
+        }
         return choices;
     }
 
@@ -361,7 +426,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return STORM_RIFT_CONTENT_VERSION;
+        return VOID_ORCHARD_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -370,6 +435,9 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (VOID_ORCHARD_CONTENT_VERSION.equals(activeContentVersion)) {
+            return VOID_ORCHARD_CONTENT_VERSION;
+        }
         if (STORM_RIFT_CONTENT_VERSION.equals(activeContentVersion)) {
             return STORM_RIFT_CONTENT_VERSION;
         }
@@ -381,16 +449,22 @@ public class StarterExpeditionContent {
 
     public static boolean supportsResonanceRoute(String contentVersion) {
         return CONTENT_VERSION.equals(contentVersion)
-                || STORM_RIFT_CONTENT_VERSION.equals(contentVersion);
+                || STORM_RIFT_CONTENT_VERSION.equals(contentVersion)
+                || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsStormRift(String contentVersion) {
-        return STORM_RIFT_CONTENT_VERSION.equals(contentVersion);
+        return STORM_RIFT_CONTENT_VERSION.equals(contentVersion)
+                || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsVoidOrchardFork(String contentVersion) {
+        return VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                STORM_RIFT_CONTENT_VERSION,
+                VOID_ORCHARD_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -519,6 +593,114 @@ public class StarterExpeditionContent {
                         "Питомец настиг раскат и вынес из него фрагмент рассветного света.",
                         30,
                         24,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                1
+                        )
+                )
+        );
+    }
+
+    private ExpeditionEventChoiceDefinition rootEchoChoice(
+            StarterInventoryContent inventoryContent
+    ) {
+        return new ExpeditionEventChoiceDefinition(
+                ROOT_ECHO_CHOICE_ID,
+                "Спуститься за корневым эхом",
+                "Позволить питомцу найти голос, который звучит из-под сада.",
+                "Тропа под корнями",
+                "Питомец отделил живой голос от старых отражений и открыл проход в память корней.",
+                36,
+                22,
+                reward(
+                        inventoryContent,
+                        StarterInventoryContent.ECHO_THREAD_ID,
+                        1
+                )
+        );
+    }
+
+    private ExpeditionEventChoiceDefinition lightCanopyChoice(
+            StarterInventoryContent inventoryContent
+    ) {
+        return new ExpeditionEventChoiceDefinition(
+                LIGHT_CANOPY_CHOICE_ID,
+                "Подняться к световой кроне",
+                "Проложить путь по проявляющимся ветвям к самому яркому плоду.",
+                "Дорога над садом",
+                "Навигатор связал вспышки в устойчивую лестницу и вывел отряд к световой кроне.",
+                44,
+                18,
+                reward(
+                        inventoryContent,
+                        StarterInventoryContent.ION_BLOOM_ID,
+                        1
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> rootMemoryChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        "map-root-memory",
+                        "Составить карту голосов",
+                        "Отделить повторяющиеся воспоминания и отметить безопасный путь наружу.",
+                        "Карта подземного хора",
+                        "Навигатор сохранил голоса в нитях эха и нашёл выход к звёздному колодцу.",
+                        46,
+                        15,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ECHO_THREAD_ID,
+                                2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        "wake-buried-seed",
+                        "Разбудить погребённое семя",
+                        "Доверить питомцу самый тихий голос под корнями.",
+                        "Семя памяти",
+                        "Питомец пробудил древнее семя и вывел его к свету, не разрушив архив.",
+                        32,
+                        24,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ASH_SEED_ID,
+                                2
+                        )
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> lightCanopyChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        "calibrate-light-fruit",
+                        "Настроить световой плод",
+                        "Стабилизировать мерцающий маршрут и извлечь сохранённый свет.",
+                        "Устойчивое сияние",
+                        "Навигатор закрепил один возможный путь и собрал люминовые осколки с его границы.",
+                        48,
+                        14,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.LUMEN_SHARD_ID,
+                                2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        "leap-between-rays",
+                        "Прыгнуть между лучами",
+                        "Позволить питомцу догнать путь, который появляется только на миг.",
+                        "Свет будущего",
+                        "Питомец настиг исчезающий маршрут и принёс фрагмент света к звёздному колодцу.",
+                        31,
+                        25,
                         reward(
                                 inventoryContent,
                                 StarterInventoryContent.DAWN_FRAGMENT_ID,

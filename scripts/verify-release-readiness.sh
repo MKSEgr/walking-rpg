@@ -91,6 +91,7 @@ for file in \
   backend/src/main/resources/db/migration/V16__platform_event_receipt_time_index.sql \
   backend/src/main/resources/db/migration/V17__server_authoritative_cosmetic_slots.sql \
   backend/src/main/resources/db/migration/V18__storm_rift_route.sql \
+  backend/src/main/resources/db/migration/V19__void_orchard_fork.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -105,6 +106,7 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/migration/ProductionProviderIsolationMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ServerAuthoritativeCraftingMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/StormRiftRouteMigrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/migration/VoidOrchardForkMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/EquipmentAndResonanceRouteMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ContentReleaseActivationHistoryMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/CosmeticSlotStateMigrationTest.java \
@@ -688,8 +690,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 18:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V18: {versions}')
+if versions != expected or not versions or versions[-1] < 19:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V19: {versions}')
 print('Flyway versions:', versions)
 PY
 

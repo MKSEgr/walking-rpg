@@ -493,6 +493,171 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldFollowRootMemoryBranchAndRejoinAtStarWell() {
+        activeContentVersion.set(
+                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
+        );
+        var voidOrchard = content.requireNode(
+                StarterExpeditionContent.VOID_ORCHARD_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(voidOrchard, 28),
+                NOW
+        );
+
+        EventResolutionResult entered = service.resolve(command(
+                StarterExpeditionContent.VOID_ORCHARD_EVENT_ID,
+                StarterExpeditionContent.ROOT_ECHO_CHOICE_ID,
+                "enter-root-memory"
+        ));
+
+        assertEquals(
+                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
+                entered.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.ROOT_MEMORY_NODE_ID,
+                entered.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.ECHO_THREAD_ID,
+                entered.material().itemId());
+        assertEquals(1, entered.material().quantityGained());
+        assertEquals(36, entered.pilot().experienceGained());
+        assertEquals(22, entered.pet().bondGained());
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                entered.receiptId(),
+                NOW
+        );
+
+        var rootMemory = content.requireNode(
+                StarterExpeditionContent.ROOT_MEMORY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(rootMemory, 30),
+                NOW
+        );
+        EventResolutionResult returned = service.resolve(command(
+                StarterExpeditionContent.ROOT_MEMORY_EVENT_ID,
+                "map-root-memory",
+                "leave-root-memory"
+        ));
+
+        assertEquals(
+                StarterExpeditionContent.STAR_WELL_NODE_ID,
+                returned.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.ECHO_THREAD_ID,
+                returned.material().itemId());
+        assertEquals(2, returned.material().quantityGained());
+        assertEquals(46, returned.pilot().experienceGained());
+        assertEquals(15, returned.pet().bondGained());
+    }
+
+    @Test
+    void shouldFollowLightCanopyBranchAndRejoinAtStarWell() {
+        activeContentVersion.set(
+                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
+        );
+        var voidOrchard = content.requireNode(
+                StarterExpeditionContent.VOID_ORCHARD_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(voidOrchard, 28),
+                NOW
+        );
+
+        EventResolutionResult entered = service.resolve(command(
+                StarterExpeditionContent.VOID_ORCHARD_EVENT_ID,
+                StarterExpeditionContent.LIGHT_CANOPY_CHOICE_ID,
+                "enter-light-canopy"
+        ));
+
+        assertEquals(
+                StarterExpeditionContent.LIGHT_CANOPY_NODE_ID,
+                entered.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.ION_BLOOM_ID,
+                entered.material().itemId());
+        assertEquals(1, entered.material().quantityGained());
+        assertEquals(44, entered.pilot().experienceGained());
+        assertEquals(18, entered.pet().bondGained());
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                entered.receiptId(),
+                NOW
+        );
+
+        var lightCanopy = content.requireNode(
+                StarterExpeditionContent.LIGHT_CANOPY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(lightCanopy, 30),
+                NOW
+        );
+        EventResolutionResult returned = service.resolve(command(
+                StarterExpeditionContent.LIGHT_CANOPY_EVENT_ID,
+                "leap-between-rays",
+                "leave-light-canopy"
+        ));
+
+        assertEquals(
+                StarterExpeditionContent.STAR_WELL_NODE_ID,
+                returned.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.DAWN_FRAGMENT_ID,
+                returned.material().itemId());
+        assertEquals(1, returned.material().quantityGained());
+        assertEquals(31, returned.pilot().experienceGained());
+        assertEquals(25, returned.pet().bondGained());
+    }
+
+    @Test
+    void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
+        activeContentVersion.set(
+                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
+        );
+        var voidOrchard = content.requireNode(
+                StarterExpeditionContent.VOID_ORCHARD_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(voidOrchard, 28),
+                NOW
+        );
+        EventResolutionCommand command = command(
+                StarterExpeditionContent.VOID_ORCHARD_EVENT_ID,
+                StarterExpeditionContent.ROOT_ECHO_CHOICE_ID,
+                "void-orchard-replay"
+        );
+
+        EventResolutionResult first = service.resolve(command);
+        activeContentVersion.set(
+                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION
+        );
+        EventResolutionResult replayed = service.resolve(command);
+
+        assertSame(first, replayed);
+        assertEquals(
+                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
+                replayed.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.ROOT_MEMORY_NODE_ID,
+                replayed.nextNode().nodeId()
+        );
+    }
+
+    @Test
     void shouldReplayRouteResultAfterClusterActivationChanges() {
         var mirrorNode = content.requireNode(
                 StarterExpeditionContent.MIRROR_DELTA_NODE_ID

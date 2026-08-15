@@ -319,6 +319,9 @@ public class PlatformContentCatalog {
     }
 
     private int chapterNodeCount(String contentVersion) {
+        if (StarterExpeditionContent.supportsVoidOrchardFork(contentVersion)) {
+            return StarterExpeditionContent.VOID_ORCHARD_NODE_COUNT;
+        }
         if (StarterExpeditionContent.supportsStormRift(contentVersion)) {
             return StarterExpeditionContent.STORM_RIFT_NODE_COUNT;
         }
