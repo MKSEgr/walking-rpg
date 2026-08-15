@@ -381,6 +381,25 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     [], self.validate(VALID.replace("RUN true", command, 1))
                 )
 
+    def test_allows_references_in_discarded_run_modifier_branches(self):
+        commands = (
+            (
+                "ENV PACKAGE_MANAGER=apt-get\n"
+                "ENV EMPTY=\n"
+                "RUN ${EMPTY:+$PACKAGE_MANAGER} printf done"
+            ),
+            (
+                "ENV PACKAGE_MANAGER=apt-get\n"
+                "ENV COMMAND=printf\n"
+                "RUN ${COMMAND:-$PACKAGE_MANAGER} done"
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
     def test_rejects_package_managers_revealed_by_trim_modifiers(self):
         commands = (
             (
@@ -516,6 +535,16 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     self.validate(VALID.replace("RUN true", command, 1))
                 )
 
+    def test_allows_escaped_trim_expansions_inside_double_quotes(self):
+        command = (
+            r'RUN VALUE=Xfooapt-get; COMMAND="\${VALUE#Xfoo*}"; '
+            r'"$COMMAND" update'
+        )
+
+        self.assertEqual(
+            [], self.validate(VALID.replace("RUN true", command, 1))
+        )
+
     def test_rejects_package_managers_composed_inside_run(self):
         commands = (
             (
@@ -562,6 +591,81 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                     )
                 )
 
+    def test_preserves_shell_assignment_scope_across_subshells(self):
+        dangerous_commands = (
+            (
+                "RUN PREFIX=ap; (PREFIX=print); SUFFIX=t-get; "
+                "PACKAGE_MANAGER=${PREFIX}${SUFFIX}; "
+                "$PACKAGE_MANAGER update"
+            ),
+            (
+                "RUN PREFIX=ap; "
+                "(SUFFIX=t-get; ${PREFIX}${SUFFIX} update)"
+            ),
+            (
+                "RUN <<'EOF'\n"
+                "PREFIX=ap\n"
+                "(\n"
+                "PREFIX=print\n"
+                ")\n"
+                "SUFFIX=t-get\n"
+                "PACKAGE_MANAGER=${PREFIX}${SUFFIX}\n"
+                "$PACKAGE_MANAGER update\n"
+                "EOF"
+            ),
+        )
+        for command in dangerous_commands:
+            with self.subTest(command=command):
+                self.assertTrue(
+                    self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+        safe = (
+            "RUN PREFIX=print; (PREFIX=ap); SUFFIX=f; "
+            "COMMAND=${PREFIX}${SUFFIX}; $COMMAND done"
+        )
+        self.assertEqual(
+            [], self.validate(VALID.replace("RUN true", safe, 1))
+        )
+
+        multiline_safe = (
+            "RUN <<'EOF'\n"
+            "PREFIX=print\n"
+            "(\n"
+            "PREFIX=ap\n"
+            ")\n"
+            "SUFFIX=f\n"
+            "COMMAND=${PREFIX}${SUFFIX}\n"
+            "$COMMAND done\n"
+            "EOF"
+        )
+        self.assertEqual(
+            [], self.validate(VALID.replace("RUN true", multiline_safe, 1))
+        )
+
+    def test_stops_assignment_tracking_at_inline_shell_comments(self):
+        command = (
+            "RUN <<'EOF'\n"
+            "PREFIX=ap # ; PREFIX=print\n"
+            "SUFFIX=t-get; PACKAGE_MANAGER=${PREFIX}${SUFFIX}; "
+            "$PACKAGE_MANAGER update\n"
+            "EOF"
+        )
+
+        self.assertTrue(
+            self.validate(VALID.replace("RUN true", command, 1))
+        )
+
+        safe = (
+            "RUN <<'EOF'\n"
+            "PREFIX=print # ; PREFIX=dn\n"
+            "SUFFIX=f; COMMAND=${PREFIX}${SUFFIX}; $COMMAND done\n"
+            "EOF"
+        )
+        self.assertEqual(
+            [], self.validate(VALID.replace("RUN true", safe, 1))
+        )
+
     def test_rejects_package_managers_composed_as_run_executables(self):
         commands = (
             "RUN PREFIX=ap; SUFFIX=t-get; ${PREFIX}${SUFFIX} update",
@@ -592,6 +696,71 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
                 self.assertTrue(
                     self.validate(VALID.replace("RUN true", command, 1))
                 )
+
+    def test_rejects_composed_executables_after_shell_control_prefixes(self):
+        commands = (
+            (
+                "RUN PREFIX=ap; SUFFIX=t-get; "
+                "if ${PREFIX}${SUFFIX} update; then :; fi"
+            ),
+            (
+                "RUN PREFIX=dn; SUFFIX=f; "
+                "while ${PREFIX}${SUFFIX} install curl; do :; done"
+            ),
+            (
+                "RUN PREFIX=ap; SUFFIX=t-get; "
+                "until ${PREFIX}${SUFFIX} update; do :; done"
+            ),
+            "RUN PREFIX=dn; SUFFIX=f; ! ${PREFIX}${SUFFIX} install curl",
+            (
+                "RUN PREFIX=ap; SUFFIX=t-get; "
+                "{ ${PREFIX}${SUFFIX} update; }"
+            ),
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertTrue(
+                    self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+    def test_applies_env_environment_removal_before_shell_reparse(self):
+        safe_commands = (
+            (
+                "RUN PREFIX=ap SUFFIX=t-get env -i "
+                "sh -c '${PREFIX}${SUFFIX} update'"
+            ),
+            (
+                "RUN PREFIX=ap SUFFIX=t-get env --ignore-environment "
+                "sh -c '${PREFIX}${SUFFIX} update'"
+            ),
+            (
+                "RUN PREFIX=ap SUFFIX=t-get env - "
+                "sh -c '${PREFIX}${SUFFIX} update'"
+            ),
+            (
+                "RUN PREFIX=ap SUFFIX=t-get "
+                "env -u PREFIX -u SUFFIX "
+                "sh -c '${PREFIX}${SUFFIX} update'"
+            ),
+            (
+                "RUN PREFIX=ap SUFFIX=t-get "
+                "env --unset=PREFIX --unset SUFFIX "
+                "sh -c '${PREFIX}${SUFFIX} update'"
+            ),
+        )
+        for command in safe_commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+        dangerous = (
+            "RUN PREFIX=ap SUFFIX=t-get env -u OTHER "
+            "sh -c '${PREFIX}${SUFFIX} update'"
+        )
+        self.assertTrue(
+            self.validate(VALID.replace("RUN true", dangerous, 1))
+        )
 
     def test_allows_safe_composed_run_executables_and_arguments(self):
         commands = (
