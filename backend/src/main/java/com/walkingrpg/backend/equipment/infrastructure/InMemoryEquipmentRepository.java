@@ -140,8 +140,22 @@ public class InMemoryEquipmentRepository implements EquipmentRepository {
             String slotId,
             String itemId
     ) {
+        return isEquipped(userId, slotId, itemId, 1);
+    }
+
+    @Override
+    public synchronized boolean isEquipped(
+            String userId,
+            String slotId,
+            String itemId,
+            long minimumUpgradeLevel
+    ) {
         EquipmentSlotState state = slots.get(new SlotKey(userId, slotId));
-        return state != null && itemId.equals(state.itemId());
+        if (state == null || !itemId.equals(state.itemId())) {
+            return false;
+        }
+        OwnedItem item = items.get(state.itemInstanceId());
+        return item != null && item.upgradeLevel() >= minimumUpgradeLevel;
     }
 
     public synchronized void putUniqueItem(
@@ -149,7 +163,21 @@ public class InMemoryEquipmentRepository implements EquipmentRepository {
             UUID itemInstanceId,
             String itemId
     ) {
-        items.put(itemInstanceId, new OwnedItem(userId, itemId));
+        putUniqueItem(userId, itemInstanceId, itemId, 1);
+    }
+
+    public synchronized void putUniqueItem(
+            String userId,
+            UUID itemInstanceId,
+            String itemId,
+            long upgradeLevel
+    ) {
+        if (upgradeLevel <= 0) {
+            throw new IllegalArgumentException(
+                    "upgradeLevel должен быть положительным"
+            );
+        }
+        items.put(itemInstanceId, new OwnedItem(userId, itemId, upgradeLevel));
     }
 
     private record ScopeKey(
@@ -169,6 +197,6 @@ public class InMemoryEquipmentRepository implements EquipmentRepository {
     private record SlotKey(String userId, String slotId) {
     }
 
-    private record OwnedItem(String userId, String itemId) {
+    private record OwnedItem(String userId, String itemId, long upgradeLevel) {
     }
 }

@@ -32,12 +32,19 @@ class StarterExpeditionContentTest {
         String chapterV5 = content.activeContentVersion(
                 () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
         );
+        String chapterV6 = content.activeContentVersion(
+                () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
         assertEquals(StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION, chapterV4);
         assertEquals(StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
                 chapterV5);
+        assertEquals(
+                StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
+                chapterV6
+        );
         assertEquals(1, activationReads.get());
         assertEquals(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION,
@@ -71,6 +78,28 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.STAR_WELL_EVENT_ID,
                 chapterV5
         )));
+        assertFalse(hasCalibratedSextantChoice(content.eventChoices(
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_EVENT_ID,
+                chapterV5
+        )));
+        List<ExpeditionEventChoiceDefinition> calibratedChoices =
+                content.eventChoices(
+                        StarterExpeditionContent.SPECTRUM_OBSERVATORY_EVENT_ID,
+                        chapterV6
+                );
+        assertTrue(hasCalibratedSextantChoice(calibratedChoices));
+        assertEquals(
+                2,
+                calibratedChoices.stream()
+                        .filter(choice ->
+                                StarterExpeditionContent
+                                        .CALIBRATED_SEXTANT_CHOICE_ID
+                                        .equals(choice.choiceId()))
+                        .findFirst()
+                        .orElseThrow()
+                        .equipmentRequirement()
+                        .minimumUpgradeLevel()
+        );
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
@@ -215,6 +244,16 @@ class StarterExpeditionContentTest {
     ) {
         return choices.stream().anyMatch(choice ->
                 StarterExpeditionContent.PRISM_SEXTANT_ROUTE_CHOICE_ID.equals(
+                        choice.choiceId()
+                )
+        );
+    }
+
+    private boolean hasCalibratedSextantChoice(
+            List<ExpeditionEventChoiceDefinition> choices
+    ) {
+        return choices.stream().anyMatch(choice ->
+                StarterExpeditionContent.CALIBRATED_SEXTANT_CHOICE_ID.equals(
                         choice.choiceId()
                 )
         );

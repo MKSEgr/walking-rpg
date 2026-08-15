@@ -6,6 +6,7 @@ public record ExpeditionChoiceRequirementSnapshot(
         String slotName,
         String itemId,
         String itemName,
+        long minimumUpgradeLevel,
         String description
 ) {
 }

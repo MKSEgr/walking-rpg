@@ -401,6 +401,27 @@ metadata и unit/API/PostgreSQL/migration/widget/cache/outbox tests реализ
 outbox tests реализованы. Дополнительные уровни и баланс material sink требуют
 beta/economy evidence.
 
+### US-018. Использовать откалиброванный секстант в экспедиции
+
+Как пользователь, я хочу открыть новый выбор улучшенным прибором, чтобы
+калибровка меняла прохождение, а не оставалась только числом в инвентаре.
+
+Критерии:
+
+- inactive `chapter-1-v6` добавляет `trace-second-dawn` только в
+  `spectrum-observatory-v1` и не меняет 23-node topology;
+- choice требует `prism-sextant` в `NAVIGATION` с minimum upgrade level `2`;
+- level 1, другой либо неэкипированный предмет оставляет choice `LOCKED`, а
+  прямой API-вызов отклоняется до reward/progression mutation;
+- успешный choice выдаёт `+46 pilot XP`, `+24 pet bond`,
+  `+3 dawn-fragment` и возвращает к `horizon-spire`;
+- Home/mobile принимают additive minimum-level requirement, сохраняя legacy
+  default level `1`; v5 не получает новый choice;
+- v6 активируется только после drain pre-V22 backend instances.
+
+**Статус:** backend/mobile/Flyway V22, unit/API/PostgreSQL/migration/parser и
+visual-mapping tests реализованы. Баланс награды требует beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -415,7 +436,8 @@ beta/economy evidence.
 - read-only offline cache валидированных `home` / `platform` snapshots;
 - расход материалов, два crafting recipe, два persistent unique item и
   server-authoritative single-item equipment slot;
-- первая server-authoritative калибровка unique item с уровнем и rarity.
+- первая server-authoritative калибровка unique item с уровнем и rarity;
+- первый expedition choice с authoritative minimum item level prerequisite.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

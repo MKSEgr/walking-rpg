@@ -394,6 +394,7 @@ void main() {
           'slotName': 'Навигационный прибор',
           'itemId': 'resonance-compass',
           'itemName': 'Резонансный компас',
+          'minimumUpgradeLevel': 2,
           'description': 'Экипируйте компас, чтобы увидеть маршрут.',
         },
       },
@@ -409,6 +410,22 @@ void main() {
     expect(gated.isAvailable, isFalse);
     expect(gated.requirement?.itemId, 'resonance-compass');
     expect(gated.requirement?.slotId, 'NAVIGATION');
+    expect(gated.requirement?.minimumUpgradeLevel, 2);
+  });
+
+  test('legacy choice requirement defaults to upgrade level one', () {
+    final HomeChoiceRequirement requirement = HomeChoiceRequirement.fromJson(
+      <String, dynamic>{
+        'type': 'EQUIPPED_ITEM',
+        'slotId': 'NAVIGATION',
+        'slotName': 'Навигационный прибор',
+        'itemId': 'resonance-compass',
+        'itemName': 'Резонансный компас',
+        'description': 'Экипируйте компас.',
+      },
+    );
+
+    expect(requirement.minimumUpgradeLevel, 1);
   });
 
   test('invalid nested response is rejected', () {

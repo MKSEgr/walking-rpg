@@ -114,8 +114,28 @@ public class EquipmentService {
 
     @Transactional(readOnly = true)
     public boolean isEquipped(String userId, String slotId, String itemId) {
+        return isEquipped(userId, slotId, itemId, 1);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isEquipped(
+            String userId,
+            String slotId,
+            String itemId,
+            long minimumUpgradeLevel
+    ) {
         content.requireSlot(slotId);
-        return repository.isEquipped(userId, slotId, itemId);
+        if (minimumUpgradeLevel <= 0) {
+            throw new IllegalArgumentException(
+                    "minimumUpgradeLevel должен быть положительным"
+            );
+        }
+        return repository.isEquipped(
+                userId,
+                slotId,
+                itemId,
+                minimumUpgradeLevel
+        );
     }
 
     private void requireNoPendingResult(String userId) {

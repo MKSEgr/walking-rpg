@@ -476,9 +476,18 @@ class HomeChoiceRequirement {
     required this.itemId,
     required this.itemName,
     required this.description,
+    this.minimumUpgradeLevel = 1,
   });
 
   factory HomeChoiceRequirement.fromJson(Map<String, dynamic> json) {
+    final int minimumUpgradeLevel = json['minimumUpgradeLevel'] == null
+        ? 1
+        : HomeSnapshot._readInt(json, 'minimumUpgradeLevel');
+    if (minimumUpgradeLevel <= 0) {
+      throw const FormatException(
+        'minimumUpgradeLevel должен быть положительным',
+      );
+    }
     return HomeChoiceRequirement(
       type: HomeSnapshot._readString(json, 'type'),
       slotId: HomeSnapshot._readString(json, 'slotId'),
@@ -486,6 +495,7 @@ class HomeChoiceRequirement {
       itemId: HomeSnapshot._readString(json, 'itemId'),
       itemName: HomeSnapshot._readString(json, 'itemName'),
       description: HomeSnapshot._readString(json, 'description'),
+      minimumUpgradeLevel: minimumUpgradeLevel,
     );
   }
 
@@ -495,6 +505,7 @@ class HomeChoiceRequirement {
   final String itemId;
   final String itemName;
   final String description;
+  final int minimumUpgradeLevel;
 }
 
 class HomeMaterialRewardPreview {

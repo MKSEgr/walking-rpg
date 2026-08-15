@@ -181,6 +181,104 @@ class EquipmentIntegrationTest {
     }
 
     @Test
+    void shouldEvaluateEquippedUniqueItemMinimumUpgradeLevel() {
+        String userId = "calibrated-equipment-user";
+        UUID itemInstanceId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO app_user (user_id, created_at, last_seen_at)
+                VALUES (?, now(), now())
+                """, userId);
+        jdbcTemplate.update("""
+                INSERT INTO unique_inventory_item (
+                    item_instance_id,
+                    user_id,
+                    item_id,
+                    recipe_id,
+                    recipe_version,
+                    version,
+                    crafted_at
+                ) VALUES (?, ?, 'prism-sextant', 'prism-sextant-v1',
+                          '1', 1, now())
+                """, itemInstanceId, userId);
+        equipmentService.change(command(
+                userId,
+                EquipmentAction.EQUIP,
+                itemInstanceId,
+                "equip-prism-sextant"
+        ));
+        jdbcTemplate.update("UPDATE content_release SET is_active = false WHERE is_active");
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v6'
+                """));
+        jdbcTemplate.update("""
+                INSERT INTO expedition_progress (
+                    user_id,
+                    expedition_id,
+                    current_node_id,
+                    progress_energy,
+                    required_energy,
+                    status,
+                    unlocked_event_id,
+                    version,
+                    created_at,
+                    updated_at
+                ) VALUES (?, ?, ?, 50, 50, 'EVENT_READY', ?, 35, now(), now())
+                """,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_NODE_ID,
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_EVENT_ID
+        );
+
+        assertTrue(equipmentService.isEquipped(
+                userId,
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                StarterInventoryContent.PRISM_SEXTANT_ID,
+                1
+        ));
+        assertFalse(equipmentService.isEquipped(
+                userId,
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                StarterInventoryContent.PRISM_SEXTANT_ID,
+                2
+        ));
+        HomeSnapshotResponse locked = homeService.getSnapshot(new HomeQuery(
+                userId,
+                LocalDate.of(2026, 8, 15)
+        ));
+        assertTrue(locked.expedition().unlockedEvent().lockedChoices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .CALIBRATED_SEXTANT_CHOICE_ID.equals(choice.choiceId())
+                        && choice.requirement().minimumUpgradeLevel() == 2));
+
+        jdbcTemplate.update("""
+                UPDATE unique_inventory_item
+                SET version = 2,
+                    rarity = 'RARE',
+                    upgraded_at = now()
+                WHERE user_id = ?
+                  AND item_instance_id = ?
+                """, userId, itemInstanceId);
+
+        assertTrue(equipmentService.isEquipped(
+                userId,
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                StarterInventoryContent.PRISM_SEXTANT_ID,
+                2
+        ));
+        HomeSnapshotResponse available = homeService.getSnapshot(new HomeQuery(
+                userId,
+                LocalDate.of(2026, 8, 15)
+        ));
+        assertTrue(available.expedition().unlockedEvent().choices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .CALIBRATED_SEXTANT_CHOICE_ID.equals(choice.choiceId())));
+    }
+
+    @Test
     void shouldHideAndRejectResonanceRouteUntilClusterActivation() {
         String userId = "staged-resonance-user";
         UUID itemInstanceId = seedUniqueItem(userId);

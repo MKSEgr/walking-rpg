@@ -204,7 +204,42 @@ class EventResolutionControllerTest {
                 .andExpect(jsonPath("$.details.slotId")
                         .value("NAVIGATION"))
                 .andExpect(jsonPath("$.details.requiredItemId")
-                        .value("resonance-compass"));
+                        .value("resonance-compass"))
+                .andExpect(jsonPath("$.details.requiredUpgradeLevel")
+                        .value(1));
+    }
+
+    @Test
+    void shouldExposeRequiredUpgradeLevelForCalibratedChoice()
+            throws Exception {
+        MockMvc observatoryMockMvc = createMockMvc(new ExpeditionProgressState(
+                50,
+                50,
+                ExpeditionProgressStatus.EVENT_READY,
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_NODE_ID,
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_EVENT_ID,
+                35
+        ), true);
+
+        observatoryMockMvc.perform(post(
+                        "/api/v1/events/spectrum-observatory-v1/resolve"
+                )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "choiceId": "trace-second-dawn",
+                                  "idempotencyKey": "locked-second-dawn"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code")
+                        .value("EVENT_CHOICE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.details.choiceId")
+                        .value("trace-second-dawn"))
+                .andExpect(jsonPath("$.details.requiredItemId")
+                        .value("prism-sextant"))
+                .andExpect(jsonPath("$.details.requiredUpgradeLevel")
+                        .value(2));
     }
 
     private MockMvc createMockMvc(

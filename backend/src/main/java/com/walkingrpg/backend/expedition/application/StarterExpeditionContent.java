@@ -24,6 +24,8 @@ public class StarterExpeditionContent {
     public static final String STORM_RIFT_CONTENT_VERSION = "chapter-1-v3";
     public static final String VOID_ORCHARD_CONTENT_VERSION = "chapter-1-v4";
     public static final String PRISM_SEXTANT_CONTENT_VERSION = "chapter-1-v5";
+    public static final String CALIBRATED_SEXTANT_CONTENT_VERSION =
+            "chapter-1-v6";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -66,6 +68,8 @@ public class StarterExpeditionContent {
             "spectrum-observatory";
     public static final String SPECTRUM_OBSERVATORY_EVENT_ID =
             "spectrum-observatory-v1";
+    public static final String CALIBRATED_SEXTANT_CHOICE_ID =
+            "trace-second-dawn";
     public static final String HORIZON_SPIRE_NODE_ID = "horizon-spire";
     public static final String FINAL_NODE_ID = "dawn-relay";
 
@@ -140,7 +144,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    PRISM_SEXTANT_CONTENT_VERSION,
+                    CALIBRATED_SEXTANT_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -354,7 +358,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                PRISM_SEXTANT_CONTENT_VERSION
+                CALIBRATED_SEXTANT_CONTENT_VERSION
         );
     }
 
@@ -388,7 +392,11 @@ public class StarterExpeditionContent {
             String eventId,
             String choiceId
     ) {
-        return requireChoice(eventId, choiceId, PRISM_SEXTANT_CONTENT_VERSION);
+        return requireChoice(
+                eventId,
+                choiceId,
+                CALIBRATED_SEXTANT_CONTENT_VERSION
+        );
     }
 
     public ExpeditionEventChoiceDefinition requireChoice(
@@ -418,7 +426,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, PRISM_SEXTANT_CONTENT_VERSION);
+        return eventChoices(eventId, CALIBRATED_SEXTANT_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -468,6 +476,14 @@ public class StarterExpeditionContent {
                     ))
                     .toList();
         }
+        if (SPECTRUM_OBSERVATORY_EVENT_ID.equals(eventId)
+                && !supportsCalibratedSextantChoice(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !CALIBRATED_SEXTANT_CHOICE_ID.equals(
+                            choice.choiceId()
+                    ))
+                    .toList();
+        }
         return choices;
     }
 
@@ -484,7 +500,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return PRISM_SEXTANT_CONTENT_VERSION;
+        return CALIBRATED_SEXTANT_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -493,6 +509,9 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (CALIBRATED_SEXTANT_CONTENT_VERSION.equals(activeContentVersion)) {
+            return CALIBRATED_SEXTANT_CONTENT_VERSION;
+        }
         if (PRISM_SEXTANT_CONTENT_VERSION.equals(activeContentVersion)) {
             return PRISM_SEXTANT_CONTENT_VERSION;
         }
@@ -512,27 +531,37 @@ public class StarterExpeditionContent {
         return CONTENT_VERSION.equals(contentVersion)
                 || STORM_RIFT_CONTENT_VERSION.equals(contentVersion)
                 || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
-                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsStormRift(String contentVersion) {
         return STORM_RIFT_CONTENT_VERSION.equals(contentVersion)
                 || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
-                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsVoidOrchardFork(String contentVersion) {
         return VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
-                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPrismSextantRoute(String contentVersion) {
-        return PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+        return PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsCalibratedSextantChoice(
+            String contentVersion
+    ) {
+        return CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                PRISM_SEXTANT_CONTENT_VERSION,
+                CALIBRATED_SEXTANT_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -835,6 +864,29 @@ public class StarterExpeditionContent {
                                 inventoryContent,
                                 StarterInventoryContent.DAWN_FRAGMENT_ID,
                                 2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        CALIBRATED_SEXTANT_CHOICE_ID,
+                        "Проследить второй рассвет",
+                        "Использовать точную калибровку секстанта, чтобы удержать самый тонкий луч за границей спектра.",
+                        "Карта второго рассвета",
+                        "Откалиброванный секстант закрепил невидимую дугу и вывел отряд к свету следующего горизонта.",
+                        46,
+                        24,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                3
+                        ),
+                        new ExpeditionChoiceEquipmentRequirement(
+                                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                                "Навигационный прибор",
+                                inventoryContent.require(
+                                        StarterInventoryContent.PRISM_SEXTANT_ID
+                                ),
+                                2,
+                                "Экипируйте откалиброванный призматический секстант уровня 2, чтобы увидеть второй рассвет."
                         )
                 )
         );
