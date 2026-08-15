@@ -26,6 +26,7 @@ void main() {
           'horizon-spire': ExpeditionNodeSignalKind.horizonSpire,
           'dawn-relay': ExpeditionNodeSignalKind.dawnRelay,
           'resonance-pocket': ExpeditionNodeSignalKind.resonancePocket,
+          'spectrum-observatory': ExpeditionNodeSignalKind.spectrumObservatory,
         };
 
     for (final MapEntry<String, ExpeditionNodeSignalKind> entry

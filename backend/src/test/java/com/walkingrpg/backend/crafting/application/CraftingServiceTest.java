@@ -118,6 +118,82 @@ class CraftingServiceTest {
     }
 
     @Test
+    void shouldGatePrismSextantRecipeAndConsumeLateChapterMaterials() {
+        StarterCraftingContent craftingContent = new StarterCraftingContent();
+        assertEquals(1, craftingContent.recipes(
+                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
+        ).size());
+        assertEquals(2, craftingContent.recipes(
+                StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+        ).size());
+        CraftingService stagedService = new CraftingService(
+                repository,
+                craftingContent,
+                new InMemoryExpeditionRepository(),
+                eventRepository,
+                () -> StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        CraftingCommand command = new CraftingCommand(
+                "user-prism",
+                StarterCraftingContent.PRISM_SEXTANT_RECIPE_ID,
+                "craft-prism"
+        );
+
+        assertThrows(
+                CraftingRecipeNotFoundException.class,
+                () -> stagedService.craft(command)
+        );
+
+        repository.putMaterial(
+                "user-prism",
+                StarterInventoryContent.PRISM_DUST_ID,
+                3,
+                1
+        );
+        repository.putMaterial(
+                "user-prism",
+                StarterInventoryContent.ION_BLOOM_ID,
+                1,
+                1
+        );
+        repository.putMaterial(
+                "user-prism",
+                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                2,
+                1
+        );
+        CraftingService activeService = new CraftingService(
+                repository,
+                new StarterCraftingContent(),
+                new InMemoryExpeditionRepository(),
+                eventRepository,
+                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        CraftingResult result = activeService.craft(command);
+
+        assertEquals(StarterCraftingContent.PRISM_CONTENT_VERSION,
+                result.contentVersion());
+        assertEquals(StarterInventoryContent.PRISM_SEXTANT_ID,
+                result.craftedItem().itemId());
+        assertEquals(3, result.consumedIngredients().size());
+        assertEquals(1, repository.materialQuantity(
+                "user-prism",
+                StarterInventoryContent.PRISM_DUST_ID
+        ));
+        assertEquals(0, repository.materialQuantity(
+                "user-prism",
+                StarterInventoryContent.ION_BLOOM_ID
+        ));
+        assertEquals(1, repository.materialQuantity(
+                "user-prism",
+                StarterInventoryContent.DAWN_FRAGMENT_ID
+        ));
+    }
+
+    @Test
     void shouldReplayExactlyButBlockNewCraftWhileEventResultIsPending() {
         String userId = "pending-result-user";
         repository.putMaterial(

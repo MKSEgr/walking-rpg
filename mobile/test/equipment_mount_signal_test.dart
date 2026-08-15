@@ -22,6 +22,10 @@ void main() {
       EquipmentMountItemKind.resonanceCompass,
     );
     expect(
+      EquipmentMountSignalCatalog.itemKindFor('prism-sextant'),
+      EquipmentMountItemKind.prismSextant,
+    );
+    expect(
       EquipmentMountSignalCatalog.itemKindFor('Резонансный компас'),
       EquipmentMountItemKind.unknown,
     );
@@ -49,6 +53,14 @@ void main() {
       EquipmentMountSignalCatalog.stateFor(
         slotId: 'NAVIGATION',
         status: 'EQUIPPED',
+        itemId: 'prism-sextant',
+      ),
+      EquipmentMountSignalState.prismSextantMounted,
+    );
+    expect(
+      EquipmentMountSignalCatalog.stateFor(
+        slotId: 'NAVIGATION',
+        status: 'EQUIPPED',
         itemId: 'future-instrument',
       ),
       EquipmentMountSignalState.neutral,
@@ -66,7 +78,7 @@ void main() {
   testWidgets(
     'known, empty and fallback mounts stay decorative in both themes',
     (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 420));
+      await tester.binding.setSurfaceSize(const Size(320, 560));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final SemanticsHandle semantics = tester.ensureSemantics();
 
@@ -83,6 +95,12 @@ void main() {
                       slotId: 'NAVIGATION',
                       status: 'EQUIPPED',
                       itemId: 'resonance-compass',
+                    ),
+                    SizedBox(height: 12),
+                    EquipmentMountSignal(
+                      slotId: 'NAVIGATION',
+                      status: 'EQUIPPED',
+                      itemId: 'prism-sextant',
                     ),
                     SizedBox(height: 12),
                     EquipmentMountSignal(
@@ -112,6 +130,12 @@ void main() {
           const Key(
             'equipment-mount-signal-NAVIGATION-navigation-'
             'resonanceCompass-EQUIPPED',
+          ),
+        ),
+        find.byKey(
+          const Key(
+            'equipment-mount-signal-NAVIGATION-navigation-'
+            'prismSextant-EQUIPPED',
           ),
         ),
         find.byKey(

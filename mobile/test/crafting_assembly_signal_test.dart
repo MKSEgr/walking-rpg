@@ -10,6 +10,10 @@ void main() {
       CraftingAssemblySignalKind.resonanceCompass,
     );
     expect(
+      CraftingAssemblySignalCatalog.kindFor('prism-sextant-v1'),
+      CraftingAssemblySignalKind.prismSextant,
+    );
+    expect(
       CraftingAssemblySignalCatalog.kindFor('Резонансный компас'),
       CraftingAssemblySignalKind.unknown,
     );
@@ -35,7 +39,7 @@ void main() {
   testWidgets('known and fallback contours stay decorative in both themes', (
     WidgetTester tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(360, 420));
+    await tester.binding.setSurfaceSize(const Size(360, 560));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final SemanticsHandle semantics = tester.ensureSemantics();
 
@@ -52,6 +56,12 @@ void main() {
                     recipeId: 'resonance-compass-v1',
                     status: 'READY',
                     ingredientAvailability: <bool>[true, true],
+                  ),
+                  SizedBox(height: 16),
+                  CraftingAssemblySignal(
+                    recipeId: 'prism-sextant-v1',
+                    status: 'READY',
+                    ingredientAvailability: <bool>[true, true, true],
                   ),
                   SizedBox(height: 16),
                   CraftingAssemblySignal(
@@ -87,11 +97,15 @@ void main() {
         'crafting-assembly-signal-future-recipe-unknown-MISSING_MATERIALS',
       ),
     );
+    final Finder prism = find.byKey(
+      const Key('crafting-assembly-signal-prism-sextant-v1-prismSextant-READY'),
+    );
     expect(known, findsOneWidget);
+    expect(prism, findsOneWidget);
     expect(fallback, findsOneWidget);
     expect(tester.getSize(known).height, 112);
     expect(tester.getSize(fallback).height, 112);
-    for (final Finder signal in <Finder>[known, fallback]) {
+    for (final Finder signal in <Finder>[known, prism, fallback]) {
       expect(
         find.descendant(of: signal, matching: find.byType(CustomPaint)),
         findsOneWidget,
@@ -105,6 +119,7 @@ void main() {
 
     await pump(WalkingRpgTheme.light());
     expect(known, findsOneWidget);
+    expect(prism, findsOneWidget);
     expect(fallback, findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();

@@ -621,6 +621,89 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldRequirePrismSextantAndRejoinAfterSpectrumObservatory() {
+        activeContentVersion.set(
+                StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+        );
+        var starWell = content.requireNode(
+                StarterExpeditionContent.STAR_WELL_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(starWell, 32),
+                NOW
+        );
+        EventResolutionCommand enterCommand = command(
+                StarterExpeditionContent.STAR_WELL_EVENT_ID,
+                StarterExpeditionContent.PRISM_SEXTANT_ROUTE_CHOICE_ID,
+                "enter-spectrum-observatory"
+        );
+
+        assertThrows(
+                EventChoiceUnavailableException.class,
+                () -> service.resolve(enterCommand)
+        );
+
+        UUID sextantInstanceId = UUID.fromString(
+                "bbbbbbbb-cccc-dddd-eeee-ffffffffffff"
+        );
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                sextantInstanceId,
+                StarterInventoryContent.PRISM_SEXTANT_ID
+        );
+        equipmentService.change(new EquipmentCommand(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                EquipmentAction.EQUIP,
+                sextantInstanceId,
+                "equip-prism-sextant"
+        ));
+
+        EventResolutionResult entered = service.resolve(enterCommand);
+
+        assertEquals(
+                StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
+                entered.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_NODE_ID,
+                entered.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.PRISM_DUST_ID,
+                entered.material().itemId());
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                entered.receiptId(),
+                NOW
+        );
+
+        var observatory = content.requireNode(
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(observatory, 34),
+                NOW
+        );
+        EventResolutionResult returned = service.resolve(command(
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_EVENT_ID,
+                "chase-dawn-refraction",
+                "leave-spectrum-observatory"
+        ));
+
+        assertEquals(
+                StarterExpeditionContent.HORIZON_SPIRE_NODE_ID,
+                returned.nextNode().nodeId()
+        );
+        assertEquals(StarterInventoryContent.DAWN_FRAGMENT_ID,
+                returned.material().itemId());
+        assertEquals(2, returned.material().quantityGained());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION

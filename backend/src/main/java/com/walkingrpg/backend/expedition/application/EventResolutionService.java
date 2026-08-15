@@ -83,7 +83,7 @@ public class EventResolutionService {
                 inventoryService,
                 content,
                 equipmentService,
-                () -> StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
+                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
                 clock
         );
     }
@@ -109,7 +109,7 @@ public class EventResolutionService {
                         eventRepository,
                         clock
                 ),
-                () -> StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
+                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
                 clock
         );
     }

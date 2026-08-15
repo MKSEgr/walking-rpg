@@ -279,7 +279,9 @@ Event resolution использует generic durable outbox, поэтому `ev
 bond, inventory или статуса экспедиции не выполняется: после resolution и ACK
 всегда перечитывается home.
 
-Home дополнительно возвращает versioned `craftingRecipes`. Карточка
+Home дополнительно возвращает versioned `craftingRecipes`. До активации
+`chapter-1-v5` это `resonance-compass-v1`; после активации добавляется
+`prism-sextant-v1` из поздних материалов главы. Карточка
 **«Мастерская»** показывает authoritative стоимость и статус:
 
 ```text
@@ -294,7 +296,8 @@ read cache и перечитывает home, где materials уже списа�
 а recipe имеет статус `CRAFTED`. Cached snapshot показывает recipe read-only.
 
 Карточка **«Снаряжение»** показывает authoritative slot `NAVIGATION` и
-позволяет экипировать/снять созданный `resonance-compass`. `EQUIPMENT`
+позволяет экипировать/снять созданный `resonance-compass` или
+`prism-sextant`; второй прибор атомарно заменяет первый. `EQUIPMENT`
 сохраняет `slotId`, action, nullable `itemInstanceId` и исходный key до первой
 отправки. После успеха client инвалидирует read cache и перечитывает home;
 локального optimistic loadout нет.

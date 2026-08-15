@@ -106,6 +106,14 @@ class CraftingIntegrationTest {
         jdbcTemplate.update("DELETE FROM inventory_stack");
         jdbcTemplate.update("DELETE FROM app_device");
         jdbcTemplate.update("DELETE FROM app_user");
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true
+                WHERE content_version = 'chapter-1-v1'
+                """);
     }
 
     @Test
@@ -174,6 +182,55 @@ class CraftingIntegrationTest {
         assertEquals(0, rowCount("inventory_ledger"));
         assertEquals(0, rowCount("unique_inventory_item"));
         assertEquals(0, rowCount("processed_crafting_command"));
+    }
+
+    @Test
+    void shouldPersistPrismSextantAfterChapterV5Activation() {
+        activateContent(StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION);
+        String userId = "prism-craft-user";
+        jdbcTemplate.update("""
+                INSERT INTO app_user (user_id, created_at, last_seen_at)
+                VALUES (?, now(), now())
+                """, userId);
+        insertStack(userId, StarterInventoryContent.PRISM_DUST_ID, 3);
+        insertStack(userId, StarterInventoryContent.ION_BLOOM_ID, 1);
+        insertStack(userId, StarterInventoryContent.DAWN_FRAGMENT_ID, 2);
+
+        CraftingResult result = craftingService.craft(new CraftingCommand(
+                userId,
+                StarterCraftingContent.PRISM_SEXTANT_RECIPE_ID,
+                "craft-prism"
+        ));
+
+        assertEquals(StarterInventoryContent.PRISM_SEXTANT_ID,
+                result.craftedItem().itemId());
+        assertEquals(3, rowCount("processed_crafting_ingredient"));
+        assertEquals(3, rowCount("inventory_ledger"));
+        assertEquals(1, materialQuantity(
+                userId,
+                StarterInventoryContent.PRISM_DUST_ID
+        ));
+        assertEquals(0, materialQuantity(
+                userId,
+                StarterInventoryContent.ION_BLOOM_ID
+        ));
+        assertEquals(1, materialQuantity(
+                userId,
+                StarterInventoryContent.DAWN_FRAGMENT_ID
+        ));
+
+        HomeSnapshotResponse home = homeService.getSnapshot(new HomeQuery(
+                userId,
+                LocalDate.of(2026, 8, 1)
+        ));
+        assertEquals(2, home.craftingRecipes().size());
+        assertEquals("CRAFTED", home.craftingRecipes().stream()
+                .filter(recipe -> recipe.recipeId().equals(
+                        StarterCraftingContent.PRISM_SEXTANT_RECIPE_ID
+                ))
+                .findFirst()
+                .orElseThrow()
+                .status());
     }
 
     @Test
@@ -554,6 +611,18 @@ class CraftingIntegrationTest {
                 )
                 VALUES (?, ?, ?, 1, now(), now())
                 """, userId, itemId, quantity);
+    }
+
+    private void activateContent(String contentVersion) {
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = ?
+                """, contentVersion);
     }
 
     private CraftingCommand command(String userId, String idempotencyKey) {

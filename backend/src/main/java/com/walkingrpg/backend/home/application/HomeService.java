@@ -130,7 +130,7 @@ public class HomeService {
                 new StarterCraftingContent(),
                 new InMemoryEquipmentRepository(),
                 new StarterEquipmentContent(),
-                () -> StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
+                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
                 clock
         );
     }
@@ -201,7 +201,7 @@ public class HomeService {
                         equipment,
                         activeContentVersion
                 ),
-                craftingSnapshots(state)
+                craftingSnapshots(state, activeContentVersion)
         );
     }
 
@@ -286,14 +286,15 @@ public class HomeService {
     }
 
     private List<CraftingRecipeSnapshot> craftingSnapshots(
-            HomeRuntimeState state
+            HomeRuntimeState state,
+            String activeContentVersion
     ) {
         Map<String, Long> quantities = new HashMap<>();
         state.inventory().forEach(item -> quantities.put(
                 item.itemId(),
                 item.quantity()
         ));
-        return craftingContent.recipes().stream()
+        return craftingContent.recipes(activeContentVersion).stream()
                 .map(recipe -> craftingSnapshot(recipe, quantities))
                 .toList();
     }

@@ -81,12 +81,12 @@ class HomeServiceTest {
         assertEquals("Искра", snapshot.pet().name());
         assertEquals(0, snapshot.pet().evolutionStage());
         assertEquals(
-                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
+                StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
                 snapshot.contentVersion()
         );
         assertEquals("starter-expedition-v1", snapshot.expedition().expeditionId());
         assertEquals(0, snapshot.inventory().size());
-        assertEquals(1, snapshot.craftingRecipes().size());
+        assertEquals(2, snapshot.craftingRecipes().size());
         assertEquals("MISSING_MATERIALS",
                 snapshot.craftingRecipes().getFirst().status());
         assertEquals(30, snapshot.expedition().progress());

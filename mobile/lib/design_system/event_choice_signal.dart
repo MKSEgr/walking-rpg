@@ -12,6 +12,7 @@ enum EventChoiceSignalKind {
   resonance,
   chart,
   compass,
+  prism,
   unknown,
 }
 
@@ -61,12 +62,17 @@ abstract final class EventChoiceSignalCatalog {
     'void-orchard-v1::trust-void-orchard': EventChoiceSignalKind.companion,
     'star-well-v1::survey-star-well': EventChoiceSignalKind.survey,
     'star-well-v1::trust-star-well': EventChoiceSignalKind.companion,
+    'star-well-v1::align-prism-sextant': EventChoiceSignalKind.prism,
     'horizon-spire-v1::survey-horizon-spire': EventChoiceSignalKind.survey,
     'horizon-spire-v1::trust-horizon-spire': EventChoiceSignalKind.companion,
     'dawn-relay-v1::survey-dawn-relay': EventChoiceSignalKind.survey,
     'dawn-relay-v1::trust-dawn-relay': EventChoiceSignalKind.companion,
     'resonance-pocket-v1::map-hidden-current': EventChoiceSignalKind.chart,
     'resonance-pocket-v1::follow-compass-pulse': EventChoiceSignalKind.compass,
+    'spectrum-observatory-v1::chart-invisible-constellation':
+        EventChoiceSignalKind.chart,
+    'spectrum-observatory-v1::chase-dawn-refraction':
+        EventChoiceSignalKind.prism,
   };
 
   static EventChoiceSignalKind kindFor({
@@ -89,6 +95,7 @@ abstract final class EventChoiceSignalCatalog {
       EventChoiceSignalKind.resonance ||
       EventChoiceSignalKind.chart ||
       EventChoiceSignalKind.compass => EventChoiceSignalTone.resonance,
+      EventChoiceSignalKind.prism => EventChoiceSignalTone.lumen,
       EventChoiceSignalKind.unknown => EventChoiceSignalTone.neutral,
     };
   }
@@ -320,6 +327,8 @@ class _EventChoiceSignalPainter extends CustomPainter {
         _paintChart(canvas, size, fine, fill);
       case EventChoiceSignalKind.compass:
         _paintCompass(canvas, size, stroke, fine, fill);
+      case EventChoiceSignalKind.prism:
+        _paintPrism(canvas, size, stroke, fine, fill);
       case EventChoiceSignalKind.unknown:
         _paintUnknown(canvas, size, fine, fill);
     }
@@ -563,6 +572,23 @@ class _EventChoiceSignalPainter extends CustomPainter {
         fill,
       );
     }
+  }
+
+  void _paintPrism(
+    Canvas canvas,
+    Size size,
+    Paint stroke,
+    Paint fine,
+    Paint fill,
+  ) {
+    final Path prism = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.24)
+      ..lineTo(size.width * 0.72, size.height * 0.7)
+      ..lineTo(size.width * 0.28, size.height * 0.7)
+      ..close();
+    canvas.drawPath(prism, stroke);
+    canvas.drawLine(_point(size, 0.22, 0.5), _point(size, 0.78, 0.5), fine);
+    canvas.drawCircle(_point(size, 0.5, 0.5), size.shortestSide * 0.045, fill);
   }
 
   @override

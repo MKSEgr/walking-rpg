@@ -17,6 +17,11 @@ void main() {
       ExpeditionItemArtwork.assetPathFor('resonance-compass'),
       'assets/items/resonance_compass.webp',
     );
+    expect(
+      ExpeditionItemArtwork.codeNativeIconFor('prism-sextant'),
+      Icons.change_history_outlined,
+    );
+    expect(ExpeditionItemArtwork.codeNativeIconFor('Prism Sextant'), isNull);
     expect(ExpeditionItemArtwork.assetPathFor('Lumen Shard'), isNull);
     expect(ExpeditionItemArtwork.assetPathFor('unknown-item'), isNull);
   });
@@ -38,6 +43,7 @@ void main() {
                 itemId: 'resonance-compass',
                 highlighted: true,
               ),
+              ExpeditionItemEmblem(itemId: 'prism-sextant', highlighted: true),
               ExpeditionItemEmblem(itemId: 'unknown-item'),
             ],
           ),
@@ -49,6 +55,10 @@ void main() {
     expect(find.byKey(const Key('item-art-lumen-shard')), findsOneWidget);
     expect(find.byKey(const Key('item-art-echo-thread')), findsOneWidget);
     expect(find.byKey(const Key('item-art-resonance-compass')), findsOneWidget);
+    expect(
+      find.byKey(const Key('item-art-code-prism-sextant')),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const Key('item-art-fallback-unknown-item')),
       findsOneWidget,

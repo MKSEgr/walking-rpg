@@ -23,11 +23,13 @@ public class StarterExpeditionContent {
     public static final String CONTENT_VERSION = "chapter-1-v2";
     public static final String STORM_RIFT_CONTENT_VERSION = "chapter-1-v3";
     public static final String VOID_ORCHARD_CONTENT_VERSION = "chapter-1-v4";
+    public static final String PRISM_SEXTANT_CONTENT_VERSION = "chapter-1-v5";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
     public static final int STORM_RIFT_NODE_COUNT = 20;
     public static final int VOID_ORCHARD_NODE_COUNT = 22;
+    public static final int PRISM_SEXTANT_NODE_COUNT = 23;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -57,6 +59,14 @@ public class StarterExpeditionContent {
     public static final String LIGHT_CANOPY_EVENT_ID = "light-canopy-v1";
     public static final String EMBER_STATION_NODE_ID = "ember-station";
     public static final String STAR_WELL_NODE_ID = "star-well";
+    public static final String STAR_WELL_EVENT_ID = "star-well-v1";
+    public static final String PRISM_SEXTANT_ROUTE_CHOICE_ID =
+            "align-prism-sextant";
+    public static final String SPECTRUM_OBSERVATORY_NODE_ID =
+            "spectrum-observatory";
+    public static final String SPECTRUM_OBSERVATORY_EVENT_ID =
+            "spectrum-observatory-v1";
+    public static final String HORIZON_SPIRE_NODE_ID = "horizon-spire";
     public static final String FINAL_NODE_ID = "dawn-relay";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
@@ -112,9 +122,9 @@ public class StarterExpeditionContent {
                 new NodeSpec(VOID_ORCHARD_NODE_ID, "Сад пустоты", 115,
                         VOID_ORCHARD_EVENT_ID,
                         "Невидимый плод", "Сад проявляется только по следу питомца."),
-                new NodeSpec(STAR_WELL_NODE_ID, "Звёздный колодец", 120, "star-well-v1",
+                new NodeSpec(STAR_WELL_NODE_ID, "Звёздный колодец", 120, STAR_WELL_EVENT_ID,
                         "Глубина света", "Колодец возвращает эхо каждого пройденного сектора."),
-                new NodeSpec("horizon-spire", "Шпиль горизонта", 125, "horizon-spire-v1",
+                new NodeSpec(HORIZON_SPIRE_NODE_ID, "Шпиль горизонта", 125, "horizon-spire-v1",
                         "Высота маршрута", "С вершины виден последний ретранслятор главы."),
                 new NodeSpec(FINAL_NODE_ID, "Ретранслятор рассвета", 130, "dawn-relay-v1",
                         "Первый рассвет", "Ретранслятор готов открыть путь к следующей главе.")
@@ -130,7 +140,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    VOID_ORCHARD_CONTENT_VERSION,
+                    PRISM_SEXTANT_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -259,6 +269,46 @@ public class StarterExpeditionContent {
         voidOrchardChoices.add(lightCanopyChoice(inventoryContent));
         choices.put(VOID_ORCHARD_EVENT_ID, List.copyOf(voidOrchardChoices));
 
+        NodeSpec spectrumObservatorySpec = new NodeSpec(
+                SPECTRUM_OBSERVATORY_NODE_ID,
+                "Спектральная обсерватория",
+                50,
+                SPECTRUM_OBSERVATORY_EVENT_ID,
+                "Карта невидимого света",
+                "Секстант разложил сияние колодца на пути, которые нельзя увидеть напрямую."
+        );
+        ExpeditionDefinition spectrumObservatoryDefinition = definition(
+                spectrumObservatorySpec
+        );
+        definitions.add(spectrumObservatoryDefinition);
+        byId.put(
+                spectrumObservatoryDefinition.currentNodeId(),
+                spectrumObservatoryDefinition
+        );
+        byEvent.put(
+                spectrumObservatoryDefinition.event().eventId(),
+                spectrumObservatoryDefinition
+        );
+        choices.put(
+                SPECTRUM_OBSERVATORY_EVENT_ID,
+                spectrumObservatoryChoices(inventoryContent)
+        );
+
+        ExpeditionDefinition horizonSpire = byId.get(HORIZON_SPIRE_NODE_ID);
+        defaultNext.put(SPECTRUM_OBSERVATORY_EVENT_ID, horizonSpire);
+        choiceNext.put(
+                new EventChoiceKey(
+                        STAR_WELL_EVENT_ID,
+                        PRISM_SEXTANT_ROUTE_CHOICE_ID
+                ),
+                spectrumObservatoryDefinition
+        );
+        List<ExpeditionEventChoiceDefinition> starWellChoices = new ArrayList<>(
+                choices.get(STAR_WELL_EVENT_ID)
+        );
+        starWellChoices.add(prismSextantRouteChoice(inventoryContent));
+        choices.put(STAR_WELL_EVENT_ID, List.copyOf(starWellChoices));
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -304,7 +354,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                VOID_ORCHARD_CONTENT_VERSION
+                PRISM_SEXTANT_CONTENT_VERSION
         );
     }
 
@@ -338,7 +388,7 @@ public class StarterExpeditionContent {
             String eventId,
             String choiceId
     ) {
-        return requireChoice(eventId, choiceId, VOID_ORCHARD_CONTENT_VERSION);
+        return requireChoice(eventId, choiceId, PRISM_SEXTANT_CONTENT_VERSION);
     }
 
     public ExpeditionEventChoiceDefinition requireChoice(
@@ -368,7 +418,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, VOID_ORCHARD_CONTENT_VERSION);
+        return eventChoices(eventId, PRISM_SEXTANT_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -410,6 +460,14 @@ public class StarterExpeditionContent {
                     .filter(choice -> !LIGHT_CANOPY_CHOICE_ID.equals(choice.choiceId()))
                     .toList();
         }
+        if (STAR_WELL_EVENT_ID.equals(eventId)
+                && !supportsPrismSextantRoute(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !PRISM_SEXTANT_ROUTE_CHOICE_ID.equals(
+                            choice.choiceId()
+                    ))
+                    .toList();
+        }
         return choices;
     }
 
@@ -426,7 +484,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return VOID_ORCHARD_CONTENT_VERSION;
+        return PRISM_SEXTANT_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -435,6 +493,9 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (PRISM_SEXTANT_CONTENT_VERSION.equals(activeContentVersion)) {
+            return PRISM_SEXTANT_CONTENT_VERSION;
+        }
         if (VOID_ORCHARD_CONTENT_VERSION.equals(activeContentVersion)) {
             return VOID_ORCHARD_CONTENT_VERSION;
         }
@@ -450,21 +511,28 @@ public class StarterExpeditionContent {
     public static boolean supportsResonanceRoute(String contentVersion) {
         return CONTENT_VERSION.equals(contentVersion)
                 || STORM_RIFT_CONTENT_VERSION.equals(contentVersion)
-                || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion);
+                || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
+                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsStormRift(String contentVersion) {
         return STORM_RIFT_CONTENT_VERSION.equals(contentVersion)
-                || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion);
+                || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
+                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsVoidOrchardFork(String contentVersion) {
-        return VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion);
+        return VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
+                || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsPrismSextantRoute(String contentVersion) {
+        return PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                VOID_ORCHARD_CONTENT_VERSION,
+                PRISM_SEXTANT_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -705,6 +773,68 @@ public class StarterExpeditionContent {
                                 inventoryContent,
                                 StarterInventoryContent.DAWN_FRAGMENT_ID,
                                 1
+                        )
+                )
+        );
+    }
+
+    private ExpeditionEventChoiceDefinition prismSextantRouteChoice(
+            StarterInventoryContent inventoryContent
+    ) {
+        return new ExpeditionEventChoiceDefinition(
+                PRISM_SEXTANT_ROUTE_CHOICE_ID,
+                "Свести скрытый спектр",
+                "Настроить экипированный секстант на свет под поверхностью колодца.",
+                "Путь невидимого света",
+                "Секстант разделил отражения и открыл подъём в спектральную обсерваторию.",
+                50,
+                20,
+                reward(
+                        inventoryContent,
+                        StarterInventoryContent.PRISM_DUST_ID,
+                        1
+                ),
+                new ExpeditionChoiceEquipmentRequirement(
+                        StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                        "Навигационный прибор",
+                        inventoryContent.require(
+                                StarterInventoryContent.PRISM_SEXTANT_ID
+                        ),
+                        "Экипируйте призматический секстант, чтобы увидеть скрытый спектр."
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> spectrumObservatoryChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        "chart-invisible-constellation",
+                        "Нанести созвездие на карту",
+                        "Зафиксировать устойчивые линии спектра для следующих маршрутов.",
+                        "Атлас невидимого света",
+                        "Навигатор сохранил карту и собрал ионный заряд с её опорных точек.",
+                        52,
+                        16,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ION_BLOOM_ID,
+                                2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        "chase-dawn-refraction",
+                        "Догнать преломление рассвета",
+                        "Доверить питомцу луч, который появляется между цветами спектра.",
+                        "Свет за пределом спектра",
+                        "Питомец удержал исчезающий луч и вынес два фрагмента рассвета.",
+                        34,
+                        28,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                2
                         )
                 )
         );

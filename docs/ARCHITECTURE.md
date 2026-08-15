@@ -307,13 +307,17 @@ Platform command payload и remote config остаются JSON, но server-own
 диапазон значения отклоняются до mutation; уже сохранённый некорректный
 `weeklyRouteEnergy` не усекается, а безопасно заменяется значением по умолчанию.
 
-Starter crafting content имеет независимую версию `crafting-v1`. Recipe
-`resonance-compass-v1` принимает только stable material item IDs и создаёт
-non-stackable `resonance-compass`. Client получает recipe projection через
-home, но не задаёт стоимость, количество или результат command-а.
+Starter crafting content версионирует каждый additive срез. Recipe
+`resonance-compass-v1` из `crafting-v1` создаёт non-stackable
+`resonance-compass`; `prism-sextant-v1` из `crafting-v2` принимает
+`2 × prism-dust`, `1 × ion-bloom`, `1 × dawn-fragment` и создаёт
+non-stackable `prism-sextant`. Второй recipe не проецируется и не принимается
+до активации `chapter-1-v5`. Client получает recipe projection через home, но
+не задаёт стоимость, количество или результат command-а.
 
-Equipment content имеет независимую версию `equipment-v1`: slot
-`NAVIGATION` принимает unique `resonance-compass`. Home availability является
+Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
+`resonance-compass` или `prism-sextant`, но одновременно удерживает только
+один прибор. Home availability является
 UX projection; locked choices вынесены в additive `lockedChoices`, чтобы
 legacy mobile видел только основной маршрут. Event service повторно проверяет
 requirement под authoritative expedition lock.
@@ -388,6 +392,12 @@ V19 stage-ит inactive `chapter-1-v4`: два server-owned выбора в
 `void-orchard-v1` ведут в независимые `root-memory` и `light-canopy`, каждая
 ветка имеет собственные решения и награды и возвращается к `star-well`.
 До cluster-wide activation v3-проекция сохраняет прежние choices и 20 узлов.
+V20 stage-ит inactive `chapter-1-v5`: recipe призматического секстанта и
+server-owned choice `align-prism-sextant` становятся доступны только после
+общей активации. Choice требует секстант в `NAVIGATION`, ведёт через
+`spectrum-observatory` с двумя наградами и возвращается к `horizon-spire`.
+До активации v4-проекция сохраняет один starter recipe, прежние choices и 22
+узла.
 
 ## 8. Конкурентность и транзакции
 

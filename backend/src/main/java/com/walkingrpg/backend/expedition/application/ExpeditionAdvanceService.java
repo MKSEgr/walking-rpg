@@ -60,7 +60,7 @@ public class ExpeditionAdvanceService {
                 eventResolutionRepository,
                 economyService,
                 content,
-                () -> StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
+                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
                 clock
         );
     }

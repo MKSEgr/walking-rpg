@@ -125,6 +125,51 @@ class EquipmentServiceTest {
     }
 
     @Test
+    void shouldReplaceCompassWithOwnedPrismSextantInNavigationSlot() {
+        UUID sextantInstanceId = UUID.fromString(
+                "66666666-7777-8888-9999-aaaaaaaaaaaa"
+        );
+        repository.putUniqueItem(
+                "user-1",
+                ITEM_INSTANCE_ID,
+                StarterInventoryContent.RESONANCE_COMPASS_ID
+        );
+        repository.putUniqueItem(
+                "user-1",
+                sextantInstanceId,
+                StarterInventoryContent.PRISM_SEXTANT_ID
+        );
+        service.change(command(
+                EquipmentAction.EQUIP,
+                ITEM_INSTANCE_ID,
+                "equip-compass-first"
+        ));
+
+        EquipmentResult replaced = service.change(command(
+                EquipmentAction.EQUIP,
+                sextantInstanceId,
+                "equip-sextant"
+        ));
+
+        assertTrue(replaced.changed());
+        assertEquals(2, replaced.version());
+        assertEquals(StarterEquipmentContent.CONTENT_VERSION,
+                replaced.contentVersion());
+        assertEquals(StarterInventoryContent.PRISM_SEXTANT_ID,
+                replaced.equippedItem().itemId());
+        assertTrue(repository.isEquipped(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                StarterInventoryContent.PRISM_SEXTANT_ID
+        ));
+        assertFalse(repository.isEquipped(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                StarterInventoryContent.RESONANCE_COMPASS_ID
+        ));
+    }
+
+    @Test
     void shouldReplayExactlyButBlockNewMutationWhileResultIsPending() {
         repository.putUniqueItem(
                 "user-1",
