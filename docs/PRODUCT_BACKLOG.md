@@ -422,11 +422,34 @@ beta/economy evidence.
 **Статус:** backend/mobile/Flyway V22, unit/API/PostgreSQL/migration/parser и
 visual-mapping tests реализованы. Баланс награды требует beta evidence.
 
+### US-019. Открыть эпилог второго рассвета
+
+Как пользователь, я хочу применить откалиброванный секстант в финале первой
+главы, чтобы улучшенный прибор открывал альтернативное завершение экспедиции.
+
+Критерии:
+
+- inactive `chapter-1-v7` добавляет `open-second-dawn` только в
+  `dawn-relay-v1` и увеличивает catalog с 23 до 24 узлов;
+- choice требует `prism-sextant` в `NAVIGATION` с minimum upgrade level `2`;
+- level 1, другой либо неэкипированный предмет оставляет choice `LOCKED`, а
+  прямой API-вызов отклоняется до reward/progression mutation;
+- успешный choice выдаёт `+48 pilot XP`, `+26 pet bond`,
+  `+1 dawn-fragment` и переводит к optional `second-dawn-threshold`;
+- `anchor-second-dawn` выдаёт `+60 pilot XP`, `+22 pet bond`,
+  `+2 ion-bloom`, а `leap-beyond-dawn` — `+42 pilot XP`,
+  `+34 pet bond`, `+2 dawn-fragment`; оба решения завершают экспедицию;
+- v1-v6 не получают новый choice, а v7 активируется только после drain
+  pre-V23 backend instances.
+
+**Статус:** backend/mobile/Flyway V23, unit/PostgreSQL/migration/catalog и
+visual-mapping tests реализованы. Баланс эпилога требует beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
-- первая глава из 18 основных узлов и четырёх опциональных маршрутов, один из
+- первая глава из 18 основных узлов и пяти опциональных маршрутов, один из
   которых разветвляется на два самостоятельных события;
 - три питомца, active selection, эволюция и навыки;
 - onboarding, задания и достижения;

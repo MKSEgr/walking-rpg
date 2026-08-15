@@ -60,7 +60,7 @@ public class CraftingService {
                 content,
                 expeditionRepository,
                 eventResolutionRepository,
-                () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
                 clock
         );
     }

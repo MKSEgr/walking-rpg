@@ -27,6 +27,7 @@ void main() {
           'dawn-relay': ExpeditionNodeSignalKind.dawnRelay,
           'resonance-pocket': ExpeditionNodeSignalKind.resonancePocket,
           'spectrum-observatory': ExpeditionNodeSignalKind.spectrumObservatory,
+          'second-dawn-threshold': ExpeditionNodeSignalKind.secondDawnThreshold,
         };
 
     for (final MapEntry<String, ExpeditionNodeSignalKind> entry
@@ -73,9 +74,9 @@ void main() {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   ExpeditionNodeSignal(
-                    nodeId: 'dawn-relay',
-                    nodeName: 'Ретранслятор рассвета',
-                    completed: true,
+                    nodeId: 'second-dawn-threshold',
+                    nodeName: 'Порог второго рассвета',
+                    completed: false,
                   ),
                   SizedBox(height: 12),
                   ExpeditionNodeSignal(
@@ -96,13 +97,17 @@ void main() {
     await pump(WalkingRpgTheme.dark());
 
     final Finder known = find.byKey(
-      const Key('expedition-node-signal-dawn-relay-dawnRelay'),
+      const Key(
+        'expedition-node-signal-second-dawn-threshold-secondDawnThreshold',
+      ),
     );
     final Finder fallback = find.byKey(
       const Key('expedition-next-node-signal-future-node-unknown'),
     );
     final Finder knownMark = find.byKey(
-      const Key('expedition-node-mark-dawn-relay-dawnRelay'),
+      const Key(
+        'expedition-node-mark-second-dawn-threshold-secondDawnThreshold',
+      ),
     );
     final Finder fallbackMark = find.byKey(
       const Key('expedition-next-node-mark-future-node-unknown'),
@@ -118,9 +123,7 @@ void main() {
       );
     }
     expect(
-      find.bySemanticsLabel(
-        'Текущий узел «Ретранслятор рассвета», экспедиция завершена',
-      ),
+      find.bySemanticsLabel('Текущий узел «Порог второго рассвета»'),
       findsOneWidget,
     );
     expect(

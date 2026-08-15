@@ -35,6 +35,9 @@ class StarterExpeditionContentTest {
         String chapterV6 = content.activeContentVersion(
                 () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION
         );
+        String chapterV7 = content.activeContentVersion(
+                () -> StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -45,6 +48,8 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
                 chapterV6
         );
+        assertEquals(StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
+                chapterV7);
         assertEquals(1, activationReads.get());
         assertEquals(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION,
@@ -100,10 +105,18 @@ class StarterExpeditionContentTest {
                         .equipmentRequirement()
                         .minimumUpgradeLevel()
         );
+        assertFalse(hasSecondDawnChoice(content.eventChoices(
+                StarterExpeditionContent.FINAL_EVENT_ID,
+                chapterV6
+        )));
+        assertTrue(hasSecondDawnChoice(content.eventChoices(
+                StarterExpeditionContent.FINAL_EVENT_ID,
+                chapterV7
+        )));
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
-                StarterExpeditionContent.PRISM_SEXTANT_NODE_COUNT,
+                StarterExpeditionContent.SECOND_DAWN_NODE_COUNT,
                 content.nodes().size()
         );
     }
@@ -217,6 +230,27 @@ class StarterExpeditionContentTest {
         );
     }
 
+    @Test
+    void shouldRouteThroughSecondDawnAndCompleteAfterItsEvent() {
+        assertEquals(
+                StarterExpeditionContent.SECOND_DAWN_NODE_ID,
+                content.nextNodeAfterEvent(
+                        StarterExpeditionContent.FINAL_EVENT_ID,
+                        StarterExpeditionContent.SECOND_DAWN_ROUTE_CHOICE_ID,
+                        StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+                ).orElseThrow().currentNodeId()
+        );
+        assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                "anchor-second-dawn",
+                StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+        ).isEmpty());
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+        ).size());
+    }
+
     private boolean hasStormRiftChoice(
             List<ExpeditionEventChoiceDefinition> choices
     ) {
@@ -254,6 +288,16 @@ class StarterExpeditionContentTest {
     ) {
         return choices.stream().anyMatch(choice ->
                 StarterExpeditionContent.CALIBRATED_SEXTANT_CHOICE_ID.equals(
+                        choice.choiceId()
+                )
+        );
+    }
+
+    private boolean hasSecondDawnChoice(
+            List<ExpeditionEventChoiceDefinition> choices
+    ) {
+        return choices.stream().anyMatch(choice ->
+                StarterExpeditionContent.SECOND_DAWN_ROUTE_CHOICE_ID.equals(
                         choice.choiceId()
                 )
         );

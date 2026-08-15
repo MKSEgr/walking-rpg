@@ -25,6 +25,7 @@ enum ExpeditionNodeSignalKind {
   dawnRelay,
   resonancePocket,
   spectrumObservatory,
+  secondDawnThreshold,
   unknown,
 }
 
@@ -60,6 +61,7 @@ abstract final class ExpeditionNodeSignalCatalog {
       'dawn-relay' => ExpeditionNodeSignalKind.dawnRelay,
       'resonance-pocket' => ExpeditionNodeSignalKind.resonancePocket,
       'spectrum-observatory' => ExpeditionNodeSignalKind.spectrumObservatory,
+      'second-dawn-threshold' => ExpeditionNodeSignalKind.secondDawnThreshold,
       _ => ExpeditionNodeSignalKind.unknown,
     };
   }
@@ -86,6 +88,7 @@ abstract final class ExpeditionNodeSignalCatalog {
       'star-well' ||
       'horizon-spire' => ExpeditionNodeSignalTone.lumen,
       'spectrum-observatory' => ExpeditionNodeSignalTone.lumen,
+      'second-dawn-threshold' => ExpeditionNodeSignalTone.lumen,
       _ => ExpeditionNodeSignalTone.neutral,
     };
   }
@@ -319,6 +322,8 @@ class _ExpeditionNodeSignalPainter extends CustomPainter {
         _paintResonancePocket(canvas, size, stroke, fine, fill);
       case ExpeditionNodeSignalKind.spectrumObservatory:
         _paintSpectrumObservatory(canvas, size, stroke, fine, fill);
+      case ExpeditionNodeSignalKind.secondDawnThreshold:
+        _paintSecondDawnThreshold(canvas, size, stroke, fine, fill);
       case ExpeditionNodeSignalKind.unknown:
         _paintUnknown(canvas, size, fine, fill);
     }
@@ -841,6 +846,34 @@ class _ExpeditionNodeSignalPainter extends CustomPainter {
     canvas.drawArc(_circle(center, size, 0.52), 0.18, 2.78, false, fine);
     canvas.drawLine(_at(size, 0.2, 0.75), _at(size, 0.8, 0.75), fine);
     _dot(canvas, center, size, 0.045, fill);
+  }
+
+  void _paintSecondDawnThreshold(
+    Canvas canvas,
+    Size size,
+    Paint stroke,
+    Paint fine,
+    Paint fill,
+  ) {
+    final Offset firstDawn = _at(size, 0.38, 0.48);
+    final Offset secondDawn = _at(size, 0.62, 0.4);
+    canvas.drawArc(
+      _circle(firstDawn, size, 0.38),
+      math.pi,
+      math.pi,
+      false,
+      fine,
+    );
+    canvas.drawArc(
+      _circle(secondDawn, size, 0.46),
+      math.pi,
+      math.pi,
+      false,
+      stroke,
+    );
+    canvas.drawLine(_at(size, 0.2, 0.66), _at(size, 0.8, 0.66), fine);
+    canvas.drawLine(_at(size, 0.5, 0.66), _at(size, 0.62, 0.4), stroke);
+    _dot(canvas, secondDawn, size, 0.052, fill);
   }
 
   Offset _at(Size size, double x, double y) {

@@ -771,6 +771,118 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldOpenAndCompleteSecondDawnEpilogueWithCalibratedSextant() {
+        activeContentVersion.set(
+                StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+        );
+        var dawnRelay = content.requireNode(
+                StarterExpeditionContent.FINAL_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(dawnRelay, 36),
+                NOW
+        );
+        UUID sextantInstanceId = UUID.fromString(
+                "dddddddd-eeee-ffff-0000-000000000002"
+        );
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                sextantInstanceId,
+                StarterInventoryContent.PRISM_SEXTANT_ID
+        );
+        equipmentService.change(new EquipmentCommand(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                EquipmentAction.EQUIP,
+                sextantInstanceId,
+                "equip-final-uncalibrated-sextant"
+        ));
+        EventResolutionCommand routeCommand = command(
+                StarterExpeditionContent.FINAL_EVENT_ID,
+                StarterExpeditionContent.SECOND_DAWN_ROUTE_CHOICE_ID,
+                "open-second-dawn"
+        );
+
+        EventChoiceUnavailableException unavailable = assertThrows(
+                EventChoiceUnavailableException.class,
+                () -> service.resolve(routeCommand)
+        );
+        assertEquals(2, unavailable.requiredUpgradeLevel());
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                sextantInstanceId,
+                StarterInventoryContent.PRISM_SEXTANT_ID,
+                2
+        );
+        EventResolutionResult opened = service.resolve(routeCommand);
+
+        assertEquals(
+                StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
+                opened.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.SECOND_DAWN_NODE_ID,
+                opened.nextNode().nodeId()
+        );
+        assertEquals(48, opened.pilot().experienceGained());
+        assertEquals(26, opened.pet().bondGained());
+        assertEquals(StarterInventoryContent.DAWN_FRAGMENT_ID,
+                opened.material().itemId());
+        assertEquals(1, opened.material().quantityGained());
+
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                opened.receiptId(),
+                NOW
+        );
+        var secondDawn = content.requireNode(
+                StarterExpeditionContent.SECOND_DAWN_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(secondDawn, 38),
+                NOW
+        );
+        EventResolutionCommand epilogueCommand = command(
+                StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                "anchor-second-dawn",
+                "complete-second-dawn"
+        );
+
+        EventResolutionResult completed = service.resolve(epilogueCommand);
+        EventResolutionResult replayed = service.resolve(epilogueCommand);
+
+        assertSame(completed, replayed);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                completed.expeditionStatus());
+        assertNull(completed.nextNode());
+        assertEquals(60, completed.pilot().experienceGained());
+        assertEquals(22, completed.pet().bondGained());
+        assertEquals(StarterInventoryContent.ION_BLOOM_ID,
+                completed.material().itemId());
+        assertEquals(2, completed.material().quantityGained());
+        assertEquals(1, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.DAWN_FRAGMENT_ID.equals(
+                        item.itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
+        assertEquals(2, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.ION_BLOOM_ID.equals(
+                        item.itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
