@@ -83,7 +83,7 @@ public class EventResolutionService {
                 inventoryService,
                 content,
                 equipmentService,
-                () -> StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
                 clock
         );
     }
@@ -109,7 +109,7 @@ public class EventResolutionService {
                         eventRepository,
                         clock
                 ),
-                () -> StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
                 clock
         );
     }

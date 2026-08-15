@@ -384,6 +384,10 @@ backend продолжает менять только compatibility pointer и 
 V18 stage-ит inactive `chapter-1-v3`: новый `storm-scriptorium` доступен только
 через server-owned choice с экипированным компасом, возвращается в основной
 маршрут и не меняет immutable v2 baseline resonance funnel.
+V19 stage-ит inactive `chapter-1-v4`: два server-owned выбора в
+`void-orchard-v1` ведут в независимые `root-memory` и `light-canopy`, каждая
+ветка имеет собственные решения и награды и возвращается к `star-well`.
+До cluster-wide activation v3-проекция сохраняет прежние choices и 20 узлов.
 
 ## 8. Конкурентность и транзакции
 

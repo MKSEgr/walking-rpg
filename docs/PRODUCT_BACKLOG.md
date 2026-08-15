@@ -70,9 +70,10 @@ midnight/timezone, permission revoke и battery evidence не выполнены
 Как пользователь, я хочу тратить ENERGY и последовательно достигать узлов экспедиции.
 
 **Статус:** реализовано для 18 основных узлов `starter-expedition-v1`,
-`resonance-pocket` и staged `chapter-1-v3` маршрута через
-`storm-scriptorium`; обе ветки возвращаются в основной путь, progress и debit
-остаются persistent/idempotent.
+`resonance-pocket`, staged `chapter-1-v3` маршрута через `storm-scriptorium`
+и staged `chapter-1-v4` развилки Сада пустоты через `root-memory` или
+`light-canopy`; все опциональные ветки возвращаются в основной путь, progress
+и debit остаются persistent/idempotent.
 
 ### US-005. Разрешить первое событие
 
@@ -370,7 +371,8 @@ metadata и unit/API/PostgreSQL/migration/widget/cache/outbox tests реализ
 
 Технически реализованы:
 
-- первая глава из 18 основных узлов и двух опциональных веток;
+- первая глава из 18 основных узлов и трёх опциональных маршрутов, последний
+  из которых разветвляется на два самостоятельных события;
 - три питомца, active selection, эволюция и навыки;
 - onboarding, задания и достижения;
 - development push provider boundary с local/test-only registration;
@@ -382,7 +384,7 @@ metadata и unit/API/PostgreSQL/migration/widget/cache/outbox tests реализ
 
 После физической device-validation и beta остаются продуктовые расширения:
 
-- дополнительные механики событий и нелинейные ветки сверх resonance/storm routes;
+- дальнейшие механики событий и нелинейные ветки сверх resonance/storm/orchard routes;
 - дополнительные recipes, rarity/upgrade mechanics и баланс material sinks;
 - production APNs / FCM;
 - background activity research с battery evidence;

@@ -130,7 +130,7 @@ public class HomeService {
                 new StarterCraftingContent(),
                 new InMemoryEquipmentRepository(),
                 new StarterEquipmentContent(),
-                () -> StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION,
                 clock
         );
     }

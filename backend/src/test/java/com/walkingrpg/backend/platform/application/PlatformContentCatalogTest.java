@@ -56,6 +56,24 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeVoidOrchardForkOnlyInChapterV4Catalog() {
+        Map<String, Object> voidOrchardCatalog = publicCatalog(
+                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
+        );
+        Map<String, Object> stormRiftCatalog = publicCatalog(
+                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v4", voidOrchardCatalog.get("contentVersion"));
+        assertEquals(22, voidOrchardCatalog.get("chapterNodes"));
+        assertEquals(20, stormRiftCatalog.get("chapterNodes"));
+        assertNotEquals(
+                voidOrchardCatalog.get("catalogDigest"),
+                stormRiftCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION
