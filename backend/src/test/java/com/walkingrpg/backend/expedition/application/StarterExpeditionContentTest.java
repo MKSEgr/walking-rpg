@@ -1,6 +1,7 @@
 package com.walkingrpg.backend.expedition.application;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventChoiceDefinition;
 import org.junit.jupiter.api.Test;
@@ -15,15 +16,28 @@ class StarterExpeditionContentTest {
 
     @Test
     void shouldGateStormRiftEntryByActiveContentVersion() {
+        AtomicInteger activationReads = new AtomicInteger();
         String chapterV2 = content.activeContentVersion(
-                StarterExpeditionContent.CONTENT_VERSION::equals
+                () -> StarterExpeditionContent.CONTENT_VERSION
         );
         String chapterV3 = content.activeContentVersion(
-                StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION::equals
+                () -> {
+                    activationReads.incrementAndGet();
+                    return StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION;
+                }
         );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
+        assertEquals(1, activationReads.get());
+        assertEquals(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION,
+                content.activeContentVersion(() -> null)
+        );
+        assertEquals(
+                StarterExpeditionContent.LEGACY_CONTENT_VERSION,
+                content.activeContentVersion(() -> "chapter-2-v1")
+        );
         assertFalse(hasStormRiftChoice(content.eventChoices(
                 StarterExpeditionContent.STORM_ARCHIVE_EVENT_ID,
                 chapterV2

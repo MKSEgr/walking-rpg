@@ -369,10 +369,11 @@ public class StarterExpeditionContent {
     }
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
-        if (activation.isActive(STORM_RIFT_CONTENT_VERSION)) {
+        String activeContentVersion = activation.activeContentVersion();
+        if (STORM_RIFT_CONTENT_VERSION.equals(activeContentVersion)) {
             return STORM_RIFT_CONTENT_VERSION;
         }
-        if (activation.isActive(CONTENT_VERSION)) {
+        if (CONTENT_VERSION.equals(activeContentVersion)) {
             return CONTENT_VERSION;
         }
         return LEGACY_CONTENT_VERSION;

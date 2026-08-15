@@ -1,5 +1,7 @@
 package com.walkingrpg.backend.expedition.infrastructure;
 
+import java.util.List;
+
 import com.walkingrpg.backend.expedition.application.ExpeditionContentActivation;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -14,15 +16,13 @@ public class JdbcExpeditionContentActivation implements ExpeditionContentActivat
     }
 
     @Override
-    public boolean isActive(String contentVersion) {
-        Boolean active = jdbcTemplate.queryForObject("""
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM content_release
-                    WHERE content_version = ?
-                      AND is_active
-                )
-                """, Boolean.class, contentVersion);
-        return Boolean.TRUE.equals(active);
+    public String activeContentVersion() {
+        List<String> versions = jdbcTemplate.queryForList("""
+                SELECT content_version
+                FROM content_release
+                WHERE is_active
+                LIMIT 1
+                """, String.class);
+        return versions.stream().findFirst().orElse(null);
     }
 }

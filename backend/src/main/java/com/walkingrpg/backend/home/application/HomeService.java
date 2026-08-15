@@ -130,7 +130,7 @@ public class HomeService {
                 new StarterCraftingContent(),
                 new InMemoryEquipmentRepository(),
                 new StarterEquipmentContent(),
-                ignored -> true,
+                () -> StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
                 clock
         );
     }

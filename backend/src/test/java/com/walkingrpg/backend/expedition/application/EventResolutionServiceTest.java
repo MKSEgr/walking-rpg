@@ -80,7 +80,7 @@ class EventResolutionServiceTest {
                 new InventoryService(inventoryRepository),
                 content,
                 equipmentService,
-                version -> version.equals(activeContentVersion.get()),
+                activeContentVersion::get,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
