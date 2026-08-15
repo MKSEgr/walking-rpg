@@ -319,6 +319,9 @@ public class PlatformContentCatalog {
     }
 
     private int chapterNodeCount(String contentVersion) {
+        if (StarterExpeditionContent.supportsSecondDawnRoute(contentVersion)) {
+            return StarterExpeditionContent.SECOND_DAWN_NODE_COUNT;
+        }
         if (StarterExpeditionContent.supportsPrismSextantRoute(contentVersion)) {
             return StarterExpeditionContent.PRISM_SEXTANT_NODE_COUNT;
         }

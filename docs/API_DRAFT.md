@@ -530,6 +530,17 @@ spectrum-observatory-v1 (chapter-1-v6)
   trace-second-dawn → требует prism-sextant уровня 2 в NAVIGATION,
                       +46 pilot XP, +24 pet bond, +3 dawn-fragment,
                       возврат к horizon-spire
+
+dawn-relay-v1 (chapter-1-v7)
+  open-second-dawn  → требует prism-sextant уровня 2 в NAVIGATION,
+                      +48 pilot XP, +26 pet bond, +1 dawn-fragment,
+                      переход к optional second-dawn-threshold
+
+second-dawn-threshold-v1
+  anchor-second-dawn → +60 pilot XP, +22 pet bond, +2 ion-bloom,
+                       завершение экспедиции
+  leap-beyond-dawn   → +42 pilot XP, +34 pet bond, +2 dawn-fragment,
+                       завершение экспедиции
 ```
 
 До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses

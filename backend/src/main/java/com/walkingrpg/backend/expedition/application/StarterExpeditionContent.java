@@ -26,12 +26,14 @@ public class StarterExpeditionContent {
     public static final String PRISM_SEXTANT_CONTENT_VERSION = "chapter-1-v5";
     public static final String CALIBRATED_SEXTANT_CONTENT_VERSION =
             "chapter-1-v6";
+    public static final String SECOND_DAWN_CONTENT_VERSION = "chapter-1-v7";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
     public static final int STORM_RIFT_NODE_COUNT = 20;
     public static final int VOID_ORCHARD_NODE_COUNT = 22;
     public static final int PRISM_SEXTANT_NODE_COUNT = 23;
+    public static final int SECOND_DAWN_NODE_COUNT = 24;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -72,6 +74,12 @@ public class StarterExpeditionContent {
             "trace-second-dawn";
     public static final String HORIZON_SPIRE_NODE_ID = "horizon-spire";
     public static final String FINAL_NODE_ID = "dawn-relay";
+    public static final String FINAL_EVENT_ID = "dawn-relay-v1";
+    public static final String SECOND_DAWN_ROUTE_CHOICE_ID =
+            "open-second-dawn";
+    public static final String SECOND_DAWN_NODE_ID = "second-dawn-threshold";
+    public static final String SECOND_DAWN_EVENT_ID =
+            "second-dawn-threshold-v1";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
 
@@ -130,7 +138,7 @@ public class StarterExpeditionContent {
                         "Глубина света", "Колодец возвращает эхо каждого пройденного сектора."),
                 new NodeSpec(HORIZON_SPIRE_NODE_ID, "Шпиль горизонта", 125, "horizon-spire-v1",
                         "Высота маршрута", "С вершины виден последний ретранслятор главы."),
-                new NodeSpec(FINAL_NODE_ID, "Ретранслятор рассвета", 130, "dawn-relay-v1",
+                new NodeSpec(FINAL_NODE_ID, "Ретранслятор рассвета", 130, FINAL_EVENT_ID,
                         "Первый рассвет", "Ретранслятор готов открыть путь к следующей главе.")
         );
 
@@ -144,7 +152,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    CALIBRATED_SEXTANT_CONTENT_VERSION,
+                    SECOND_DAWN_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -313,6 +321,36 @@ public class StarterExpeditionContent {
         starWellChoices.add(prismSextantRouteChoice(inventoryContent));
         choices.put(STAR_WELL_EVENT_ID, List.copyOf(starWellChoices));
 
+        NodeSpec secondDawnSpec = new NodeSpec(
+                SECOND_DAWN_NODE_ID,
+                "Порог второго рассвета",
+                60,
+                SECOND_DAWN_EVENT_ID,
+                "Свет за пределом главы",
+                "Ретранслятор открыл короткое окно в ещё не нанесённый на карту сектор."
+        );
+        ExpeditionDefinition secondDawnDefinition = definition(secondDawnSpec);
+        definitions.add(secondDawnDefinition);
+        byId.put(secondDawnDefinition.currentNodeId(), secondDawnDefinition);
+        byEvent.put(secondDawnDefinition.event().eventId(), secondDawnDefinition);
+        choices.put(
+                SECOND_DAWN_EVENT_ID,
+                secondDawnChoices(inventoryContent)
+        );
+
+        choiceNext.put(
+                new EventChoiceKey(
+                        FINAL_EVENT_ID,
+                        SECOND_DAWN_ROUTE_CHOICE_ID
+                ),
+                secondDawnDefinition
+        );
+        List<ExpeditionEventChoiceDefinition> dawnRelayChoices = new ArrayList<>(
+                choices.get(FINAL_EVENT_ID)
+        );
+        dawnRelayChoices.add(secondDawnRouteChoice(inventoryContent));
+        choices.put(FINAL_EVENT_ID, List.copyOf(dawnRelayChoices));
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -358,7 +396,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                CALIBRATED_SEXTANT_CONTENT_VERSION
+                SECOND_DAWN_CONTENT_VERSION
         );
     }
 
@@ -395,7 +433,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                CALIBRATED_SEXTANT_CONTENT_VERSION
+                SECOND_DAWN_CONTENT_VERSION
         );
     }
 
@@ -426,7 +464,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, CALIBRATED_SEXTANT_CONTENT_VERSION);
+        return eventChoices(eventId, SECOND_DAWN_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -484,6 +522,14 @@ public class StarterExpeditionContent {
                     ))
                     .toList();
         }
+        if (FINAL_EVENT_ID.equals(eventId)
+                && !supportsSecondDawnRoute(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !SECOND_DAWN_ROUTE_CHOICE_ID.equals(
+                            choice.choiceId()
+                    ))
+                    .toList();
+        }
         return choices;
     }
 
@@ -500,7 +546,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return CALIBRATED_SEXTANT_CONTENT_VERSION;
+        return SECOND_DAWN_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -509,6 +555,9 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (SECOND_DAWN_CONTENT_VERSION.equals(activeContentVersion)) {
+            return SECOND_DAWN_CONTENT_VERSION;
+        }
         if (CALIBRATED_SEXTANT_CONTENT_VERSION.equals(activeContentVersion)) {
             return CALIBRATED_SEXTANT_CONTENT_VERSION;
         }
@@ -532,36 +581,45 @@ public class StarterExpeditionContent {
                 || STORM_RIFT_CONTENT_VERSION.equals(contentVersion)
                 || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
                 || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsStormRift(String contentVersion) {
         return STORM_RIFT_CONTENT_VERSION.equals(contentVersion)
                 || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
                 || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsVoidOrchardFork(String contentVersion) {
         return VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
                 || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPrismSextantRoute(String contentVersion) {
         return PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+                || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsCalibratedSextantChoice(
             String contentVersion
     ) {
-        return CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion);
+        return CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsSecondDawnRoute(String contentVersion) {
+        return SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                CALIBRATED_SEXTANT_CONTENT_VERSION,
+                SECOND_DAWN_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -887,6 +945,69 @@ public class StarterExpeditionContent {
                                 ),
                                 2,
                                 "Экипируйте откалиброванный призматический секстант уровня 2, чтобы увидеть второй рассвет."
+                        )
+                )
+        );
+    }
+
+    private ExpeditionEventChoiceDefinition secondDawnRouteChoice(
+            StarterInventoryContent inventoryContent
+    ) {
+        return new ExpeditionEventChoiceDefinition(
+                SECOND_DAWN_ROUTE_CHOICE_ID,
+                "Направить ретранслятор ко второму рассвету",
+                "Совместить точную карту секстанта с финальным импульсом главы.",
+                "Окно второго рассвета",
+                "Откалиброванный секстант удержал новый горизонт, пока ретранслятор открывал короткий переход.",
+                48,
+                26,
+                reward(
+                        inventoryContent,
+                        StarterInventoryContent.DAWN_FRAGMENT_ID,
+                        1
+                ),
+                new ExpeditionChoiceEquipmentRequirement(
+                        StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                        "Навигационный прибор",
+                        inventoryContent.require(
+                                StarterInventoryContent.PRISM_SEXTANT_ID
+                        ),
+                        2,
+                        "Экипируйте откалиброванный призматический секстант уровня 2, чтобы открыть второй рассвет."
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> secondDawnChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        "anchor-second-dawn",
+                        "Закрепить новый горизонт",
+                        "Нанести устойчивые точки перехода на карту следующей главы.",
+                        "Граница нанесена на карту",
+                        "Пилот закрепил координаты второго рассвета и собрал ионный заряд с опорных маяков.",
+                        60,
+                        22,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ION_BLOOM_ID,
+                                2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        "leap-beyond-dawn",
+                        "Шагнуть за рассвет вместе",
+                        "Доверить питомцу первый след в ещё не исследованном секторе.",
+                        "Шаг за пределы",
+                        "Питомец удержал живой след за границей карты и вернул два фрагмента нового света.",
+                        42,
+                        34,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                2
                         )
                 )
         );

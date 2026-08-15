@@ -110,6 +110,24 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeSecondDawnEpilogueOnlyInChapterV7Catalog() {
+        Map<String, Object> secondDawnCatalog = publicCatalog(
+                StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+        );
+        Map<String, Object> calibratedCatalog = publicCatalog(
+                StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v7", secondDawnCatalog.get("contentVersion"));
+        assertEquals(24, secondDawnCatalog.get("chapterNodes"));
+        assertEquals(23, calibratedCatalog.get("chapterNodes"));
+        assertNotEquals(
+                secondDawnCatalog.get("catalogDigest"),
+                calibratedCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

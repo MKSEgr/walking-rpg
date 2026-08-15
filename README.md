@@ -44,8 +44,8 @@
   schema-v1 JSON evidence, недоступный в release build;
 - server-authoritative ENERGY economy;
 - production `GET /api/v1/home`;
-- content-driven первая глава `chapter-1-v2` с 18 основными узлами,
-  опциональным `resonance-pocket` и server-owned choices;
+- content-driven первая глава с 18 основными и staged optional узлами вплоть
+  до эпилога `second-dawn-threshold`, equipment-gated server-owned choices;
 - guided «Первый путь» от разрешения шагов до первого решения;
 - server-authoritative funnel и time-to-value первого пути для alpha cohort,
   включая отдельное подтверждение показа первого результата;

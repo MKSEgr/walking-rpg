@@ -112,7 +112,22 @@ void main() {
         'trace-second-dawn',
         EventChoiceSignalKind.prism,
       );
-      expect(currentPairCount, 43);
+      expectChoice(
+        'dawn-relay-v1',
+        'open-second-dawn',
+        EventChoiceSignalKind.prism,
+      );
+      expectChoice(
+        'second-dawn-threshold-v1',
+        'anchor-second-dawn',
+        EventChoiceSignalKind.chart,
+      );
+      expectChoice(
+        'second-dawn-threshold-v1',
+        'leap-beyond-dawn',
+        EventChoiceSignalKind.companion,
+      );
+      expect(currentPairCount, 46);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

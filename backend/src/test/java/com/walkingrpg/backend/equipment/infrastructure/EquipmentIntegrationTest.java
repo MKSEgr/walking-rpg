@@ -276,6 +276,49 @@ class EquipmentIntegrationTest {
         assertTrue(available.expedition().unlockedEvent().choices().stream()
                 .anyMatch(choice -> StarterExpeditionContent
                         .CALIBRATED_SEXTANT_CHOICE_ID.equals(choice.choiceId())));
+
+        jdbcTemplate.update("""
+                UPDATE expedition_progress
+                SET current_node_id = ?,
+                    progress_energy = 130,
+                    required_energy = 130,
+                    status = 'EVENT_READY',
+                    unlocked_event_id = ?,
+                    version = 36,
+                    updated_at = now()
+                WHERE user_id = ?
+                """,
+                StarterExpeditionContent.FINAL_NODE_ID,
+                StarterExpeditionContent.FINAL_EVENT_ID,
+                userId
+        );
+        HomeSnapshotResponse v6Finale = homeService.getSnapshot(new HomeQuery(
+                userId,
+                LocalDate.of(2026, 8, 15)
+        ));
+        assertFalse(v6Finale.expedition().unlockedEvent().choices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .SECOND_DAWN_ROUTE_CHOICE_ID.equals(choice.choiceId())));
+        assertFalse(v6Finale.expedition().unlockedEvent().lockedChoices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .SECOND_DAWN_ROUTE_CHOICE_ID.equals(choice.choiceId())));
+
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v7'
+                """));
+        HomeSnapshotResponse v7Finale = homeService.getSnapshot(new HomeQuery(
+                userId,
+                LocalDate.of(2026, 8, 15)
+        ));
+        assertTrue(v7Finale.expedition().unlockedEvent().choices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .SECOND_DAWN_ROUTE_CHOICE_ID.equals(choice.choiceId())));
     }
 
     @Test

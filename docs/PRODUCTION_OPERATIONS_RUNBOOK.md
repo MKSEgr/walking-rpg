@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V22 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V23 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -482,6 +482,39 @@ level-1 sextant and available only for an equipped level-2/RARE sextant. After
 resolution, verify `3 × dawn-fragment` and the rejoin at `horizon-spire`.
 Before backend rollback, require zero persisted `trace-second-dawn` results;
 otherwise use a forward fix on a v6-capable binary.
+
+## `chapter-1-v7` activation
+
+Flyway V23 stages `chapter-1-v7` inactive and leaves the current release
+unchanged. Activate it only after every pre-V23 backend has drained. V7 adds
+`open-second-dawn` to `dawn-relay-v1` and one optional node, increasing the
+catalog from 23 to 24 nodes.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v7",
+  "releaseNotes": "Первая глава: откалиброванный секстант открывает эпилог второго рассвета.",
+  "content": {
+    "contentVersion": "chapter-1-v7",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 24,
+    "topology": "second-dawn-epilogue-v1"
+  }
+}
+```
+
+At `dawn-relay-v1`, verify the choice is absent on v6, locked for an
+unequipped or level-1 sextant on v7, and available only for an equipped
+level-2/RARE sextant. Resolve it and verify `+1 dawn-fragment` plus the handoff
+to `second-dawn-threshold`. Both epilogue choices must finish the expedition;
+verify `anchor-second-dawn` grants `2 × ion-bloom` and
+`leap-beyond-dawn` grants `2 × dawn-fragment`.
+
+Do not roll back to a pre-V23 binary while any user is at
+`second-dawn-threshold` or while v7 event results need replay/delivery. Stop
+activation and use a forward fix once the new route has persisted user state.
 
 ## Rollback
 

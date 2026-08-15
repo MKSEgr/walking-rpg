@@ -83,7 +83,7 @@ public class EventResolutionService {
                 inventoryService,
                 content,
                 equipmentService,
-                () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
                 clock
         );
     }
@@ -109,7 +109,7 @@ public class EventResolutionService {
                         eventRepository,
                         clock
                 ),
-                () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
                 clock
         );
     }

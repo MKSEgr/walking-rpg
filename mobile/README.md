@@ -310,6 +310,13 @@ read cache и перечитывает home, где materials уже списа�
 поля трактуется как level 1. Mobile показывает server-owned lock reason, но не
 рассчитывает доступность локально.
 
+При active `chapter-1-v7` финальный `dawn-relay-v1` получает
+`open-second-dawn` с тем же requirement уровня 2. Доступный choice переводит к
+optional `second-dawn-threshold`; оба решения этого эпилога завершают
+экспедицию после server-owned награды. Mobile использует exact-ID visual marks
+для финального choice, нового узла и обоих решений, не выводя identity из
+переведённого текста.
+
 Карточка **«Снаряжение»** показывает authoritative slot `NAVIGATION` и
 позволяет экипировать/снять созданный `resonance-compass` или
 `prism-sextant`; второй прибор атомарно заменяет первый. `EQUIPMENT`

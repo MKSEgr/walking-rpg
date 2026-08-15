@@ -331,6 +331,11 @@ legacy mobile видел только основной маршрут. Event ser
 requirement под authoritative expedition lock. Начиная с `chapter-1-v6`
 requirement может дополнительно задавать минимальный server-owned upgrade level:
 `trace-second-dawn` требует экипированный `prism-sextant` уровня 2/RARE.
+В `chapter-1-v7` тот же requirement защищает финальный
+`open-second-dawn`: выбор в `dawn-relay-v1` переводит к optional
+`second-dawn-threshold`. Обычные финальные choices по-прежнему завершают
+экспедицию сразу, а оба решения нового узла завершают её после собственных
+server-owned наград.
 
 ## 7. Схема данных
 
@@ -420,6 +425,10 @@ V22 stage-ит inactive `chapter-1-v6` с теми же 23 узлами. В
 экипированный секстант минимум уровня 2, даёт три `dawn-fragment` и возвращает
 к `horizon-spire`. V5 не получает новый choice; activation выполняется только
 после drain pre-V22 backend instances.
+V23 stage-ит inactive `chapter-1-v7` с 24 узлами. В `dawn-relay-v1`
+появляется `open-second-dawn`: choice требует экипированный секстант минимум
+уровня 2 и ведёт к `second-dawn-threshold`. V1-V6 сохраняют прежний финал и
+catalog; activation выполняется только после drain pre-V23 backend instances.
 
 ## 8. Конкурентность и транзакции
 
