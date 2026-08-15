@@ -91,6 +91,7 @@ POST /api/v1/expeditions/{expeditionId}/advance
 POST /api/v1/events/{eventId}/resolve
 POST /api/v1/event-results/{receiptId}/acknowledge
 POST /api/v1/crafting/recipes/{recipeId}/craft
+POST /api/v1/item-upgrades/{upgradeId}/apply
 POST /api/v1/equipment/slots/{slotId}/equip
 POST /api/v1/equipment/slots/{slotId}/unequip
 POST /api/v1/platform/commands
@@ -103,7 +104,7 @@ Versioned JSON store находится в application-support directory. Зап
 ```text
 ACTIVITY — синхронизация шагов
 GAMEPLAY — продвижение экспедиции, решение/подтверждение события, crafting,
-           equipment и изменяющие state platform-команды
+           item upgrade, equipment и изменяющие state platform-команды
 TELEMETRY — RECORD_EXPERIMENT_EXPOSURE
 ```
 
@@ -294,6 +295,14 @@ Home дополнительно возвращает versioned `craftingRecipes`
 outbox. Успешный response не применяется оптимистично: mobile инвалидирует
 read cache и перечитывает home, где materials уже списаны, unique item добавлен,
 а recipe имеет статус `CRAFTED`. Cached snapshot показывает recipe read-only.
+
+При active `chapter-1-v5` Home также возвращает `itemUpgrades`. Карточка
+**«Калибровка снаряжения»** показывает состояния
+`LOCKED|MISSING_MATERIALS|READY|COMPLETED`, стоимость и переход
+`1/UNCOMMON → 2/RARE`. `ITEM_UPGRADE` сохраняет только server-owned
+`upgradeId` и исходный key в GAMEPLAY outbox. Успешный response не меняет
+локальный inventory: cache инвалидируется, после чего Home перечитывает тот же
+`itemInstanceId`, новый level/rarity и остатки материалов.
 
 Карточка **«Снаряжение»** показывает authoritative slot `NAVIGATION` и
 позволяет экипировать/снять созданный `resonance-compass` или
@@ -525,6 +534,7 @@ Unit/widget tests покрывают:
   activity/expedition/event/platform;
 - persist-before-send/restart replay receipt для bodyless event-result ACK;
 - persist-before-send/restart replay crafting recipe с исходным key;
+- persist-before-send/restart replay item upgrade с исходным key;
 - persist-before-send/restart replay equip/unequip с исходным payload/key;
 - FIFO внутри lanes, порядок ACTIVITY → GAMEPLAY и параллельная TELEMETRY;
 - temporary/backup/corruption recovery файлового store;
@@ -538,8 +548,8 @@ Unit/widget tests покрывают:
 - `sync → reload authoritative home`;
 - переход первого события на второй узел;
 - resolution второго события, material preview/result и inventory rendering;
-- parsing/UI/API error mapping crafting recipe, unique item и authoritative
-  reload; read-only cached crafting;
+- parsing/UI/API error mapping crafting recipe/item upgrade, unique item,
+  level/rarity и authoritative reload; read-only cached mutations;
 - полный widget flow locked choice → equip → unlocked choice → unequip →
   locked choice без optimistic state;
 - compass widget telemetry только после viewport exposure при selected/current/

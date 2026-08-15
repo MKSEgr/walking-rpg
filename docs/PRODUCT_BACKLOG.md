@@ -375,6 +375,32 @@ beta validation.
 metadata и unit/API/PostgreSQL/migration/widget/cache/outbox tests реализованы.
 Пороговые значения и продуктовые выводы остаются внешней beta validation.
 
+### US-017. Откалибровать уникальный прибор
+
+Как пользователь, я хочу постоянно улучшить созданный призматический секстант,
+чтобы поздние материалы главы давали следующую игровую цель.
+
+Критерии:
+
+- `item-upgrade-v1` и стоимость принадлежат server content и доступны только с
+  active `chapter-1-v5`;
+- `prism-sextant-calibration-v1` расходует `2 × echo-thread`,
+  `1 × prism-dust`, `1 × ion-bloom` и меняет тот же instance с
+  `1/UNCOMMON` на `2/RARE`;
+- все ingredient checks предшествуют debit, а item, ledger и immutable response
+  сохраняются атомарно;
+- exact replay не списывает материалы второй раз; новый key после завершения
+  получает стабильный state conflict;
+- новая mutation сериализуется с crafting/equipment/expedition, блокируется
+  pending event receipt и входит в export, account deletion и backup/restore;
+- Home возвращает additive `LOCKED|MISSING_MATERIALS|READY|COMPLETED`, а mobile
+  хранит `ITEM_UPGRADE` в GAMEPLAY outbox и перечитывает authoritative Home без
+  optimistic mutation.
+
+**Статус:** backend/mobile/Flyway V21, unit/API/PostgreSQL/migration/widget и
+outbox tests реализованы. Дополнительные уровни и баланс material sink требуют
+beta/economy evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -388,12 +414,13 @@ metadata и unit/API/PostgreSQL/migration/widget/cache/outbox tests реализ
 - cohort funnel crafting/equipment/resonance с authoritative gameplay stages;
 - read-only offline cache валидированных `home` / `platform` snapshots;
 - расход материалов, два crafting recipe, два persistent unique item и
-  server-authoritative single-item equipment slot.
+  server-authoritative single-item equipment slot;
+- первая server-authoritative калибровка unique item с уровнем и rarity.
 
 После физической device-validation и beta остаются продуктовые расширения:
 
 - дальнейшие механики событий и нелинейные ветки сверх resonance/storm/orchard routes;
-- rarity/upgrade mechanics и баланс material sinks;
+- дополнительные upgrade levels/rarity tiers и баланс material sinks;
 - production APNs / FCM;
 - background activity research с battery evidence;
 - настройка баланса по фактическим retention/economy данным.

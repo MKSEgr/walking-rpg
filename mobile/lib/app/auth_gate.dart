@@ -28,6 +28,7 @@ import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart'
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
+import 'package:walking_rpg_mobile/features/item_upgrade/data/item_upgrade_api_client.dart';
 import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_screen.dart';
@@ -235,6 +236,12 @@ class _AuthenticatedApplicationShellState
       transport: transport,
       cache: widget.cache,
     );
+    final ItemUpgradeApiClient itemUpgradeClient = ItemUpgradeApiClient(
+      baseUri: configuration.apiBaseUri,
+      userId: widget.identity.ownerId,
+      transport: transport,
+      cache: widget.cache,
+    );
     final EquipmentApiClient equipmentClient = EquipmentApiClient(
       baseUri: configuration.apiBaseUri,
       userId: widget.identity.ownerId,
@@ -259,6 +266,7 @@ class _AuthenticatedApplicationShellState
       eventSender: eventClient.resolve,
       eventResultAcknowledgementSender: eventClient.acknowledge,
       craftingSender: craftingClient.craft,
+      itemUpgradeSender: itemUpgradeClient.apply,
       equipmentSender: equipmentClient.change,
       platformSender: _platformClient.execute,
     );

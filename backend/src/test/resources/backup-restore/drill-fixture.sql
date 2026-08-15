@@ -436,7 +436,9 @@ INSERT INTO unique_inventory_item (
     recipe_id,
     recipe_version,
     version,
-    crafted_at
+    rarity,
+    crafted_at,
+    upgraded_at
 ) VALUES (
     '70000000-0000-0000-0000-000000000001',
     'backup-drill-user',
@@ -444,7 +446,19 @@ INSERT INTO unique_inventory_item (
     'resonance-compass-v1',
     '1',
     1,
-    '2026-07-30T10:00:36Z'
+    'COMMON',
+    '2026-07-30T10:00:36Z',
+    NULL
+), (
+    '70000000-0000-0000-0000-000000000002',
+    'backup-drill-user',
+    'prism-sextant',
+    'prism-sextant-v1',
+    '1',
+    2,
+    'RARE',
+    '2026-07-30T10:00:36Z',
+    '2026-07-30T10:00:38Z'
 );
 
 INSERT INTO processed_crafting_command (
@@ -508,6 +522,82 @@ INSERT INTO processed_crafting_ingredient (
     2,
     2,
     3
+);
+
+INSERT INTO processed_item_upgrade_command (
+    user_id,
+    upgrade_id,
+    idempotency_key,
+    request_fingerprint,
+    content_version,
+    upgrade_version,
+    upgrade_name,
+    item_instance_id,
+    item_id,
+    item_name,
+    item_description,
+    previous_level,
+    result_level,
+    result_rarity,
+    upgraded_at,
+    server_time,
+    created_at
+) VALUES (
+    'backup-drill-user',
+    'prism-sextant-calibration-v1',
+    'backup-drill-upgrade',
+    repeat('7', 64),
+    'item-upgrade-v1',
+    '1',
+    'Калибровать призматический секстант',
+    '70000000-0000-0000-0000-000000000002',
+    'prism-sextant',
+    'Призматический секстант',
+    'Synthetic refined navigation instrument.',
+    1,
+    2,
+    'RARE',
+    '2026-07-30T10:00:38Z',
+    '2026-07-30T10:00:38Z',
+    '2026-07-30T10:00:38Z'
+);
+
+INSERT INTO processed_item_upgrade_ingredient (
+    user_id,
+    upgrade_id,
+    idempotency_key,
+    item_id,
+    item_name,
+    quantity_consumed,
+    quantity_after,
+    inventory_version
+) VALUES (
+    'backup-drill-user',
+    'prism-sextant-calibration-v1',
+    'backup-drill-upgrade',
+    'echo-thread',
+    'Нить эха',
+    2,
+    0,
+    3
+), (
+    'backup-drill-user',
+    'prism-sextant-calibration-v1',
+    'backup-drill-upgrade',
+    'ion-bloom',
+    'Ионный цветок',
+    1,
+    0,
+    2
+), (
+    'backup-drill-user',
+    'prism-sextant-calibration-v1',
+    'backup-drill-upgrade',
+    'prism-dust',
+    'Призматическая пыль',
+    1,
+    0,
+    2
 );
 
 INSERT INTO equipment_slot_state (

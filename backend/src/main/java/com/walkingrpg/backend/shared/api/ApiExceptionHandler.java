@@ -30,6 +30,10 @@ import com.walkingrpg.backend.expedition.application.ExpeditionValidationExcepti
 import com.walkingrpg.backend.expedition.application.PendingEventResultException;
 import com.walkingrpg.backend.home.application.HomeQueryValidationException;
 import com.walkingrpg.backend.inventory.domain.InventoryLedgerConflictException;
+import com.walkingrpg.backend.itemupgrade.application.ItemUpgradeIdempotencyConflictException;
+import com.walkingrpg.backend.itemupgrade.application.ItemUpgradeNotFoundException;
+import com.walkingrpg.backend.itemupgrade.application.ItemUpgradeStateConflictException;
+import com.walkingrpg.backend.itemupgrade.application.ItemUpgradeValidationException;
 import com.walkingrpg.backend.platform.application.PlatformIdempotencyConflictException;
 import com.walkingrpg.backend.platform.application.PlatformStateConflictException;
 import com.walkingrpg.backend.platform.application.PlatformValidationException;
@@ -97,6 +101,13 @@ public class ApiExceptionHandler {
         return fieldValidation(exception.getMessage(), exception.field());
     }
 
+    @ExceptionHandler(ItemUpgradeValidationException.class)
+    ResponseEntity<ApiErrorResponse> handleItemUpgradeValidation(
+            ItemUpgradeValidationException exception
+    ) {
+        return fieldValidation(exception.getMessage(), exception.field());
+    }
+
     @ExceptionHandler(EquipmentValidationException.class)
     ResponseEntity<ApiErrorResponse> handleEquipmentValidation(
             EquipmentValidationException exception
@@ -135,6 +146,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(CraftingIdempotencyConflictException.class)
     ResponseEntity<ApiErrorResponse> handleCraftingIdempotencyConflict(
             CraftingIdempotencyConflictException exception
+    ) {
+        return idempotencyConflict(exception.getMessage());
+    }
+
+    @ExceptionHandler(ItemUpgradeIdempotencyConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleItemUpgradeIdempotencyConflict(
+            ItemUpgradeIdempotencyConflictException exception
     ) {
         return idempotencyConflict(exception.getMessage());
     }
@@ -186,6 +204,18 @@ public class ApiExceptionHandler {
                 "CRAFTING_RECIPE_NOT_FOUND",
                 exception.getMessage(),
                 Map.of("recipeId", exception.recipeId())
+        );
+    }
+
+    @ExceptionHandler(ItemUpgradeNotFoundException.class)
+    ResponseEntity<ApiErrorResponse> handleItemUpgradeNotFound(
+            ItemUpgradeNotFoundException exception
+    ) {
+        return error(
+                HttpStatus.NOT_FOUND,
+                "ITEM_UPGRADE_NOT_FOUND",
+                exception.getMessage(),
+                Map.of("upgradeId", exception.upgradeId())
         );
     }
 
@@ -344,6 +374,22 @@ public class ApiExceptionHandler {
                 Map.of(
                         "recipeId", exception.recipeId(),
                         "itemId", exception.itemId()
+                )
+        );
+    }
+
+    @ExceptionHandler(ItemUpgradeStateConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleItemUpgradeStateConflict(
+            ItemUpgradeStateConflictException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "ITEM_UPGRADE_STATE_CONFLICT",
+                exception.getMessage(),
+                Map.of(
+                        "upgradeId", exception.upgradeId(),
+                        "itemId", exception.itemId(),
+                        "reason", exception.reason()
                 )
         );
     }

@@ -564,7 +564,8 @@ public class PlatformAdminService {
         ));
         export.put("uniqueInventory", jdbcTemplate.queryForList(
                 "SELECT item_instance_id, item_id, recipe_id, recipe_version, "
-                        + "version, crafted_at FROM unique_inventory_item "
+                        + "version, rarity, crafted_at, upgraded_at "
+                        + "FROM unique_inventory_item "
                         + "WHERE user_id = ? ORDER BY crafted_at, item_id",
                 normalized
         ));
@@ -582,6 +583,23 @@ public class PlatformAdminService {
                         + "quantity_consumed, quantity_after, inventory_version "
                         + "FROM processed_crafting_ingredient "
                         + "WHERE user_id = ? ORDER BY recipe_id, idempotency_key, item_id",
+                normalized
+        ));
+        export.put("itemUpgradeOperations", jdbcTemplate.queryForList(
+                "SELECT upgrade_id, idempotency_key, content_version, "
+                        + "upgrade_version, upgrade_name, item_instance_id, "
+                        + "item_id, item_name, item_description, previous_level, "
+                        + "result_level, result_rarity, upgraded_at, server_time, "
+                        + "created_at FROM processed_item_upgrade_command "
+                        + "WHERE user_id = ? ORDER BY created_at",
+                normalized
+        ));
+        export.put("itemUpgradeIngredients", jdbcTemplate.queryForList(
+                "SELECT upgrade_id, idempotency_key, item_id, item_name, "
+                        + "quantity_consumed, quantity_after, inventory_version "
+                        + "FROM processed_item_upgrade_ingredient "
+                        + "WHERE user_id = ? "
+                        + "ORDER BY upgrade_id, idempotency_key, item_id",
                 normalized
         ));
         export.put("equipment", jdbcTemplate.queryForList(

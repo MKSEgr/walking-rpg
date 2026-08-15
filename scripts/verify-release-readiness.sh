@@ -93,6 +93,7 @@ for file in \
   backend/src/main/resources/db/migration/V18__storm_rift_route.sql \
   backend/src/main/resources/db/migration/V19__void_orchard_fork.sql \
   backend/src/main/resources/db/migration/V20__prism_sextant_route.sql \
+  backend/src/main/resources/db/migration/V21__prism_sextant_refinement.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -109,6 +110,7 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/migration/StormRiftRouteMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/VoidOrchardForkMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/PrismSextantRouteMigrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/migration/PrismSextantRefinementMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/EquipmentAndResonanceRouteMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ContentReleaseActivationHistoryMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/CosmeticSlotStateMigrationTest.java \
@@ -545,7 +547,7 @@ grep -Fq 'SERVER_RESERVED_EVENT_NAMES' backend/src/main/java/com/walkingrpg/back
 grep -Fq '@Component("dbHealthContributor")' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'bounded database readiness must keep the canonical db contributor id'
 grep -Fq 'connection.isValid(VALIDATION_TIMEOUT_SECONDS)' backend/src/main/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicator.java || fail 'database readiness validation must use a non-zero bounded timeout'
 MANUAL_TIMEOUTS=$(grep -RFo 'JdbcStatementTimeouts.apply(jdbcTemplate, statement);' backend/src/main/java | wc -l | tr -d ' ')
-[ "$MANUAL_TIMEOUTS" -eq 10 ] || fail 'all ten manual advisory-lock statements must inherit the JDBC timeout'
+[ "$MANUAL_TIMEOUTS" -eq 11 ] || fail 'all eleven manual advisory-lock statements must inherit the JDBC timeout'
 grep -Fq 'platform-publication-serialization' backend/src/main/java/com/walkingrpg/backend/platform/infrastructure/PlatformPublicationTransactionLock.java || fail 'platform publications must keep their dedicated transaction-lock boundary'
 grep -Fq 'shouldSerializeConcurrentRemoteConfigPublications' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve remote-config publication serialization'
 grep -Fq 'shouldSerializeConcurrentContentPublications' backend/src/test/java/com/walkingrpg/backend/platform/infrastructure/PlatformPersistenceIntegrationTest.java || fail 'PostgreSQL coverage must preserve content publication serialization'
@@ -692,8 +694,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 20:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V20: {versions}')
+if versions != expected or not versions or versions[-1] < 21:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V21: {versions}')
 print('Flyway versions:', versions)
 PY
 

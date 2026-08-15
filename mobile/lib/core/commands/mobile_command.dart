@@ -17,6 +17,7 @@ enum MobileCommandType {
     MobileCommandLane.gameplay,
   ),
   crafting('CRAFTING', MobileCommandLane.gameplay),
+  itemUpgrade('ITEM_UPGRADE', MobileCommandLane.gameplay),
   equipment('EQUIPMENT', MobileCommandLane.gameplay),
   platformCommand('PLATFORM_COMMAND', MobileCommandLane.gameplay);
 

@@ -14,6 +14,7 @@ import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 
@@ -161,6 +162,58 @@ void main() {
     expect(replayedKey, 'craft-original');
     expect(store.snapshot, isEmpty);
   });
+
+  test(
+    'item upgrade replays the same definition and key after restart',
+    () async {
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+      final MobileCommandRuntime firstRuntime = _runtime(
+        store: store,
+        itemUpgradeSender:
+            ({
+              required String upgradeId,
+              required String idempotencyKey,
+            }) async => throw StateError('response lost after item upgrade'),
+      );
+
+      await expectLater(
+        firstRuntime.upgradeItem(
+          upgradeId: 'prism-sextant-calibration-v1',
+          idempotencyKey: 'upgrade-original',
+        ),
+        throwsStateError,
+      );
+      expect(store.snapshot.single.type, MobileCommandType.itemUpgrade);
+      expect(store.snapshot.single.lane, MobileCommandLane.gameplay);
+      expect(store.snapshot.single.payload, <String, Object?>{
+        'upgradeId': 'prism-sextant-calibration-v1',
+      });
+      expect(store.snapshot.single.state, MobileCommandState.pending);
+
+      String? replayedUpgradeId;
+      String? replayedKey;
+      final MobileCommandRuntime restartedRuntime = _runtime(
+        store: store,
+        itemUpgradeSender:
+            ({
+              required String upgradeId,
+              required String idempotencyKey,
+            }) async {
+              replayedUpgradeId = upgradeId;
+              replayedKey = idempotencyKey;
+              return _itemUpgradeResult();
+            },
+      );
+
+      final MobileCommandReplayReport report = await restartedRuntime
+          .replayPending();
+
+      expect(report.succeeded, 1);
+      expect(replayedUpgradeId, 'prism-sextant-calibration-v1');
+      expect(replayedKey, 'upgrade-original');
+      expect(store.snapshot, isEmpty);
+    },
+  );
 
   test(
     'equipment replays the same desired state and key after restart',
@@ -1210,6 +1263,7 @@ MobileCommandRuntime _runtime({
   EventCommandSender? eventSender,
   EventResultAcknowledgementSender? eventResultAcknowledgementSender,
   CraftingCommandSender? craftingSender,
+  ItemUpgradeCommandSender? itemUpgradeSender,
   EquipmentCommandSender? equipmentSender,
   PlatformCommandSender? platformSender,
 }) {
@@ -1244,6 +1298,10 @@ MobileCommandRuntime _runtime({
         craftingSender ??
         ({required String recipeId, required String idempotencyKey}) async =>
             _craftingResult(),
+    itemUpgradeSender:
+        itemUpgradeSender ??
+        ({required String upgradeId, required String idempotencyKey}) async =>
+            _itemUpgradeResult(),
     equipmentSender:
         equipmentSender ??
         ({
@@ -1380,6 +1438,49 @@ CraftingResult _craftingResult() {
       description: 'Уникальный прибор.',
       version: 1,
       craftedAt: '2026-07-26T10:00:00Z',
+    ),
+    serverTime: '2026-07-26T10:00:00Z',
+  );
+}
+
+ItemUpgradeResult _itemUpgradeResult() {
+  return const ItemUpgradeResult(
+    contentVersion: 'item-upgrade-v1',
+    upgradeId: 'prism-sextant-calibration-v1',
+    upgradeVersion: '1',
+    upgradeName: 'Откалибровать призматический секстант',
+    consumedIngredients: <ItemUpgradeIngredientResult>[
+      ItemUpgradeIngredientResult(
+        itemId: 'echo-thread',
+        name: 'Нить эха',
+        quantityConsumed: 2,
+        quantityAfter: 0,
+        version: 2,
+      ),
+      ItemUpgradeIngredientResult(
+        itemId: 'ion-bloom',
+        name: 'Ионный цветок',
+        quantityConsumed: 1,
+        quantityAfter: 0,
+        version: 2,
+      ),
+      ItemUpgradeIngredientResult(
+        itemId: 'prism-dust',
+        name: 'Призматическая пыль',
+        quantityConsumed: 1,
+        quantityAfter: 0,
+        version: 2,
+      ),
+    ],
+    upgradedItem: UpgradedUniqueItem(
+      itemInstanceId: '44444444-4444-4444-4444-444444444444',
+      itemId: 'prism-sextant',
+      name: 'Призматический секстант',
+      description: 'Уникальный прибор.',
+      previousLevel: 1,
+      upgradeLevel: 2,
+      rarity: 'RARE',
+      upgradedAt: '2026-07-26T10:00:00Z',
     ),
     serverTime: '2026-07-26T10:00:00Z',
   );

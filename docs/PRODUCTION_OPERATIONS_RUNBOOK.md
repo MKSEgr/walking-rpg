@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V20 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V21 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -431,6 +431,30 @@ SELECT
 ```
 
 Once either count is non-zero, use a forward fix on a v5-capable binary.
+
+## Prism Sextant refinement rollout
+
+Flyway V21 adds `rarity`/`upgraded_at` to unique inventory and immutable
+item-upgrade command tables. Existing level-1 prism sextants are backfilled as
+`UNCOMMON`; a compatibility trigger also normalizes level-1 sextants written by
+a pre-V21 backend during a rolling deploy. Deploy V21-capable backends before
+exposing the mobile action. The definition remains hidden unless
+`chapter-1-v5` is active.
+
+Verify the schema and invariant after migration:
+
+```sql
+SELECT version, rarity, count(*)
+FROM unique_inventory_item
+WHERE item_id = 'prism-sextant'
+GROUP BY version, rarity
+ORDER BY version, rarity;
+```
+
+Only `1/UNCOMMON` and `2/RARE` are valid. A backend rollback leaves the additive
+V21 schema and refined items in place; do not undo the migration. Disable the
+new mobile/backend action and use a forward fix if persisted refinement rows
+need correction.
 
 ## Rollback
 

@@ -22,6 +22,7 @@ import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
+import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 
 void main() {
   testWidgets('home loading waits for an accepted route snapshot', (
@@ -965,9 +966,7 @@ void main() {
     expect(sentRecipeId, 'resonance-compass-v1');
     expect(sentKey, 'craft-key');
     expect(loads, 2);
-    final Finder uniqueItem = find.text(
-      'Резонансный компас · уникальный предмет',
-    );
+    final Finder uniqueItem = find.text('Резонансный компас · уровень 1');
     await tester.scrollUntilVisible(
       uniqueItem,
       200,
@@ -1045,6 +1044,66 @@ void main() {
     expect(find.text('Создание недоступно офлайн'), findsOneWidget);
     expect(craftCalls, 0);
     expect(impressionCalls, 0);
+  });
+
+  testWidgets('home upgrades item and reloads authoritative rarity', (
+    WidgetTester tester,
+  ) async {
+    int loads = 0;
+    String? sentUpgradeId;
+    String? sentKey;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async {
+            loads += 1;
+            return loads == 1 ? _upgradeReady() : _upgradeCompleted();
+          },
+          idempotencyKeyFactory: () => 'upgrade-key',
+          itemUpgradeExecutor:
+              ({
+                required String upgradeId,
+                required String idempotencyKey,
+              }) async {
+                sentUpgradeId = upgradeId;
+                sentKey = idempotencyKey;
+                return _itemUpgradeResult();
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder upgradeButton = find.byKey(
+      const Key('item-upgrade-prism-sextant-calibration-v1'),
+    );
+    await tester.scrollUntilVisible(
+      upgradeButton,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(upgradeButton).onPressed, isNotNull);
+
+    await tester.tap(upgradeButton);
+    await tester.pumpAndSettle();
+
+    expect(sentUpgradeId, 'prism-sextant-calibration-v1');
+    expect(sentKey, 'upgrade-key');
+    expect(loads, 2);
+    final Finder completed = find.text('Улучшение завершено');
+    await tester.scrollUntilVisible(
+      completed,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(completed, findsOneWidget);
+    expect(
+      find.text('Призматический секстант · уровень 2 · RARE'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('equipment unlocks and unequip locks resonance route', (
@@ -1802,7 +1861,11 @@ HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
   );
 }
 
-HomeSnapshot _craftingReady({CachedReadMetadata? cacheMetadata}) {
+HomeSnapshot _craftingReady({
+  CachedReadMetadata? cacheMetadata,
+  List<HomeInventoryItem>? inventory,
+  List<HomeItemUpgrade> itemUpgrades = const <HomeItemUpgrade>[],
+}) {
   return HomeSnapshot(
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
@@ -1831,26 +1894,154 @@ HomeSnapshot _craftingReady({CachedReadMetadata? cacheMetadata}) {
     petName: 'Искра',
     petLevel: 1,
     petBond: 23,
+    inventory:
+        inventory ??
+        const <HomeInventoryItem>[
+          HomeInventoryItem(
+            itemId: 'lumen-shard',
+            name: 'Люминовый осколок',
+            description: 'Стабильный фрагмент светового ядра.',
+            quantity: 2,
+            version: 1,
+          ),
+          HomeInventoryItem(
+            itemId: 'echo-thread',
+            name: 'Нить эха',
+            description: 'Тонкая нить сохранённого сигнала.',
+            quantity: 1,
+            version: 1,
+          ),
+        ],
+    craftingRecipes: const <HomeCraftingRecipe>[_readyRecipe],
+    itemUpgrades: itemUpgrades,
+    cacheMetadata: cacheMetadata,
+  );
+}
+
+HomeSnapshot _upgradeReady() {
+  return _craftingReady(
     inventory: const <HomeInventoryItem>[
       HomeInventoryItem(
-        itemId: 'lumen-shard',
-        name: 'Люминовый осколок',
-        description: 'Стабильный фрагмент светового ядра.',
-        quantity: 2,
+        itemId: 'prism-sextant',
+        name: 'Призматический секстант',
+        description: 'Уникальный навигационный прибор.',
+        quantity: 1,
         version: 1,
+        kind: 'UNIQUE',
+        itemInstanceId: '44444444-4444-4444-4444-444444444444',
+        rarity: 'UNCOMMON',
       ),
       HomeInventoryItem(
         itemId: 'echo-thread',
         name: 'Нить эха',
         description: 'Тонкая нить сохранённого сигнала.',
+        quantity: 2,
+        version: 1,
+      ),
+      HomeInventoryItem(
+        itemId: 'ion-bloom',
+        name: 'Ионный цветок',
+        description: 'Заряженный цветок.',
+        quantity: 1,
+        version: 1,
+      ),
+      HomeInventoryItem(
+        itemId: 'prism-dust',
+        name: 'Призматическая пыль',
+        description: 'Пыль преломлённого света.',
         quantity: 1,
         version: 1,
       ),
     ],
-    craftingRecipes: const <HomeCraftingRecipe>[_readyRecipe],
-    cacheMetadata: cacheMetadata,
+    itemUpgrades: const <HomeItemUpgrade>[_readyItemUpgrade],
   );
 }
+
+HomeSnapshot _upgradeCompleted() {
+  return _craftingReady(
+    inventory: const <HomeInventoryItem>[
+      HomeInventoryItem(
+        itemId: 'prism-sextant',
+        name: 'Призматический секстант',
+        description: 'Уникальный навигационный прибор.',
+        quantity: 1,
+        version: 2,
+        kind: 'UNIQUE',
+        itemInstanceId: '44444444-4444-4444-4444-444444444444',
+        rarity: 'RARE',
+      ),
+    ],
+    itemUpgrades: const <HomeItemUpgrade>[
+      HomeItemUpgrade(
+        upgradeId: 'prism-sextant-calibration-v1',
+        upgradeVersion: '1',
+        name: 'Откалибровать призматический секстант',
+        description: 'Закрепить карту невидимого спектра.',
+        status: 'COMPLETED',
+        targetItemId: 'prism-sextant',
+        targetItemName: 'Призматический секстант',
+        requiredLevel: 1,
+        resultingLevel: 2,
+        initialRarity: 'UNCOMMON',
+        resultingRarity: 'RARE',
+        ingredients: <HomeItemUpgradeIngredient>[
+          HomeItemUpgradeIngredient(
+            itemId: 'echo-thread',
+            name: 'Нить эха',
+            requiredQuantity: 2,
+            availableQuantity: 0,
+          ),
+          HomeItemUpgradeIngredient(
+            itemId: 'ion-bloom',
+            name: 'Ионный цветок',
+            requiredQuantity: 1,
+            availableQuantity: 0,
+          ),
+          HomeItemUpgradeIngredient(
+            itemId: 'prism-dust',
+            name: 'Призматическая пыль',
+            requiredQuantity: 1,
+            availableQuantity: 0,
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+const HomeItemUpgrade _readyItemUpgrade = HomeItemUpgrade(
+  upgradeId: 'prism-sextant-calibration-v1',
+  upgradeVersion: '1',
+  name: 'Откалибровать призматический секстант',
+  description: 'Закрепить карту невидимого спектра.',
+  status: 'READY',
+  targetItemId: 'prism-sextant',
+  targetItemName: 'Призматический секстант',
+  requiredLevel: 1,
+  resultingLevel: 2,
+  initialRarity: 'UNCOMMON',
+  resultingRarity: 'RARE',
+  ingredients: <HomeItemUpgradeIngredient>[
+    HomeItemUpgradeIngredient(
+      itemId: 'echo-thread',
+      name: 'Нить эха',
+      requiredQuantity: 2,
+      availableQuantity: 2,
+    ),
+    HomeItemUpgradeIngredient(
+      itemId: 'ion-bloom',
+      name: 'Ионный цветок',
+      requiredQuantity: 1,
+      availableQuantity: 1,
+    ),
+    HomeItemUpgradeIngredient(
+      itemId: 'prism-dust',
+      name: 'Призматическая пыль',
+      requiredQuantity: 1,
+      availableQuantity: 1,
+    ),
+  ],
+);
 
 HomeSnapshot _craftingCompleted() {
   final HomeSnapshot ready = _craftingReady();
@@ -2356,6 +2547,49 @@ CraftingResult _craftingResult() {
       description: 'Уникальный прибор.',
       version: 1,
       craftedAt: '2026-07-26T06:00:00Z',
+    ),
+    serverTime: '2026-07-26T06:00:00Z',
+  );
+}
+
+ItemUpgradeResult _itemUpgradeResult() {
+  return const ItemUpgradeResult(
+    contentVersion: 'item-upgrade-v1',
+    upgradeId: 'prism-sextant-calibration-v1',
+    upgradeVersion: '1',
+    upgradeName: 'Откалибровать призматический секстант',
+    consumedIngredients: <ItemUpgradeIngredientResult>[
+      ItemUpgradeIngredientResult(
+        itemId: 'echo-thread',
+        name: 'Нить эха',
+        quantityConsumed: 2,
+        quantityAfter: 0,
+        version: 2,
+      ),
+      ItemUpgradeIngredientResult(
+        itemId: 'ion-bloom',
+        name: 'Ионный цветок',
+        quantityConsumed: 1,
+        quantityAfter: 0,
+        version: 2,
+      ),
+      ItemUpgradeIngredientResult(
+        itemId: 'prism-dust',
+        name: 'Призматическая пыль',
+        quantityConsumed: 1,
+        quantityAfter: 0,
+        version: 2,
+      ),
+    ],
+    upgradedItem: UpgradedUniqueItem(
+      itemInstanceId: '44444444-4444-4444-4444-444444444444',
+      itemId: 'prism-sextant',
+      name: 'Призматический секстант',
+      description: 'Уникальный навигационный прибор.',
+      previousLevel: 1,
+      upgradeLevel: 2,
+      rarity: 'RARE',
+      upgradedAt: '2026-07-26T06:00:00Z',
     ),
     serverTime: '2026-07-26T06:00:00Z',
   );

@@ -24,6 +24,7 @@ void main() {
     expect(snapshot.petEvolutionStage, 0);
     expect(snapshot.inventory, isEmpty);
     expect(snapshot.craftingRecipes, isEmpty);
+    expect(snapshot.itemUpgrades, isEmpty);
   });
 
   test('production response maps ready event choices and progression', () {
@@ -259,6 +260,94 @@ void main() {
     expect(snapshot.craftingRecipes.single.isCrafted, isTrue);
     expect(snapshot.craftingRecipes.single.canCraft, isFalse);
     expect(snapshot.craftingRecipes.single.ingredients, hasLength(2));
+  });
+
+  test('item upgrade and unique rarity are mapped additively', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['inventory'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'itemInstanceId': '33333333-3333-3333-3333-333333333333',
+        'itemId': 'prism-sextant',
+        'name': 'Призматический секстант',
+        'description': 'Уникальный навигационный прибор.',
+        'quantity': 1,
+        'version': 1,
+        'kind': 'UNIQUE',
+        'rarity': 'UNCOMMON',
+      },
+    ];
+    response['itemUpgrades'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'upgradeId': 'prism-sextant-calibration-v1',
+        'upgradeVersion': '1',
+        'name': 'Откалибровать призматический секстант',
+        'description': 'Закрепить карту невидимого спектра.',
+        'status': 'READY',
+        'targetItemId': 'prism-sextant',
+        'targetItemName': 'Призматический секстант',
+        'requiredLevel': 1,
+        'resultingLevel': 2,
+        'initialRarity': 'UNCOMMON',
+        'resultingRarity': 'RARE',
+        'ingredients': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'itemId': 'echo-thread',
+            'name': 'Нить эха',
+            'requiredQuantity': 2,
+            'availableQuantity': 2,
+          },
+          <String, dynamic>{
+            'itemId': 'ion-bloom',
+            'name': 'Ионный цветок',
+            'requiredQuantity': 1,
+            'availableQuantity': 1,
+          },
+          <String, dynamic>{
+            'itemId': 'prism-dust',
+            'name': 'Призматическая пыль',
+            'requiredQuantity': 1,
+            'availableQuantity': 1,
+          },
+        ],
+      },
+    ];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.inventory.single.rarity, 'UNCOMMON');
+    expect(snapshot.itemUpgrades.single.canApply, isTrue);
+    expect(snapshot.itemUpgrades.single.resultingLevel, 2);
+    expect(snapshot.itemUpgrades.single.resultingRarity, 'RARE');
+    expect(snapshot.itemUpgrades.single.ingredients, hasLength(3));
+  });
+
+  test('unknown item upgrade status is rejected', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['itemUpgrades'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'upgradeId': 'prism-sextant-calibration-v1',
+        'upgradeVersion': '1',
+        'name': 'Откалибровать призматический секстант',
+        'description': 'Закрепить карту невидимого спектра.',
+        'status': 'FUTURE',
+        'targetItemId': 'prism-sextant',
+        'targetItemName': 'Призматический секстант',
+        'requiredLevel': 1,
+        'resultingLevel': 2,
+        'initialRarity': 'UNCOMMON',
+        'resultingRarity': 'RARE',
+        'ingredients': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'itemId': 'echo-thread',
+            'name': 'Нить эха',
+            'requiredQuantity': 2,
+            'availableQuantity': 2,
+          },
+        ],
+      },
+    ];
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('equipment and gated event choice are mapped additively', () {
