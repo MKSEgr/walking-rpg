@@ -83,7 +83,7 @@ public class EventResolutionService {
                 inventoryService,
                 content,
                 equipmentService,
-                ignored -> true,
+                () -> StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
                 clock
         );
     }
@@ -109,7 +109,7 @@ public class EventResolutionService {
                         eventRepository,
                         clock
                 ),
-                ignored -> true,
+                () -> StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
                 clock
         );
     }

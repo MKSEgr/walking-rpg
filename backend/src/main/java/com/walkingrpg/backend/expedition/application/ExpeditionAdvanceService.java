@@ -60,7 +60,7 @@ public class ExpeditionAdvanceService {
                 eventResolutionRepository,
                 economyService,
                 content,
-                ignored -> true,
+                () -> StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION,
                 clock
         );
     }
