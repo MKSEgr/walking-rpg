@@ -142,13 +142,15 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        quantity,
                        version,
                        item_instance_id,
-                       equipped_slot_id
+                       equipped_slot_id,
+                       rarity
                 FROM (
                     SELECT item_id,
                            quantity,
                            version,
                            NULL::uuid AS item_instance_id,
-                           NULL::varchar AS equipped_slot_id
+                           NULL::varchar AS equipped_slot_id,
+                           NULL::varchar AS rarity
                     FROM inventory_stack
                     WHERE user_id = ?
                       AND quantity > 0
@@ -157,7 +159,8 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                            1 AS quantity,
                            item.version,
                            item.item_instance_id,
-                           equipment.slot_id AS equipped_slot_id
+                           equipment.slot_id AS equipped_slot_id,
+                           item.rarity
                     FROM unique_inventory_item item
                     LEFT JOIN equipment_slot_state equipment
                       ON equipment.user_id = item.user_id
@@ -170,7 +173,8 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 resultSet.getLong("quantity"),
                 resultSet.getLong("version"),
                 resultSet.getObject("item_instance_id", java.util.UUID.class),
-                resultSet.getString("equipped_slot_id")
+                resultSet.getString("equipped_slot_id"),
+                resultSet.getString("rarity")
         ), userId, userId);
     }
 }

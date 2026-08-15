@@ -42,9 +42,10 @@
 Экспорт включает `firstJourneyMilestones` с milestone, source, минимальными
 игровыми attributes и timestamps, а также `uniqueInventory`,
 `craftingOperations` и `craftingIngredients` без access tokens или локального
-mobile outbox. Persistent loadout и его exact command snapshots входят в
-`equipment` и `equipmentOperations`; cosmetic loadout входит в
-`cosmeticEquipment`.
+mobile outbox. Refined unique item содержит `rarity`/`upgradedAt`, а immutable
+операции входят в `itemUpgradeOperations` и `itemUpgradeIngredients`.
+Persistent loadout и его exact command snapshots входят в `equipment` и
+`equipmentOperations`; cosmetic loadout входит в `cosmeticEquipment`.
 До формирования файла backend на одном database connection захватывает
 session-level subject lock, затем на том же connection начинает read-only
 `REPEATABLE_READ`. Первый statement возвращает PostgreSQL
@@ -290,7 +291,8 @@ Authorization: Bearer <access-token>
 - `inventory[]` содержит актуальные material stacks и unique items;
   `kind=MATERIAL|UNIQUE`, unique item всегда имеет `quantity=1`; для unique
   item additive fields содержат persistent `itemInstanceId`, допустимый
-  `equippableSlotId` и nullable текущий `equippedSlotId`;
+  `equippableSlotId`, nullable текущий `equippedSlotId` и nullable для legacy
+  client `rarity`;
 - `equipment[]` — additive server-owned projection slot state; `status`
   принимает `EMPTY|EQUIPPED`, а `item` присутствует только для `EQUIPPED`;
 - в `expedition.unlockedEvent` legacy-массив `choices` содержит только
@@ -300,6 +302,9 @@ Authorization: Bearer <access-token>
 - `craftingRecipes[]` — additive server-owned projection; `status` принимает
   `READY`, `MISSING_MATERIALS` или `CRAFTED`, а available quantities отражают
   тот же repeatable-read snapshot, что и inventory;
+- `itemUpgrades[]` — additive server-owned projection active content-а;
+  `status` принимает `LOCKED`, `MISSING_MATERIALS`, `READY` или `COMPLETED`,
+  содержит target level/rarity и authoritative ingredient quantities;
 - `pendingEventResult` — nullable top-level receipt единственного
   неподтверждённого результата текущей экспедиции; он содержит immutable
   choice/reward snapshot и nullable `nextNode`;
@@ -768,6 +773,67 @@ Content-Type: application/json
 - неизвестный recipe возвращает `404 CRAFTING_RECIPE_NOT_FOUND`;
 - mobile хранит `recipeId`/key в GAMEPLAY outbox и после успеха перечитывает
   authoritative `GET /home`.
+
+## `POST /api/v1/item-upgrades/{upgradeId}/apply`
+
+Атомарно применяет server-owned улучшение к существующему unique item. В
+`item-upgrade-v1` definition `prism-sextant-calibration-v1` доступен только с
+active `chapter-1-v5`:
+
+```text
+2 × echo-thread + 1 × prism-dust + 1 × ion-bloom
+→ тот же prism-sextant: 1/UNCOMMON → 2/RARE
+```
+
+```json
+{
+  "idempotencyKey": "upgrade-prism-sextant-1"
+}
+```
+
+```json
+{
+  "contentVersion": "item-upgrade-v1",
+  "upgradeId": "prism-sextant-calibration-v1",
+  "upgradeVersion": "1",
+  "upgradeName": "Откалибровать призматический секстант",
+  "consumedIngredients": [
+    {
+      "itemId": "echo-thread",
+      "name": "Нить эха",
+      "quantityConsumed": 2,
+      "quantityAfter": 0,
+      "version": 2
+    }
+  ],
+  "upgradedItem": {
+    "itemInstanceId": "11111111-2222-3333-4444-555555555555",
+    "itemId": "prism-sextant",
+    "name": "Призматический секстант",
+    "description": "Уникальный навигационный прибор.",
+    "previousLevel": 1,
+    "upgradeLevel": 2,
+    "rarity": "RARE",
+    "upgradedAt": "2026-08-15T08:00:00Z"
+  },
+  "serverTime": "2026-08-15T08:00:00Z"
+}
+```
+
+Правила:
+
+- request не принимает item instance, стоимость, level или rarity;
+- user/crafting lock и общий expedition lock сериализуют command с crafting,
+  equipment, advance/resolution и account deletion;
+- target row и все material rows блокируются; shortages возвращают
+  `409 INSUFFICIENT_MATERIALS` без частичной мутации;
+- exact replay возвращает исходный item/ingredient/timestamp snapshot до
+  content и pending-result gates;
+- отсутствующий, несовместимый или уже улучшенный target возвращает
+  `409 ITEM_UPGRADE_STATE_CONFLICT` с stable `details.reason`;
+- неизвестный/inactive upgrade возвращает `404 ITEM_UPGRADE_NOT_FOUND`;
+- mobile хранит `upgradeId`/key как `ITEM_UPGRADE` в GAMEPLAY outbox и после
+  успеха перечитывает authoritative `GET /home`.
 
 ## Equipment
 

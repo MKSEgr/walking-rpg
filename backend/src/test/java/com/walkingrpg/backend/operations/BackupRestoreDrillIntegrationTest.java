@@ -95,8 +95,8 @@ class BackupRestoreDrillIntegrationTest {
         assertEquals(latestRepositoryVersion, sourceFlywayVersion);
         assertTrue(
                 MigrationVersion.fromVersion(latestRepositoryVersion)
-                        .compareTo(MigrationVersion.fromVersion("20")) >= 0,
-                "The drill must cover Flyway V1-V20 or later"
+                        .compareTo(MigrationVersion.fromVersion("21")) >= 0,
+                "The drill must cover Flyway V1-V21 or later"
         );
 
         try (Connection sourceConnection = connection(SOURCE)) {
@@ -446,6 +446,20 @@ class BackupRestoreDrillIntegrationTest {
                 FROM processed_crafting_ingredient
                 WHERE user_id = 'backup-drill-user'
                   AND recipe_id = 'resonance-compass-v1'
+                """));
+        assertEquals(1, scalarLong(connection, """
+                SELECT count(*)
+                FROM processed_item_upgrade_command
+                WHERE user_id = 'backup-drill-user'
+                  AND upgrade_id = 'prism-sextant-calibration-v1'
+                  AND result_level = 2
+                  AND result_rarity = 'RARE'
+                """));
+        assertEquals(3, scalarLong(connection, """
+                SELECT count(*)
+                FROM processed_item_upgrade_ingredient
+                WHERE user_id = 'backup-drill-user'
+                  AND upgrade_id = 'prism-sextant-calibration-v1'
                 """));
         assertEquals(1, scalarLong(connection, """
                 SELECT count(*)

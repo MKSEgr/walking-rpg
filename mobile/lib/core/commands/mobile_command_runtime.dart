@@ -19,6 +19,8 @@ import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/item_upgrade/data/item_upgrade_api_client.dart';
+import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 
@@ -49,6 +51,11 @@ typedef CraftingCommandSender =
       required String recipeId,
       required String idempotencyKey,
     });
+typedef ItemUpgradeCommandSender =
+    Future<ItemUpgradeResult> Function({
+      required String upgradeId,
+      required String idempotencyKey,
+    });
 typedef EquipmentCommandSender =
     Future<EquipmentResult> Function({
       required String slotId,
@@ -72,6 +79,7 @@ final class MobileCommandRuntime {
     required EventCommandSender eventSender,
     EventResultAcknowledgementSender? eventResultAcknowledgementSender,
     CraftingCommandSender? craftingSender,
+    ItemUpgradeCommandSender? itemUpgradeSender,
     EquipmentCommandSender? equipmentSender,
     PlatformCommandSender? platformSender,
     MobileCommandClock? clock,
@@ -83,6 +91,7 @@ final class MobileCommandRuntime {
        _eventSender = eventSender,
        _eventResultAcknowledgementSender = eventResultAcknowledgementSender,
        _craftingSender = craftingSender,
+       _itemUpgradeSender = itemUpgradeSender,
        _equipmentSender = equipmentSender,
        _platformSender = platformSender,
        _clock = clock ?? DateTime.now,
@@ -96,6 +105,8 @@ final class MobileCommandRuntime {
     final EventApiClient eventClient = EventApiClient.fromEnvironment();
     final CraftingApiClient craftingClient =
         CraftingApiClient.fromEnvironment();
+    final ItemUpgradeApiClient itemUpgradeClient =
+        ItemUpgradeApiClient.fromEnvironment();
     final EquipmentApiClient equipmentClient =
         EquipmentApiClient.fromEnvironment();
     final PlatformApiClient platformClient =
@@ -108,6 +119,7 @@ final class MobileCommandRuntime {
       eventSender: eventClient.resolve,
       eventResultAcknowledgementSender: eventClient.acknowledge,
       craftingSender: craftingClient.craft,
+      itemUpgradeSender: itemUpgradeClient.apply,
       equipmentSender: equipmentClient.change,
       platformSender: platformClient.execute,
     );
@@ -120,6 +132,7 @@ final class MobileCommandRuntime {
   final EventCommandSender _eventSender;
   final EventResultAcknowledgementSender? _eventResultAcknowledgementSender;
   final CraftingCommandSender? _craftingSender;
+  final ItemUpgradeCommandSender? _itemUpgradeSender;
   final EquipmentCommandSender? _equipmentSender;
   final PlatformCommandSender? _platformSender;
   final MobileCommandClock _clock;
@@ -250,6 +263,24 @@ final class MobileCommandRuntime {
           normalizedRecipeId,
         ]),
         payload: <String, Object?>{'recipeId': normalizedRecipeId},
+      ),
+    );
+  }
+
+  Future<ItemUpgradeResult> upgradeItem({
+    required String upgradeId,
+    required String idempotencyKey,
+  }) {
+    final String normalizedUpgradeId = _requireText(upgradeId, 'upgradeId');
+    return _runOpenOperation<ItemUpgradeResult>(
+      () => _submit<ItemUpgradeResult>(
+        type: MobileCommandType.itemUpgrade,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.itemUpgrade.wireName,
+          normalizedUpgradeId,
+        ]),
+        payload: <String, Object?>{'upgradeId': normalizedUpgradeId},
       ),
     );
   }
@@ -747,6 +778,16 @@ final class MobileCommandRuntime {
           recipeId: recipeId,
           idempotencyKey: command.idempotencyKey,
         );
+      case MobileCommandType.itemUpgrade:
+        final ItemUpgradeCommandSender? sender = _itemUpgradeSender;
+        if (sender == null) {
+          throw const MobileCommandPayloadException();
+        }
+        final String upgradeId = _payloadString(command, 'upgradeId');
+        return sender(
+          upgradeId: upgradeId,
+          idempotencyKey: command.idempotencyKey,
+        );
       case MobileCommandType.equipment:
         final EquipmentCommandSender? sender = _equipmentSender;
         if (sender == null) {
@@ -868,6 +909,9 @@ final class MobileCommandRuntime {
       return error.statusCode;
     }
     if (error is CraftingApiException) {
+      return error.statusCode;
+    }
+    if (error is ItemUpgradeApiException) {
       return error.statusCode;
     }
     if (error is EquipmentApiException) {

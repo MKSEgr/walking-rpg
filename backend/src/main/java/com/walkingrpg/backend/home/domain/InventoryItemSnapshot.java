@@ -11,7 +11,8 @@ public record InventoryItemSnapshot(
         String kind,
         UUID itemInstanceId,
         String equippableSlotId,
-        String equippedSlotId
+        String equippedSlotId,
+        String rarity
 ) {
     public InventoryItemSnapshot(
             String itemId,
@@ -28,6 +29,7 @@ public record InventoryItemSnapshot(
                 quantity,
                 version,
                 kind,
+                null,
                 null,
                 null,
                 null
@@ -50,6 +52,32 @@ public record InventoryItemSnapshot(
                 "MATERIAL",
                 null,
                 null,
+                null,
+                null
+        );
+    }
+
+    public InventoryItemSnapshot(
+            String itemId,
+            String name,
+            String description,
+            long quantity,
+            long version,
+            String kind,
+            UUID itemInstanceId,
+            String equippableSlotId,
+            String equippedSlotId
+    ) {
+        this(
+                itemId,
+                name,
+                description,
+                quantity,
+                version,
+                kind,
+                itemInstanceId,
+                equippableSlotId,
+                equippedSlotId,
                 null
         );
     }

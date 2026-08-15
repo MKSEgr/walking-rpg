@@ -31,6 +31,8 @@ import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_clien
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
+import 'package:walking_rpg_mobile/features/item_upgrade/data/item_upgrade_api_client.dart';
+import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
 
 typedef HomeSnapshotLoader = Future<HomeSnapshot> Function();
@@ -54,6 +56,11 @@ typedef EventResultAcknowledger =
 typedef CraftingExecutor =
     Future<CraftingResult> Function({
       required String recipeId,
+      required String idempotencyKey,
+    });
+typedef ItemUpgradeExecutor =
+    Future<ItemUpgradeResult> Function({
+      required String upgradeId,
       required String idempotencyKey,
     });
 typedef EquipmentExecutor =
@@ -99,6 +106,7 @@ class HomeScreen extends StatefulWidget {
     this.eventResolver,
     this.eventResultAcknowledger,
     this.crafter,
+    this.itemUpgradeExecutor,
     this.equipmentExecutor,
     this.impressionRecorder,
     this.idempotencyKeyFactory,
@@ -115,6 +123,7 @@ class HomeScreen extends StatefulWidget {
   final EventResolver? eventResolver;
   final EventResultAcknowledger? eventResultAcknowledger;
   final CraftingExecutor? crafter;
+  final ItemUpgradeExecutor? itemUpgradeExecutor;
   final EquipmentExecutor? equipmentExecutor;
   final HomeImpressionRecorder? impressionRecorder;
   final IdempotencyKeyFactory? idempotencyKeyFactory;
@@ -140,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isResolving = false;
   bool _isAcknowledging = false;
   bool _isCrafting = false;
+  bool _isUpgrading = false;
   bool _isChangingEquipment = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<State<StatefulWidget>> _routeChoiceViewportKey =
@@ -163,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _isResolving ||
       _isAcknowledging ||
       _isCrafting ||
+      _isUpgrading ||
       _isChangingEquipment;
 
   bool get _canPresentCompassImpressions =>
@@ -313,6 +324,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       isResolving: _isResolving,
                       isAcknowledging: _isAcknowledging,
                       isCrafting: _isCrafting,
+                      isUpgrading: _isUpgrading,
                       isChangingEquipment: _isChangingEquipment,
                       onAdvance: () => _advance(snapshot),
                       onResolve: (HomeEventChoice choice) =>
@@ -321,6 +333,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           _acknowledgeEventResult(snapshot),
                       onCraft: (HomeCraftingRecipe recipe) =>
                           _craft(snapshot, recipe),
+                      onUpgrade: (HomeItemUpgrade upgrade) =>
+                          _upgrade(snapshot, upgrade),
                       onEquip: (HomeInventoryItem item) =>
                           _equip(snapshot, item),
                       onUnequip: (HomeEquipmentSlot slot) =>
@@ -700,6 +714,55 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _upgrade(HomeSnapshot snapshot, HomeItemUpgrade upgrade) async {
+    if (_isBusy ||
+        snapshot.isCached ||
+        snapshot.pendingEventResult != null ||
+        !upgrade.canApply) {
+      return;
+    }
+
+    setState(() {
+      _isUpgrading = true;
+    });
+    try {
+      final ItemUpgradeExecutor executor =
+          widget.itemUpgradeExecutor ??
+          ItemUpgradeApiClient.fromEnvironment().apply;
+      final ItemUpgradeResult result = await executor(
+        upgradeId: upgrade.upgradeId,
+        idempotencyKey: _nextKey(upgrade.upgradeId),
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${result.upgradedItem.name}: уровень '
+            '${result.upgradedItem.upgradeLevel}, '
+            '${result.upgradedItem.rarity}',
+          ),
+        ),
+      );
+      setState(() {
+        _snapshotFuture = _startSnapshotLoad();
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось улучшить предмет: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpgrading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _equip(HomeSnapshot snapshot, HomeInventoryItem item) async {
     final String? slotId = item.equippableSlotId;
     final String? itemInstanceId = item.itemInstanceId;
@@ -853,11 +916,13 @@ class _HomeBody extends StatelessWidget {
     required this.isResolving,
     required this.isAcknowledging,
     required this.isCrafting,
+    required this.isUpgrading,
     required this.isChangingEquipment,
     required this.onAdvance,
     required this.onResolve,
     required this.onAcknowledgeEventResult,
     required this.onCraft,
+    required this.onUpgrade,
     required this.onEquip,
     required this.onUnequip,
     required this.onRefresh,
@@ -873,11 +938,13 @@ class _HomeBody extends StatelessWidget {
   final bool isResolving;
   final bool isAcknowledging;
   final bool isCrafting;
+  final bool isUpgrading;
   final bool isChangingEquipment;
   final VoidCallback onAdvance;
   final ValueChanged<HomeEventChoice> onResolve;
   final VoidCallback onAcknowledgeEventResult;
   final ValueChanged<HomeCraftingRecipe> onCraft;
+  final ValueChanged<HomeItemUpgrade> onUpgrade;
   final ValueChanged<HomeInventoryItem> onEquip;
   final ValueChanged<HomeEquipmentSlot> onUnequip;
   final VoidCallback onRefresh;
@@ -904,6 +971,7 @@ class _HomeBody extends StatelessWidget {
         isResolving ||
         isAcknowledging ||
         isCrafting ||
+        isUpgrading ||
         isChangingEquipment;
     final bool gameplayActionBlocked =
         busy || pendingEventResult != null || readOnly;
@@ -992,7 +1060,8 @@ class _HomeBody extends StatelessWidget {
                   _ExpeditionTeam(snapshot: snapshot),
                   if (snapshot.equipment.isNotEmpty ||
                       snapshot.inventory.isNotEmpty ||
-                      snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
+                      snapshot.craftingRecipes.isNotEmpty ||
+                      snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 24),
                     const ExpeditionSectionTitle(
                       title: 'Полевой комплект',
@@ -1029,6 +1098,16 @@ class _HomeBody extends StatelessWidget {
                       busy: gameplayActionBlocked,
                       crafting: isCrafting,
                       onCraft: onCraft,
+                    ),
+                  ],
+                  if (snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 12),
+                    _ItemUpgradeCard(
+                      upgrades: snapshot.itemUpgrades,
+                      readOnly: readOnly,
+                      busy: gameplayActionBlocked,
+                      upgrading: isUpgrading,
+                      onUpgrade: onUpgrade,
                     ),
                   ],
                   const SizedBox(height: 24),
@@ -2066,7 +2145,8 @@ class _InventoryCard extends StatelessWidget {
               layoutKey: 'inventory-item-layout-${item.itemId}',
               itemId: item.itemId,
               title: item.isUnique
-                  ? '${item.name} · уникальный предмет'
+                  ? '${item.name} · уровень ${item.version}'
+                        '${item.rarity == null ? '' : ' · ${item.rarity}'}'
                   : '${item.name} × ${item.quantity}',
               description: item.description,
               highlighted: item.isUnique || item.isEquipped,
@@ -2261,6 +2341,155 @@ class _CraftingRecipeView extends StatelessWidget {
                 ? 'Предмет уже создан'
                 : recipe.canCraft
                 ? 'Создать предмет'
+                : 'Не хватает материалов',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ItemUpgradeCard extends StatelessWidget {
+  const _ItemUpgradeCard({
+    required this.upgrades,
+    required this.readOnly,
+    required this.busy,
+    required this.upgrading,
+    required this.onUpgrade,
+  });
+
+  final List<HomeItemUpgrade> upgrades;
+  final bool readOnly;
+  final bool busy;
+  final bool upgrading;
+  final ValueChanged<HomeItemUpgrade> onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpeditionPanel(
+      key: const Key('item-upgrade-card'),
+      tone: ExpeditionPanelTone.resonance,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const ExpeditionSectionTitle(
+            title: 'Калибровка снаряжения',
+            subtitle: 'Постоянно усиливай созданные приборы.',
+            icon: Icons.auto_fix_high_outlined,
+          ),
+          const SizedBox(height: 12),
+          for (int index = 0; index < upgrades.length; index++) ...<Widget>[
+            _ItemUpgradeView(
+              upgrade: upgrades[index],
+              readOnly: readOnly,
+              busy: busy,
+              upgrading: upgrading,
+              onUpgrade: () => onUpgrade(upgrades[index]),
+            ),
+            if (index + 1 < upgrades.length) const Divider(height: 28),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemUpgradeView extends StatelessWidget {
+  const _ItemUpgradeView({
+    required this.upgrade,
+    required this.readOnly,
+    required this.busy,
+    required this.upgrading,
+    required this.onUpgrade,
+  });
+
+  final HomeItemUpgrade upgrade;
+  final bool readOnly;
+  final bool busy;
+  final bool upgrading;
+  final VoidCallback onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _IllustratedItemIdentity(
+          layoutKey: 'item-upgrade-layout-${upgrade.upgradeId}',
+          itemId: upgrade.targetItemId,
+          title: upgrade.name,
+          description: upgrade.description,
+          highlighted: upgrade.canApply || upgrade.isCompleted,
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(Icons.tune_outlined, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Уровень ${upgrade.requiredLevel} → '
+                  '${upgrade.resultingLevel}',
+                ),
+              ],
+            ),
+            Text('${upgrade.initialRarity} → ${upgrade.resultingRarity}'),
+          ],
+        ),
+        const SizedBox(height: 12),
+        for (final HomeItemUpgradeIngredient ingredient
+            in upgrade.ingredients) ...<Widget>[
+          Semantics(
+            container: true,
+            label:
+                '${ingredient.name}, ${ingredient.availableQuantity} из '
+                '${ingredient.requiredQuantity}, '
+                '${ingredient.isAvailable ? 'материала достаточно' : 'материала не хватает'}',
+            child: ExcludeSemantics(
+              child: Row(
+                children: <Widget>[
+                  ExpeditionItemEmblem(itemId: ingredient.itemId, size: 38),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(ingredient.name)),
+                  Text(
+                    '${ingredient.availableQuantity} / '
+                    '${ingredient.requiredQuantity}',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        const SizedBox(height: 8),
+        FilledButton.tonalIcon(
+          key: Key('item-upgrade-${upgrade.upgradeId}'),
+          onPressed: readOnly || busy || !upgrade.canApply ? null : onUpgrade,
+          icon: upgrading && upgrade.canApply
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(
+                  upgrade.isCompleted
+                      ? Icons.check_circle_outline
+                      : Icons.auto_fix_high_outlined,
+                ),
+          label: Text(
+            readOnly
+                ? 'Улучшение недоступно офлайн'
+                : upgrade.isCompleted
+                ? 'Улучшение завершено'
+                : upgrade.isLocked
+                ? 'Сначала создайте предмет'
+                : upgrade.canApply
+                ? 'Улучшить предмет'
                 : 'Не хватает материалов',
           ),
         ),

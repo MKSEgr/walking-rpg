@@ -36,6 +36,8 @@ import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryItemSnapshot;
+import com.walkingrpg.backend.home.domain.ItemUpgradeIngredientSnapshot;
+import com.walkingrpg.backend.home.domain.ItemUpgradeSnapshot;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
 import com.walkingrpg.backend.home.domain.PendingEventResultSnapshot;
@@ -43,6 +45,8 @@ import com.walkingrpg.backend.home.domain.PilotSnapshot;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.domain.InventoryItemDefinition;
+import com.walkingrpg.backend.itemupgrade.application.StarterItemUpgradeContent;
+import com.walkingrpg.backend.itemupgrade.domain.ItemUpgradeDefinition;
 import com.walkingrpg.backend.shared.time.DatabaseSnapshotClock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -58,6 +62,7 @@ public class HomeService {
     private final StarterExpeditionContent expeditionContent;
     private final StarterInventoryContent inventoryContent;
     private final StarterCraftingContent craftingContent;
+    private final StarterItemUpgradeContent itemUpgradeContent;
     private final EquipmentRepository equipmentRepository;
     private final StarterEquipmentContent equipmentContent;
     private final ExpeditionContentActivation contentActivation;
@@ -82,6 +87,7 @@ public class HomeService {
         this.expeditionContent = expeditionContent;
         this.inventoryContent = inventoryContent;
         this.craftingContent = craftingContent;
+        this.itemUpgradeContent = new StarterItemUpgradeContent(inventoryContent);
         this.equipmentRepository = equipmentRepository;
         this.equipmentContent = equipmentContent;
         this.contentActivation = contentActivation;
@@ -201,7 +207,8 @@ public class HomeService {
                         equipment,
                         activeContentVersion
                 ),
-                craftingSnapshots(state, activeContentVersion)
+                craftingSnapshots(state, activeContentVersion),
+                itemUpgradeSnapshots(state, activeContentVersion)
         );
     }
 
@@ -279,10 +286,82 @@ public class HomeService {
                             equipmentContent.slotForItem(item.itemId())
                                     .map(EquipmentSlotDefinition::slotId)
                                     .orElse(null),
-                            runtime.equippedSlotId()
+                            runtime.equippedSlotId(),
+                            runtime.rarity()
                     );
                 })
                 .toList();
+    }
+
+    private List<ItemUpgradeSnapshot> itemUpgradeSnapshots(
+            HomeRuntimeState state,
+            String activeContentVersion
+    ) {
+        Map<String, Long> quantities = new HashMap<>();
+        Map<String, Long> uniqueLevels = new HashMap<>();
+        state.inventory().forEach(item -> {
+            if (item.itemInstanceId() == null) {
+                quantities.put(item.itemId(), item.quantity());
+            } else {
+                uniqueLevels.put(item.itemId(), item.version());
+            }
+        });
+        return itemUpgradeContent.upgrades(activeContentVersion).stream()
+                .map(definition -> itemUpgradeSnapshot(
+                        definition,
+                        quantities,
+                        uniqueLevels
+                ))
+                .toList();
+    }
+
+    private ItemUpgradeSnapshot itemUpgradeSnapshot(
+            ItemUpgradeDefinition definition,
+            Map<String, Long> quantities,
+            Map<String, Long> uniqueLevels
+    ) {
+        Long currentLevel = uniqueLevels.get(
+                definition.targetItem().itemId()
+        );
+        boolean completed = currentLevel != null
+                && currentLevel >= definition.resultingLevel();
+        boolean ready = currentLevel != null
+                && currentLevel == definition.requiredLevel()
+                && definition.ingredients().stream().allMatch(
+                        ingredient -> quantities.getOrDefault(
+                                ingredient.item().itemId(),
+                                0L
+                        ) >= ingredient.quantity()
+                );
+        String status = completed
+                ? "COMPLETED"
+                : currentLevel == null
+                ? "LOCKED"
+                : ready ? "READY" : "MISSING_MATERIALS";
+        return new ItemUpgradeSnapshot(
+                definition.upgradeId(),
+                definition.upgradeVersion(),
+                definition.name(),
+                definition.description(),
+                status,
+                definition.targetItem().itemId(),
+                definition.targetItem().name(),
+                definition.requiredLevel(),
+                definition.resultingLevel(),
+                definition.initialRarity().name(),
+                definition.resultingRarity().name(),
+                definition.ingredients().stream()
+                        .map(ingredient -> new ItemUpgradeIngredientSnapshot(
+                                ingredient.item().itemId(),
+                                ingredient.item().name(),
+                                ingredient.quantity(),
+                                quantities.getOrDefault(
+                                        ingredient.item().itemId(),
+                                        0L
+                                )
+                        ))
+                        .toList()
+        );
     }
 
     private List<CraftingRecipeSnapshot> craftingSnapshots(

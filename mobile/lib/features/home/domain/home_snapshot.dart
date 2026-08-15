@@ -37,6 +37,7 @@ class HomeSnapshot {
     this.inventory = const <HomeInventoryItem>[],
     this.equipment = const <HomeEquipmentSlot>[],
     this.craftingRecipes = const <HomeCraftingRecipe>[],
+    this.itemUpgrades = const <HomeItemUpgrade>[],
     this.pendingEventResult,
     this.cacheMetadata,
   });
@@ -101,6 +102,7 @@ class HomeSnapshot {
       inventory: _readInventory(json['inventory']),
       equipment: _readEquipment(json['equipment']),
       craftingRecipes: _readCraftingRecipes(json['craftingRecipes']),
+      itemUpgrades: _readItemUpgrades(json['itemUpgrades']),
       pendingEventResult: pendingEventResultJson == null
           ? null
           : PendingEventResult.fromJson(
@@ -143,6 +145,7 @@ class HomeSnapshot {
   final List<HomeInventoryItem> inventory;
   final List<HomeEquipmentSlot> equipment;
   final List<HomeCraftingRecipe> craftingRecipes;
+  final List<HomeItemUpgrade> itemUpgrades;
   final PendingEventResult? pendingEventResult;
   final CachedReadMetadata? cacheMetadata;
 
@@ -247,6 +250,21 @@ class HomeSnapshot {
         .map(
           (Object? value) =>
               HomeCraftingRecipe.fromJson(_asMap(value, 'craftingRecipes[]')),
+        )
+        .toList(growable: false);
+  }
+
+  static List<HomeItemUpgrade> _readItemUpgrades(Object? raw) {
+    if (raw == null) {
+      return const <HomeItemUpgrade>[];
+    }
+    if (raw is! List<dynamic>) {
+      throw const FormatException('itemUpgrades должен быть JSON-массивом');
+    }
+    return raw
+        .map(
+          (Object? value) =>
+              HomeItemUpgrade.fromJson(_asMap(value, 'itemUpgrades[]')),
         )
         .toList(growable: false);
   }
@@ -539,6 +557,7 @@ class HomeInventoryItem {
     this.itemInstanceId,
     this.equippableSlotId,
     this.equippedSlotId,
+    this.rarity,
   });
 
   factory HomeInventoryItem.fromJson(Map<String, dynamic> json) {
@@ -557,6 +576,7 @@ class HomeInventoryItem {
         'equippableSlotId',
       ),
       equippedSlotId: HomeSnapshot._readNullableString(json, 'equippedSlotId'),
+      rarity: HomeSnapshot._readNullableString(json, 'rarity'),
     );
   }
 
@@ -569,10 +589,106 @@ class HomeInventoryItem {
   final String? itemInstanceId;
   final String? equippableSlotId;
   final String? equippedSlotId;
+  final String? rarity;
 
   bool get isUnique => kind == 'UNIQUE';
   bool get isEquippable => itemInstanceId != null && equippableSlotId != null;
   bool get isEquipped => equippedSlotId != null;
+}
+
+class HomeItemUpgrade {
+  const HomeItemUpgrade({
+    required this.upgradeId,
+    required this.upgradeVersion,
+    required this.name,
+    required this.description,
+    required this.status,
+    required this.targetItemId,
+    required this.targetItemName,
+    required this.requiredLevel,
+    required this.resultingLevel,
+    required this.initialRarity,
+    required this.resultingRarity,
+    required this.ingredients,
+  });
+
+  factory HomeItemUpgrade.fromJson(Map<String, dynamic> json) {
+    final String status = HomeSnapshot._readString(json, 'status');
+    if (status != 'LOCKED' &&
+        status != 'MISSING_MATERIALS' &&
+        status != 'READY' &&
+        status != 'COMPLETED') {
+      throw FormatException('Неизвестный item upgrade status: $status');
+    }
+    final Object? rawIngredients = json['ingredients'];
+    if (rawIngredients is! List<dynamic> || rawIngredients.isEmpty) {
+      throw const FormatException(
+        'item upgrade ingredients должен быть непустым массивом',
+      );
+    }
+    return HomeItemUpgrade(
+      upgradeId: HomeSnapshot._readString(json, 'upgradeId'),
+      upgradeVersion: HomeSnapshot._readString(json, 'upgradeVersion'),
+      name: HomeSnapshot._readString(json, 'name'),
+      description: HomeSnapshot._readString(json, 'description'),
+      status: status,
+      targetItemId: HomeSnapshot._readString(json, 'targetItemId'),
+      targetItemName: HomeSnapshot._readString(json, 'targetItemName'),
+      requiredLevel: HomeSnapshot._readInt(json, 'requiredLevel'),
+      resultingLevel: HomeSnapshot._readInt(json, 'resultingLevel'),
+      initialRarity: HomeSnapshot._readString(json, 'initialRarity'),
+      resultingRarity: HomeSnapshot._readString(json, 'resultingRarity'),
+      ingredients: rawIngredients
+          .map(
+            (Object? value) => HomeItemUpgradeIngredient.fromJson(
+              _asMap(value, 'itemUpgrades[].ingredients[]'),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  final String upgradeId;
+  final String upgradeVersion;
+  final String name;
+  final String description;
+  final String status;
+  final String targetItemId;
+  final String targetItemName;
+  final int requiredLevel;
+  final int resultingLevel;
+  final String initialRarity;
+  final String resultingRarity;
+  final List<HomeItemUpgradeIngredient> ingredients;
+
+  bool get canApply => status == 'READY';
+  bool get isCompleted => status == 'COMPLETED';
+  bool get isLocked => status == 'LOCKED';
+}
+
+class HomeItemUpgradeIngredient {
+  const HomeItemUpgradeIngredient({
+    required this.itemId,
+    required this.name,
+    required this.requiredQuantity,
+    required this.availableQuantity,
+  });
+
+  factory HomeItemUpgradeIngredient.fromJson(Map<String, dynamic> json) {
+    return HomeItemUpgradeIngredient(
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      name: HomeSnapshot._readString(json, 'name'),
+      requiredQuantity: HomeSnapshot._readInt(json, 'requiredQuantity'),
+      availableQuantity: HomeSnapshot._readInt(json, 'availableQuantity'),
+    );
+  }
+
+  final String itemId;
+  final String name;
+  final int requiredQuantity;
+  final int availableQuantity;
+
+  bool get isAvailable => availableQuantity >= requiredQuantity;
 }
 
 class HomeEquipmentSlot {

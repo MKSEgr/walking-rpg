@@ -27,6 +27,7 @@ expedition     — узлы, события и прохождение
 progression    — pilot XP и pet bond
 inventory      — material stack и credit/debit ledger
 crafting       — versioned recipes, material consumption и unique items
+itemupgrade    — server-owned refinement, rarity и immutable exact replay
 equipment      — persistent loadout, ownership и exact equip/unequip replay
 home           — агрегированный read model
 platform       — onboarding, pets, skills, quests, season, squads, cosmetics, experiments
@@ -48,6 +49,7 @@ home                 — authoritative home snapshot
 expedition           — ENERGY spend
 event                — event resolution, durable result и acknowledgement
 crafting             — server recipe command/result
+item_upgrade          — durable item refinement command/result
 equipment            — durable equip/unequip command/result
 onboarding            — guided first journey и recovery milestones
 platform             — typed snapshot, commands и «Путевой журнал»
@@ -315,6 +317,12 @@ non-stackable `prism-sextant`. Второй recipe не проецируется
 до активации `chapter-1-v5`. Client получает recipe projection через home, но
 не задаёт стоимость, количество или результат command-а.
 
+Item upgrade content `item-upgrade-v1` появляется только при active
+`chapter-1-v5`. Definition `prism-sextant-calibration-v1` расходует
+`2 × echo-thread`, `1 × prism-dust`, `1 × ion-bloom` и переводит тот же
+`itemInstanceId` с уровня `1/UNCOMMON` на `2/RARE`. Клиент получает только
+authoritative Home projection и не задаёт target, стоимость, level или rarity.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
@@ -337,7 +345,9 @@ processed_event_resolution
   └─ receipt_id, handoff_required, next_node_*, acknowledged_at
 inventory_stack, inventory_ledger
 unique_inventory_item
+  └─ rarity, upgraded_at
 processed_crafting_command, processed_crafting_ingredient
+processed_item_upgrade_command, processed_item_upgrade_ingredient
 equipment_slot_state, processed_equipment_command
 roadmap_user_state, processed_roadmap_command
 remote_config_snapshot, content_release
@@ -398,6 +408,11 @@ server-owned choice `align-prism-sextant` становятся доступны 
 `spectrum-observatory` с двумя наградами и возвращается к `horizon-spire`.
 До активации v4-проекция сохраняет один starter recipe, прежние choices и 22
 узла.
+V21 добавляет rarity/upgraded timestamp unique item-а и immutable item-upgrade
+command/ingredient snapshots. Backfill присваивает существующему секстанту
+уровня 1 `UNCOMMON`; trigger сохраняет rolling compatibility старого crafting
+writer и допускает для секстанта только состояния `1/UNCOMMON` и `2/RARE` с
+обязательным `upgraded_at` у второго уровня.
 
 ## 8. Конкурентность и транзакции
 
@@ -415,7 +430,8 @@ server-owned choice `align-prism-sextant` становятся доступны 
 - source uniqueness в ledger;
 - account-deletion lock и active-subject check выполняются внутри mutating
   transaction до operation-specific locks/replay. Это включает activity,
-  platform, crafting, equipment, expedition advance/resolution и result ACK;
+  platform, crafting, item upgrade, equipment, expedition advance/resolution
+  и result ACK;
   request-level security check не считается конкурентной границей;
 - authenticated telemetry/crash ingestion, push registration, test push и
   tester cohort upsert снимают server-owned receive/mutation timestamps после
@@ -441,6 +457,10 @@ server-owned choice `align-prism-sextant` становятся доступны 
   material mutation; material rows блокируются в стабильном `itemId`-порядке;
 - все ingredient checks выполняются до debit, а material debit, ledger,
   unique item и processed response имеют один commit;
+- item upgrade разделяет user lock с crafting, затем получает общий expedition
+  lock. Он блокирует target unique item и material stacks, сохраняет тот же
+  `itemInstanceId`, debit ledger и immutable response одним commit; exact replay
+  выполняется до pending-result/content gates;
 - equipment exact replay выполняется после account/equipment lock, но до
   expedition boundary; новая мутация получает shared expedition lock,
   проверяет pending receipt, блокирует принадлежащий unique item и одним
@@ -455,7 +475,7 @@ server-owned choice `align-prism-sextant` становятся доступны 
   он читает committed loadout, поэтому lock order не образует цикл;
 - один transaction commit для связанных изменений;
 - capable pending result проверяется под тем же user+expedition serialization
-  boundary до advance/resolution/new crafting mutation;
+  boundary до advance/resolution/new crafting/item-upgrade mutation;
 - ACK после account-deletion subject lock фиксирует одно post-lock время и
   заполняет им `acknowledged_at` условным `UPDATE`, только пока поле `NULL`;
   тот же commit создаёт ACK milestone, replay читает сохранённое время без
@@ -630,6 +650,9 @@ server-owned choice `align-prism-sextant` становятся доступны 
     любого server-owned catalog value меняет стабильный SHA-256. Digest writer
     изолирован от API `ObjectMapper`, сортирует object properties и не включает
     response formatting.
+45. Item upgrade не принимает client-owned target/cost/result, не создаёт новый
+    unique instance и не допускает частичного material debit; уровень и rarity
+    переходят только из `1/UNCOMMON` в `2/RARE`.
 
 ## 10. Identity и authorization boundary
 

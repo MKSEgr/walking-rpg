@@ -128,6 +128,8 @@ class AccountDeletionIntegrationTest {
         assertEquals(0, rowCount("unique_inventory_item"));
         assertEquals(0, rowCount("processed_crafting_command"));
         assertEquals(0, rowCount("processed_crafting_ingredient"));
+        assertEquals(0, rowCount("processed_item_upgrade_command"));
+        assertEquals(0, rowCount("processed_item_upgrade_ingredient"));
         assertEquals(0, rowCount("equipment_slot_state"));
         assertEquals(0, rowCount("processed_equipment_command"));
         assertEquals(0, rowCount("platform_cosmetic_slot_state"));
@@ -205,6 +207,8 @@ class AccountDeletionIntegrationTest {
                 "uniqueInventory",
                 "craftingOperations",
                 "craftingIngredients",
+                "itemUpgradeOperations",
+                "itemUpgradeIngredients",
                 "equipment",
                 "equipmentOperations",
                 "platformState",
@@ -223,9 +227,11 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, ((List<?>) export.get("activity")).size());
         assertEquals(1, ((List<?>) export.get("telemetry")).size());
         assertEquals(1, ((List<?>) export.get("firstJourneyMilestones")).size());
-        assertEquals(1, ((List<?>) export.get("uniqueInventory")).size());
+        assertEquals(2, ((List<?>) export.get("uniqueInventory")).size());
         assertEquals(1, ((List<?>) export.get("craftingOperations")).size());
         assertEquals(1, ((List<?>) export.get("craftingIngredients")).size());
+        assertEquals(1, ((List<?>) export.get("itemUpgradeOperations")).size());
+        assertEquals(3, ((List<?>) export.get("itemUpgradeIngredients")).size());
         assertEquals(1, ((List<?>) export.get("equipment")).size());
         assertEquals(1, ((List<?>) export.get("equipmentOperations")).size());
         assertEquals(1, ((List<?>) export.get("cosmeticEquipment")).size());
@@ -855,6 +861,44 @@ class AccountDeletionIntegrationTest {
                     'lumen-shard', 'Люминовый осколок', 2, 0, 1
                 )
                 """, userId);
+        jdbcTemplate.update("""
+                INSERT INTO unique_inventory_item (
+                    item_instance_id, user_id, item_id, recipe_id,
+                    recipe_version, version, rarity, crafted_at, upgraded_at
+                ) VALUES (
+                    '70000000-0000-0000-0000-000000000002', ?,
+                    'prism-sextant', 'prism-sextant-v1', '1', 2, 'RARE', ?, ?
+                )
+                """, userId, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO processed_item_upgrade_command (
+                    user_id, upgrade_id, idempotency_key, request_fingerprint,
+                    content_version, upgrade_version, upgrade_name,
+                    item_instance_id, item_id, item_name, item_description,
+                    previous_level, result_level, result_rarity, upgraded_at,
+                    server_time, created_at
+                ) VALUES (
+                    ?, 'prism-sextant-calibration-v1', 'account-test-upgrade',
+                    repeat('7', 64), 'item-upgrade-v1', '1',
+                    'Калибровать призматический секстант',
+                    '70000000-0000-0000-0000-000000000002',
+                    'prism-sextant', 'Призматический секстант',
+                    'Account export upgraded item.', 1, 2, 'RARE', ?, ?, ?
+                )
+                """, userId, timestamp, timestamp, timestamp);
+        jdbcTemplate.batchUpdate("""
+                INSERT INTO processed_item_upgrade_ingredient (
+                    user_id, upgrade_id, idempotency_key, item_id, item_name,
+                    quantity_consumed, quantity_after, inventory_version
+                ) VALUES (
+                    ?, 'prism-sextant-calibration-v1', 'account-test-upgrade',
+                    ?, ?, ?, 0, 1
+                )
+                """, List.of(
+                new Object[]{userId, "echo-thread", "Нить эха", 2},
+                new Object[]{userId, "ion-bloom", "Ионный цветок", 1},
+                new Object[]{userId, "prism-dust", "Призматическая пыль", 1}
+        ));
         jdbcTemplate.update("""
                 INSERT INTO platform_cosmetic_slot_state (
                     user_id, slot, cosmetic_id, version,

@@ -9,6 +9,7 @@ import com.walkingrpg.backend.home.domain.CraftingRecipeSnapshot;
 import com.walkingrpg.backend.home.domain.EquipmentSlotSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.InventoryItemSnapshot;
+import com.walkingrpg.backend.home.domain.ItemUpgradeSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
 import com.walkingrpg.backend.home.domain.PendingEventResultSnapshot;
 import com.walkingrpg.backend.home.domain.PilotSnapshot;
@@ -31,7 +32,8 @@ public record HomeSnapshotResponse(
         List<EquipmentSlotSnapshot> equipment,
         PendingEventResultSnapshot pendingEventResult,
         ExpeditionSnapshot expedition,
-        List<CraftingRecipeSnapshot> craftingRecipes
+        List<CraftingRecipeSnapshot> craftingRecipes,
+        List<ItemUpgradeSnapshot> itemUpgrades
 ) {
     public HomeSnapshotResponse {
         inventory = inventory == null ? List.of() : List.copyOf(inventory);
@@ -39,6 +41,9 @@ public record HomeSnapshotResponse(
         craftingRecipes = craftingRecipes == null
                 ? List.of()
                 : List.copyOf(craftingRecipes);
+        itemUpgrades = itemUpgrades == null
+                ? List.of()
+                : List.copyOf(itemUpgrades);
     }
 
     public HomeSnapshotResponse(
@@ -75,6 +80,7 @@ public record HomeSnapshotResponse(
                 List.of(),
                 null,
                 expedition,
+                List.of(),
                 List.of()
         );
     }

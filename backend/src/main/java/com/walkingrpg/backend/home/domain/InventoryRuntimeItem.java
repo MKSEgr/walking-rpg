@@ -7,7 +7,8 @@ public record InventoryRuntimeItem(
         long quantity,
         long version,
         UUID itemInstanceId,
-        String equippedSlotId
+        String equippedSlotId,
+        String rarity
 ) {
     public InventoryRuntimeItem {
         if (itemId == null || itemId.isBlank()) {
@@ -25,9 +26,24 @@ public record InventoryRuntimeItem(
                     "Material item не может быть экипирован"
             );
         }
+        if (rarity != null && itemInstanceId == null) {
+            throw new IllegalArgumentException(
+                    "Material item не может иметь rarity"
+            );
+        }
     }
 
     public InventoryRuntimeItem(String itemId, long quantity, long version) {
-        this(itemId, quantity, version, null, null);
+        this(itemId, quantity, version, null, null, null);
+    }
+
+    public InventoryRuntimeItem(
+            String itemId,
+            long quantity,
+            long version,
+            UUID itemInstanceId,
+            String equippedSlotId
+    ) {
+        this(itemId, quantity, version, itemInstanceId, equippedSlotId, null);
     }
 }
