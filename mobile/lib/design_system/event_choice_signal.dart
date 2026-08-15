@@ -73,8 +73,7 @@ abstract final class EventChoiceSignalCatalog {
         EventChoiceSignalKind.chart,
     'spectrum-observatory-v1::chase-dawn-refraction':
         EventChoiceSignalKind.prism,
-    'spectrum-observatory-v1::trace-second-dawn':
-        EventChoiceSignalKind.prism,
+    'spectrum-observatory-v1::trace-second-dawn': EventChoiceSignalKind.prism,
   };
 
   static EventChoiceSignalKind kindFor({

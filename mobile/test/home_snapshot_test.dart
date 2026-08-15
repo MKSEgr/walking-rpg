@@ -414,16 +414,15 @@ void main() {
   });
 
   test('legacy choice requirement defaults to upgrade level one', () {
-    final HomeChoiceRequirement requirement = HomeChoiceRequirement.fromJson(
-      <String, dynamic>{
-        'type': 'EQUIPPED_ITEM',
-        'slotId': 'NAVIGATION',
-        'slotName': 'Навигационный прибор',
-        'itemId': 'resonance-compass',
-        'itemName': 'Резонансный компас',
-        'description': 'Экипируйте компас.',
-      },
-    );
+    final HomeChoiceRequirement requirement =
+        HomeChoiceRequirement.fromJson(<String, dynamic>{
+          'type': 'EQUIPPED_ITEM',
+          'slotId': 'NAVIGATION',
+          'slotName': 'Навигационный прибор',
+          'itemId': 'resonance-compass',
+          'itemName': 'Резонансный компас',
+          'description': 'Экипируйте компас.',
+        });
 
     expect(requirement.minimumUpgradeLevel, 1);
   });
