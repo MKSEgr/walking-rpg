@@ -298,6 +298,7 @@ def _protect_quoted_glob_characters(value: str) -> str:
 
 def _strip_inline_shell_comment(value: str) -> str:
     quote: str | None = None
+    parameter_expansion_depth = 0
     index = 0
     while index < len(value):
         character = value[index]
@@ -309,6 +310,12 @@ def _strip_inline_shell_comment(value: str) -> str:
         if quote == '"':
             if character == "\\" and index + 1 < len(value):
                 index += 2
+            elif value.startswith("${", index):
+                parameter_expansion_depth += 1
+                index += 2
+            elif character == "}" and parameter_expansion_depth > 0:
+                parameter_expansion_depth -= 1
+                index += 1
             elif character == '"':
                 quote = None
                 index += 1
@@ -322,8 +329,20 @@ def _strip_inline_shell_comment(value: str) -> str:
             quote = character
             index += 1
             continue
-        if character == "#" and (
-            index == 0 or value[index - 1] in SHELL_TOKEN_BOUNDARIES
+        if value.startswith("${", index):
+            parameter_expansion_depth += 1
+            index += 2
+            continue
+        if character == "}" and parameter_expansion_depth > 0:
+            parameter_expansion_depth -= 1
+            index += 1
+            continue
+        if (
+            parameter_expansion_depth == 0
+            and character == "#"
+            and (
+                index == 0 or value[index - 1] in SHELL_TOKEN_BOUNDARIES
+            )
         ):
             return value[:index]
         index += 1

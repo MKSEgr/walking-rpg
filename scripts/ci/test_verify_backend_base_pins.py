@@ -666,6 +666,40 @@ class VerifyBackendBasePinsTest(unittest.TestCase):
             [], self.validate(VALID.replace("RUN true", safe, 1))
         )
 
+    def test_preserves_hashes_inside_parameter_expansions(self):
+        dangerous_commands = (
+            (
+                "RUN PREFIX=ap; EMPTY=; IGNORE=${EMPTY:- #}; "
+                "SUFFIX=t-get; ${PREFIX}${SUFFIX} update"
+            ),
+            (
+                "RUN PREFIX=dn; EMPTY=; OTHER=; "
+                "IGNORE=${EMPTY:- ${OTHER:- #}}; "
+                "SUFFIX=f; ${PREFIX}${SUFFIX} install curl"
+            ),
+        )
+        for command in dangerous_commands:
+            with self.subTest(command=command):
+                self.assertTrue(
+                    self.validate(VALID.replace("RUN true", command, 1))
+                )
+
+        safe_commands = (
+            (
+                "RUN EMPTY=; IGNORE=${EMPTY:- #}; "
+                "# PREFIX=ap; SUFFIX=t-get; ${PREFIX}${SUFFIX} update"
+            ),
+            (
+                r"RUN printf \${EMPTY:- #}; "
+                "PREFIX=ap; SUFFIX=t-get; ${PREFIX}${SUFFIX} update"
+            ),
+        )
+        for command in safe_commands:
+            with self.subTest(command=command):
+                self.assertEqual(
+                    [], self.validate(VALID.replace("RUN true", command, 1))
+                )
+
     def test_rejects_package_managers_composed_as_run_executables(self):
         commands = (
             "RUN PREFIX=ap; SUFFIX=t-get; ${PREFIX}${SUFFIX} update",
