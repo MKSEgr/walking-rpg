@@ -146,8 +146,8 @@ public class EventResolutionService {
             return processed.result();
         }
         requireNoPendingResult(command.userId(), definition.expeditionId());
-        boolean resonanceRouteActive = contentActivation.isActive(
-                StarterExpeditionContent.CONTENT_VERSION
+        String activeContentVersion = content.activeContentVersion(
+                contentActivation
         );
 
         ExpeditionProgressState current = expeditionRepository.findState(
@@ -161,7 +161,7 @@ public class EventResolutionService {
         ExpeditionEventChoiceDefinition choice = content.requireChoice(
                 command.eventId(),
                 command.choiceId(),
-                resonanceRouteActive
+                activeContentVersion
         );
         requireEquipment(command.userId(), choice);
 
@@ -180,7 +180,7 @@ public class EventResolutionService {
         Optional<ExpeditionDefinition> nextNode = content.nextNodeAfterEvent(
                 command.eventId(),
                 choice.choiceId(),
-                resonanceRouteActive
+                activeContentVersion
         );
         ExpeditionProgressState updated = nextNode
                 .map(node -> current.resolveAndContinue(command.eventId(), node))
@@ -188,7 +188,7 @@ public class EventResolutionService {
 
         EventResolutionResult result = new EventResolutionResult(
                 UUID.randomUUID(),
-                content.contentVersion(resonanceRouteActive),
+                activeContentVersion,
                 definition.expeditionId(),
                 updated.status(),
                 updated.version(),

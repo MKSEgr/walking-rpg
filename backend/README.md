@@ -161,6 +161,9 @@ PostgreSQL Testcontainers tests проверяют:
 - Flyway V16 добавляет receipt-time retention index, а V17 сохраняет cosmetic
   loadout независимо по `PILOT`/`PET`/`PROFILE`, backfill-ит известный legacy
   selection и покрывается restart/upgrade/account/backup tests.
+- Flyway V18 stage-ит inactive `chapter-1-v3` со вторым опциональным маршрутом
+  через `storm-scriptorium`; v1/v2 projection и resonance analytics остаются
+  совместимыми до и после отдельной cluster-wide activation.
 - operational integration проверяет main-port `/livez`/`readyz`, PostgreSQL в
   readiness, скрытые health details и admin-only Prometheus;
 - synthetic PostgreSQL 17.10 backup/restore drill сверяет archive checksum,

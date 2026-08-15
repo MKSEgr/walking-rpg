@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V17 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V18 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -264,7 +264,7 @@ preflight by copying mutable `created_at`.
 
 Activation sequence:
 
-1. apply Flyway through V17 and deploy the new backend while v1 remains active;
+1. apply Flyway through V18 and deploy the new backend while v1 remains active;
 2. verify bootstrap reports v1 with 18 nodes and Home exposes no
    `follow-resonance`, including in `lockedChoices`;
 3. remove every old backend instance from traffic and wait for its graceful
@@ -314,6 +314,34 @@ both counts are zero. Once any route result is persisted, reactivating v1 or
 deploying a binary unaware of the optional node is prohibited; use a forward
 fix. Exact replay remains available on the new binary even if activation is
 stopped.
+
+## `chapter-1-v3` activation
+
+Flyway V18 stages `chapter-1-v3` inactive and leaves the current release
+unchanged. Activate it only after every pre-V18 backend has drained; those
+instances do not know `storm-scriptorium` and cannot serve a persisted v3
+route state.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v3",
+  "releaseNotes": "Первая глава: второй опциональный маршрут через грозовой скрипторий.",
+  "content": {
+    "contentVersion": "chapter-1-v3",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 20,
+    "topology": "storm-rift-v1"
+  }
+}
+```
+
+Then verify bootstrap reports v3 with 20 nodes and a non-production account at
+`storm-archive-v1` sees `enter-storm-rift` locked without the compass and
+available with it. Before rollback, require zero progress rows at
+`storm-scriptorium` and zero `enter-storm-rift` resolution rows; otherwise use
+a forward fix on a v3-capable binary.
 
 ## Rollback
 

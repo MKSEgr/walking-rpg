@@ -36,11 +36,10 @@ public class CompassJourneyAnalyticsService {
     private static final String STAGE_EVENTS = """
             /* compass journey stage events */
             WITH route_release AS (
-                SELECT active_release.activated_at
-                FROM content_release active_release
-                WHERE active_release.content_version = :routeContentVersion
-                  AND active_release.is_active
-                  AND active_release.activated_at IS NOT NULL
+                SELECT release_history.activated_at
+                FROM content_release release_history
+                WHERE release_history.content_version = :routeContentVersion
+                  AND release_history.activated_at IS NOT NULL
                 LIMIT 1
             ),
             compass_stage_event AS (

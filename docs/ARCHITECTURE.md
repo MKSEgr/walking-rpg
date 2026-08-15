@@ -381,6 +381,9 @@ V17 добавляет независимый persistent cosmetic slot state, ba
 legacy `activeCosmeticId`, account cascade и additive platform projection. Старый
 backend продолжает менять только compatibility pointer и не удаляет V17 rows;
 новый read model накладывает этот pointer на его server-catalog slot.
+V18 stage-ит inactive `chapter-1-v3`: новый `storm-scriptorium` доступен только
+через server-owned choice с экипированным компасом, возвращается в основной
+маршрут и не меняет immutable v2 baseline resonance funnel.
 
 ## 8. Конкурентность и транзакции
 
