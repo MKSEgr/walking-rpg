@@ -18,6 +18,7 @@ public class StarterInventoryContent {
     public static final String ION_BLOOM_ID = "ion-bloom";
     public static final String DAWN_FRAGMENT_ID = "dawn-fragment";
     public static final String RESONANCE_COMPASS_ID = "resonance-compass";
+    public static final String PRISM_SEXTANT_ID = "prism-sextant";
 
     private final Map<String, InventoryItemDefinition> items;
 
@@ -77,6 +78,15 @@ public class StarterInventoryContent {
                         RESONANCE_COMPASS_ID,
                         "Резонансный компас",
                         "Уникальный прибор, собранный из люминовых осколков и нити эха.",
+                        InventoryItemKind.UNIQUE
+                )
+        );
+        definitions.put(
+                PRISM_SEXTANT_ID,
+                new InventoryItemDefinition(
+                        PRISM_SEXTANT_ID,
+                        "Призматический секстант",
+                        "Уникальный прибор, сводящий свет поздних маршрутов в карту скрытого спектра.",
                         InventoryItemKind.UNIQUE
                 )
         );

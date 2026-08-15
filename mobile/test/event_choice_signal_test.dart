@@ -92,7 +92,22 @@ void main() {
         'follow-compass-pulse',
         EventChoiceSignalKind.compass,
       );
-      expect(currentPairCount, 39);
+      expectChoice(
+        'star-well-v1',
+        'align-prism-sextant',
+        EventChoiceSignalKind.prism,
+      );
+      expectChoice(
+        'spectrum-observatory-v1',
+        'chart-invisible-constellation',
+        EventChoiceSignalKind.chart,
+      );
+      expectChoice(
+        'spectrum-observatory-v1',
+        'chase-dawn-refraction',
+        EventChoiceSignalKind.prism,
+      );
+      expect(currentPairCount, 42);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

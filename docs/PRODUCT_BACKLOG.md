@@ -72,8 +72,9 @@ midnight/timezone, permission revoke и battery evidence не выполнены
 **Статус:** реализовано для 18 основных узлов `starter-expedition-v1`,
 `resonance-pocket`, staged `chapter-1-v3` маршрута через `storm-scriptorium`
 и staged `chapter-1-v4` развилки Сада пустоты через `root-memory` или
-`light-canopy`; все опциональные ветки возвращаются в основной путь, progress
-и debit остаются persistent/idempotent.
+`light-canopy`, а staged `chapter-1-v5` добавляет путь с призматическим
+секстантом через `spectrum-observatory`; все опциональные ветки возвращаются в
+основной путь, progress и debit остаются persistent/idempotent.
 
 ### US-005. Разрешить первое событие
 
@@ -283,6 +284,9 @@ limiter, deployed management network, alerts, backup policy, PITR/RPO/RTO и
 
 - рецепт, стоимость, имя и результат принадлежат server content;
 - `resonance-compass-v1` требует `2 × lumen-shard` и `1 × echo-thread`;
+- staged `prism-sextant-v1` требует `2 × prism-dust`, `1 × ion-bloom` и
+  `1 × dawn-fragment`, появляется только вместе с `chapter-1-v5` и создаёт
+  единственный `prism-sextant`;
 - backend под user-scoped transaction lock проверяет оба stack, списывает их
   без отрицательного остатка, пишет по одному debit ledger entry и создаёт
   единственный `resonance-compass`;
@@ -298,9 +302,9 @@ limiter, deployed management network, alerts, backup policy, PITR/RPO/RTO и
 - unique inventory и immutable crafting snapshots входят в account export,
   каскадное удаление и backup/restore manifest.
 
-**Статус:** backend/mobile/Flyway V13, unit/API/PostgreSQL/widget tests и
-операционные policy checks реализованы. Ценность рецепта и стоимость material
-sink требуют beta/economy validation.
+**Статус:** backend/mobile/Flyway V13/V20, два server-owned recipe,
+unit/API/PostgreSQL/widget tests и операционные policy checks реализованы.
+Ценность рецептов и стоимость material sinks требуют beta/economy validation.
 
 ### US-015. Экипировать компас и открыть скрытый маршрут
 
@@ -312,6 +316,8 @@ sink требуют beta/economy validation.
 
 - `equipment-v1` содержит server-owned slot `NAVIGATION`, принимающий только
   принадлежащий пользователю `resonance-compass`;
+- `equipment-v2` расширяет тот же single-item slot для `prism-sextant`; смена
+  прибора атомарно заменяет предыдущий;
 - equip/unequip — desired-state команды с persistent exact replay и конфликтом
   при повторном key с другим payload;
 - новая equipment mutation сериализуется с expedition/event/crafting и
@@ -324,12 +330,14 @@ sink требуют beta/economy validation.
   cluster-wide activation и полного drain старого backend pool;
 - доступный выбор ведёт в optional `resonance-pocket`, после которого маршрут
   возвращается в `storm-archive`; основной выбор сохраняет прежний путь;
+- `align-prism-sextant` в staged `chapter-1-v5` требует экипированный секстант,
+  ведёт через `spectrum-observatory` и возвращается к `horizon-spire`;
 - mobile сохраняет `EQUIPMENT` до отправки в GAMEPLAY outbox, не применяет
   optimistic loadout и после успеха перечитывает authoritative home;
 - equipment state/processed responses входят в export, cascade deletion и
   backup/restore manifest.
 
-**Статус:** backend/mobile/Flyway V14, staged rollout gate,
+**Статус:** backend/mobile/Flyway V14/V20, staged rollout gates,
 unit/API/PostgreSQL concurrency/widget tests и release-policy checks
 реализованы. Понятность экипировки и ценность опционального маршрута требуют
 beta validation.
@@ -371,21 +379,21 @@ metadata и unit/API/PostgreSQL/migration/widget/cache/outbox tests реализ
 
 Технически реализованы:
 
-- первая глава из 18 основных узлов и трёх опциональных маршрутов, последний
-  из которых разветвляется на два самостоятельных события;
+- первая глава из 18 основных узлов и четырёх опциональных маршрутов, один из
+  которых разветвляется на два самостоятельных события;
 - три питомца, active selection, эволюция и навыки;
 - onboarding, задания и достижения;
 - development push provider boundary с local/test-only registration;
 - product analytics и experiment exposure;
 - cohort funnel crafting/equipment/resonance с authoritative gameplay stages;
 - read-only offline cache валидированных `home` / `platform` snapshots;
-- расход материалов, starter crafting recipe, persistent unique item и
-  server-authoritative equipment slot.
+- расход материалов, два crafting recipe, два persistent unique item и
+  server-authoritative single-item equipment slot.
 
 После физической device-validation и beta остаются продуктовые расширения:
 
 - дальнейшие механики событий и нелинейные ветки сверх resonance/storm/orchard routes;
-- дополнительные recipes, rarity/upgrade mechanics и баланс material sinks;
+- rarity/upgrade mechanics и баланс material sinks;
 - production APNs / FCM;
 - background activity research с battery evidence;
 - настройка баланса по фактическим retention/economy данным.

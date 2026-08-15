@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class StarterEquipmentContent {
 
-    public static final String CONTENT_VERSION = "equipment-v1";
+    public static final String CONTENT_VERSION = "equipment-v2";
     public static final String NAVIGATION_SLOT_ID = "NAVIGATION";
 
     private final EquipmentSlotDefinition navigationSlot =
@@ -44,7 +44,8 @@ public class StarterEquipmentContent {
             String itemId
     ) {
         requireSlot(slotId);
-        if (!StarterInventoryContent.RESONANCE_COMPASS_ID.equals(itemId)) {
+        if (!StarterInventoryContent.RESONANCE_COMPASS_ID.equals(itemId)
+                && !StarterInventoryContent.PRISM_SEXTANT_ID.equals(itemId)) {
             throw new EquipmentItemUnavailableException(itemId);
         }
         return inventoryContent.require(itemId);
@@ -56,6 +57,7 @@ public class StarterEquipmentContent {
 
     public Optional<EquipmentSlotDefinition> slotForItem(String itemId) {
         return StarterInventoryContent.RESONANCE_COMPASS_ID.equals(itemId)
+                || StarterInventoryContent.PRISM_SEXTANT_ID.equals(itemId)
                 ? Optional.of(navigationSlot)
                 : Optional.empty();
     }

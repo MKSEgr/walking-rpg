@@ -10,6 +10,13 @@ abstract final class ExpeditionItemArtwork {
       _ => null,
     };
   }
+
+  static IconData? codeNativeIconFor(String itemId) {
+    return switch (itemId) {
+      'prism-sextant' => Icons.change_history_outlined,
+      _ => null,
+    };
+  }
 }
 
 /// Presentation-only item art selected from an exact server-owned [itemId].
@@ -34,10 +41,14 @@ class ExpeditionItemEmblem extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final String? assetPath = ExpeditionItemArtwork.assetPathFor(itemId);
+    final IconData? codeNativeIcon = ExpeditionItemArtwork.codeNativeIconFor(
+      itemId,
+    );
     final Color accent = switch (itemId) {
       'lumen-shard' => colors.primary,
       'echo-thread' => palette.resonance,
       'resonance-compass' => palette.energy,
+      'prism-sextant' => colors.primary,
       _ => colors.onSurfaceVariant,
     };
     final double radius = size * 0.25;
@@ -69,10 +80,14 @@ class ExpeditionItemEmblem extends StatelessWidget {
               borderRadius: BorderRadius.circular(radius - 1),
               child: assetPath == null
                   ? ColoredBox(
-                      key: Key('item-art-fallback-$itemId'),
+                      key: Key(
+                        codeNativeIcon == null
+                            ? 'item-art-fallback-$itemId'
+                            : 'item-art-code-$itemId',
+                      ),
                       color: colors.surfaceContainerHighest,
                       child: Icon(
-                        Icons.category_outlined,
+                        codeNativeIcon ?? Icons.category_outlined,
                         size: size * 0.42,
                         color: colors.onSurfaceVariant,
                       ),

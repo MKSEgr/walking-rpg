@@ -29,10 +29,15 @@ class StarterExpeditionContentTest {
                     return StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION;
                 }
         );
+        String chapterV5 = content.activeContentVersion(
+                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
         assertEquals(StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION, chapterV4);
+        assertEquals(StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
+                chapterV5);
         assertEquals(1, activationReads.get());
         assertEquals(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION,
@@ -58,10 +63,18 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.VOID_ORCHARD_EVENT_ID,
                 chapterV4
         )));
+        assertFalse(hasPrismSextantChoice(content.eventChoices(
+                StarterExpeditionContent.STAR_WELL_EVENT_ID,
+                chapterV4
+        )));
+        assertTrue(hasPrismSextantChoice(content.eventChoices(
+                StarterExpeditionContent.STAR_WELL_EVENT_ID,
+                chapterV5
+        )));
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
-                StarterExpeditionContent.VOID_ORCHARD_NODE_COUNT,
+                StarterExpeditionContent.PRISM_SEXTANT_NODE_COUNT,
                 content.nodes().size()
         );
     }
@@ -155,6 +168,26 @@ class StarterExpeditionContentTest {
         );
     }
 
+    @Test
+    void shouldRouteThroughSpectrumObservatoryAndRejoinAtHorizonSpire() {
+        assertEquals(
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_NODE_ID,
+                content.nextNodeAfterEvent(
+                        StarterExpeditionContent.STAR_WELL_EVENT_ID,
+                        StarterExpeditionContent.PRISM_SEXTANT_ROUTE_CHOICE_ID,
+                        StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+                ).orElseThrow().currentNodeId()
+        );
+        assertEquals(
+                StarterExpeditionContent.HORIZON_SPIRE_NODE_ID,
+                content.nextNodeAfterEvent(
+                        StarterExpeditionContent.SPECTRUM_OBSERVATORY_EVENT_ID,
+                        "chart-invisible-constellation",
+                        StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+                ).orElseThrow().currentNodeId()
+        );
+    }
+
     private boolean hasStormRiftChoice(
             List<ExpeditionEventChoiceDefinition> choices
     ) {
@@ -172,6 +205,16 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.ROOT_ECHO_CHOICE_ID.equals(
                         choice.choiceId()
                 ) || StarterExpeditionContent.LIGHT_CANOPY_CHOICE_ID.equals(
+                        choice.choiceId()
+                )
+        );
+    }
+
+    private boolean hasPrismSextantChoice(
+            List<ExpeditionEventChoiceDefinition> choices
+    ) {
+        return choices.stream().anyMatch(choice ->
+                StarterExpeditionContent.PRISM_SEXTANT_ROUTE_CHOICE_ID.equals(
                         choice.choiceId()
                 )
         );

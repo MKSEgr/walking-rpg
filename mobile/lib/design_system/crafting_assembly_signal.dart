@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
-enum CraftingAssemblySignalKind { resonanceCompass, unknown }
+enum CraftingAssemblySignalKind { resonanceCompass, prismSextant, unknown }
 
 /// Presentation identities for server-authored crafting recipes.
 ///
@@ -15,6 +15,7 @@ abstract final class CraftingAssemblySignalCatalog {
   static CraftingAssemblySignalKind kindFor(String recipeId) {
     return switch (recipeId) {
       'resonance-compass-v1' => CraftingAssemblySignalKind.resonanceCompass,
+      'prism-sextant-v1' => CraftingAssemblySignalKind.prismSextant,
       _ => CraftingAssemblySignalKind.unknown,
     };
   }
@@ -127,10 +128,11 @@ class _CraftingAssemblySignalPainter extends CustomPainter {
     }
 
     final double unit = size.height;
-    final Color identityAccent =
-        kind == CraftingAssemblySignalKind.resonanceCompass
-        ? resonance
-        : foreground;
+    final Color identityAccent = switch (kind) {
+      CraftingAssemblySignalKind.resonanceCompass => resonance,
+      CraftingAssemblySignalKind.prismSextant => lumen,
+      CraftingAssemblySignalKind.unknown => foreground,
+    };
     final Color stateAccent = _isCrafted
         ? lumen
         : _isReady
@@ -194,6 +196,8 @@ class _CraftingAssemblySignalPainter extends CustomPainter {
     switch (kind) {
       case CraftingAssemblySignalKind.resonanceCompass:
         _paintResonanceCore(canvas, core, unit, stateAccent);
+      case CraftingAssemblySignalKind.prismSextant:
+        _paintPrismCore(canvas, core, unit, stateAccent);
       case CraftingAssemblySignalKind.unknown:
         _paintUnknownCore(canvas, core, unit, identityAccent);
     }
@@ -412,6 +416,40 @@ class _CraftingAssemblySignalPainter extends CustomPainter {
         Paint()..color = identityAccent.withValues(alpha: 0.78),
       );
     }
+  }
+
+  void _paintPrismCore(
+    Canvas canvas,
+    Offset center,
+    double unit,
+    Color stateAccent,
+  ) {
+    final double radius = unit * 0.2;
+    final Path prism = Path()
+      ..moveTo(center.dx, center.dy - radius)
+      ..lineTo(center.dx + radius * 0.88, center.dy + radius * 0.62)
+      ..lineTo(center.dx - radius * 0.88, center.dy + radius * 0.62)
+      ..close();
+    canvas.drawPath(
+      prism,
+      Paint()..color = Color.alphaBlend(lumen.withValues(alpha: 0.16), surface),
+    );
+    canvas.drawPath(
+      prism,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = unit * 0.02
+        ..strokeJoin = StrokeJoin.round
+        ..color = stateAccent.withValues(alpha: 0.9),
+    );
+    canvas.drawLine(
+      center + Offset(-radius * 0.48, radius * 0.18),
+      center + Offset(radius * 0.56, radius * 0.18),
+      Paint()
+        ..strokeWidth = unit * 0.018
+        ..strokeCap = StrokeCap.round
+        ..color = resonance.withValues(alpha: 0.84),
+    );
   }
 
   void _paintOutputNode(

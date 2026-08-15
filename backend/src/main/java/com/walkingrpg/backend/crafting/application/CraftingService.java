@@ -11,11 +11,13 @@ import com.walkingrpg.backend.crafting.domain.CraftingRecipeDefinition;
 import com.walkingrpg.backend.crafting.domain.CraftingResult;
 import com.walkingrpg.backend.crafting.domain.ProcessedCraftingCommand;
 import com.walkingrpg.backend.crafting.infrastructure.CraftingRepository;
+import com.walkingrpg.backend.expedition.application.ExpeditionContentActivation;
 import com.walkingrpg.backend.expedition.application.PendingEventResultException;
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
 import com.walkingrpg.backend.expedition.infrastructure.ExpeditionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +28,25 @@ public class CraftingService {
     private final StarterCraftingContent content;
     private final ExpeditionRepository expeditionRepository;
     private final EventResolutionRepository eventResolutionRepository;
+    private final ExpeditionContentActivation contentActivation;
     private final Clock clock;
+
+    @Autowired
+    public CraftingService(
+            CraftingRepository repository,
+            StarterCraftingContent content,
+            ExpeditionRepository expeditionRepository,
+            EventResolutionRepository eventResolutionRepository,
+            ExpeditionContentActivation contentActivation,
+            Clock clock
+    ) {
+        this.repository = repository;
+        this.content = content;
+        this.expeditionRepository = expeditionRepository;
+        this.eventResolutionRepository = eventResolutionRepository;
+        this.contentActivation = contentActivation;
+        this.clock = clock;
+    }
 
     public CraftingService(
             CraftingRepository repository,
@@ -35,11 +55,14 @@ public class CraftingService {
             EventResolutionRepository eventResolutionRepository,
             Clock clock
     ) {
-        this.repository = repository;
-        this.content = content;
-        this.expeditionRepository = expeditionRepository;
-        this.eventResolutionRepository = eventResolutionRepository;
-        this.clock = clock;
+        this(
+                repository,
+                content,
+                expeditionRepository,
+                eventResolutionRepository,
+                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
+                clock
+        );
     }
 
     @Transactional
@@ -62,7 +85,10 @@ public class CraftingService {
         );
         requireNoPendingResult(command.userId());
 
-        CraftingRecipeDefinition recipe = content.require(command.recipeId());
+        CraftingRecipeDefinition recipe = content.require(
+                command.recipeId(),
+                contentActivation.activeContentVersion()
+        );
         Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
         return repository.createUniqueItem(
                 scope,

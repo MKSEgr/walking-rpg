@@ -24,6 +24,7 @@ enum ExpeditionNodeSignalKind {
   horizonSpire,
   dawnRelay,
   resonancePocket,
+  spectrumObservatory,
   unknown,
 }
 
@@ -58,6 +59,7 @@ abstract final class ExpeditionNodeSignalCatalog {
       'horizon-spire' => ExpeditionNodeSignalKind.horizonSpire,
       'dawn-relay' => ExpeditionNodeSignalKind.dawnRelay,
       'resonance-pocket' => ExpeditionNodeSignalKind.resonancePocket,
+      'spectrum-observatory' => ExpeditionNodeSignalKind.spectrumObservatory,
       _ => ExpeditionNodeSignalKind.unknown,
     };
   }
@@ -83,6 +85,7 @@ abstract final class ExpeditionNodeSignalCatalog {
       'aurora-bridge' ||
       'star-well' ||
       'horizon-spire' => ExpeditionNodeSignalTone.lumen,
+      'spectrum-observatory' => ExpeditionNodeSignalTone.lumen,
       _ => ExpeditionNodeSignalTone.neutral,
     };
   }
@@ -314,6 +317,8 @@ class _ExpeditionNodeSignalPainter extends CustomPainter {
         _paintDawnRelay(canvas, size, stroke, fine, fill);
       case ExpeditionNodeSignalKind.resonancePocket:
         _paintResonancePocket(canvas, size, stroke, fine, fill);
+      case ExpeditionNodeSignalKind.spectrumObservatory:
+        _paintSpectrumObservatory(canvas, size, stroke, fine, fill);
       case ExpeditionNodeSignalKind.unknown:
         _paintUnknown(canvas, size, fine, fill);
     }
@@ -817,6 +822,25 @@ class _ExpeditionNodeSignalPainter extends CustomPainter {
         fill,
       );
     }
+  }
+
+  void _paintSpectrumObservatory(
+    Canvas canvas,
+    Size size,
+    Paint stroke,
+    Paint fine,
+    Paint fill,
+  ) {
+    final Offset center = _at(size, 0.5, 0.48);
+    final Path prism = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.2)
+      ..lineTo(size.width * 0.72, size.height * 0.67)
+      ..lineTo(size.width * 0.28, size.height * 0.67)
+      ..close();
+    canvas.drawPath(prism, stroke);
+    canvas.drawArc(_circle(center, size, 0.52), 0.18, 2.78, false, fine);
+    canvas.drawLine(_at(size, 0.2, 0.75), _at(size, 0.8, 0.75), fine);
+    _dot(canvas, center, size, 0.045, fill);
   }
 
   Offset _at(Size size, double x, double y) {

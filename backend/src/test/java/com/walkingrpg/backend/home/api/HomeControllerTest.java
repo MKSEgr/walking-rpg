@@ -102,7 +102,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.economyVersion").value(2))
                 .andExpect(jsonPath("$.contentVersion")
                         .value(
-                                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
+                                StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
                         ))
                 .andExpect(jsonPath("$.pilot.name").value("Навигатор"))
                 .andExpect(jsonPath("$.pet.petId").value("spark-v1"))
@@ -110,7 +110,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.pet.evolutionStage").value(0))
                 .andExpect(jsonPath("$.inventory").isArray())
                 .andExpect(jsonPath("$.inventory").isEmpty())
-                .andExpect(jsonPath("$.craftingRecipes.length()").value(1))
+                .andExpect(jsonPath("$.craftingRecipes.length()").value(2))
                 .andExpect(jsonPath("$.craftingRecipes[0].status")
                         .value("MISSING_MATERIALS"))
                 .andExpect(jsonPath("$.expedition.expeditionId")

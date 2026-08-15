@@ -5,11 +5,12 @@ import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 enum EquipmentMountSignalKind { navigation, unknown }
 
-enum EquipmentMountItemKind { empty, resonanceCompass, unknown }
+enum EquipmentMountItemKind { empty, resonanceCompass, prismSextant, unknown }
 
 enum EquipmentMountSignalState {
   navigationEmpty,
   resonanceCompassMounted,
+  prismSextantMounted,
   neutral,
 }
 
@@ -30,6 +31,7 @@ abstract final class EquipmentMountSignalCatalog {
     return switch (itemId) {
       null => EquipmentMountItemKind.empty,
       'resonance-compass' => EquipmentMountItemKind.resonanceCompass,
+      'prism-sextant' => EquipmentMountItemKind.prismSextant,
       _ => EquipmentMountItemKind.unknown,
     };
   }
@@ -44,6 +46,8 @@ abstract final class EquipmentMountSignalCatalog {
         EquipmentMountSignalState.navigationEmpty,
       ('NAVIGATION', 'EQUIPPED', 'resonance-compass') =>
         EquipmentMountSignalState.resonanceCompassMounted,
+      ('NAVIGATION', 'EQUIPPED', 'prism-sextant') =>
+        EquipmentMountSignalState.prismSextantMounted,
       _ => EquipmentMountSignalState.neutral,
     };
   }
@@ -156,6 +160,7 @@ class _EquipmentMountSignalPainter extends CustomPainter {
     final Color stateAccent = switch (state) {
       EquipmentMountSignalState.navigationEmpty => identityAccent,
       EquipmentMountSignalState.resonanceCompassMounted => energy,
+      EquipmentMountSignalState.prismSextantMounted => lumen,
       EquipmentMountSignalState.neutral => foreground,
     };
     final RRect frame = RRect.fromRectAndRadius(
@@ -302,6 +307,8 @@ class _EquipmentMountSignalPainter extends CustomPainter {
         _paintEmptyMount(canvas, center, radius, stateAccent);
       case EquipmentMountSignalState.resonanceCompassMounted:
         _paintResonanceCompass(canvas, center, radius, stateAccent);
+      case EquipmentMountSignalState.prismSextantMounted:
+        _paintPrismSextant(canvas, center, radius, stateAccent);
       case EquipmentMountSignalState.neutral:
         _paintUnknownItem(canvas, center, radius, stateAccent);
     }
@@ -373,6 +380,34 @@ class _EquipmentMountSignalPainter extends CustomPainter {
         Paint()..color = stateAccent.withValues(alpha: 0.78),
       );
     }
+  }
+
+  void _paintPrismSextant(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Color stateAccent,
+  ) {
+    final Path prism = Path()
+      ..moveTo(center.dx, center.dy - radius * 0.56)
+      ..lineTo(center.dx + radius * 0.5, center.dy + radius * 0.34)
+      ..lineTo(center.dx - radius * 0.5, center.dy + radius * 0.34)
+      ..close();
+    canvas.drawPath(
+      prism,
+      Paint()..color = stateAccent.withValues(alpha: mounted ? 0.92 : 0.58),
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius * 0.72),
+      math.pi * 0.12,
+      math.pi * 0.76,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = radius * 0.09
+        ..strokeCap = StrokeCap.round
+        ..color = resonance.withValues(alpha: 0.84),
+    );
   }
 
   void _paintRouteNode(Canvas canvas, Offset center, double unit, Color color) {

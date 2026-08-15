@@ -74,6 +74,24 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposePrismSextantRouteOnlyInChapterV5Catalog() {
+        Map<String, Object> prismCatalog = publicCatalog(
+                StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+        );
+        Map<String, Object> voidOrchardCatalog = publicCatalog(
+                StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v5", prismCatalog.get("contentVersion"));
+        assertEquals(23, prismCatalog.get("chapterNodes"));
+        assertEquals(22, voidOrchardCatalog.get("chapterNodes"));
+        assertNotEquals(
+                prismCatalog.get("catalogDigest"),
+                voidOrchardCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

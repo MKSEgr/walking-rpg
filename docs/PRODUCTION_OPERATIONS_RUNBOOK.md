@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V19 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V20 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -386,6 +386,51 @@ SELECT
 ```
 
 Once either count is non-zero, use a forward fix on a v4-capable binary.
+
+## `chapter-1-v5` activation
+
+Flyway V20 stages `chapter-1-v5` inactive and leaves the current release
+unchanged. Activate it only after every pre-V20 backend has drained. This gate
+enables the `prism-sextant-v1` recipe, equipment compatibility and its route as
+one cluster-wide content change.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v5",
+  "releaseNotes": "Первая глава: призматический секстант и скрытый путь через спектральную обсерваторию.",
+  "content": {
+    "contentVersion": "chapter-1-v5",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 23,
+    "topology": "prism-sextant-route-v1"
+  }
+}
+```
+
+Then verify bootstrap reports v5 with 23 nodes. Home must expose both recipes;
+a non-production account at `star-well-v1` must see `align-prism-sextant`
+locked without the sextant, locked with the compass, and available with the
+sextant equipped. Resolve the route through `spectrum-observatory-v1` and
+verify that both choices return to `horizon-spire`.
+
+Before rollback, drain writes and require both counts to be zero:
+
+```sql
+SELECT
+    (SELECT count(*)
+     FROM expedition_progress
+     WHERE current_node_id = 'spectrum-observatory')
+        AS active_spectrum_states,
+    (SELECT count(*)
+     FROM processed_event_resolution
+     WHERE event_id = 'star-well-v1'
+       AND choice_id = 'align-prism-sextant')
+        AS persisted_spectrum_results;
+```
+
+Once either count is non-zero, use a forward fix on a v5-capable binary.
 
 ## Rollback
 
