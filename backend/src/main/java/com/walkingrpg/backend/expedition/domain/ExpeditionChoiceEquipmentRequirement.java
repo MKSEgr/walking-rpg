@@ -9,18 +9,33 @@ public record ExpeditionChoiceEquipmentRequirement(
         String slotId,
         String slotName,
         InventoryItemDefinition item,
+        long minimumUpgradeLevel,
         String lockedReason
 ) {
     public ExpeditionChoiceEquipmentRequirement {
         slotId = requireText(slotId, "slotId");
         slotName = requireText(slotName, "slotName");
         Objects.requireNonNull(item, "item");
+        if (minimumUpgradeLevel <= 0) {
+            throw new IllegalArgumentException(
+                    "minimumUpgradeLevel должен быть положительным"
+            );
+        }
         lockedReason = requireText(lockedReason, "lockedReason");
         if (item.kind() != InventoryItemKind.UNIQUE) {
             throw new IllegalArgumentException(
                     "Equipment requirement должен ссылаться на unique item"
             );
         }
+    }
+
+    public ExpeditionChoiceEquipmentRequirement(
+            String slotId,
+            String slotName,
+            InventoryItemDefinition item,
+            String lockedReason
+    ) {
+        this(slotId, slotName, item, 1, lockedReason);
     }
 
     private static String requireText(String value, String field) {

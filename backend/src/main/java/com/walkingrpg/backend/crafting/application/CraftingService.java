@@ -60,7 +60,7 @@ public class CraftingService {
                 content,
                 expeditionRepository,
                 eventResolutionRepository,
-                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
                 clock
         );
     }

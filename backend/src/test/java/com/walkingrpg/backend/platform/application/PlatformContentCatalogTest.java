@@ -92,6 +92,24 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeCalibratedChoiceVersionWithSameChapterTopology() {
+        Map<String, Object> calibratedCatalog = publicCatalog(
+                StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION
+        );
+        Map<String, Object> prismCatalog = publicCatalog(
+                StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v6", calibratedCatalog.get("contentVersion"));
+        assertEquals(23, calibratedCatalog.get("chapterNodes"));
+        assertEquals(23, prismCatalog.get("chapterNodes"));
+        assertNotEquals(
+                calibratedCatalog.get("catalogDigest"),
+                prismCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

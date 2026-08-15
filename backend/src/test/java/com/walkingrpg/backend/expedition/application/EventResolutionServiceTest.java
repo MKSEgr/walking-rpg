@@ -704,6 +704,73 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldRequireCalibratedEquippedSextantForSecondDawnChoice() {
+        activeContentVersion.set(
+                StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION
+        );
+        var observatory = content.requireNode(
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(observatory, 35),
+                NOW
+        );
+        UUID sextantInstanceId = UUID.fromString(
+                "cccccccc-dddd-eeee-ffff-000000000001"
+        );
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                sextantInstanceId,
+                StarterInventoryContent.PRISM_SEXTANT_ID
+        );
+        equipmentService.change(new EquipmentCommand(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                EquipmentAction.EQUIP,
+                sextantInstanceId,
+                "equip-uncalibrated-sextant"
+        ));
+        EventResolutionCommand command = command(
+                StarterExpeditionContent.SPECTRUM_OBSERVATORY_EVENT_ID,
+                StarterExpeditionContent.CALIBRATED_SEXTANT_CHOICE_ID,
+                "trace-second-dawn"
+        );
+
+        EventChoiceUnavailableException unavailable = assertThrows(
+                EventChoiceUnavailableException.class,
+                () -> service.resolve(command)
+        );
+        assertEquals(2, unavailable.requiredUpgradeLevel());
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                sextantInstanceId,
+                StarterInventoryContent.PRISM_SEXTANT_ID,
+                2
+        );
+        EventResolutionResult result = service.resolve(command);
+
+        assertEquals(
+                StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
+                result.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.HORIZON_SPIRE_NODE_ID,
+                result.nextNode().nodeId()
+        );
+        assertEquals(
+                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                result.material().itemId()
+        );
+        assertEquals(3, result.material().quantityGained());
+        assertEquals(46, result.pilot().experienceGained());
+        assertEquals(24, result.pet().bondGained());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION

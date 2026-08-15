@@ -36,6 +36,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryItemSnapshot;
+import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
 import com.walkingrpg.backend.home.domain.ItemUpgradeIngredientSnapshot;
 import com.walkingrpg.backend.home.domain.ItemUpgradeSnapshot;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
@@ -136,7 +137,7 @@ public class HomeService {
                 new StarterCraftingContent(),
                 new InMemoryEquipmentRepository(),
                 new StarterEquipmentContent(),
-                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
                 clock
         );
     }
@@ -204,7 +205,6 @@ public class HomeService {
                 expeditionSnapshot(
                         currentDefinition,
                         state,
-                        equipment,
                         activeContentVersion
                 ),
                 craftingSnapshots(state, activeContentVersion),
@@ -423,7 +423,6 @@ public class HomeService {
     private ExpeditionSnapshot expeditionSnapshot(
             ExpeditionDefinition definition,
             HomeRuntimeState state,
-            List<EquipmentSlotState> equipment,
             String activeContentVersion
     ) {
         long requiredEnergy = state.expeditionRequiredEnergy() > 0
@@ -447,7 +446,6 @@ public class HomeService {
                 eventSnapshot(
                         definition,
                         state,
-                        equipment,
                         activeContentVersion
                 )
         );
@@ -456,7 +454,6 @@ public class HomeService {
     private ExpeditionEventSnapshot eventSnapshot(
             ExpeditionDefinition definition,
             HomeRuntimeState state,
-            List<EquipmentSlotState> equipment,
             String activeContentVersion
     ) {
         if (state.unlockedEventId() == null) {
@@ -470,7 +467,7 @@ public class HomeService {
         List<ExpeditionEventChoiceSnapshot> projectedChoices = expeditionContent
                 .eventChoices(state.unlockedEventId(), activeContentVersion)
                 .stream()
-                .map(choice -> choiceSnapshot(choice, equipment))
+                .map(choice -> choiceSnapshot(choice, state.inventory()))
                 .toList();
         List<ExpeditionEventChoiceSnapshot> choices = projectedChoices.stream()
                 .filter(choice -> "AVAILABLE".equals(choice.availability()))
@@ -495,7 +492,7 @@ public class HomeService {
 
     private ExpeditionEventChoiceSnapshot choiceSnapshot(
             ExpeditionEventChoiceDefinition choice,
-            List<EquipmentSlotState> equipment
+            List<InventoryRuntimeItem> inventory
     ) {
         MaterialRewardPreviewSnapshot material = choice.materialReward() == null
                 ? null
@@ -505,9 +502,12 @@ public class HomeService {
                         choice.materialReward().quantity()
                 );
         var requirement = choice.equipmentRequirement();
-        boolean available = requirement == null || equipment.stream()
-                .anyMatch(slot -> requirement.slotId().equals(slot.slotId())
-                        && requirement.item().itemId().equals(slot.itemId()));
+        boolean available = requirement == null || inventory.stream()
+                .anyMatch(item -> requirement.slotId().equals(
+                                item.equippedSlotId()
+                        )
+                        && requirement.item().itemId().equals(item.itemId())
+                        && item.version() >= requirement.minimumUpgradeLevel());
         ExpeditionChoiceRequirementSnapshot requirementSnapshot =
                 requirement == null
                         ? null
@@ -517,6 +517,7 @@ public class HomeService {
                                 requirement.slotName(),
                                 requirement.item().itemId(),
                                 requirement.item().name(),
+                                requirement.minimumUpgradeLevel(),
                                 requirement.lockedReason()
                         );
         return new ExpeditionEventChoiceSnapshot(

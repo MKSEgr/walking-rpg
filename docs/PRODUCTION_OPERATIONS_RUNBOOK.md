@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V21 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V22 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -455,6 +455,33 @@ Only `1/UNCOMMON` and `2/RARE` are valid. A backend rollback leaves the additive
 V21 schema and refined items in place; do not undo the migration. Disable the
 new mobile/backend action and use a forward fix if persisted refinement rows
 need correction.
+
+## `chapter-1-v6` activation
+
+Flyway V22 stages `chapter-1-v6` inactive and leaves the current release
+unchanged. Activate it only after every pre-V22 backend has drained. V6 keeps
+23 nodes and adds `trace-second-dawn` to `spectrum-observatory-v1`.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v6",
+  "releaseNotes": "Первая глава: откалиброванный секстант открывает выбор второго рассвета.",
+  "content": {
+    "contentVersion": "chapter-1-v6",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 23,
+    "topology": "calibrated-sextant-choice-v1"
+  }
+}
+```
+
+At `spectrum-observatory-v1`, verify the choice is locked for an unequipped or
+level-1 sextant and available only for an equipped level-2/RARE sextant. After
+resolution, verify `3 × dawn-fragment` and the rejoin at `horizon-spire`.
+Before backend rollback, require zero persisted `trace-second-dawn` results;
+otherwise use a forward fix on a v6-capable binary.
 
 ## Rollback
 

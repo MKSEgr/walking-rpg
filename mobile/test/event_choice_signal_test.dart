@@ -107,7 +107,12 @@ void main() {
         'chase-dawn-refraction',
         EventChoiceSignalKind.prism,
       );
-      expect(currentPairCount, 42);
+      expectChoice(
+        'spectrum-observatory-v1',
+        'trace-second-dawn',
+        EventChoiceSignalKind.prism,
+      );
+      expect(currentPairCount, 43);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

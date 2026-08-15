@@ -41,4 +41,13 @@ public interface EquipmentRepository {
     List<EquipmentSlotState> findAll(String userId);
 
     boolean isEquipped(String userId, String slotId, String itemId);
+
+    default boolean isEquipped(
+            String userId,
+            String slotId,
+            String itemId,
+            long minimumUpgradeLevel
+    ) {
+        return minimumUpgradeLevel <= 1 && isEquipped(userId, slotId, itemId);
+    }
 }

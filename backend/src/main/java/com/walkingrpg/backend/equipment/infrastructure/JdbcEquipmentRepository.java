@@ -209,6 +209,16 @@ public class JdbcEquipmentRepository implements EquipmentRepository {
 
     @Override
     public boolean isEquipped(String userId, String slotId, String itemId) {
+        return isEquipped(userId, slotId, itemId, 1);
+    }
+
+    @Override
+    public boolean isEquipped(
+            String userId,
+            String slotId,
+            String itemId,
+            long minimumUpgradeLevel
+    ) {
         Boolean equipped = jdbcTemplate.queryForObject("""
                 SELECT EXISTS (
                     SELECT 1
@@ -219,8 +229,9 @@ public class JdbcEquipmentRepository implements EquipmentRepository {
                     WHERE state.user_id = ?
                       AND state.slot_id = ?
                       AND item.item_id = ?
+                      AND item.version >= ?
                 )
-                """, Boolean.class, userId, slotId, itemId);
+                """, Boolean.class, userId, slotId, itemId, minimumUpgradeLevel);
         return Boolean.TRUE.equals(equipped);
     }
 

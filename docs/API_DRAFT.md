@@ -525,6 +525,11 @@ mirror-delta-v1
 
 resonance-pocket-v1
   любой choice      → награда optional node и возврат к storm-archive
+
+spectrum-observatory-v1 (chapter-1-v6)
+  trace-second-dawn → требует prism-sextant уровня 2 в NAVIGATION,
+                      +46 pilot XP, +24 pet bond, +3 dawn-fragment,
+                      возврат к horizon-spire
 ```
 
 До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses
@@ -614,7 +619,8 @@ expedition transition и durable result используют одно post-lock 
   expedition lock; доступный вариант находится в `choices`, недоступный — в
   additive `lockedChoices`. Home availability используется только для UX, а
   прямой вызов без prerequisite возвращает
-  `409 EVENT_CHOICE_UNAVAILABLE`;
+  `409 EVENT_CHOICE_UNAVAILABLE`; additive requirement и error details содержат
+  `minimumUpgradeLevel`/`requiredUpgradeLevel` (legacy default — `1`);
 - `receiptId`, immutable reward snapshot и `nextNode` сохраняются в той же
   транзакции, что и progression/inventory/expedition transition;
 - первый event resolution переводит progress на второй узел, второй — на

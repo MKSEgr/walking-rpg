@@ -102,7 +102,8 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.economyVersion").value(2))
                 .andExpect(jsonPath("$.contentVersion")
                         .value(
-                                StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+                                StarterExpeditionContent
+                                        .CALIBRATED_SEXTANT_CONTENT_VERSION
                         ))
                 .andExpect(jsonPath("$.pilot.name").value("Навигатор"))
                 .andExpect(jsonPath("$.pet.petId").value("spark-v1"))

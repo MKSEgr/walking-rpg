@@ -328,7 +328,9 @@ Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 один прибор. Home availability является
 UX projection; locked choices вынесены в additive `lockedChoices`, чтобы
 legacy mobile видел только основной маршрут. Event service повторно проверяет
-requirement под authoritative expedition lock.
+requirement под authoritative expedition lock. Начиная с `chapter-1-v6`
+requirement может дополнительно задавать минимальный server-owned upgrade level:
+`trace-second-dawn` требует экипированный `prism-sextant` уровня 2/RARE.
 
 ## 7. Схема данных
 
@@ -413,6 +415,11 @@ command/ingredient snapshots. Backfill присваивает существую
 уровня 1 `UNCOMMON`; trigger сохраняет rolling compatibility старого crafting
 writer и допускает для секстанта только состояния `1/UNCOMMON` и `2/RARE` с
 обязательным `upgraded_at` у второго уровня.
+V22 stage-ит inactive `chapter-1-v6` с теми же 23 узлами. В
+`spectrum-observatory-v1` появляется `trace-second-dawn`: choice требует
+экипированный секстант минимум уровня 2, даёт три `dawn-fragment` и возвращает
+к `horizon-spire`. V5 не получает новый choice; activation выполняется только
+после drain pre-V22 backend instances.
 
 ## 8. Конкурентность и транзакции
 

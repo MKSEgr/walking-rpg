@@ -296,7 +296,8 @@ public class ApiExceptionHandler {
                 Map.of(
                         "choiceId", exception.choiceId(),
                         "slotId", exception.slotId(),
-                        "requiredItemId", exception.requiredItemId()
+                        "requiredItemId", exception.requiredItemId(),
+                        "requiredUpgradeLevel", exception.requiredUpgradeLevel()
                 )
         );
     }

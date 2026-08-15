@@ -94,6 +94,7 @@ for file in \
   backend/src/main/resources/db/migration/V19__void_orchard_fork.sql \
   backend/src/main/resources/db/migration/V20__prism_sextant_route.sql \
   backend/src/main/resources/db/migration/V21__prism_sextant_refinement.sql \
+  backend/src/main/resources/db/migration/V22__calibrated_sextant_choice.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -111,6 +112,7 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/migration/VoidOrchardForkMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/PrismSextantRouteMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/PrismSextantRefinementMigrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/migration/CalibratedSextantChoiceMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/EquipmentAndResonanceRouteMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/ContentReleaseActivationHistoryMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/CosmeticSlotStateMigrationTest.java \
@@ -694,8 +696,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 21:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V21: {versions}')
+if versions != expected or not versions or versions[-1] < 22:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V22: {versions}')
 print('Flyway versions:', versions)
 PY
 

@@ -83,7 +83,7 @@ public class EventResolutionService {
                 inventoryService,
                 content,
                 equipmentService,
-                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
                 clock
         );
     }
@@ -109,7 +109,7 @@ public class EventResolutionService {
                         eventRepository,
                         clock
                 ),
-                () -> StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION,
                 clock
         );
     }
@@ -303,12 +303,14 @@ public class EventResolutionService {
         if (!equipmentService.isEquipped(
                 userId,
                 requirement.slotId(),
-                requirement.item().itemId()
+                requirement.item().itemId(),
+                requirement.minimumUpgradeLevel()
         )) {
             throw new EventChoiceUnavailableException(
                     choice.choiceId(),
                     requirement.slotId(),
-                    requirement.item().itemId()
+                    requirement.item().itemId(),
+                    requirement.minimumUpgradeLevel()
             );
         }
     }

@@ -304,6 +304,12 @@ read cache и перечитывает home, где materials уже списа�
 локальный inventory: cache инвалидируется, после чего Home перечитывает тот же
 `itemInstanceId`, новый level/rarity и остатки материалов.
 
+При active `chapter-1-v6` событие спектральной обсерватории получает
+`trace-second-dawn`. Home держит choice заблокированным, пока в `NAVIGATION` не
+экипирован `prism-sextant` с `minimumUpgradeLevel = 2`; legacy requirement без
+поля трактуется как level 1. Mobile показывает server-owned lock reason, но не
+рассчитывает доступность локально.
+
 Карточка **«Снаряжение»** показывает authoritative slot `NAVIGATION` и
 позволяет экипировать/снять созданный `resonance-compass` или
 `prism-sextant`; второй прибор атомарно заменяет первый. `EQUIPMENT`
