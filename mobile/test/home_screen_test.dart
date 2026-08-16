@@ -1522,15 +1522,11 @@ void main() {
 
     expect(tester.widget<FilledButton>(choice).onPressed, isNull);
     expect(
-      find.byKey(
-        const Key('home-choice-locked-cross-first-light-causeway'),
-      ),
+      find.byKey(const Key('home-choice-locked-cross-first-light-causeway')),
       findsOneWidget,
     );
     expect(
-      find.text(
-        'Откройте навык «Ровный шаг», чтобы перейти по первому свету.',
-      ),
+      find.text('Откройте навык «Ровный шаг», чтобы перейти по первому свету.'),
       findsOneWidget,
     );
     expect(
