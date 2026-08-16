@@ -197,7 +197,22 @@ void main() {
         'preserve-echo-key',
         EventChoiceSignalKind.companion,
       );
-      expect(currentPairCount, 60);
+      expectChoice(
+        'hidden-signal-observatory-v1',
+        'reconstruct-forgotten-route',
+        EventChoiceSignalKind.echo,
+      );
+      expectChoice(
+        'memory-constellation-v1',
+        'archive-return-path',
+        EventChoiceSignalKind.chart,
+      );
+      expectChoice(
+        'memory-constellation-v1',
+        'entrust-memory-to-pet',
+        EventChoiceSignalKind.companion,
+      );
+      expect(currentPairCount, 63);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

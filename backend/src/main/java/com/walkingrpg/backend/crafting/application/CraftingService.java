@@ -61,7 +61,7 @@ public class CraftingService {
                 expeditionRepository,
                 eventResolutionRepository,
                 () -> StarterExpeditionContent
-                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION,
+                        .TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
                 clock
         );
     }

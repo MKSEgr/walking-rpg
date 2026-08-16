@@ -68,6 +68,8 @@ Roadmap отражает снижение рисков. Статусы:
       `constellation-sanctuary` в staged `chapter-1-v13`
 - [x] Продолжение skill-gated исхода в 27-й узел
       `hidden-signal-observatory` в staged `chapter-1-v14`
+- [x] «Память маршрута» как authoritative prerequisite продолжения в 28-й
+      узел `memory-constellation` в staged `chapter-1-v15`
 - [x] Push provider boundary + development implementation
 - [x] Remote config и базовый admin content API
 - [x] Flutter «Путевой журнал» для platform state/commands

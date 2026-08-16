@@ -598,6 +598,19 @@ hidden-signal-observatory-v1 (chapter-1-v14)
                          завершение экспедиции
   preserve-echo-key    → +86 pilot XP, +76 pet bond, +5 echo-thread,
                          завершение экспедиции
+
+hidden-signal-observatory-v1 (additive chapter-1-v15 choice)
+  reconstruct-forgotten-route
+                       → требует открытый навык trail-memory,
+                         +104 pilot XP, +64 pet bond, +3 dawn-fragment,
+                         переход к memory-constellation
+
+memory-constellation-v1 (chapter-1-v15)
+  archive-return-path  → +120 pilot XP, +58 pet bond, +4 ion-bloom,
+                         завершение экспедиции
+  entrust-memory-to-pet
+                       → +92 pilot XP, +82 pet bond, +6 echo-thread,
+                         завершение экспедиции
 ```
 
 До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses
@@ -608,7 +621,8 @@ V1-v12 не проецируют и не принимают `decode-sanctuary-si
 проверяет `signal-reader` по authoritative platform state до любой награды или
 expedition mutation и завершает journey. Active v14 выполняет ту же проверку,
 но продолжает journey в `hidden-signal-observatory`; v1-v13 не могут начать
-новый маршрут.
+новый маршрут. Active v15 дополнительно проверяет `trail-memory` перед
+переходом в `memory-constellation`; v1-v14 не принимают новый choice ID.
 
 Response второго события:
 

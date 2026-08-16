@@ -103,6 +103,7 @@ for file in \
   backend/src/main/resources/db/migration/V28__adult_pet_frontier_route.sql \
   backend/src/main/resources/db/migration/V29__signal_reader_sanctuary_choice.sql \
   backend/src/main/resources/db/migration/V30__signal_reader_secret_route.sql \
+  backend/src/main/resources/db/migration/V31__trail_memory_secret_route.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -706,8 +707,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 30:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V30: {versions}')
+if versions != expected or not versions or versions[-1] < 31:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V31: {versions}')
 print('Flyway versions:', versions)
 PY
 

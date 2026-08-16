@@ -295,6 +295,30 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeTrailMemoryRouteOnlyInChapterV15Catalog() {
+        Map<String, Object> trailMemoryCatalog = publicCatalog(
+                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+        );
+        Map<String, Object> secretRouteCatalog = publicCatalog(
+                StarterExpeditionContent
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v15",
+                trailMemoryCatalog.get("contentVersion"));
+        assertEquals(28, trailMemoryCatalog.get("chapterNodes"));
+        assertEquals(27, secretRouteCatalog.get("chapterNodes"));
+        assertEquals(
+                list(secretRouteCatalog, "skills"),
+                list(trailMemoryCatalog, "skills")
+        );
+        assertNotEquals(
+                secretRouteCatalog.get("catalogDigest"),
+                trailMemoryCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

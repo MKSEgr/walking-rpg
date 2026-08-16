@@ -45,6 +45,8 @@ public class StarterExpeditionContent {
             "chapter-1-v13";
     public static final String SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION =
             "chapter-1-v14";
+    public static final String TRAIL_MEMORY_ROUTE_CONTENT_VERSION =
+            "chapter-1-v15";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -55,6 +57,7 @@ public class StarterExpeditionContent {
     public static final int UNCHARTED_VERGE_NODE_COUNT = 25;
     public static final int ADULT_PET_FRONTIER_NODE_COUNT = 26;
     public static final int SIGNAL_READER_SECRET_ROUTE_NODE_COUNT = 27;
+    public static final int TRAIL_MEMORY_ROUTE_NODE_COUNT = 28;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -132,6 +135,16 @@ public class StarterExpeditionContent {
             "chart-hidden-sector";
     public static final String PRESERVE_ECHO_KEY_CHOICE_ID =
             "preserve-echo-key";
+    public static final String RECONSTRUCT_FORGOTTEN_ROUTE_CHOICE_ID =
+            "reconstruct-forgotten-route";
+    public static final String MEMORY_CONSTELLATION_NODE_ID =
+            "memory-constellation";
+    public static final String MEMORY_CONSTELLATION_EVENT_ID =
+            "memory-constellation-v1";
+    public static final String ARCHIVE_RETURN_PATH_CHOICE_ID =
+            "archive-return-path";
+    public static final String ENTRUST_MEMORY_TO_PET_CHOICE_ID =
+            "entrust-memory-to-pet";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
 
@@ -204,7 +217,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION,
+                    TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -518,6 +531,38 @@ public class StarterExpeditionContent {
                 hiddenSignalObservatoryDefinition
         );
 
+        NodeSpec memoryConstellationSpec = new NodeSpec(
+                MEMORY_CONSTELLATION_NODE_ID,
+                "Созвездие памяти",
+                95,
+                MEMORY_CONSTELLATION_EVENT_ID,
+                "Маршрут, который помнит шаги",
+                "Забытые следы вспыхнули созвездием и ждут решения: сохранить карту или доверить память живому проводнику."
+        );
+        ExpeditionDefinition memoryConstellationDefinition = definition(
+                memoryConstellationSpec
+        );
+        definitions.add(memoryConstellationDefinition);
+        byId.put(
+                memoryConstellationDefinition.currentNodeId(),
+                memoryConstellationDefinition
+        );
+        byEvent.put(
+                memoryConstellationDefinition.event().eventId(),
+                memoryConstellationDefinition
+        );
+        choices.put(
+                MEMORY_CONSTELLATION_EVENT_ID,
+                memoryConstellationChoices(inventoryContent)
+        );
+        choiceNext.put(
+                new EventChoiceKey(
+                        HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                        RECONSTRUCT_FORGOTTEN_ROUTE_CHOICE_ID
+                ),
+                memoryConstellationDefinition
+        );
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -563,7 +608,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+                TRAIL_MEMORY_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -605,7 +650,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+                TRAIL_MEMORY_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -638,7 +683,7 @@ public class StarterExpeditionContent {
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
         return eventChoices(
                 eventId,
-                SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+                TRAIL_MEMORY_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -752,6 +797,13 @@ public class StarterExpeditionContent {
                         .toList();
             }
         }
+        if (HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID.equals(eventId)
+                && !supportsTrailMemoryRoute(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !RECONSTRUCT_FORGOTTEN_ROUTE_CHOICE_ID
+                            .equals(choice.choiceId()))
+                    .toList();
+        }
         return choices;
     }
 
@@ -768,7 +820,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION;
+        return TRAIL_MEMORY_ROUTE_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -777,6 +829,9 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(activeContentVersion)) {
+            return TRAIL_MEMORY_ROUTE_CONTENT_VERSION;
+        }
         if (SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                 activeContentVersion
         )) {
@@ -846,6 +901,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -865,6 +923,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -883,6 +944,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -899,6 +963,9 @@ public class StarterExpeditionContent {
                 || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
                 );
     }
@@ -918,6 +985,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -933,6 +1003,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -947,6 +1020,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -958,6 +1034,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -968,6 +1047,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -977,6 +1059,9 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -985,12 +1070,18 @@ public class StarterExpeditionContent {
                 || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
     public static boolean supportsPilotSkillChoice(String contentVersion) {
         return PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion)
                 || SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
+                )
+                || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
                 );
     }
@@ -1000,12 +1091,18 @@ public class StarterExpeditionContent {
     ) {
         return SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION.equals(
                 contentVersion
+        ) || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                contentVersion
         );
+    }
+
+    public static boolean supportsTrailMemoryRoute(String contentVersion) {
+        return TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION,
+                TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -1670,6 +1767,60 @@ public class StarterExpeditionContent {
                                 inventoryContent,
                                 StarterInventoryContent.ECHO_THREAD_ID,
                                 5
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        RECONSTRUCT_FORGOTTEN_ROUTE_CHOICE_ID,
+                        "Восстановить забытый маршрут",
+                        "Применить Память маршрута и собрать исчезнувшие шаги в новый путь.",
+                        "Следы снова стали дорогой",
+                        "Пилот связал отголоски пройденных узлов и открыл созвездие, которое помнит каждый шаг.",
+                        104,
+                        64,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                3
+                        ),
+                        new ExpeditionChoiceSkillRequirement(
+                                PlatformSkillIds.TRAIL_MEMORY,
+                                "Память маршрута",
+                                "Откройте навык «Память маршрута», чтобы восстановить забытый путь обсерватории."
+                        )
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> memoryConstellationChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        ARCHIVE_RETURN_PATH_CHOICE_ID,
+                        "Сохранить путь возвращения",
+                        "Закрепить восстановленные шаги в общей карте экспедиции.",
+                        "Память стала картой",
+                        "Пилот сохранил маршрут между забытыми маяками и собрал ионный свет с его опорных точек.",
+                        120,
+                        58,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ION_BLOOM_ID,
+                                4
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        ENTRUST_MEMORY_TO_PET_CHOICE_ID,
+                        "Доверить память питомцу",
+                        "Позволить питомцу удержать живой ритм пути вместо неподвижной карты.",
+                        "Живой проводник",
+                        "Питомец запомнил дорогу как песню движения и сохранил её в шести нитях эха.",
+                        92,
+                        82,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ECHO_THREAD_ID,
+                                6
                         )
                 )
         );
