@@ -100,6 +100,7 @@ for file in \
   backend/src/main/resources/db/migration/V25__epic_sextant_uncharted_verge.sql \
   backend/src/main/resources/db/migration/V26__pet_guided_uncharted_outcomes.sql \
   backend/src/main/resources/db/migration/V27__adult_starter_pet_evolution.sql \
+  backend/src/main/resources/db/migration/V28__adult_pet_frontier_route.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -122,6 +123,7 @@ for file in \
   backend/src/test/java/com/walkingrpg/backend/migration/ContentReleaseActivationHistoryMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/CosmeticSlotStateMigrationTest.java \
   backend/src/test/java/com/walkingrpg/backend/migration/AdultPetEvolutionMigrationTest.java \
+  backend/src/test/java/com/walkingrpg/backend/migration/AdultPetFrontierRouteMigrationTest.java \
   privacy/privacy-policy.md \
   scripts/generate-build-metadata.sh \
   scripts/ci/action-pin-policy-requirements.txt \
@@ -702,8 +704,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 27:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V27: {versions}')
+if versions != expected or not versions or versions[-1] < 28:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V28: {versions}')
 print('Flyway versions:', versions)
 PY
 

@@ -881,6 +881,176 @@ class EventResolutionIntegrationTest {
     }
 
     @Test
+    void shouldGateAdultPetFrontierAndCompleteSanctuary() {
+        String userId = "adult-pet-frontier-user";
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "select-spark-for-adult-frontier",
+                Map.of("petId", "spark-v1")
+        ));
+        jdbcTemplate.update("""
+                UPDATE roadmap_user_state
+                SET state_json = jsonb_set(
+                    jsonb_set(
+                        jsonb_set(
+                            state_json,
+                            '{pets,spark-v1,level}',
+                            '2'::jsonb
+                        ),
+                        '{pets,spark-v1,bond}',
+                        '145'::jsonb
+                    ),
+                    '{pets,spark-v1,evolutionStage}',
+                    '1'::jsonb
+                )
+                WHERE user_id = ?
+                """, userId);
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v12'
+                """));
+        jdbcTemplate.update("""
+                INSERT INTO expedition_progress (
+                    user_id, expedition_id, current_node_id,
+                    progress_energy, required_energy, status,
+                    unlocked_event_id, version, created_at, updated_at
+                ) VALUES (?, ?, ?, 70, 70, 'EVENT_READY', ?, 43, now(), now())
+                """,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID,
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID
+        );
+
+        HomeSnapshotResponse youngHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        var youngAdultChoice = youngHome.expedition().unlockedEvent()
+                .lockedChoices().stream()
+                .filter(choice -> StarterExpeditionContent
+                        .SPARK_ADULT_FRONTIER_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(
+                StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION,
+                youngHome.contentVersion()
+        );
+        assertEquals(2, youngAdultChoice.requirement()
+                .minimumEvolutionStage());
+        EventChoicePetUnavailableException unavailable = assertThrows(
+                EventChoicePetUnavailableException.class,
+                () -> eventResolutionService.resolve(command(
+                        userId,
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.SPARK_ADULT_FRONTIER_CHOICE_ID,
+                        "reject-young-spark-frontier"
+                ))
+        );
+        assertEquals(2, unavailable.requiredEvolutionStage());
+        assertEquals(1, unavailable.actualEvolutionStage());
+        assertEquals(0, rowCount("processed_event_resolution"));
+        assertEquals(0, rowCount("inventory_stack"));
+        assertEquals(0, rowCount("pilot_progress"));
+        assertEquals(0, rowCount("pet_progress"));
+
+        jdbcTemplate.update("""
+                UPDATE roadmap_user_state
+                SET state_json = jsonb_set(
+                    jsonb_set(
+                        state_json,
+                        '{pets,spark-v1,level}',
+                        '3'::jsonb
+                    ),
+                    '{pets,spark-v1,evolutionStage}',
+                    '2'::jsonb
+                )
+                WHERE user_id = ?
+                """, userId);
+
+        HomeSnapshotResponse adultHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        assertTrue(adultHome.expedition().unlockedEvent().choices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .SPARK_ADULT_FRONTIER_CHOICE_ID.equals(
+                                choice.choiceId()
+                        )));
+        assertEquals(2L, adultHome.expedition().unlockedEvent()
+                .lockedChoices().stream()
+                .filter(choice -> choice.requirement() != null
+                        && choice.requirement().minimumEvolutionStage() == 2)
+                .count());
+
+        EventResolutionCommand routeCommand = command(
+                userId,
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                StarterExpeditionContent.SPARK_ADULT_FRONTIER_CHOICE_ID,
+                "resolve-adult-spark-frontier"
+        );
+        EventResolutionResult route = eventResolutionService.resolve(
+                routeCommand
+        );
+        EventResolutionResult routeReplay = eventResolutionService.resolve(
+                routeCommand
+        );
+
+        assertEquals(route, routeReplay);
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS,
+                route.expeditionStatus());
+        assertEquals(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID,
+                route.nextNode().nodeId()
+        );
+        assertEquals("spark-v1", route.pet().petId());
+        assertEquals(2L, inventoryQuantity("ion-bloom"));
+        acknowledgementService.acknowledge(userId, route.receiptId());
+
+        jdbcTemplate.update("""
+                UPDATE expedition_progress
+                SET progress_energy = required_energy,
+                    status = 'EVENT_READY',
+                    unlocked_event_id = ?,
+                    version = version + 1,
+                    updated_at = now()
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                  AND current_node_id = ?
+                """,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID
+        );
+        EventResolutionCommand finaleCommand = command(
+                userId,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                "anchor-constellation-sanctuary",
+                "complete-adult-pet-sanctuary"
+        );
+        EventResolutionResult finale = eventResolutionService.resolve(
+                finaleCommand
+        );
+        EventResolutionResult finaleReplay = eventResolutionService.resolve(
+                finaleCommand
+        );
+
+        assertEquals(finale, finaleReplay);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                finale.expeditionStatus());
+        assertNull(finale.nextNode());
+        assertEquals(3L, inventoryQuantity("prism-dust"));
+        assertEquals(2, rowCount("processed_event_resolution"));
+    }
+
+    @Test
     void shouldSerializeEventRewardWithConcurrentPetSelection() throws Exception {
         String userId = "concurrent-pet-user";
         platformService.execute(userId, new PlatformCommandRequest(

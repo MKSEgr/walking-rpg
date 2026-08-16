@@ -157,7 +157,32 @@ void main() {
         'decode-living-constellation',
         EventChoiceSignalKind.echo,
       );
-      expect(currentPairCount, 52);
+      expectChoice(
+        'uncharted-verge-v1',
+        'ignite-constellation-gate',
+        EventChoiceSignalKind.companion,
+      );
+      expectChoice(
+        'uncharted-verge-v1',
+        'root-constellation-gate',
+        EventChoiceSignalKind.stabilize,
+      );
+      expectChoice(
+        'uncharted-verge-v1',
+        'read-constellation-gate',
+        EventChoiceSignalKind.echo,
+      );
+      expectChoice(
+        'constellation-sanctuary-v1',
+        'anchor-constellation-sanctuary',
+        EventChoiceSignalKind.chart,
+      );
+      expectChoice(
+        'constellation-sanctuary-v1',
+        'carry-sanctuary-song',
+        EventChoiceSignalKind.companion,
+      );
+      expect(currentPairCount, 57);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

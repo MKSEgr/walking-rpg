@@ -54,6 +54,10 @@ class StarterExpeditionContentTest {
                 () -> StarterExpeditionContent
                         .ADULT_PET_EVOLUTION_CONTENT_VERSION
         );
+        String chapterV12 = content.activeContentVersion(
+                () -> StarterExpeditionContent
+                        .ADULT_PET_FRONTIER_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -82,6 +86,10 @@ class StarterExpeditionContentTest {
         assertEquals(
                 StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION,
                 chapterV11
+        );
+        assertEquals(
+                StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION,
+                chapterV12
         );
         assertEquals(1, activationReads.get());
         assertEquals(
@@ -210,16 +218,41 @@ class StarterExpeditionContentTest {
                         chapterV11
                 )
         );
+        List<ExpeditionEventChoiceDefinition> adultFrontierChoices =
+                content.eventChoices(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        chapterV12
+                );
+        assertEquals(8, adultFrontierChoices.size());
+        assertEquals(
+                List.of(2, 2, 2),
+                adultFrontierChoices.stream()
+                        .filter(choice -> choice.petRequirement() != null)
+                        .filter(choice -> choice.petRequirement()
+                                .minimumEvolutionStage() > 0)
+                        .map(choice -> choice.petRequirement()
+                                .minimumEvolutionStage())
+                        .toList()
+        );
         assertFalse(StarterExpeditionContent.supportsAdultPetEvolution(
                 chapterV10
         ));
         assertTrue(StarterExpeditionContent.supportsAdultPetEvolution(
                 chapterV11
         ));
+        assertTrue(StarterExpeditionContent.supportsAdultPetEvolution(
+                chapterV12
+        ));
+        assertFalse(StarterExpeditionContent.supportsAdultPetFrontier(
+                chapterV11
+        ));
+        assertTrue(StarterExpeditionContent.supportsAdultPetFrontier(
+                chapterV12
+        ));
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
-                StarterExpeditionContent.UNCHARTED_VERGE_NODE_COUNT,
+                StarterExpeditionContent.ADULT_PET_FRONTIER_NODE_COUNT,
                 content.nodes().size()
         );
     }
@@ -390,6 +423,48 @@ class StarterExpeditionContentTest {
                         StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
                 )
         );
+    }
+
+    @Test
+    void shouldOpenConstellationSanctuaryOnlyForAdultPetFrontier() {
+        assertThrows(
+                EventResolutionValidationException.class,
+                () -> content.requireChoice(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.SPARK_ADULT_FRONTIER_CHOICE_ID,
+                        StarterExpeditionContent
+                                .ADULT_PET_EVOLUTION_CONTENT_VERSION
+                )
+        );
+        assertEquals(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID,
+                content.nextNodeAfterEvent(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.SPARK_ADULT_FRONTIER_CHOICE_ID,
+                        StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+                ).orElseThrow().currentNodeId()
+        );
+        assertEquals(
+                2,
+                content.requireChoice(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.SPARK_ADULT_FRONTIER_CHOICE_ID,
+                        StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+                ).petRequirement().minimumEvolutionStage()
+        );
+        assertTrue(content.eventChoices(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION
+        ).isEmpty());
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+        ).size());
+        assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                "anchor-constellation-sanctuary",
+                StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+        ).isEmpty());
     }
 
     private boolean hasStormRiftChoice(

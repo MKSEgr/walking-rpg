@@ -85,7 +85,7 @@ public class EventResolutionService {
                 content,
                 equipmentService,
                 () -> StarterExpeditionContent
-                        .ADULT_PET_EVOLUTION_CONTENT_VERSION,
+                        .ADULT_PET_FRONTIER_CONTENT_VERSION,
                 clock
         );
     }
@@ -112,7 +112,7 @@ public class EventResolutionService {
                         clock
                 ),
                 () -> StarterExpeditionContent
-                        .ADULT_PET_EVOLUTION_CONTENT_VERSION,
+                        .ADULT_PET_FRONTIER_CONTENT_VERSION,
                 clock
         );
     }
@@ -327,12 +327,15 @@ public class EventResolutionService {
         if (requirement == null) {
             return;
         }
-        if (!requirement.petId().equals(
-                progressionService.activePetFor(userId).petId()
-        )) {
+        var activePet = progressionService.activePetFor(userId);
+        if (!requirement.petId().equals(activePet.petId())
+                || activePet.evolutionStage()
+                < requirement.minimumEvolutionStage()) {
             throw new EventChoicePetUnavailableException(
                     choice.choiceId(),
-                    requirement.petId()
+                    requirement.petId(),
+                    requirement.minimumEvolutionStage(),
+                    activePet.evolutionStage()
             );
         }
     }

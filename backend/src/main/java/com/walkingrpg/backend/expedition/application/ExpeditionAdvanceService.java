@@ -61,7 +61,7 @@ public class ExpeditionAdvanceService {
                 economyService,
                 content,
                 () -> StarterExpeditionContent
-                        .ADULT_PET_EVOLUTION_CONTENT_VERSION,
+                        .ADULT_PET_FRONTIER_CONTENT_VERSION,
                 clock
         );
     }

@@ -7,6 +7,7 @@ public record ExpeditionChoiceRequirementSnapshot(
         String itemId,
         String itemName,
         long minimumUpgradeLevel,
+        int minimumEvolutionStage,
         String description
 ) {
 }

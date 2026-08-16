@@ -541,12 +541,41 @@ parser/widget и visual-mapping tests реализованы. Баланс pet-s
 **Статус:** backend/mobile/Flyway V27, unit/migration/catalog/parser/widget
 tests реализованы. Баланс взрослых thresholds требует beta evidence.
 
+### US-024. Открыть взрослым питомцам путь за Неизведанный рубеж
+
+Как пользователь со взрослым активным питомцем, я хочу продолжить экспедицию
+за обычным финалом Неизведанного рубежа, чтобы вторая эволюция открывала новое
+решение и место, а не оставалась только визуальным состоянием журнала.
+
+Критерии:
+
+- inactive `chapter-1-v12` добавляет 26-й узел
+  `constellation-sanctuary` и событие `constellation-sanctuary-v1`; v1-v11
+  сохраняют прежнюю topology и не принимают новые choice IDs;
+- `uncharted-verge-v1` получает по одному маршруту для Искры-звездочёта,
+  Мха-оплота и Руны-провидицы; выбор требует exact active pet и
+  `evolutionStage >= 2`;
+- Home проецирует additive `minimumEvolutionStage`: доступен только маршрут
+  текущего взрослого питомца, остальные adult routes остаются в
+  `lockedChoices`;
+- event service повторно проверяет pet ID/stage до progression, inventory и
+  expedition mutation; успешный choice выдаёт награду один раз и переводит в
+  Святилище созвездий;
+- два решения святилища выдают собственные XP/bond/material rewards и
+  завершают экспедицию с exact replay;
+- V28 сохраняет active v11 и существующие platform/pet/expedition rows; v12
+  активируется только после drain pre-V28 backend instances.
+
+**Статус:** backend/mobile/Flyway V28, unit/API/PostgreSQL/migration/catalog,
+parser/widget и visual-mapping tests реализованы. Баланс наград и ценность
+adult-only continuation требуют beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
 - первая глава из 18 основных узлов и staged optional topology вплоть до
-  `uncharted-verge`;
+  `constellation-sanctuary`;
 - три питомца, active selection, две эволюции, навыки и собственные финальные
   исходы экспедиции;
 - onboarding, задания и достижения;
@@ -558,8 +587,8 @@ tests реализованы. Баланс взрослых thresholds треб�
   server-authoritative single-item equipment slot;
 - две последовательные server-authoritative ступени unique item вплоть до
   уровня 3/EPIC;
-- expedition choices с authoritative minimum item level и active-pet
-  prerequisites.
+- expedition choices с authoritative minimum item level, active-pet и
+  minimum evolution stage prerequisites.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

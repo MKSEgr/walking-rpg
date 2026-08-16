@@ -5,12 +5,26 @@ import java.util.Objects;
 public record ExpeditionChoicePetRequirement(
         String petId,
         String petName,
-        String lockedReason
+        String lockedReason,
+        int minimumEvolutionStage
 ) {
     public ExpeditionChoicePetRequirement {
         petId = requireText(petId, "petId");
         petName = requireText(petName, "petName");
         lockedReason = requireText(lockedReason, "lockedReason");
+        if (minimumEvolutionStage < 0) {
+            throw new IllegalArgumentException(
+                    "minimumEvolutionStage не может быть отрицательной"
+            );
+        }
+    }
+
+    public ExpeditionChoicePetRequirement(
+            String petId,
+            String petName,
+            String lockedReason
+    ) {
+        this(petId, petName, lockedReason, 0);
     }
 
     private static String requireText(String value, String field) {

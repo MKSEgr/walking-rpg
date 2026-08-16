@@ -445,7 +445,41 @@ void main() {
     expect(requirement.itemId, 'moss-v1');
     expect(requirement.itemName, 'Мох');
     expect(requirement.minimumUpgradeLevel, 1);
+    expect(requirement.minimumEvolutionStage, 0);
     expect(requirement.description, contains('Выберите Мха'));
+  });
+
+  test('adult pet requirement preserves authoritative evolution stage', () {
+    final HomeChoiceRequirement requirement =
+        HomeChoiceRequirement.fromJson(<String, dynamic>{
+          'type': 'ACTIVE_PET',
+          'slotId': 'ACTIVE_PET',
+          'slotName': 'Активный питомец',
+          'itemId': 'spark-v1',
+          'itemName': 'Искра-звездочёт',
+          'minimumUpgradeLevel': 1,
+          'minimumEvolutionStage': 2,
+          'description':
+              'Выберите взрослую Искру-звездочёта активным питомцем.',
+        });
+
+    expect(requirement.minimumEvolutionStage, 2);
+    expect(requirement.itemName, 'Искра-звездочёт');
+  });
+
+  test('negative pet evolution requirement is rejected', () {
+    expect(
+      () => HomeChoiceRequirement.fromJson(<String, dynamic>{
+        'type': 'ACTIVE_PET',
+        'slotId': 'ACTIVE_PET',
+        'slotName': 'Активный питомец',
+        'itemId': 'spark-v1',
+        'itemName': 'Искра',
+        'minimumEvolutionStage': -1,
+        'description': 'Недоступно.',
+      }),
+      throwsFormatException,
+    );
   });
 
   test('invalid nested response is rejected', () {

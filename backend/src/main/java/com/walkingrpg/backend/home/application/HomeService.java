@@ -138,7 +138,7 @@ public class HomeService {
                 new InMemoryEquipmentRepository(),
                 new StarterEquipmentContent(),
                 () -> StarterExpeditionContent
-                        .ADULT_PET_EVOLUTION_CONTENT_VERSION,
+                        .ADULT_PET_FRONTIER_CONTENT_VERSION,
                 clock
         );
     }
@@ -471,7 +471,8 @@ public class HomeService {
                 .map(choice -> choiceSnapshot(
                         choice,
                         state.inventory(),
-                        state.petId()
+                        state.petId(),
+                        state.petEvolutionStage()
                 ))
                 .toList();
         List<ExpeditionEventChoiceSnapshot> choices = projectedChoices.stream()
@@ -498,7 +499,8 @@ public class HomeService {
     private ExpeditionEventChoiceSnapshot choiceSnapshot(
             ExpeditionEventChoiceDefinition choice,
             List<InventoryRuntimeItem> inventory,
-            String activePetId
+            String activePetId,
+            int activePetEvolutionStage
     ) {
         MaterialRewardPreviewSnapshot material = choice.materialReward() == null
                 ? null
@@ -528,10 +530,13 @@ public class HomeService {
                     equipmentRequirement.item().itemId(),
                     equipmentRequirement.item().name(),
                     equipmentRequirement.minimumUpgradeLevel(),
+                    0,
                     equipmentRequirement.lockedReason()
             );
         } else if (petRequirement != null) {
-            available = petRequirement.petId().equals(activePetId);
+            available = petRequirement.petId().equals(activePetId)
+                    && activePetEvolutionStage
+                    >= petRequirement.minimumEvolutionStage();
             requirementSnapshot = new ExpeditionChoiceRequirementSnapshot(
                     "ACTIVE_PET",
                     "ACTIVE_PET",
@@ -539,6 +544,7 @@ public class HomeService {
                     petRequirement.petId(),
                     petRequirement.petName(),
                     1,
+                    petRequirement.minimumEvolutionStage(),
                     petRequirement.lockedReason()
             );
         }

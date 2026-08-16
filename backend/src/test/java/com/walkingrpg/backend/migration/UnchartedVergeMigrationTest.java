@@ -44,7 +44,7 @@ class UnchartedVergeMigrationTest {
                 .load();
         flyway.migrate();
 
-        assertEquals("27", flyway.info().current().getVersion().getVersion());
+        assertEquals("28", flyway.info().current().getVersion().getVersion());
         try (Connection connection = connection();
              Statement statement = connection.createStatement()) {
             assertEquals(1, scalar(statement, """

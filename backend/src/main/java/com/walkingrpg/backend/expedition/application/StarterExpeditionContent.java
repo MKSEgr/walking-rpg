@@ -37,6 +37,8 @@ public class StarterExpeditionContent {
             "chapter-1-v10";
     public static final String ADULT_PET_EVOLUTION_CONTENT_VERSION =
             "chapter-1-v11";
+    public static final String ADULT_PET_FRONTIER_CONTENT_VERSION =
+            "chapter-1-v12";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -45,6 +47,7 @@ public class StarterExpeditionContent {
     public static final int PRISM_SEXTANT_NODE_COUNT = 23;
     public static final int SECOND_DAWN_NODE_COUNT = 24;
     public static final int UNCHARTED_VERGE_NODE_COUNT = 25;
+    public static final int ADULT_PET_FRONTIER_NODE_COUNT = 26;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -102,6 +105,16 @@ public class StarterExpeditionContent {
             "root-return-beacon";
     public static final String RUNE_UNCHARTED_CHOICE_ID =
             "decode-living-constellation";
+    public static final String SPARK_ADULT_FRONTIER_CHOICE_ID =
+            "ignite-constellation-gate";
+    public static final String MOSS_ADULT_FRONTIER_CHOICE_ID =
+            "root-constellation-gate";
+    public static final String RUNE_ADULT_FRONTIER_CHOICE_ID =
+            "read-constellation-gate";
+    public static final String CONSTELLATION_SANCTUARY_NODE_ID =
+            "constellation-sanctuary";
+    public static final String CONSTELLATION_SANCTUARY_EVENT_ID =
+            "constellation-sanctuary-v1";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
 
@@ -174,7 +187,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    ADULT_PET_EVOLUTION_CONTENT_VERSION,
+                    ADULT_PET_FRONTIER_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -413,6 +426,49 @@ public class StarterExpeditionContent {
                 List.copyOf(secondDawnRouteChoices)
         );
 
+        NodeSpec constellationSanctuarySpec = new NodeSpec(
+                CONSTELLATION_SANCTUARY_NODE_ID,
+                "Святилище созвездий",
+                80,
+                CONSTELLATION_SANCTUARY_EVENT_ID,
+                "Хор трёх путей",
+                "Взрослый питомец открыл место, где свет, корни и эхо складываются в карту следующего мира."
+        );
+        ExpeditionDefinition constellationSanctuaryDefinition = definition(
+                constellationSanctuarySpec
+        );
+        definitions.add(constellationSanctuaryDefinition);
+        byId.put(
+                constellationSanctuaryDefinition.currentNodeId(),
+                constellationSanctuaryDefinition
+        );
+        byEvent.put(
+                constellationSanctuaryDefinition.event().eventId(),
+                constellationSanctuaryDefinition
+        );
+        choices.put(
+                CONSTELLATION_SANCTUARY_EVENT_ID,
+                constellationSanctuaryChoices(inventoryContent)
+        );
+
+        for (String choiceId : List.of(
+                SPARK_ADULT_FRONTIER_CHOICE_ID,
+                MOSS_ADULT_FRONTIER_CHOICE_ID,
+                RUNE_ADULT_FRONTIER_CHOICE_ID
+        )) {
+            choiceNext.put(
+                    new EventChoiceKey(UNCHARTED_VERGE_EVENT_ID, choiceId),
+                    constellationSanctuaryDefinition
+            );
+        }
+        List<ExpeditionEventChoiceDefinition> adultFrontierChoices =
+                new ArrayList<>(choices.get(UNCHARTED_VERGE_EVENT_ID));
+        adultFrontierChoices.addAll(adultPetFrontierChoices(inventoryContent));
+        choices.put(
+                UNCHARTED_VERGE_EVENT_ID,
+                List.copyOf(adultFrontierChoices)
+        );
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -458,7 +514,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                ADULT_PET_EVOLUTION_CONTENT_VERSION
+                ADULT_PET_FRONTIER_CONTENT_VERSION
         );
     }
 
@@ -495,7 +551,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                ADULT_PET_EVOLUTION_CONTENT_VERSION
+                ADULT_PET_FRONTIER_CONTENT_VERSION
         );
     }
 
@@ -526,7 +582,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, ADULT_PET_EVOLUTION_CONTENT_VERSION);
+        return eventChoices(eventId, ADULT_PET_FRONTIER_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -600,19 +656,37 @@ public class StarterExpeditionContent {
                     ))
                     .toList();
         }
-        if (UNCHARTED_VERGE_EVENT_ID.equals(eventId)
-                && !supportsPetGuidedUncharted(activeContentVersion)) {
-            return choices.stream()
-                    .filter(choice -> !SPARK_UNCHARTED_CHOICE_ID.equals(
-                            choice.choiceId()
-                    ))
-                    .filter(choice -> !MOSS_UNCHARTED_CHOICE_ID.equals(
-                            choice.choiceId()
-                    ))
-                    .filter(choice -> !RUNE_UNCHARTED_CHOICE_ID.equals(
-                            choice.choiceId()
-                    ))
-                    .toList();
+        if (UNCHARTED_VERGE_EVENT_ID.equals(eventId)) {
+            var filtered = choices.stream();
+            if (!supportsPetGuidedUncharted(activeContentVersion)) {
+                filtered = filtered
+                        .filter(choice -> !SPARK_UNCHARTED_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ))
+                        .filter(choice -> !MOSS_UNCHARTED_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ))
+                        .filter(choice -> !RUNE_UNCHARTED_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ));
+            }
+            if (!supportsAdultPetFrontier(activeContentVersion)) {
+                filtered = filtered
+                        .filter(choice -> !SPARK_ADULT_FRONTIER_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ))
+                        .filter(choice -> !MOSS_ADULT_FRONTIER_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ))
+                        .filter(choice -> !RUNE_ADULT_FRONTIER_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ));
+            }
+            return filtered.toList();
+        }
+        if (CONSTELLATION_SANCTUARY_EVENT_ID.equals(eventId)
+                && !supportsAdultPetFrontier(activeContentVersion)) {
+            return List.of();
         }
         return choices;
     }
@@ -630,7 +704,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return ADULT_PET_EVOLUTION_CONTENT_VERSION;
+        return ADULT_PET_FRONTIER_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -639,6 +713,11 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (ADULT_PET_FRONTIER_CONTENT_VERSION.equals(
+                activeContentVersion
+        )) {
+            return ADULT_PET_FRONTIER_CONTENT_VERSION;
+        }
         if (ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(
                 activeContentVersion
         )) {
@@ -690,7 +769,8 @@ public class StarterExpeditionContent {
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsStormRift(String contentVersion) {
@@ -704,7 +784,8 @@ public class StarterExpeditionContent {
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsVoidOrchardFork(String contentVersion) {
@@ -717,7 +798,8 @@ public class StarterExpeditionContent {
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPrismSextantRoute(String contentVersion) {
@@ -729,7 +811,8 @@ public class StarterExpeditionContent {
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsCalibratedSextantChoice(
@@ -742,7 +825,8 @@ public class StarterExpeditionContent {
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsSecondDawnRoute(String contentVersion) {
@@ -752,7 +836,8 @@ public class StarterExpeditionContent {
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsSecondDawnAttunement(
@@ -761,27 +846,35 @@ public class StarterExpeditionContent {
         return SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(contentVersion)
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsUnchartedVerge(String contentVersion) {
         return UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPetGuidedUncharted(String contentVersion) {
         return PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsAdultPetEvolution(String contentVersion) {
-        return ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+        return ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsAdultPetFrontier(String contentVersion) {
+        return ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                ADULT_PET_EVOLUTION_CONTENT_VERSION,
+                ADULT_PET_FRONTIER_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -1290,6 +1383,108 @@ public class StarterExpeditionContent {
                                 StarterProgressionContent.RUNE_PET_ID,
                                 "Руна",
                                 "Выберите Руну активным питомцем, чтобы расшифровать живое созвездие."
+                        )
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> adultPetFrontierChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        SPARK_ADULT_FRONTIER_CHOICE_ID,
+                        "Зажечь врата с Искрой-звездочётом",
+                        "Доверить взрослой Искре звёздную решётку за границей карты.",
+                        "Врата звёздного огня",
+                        "Искра-звездочёт собрала далёкие вспышки в проход к святилищу созвездий.",
+                        54,
+                        52,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ION_BLOOM_ID,
+                                2
+                        ),
+                        new ExpeditionChoicePetRequirement(
+                                StarterProgressionContent.PET_ID,
+                                "Искра-звездочёт",
+                                "Выберите взрослую Искру-звездочёта активным питомцем, чтобы открыть звёздные врата.",
+                                2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        MOSS_ADULT_FRONTIER_CHOICE_ID,
+                        "Укоренить проход с Мхом-оплотом",
+                        "Позволить взрослому Мху вырастить опору в пустоте между созвездиями.",
+                        "Живой мост за рубеж",
+                        "Мох-оплот поднял корневой мост и связал новую землю со святилищем созвездий.",
+                        70,
+                        40,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ASH_SEED_ID,
+                                2
+                        ),
+                        new ExpeditionChoicePetRequirement(
+                                StarterProgressionContent.MOSS_PET_ID,
+                                "Мох-оплот",
+                                "Выберите взрослого Мха-оплота активным питомцем, чтобы вырастить живой проход.",
+                                2
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        RUNE_ADULT_FRONTIER_CHOICE_ID,
+                        "Прочесть врата с Руной-провидицей",
+                        "Попросить взрослую Руну услышать маршрут между ещё не названными звёздами.",
+                        "Прочитанный горизонт",
+                        "Руна-провидица распознала ритм нового неба и открыла путь к святилищу созвездий.",
+                        62,
+                        46,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ECHO_THREAD_ID,
+                                2
+                        ),
+                        new ExpeditionChoicePetRequirement(
+                                StarterProgressionContent.RUNE_PET_ID,
+                                "Руна-провидица",
+                                "Выберите взрослую Руну-провидицу активным питомцем, чтобы прочесть скрытые врата.",
+                                2
+                        )
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> constellationSanctuaryChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        "anchor-constellation-sanctuary",
+                        "Закрепить карту трёх путей",
+                        "Свести звёздный свет, живые корни и эхо в устойчивую карту следующего мира.",
+                        "Три пути стали картой",
+                        "Пилот закрепил общий маршрут взрослых питомцев и сохранил призматическую пыль святилища.",
+                        82,
+                        44,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.PRISM_DUST_ID,
+                                3
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        "carry-sanctuary-song",
+                        "Унести песню святилища",
+                        "Доверить питомцу живой мотив, который укажет дорогу при следующем переходе.",
+                        "Песня нового горизонта",
+                        "Питомец запомнил хор святилища и вынес свет трёх будущих рассветов.",
+                        68,
+                        60,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                3
                         )
                 )
         );

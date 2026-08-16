@@ -372,6 +372,9 @@ public class PlatformContentCatalog {
     }
 
     private int chapterNodeCount(String contentVersion) {
+        if (StarterExpeditionContent.supportsAdultPetFrontier(contentVersion)) {
+            return StarterExpeditionContent.ADULT_PET_FRONTIER_NODE_COUNT;
+        }
         if (StarterExpeditionContent.supportsUnchartedVerge(contentVersion)) {
             return StarterExpeditionContent.UNCHARTED_VERGE_NODE_COUNT;
         }
