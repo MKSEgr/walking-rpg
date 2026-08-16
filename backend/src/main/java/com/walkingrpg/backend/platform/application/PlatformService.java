@@ -1213,7 +1213,12 @@ public class PlatformService {
             );
             view.put(
                     "maximumEvolutionStage",
-                    definition.maximumEvolutionStage(adultEvolutionActive)
+                    Math.max(
+                            definition.maximumEvolutionStage(
+                                    adultEvolutionActive
+                            ),
+                            progress.evolutionStage()
+                    )
             );
             view.put("active", definition.petId().equals(state.activePetId()));
             views.add(Map.copyOf(view));

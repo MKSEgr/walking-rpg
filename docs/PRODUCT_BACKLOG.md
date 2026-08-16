@@ -532,7 +532,8 @@ parser/widget и visual-mapping tests реализованы. Баланс pet-s
   «Мох-оплот», Rune при `150` в «Руну-провидицу»;
 - user-state pet projection возвращает следующий `evolutionBond` и additive
   `maximumEvolutionStage`; старый mobile/backend безопасно используют maximum
-  `1` во время rolling upgrade;
+  `1` во время rolling upgrade, а content rollback не опускает effective
+  maximum ниже уже сохранённой стадии;
 - обе эволюции синхронизируют level/bond с независимой `pet_progress` строкой,
   а exact replay второй команды не повторяет mutation;
 - V27 сохраняет active v10 и существующие platform/progression rows; v11

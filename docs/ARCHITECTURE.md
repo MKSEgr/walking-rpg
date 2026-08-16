@@ -114,7 +114,7 @@ GAMEPLAY не вызывается и остаётся `PENDING`; `TELEMETRY` в
 lane. Exposure lane выводится из
 сохранённого payload, поэтому старый v1 record изолируется без миграции store.
 
-Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. Pet projection передаёт текущую форму, следующий bond threshold и `maximumEvolutionStage`; отсутствие последнего поля у старого backend означает legacy maximum `1`. `equippedCosmetics` является additive server-owned mapping `PILOT`/`PET`/`PROFILE → cosmeticId`; legacy `activeCosmeticId` остаётся указателем на последний выбор для старого клиента. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
+Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. Pet projection передаёт текущую форму, следующий bond threshold и `maximumEvolutionStage`; отсутствие последнего поля у старого backend означает legacy maximum `1`. После rollback контента effective maximum не опускается ниже сохранённой стадии питомца, поэтому snapshot остаётся валиден, но правила старого контента не разрешают новый переход. `equippedCosmetics` является additive server-owned mapping `PILOT`/`PET`/`PROFILE → cosmeticId`; legacy `activeCosmeticId` остаётся указателем на последний выбор для старого клиента. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
 
 Authenticated shell выполняет startup replay ровно в одном месте, а runtime
 memoize-ит его Future до завершения authenticated session. После первой
