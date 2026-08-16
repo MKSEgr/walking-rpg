@@ -45,7 +45,7 @@ class PrismSextantRefinementMigrationTest {
                 .load();
         flyway.migrate();
 
-        assertEquals("26", flyway.info().current().getVersion().getVersion());
+        assertEquals("27", flyway.info().current().getVersion().getVersion());
         try (Connection connection = connection();
              Statement statement = connection.createStatement()) {
             assertEquals("UNCOMMON", scalarString(statement, """

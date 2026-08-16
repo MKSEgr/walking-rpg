@@ -50,6 +50,10 @@ class StarterExpeditionContentTest {
                 () -> StarterExpeditionContent
                         .PET_GUIDED_UNCHARTED_CONTENT_VERSION
         );
+        String chapterV11 = content.activeContentVersion(
+                () -> StarterExpeditionContent
+                        .ADULT_PET_EVOLUTION_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -74,6 +78,10 @@ class StarterExpeditionContentTest {
         assertEquals(
                 StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION,
                 chapterV10
+        );
+        assertEquals(
+                StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION,
+                chapterV11
         );
         assertEquals(1, activationReads.get());
         assertEquals(
@@ -151,6 +159,9 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsSecondDawnAttunement(
                 chapterV10
         ));
+        assertTrue(StarterExpeditionContent.supportsSecondDawnAttunement(
+                chapterV11
+        ));
         assertFalse(StarterExpeditionContent.supportsSecondDawnAttunement(
                 chapterV7
         ));
@@ -192,6 +203,19 @@ class StarterExpeditionContentTest {
                         .map(choice -> choice.petRequirement().petId())
                         .toList()
         );
+        assertEquals(
+                petGuidedChoices,
+                content.eventChoices(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        chapterV11
+                )
+        );
+        assertFalse(StarterExpeditionContent.supportsAdultPetEvolution(
+                chapterV10
+        ));
+        assertTrue(StarterExpeditionContent.supportsAdultPetEvolution(
+                chapterV11
+        ));
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(

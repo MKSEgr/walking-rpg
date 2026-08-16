@@ -977,7 +977,13 @@ remote config. Канонический первый путь содержит �
 
 `activePetId` согласован с единственным `pets[].active=true`. Каждый питомец
 содержит `trait`, независимые `level/bond/evolutionStage` и server-owned
-evolution threshold. `userState.hasSuccessfulActivitySync` — долговечный
+`evolutionBond` для следующего перехода. Additive
+`maximumEvolutionStage` задаёт последнюю доступную форму: v1-v10 возвращают
+`1`, а `chapter-1-v11` — `2`. Mobile при отсутствии поля использует `1`,
+поэтому новый клиент со старым backend и старый клиент с новым backend не
+показывают недоступную вторую команду. На v11 переходы разрешены только
+`0 → 1` и `1 → 2`; thresholds равны `50/140` для Spark, `45/125` для Moss и
+`55/150` для Rune. `userState.hasSuccessfulActivitySync` — долговечный
 authoritative fact наличия хотя бы одной успешно обработанной activity-команды,
 включая sync с нулём шагов; он не сбрасывается при смене локальной даты или
 очистке идемпотентных activity-receipts по retention policy и не выводится из
@@ -1095,6 +1101,8 @@ fail-closed заменить capability field на `false` без повторн
   был сохранён;
 - `CLAIM_QUEST` и `EVOLVE_PET` обновляют platform state и соответствующую
   `pet_progress` строку одной транзакцией;
+- `EVOLVE_PET` проверяет threshold следующей стадии и content-version maximum;
+  v1-v10 остаются на стадии `1`, а v11 разрешает взрослую стадию `2`;
 - `COMPLETE_ONBOARDING_STEP` записывается после соответствующего реального
   действия; mobile не показывает отдельные кнопки фиктивного завершения;
 - после process restart mobile восстанавливает `health-permission`,

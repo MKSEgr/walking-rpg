@@ -12,6 +12,8 @@ void main() {
     expect(snapshot.userState.pets, hasLength(3));
     expect(snapshot.activePet.petId, 'spark-v1');
     expect(snapshot.activePet.canEvolve, isTrue);
+    expect(snapshot.activePet.maximumEvolutionStage, 1);
+    expect(snapshot.activePet.isFullyEvolved, isFalse);
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.weeklyRouteProgressValue, 0.4);
     expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
@@ -24,6 +26,52 @@ void main() {
     expect(snapshot.userState.equippedCosmeticIds, const <String>{
       'pilot-scarf',
     });
+  });
+
+  test('maps the additive adult evolution contract', () {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState = Map<String, dynamic>.from(
+      json['userState']! as Map<String, dynamic>,
+    );
+    final List<dynamic> pets = List<dynamic>.from(userState['pets']! as List);
+    pets[0] = <String, dynamic>{
+      ...Map<String, dynamic>.from(pets[0] as Map),
+      'name': 'Искра-проводник',
+      'level': 2,
+      'bond': 140,
+      'evolutionStage': 1,
+      'evolutionBond': 140,
+      'maximumEvolutionStage': 2,
+    };
+    userState['pets'] = pets;
+    json['userState'] = userState;
+
+    final PlatformPet pet = PlatformSnapshot.fromJson(json).activePet;
+
+    expect(pet.evolutionStage, 1);
+    expect(pet.maximumEvolutionStage, 2);
+    expect(pet.canEvolve, isTrue);
+    expect(pet.isFullyEvolved, isFalse);
+  });
+
+  test('rejects an evolution stage above the server maximum', () {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState = Map<String, dynamic>.from(
+      json['userState']! as Map<String, dynamic>,
+    );
+    final List<dynamic> pets = List<dynamic>.from(userState['pets']! as List);
+    pets[0] = <String, dynamic>{
+      ...Map<String, dynamic>.from(pets[0] as Map),
+      'evolutionStage': 2,
+      'maximumEvolutionStage': 1,
+    };
+    userState['pets'] = pets;
+    json['userState'] = userState;
+
+    expect(
+      () => PlatformSnapshot.fromJson(json),
+      throwsA(isA<FormatException>()),
+    );
   });
 
   test('maps independent server-owned cosmetic slots', () {

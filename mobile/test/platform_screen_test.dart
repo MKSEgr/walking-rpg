@@ -57,6 +57,52 @@ void main() {
     expect(find.byKey(const Key('platform-journal-hero')), findsOneWidget);
   });
 
+  testWidgets('intermediate pet form keeps the adult evolution action', (
+    WidgetTester tester,
+  ) async {
+    final PlatformSnapshot initial = platformSnapshot(
+      sparkName: 'Искра-проводник',
+      sparkLevel: 2,
+      sparkBond: 140,
+      sparkEvolutionStage: 1,
+      sparkEvolutionBond: 140,
+      sparkMaximumEvolutionStage: 2,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => initial,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder evolve = find.byKey(const Key('platform-evolve-pet-spark-v1'));
+    await _bringIntoView(tester, evolve);
+
+    final FilledButton button = tester.widget<FilledButton>(evolve);
+    expect(button.onPressed, isNotNull);
+    expect(find.text('Эволюционировать'), findsOneWidget);
+    expect(
+      find.byKey(const Key('companion-bond-signal-spark-v1-spark-ready')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('companion-bond-signal-spark-v1-spark-evolved')),
+      findsNothing,
+    );
+    expect(
+      find.bySemanticsLabel('Рост спутника: Юный, этап 2 из 3'),
+      findsWidgets,
+    );
+    expect(find.textContaining('для следующей эволюции'), findsNothing);
+    _expectNoLayoutException(tester);
+  });
+
   testWidgets('journal retries without exposing stale actions after error', (
     WidgetTester tester,
   ) async {

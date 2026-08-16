@@ -61,7 +61,7 @@ Roadmap отражает снижение рисков. Статусы:
 ## Milestone 4 — MVP content loop
 
 - [x] 18 content-driven узлов первой главы и versioned content delivery
-- [x] Три питомца, active selection и эволюция
+- [x] Три питомца, active selection и две эволюции до взрослой формы
 - [x] Навыки, задания, достижения и onboarding
 - [x] Push provider boundary + development implementation
 - [x] Remote config и базовый admin content API

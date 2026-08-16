@@ -49,11 +49,58 @@ public class PlatformContentCatalog {
             String petId,
             String name,
             String evolvedName,
+            String adultName,
             String species,
             String trait,
             int initialBond,
-            int evolutionBond
+            int evolutionBond,
+            int adultEvolutionBond
     ) {
+        private static final int LEGACY_MAXIMUM_EVOLUTION_STAGE = 1;
+        private static final int ADULT_MAXIMUM_EVOLUTION_STAGE = 2;
+
+        public PetDefinition {
+            if (petId == null || petId.isBlank()
+                    || name == null || name.isBlank()
+                    || evolvedName == null || evolvedName.isBlank()
+                    || adultName == null || adultName.isBlank()) {
+                throw new IllegalArgumentException("Формы питомца обязательны");
+            }
+            if (initialBond < 0 || evolutionBond <= initialBond
+                    || adultEvolutionBond <= evolutionBond) {
+                throw new IllegalArgumentException(
+                        "Пороги связи питомца должны последовательно расти"
+                );
+            }
+        }
+
+        public int maximumEvolutionStage(boolean adultEvolutionActive) {
+            return adultEvolutionActive
+                    ? ADULT_MAXIMUM_EVOLUTION_STAGE
+                    : LEGACY_MAXIMUM_EVOLUTION_STAGE;
+        }
+
+        public String nameForStage(
+                int evolutionStage,
+                boolean adultEvolutionActive
+        ) {
+            if (evolutionStage <= 0) {
+                return name;
+            }
+            if (evolutionStage == 1 || !adultEvolutionActive) {
+                return evolvedName;
+            }
+            return adultName;
+        }
+
+        public int requiredBondForNextEvolution(
+                int evolutionStage,
+                boolean adultEvolutionActive
+        ) {
+            return evolutionStage <= 0 || !adultEvolutionActive
+                    ? evolutionBond
+                    : adultEvolutionBond;
+        }
     }
 
     public record SkillDefinition(
@@ -122,28 +169,34 @@ public class PlatformContentCatalog {
                     "spark-v1",
                     "Искра",
                     "Искра-проводник",
+                    "Искра-звездочёт",
                     "люмин",
                     "Чуткий разведчик",
                     10,
-                    50
+                    50,
+                    140
             ),
             new PetDefinition(
                     "moss-v1",
                     "Мох",
                     "Мох-хранитель",
+                    "Мох-оплот",
                     "терра",
                     "Спокойный хранитель",
                     10,
-                    45
+                    45,
+                    125
             ),
             new PetDefinition(
                     "rune-v1",
                     "Руна",
                     "Руна-навигация",
+                    "Руна-провидица",
                     "эхо",
                     "Смелый навигатор",
                     10,
-                    55
+                    55,
+                    150
             )
     );
     private final List<SkillDefinition> skills = List.of(
@@ -291,7 +344,7 @@ public class PlatformContentCatalog {
                 chapterNodeCount(activeContentVersion)
         );
         catalog.put("onboardingSteps", onboardingSteps);
-        catalog.put("pets", pets);
+        catalog.put("pets", publicPetViews(activeContentVersion));
         catalog.put("skills", skills);
         catalog.put("quests", quests);
         catalog.put("achievements", achievements);
@@ -338,6 +391,37 @@ public class PlatformContentCatalog {
             return StarterExpeditionContent.NODE_COUNT;
         }
         return StarterExpeditionContent.LEGACY_NODE_COUNT;
+    }
+
+    private List<Map<String, Object>> publicPetViews(String contentVersion) {
+        boolean adultEvolutionActive =
+                StarterExpeditionContent.supportsAdultPetEvolution(
+                        contentVersion
+                );
+        List<Map<String, Object>> views = new ArrayList<>();
+        for (PetDefinition definition : pets) {
+            Map<String, Object> view = new LinkedHashMap<>();
+            view.put("petId", definition.petId());
+            view.put("name", definition.name());
+            view.put("evolvedName", definition.evolvedName());
+            view.put("species", definition.species());
+            view.put("trait", definition.trait());
+            view.put("initialBond", definition.initialBond());
+            view.put("evolutionBond", definition.evolutionBond());
+            if (adultEvolutionActive) {
+                view.put("adultName", definition.adultName());
+                view.put(
+                        "adultEvolutionBond",
+                        definition.adultEvolutionBond()
+                );
+                view.put(
+                        "maximumEvolutionStage",
+                        definition.maximumEvolutionStage(true)
+                );
+            }
+            views.add(Map.copyOf(view));
+        }
+        return List.copyOf(views);
     }
 
     private static Map<String, Object> achievement(String id, String name) {

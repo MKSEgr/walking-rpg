@@ -11,6 +11,7 @@ import com.walkingrpg.backend.progression.domain.PetDefinition;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -181,6 +182,47 @@ class PlatformContentCatalogTest {
         assertNotEquals(
                 petGuidedCatalog.get("catalogDigest"),
                 unchartedCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
+    void shouldExposeAdultPetFormsOnlyInChapterV11Catalog() {
+        Map<String, Object> adultCatalog = publicCatalog(
+                StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION
+        );
+        Map<String, Object> petGuidedCatalog = publicCatalog(
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION
+        );
+
+        Map<String, Object> adultSpark = map(list(adultCatalog, "pets").getFirst());
+        Map<String, Object> legacySpark = map(
+                list(petGuidedCatalog, "pets").getFirst()
+        );
+
+        assertEquals("chapter-1-v11", adultCatalog.get("contentVersion"));
+        assertEquals(25, adultCatalog.get("chapterNodes"));
+        assertEquals(25, petGuidedCatalog.get("chapterNodes"));
+        assertEquals("Искра-звездочёт", adultSpark.get("adultName"));
+        assertEquals(140, adultSpark.get("adultEvolutionBond"));
+        assertEquals(2, adultSpark.get("maximumEvolutionStage"));
+        assertEquals(
+                List.of(
+                        "Искра-звездочёт:140",
+                        "Мох-оплот:125",
+                        "Руна-провидица:150"
+                ),
+                list(adultCatalog, "pets").stream()
+                        .map(PlatformContentCatalogTest::map)
+                        .map(pet -> pet.get("adultName") + ":"
+                                + pet.get("adultEvolutionBond"))
+                        .toList()
+        );
+        assertFalse(legacySpark.containsKey("adultName"));
+        assertFalse(legacySpark.containsKey("adultEvolutionBond"));
+        assertFalse(legacySpark.containsKey("maximumEvolutionStage"));
+        assertNotEquals(
+                adultCatalog.get("catalogDigest"),
+                petGuidedCatalog.get("catalogDigest")
         );
     }
 

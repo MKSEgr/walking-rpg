@@ -38,7 +38,7 @@ void main() {
       bond: 60,
       evolutionBond: 45,
       canEvolve: false,
-      evolved: false,
+      fullyEvolved: false,
     );
     const CompanionBondSignal ready = CompanionBondSignal(
       petId: 'future-pet',
@@ -46,7 +46,7 @@ void main() {
       bond: 12,
       evolutionBond: 45,
       canEvolve: true,
-      evolved: false,
+      fullyEvolved: false,
     );
     const CompanionBondSignal evolved = CompanionBondSignal(
       petId: 'future-pet',
@@ -54,7 +54,7 @@ void main() {
       bond: 0,
       evolutionBond: 45,
       canEvolve: false,
-      evolved: true,
+      fullyEvolved: true,
     );
 
     expect(growing.status, CompanionBondStatus.growing);
@@ -92,7 +92,7 @@ void main() {
                     bond: 50,
                     evolutionBond: 50,
                     canEvolve: true,
-                    evolved: false,
+                    fullyEvolved: false,
                   ),
                   SizedBox(height: 12),
                   CompanionBondSignal(
@@ -101,7 +101,7 @@ void main() {
                     bond: 12,
                     evolutionBond: 45,
                     canEvolve: false,
-                    evolved: false,
+                    fullyEvolved: false,
                   ),
                 ],
               ),
@@ -171,7 +171,7 @@ void main() {
             bond: 7,
             evolutionBond: 55,
             canEvolve: false,
-            evolved: true,
+            fullyEvolved: true,
           ),
         ),
       ),

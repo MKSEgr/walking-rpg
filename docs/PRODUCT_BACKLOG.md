@@ -519,13 +519,35 @@ visual-mapping tests реализованы. Баланс нового рубе�
 parser/widget и visual-mapping tests реализованы. Баланс pet-specific наград
 требует beta evidence.
 
+### US-023. Довести starter pets до взрослой формы
+
+Как пользователь с развитой связью, я хочу провести выбранного питомца через
+вторую эволюцию, чтобы трёхступенчатый рост имел достижимую финальную форму.
+
+Критерии:
+
+- inactive `chapter-1-v11` сохраняет 25-node topology и разрешает
+  server-authoritative переход `1 → 2`; v1-v10 сохраняют maximum stage `1`;
+- Spark эволюционирует при `140` bond в «Искру-звездочёта», Moss при `125` в
+  «Мох-оплот», Rune при `150` в «Руну-провидицу»;
+- user-state pet projection возвращает следующий `evolutionBond` и additive
+  `maximumEvolutionStage`; старый mobile/backend безопасно используют maximum
+  `1` во время rolling upgrade;
+- обе эволюции синхронизируют level/bond с независимой `pet_progress` строкой,
+  а exact replay второй команды не повторяет mutation;
+- V27 сохраняет active v10 и существующие platform/progression rows; v11
+  активируется только после drain pre-V27 backend instances.
+
+**Статус:** backend/mobile/Flyway V27, unit/migration/catalog/parser/widget
+tests реализованы. Баланс взрослых thresholds требует beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
 - первая глава из 18 основных узлов и staged optional topology вплоть до
   `uncharted-verge`;
-- три питомца, active selection, эволюция, навыки и собственные финальные
+- три питомца, active selection, две эволюции, навыки и собственные финальные
   исходы экспедиции;
 - onboarding, задания и достижения;
 - development push provider boundary с local/test-only registration;

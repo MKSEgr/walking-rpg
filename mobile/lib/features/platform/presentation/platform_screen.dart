@@ -1315,15 +1315,18 @@ class _PetCard extends StatelessWidget {
             bond: pet.bond,
             evolutionBond: pet.evolutionBond,
             canEvolve: pet.canEvolve,
-            evolved: pet.evolutionStage > 0,
+            fullyEvolved: pet.isFullyEvolved,
           ),
           const SizedBox(height: 8),
           Text(
-            pet.evolutionStage > 0
+            pet.isFullyEvolved
                 ? '${CompanionGrowth.stageName(pet.evolutionStage)} — '
-                      'текущая серверная форма спутника.'
+                      'финальная серверная форма спутника.'
                 : pet.canEvolve
                 ? 'Связь готова к эволюции.'
+                : pet.evolutionStage > 0
+                ? '${CompanionGrowth.stageName(pet.evolutionStage)} — '
+                      'укрепляйте связь для следующей эволюции.'
                 : 'Решения событий укрепляют связь со спутником.',
             style: Theme.of(
               context,
@@ -1352,7 +1355,7 @@ class _PetCard extends StatelessWidget {
                   label: 'Активный спутник',
                   icon: Icons.pets,
                 ),
-              if (pet.evolutionStage == 0)
+              if (!pet.isFullyEvolved)
                 FilledButton.tonalIcon(
                   key: Key('platform-evolve-pet-${pet.petId}'),
                   onPressed: busy || !pet.canEvolve ? null : onEvolve,

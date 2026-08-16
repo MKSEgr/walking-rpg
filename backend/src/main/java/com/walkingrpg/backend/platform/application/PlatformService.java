@@ -257,6 +257,7 @@ public class PlatformService {
                 scope,
                 factsBefore,
                 remoteConfig,
+                activeContentVersion,
                 serverTime
         );
         PlatformUserState updated = withDerivedAchievements(
@@ -360,12 +361,19 @@ public class PlatformService {
             PlatformCommandScope scope,
             PlatformProgressFacts facts,
             Map<String, Object> remoteConfig,
+            String activeContentVersion,
             Instant occurredAt
     ) {
         return switch (commandType) {
             case "COMPLETE_ONBOARDING_STEP" -> completeOnboarding(state, payload);
             case "SELECT_PET" -> selectPet(state, payload);
-            case "EVOLVE_PET" -> evolvePet(userId, state, payload, occurredAt);
+            case "EVOLVE_PET" -> evolvePet(
+                    userId,
+                    state,
+                    payload,
+                    activeContentVersion,
+                    occurredAt
+            );
             case "UNLOCK_SKILL" -> unlockSkill(state, payload);
             case "CLAIM_QUEST" -> claimQuest(
                     userId, state, payload, facts, occurredAt
@@ -495,6 +503,7 @@ public class PlatformService {
             String userId,
             PlatformUserState state,
             Map<String, Object> payload,
+            String activeContentVersion,
             Instant occurredAt
     ) {
         String petId = payloadText(payload, "petId");
@@ -503,15 +512,33 @@ public class PlatformService {
         if (progress == null) {
             throw new PlatformStateConflictException("Питомец не открыт");
         }
-        if (progress.evolutionStage() > 0) {
-            return new Mutation(state, "Питомец уже эволюционировал");
+        boolean adultEvolutionActive =
+                StarterExpeditionContent.supportsAdultPetEvolution(
+                        activeContentVersion
+                );
+        int maximumEvolutionStage = definition.maximumEvolutionStage(
+                adultEvolutionActive
+        );
+        if (progress.evolutionStage() >= maximumEvolutionStage) {
+            return new Mutation(
+                    state,
+                    adultEvolutionActive
+                            ? "Питомец достиг взрослой формы"
+                            : "Питомец уже эволюционировал"
+            );
         }
-        if (progress.bond() < definition.evolutionBond()) {
+        int requiredBond = definition.requiredBondForNextEvolution(
+                progress.evolutionStage(),
+                adultEvolutionActive
+        );
+        if (progress.bond() < requiredBond) {
             throw new PlatformStateConflictException(
                     "Недостаточно связи для эволюции",
                     Map.of(
                             "currentBond", progress.bond(),
-                            "requiredBond", definition.evolutionBond()
+                            "requiredBond", requiredBond,
+                            "currentEvolutionStage", progress.evolutionStage(),
+                            "maximumEvolutionStage", maximumEvolutionStage
                     )
             );
         }
@@ -530,7 +557,13 @@ public class PlatformService {
                 canonical.bond(),
                 evolved.evolutionStage()
         ));
-        return new Mutation(withPets(state, pets), "Питомец эволюционировал");
+        return new Mutation(
+                withPets(state, pets),
+                evolved.evolutionStage() == maximumEvolutionStage
+                        && adultEvolutionActive
+                        ? "Питомец достиг взрослой формы"
+                        : "Питомец эволюционировал"
+        );
     }
 
     private Mutation unlockSkill(PlatformUserState state, Map<String, Object> payload) {
@@ -1082,7 +1115,7 @@ public class PlatformService {
         );
         Map<String, Object> userState = new LinkedHashMap<>();
         userState.put("activePetId", state.activePetId());
-        userState.put("pets", petViews(state));
+        userState.put("pets", petViews(state, activeContentVersion));
         userState.put("completedOnboardingSteps", state.completedOnboardingSteps());
         userState.put("onboardingComplete",
                 state.completedOnboardingSteps().containsAll(content.onboardingSteps()));
@@ -1146,21 +1179,42 @@ public class PlatformService {
         return Map.copyOf(equipped);
     }
 
-    private List<Map<String, Object>> petViews(PlatformUserState state) {
+    private List<Map<String, Object>> petViews(
+            PlatformUserState state,
+            String activeContentVersion
+    ) {
+        boolean adultEvolutionActive =
+                StarterExpeditionContent.supportsAdultPetEvolution(
+                        activeContentVersion
+                );
         List<Map<String, Object>> views = new ArrayList<>();
         for (PlatformContentCatalog.PetDefinition definition : content.pets()) {
             PlatformPetProgress progress = state.pets().get(definition.petId());
             Map<String, Object> view = new LinkedHashMap<>();
             view.put("petId", definition.petId());
-            view.put("name", progress.evolutionStage() > 0
-                    ? definition.evolvedName()
-                    : definition.name());
+            view.put(
+                    "name",
+                    definition.nameForStage(
+                            progress.evolutionStage(),
+                            adultEvolutionActive
+                    )
+            );
             view.put("species", definition.species());
             view.put("trait", definition.trait());
             view.put("level", progress.level());
             view.put("bond", progress.bond());
             view.put("evolutionStage", progress.evolutionStage());
-            view.put("evolutionBond", definition.evolutionBond());
+            view.put(
+                    "evolutionBond",
+                    definition.requiredBondForNextEvolution(
+                            progress.evolutionStage(),
+                            adultEvolutionActive
+                    )
+            );
+            view.put(
+                    "maximumEvolutionStage",
+                    definition.maximumEvolutionStage(adultEvolutionActive)
+            );
             view.put("active", definition.petId().equals(state.activePetId()));
             views.add(Map.copyOf(view));
         }
