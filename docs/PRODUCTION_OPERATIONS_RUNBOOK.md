@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V27 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V28 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -646,6 +646,42 @@ response without another level increment.
 Do not roll back to a pre-V27 binary after any stage-2 state has persisted.
 Stop activation and forward-fix; an older binary cannot correctly project or
 enforce the adult-form maximum.
+
+## Adult-pet frontier route rollout
+
+Flyway V28 stages `chapter-1-v12` inactive and adds one content node without
+changing active v11 or existing pet/expedition state. Deploy and drain every
+pre-V28 backend before activation. V1-v11 do not expose the new route choice
+IDs or `constellation-sanctuary-v1`.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v12",
+  "releaseNotes": "Первая глава: взрослый активный питомец открывает путь в Святилище созвездий.",
+  "content": {
+    "contentVersion": "chapter-1-v12",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 26,
+    "topology": "adult-pet-frontier-route-v1"
+  }
+}
+```
+
+Before activation, place a stage-1 and stage-2 copy of each starter pet at
+`uncharted-verge`. Home must keep all adult routes locked for stage 1. At stage
+2 it must expose exactly the route of the active pet, with the other two
+remaining `ACTIVE_PET` locks and `minimumEvolutionStage=2`. Direct stage-1
+resolution must leave progression, inventory and expedition rows unchanged.
+Resolve the available route, verify the transition to
+`constellation-sanctuary`, acknowledge the result, then complete either final
+choice and replay both commands without duplicate rewards.
+
+Do not roll back to a pre-V28 binary after a v12 route result or sanctuary
+state has persisted. Stop activation, return the active release to v11 for new
+journeys if safe, and forward-fix binaries that must read the new node and
+choice IDs.
 
 ## Rollback
 

@@ -349,6 +349,14 @@ Rune `150` bond. V1-V10 ограничивают `EVOLVE_PET` стадией `1`
 получает взрослое имя. State JSON не требует schema rewrite, а level/bond
 продолжают синхронизироваться с независимой `pet_progress` строкой.
 
+Active `chapter-1-v12` добавляет 26-й узел `constellation-sanctuary`. Три
+новых choice в `uncharted-verge-v1` требуют одновременно exact active pet и
+`evolutionStage >= 2`, выдают разные material rewards и ведут к общему
+финальному событию. Home проецирует additive `minimumEvolutionStage`, но event
+service повторно читает active pet со стадией под тем же serialized
+user/expedition boundary до любой XP, bond, material или route mutation.
+V1-V11 не проецируют и не принимают новые IDs.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
@@ -473,6 +481,10 @@ V27 stage-ит inactive `chapter-1-v11` с той же topology и взросл�
 трёх starter pets. Миграция не меняет active v10, `roadmap_user_state` или
 `pet_progress`; activation выполняется только после drain pre-V27 backend
 instances. После сохранения stage `2` rollback на pre-V27 binary запрещён.
+V28 stage-ит inactive `chapter-1-v12` с 26-м узлом и adult-pet-gated
+продолжением из `uncharted-verge-v1`. Миграция не меняет active v11,
+`roadmap_user_state`, `pet_progress` или текущие `expedition_progress` rows;
+activation выполняется только после drain pre-V28 backend instances.
 
 ## 8. Конкурентность и транзакции
 

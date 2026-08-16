@@ -1071,6 +1071,112 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldRequireAdultPetAndCompleteConstellationSanctuary() {
+        activeContentVersion.set(
+                StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+        );
+        var unchartedVerge = content.requireNode(
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(unchartedVerge, 43),
+                NOW
+        );
+        EventResolutionService youngPetService = serviceForActivePet(
+                new ActivePetSelection(
+                        StarterProgressionContent.PET_ID,
+                        2,
+                        145,
+                        1
+                )
+        );
+
+        EventChoicePetUnavailableException unavailable = assertThrows(
+                EventChoicePetUnavailableException.class,
+                () -> youngPetService.resolve(command(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.SPARK_ADULT_FRONTIER_CHOICE_ID,
+                        "young-spark-at-frontier"
+                ))
+        );
+
+        assertEquals(2, unavailable.requiredEvolutionStage());
+        assertEquals(1, unavailable.actualEvolutionStage());
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+        assertEquals(
+                ExpeditionProgressStatus.EVENT_READY,
+                expeditionRepository.findState(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().status()
+        );
+
+        EventResolutionService adultPetService = serviceForActivePet(
+                new ActivePetSelection(
+                        StarterProgressionContent.PET_ID,
+                        3,
+                        145,
+                        2
+                )
+        );
+        EventResolutionCommand routeCommand = command(
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                StarterExpeditionContent.SPARK_ADULT_FRONTIER_CHOICE_ID,
+                "adult-spark-at-frontier"
+        );
+        EventResolutionResult route = adultPetService.resolve(routeCommand);
+        EventResolutionResult routeReplay = adultPetService.resolve(routeCommand);
+
+        assertSame(route, routeReplay);
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS,
+                route.expeditionStatus());
+        assertEquals(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID,
+                route.nextNode().nodeId()
+        );
+        assertEquals(52, route.pet().bondGained());
+        assertEquals(StarterInventoryContent.ION_BLOOM_ID,
+                route.material().itemId());
+        assertEquals(2, route.material().quantityGained());
+
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                route.receiptId(),
+                NOW
+        );
+        var sanctuary = content.requireNode(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(sanctuary, route.expeditionVersion() + 1),
+                NOW
+        );
+        EventResolutionCommand finaleCommand = command(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                "anchor-constellation-sanctuary",
+                "complete-constellation-sanctuary"
+        );
+        EventResolutionResult finale = adultPetService.resolve(finaleCommand);
+        EventResolutionResult finaleReplay = adultPetService.resolve(
+                finaleCommand
+        );
+
+        assertSame(finale, finaleReplay);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                finale.expeditionStatus());
+        assertNull(finale.nextNode());
+        assertEquals(82, finale.pilot().experienceGained());
+        assertEquals(44, finale.pet().bondGained());
+        assertEquals(StarterInventoryContent.PRISM_DUST_ID,
+                finale.material().itemId());
+        assertEquals(3, finale.material().quantityGained());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
@@ -1251,6 +1357,25 @@ class EventResolutionServiceTest {
             String key
     ) {
         return new EventResolutionCommand("user-1", eventId, choiceId, key);
+    }
+
+    private EventResolutionService serviceForActivePet(
+            ActivePetSelection activePet
+    ) {
+        return new EventResolutionService(
+                expeditionRepository,
+                eventResolutionRepository,
+                new ProgressionService(
+                        new InMemoryProgressionRepository(),
+                        new StarterProgressionContent(),
+                        ignored -> activePet
+                ),
+                new InventoryService(inventoryRepository),
+                content,
+                equipmentService,
+                activeContentVersion::get,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
     }
 
     private ExpeditionProgressState firstReadyState() {

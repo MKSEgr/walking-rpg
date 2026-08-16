@@ -314,7 +314,11 @@ public class ApiExceptionHandler {
                 Map.of(
                         "choiceId", exception.choiceId(),
                         "requirementType", "ACTIVE_PET",
-                        "requiredPetId", exception.requiredPetId()
+                        "requiredPetId", exception.requiredPetId(),
+                        "requiredEvolutionStage",
+                        exception.requiredEvolutionStage(),
+                        "actualEvolutionStage",
+                        exception.actualEvolutionStage()
                 )
         );
     }

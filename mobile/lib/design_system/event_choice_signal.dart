@@ -87,6 +87,15 @@ abstract final class EventChoiceSignalCatalog {
     'uncharted-verge-v1::root-return-beacon': EventChoiceSignalKind.stabilize,
     'uncharted-verge-v1::decode-living-constellation':
         EventChoiceSignalKind.echo,
+    'uncharted-verge-v1::ignite-constellation-gate':
+        EventChoiceSignalKind.companion,
+    'uncharted-verge-v1::root-constellation-gate':
+        EventChoiceSignalKind.stabilize,
+    'uncharted-verge-v1::read-constellation-gate': EventChoiceSignalKind.echo,
+    'constellation-sanctuary-v1::anchor-constellation-sanctuary':
+        EventChoiceSignalKind.chart,
+    'constellation-sanctuary-v1::carry-sanctuary-song':
+        EventChoiceSignalKind.companion,
   };
 
   static EventChoiceSignalKind kindFor({

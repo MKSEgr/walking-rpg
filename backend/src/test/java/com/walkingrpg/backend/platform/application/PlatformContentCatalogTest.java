@@ -227,6 +227,28 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeAdultPetFrontierNodeOnlyInChapterV12Catalog() {
+        Map<String, Object> frontierCatalog = publicCatalog(
+                StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+        );
+        Map<String, Object> adultCatalog = publicCatalog(
+                StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v12", frontierCatalog.get("contentVersion"));
+        assertEquals(26, frontierCatalog.get("chapterNodes"));
+        assertEquals(25, adultCatalog.get("chapterNodes"));
+        assertEquals(
+                list(adultCatalog, "pets"),
+                list(frontierCatalog, "pets")
+        );
+        assertNotEquals(
+                adultCatalog.get("catalogDigest"),
+                frontierCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

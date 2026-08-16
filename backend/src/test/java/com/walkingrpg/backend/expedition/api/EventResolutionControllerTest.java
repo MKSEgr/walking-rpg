@@ -271,7 +271,47 @@ class EventResolutionControllerTest {
                 .andExpect(jsonPath("$.details.requirementType")
                         .value("ACTIVE_PET"))
                 .andExpect(jsonPath("$.details.requiredPetId")
-                        .value("moss-v1"));
+                        .value("moss-v1"))
+                .andExpect(jsonPath("$.details.requiredEvolutionStage")
+                        .value(0))
+                .andExpect(jsonPath("$.details.actualEvolutionStage")
+                        .value(0));
+    }
+
+    @Test
+    void shouldExposeRequiredEvolutionForAdultPetRoute() throws Exception {
+        MockMvc unchartedMockMvc = createMockMvc(new ExpeditionProgressState(
+                70,
+                70,
+                ExpeditionProgressStatus.EVENT_READY,
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID,
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                43
+        ), true);
+
+        unchartedMockMvc.perform(post(
+                        "/api/v1/events/uncharted-verge-v1/resolve"
+                )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "choiceId": "ignite-constellation-gate",
+                                  "idempotencyKey": "locked-young-spark-route"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code")
+                        .value("EVENT_CHOICE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.details.choiceId")
+                        .value("ignite-constellation-gate"))
+                .andExpect(jsonPath("$.details.requirementType")
+                        .value("ACTIVE_PET"))
+                .andExpect(jsonPath("$.details.requiredPetId")
+                        .value("spark-v1"))
+                .andExpect(jsonPath("$.details.requiredEvolutionStage")
+                        .value(2))
+                .andExpect(jsonPath("$.details.actualEvolutionStage")
+                        .value(0));
     }
 
     private MockMvc createMockMvc(

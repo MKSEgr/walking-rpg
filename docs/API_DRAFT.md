@@ -564,6 +564,27 @@ uncharted-verge-v1 (additive chapter-1-v10 choices)
                        → требует активную Руну,
                          +56 pilot XP, +40 pet bond, +3 echo-thread,
                          завершение экспедиции
+
+uncharted-verge-v1 (additive chapter-1-v12 choices)
+  ignite-constellation-gate
+                       → требует активную Искру-звездочёта stage 2,
+                         +54 pilot XP, +52 pet bond, +2 ion-bloom,
+                         переход к constellation-sanctuary
+  root-constellation-gate
+                       → требует активного Мха-оплота stage 2,
+                         +70 pilot XP, +40 pet bond, +2 ash-seed,
+                         переход к constellation-sanctuary
+  read-constellation-gate
+                       → требует активную Руну-провидицу stage 2,
+                         +62 pilot XP, +46 pet bond, +2 echo-thread,
+                         переход к constellation-sanctuary
+
+constellation-sanctuary-v1 (chapter-1-v12)
+  anchor-constellation-sanctuary
+                       → +82 pilot XP, +44 pet bond, +3 prism-dust,
+                         завершение экспедиции
+  carry-sanctuary-song → +68 pilot XP, +60 pet bond, +3 dawn-fragment,
+                         завершение экспедиции
 ```
 
 До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses
@@ -656,8 +677,10 @@ expedition transition и durable result используют одно post-lock 
   `409 EVENT_CHOICE_UNAVAILABLE`. Equipment requirement содержит
   `minimumUpgradeLevel`/`requiredUpgradeLevel` (legacy default — `1`);
   active-pet requirement использует `type=ACTIVE_PET`, `slotId=ACTIVE_PET`,
-  `itemId=<petId>`, `itemName=<petName>`, а error details возвращает
-  `requirementType=ACTIVE_PET` и `requiredPetId`;
+  `itemId=<petId>`, `itemName=<petName>` и additive
+  `minimumEvolutionStage` (legacy default — `0`), а error details возвращает
+  `requirementType=ACTIVE_PET`, `requiredPetId`, `requiredEvolutionStage` и
+  `actualEvolutionStage`;
 - `receiptId`, immutable reward snapshot и `nextNode` сохраняются в той же
   транзакции, что и progression/inventory/expedition transition;
 - первый event resolution переводит progress на второй узел, второй — на
@@ -979,9 +1002,9 @@ remote config. Канонический первый путь содержит �
 содержит `trait`, независимые `level/bond/evolutionStage` и server-owned
 `evolutionBond` для следующего перехода. Additive
 `maximumEvolutionStage` задаёт последнюю доступную форму: v1-v10 возвращают
-`1`, а `chapter-1-v11` — `2`. Mobile при отсутствии поля использует `1`,
+`1`, а `chapter-1-v11` и v12 — `2`. Mobile при отсутствии поля использует `1`,
 поэтому новый клиент со старым backend и старый клиент с новым backend не
-показывают недоступную вторую команду. На v11 переходы разрешены только
+показывают недоступную вторую команду. На v11+ переходы разрешены только
 `0 → 1` и `1 → 2`; thresholds равны `50/140` для Spark, `45/125` для Moss и
 `55/150` для Rune. `userState.hasSuccessfulActivitySync` — долговечный
 authoritative fact наличия хотя бы одной успешно обработанной activity-команды,
@@ -1102,7 +1125,7 @@ fail-closed заменить capability field на `false` без повторн
 - `CLAIM_QUEST` и `EVOLVE_PET` обновляют platform state и соответствующую
   `pet_progress` строку одной транзакцией;
 - `EVOLVE_PET` проверяет threshold следующей стадии и content-version maximum;
-  v1-v10 остаются на стадии `1`, а v11 разрешает взрослую стадию `2`;
+  v1-v10 остаются на стадии `1`, а v11+ разрешают взрослую стадию `2`;
 - `COMPLETE_ONBOARDING_STEP` записывается после соответствующего реального
   действия; mobile не показывает отдельные кнопки фиктивного завершения;
 - после process restart mobile восстанавливает `health-permission`,

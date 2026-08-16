@@ -1274,34 +1274,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('pet-guided choice shows the server lock reason', (
+  testWidgets('adult pet choice shows the server evolution lock reason', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(home: HomeScreen(loader: () async => _petGuidedEventReady())),
+      MaterialApp(home: HomeScreen(loader: () async => _adultPetEventReady())),
     );
     await tester.pumpAndSettle();
 
     final Finder choice = find.byKey(
-      const Key('home-event-choice-root-return-beacon'),
+      const Key('home-event-choice-root-constellation-gate'),
     );
     await _scrollAboveStickyAction(tester, choice);
 
     expect(tester.widget<FilledButton>(choice).onPressed, isNull);
     expect(
-      find.byKey(const Key('home-choice-locked-root-return-beacon')),
+      find.byKey(const Key('home-choice-locked-root-constellation-gate')),
       findsOneWidget,
     );
     expect(
       find.text(
-        'Выберите Мха активным питомцем, чтобы укоренить маяк возврата.',
+        'Выберите взрослого Мха-оплота активным питомцем, чтобы вырастить живой проход.',
       ),
       findsOneWidget,
     );
     expect(
       find.byKey(
         const Key(
-          'event-choice-signal-uncharted-verge-v1-root-return-beacon-'
+          'event-choice-signal-uncharted-verge-v1-root-constellation-gate-'
           'stabilize-muted',
         ),
       ),
@@ -2244,7 +2244,7 @@ HomeSnapshot _resonanceEventReady({required bool equipped}) {
   );
 }
 
-HomeSnapshot _petGuidedEventReady() {
+HomeSnapshot _adultPetEventReady() {
   return const HomeSnapshot(
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
@@ -2256,7 +2256,7 @@ HomeSnapshot _petGuidedEventReady() {
     economyVersion: 8,
     lastActivitySyncAt: '2026-07-26T05:55:00Z',
     serverTime: '2026-07-26T06:00:00Z',
-    contentVersion: 'chapter-1-v10',
+    contentVersion: 'chapter-1-v12',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
     currentNodeId: 'uncharted-verge',
@@ -2272,15 +2272,15 @@ HomeSnapshot _petGuidedEventReady() {
       status: 'READY',
       choices: <HomeEventChoice>[
         HomeEventChoice(
-          choiceId: 'root-return-beacon',
-          title: 'Укоренить маяк вместе с Мхом',
-          description: 'Доверить Мху опорную точку на незнакомой земле.',
-          pilotExperienceReward: 64,
-          petBondReward: 34,
+          choiceId: 'root-constellation-gate',
+          title: 'Укоренить проход с Мхом-оплотом',
+          description: 'Позволить взрослому Мху вырастить опору в пустоте.',
+          pilotExperienceReward: 70,
+          petBondReward: 40,
           materialReward: HomeMaterialRewardPreview(
             itemId: 'ash-seed',
             itemName: 'Пепельное семя',
-            quantity: 3,
+            quantity: 2,
           ),
           availability: 'LOCKED',
           requirement: HomeChoiceRequirement(
@@ -2288,9 +2288,10 @@ HomeSnapshot _petGuidedEventReady() {
             slotId: 'ACTIVE_PET',
             slotName: 'Активный питомец',
             itemId: 'moss-v1',
-            itemName: 'Мох',
+            itemName: 'Мох-оплот',
+            minimumEvolutionStage: 2,
             description:
-                'Выберите Мха активным питомцем, чтобы укоренить маяк возврата.',
+                'Выберите взрослого Мха-оплота активным питомцем, чтобы вырастить живой проход.',
           ),
         ),
       ],
