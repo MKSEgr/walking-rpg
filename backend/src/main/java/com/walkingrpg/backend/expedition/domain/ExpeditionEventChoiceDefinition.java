@@ -14,7 +14,8 @@ public record ExpeditionEventChoiceDefinition(
         int petBondReward,
         InventoryRewardDefinition materialReward,
         ExpeditionChoiceEquipmentRequirement equipmentRequirement,
-        ExpeditionChoicePetRequirement petRequirement
+        ExpeditionChoicePetRequirement petRequirement,
+        ExpeditionChoiceSkillRequirement skillRequirement
 ) {
     public ExpeditionEventChoiceDefinition {
         choiceId = requireText(choiceId, "choiceId");
@@ -28,7 +29,10 @@ public record ExpeditionEventChoiceDefinition(
         if (pilotExperienceReward == 0 && petBondReward == 0 && materialReward == null) {
             throw new IllegalArgumentException("Выбор должен содержать положительную награду");
         }
-        if (equipmentRequirement != null && petRequirement != null) {
+        int requirementCount = (equipmentRequirement == null ? 0 : 1)
+                + (petRequirement == null ? 0 : 1)
+                + (skillRequirement == null ? 0 : 1);
+        if (requirementCount > 1) {
             throw new IllegalArgumentException(
                     "Выбор поддерживает только одно обязательное условие"
             );
@@ -56,6 +60,7 @@ public record ExpeditionEventChoiceDefinition(
                 petBondReward,
                 materialReward,
                 equipmentRequirement,
+                null,
                 null
         );
     }
@@ -81,7 +86,34 @@ public record ExpeditionEventChoiceDefinition(
                 petBondReward,
                 materialReward,
                 null,
-                petRequirement
+                petRequirement,
+                null
+        );
+    }
+
+    public ExpeditionEventChoiceDefinition(
+            String choiceId,
+            String title,
+            String description,
+            String outcomeTitle,
+            String outcomeSummary,
+            int pilotExperienceReward,
+            int petBondReward,
+            InventoryRewardDefinition materialReward,
+            ExpeditionChoiceSkillRequirement skillRequirement
+    ) {
+        this(
+                choiceId,
+                title,
+                description,
+                outcomeTitle,
+                outcomeSummary,
+                pilotExperienceReward,
+                petBondReward,
+                materialReward,
+                null,
+                null,
+                skillRequirement
         );
     }
 
@@ -105,6 +137,7 @@ public record ExpeditionEventChoiceDefinition(
                 petBondReward,
                 materialReward,
                 null,
+                null,
                 null
         );
     }
@@ -126,6 +159,7 @@ public record ExpeditionEventChoiceDefinition(
                 outcomeSummary,
                 pilotExperienceReward,
                 petBondReward,
+                null,
                 null,
                 null,
                 null

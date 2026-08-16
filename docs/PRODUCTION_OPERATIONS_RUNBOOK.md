@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V28 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V29 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -682,6 +682,39 @@ Do not roll back to a pre-V28 binary after a v12 route result or sanctuary
 state has persisted. Stop activation, return the active release to v11 for new
 journeys if safe, and forward-fix binaries that must read the new node and
 choice IDs.
+
+## Signal Reader sanctuary outcome rollout
+
+Flyway V29 stages `chapter-1-v13` inactive without changing the 26-node v12
+topology, active v12 or existing platform/pet/expedition state. Deploy and
+drain every pre-V29 backend before activation. V1-v12 neither expose nor
+accept `decode-sanctuary-signal`.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v13",
+  "releaseNotes": "Первая глава: навык «Чтение сигналов» открывает скрытый исход Святилища созвездий.",
+  "content": {
+    "contentVersion": "chapter-1-v13",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 26,
+    "topology": "signal-reader-sanctuary-choice-v1"
+  }
+}
+```
+
+Before activation, place otherwise identical users with and without
+`signal-reader` at `constellation-sanctuary-v1`. Home must return the new
+choice as `LOCKED/UNLOCKED_SKILL` for the latter and `AVAILABLE` for the
+former. A direct locked resolution must leave progression, inventory and
+expedition rows unchanged. Resolve the available choice, acknowledge its
+result and replay the command without duplicate rewards.
+
+Do not roll back to a pre-V29 binary while v13 is active: old instances do not
+know the choice ID. Return the active release to v12, drain v13 traffic, and
+forward-fix any persisted v13 result or state that an older binary cannot read.
 
 ## Rollback
 

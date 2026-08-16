@@ -1309,6 +1309,43 @@ void main() {
     );
   });
 
+  testWidgets('signal reader choice shows the server skill lock reason', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(loader: () async => _signalReaderEventReady()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder choice = find.byKey(
+      const Key('home-event-choice-decode-sanctuary-signal'),
+    );
+    await _scrollAboveStickyAction(tester, choice);
+
+    expect(tester.widget<FilledButton>(choice).onPressed, isNull);
+    expect(
+      find.byKey(const Key('home-choice-locked-decode-sanctuary-signal')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Откройте навык «Чтение сигналов», чтобы расшифровать скрытый хор святилища.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const Key(
+          'event-choice-signal-constellation-sanctuary-v1-'
+          'decode-sanctuary-signal-frequency-muted',
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'home screen keeps result visible until acknowledgement and reloads',
     (WidgetTester tester) async {
@@ -2303,6 +2340,67 @@ HomeSnapshot _adultPetEventReady() {
     petName: 'Искра',
     petLevel: 2,
     petBond: 40,
+  );
+}
+
+HomeSnapshot _signalReaderEventReady() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 8,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v13',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'constellation-sanctuary',
+    currentNodeName: 'Святилище созвездий',
+    expeditionProgress: 80,
+    requiredEnergy: 80,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 51,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'constellation-sanctuary-v1',
+      title: 'Хор трёх путей',
+      summary: 'Свет, корни и эхо складываются в карту нового мира.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'decode-sanctuary-signal',
+          title: 'Расшифровать скрытый хор',
+          description: 'Применить Чтение сигналов к хору святилища.',
+          pilotExperienceReward: 96,
+          petBondReward: 50,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'echo-thread',
+            itemName: 'Нить эха',
+            quantity: 4,
+          ),
+          availability: 'LOCKED',
+          requirement: HomeChoiceRequirement(
+            type: 'UNLOCKED_SKILL',
+            slotId: 'PILOT_SKILL',
+            slotName: 'Навык пилота',
+            itemId: 'signal-reader',
+            itemName: 'Чтение сигналов',
+            description:
+                'Откройте навык «Чтение сигналов», чтобы расшифровать скрытый хор святилища.',
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 4,
+    pilotCurrentExperience: 380,
+    pilotNextLevelExperience: 640,
+    petName: 'Искра-звездочёт',
+    petLevel: 3,
+    petBond: 170,
   );
 }
 

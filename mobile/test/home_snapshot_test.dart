@@ -467,6 +467,29 @@ void main() {
     expect(requirement.itemName, 'Искра-звездочёт');
   });
 
+  test('pilot skill choice requirement is mapped without client inference', () {
+    final HomeChoiceRequirement requirement = HomeChoiceRequirement.fromJson(
+      <String, dynamic>{
+        'type': 'UNLOCKED_SKILL',
+        'slotId': 'PILOT_SKILL',
+        'slotName': 'Навык пилота',
+        'itemId': 'signal-reader',
+        'itemName': 'Чтение сигналов',
+        'minimumUpgradeLevel': 1,
+        'minimumEvolutionStage': 0,
+        'description':
+            'Откройте навык «Чтение сигналов», чтобы расшифровать скрытый хор.',
+      },
+    );
+
+    expect(requirement.type, 'UNLOCKED_SKILL');
+    expect(requirement.slotId, 'PILOT_SKILL');
+    expect(requirement.itemId, 'signal-reader');
+    expect(requirement.itemName, 'Чтение сигналов');
+    expect(requirement.minimumUpgradeLevel, 1);
+    expect(requirement.minimumEvolutionStage, 0);
+  });
+
   test('negative pet evolution requirement is rejected', () {
     expect(
       () => HomeChoiceRequirement.fromJson(<String, dynamic>{

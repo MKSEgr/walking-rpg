@@ -25,6 +25,7 @@ import javax.sql.DataSource;
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
 import com.walkingrpg.backend.expedition.application.EventChoicePetUnavailableException;
+import com.walkingrpg.backend.expedition.application.EventChoiceSkillUnavailableException;
 import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.EventResolutionService;
 import com.walkingrpg.backend.expedition.application.EventResultAcknowledgementService;
@@ -45,6 +46,7 @@ import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.inventory.application.InventoryService;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.application.PlatformService;
+import com.walkingrpg.backend.platform.domain.PlatformSkillIds;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1048,6 +1050,117 @@ class EventResolutionIntegrationTest {
         assertNull(finale.nextNode());
         assertEquals(3L, inventoryQuantity("prism-dust"));
         assertEquals(2, rowCount("processed_event_resolution"));
+    }
+
+    @Test
+    void shouldGateSanctuarySignalUntilPilotSkillIsUnlocked() {
+        String userId = "signal-reader-sanctuary-user";
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "select-pet-before-signal-reader",
+                Map.of("petId", "spark-v1")
+        ));
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE roadmap_user_state
+                SET state_json = jsonb_set(
+                    state_json,
+                    '{seasonXp}',
+                    '360'::jsonb
+                )
+                WHERE user_id = ?
+                """, userId));
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v13'
+                """));
+        jdbcTemplate.update("""
+                INSERT INTO expedition_progress (
+                    user_id, expedition_id, current_node_id,
+                    progress_energy, required_energy, status,
+                    unlocked_event_id, version, created_at, updated_at
+                ) VALUES (?, ?, ?, 80, 80, 'EVENT_READY', ?, 51, now(), now())
+                """,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID
+        );
+
+        HomeSnapshotResponse lockedHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        var lockedChoice = lockedHome.expedition().unlockedEvent()
+                .lockedChoices().stream()
+                .filter(choice -> StarterExpeditionContent
+                        .SIGNAL_READER_SANCTUARY_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION,
+                lockedHome.contentVersion()
+        );
+        assertEquals("UNLOCKED_SKILL", lockedChoice.requirement().type());
+        assertEquals(PlatformSkillIds.SIGNAL_READER,
+                lockedChoice.requirement().itemId());
+        EventChoiceSkillUnavailableException unavailable = assertThrows(
+                EventChoiceSkillUnavailableException.class,
+                () -> eventResolutionService.resolve(command(
+                        userId,
+                        StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                        StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                        "reject-locked-signal-reader"
+                ))
+        );
+        assertEquals(PlatformSkillIds.SIGNAL_READER,
+                unavailable.requiredSkillId());
+        assertEquals(0, rowCount("processed_event_resolution"));
+        assertEquals(0, rowCount("inventory_stack"));
+        assertEquals(0, rowCount("pilot_progress"));
+        assertEquals(0, rowCount("pet_progress"));
+
+        platformService.execute(userId, new PlatformCommandRequest(
+                "UNLOCK_SKILL",
+                "unlock-signal-reader-before-sanctuary",
+                Map.of("skillId", PlatformSkillIds.SIGNAL_READER)
+        ));
+        HomeSnapshotResponse unlockedHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        assertTrue(unlockedHome.expedition().unlockedEvent().choices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .SIGNAL_READER_SANCTUARY_CHOICE_ID.equals(
+                                choice.choiceId()
+                        )));
+
+        EventResolutionCommand command = command(
+                userId,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                "resolve-signal-reader-sanctuary"
+        );
+        EventResolutionResult result = eventResolutionService.resolve(command);
+        EventResolutionResult replayed = eventResolutionService.resolve(command);
+
+        assertEquals(result, replayed);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                result.expeditionStatus());
+        assertEquals(96, result.pilot().experienceGained());
+        assertEquals(50, result.pet().bondGained());
+        assertEquals(StarterInventoryContent.ECHO_THREAD_ID,
+                result.material().itemId());
+        assertEquals(4, result.material().quantityGained());
+        assertEquals(4L, inventoryQuantity(StarterInventoryContent.ECHO_THREAD_ID));
+        assertEquals(1, rowCount("processed_event_resolution"));
+        assertEquals(1, rowCount("pilot_progress"));
+        assertEquals(1, rowCount("pet_progress"));
     }
 
     @Test

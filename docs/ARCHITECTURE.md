@@ -357,6 +357,14 @@ service повторно читает active pet со стадией под те
 user/expedition boundary до любой XP, bond, material или route mutation.
 V1-V11 не проецируют и не принимают новые IDs.
 
+Active `chapter-1-v13` сохраняет 26-node topology и добавляет в финальное
+событие skill-gated choice `decode-sanctuary-signal`. Home получает
+authoritative множество навыков через `PlatformSkillAccess` и проецирует
+`UNLOCKED_SKILL` как additive generic requirement. Event resolution независимо
+повторяет ту же проверку по repository-backed platform state до любых наград
+или completion mutation; клиентская availability остаётся только UX-проекцией.
+V1-V12 не проецируют и не принимают новый ID.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
@@ -485,6 +493,10 @@ V28 stage-ит inactive `chapter-1-v12` с 26-м узлом и adult-pet-gated
 продолжением из `uncharted-verge-v1`. Миграция не меняет active v11,
 `roadmap_user_state`, `pet_progress` или текущие `expedition_progress` rows;
 activation выполняется только после drain pre-V28 backend instances.
+V29 stage-ит inactive `chapter-1-v13` с прежней 26-node topology и
+skill-gated исходом `constellation-sanctuary-v1`. Миграция не меняет active
+v12, `roadmap_user_state`, `pet_progress` или текущие `expedition_progress`
+rows; activation выполняется только после drain pre-V29 backend instances.
 
 ## 8. Конкурентность и транзакции
 

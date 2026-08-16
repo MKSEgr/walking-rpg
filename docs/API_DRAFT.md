@@ -585,12 +585,21 @@ constellation-sanctuary-v1 (chapter-1-v12)
                          завершение экспедиции
   carry-sanctuary-song → +68 pilot XP, +60 pet bond, +3 dawn-fragment,
                          завершение экспедиции
+
+constellation-sanctuary-v1 (additive chapter-1-v13 choice)
+  decode-sanctuary-signal
+                       → требует открытый навык signal-reader,
+                         +96 pilot XP, +50 pet bond, +4 echo-thread,
+                         завершение экспедиции
 ```
 
 До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses
 остаются на `chapter-1-v1`, а `follow-resonance` отсутствует и в `choices`, и в
 `lockedChoices`. Прямая новая resolution-команда с этим choice отклоняется.
 Exact replay уже сохранённого результата выполняется до проверки release gate.
+V1-v12 не проецируют и не принимают `decode-sanctuary-signal`; active v13
+проверяет `signal-reader` по authoritative platform state до любой награды или
+expedition mutation.
 
 Response второго события:
 
@@ -670,7 +679,8 @@ expedition transition и durable result используют одно post-lock 
 - account-deletion subject lock и active check предшествуют expedition lock,
   replay lookup и всем reward/progression mutations в той же транзакции;
 - `choiceId` выбирается из server-owned definition соответствующего `eventId`;
-- gated choice повторно проверяет authoritative equipment или active pet под
+- gated choice повторно проверяет authoritative equipment, active pet или
+  unlocked pilot skill под
   тем же expedition lock; доступный вариант находится в `choices`, недоступный
   — в additive `lockedChoices`. Home availability используется только для UX,
   а прямой вызов без prerequisite возвращает
@@ -680,7 +690,10 @@ expedition transition и durable result используют одно post-lock 
   `itemId=<petId>`, `itemName=<petName>` и additive
   `minimumEvolutionStage` (legacy default — `0`), а error details возвращает
   `requirementType=ACTIVE_PET`, `requiredPetId`, `requiredEvolutionStage` и
-  `actualEvolutionStage`;
+  `actualEvolutionStage`. Skill requirement использует
+  `type=UNLOCKED_SKILL`, `slotId=PILOT_SKILL`, `itemId=<skillId>`; прямой
+  вызов без навыка возвращает `requirementType=UNLOCKED_SKILL` и
+  `requiredSkillId`;
 - `receiptId`, immutable reward snapshot и `nextNode` сохраняются в той же
   транзакции, что и progression/inventory/expedition transition;
 - первый event resolution переводит progress на второй узел, второй — на
@@ -1002,7 +1015,7 @@ remote config. Канонический первый путь содержит �
 содержит `trait`, независимые `level/bond/evolutionStage` и server-owned
 `evolutionBond` для следующего перехода. Additive
 `maximumEvolutionStage` задаёт последнюю доступную форму: v1-v10 возвращают
-`1`, а `chapter-1-v11` и v12 — `2`. Если сохранённая стадия выше лимита
+`1`, а `chapter-1-v11` и новее — `2`. Если сохранённая стадия выше лимита
 активного контента после rollback, projection возвращает сохранённую стадию
 как effective maximum, но новая эволюция остаётся запрещена правилами
 активного контента. Mobile при отсутствии поля использует `1`, поэтому новый

@@ -58,6 +58,10 @@ class StarterExpeditionContentTest {
                 () -> StarterExpeditionContent
                         .ADULT_PET_FRONTIER_CONTENT_VERSION
         );
+        String chapterV13 = content.activeContentVersion(
+                () -> StarterExpeditionContent
+                        .PILOT_SKILL_CHOICE_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -90,6 +94,10 @@ class StarterExpeditionContentTest {
         assertEquals(
                 StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION,
                 chapterV12
+        );
+        assertEquals(
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION,
+                chapterV13
         );
         assertEquals(1, activationReads.get());
         assertEquals(
@@ -243,12 +251,35 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsAdultPetEvolution(
                 chapterV12
         ));
+        assertTrue(StarterExpeditionContent.supportsAdultPetEvolution(
+                chapterV13
+        ));
         assertFalse(StarterExpeditionContent.supportsAdultPetFrontier(
                 chapterV11
         ));
         assertTrue(StarterExpeditionContent.supportsAdultPetFrontier(
                 chapterV12
         ));
+        assertTrue(StarterExpeditionContent.supportsAdultPetFrontier(
+                chapterV13
+        ));
+        assertFalse(StarterExpeditionContent.supportsPilotSkillChoice(
+                chapterV12
+        ));
+        assertTrue(StarterExpeditionContent.supportsPilotSkillChoice(
+                chapterV13
+        ));
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                chapterV12
+        ).size());
+        var skillChoice = content.requireChoice(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                chapterV13
+        );
+        assertEquals("signal-reader", skillChoice.skillRequirement().skillId());
+        assertEquals(4, skillChoice.materialReward().quantity());
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
@@ -460,6 +491,26 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
         ).size());
+        assertThrows(
+                EventResolutionValidationException.class,
+                () -> content.requireChoice(
+                        StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                        StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                        StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+                )
+        );
+        assertEquals(3, content.eventChoices(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+        ).size());
+        assertEquals(
+                "signal-reader",
+                content.requireChoice(
+                        StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                        StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                        StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+                ).skillRequirement().skillId()
+        );
         assertTrue(content.nextNodeAfterEvent(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 "anchor-constellation-sanctuary",

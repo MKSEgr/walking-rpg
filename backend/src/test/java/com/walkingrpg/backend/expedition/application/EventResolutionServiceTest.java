@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -21,6 +22,7 @@ import com.walkingrpg.backend.expedition.infrastructure.InMemoryExpeditionReposi
 import com.walkingrpg.backend.inventory.application.InventoryService;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.infrastructure.InMemoryInventoryRepository;
+import com.walkingrpg.backend.platform.domain.PlatformSkillIds;
 import com.walkingrpg.backend.progression.application.ActivePetSelection;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
@@ -1174,6 +1176,77 @@ class EventResolutionServiceTest {
         assertEquals(StarterInventoryContent.PRISM_DUST_ID,
                 finale.material().itemId());
         assertEquals(3, finale.material().quantityGained());
+    }
+
+    @Test
+    void shouldRequireSignalReaderForHiddenSanctuaryOutcome() {
+        activeContentVersion.set(
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+        );
+        var sanctuary = content.requireNode(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(sanctuary, 51),
+                NOW
+        );
+        EventResolutionCommand command = command(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                "decode-hidden-sanctuary-signal"
+        );
+
+        EventChoiceSkillUnavailableException unavailable = assertThrows(
+                EventChoiceSkillUnavailableException.class,
+                () -> service.resolve(command)
+        );
+
+        assertEquals(PlatformSkillIds.SIGNAL_READER,
+                unavailable.requiredSkillId());
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+        assertEquals(
+                ExpeditionProgressStatus.EVENT_READY,
+                expeditionRepository.findState(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().status()
+        );
+
+        EventResolutionService unlockedService = new EventResolutionService(
+                expeditionRepository,
+                eventResolutionRepository,
+                new ProgressionService(
+                        new InMemoryProgressionRepository(),
+                        new StarterProgressionContent()
+                ),
+                new InventoryService(inventoryRepository),
+                content,
+                equipmentService,
+                userId -> Set.of(PlatformSkillIds.SIGNAL_READER),
+                activeContentVersion::get,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        EventResolutionResult result = unlockedService.resolve(command);
+        EventResolutionResult replayed = unlockedService.resolve(command);
+
+        assertSame(result, replayed);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                result.expeditionStatus());
+        assertNull(result.nextNode());
+        assertEquals(96, result.pilot().experienceGained());
+        assertEquals(50, result.pet().bondGained());
+        assertEquals(StarterInventoryContent.ECHO_THREAD_ID,
+                result.material().itemId());
+        assertEquals(4, result.material().quantityGained());
+        assertEquals(4L, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.ECHO_THREAD_ID.equals(
+                        item.item().itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
     }
 
     @Test

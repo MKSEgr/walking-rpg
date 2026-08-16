@@ -14,6 +14,7 @@ import java.util.TreeMap;
 
 import com.walkingrpg.backend.expedition.application.StarterExpeditionContent;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
+import com.walkingrpg.backend.platform.domain.PlatformSkillIds;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.MapperFeature;
@@ -200,14 +201,17 @@ public class PlatformContentCatalog {
             )
     );
     private final List<SkillDefinition> skills = List.of(
-            new SkillDefinition("steady-step", "Ровный шаг",
+            new SkillDefinition(PlatformSkillIds.STEADY_STEP, "Ровный шаг",
                     "Добавляет диагностический бонус к стабильным сериям активности.", 0),
-            new SkillDefinition("trail-memory", "Память маршрута",
+            new SkillDefinition(PlatformSkillIds.TRAIL_MEMORY, "Память маршрута",
                     "Открывает дополнительное описание пройденных узлов.", 100),
-            new SkillDefinition("energy-discipline", "Дисциплина энергии",
+            new SkillDefinition(PlatformSkillIds.ENERGY_DISCIPLINE,
+                    "Дисциплина энергии",
                     "Показывает недельный бюджет энергии.", 220),
-            new SkillDefinition("signal-reader", "Чтение сигналов",
-                    "Открывает расширенные сведения о событиях.", 360)
+            new SkillDefinition(PlatformSkillIds.SIGNAL_READER,
+                    "Чтение сигналов",
+                    "Открывает расширенные сведения и скрытые исходы событий.",
+                    360)
     );
     private final List<QuestDefinition> quests = List.of(
             new QuestDefinition("walk-3000", "Первый маршрут", QuestMetric.TOTAL_ACCEPTED_STEPS,

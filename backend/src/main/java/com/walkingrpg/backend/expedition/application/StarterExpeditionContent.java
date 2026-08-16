@@ -9,11 +9,13 @@ import java.util.Optional;
 import com.walkingrpg.backend.equipment.application.StarterEquipmentContent;
 import com.walkingrpg.backend.expedition.domain.ExpeditionChoiceEquipmentRequirement;
 import com.walkingrpg.backend.expedition.domain.ExpeditionChoicePetRequirement;
+import com.walkingrpg.backend.expedition.domain.ExpeditionChoiceSkillRequirement;
 import com.walkingrpg.backend.expedition.domain.ExpeditionDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventChoiceDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventDefinition;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.domain.InventoryRewardDefinition;
+import com.walkingrpg.backend.platform.domain.PlatformSkillIds;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -39,6 +41,8 @@ public class StarterExpeditionContent {
             "chapter-1-v11";
     public static final String ADULT_PET_FRONTIER_CONTENT_VERSION =
             "chapter-1-v12";
+    public static final String PILOT_SKILL_CHOICE_CONTENT_VERSION =
+            "chapter-1-v13";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -115,6 +119,8 @@ public class StarterExpeditionContent {
             "constellation-sanctuary";
     public static final String CONSTELLATION_SANCTUARY_EVENT_ID =
             "constellation-sanctuary-v1";
+    public static final String SIGNAL_READER_SANCTUARY_CHOICE_ID =
+            "decode-sanctuary-signal";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
 
@@ -187,7 +193,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    ADULT_PET_FRONTIER_CONTENT_VERSION,
+                    PILOT_SKILL_CHOICE_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -514,7 +520,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                ADULT_PET_FRONTIER_CONTENT_VERSION
+                PILOT_SKILL_CHOICE_CONTENT_VERSION
         );
     }
 
@@ -551,7 +557,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                ADULT_PET_FRONTIER_CONTENT_VERSION
+                PILOT_SKILL_CHOICE_CONTENT_VERSION
         );
     }
 
@@ -582,7 +588,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, ADULT_PET_FRONTIER_CONTENT_VERSION);
+        return eventChoices(eventId, PILOT_SKILL_CHOICE_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -684,9 +690,16 @@ public class StarterExpeditionContent {
             }
             return filtered.toList();
         }
-        if (CONSTELLATION_SANCTUARY_EVENT_ID.equals(eventId)
-                && !supportsAdultPetFrontier(activeContentVersion)) {
-            return List.of();
+        if (CONSTELLATION_SANCTUARY_EVENT_ID.equals(eventId)) {
+            if (!supportsAdultPetFrontier(activeContentVersion)) {
+                return List.of();
+            }
+            if (!supportsPilotSkillChoice(activeContentVersion)) {
+                return choices.stream()
+                        .filter(choice -> !SIGNAL_READER_SANCTUARY_CHOICE_ID
+                                .equals(choice.choiceId()))
+                        .toList();
+            }
         }
         return choices;
     }
@@ -704,7 +717,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return ADULT_PET_FRONTIER_CONTENT_VERSION;
+        return PILOT_SKILL_CHOICE_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -713,6 +726,9 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(activeContentVersion)) {
+            return PILOT_SKILL_CHOICE_CONTENT_VERSION;
+        }
         if (ADULT_PET_FRONTIER_CONTENT_VERSION.equals(
                 activeContentVersion
         )) {
@@ -770,7 +786,8 @@ public class StarterExpeditionContent {
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsStormRift(String contentVersion) {
@@ -785,7 +802,8 @@ public class StarterExpeditionContent {
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsVoidOrchardFork(String contentVersion) {
@@ -799,7 +817,8 @@ public class StarterExpeditionContent {
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPrismSextantRoute(String contentVersion) {
@@ -812,7 +831,8 @@ public class StarterExpeditionContent {
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsCalibratedSextantChoice(
@@ -826,7 +846,8 @@ public class StarterExpeditionContent {
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsSecondDawnRoute(String contentVersion) {
@@ -837,7 +858,8 @@ public class StarterExpeditionContent {
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsSecondDawnAttunement(
@@ -847,34 +869,43 @@ public class StarterExpeditionContent {
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsUnchartedVerge(String contentVersion) {
         return UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
                 || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPetGuidedUncharted(String contentVersion) {
         return PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
                 || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsAdultPetEvolution(String contentVersion) {
         return ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion)
-                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+                || ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsAdultPetFrontier(String contentVersion) {
-        return ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion);
+        return ADULT_PET_FRONTIER_CONTENT_VERSION.equals(contentVersion)
+                || PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsPilotSkillChoice(String contentVersion) {
+        return PILOT_SKILL_CHOICE_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                ADULT_PET_FRONTIER_CONTENT_VERSION,
+                PILOT_SKILL_CHOICE_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -1485,6 +1516,25 @@ public class StarterExpeditionContent {
                                 inventoryContent,
                                 StarterInventoryContent.DAWN_FRAGMENT_ID,
                                 3
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                        "Расшифровать скрытый хор",
+                        "Применить Чтение сигналов, чтобы отделить тайный маршрут от общего хора святилища.",
+                        "Сигнал за пределами карты",
+                        "Пилот распознал в хоре святилища координаты невидимого сектора и сохранил нити его эха.",
+                        96,
+                        50,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ECHO_THREAD_ID,
+                                4
+                        ),
+                        new ExpeditionChoiceSkillRequirement(
+                                PlatformSkillIds.SIGNAL_READER,
+                                "Чтение сигналов",
+                                "Откройте навык «Чтение сигналов», чтобы расшифровать скрытый хор святилища."
                         )
                 )
         );
