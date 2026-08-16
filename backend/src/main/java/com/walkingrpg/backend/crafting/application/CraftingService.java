@@ -61,7 +61,7 @@ public class CraftingService {
                 expeditionRepository,
                 eventResolutionRepository,
                 () -> StarterExpeditionContent
-                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION,
+                        .ADULT_PET_EVOLUTION_CONTENT_VERSION,
                 clock
         );
     }

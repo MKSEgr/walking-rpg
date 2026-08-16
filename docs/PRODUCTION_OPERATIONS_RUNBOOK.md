@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V26 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V27 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -614,6 +614,38 @@ the expedition completes and exact replay is immutable.
 
 Do not roll back to a pre-V26 binary after v10 choices have persisted. Stop
 activation and forward-fix; a pre-V26 instance cannot replay those choice IDs.
+
+## Adult starter-pet evolution rollout
+
+Flyway V27 stages `chapter-1-v11` inactive without changing the 25-node v10
+topology. Deploy and drain every pre-V27 backend before activation. V1-v10 cap
+pet evolution at stage `1`; v11 enables the server-authoritative `1 → 2`
+transition.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v11",
+  "releaseNotes": "Первая глава: Искра, Мох и Руна открывают взрослую форму через второй порог связи.",
+  "content": {
+    "contentVersion": "chapter-1-v11",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 25,
+    "topology": "adult-starter-pet-evolution-v1"
+  }
+}
+```
+
+Before activation, verify that a stage-1 Spark at bond `139` receives
+`requiredBond=140` without mutation, while bond `140` produces stage `2`,
+level increment, the adult name and the matching `pet_progress` synchronization.
+Repeat for Moss at `125` and Rune at `150`; exact replay must return the saved
+response without another level increment.
+
+Do not roll back to a pre-V27 binary after any stage-2 state has persisted.
+Stop activation and forward-fix; an older binary cannot correctly project or
+enforce the adult-form maximum.
 
 ## Rollback
 

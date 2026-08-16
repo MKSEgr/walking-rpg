@@ -114,7 +114,7 @@ GAMEPLAY не вызывается и остаётся `PENDING`; `TELEMETRY` в
 lane. Exposure lane выводится из
 сохранённого payload, поэтому старый v1 record изолируется без миграции store.
 
-Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. `equippedCosmetics` является additive server-owned mapping `PILOT`/`PET`/`PROFILE → cosmeticId`; legacy `activeCosmeticId` остаётся указателем на последний выбор для старого клиента. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
+Platform snapshot содержит onboarding, три питомца, skills, quests, achievements, season, weekly route, squad, cosmetics, experiments и remote config. Pet projection передаёт текущую форму, следующий bond threshold и `maximumEvolutionStage`; отсутствие последнего поля у старого backend означает legacy maximum `1`. `equippedCosmetics` является additive server-owned mapping `PILOT`/`PET`/`PROFILE → cosmeticId`; legacy `activeCosmeticId` остаётся указателем на последний выбор для старого клиента. После успешной команды UI заменяет состояние snapshot-ом backend и перечитывает home; optimistic rewards не применяются.
 
 Authenticated shell выполняет startup replay ровно в одном месте, а runtime
 memoize-ит его Future до завершения authenticated session. После первой
@@ -241,8 +241,8 @@ Retention, first-journey и compass read models начинают `REPEATABLE_REA
 `ActivePetProvider` связывает platform state с home/progression: event reward
 берёт тот же per-user advisory lock, что и `SELECT_PET`, затем блокирует и
 изменяет строку выбранного `pet_id`; pilot XP остаётся общим. Quest bond и
-evolution level синхронизируются с той же `pet_progress` строкой в транзакции
-platform-команды. Для старого раздвоенного состояния read/reward использует
+каждая evolution stage и level синхронизируются с той же `pet_progress`
+строкой в транзакции platform-команды. Для старого раздвоенного состояния read/reward использует
 максимальные подтверждённые level/bond. Отсутствующее platform state безопасно
 использует `spark-v1`.
 
@@ -341,6 +341,13 @@ Active `chapter-1-v10` сохраняет 25-node topology и добавляет
 `lockedChoices` с `type=ACTIVE_PET`. Event service повторно читает active pet
 под тем же serialized user/expedition transaction boundary до XP, bond,
 material и completion mutations. V1-V9 не знают новые choice IDs.
+
+Active `chapter-1-v11` сохраняет ту же topology и открывает вторую
+server-authoritative эволюцию для всех starter pets: Spark `140`, Moss `125`,
+Rune `150` bond. V1-V10 ограничивают `EVOLVE_PET` стадией `1`; v11 проецирует
+следующий threshold и `maximumEvolutionStage=2`, а достигнутая стадия `2`
+получает взрослое имя. State JSON не требует schema rewrite, а level/bond
+продолжают синхронизироваться с независимой `pet_progress` строкой.
 
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
@@ -462,6 +469,10 @@ V26 stage-ит inactive `chapter-1-v10` с прежней 25-node topology и т
 pet-guided исходами `uncharted-verge-v1`. Миграция не меняет active v9,
 выбранного питомца или его progression; activation выполняется только после
 drain pre-V26 backend instances.
+V27 stage-ит inactive `chapter-1-v11` с той же topology и взрослыми формами
+трёх starter pets. Миграция не меняет active v10, `roadmap_user_state` или
+`pet_progress`; activation выполняется только после drain pre-V27 backend
+instances. После сохранения stage `2` rollback на pre-V27 binary запрещён.
 
 ## 8. Конкурентность и транзакции
 

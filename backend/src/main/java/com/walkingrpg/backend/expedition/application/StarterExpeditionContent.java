@@ -35,6 +35,8 @@ public class StarterExpeditionContent {
             "chapter-1-v9";
     public static final String PET_GUIDED_UNCHARTED_CONTENT_VERSION =
             "chapter-1-v10";
+    public static final String ADULT_PET_EVOLUTION_CONTENT_VERSION =
+            "chapter-1-v11";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -172,7 +174,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    PET_GUIDED_UNCHARTED_CONTENT_VERSION,
+                    ADULT_PET_EVOLUTION_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -456,7 +458,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                PET_GUIDED_UNCHARTED_CONTENT_VERSION
+                ADULT_PET_EVOLUTION_CONTENT_VERSION
         );
     }
 
@@ -493,7 +495,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                PET_GUIDED_UNCHARTED_CONTENT_VERSION
+                ADULT_PET_EVOLUTION_CONTENT_VERSION
         );
     }
 
@@ -524,7 +526,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, PET_GUIDED_UNCHARTED_CONTENT_VERSION);
+        return eventChoices(eventId, ADULT_PET_EVOLUTION_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -628,7 +630,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return PET_GUIDED_UNCHARTED_CONTENT_VERSION;
+        return ADULT_PET_EVOLUTION_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -637,6 +639,11 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(
+                activeContentVersion
+        )) {
+            return ADULT_PET_EVOLUTION_CONTENT_VERSION;
+        }
         if (PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(
                 activeContentVersion
         )) {
@@ -682,7 +689,8 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
-                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsStormRift(String contentVersion) {
@@ -695,7 +703,8 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
-                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsVoidOrchardFork(String contentVersion) {
@@ -707,7 +716,8 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
-                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPrismSextantRoute(String contentVersion) {
@@ -718,7 +728,8 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
-                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsCalibratedSextantChoice(
@@ -730,7 +741,8 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
-                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsSecondDawnRoute(String contentVersion) {
@@ -739,7 +751,8 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
-                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsSecondDawnAttunement(
@@ -747,21 +760,28 @@ public class StarterExpeditionContent {
     ) {
         return SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(contentVersion)
                 || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
-                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsUnchartedVerge(String contentVersion) {
         return UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion)
-                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+                || PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPetGuidedUncharted(String contentVersion) {
-        return PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion);
+        return PET_GUIDED_UNCHARTED_CONTENT_VERSION.equals(contentVersion)
+                || ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsAdultPetEvolution(String contentVersion) {
+        return ADULT_PET_EVOLUTION_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                PET_GUIDED_UNCHARTED_CONTENT_VERSION,
+                ADULT_PET_EVOLUTION_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),

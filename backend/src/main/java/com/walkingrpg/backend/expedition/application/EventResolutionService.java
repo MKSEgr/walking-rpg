@@ -85,7 +85,7 @@ public class EventResolutionService {
                 content,
                 equipmentService,
                 () -> StarterExpeditionContent
-                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION,
+                        .ADULT_PET_EVOLUTION_CONTENT_VERSION,
                 clock
         );
     }
@@ -112,7 +112,7 @@ public class EventResolutionService {
                         clock
                 ),
                 () -> StarterExpeditionContent
-                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION,
+                        .ADULT_PET_EVOLUTION_CONTENT_VERSION,
                 clock
         );
     }

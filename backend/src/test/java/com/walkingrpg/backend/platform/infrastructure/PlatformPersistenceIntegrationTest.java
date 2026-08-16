@@ -798,6 +798,108 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldPersistAndReplayAdultPetEvolutionAcrossBothProgressStores() {
+        String userId = "adult-pet-persistence-user";
+        String previousContentVersion = scalarString("""
+                SELECT content_version
+                FROM content_release
+                WHERE is_active
+                """);
+        platformService.execute(userId, new PlatformCommandRequest(
+                "COMPLETE_ONBOARDING_STEP",
+                "adult-pet-state-seed",
+                Map.of("stepId", "welcome")
+        ));
+        jdbcTemplate.update("""
+                UPDATE roadmap_user_state
+                SET state_json = jsonb_set(
+                        jsonb_set(
+                            jsonb_set(
+                                state_json,
+                                '{pets,spark-v1,level}',
+                                '2'::jsonb
+                            ),
+                            '{pets,spark-v1,bond}',
+                            '145'::jsonb
+                        ),
+                        '{pets,spark-v1,evolutionStage}',
+                        '1'::jsonb
+                    )
+                WHERE user_id = ?
+                """, userId);
+        jdbcTemplate.update("""
+                INSERT INTO pet_progress (
+                    user_id, pet_id, level, bond, version,
+                    created_at, updated_at
+                ) VALUES (?, 'spark-v1', 2, 145, 4, now(), now())
+                """, userId);
+        PlatformCommandRequest request = new PlatformCommandRequest(
+                "EVOLVE_PET",
+                "adult-pet-evolve-once",
+                Map.of("petId", "spark-v1")
+        );
+
+        try {
+            jdbcTemplate.update(
+                    "UPDATE content_release SET is_active = false WHERE is_active"
+            );
+            assertEquals(1, jdbcTemplate.update("""
+                    UPDATE content_release
+                    SET is_active = true,
+                        activated_at = COALESCE(activated_at, now())
+                    WHERE content_version = 'chapter-1-v11'
+                    """));
+
+            PlatformCommandResponse first = platformService.execute(userId, request);
+            PlatformCommandResponse replayed = platformService.execute(userId, request);
+            Map<String, Object> spark = objectList(
+                    first.snapshot().userState().get("pets")
+            ).stream()
+                    .map(PlatformPersistenceIntegrationTest::objectMap)
+                    .filter(pet -> "spark-v1".equals(pet.get("petId")))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertEquals(first, replayed);
+            assertEquals("Искра-звездочёт", spark.get("name"));
+            assertEquals(3, spark.get("level"));
+            assertEquals(2, spark.get("evolutionStage"));
+            assertEquals(2, spark.get("maximumEvolutionStage"));
+            assertEquals(3, jdbcTemplate.queryForObject("""
+                    SELECT (state_json #>>
+                        '{pets,spark-v1,level}')::integer
+                    FROM roadmap_user_state
+                    WHERE user_id = ?
+                    """, Integer.class, userId));
+            assertEquals(2, jdbcTemplate.queryForObject("""
+                    SELECT (state_json #>>
+                        '{pets,spark-v1,evolutionStage}')::integer
+                    FROM roadmap_user_state
+                    WHERE user_id = ?
+                    """, Integer.class, userId));
+            assertEquals(3, jdbcTemplate.queryForObject("""
+                    SELECT level
+                    FROM pet_progress
+                    WHERE user_id = ? AND pet_id = 'spark-v1'
+                    """, Integer.class, userId));
+            assertEquals(5L, jdbcTemplate.queryForObject("""
+                    SELECT version
+                    FROM pet_progress
+                    WHERE user_id = ? AND pet_id = 'spark-v1'
+                    """, Long.class, userId));
+        } finally {
+            jdbcTemplate.update(
+                    "UPDATE content_release SET is_active = false WHERE is_active"
+            );
+            assertEquals(1, jdbcTemplate.update("""
+                    UPDATE content_release
+                    SET is_active = true
+                    WHERE content_version = ?
+                    """, previousContentVersion));
+        }
+    }
+
+    @Test
     void shouldPersistOnePurchaseAcrossLegacyAndCanonicalCommandAliases() throws Exception {
         String userId = "payment-alias-user";
         String idempotencyKey = "payment-alias-once";

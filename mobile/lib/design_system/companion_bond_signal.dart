@@ -25,7 +25,7 @@ abstract final class CompanionBondSignalCatalog {
 /// Code-native field for one accepted companion bond snapshot.
 ///
 /// Decorative nodes sample the visual trace; they are not bond thresholds.
-/// Readiness and evolved state are passed from the owning server-backed model
+/// Readiness and final-form state are passed from the owning server-backed model
 /// rather than inferred by the painter.
 class CompanionBondSignal extends StatelessWidget {
   const CompanionBondSignal({
@@ -35,7 +35,7 @@ class CompanionBondSignal extends StatelessWidget {
     required this.bond,
     required this.evolutionBond,
     required this.canEvolve,
-    required this.evolved,
+    required this.fullyEvolved,
   }) : assert(bond >= 0),
        assert(evolutionBond > 0);
 
@@ -44,10 +44,10 @@ class CompanionBondSignal extends StatelessWidget {
   final int bond;
   final int evolutionBond;
   final bool canEvolve;
-  final bool evolved;
+  final bool fullyEvolved;
 
   CompanionBondStatus get status {
-    if (evolved) {
+    if (fullyEvolved) {
       return CompanionBondStatus.evolved;
     }
     if (canEvolve) {

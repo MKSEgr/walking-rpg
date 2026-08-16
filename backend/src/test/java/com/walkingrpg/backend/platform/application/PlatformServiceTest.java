@@ -620,8 +620,82 @@ class PlatformServiceTest {
                 .orElseThrow();
         assertEquals(2, number(spark, "level"));
         assertEquals(1, number(spark, "evolutionStage"));
+        assertEquals(1, number(spark, "maximumEvolutionStage"));
         assertTrue(collection(response.snapshot().userState(), "achievements")
                 .contains("pet-friend"));
+    }
+
+    @Test
+    void shouldEvolvePetIntoAdultFormOnlyInChapterV11() {
+        platformRepository.setContentVersion(
+                StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION
+        );
+        factsProvider.set("adult-user", new PlatformProgressFacts(0, 0, 60, null));
+
+        PlatformCommandResponse first = service.execute("adult-user", command(
+                "EVOLVE_PET",
+                "evolve-spark-young",
+                Map.of("petId", "spark-v1")
+        ));
+        PlatformCommandRequest adultCommand = command(
+                "EVOLVE_PET",
+                "evolve-spark-adult",
+                Map.of("petId", "spark-v1")
+        );
+        PlatformStateConflictException insufficient = assertThrows(
+                PlatformStateConflictException.class,
+                () -> service.execute("adult-user", adultCommand)
+        );
+        factsProvider.set("adult-user", new PlatformProgressFacts(0, 0, 160, null));
+        PlatformCommandResponse adult = service.execute("adult-user", adultCommand);
+        PlatformCommandResponse replayed = service.execute("adult-user", adultCommand);
+
+        Map<String, Object> youngSpark = pet(first.snapshot(), "spark-v1");
+        Map<String, Object> adultSpark = pet(adult.snapshot(), "spark-v1");
+        assertEquals(1, number(youngSpark, "evolutionStage"));
+        assertEquals(140, number(youngSpark, "evolutionBond"));
+        assertEquals(2, number(youngSpark, "maximumEvolutionStage"));
+        assertEquals(140, insufficient.details().get("requiredBond"));
+        assertEquals(1, insufficient.details().get("currentEvolutionStage"));
+        assertEquals(2, insufficient.details().get("maximumEvolutionStage"));
+        assertEquals("Искра-звездочёт", adultSpark.get("name"));
+        assertEquals(3, number(adultSpark, "level"));
+        assertEquals(2, number(adultSpark, "evolutionStage"));
+        assertEquals(2, number(adultSpark, "maximumEvolutionStage"));
+        assertEquals("Питомец достиг взрослой формы", adult.message());
+        assertEquals(adult, replayed);
+    }
+
+    @Test
+    void shouldKeepChapterV10PetAtLegacyMaximumStage() {
+        platformRepository.setContentVersion(
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION
+        );
+        factsProvider.set("legacy-pet-user", new PlatformProgressFacts(
+                0,
+                0,
+                160,
+                null
+        ));
+
+        PlatformCommandResponse first = service.execute("legacy-pet-user", command(
+                "EVOLVE_PET",
+                "evolve-legacy-young",
+                Map.of("petId", "spark-v1")
+        ));
+        PlatformCommandResponse second = service.execute("legacy-pet-user", command(
+                "EVOLVE_PET",
+                "evolve-legacy-again",
+                Map.of("petId", "spark-v1")
+        ));
+
+        assertEquals(1, number(pet(first.snapshot(), "spark-v1"), "evolutionStage"));
+        assertEquals(1, second.stateVersion());
+        assertEquals("Питомец уже эволюционировал", second.message());
+        assertEquals(
+                1,
+                number(pet(second.snapshot(), "spark-v1"), "maximumEvolutionStage")
+        );
     }
 
     @Test
@@ -1406,6 +1480,17 @@ class PlatformServiceTest {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> map(Object value) {
         return (Map<String, Object>) value;
+    }
+
+    private static Map<String, Object> pet(
+            PlatformSnapshotResponse snapshot,
+            String petId
+    ) {
+        return list(snapshot.userState(), "pets").stream()
+                .map(PlatformServiceTest::map)
+                .filter(candidate -> petId.equals(candidate.get("petId")))
+                .findFirst()
+                .orElseThrow();
     }
 
     private Map<String, Object> event(String eventName) {

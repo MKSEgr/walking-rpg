@@ -265,6 +265,7 @@ class PlatformPet {
     required this.bond,
     required this.evolutionStage,
     required this.evolutionBond,
+    required this.maximumEvolutionStage,
     required this.active,
   });
 
@@ -273,7 +274,17 @@ class PlatformPet {
     final int bond = _readInt(json, 'bond');
     final int evolutionStage = _readInt(json, 'evolutionStage');
     final int evolutionBond = _readInt(json, 'evolutionBond');
-    if (level <= 0 || bond < 0 || evolutionStage < 0 || evolutionBond <= 0) {
+    final int maximumEvolutionStage = _readOptionalInt(
+      json,
+      'maximumEvolutionStage',
+      1,
+    );
+    if (level <= 0 ||
+        bond < 0 ||
+        evolutionStage < 0 ||
+        evolutionBond <= 0 ||
+        maximumEvolutionStage <= 0 ||
+        evolutionStage > maximumEvolutionStage) {
       throw const FormatException('Некорректный progress питомца');
     }
     return PlatformPet(
@@ -289,6 +300,7 @@ class PlatformPet {
       bond: bond,
       evolutionStage: evolutionStage,
       evolutionBond: evolutionBond,
+      maximumEvolutionStage: maximumEvolutionStage,
       active: _readBool(json, 'active'),
     );
   }
@@ -301,9 +313,13 @@ class PlatformPet {
   final int bond;
   final int evolutionStage;
   final int evolutionBond;
+  final int maximumEvolutionStage;
   final bool active;
 
-  bool get canEvolve => evolutionStage == 0 && bond >= evolutionBond;
+  bool get canEvolve =>
+      evolutionStage < maximumEvolutionStage && bond >= evolutionBond;
+
+  bool get isFullyEvolved => evolutionStage >= maximumEvolutionStage;
 }
 
 class PlatformQuest {
