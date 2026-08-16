@@ -53,6 +53,62 @@ void main() {
     expect(snapshot.petEvolutionStage, 0);
   });
 
+  test('chapter v14 maps the secret observatory without client inference', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['contentVersion'] = 'chapter-1-v14';
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['currentNodeId'] = 'hidden-signal-observatory'
+      ..['currentNode'] = 'Обсерватория скрытого сигнала'
+      ..['progress'] = 90
+      ..['requiredEnergy'] = 90
+      ..['version'] = 53
+      ..['unlockedEvent'] = <String, dynamic>{
+        'eventId': 'hidden-signal-observatory-v1',
+        'title': 'Координаты за хором',
+        'summary': 'Скрытый хор складывается в карту неизвестного сектора.',
+        'status': 'READY',
+        'choices': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'choiceId': 'chart-hidden-sector',
+            'title': 'Нанести скрытый сектор на карту',
+            'description': 'Закрепить координаты для будущих экспедиций.',
+            'pilotExperienceReward': 112,
+            'petBondReward': 54,
+            'materialReward': <String, dynamic>{
+              'itemId': 'prism-dust',
+              'itemName': 'Призматическая пыль',
+              'quantity': 4,
+            },
+          },
+          <String, dynamic>{
+            'choiceId': 'preserve-echo-key',
+            'title': 'Сохранить ключ эха',
+            'description': 'Передать живой ритм сигнала питомцу.',
+            'pilotExperienceReward': 86,
+            'petBondReward': 76,
+            'materialReward': <String, dynamic>{
+              'itemId': 'echo-thread',
+              'itemName': 'Нить эха',
+              'quantity': 5,
+            },
+          },
+        ],
+      };
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.contentVersion, 'chapter-1-v14');
+    expect(snapshot.currentNodeId, 'hidden-signal-observatory');
+    expect(snapshot.requiredEnergy, 90);
+    expect(snapshot.unlockedEvent?.eventId, 'hidden-signal-observatory-v1');
+    expect(
+      snapshot.unlockedEvent?.choices.map((choice) => choice.choiceId),
+      <String>['chart-hidden-sector', 'preserve-echo-key'],
+    );
+  });
+
   test('legacy response keeps companion identity unknown', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> pet = response['pet'] as Map<String, dynamic>;

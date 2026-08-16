@@ -598,12 +598,38 @@ adult-only continuation требуют beta evidence.
 parser/widget и visual-mapping tests реализованы. Ценность скрытого исхода и
 баланс награды требуют beta evidence.
 
+### US-026. Пройти по расшифрованному сигналу в скрытую обсерваторию
+
+Как пользователь с открытым «Чтением сигналов», я хочу продолжить путь после
+расшифровки хора, чтобы навык открывал отдельный игровой узел, а не только
+другую финальную награду.
+
+Критерии:
+
+- inactive `chapter-1-v14` добавляет 27-й узел
+  `hidden-signal-observatory`; v13 сохраняет прежнее завершение после
+  `decode-sanctuary-signal`;
+- в active v14 тот же skill-gated choice выдаёт `+96 XP / +50 bond /
+  4 echo-thread` и переводит экспедицию в новый узел;
+- событие `hidden-signal-observatory-v1` предлагает два финала: карта сектора
+  за `+112 XP / +54 bond / 4 prism-dust` или ключ эха за
+  `+86 XP / +76 bond / 5 echo-thread`;
+- Home и Flutter отображают новый узел и оба server-owned choice без
+  специальной клиентской логики, а exact replay не дублирует награды;
+- rollback контента с v14 на v13 не мешает завершить уже сохранённый 27-й
+  узел; rollback binary на pre-V30 после сохранения такого state запрещён;
+- V30 сохраняет active v13 и существующие platform/pet/expedition rows.
+
+**Статус:** backend/mobile/Flyway V30, unit/PostgreSQL/migration/catalog,
+parser/widget и visual-mapping tests реализованы. Баланс двух финалов требует
+beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
 - первая глава из 18 основных узлов и staged optional topology вплоть до
-  `constellation-sanctuary`;
+  `hidden-signal-observatory`;
 - три питомца, active selection, две эволюции, навыки и собственные финальные
   исходы экспедиции;
 - onboarding, задания и достижения;

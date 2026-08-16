@@ -1346,6 +1346,35 @@ void main() {
     );
   });
 
+  testWidgets('secret observatory renders both terminal route signals', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(loader: () async => _hiddenSignalObservatoryReady()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    for (final (String choiceId, String signalKind) in <(String, String)>[
+      ('chart-hidden-sector', 'chart'),
+      ('preserve-echo-key', 'companion'),
+    ]) {
+      final Finder choice = find.byKey(Key('home-event-choice-$choiceId'));
+      await _scrollAboveStickyAction(tester, choice);
+      expect(tester.widget<FilledButton>(choice).onPressed, isNotNull);
+      expect(
+        find.byKey(
+          Key(
+            'event-choice-signal-hidden-signal-observatory-v1-'
+            '$choiceId-$signalKind-active',
+          ),
+        ),
+        findsOneWidget,
+      );
+    }
+  });
+
   testWidgets(
     'home screen keeps result visible until acknowledgement and reloads',
     (WidgetTester tester) async {
@@ -2401,6 +2430,69 @@ HomeSnapshot _signalReaderEventReady() {
     petName: 'Искра-звездочёт',
     petLevel: 3,
     petBond: 170,
+  );
+}
+
+HomeSnapshot _hiddenSignalObservatoryReady() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 10,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v14',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'hidden-signal-observatory',
+    currentNodeName: 'Обсерватория скрытого сигнала',
+    expeditionProgress: 90,
+    requiredEnergy: 90,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 53,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'hidden-signal-observatory-v1',
+      title: 'Координаты за хором',
+      summary: 'Скрытый хор складывается в карту неизвестного сектора.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'chart-hidden-sector',
+          title: 'Нанести скрытый сектор на карту',
+          description: 'Закрепить координаты для будущих экспедиций.',
+          pilotExperienceReward: 112,
+          petBondReward: 54,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'prism-dust',
+            itemName: 'Призматическая пыль',
+            quantity: 4,
+          ),
+        ),
+        HomeEventChoice(
+          choiceId: 'preserve-echo-key',
+          title: 'Сохранить ключ эха',
+          description: 'Передать живой ритм сигнала питомцу.',
+          pilotExperienceReward: 86,
+          petBondReward: 76,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'echo-thread',
+            itemName: 'Нить эха',
+            quantity: 5,
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 4,
+    pilotCurrentExperience: 476,
+    pilotNextLevelExperience: 640,
+    petName: 'Искра-звездочёт',
+    petLevel: 3,
+    petBond: 220,
   );
 }
 

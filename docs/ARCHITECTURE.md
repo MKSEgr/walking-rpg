@@ -365,6 +365,14 @@ authoritative множество навыков через `PlatformSkillAccess`
 или completion mutation; клиентская availability остаётся только UX-проекцией.
 V1-V12 не проецируют и не принимают новый ID.
 
+Active `chapter-1-v14` сохраняет skill gate v13, но успешный
+`decode-sanctuary-signal` продолжает экспедицию в 27-й узел
+`hidden-signal-observatory`. Его событие содержит два terminal choice с
+разными XP/bond/material rewards. Версионная маршрутизация оставляет v13
+terminal semantics неизменной, а определения нового узла остаются читаемыми
+после content rollback, чтобы уже сохранённое v14 journey можно было
+завершить. V1-V13 не могут начать этот маршрут.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
@@ -497,6 +505,10 @@ V29 stage-ит inactive `chapter-1-v13` с прежней 26-node topology и
 skill-gated исходом `constellation-sanctuary-v1`. Миграция не меняет active
 v12, `roadmap_user_state`, `pet_progress` или текущие `expedition_progress`
 rows; activation выполняется только после drain pre-V29 backend instances.
+V30 stage-ит inactive `chapter-1-v14` с 27-м узлом
+`hidden-signal-observatory`. Миграция не меняет active v13,
+`roadmap_user_state`, `pet_progress` или текущие `expedition_progress` rows;
+activation выполняется только после drain pre-V30 backend instances.
 
 ## 8. Конкурентность и транзакции
 

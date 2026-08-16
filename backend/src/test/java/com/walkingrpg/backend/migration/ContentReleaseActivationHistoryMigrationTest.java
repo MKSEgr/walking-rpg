@@ -101,7 +101,7 @@ class ContentReleaseActivationHistoryMigrationTest {
 
         flyway.migrate();
 
-        assertEquals("29", flyway.info().current().getVersion().getVersion());
+        assertEquals("30", flyway.info().current().getVersion().getVersion());
         try (Connection connection = connection();
              Statement statement = connection.createStatement()) {
             assertEquals(V1_ACTIVATED_AT, scalarInstant(statement, """
