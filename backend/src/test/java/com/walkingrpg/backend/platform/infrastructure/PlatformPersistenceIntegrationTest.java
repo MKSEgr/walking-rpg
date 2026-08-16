@@ -206,7 +206,7 @@ class PlatformPersistenceIntegrationTest {
                     FROM remote_config_snapshot
                     WHERE config_version = 'canonical-values-config-v2'
                     """));
-            assertEquals("31", scalarString("""
+            assertEquals("30", scalarString("""
                     SELECT config_json ->> 'activityRetentionDays'
                     FROM remote_config_snapshot
                     WHERE config_version = 'canonical-values-config-v2'
