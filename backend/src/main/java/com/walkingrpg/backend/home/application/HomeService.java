@@ -137,7 +137,8 @@ public class HomeService {
                 new StarterCraftingContent(),
                 new InMemoryEquipmentRepository(),
                 new StarterEquipmentContent(),
-                () -> StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
+                () -> StarterExpeditionContent
+                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION,
                 clock
         );
     }
@@ -467,7 +468,11 @@ public class HomeService {
         List<ExpeditionEventChoiceSnapshot> projectedChoices = expeditionContent
                 .eventChoices(state.unlockedEventId(), activeContentVersion)
                 .stream()
-                .map(choice -> choiceSnapshot(choice, state.inventory()))
+                .map(choice -> choiceSnapshot(
+                        choice,
+                        state.inventory(),
+                        state.petId()
+                ))
                 .toList();
         List<ExpeditionEventChoiceSnapshot> choices = projectedChoices.stream()
                 .filter(choice -> "AVAILABLE".equals(choice.availability()))
@@ -492,7 +497,8 @@ public class HomeService {
 
     private ExpeditionEventChoiceSnapshot choiceSnapshot(
             ExpeditionEventChoiceDefinition choice,
-            List<InventoryRuntimeItem> inventory
+            List<InventoryRuntimeItem> inventory,
+            String activePetId
     ) {
         MaterialRewardPreviewSnapshot material = choice.materialReward() == null
                 ? null
@@ -501,25 +507,41 @@ public class HomeService {
                         choice.materialReward().item().name(),
                         choice.materialReward().quantity()
                 );
-        var requirement = choice.equipmentRequirement();
-        boolean available = requirement == null || inventory.stream()
-                .anyMatch(item -> requirement.slotId().equals(
-                                item.equippedSlotId()
-                        )
-                        && requirement.item().itemId().equals(item.itemId())
-                        && item.version() >= requirement.minimumUpgradeLevel());
-        ExpeditionChoiceRequirementSnapshot requirementSnapshot =
-                requirement == null
-                        ? null
-                        : new ExpeditionChoiceRequirementSnapshot(
-                                "EQUIPPED_ITEM",
-                                requirement.slotId(),
-                                requirement.slotName(),
-                                requirement.item().itemId(),
-                                requirement.item().name(),
-                                requirement.minimumUpgradeLevel(),
-                                requirement.lockedReason()
-                        );
+        var equipmentRequirement = choice.equipmentRequirement();
+        var petRequirement = choice.petRequirement();
+        boolean available = true;
+        ExpeditionChoiceRequirementSnapshot requirementSnapshot = null;
+        if (equipmentRequirement != null) {
+            available = inventory.stream()
+                    .anyMatch(item -> equipmentRequirement.slotId().equals(
+                                    item.equippedSlotId()
+                            )
+                            && equipmentRequirement.item().itemId().equals(
+                                    item.itemId()
+                            )
+                            && item.version() >= equipmentRequirement
+                                    .minimumUpgradeLevel());
+            requirementSnapshot = new ExpeditionChoiceRequirementSnapshot(
+                    "EQUIPPED_ITEM",
+                    equipmentRequirement.slotId(),
+                    equipmentRequirement.slotName(),
+                    equipmentRequirement.item().itemId(),
+                    equipmentRequirement.item().name(),
+                    equipmentRequirement.minimumUpgradeLevel(),
+                    equipmentRequirement.lockedReason()
+            );
+        } else if (petRequirement != null) {
+            available = petRequirement.petId().equals(activePetId);
+            requirementSnapshot = new ExpeditionChoiceRequirementSnapshot(
+                    "ACTIVE_PET",
+                    "ACTIVE_PET",
+                    "Активный питомец",
+                    petRequirement.petId(),
+                    petRequirement.petName(),
+                    1,
+                    petRequirement.lockedReason()
+            );
+        }
         return new ExpeditionEventChoiceSnapshot(
                 choice.choiceId(),
                 choice.title(),

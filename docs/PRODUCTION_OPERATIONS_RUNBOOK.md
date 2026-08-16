@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V25 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V26 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -584,6 +584,36 @@ and exact replay must not duplicate XP, bond or materials.
 Do not roll back to a pre-V25 binary while any user is at `uncharted-verge`
 or while v9 route results need replay/delivery. Stop activation and use a
 forward fix after the new route has persisted user state.
+
+## Pet-guided uncharted-verge rollout
+
+Flyway V26 stages `chapter-1-v10` inactive without changing the 25-node v9
+topology. Deploy and drain every pre-V26 backend before activation. V1-v9 do
+not expose the three new pet-specific choice IDs.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v10",
+  "releaseNotes": "Первая глава: активный питомец открывает собственный исход на неизведанном рубеже.",
+  "content": {
+    "contentVersion": "chapter-1-v10",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 25,
+    "topology": "pet-guided-uncharted-outcomes-v1"
+  }
+}
+```
+
+Before activation, select each of `spark-v1`, `moss-v1` and `rune-v1` on a
+test account at `uncharted-verge`. Home must expose exactly that pet's choice
+as available and the other two as `ACTIVE_PET` locks. Resolve one outcome and
+verify the matching pet receives bond, the expected material is credited once,
+the expedition completes and exact replay is immutable.
+
+Do not roll back to a pre-V26 binary after v10 choices have persisted. Stop
+activation and forward-fix; a pre-V26 instance cannot replay those choice IDs.
 
 ## Rollback
 

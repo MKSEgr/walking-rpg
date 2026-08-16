@@ -45,6 +45,10 @@ public class ProgressionService {
         );
     }
 
+    public ActivePetSelection activePetFor(String userId) {
+        return activePetProvider.activePetFor(userId);
+    }
+
     @Transactional
     public ProgressionRewardResult rewardEvent(
             String userId,

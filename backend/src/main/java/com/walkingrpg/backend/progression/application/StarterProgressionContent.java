@@ -13,6 +13,8 @@ public class StarterProgressionContent {
 
     public static final String PILOT_ID = "navigator-v1";
     public static final String PET_ID = "spark-v1";
+    public static final String MOSS_PET_ID = "moss-v1";
+    public static final String RUNE_PET_ID = "rune-v1";
 
     private final PilotDefinition pilot = new PilotDefinition(
             PILOT_ID,
@@ -33,7 +35,7 @@ public class StarterProgressionContent {
                     "Чуткий разведчик"
             ),
             new PetDefinition(
-                    "moss-v1",
+                    MOSS_PET_ID,
                     "Мох",
                     "Терра",
                     1,
@@ -41,7 +43,7 @@ public class StarterProgressionContent {
                     "Спокойный хранитель"
             ),
             new PetDefinition(
-                    "rune-v1",
+                    RUNE_PET_ID,
                     "Руна",
                     "Эхо",
                     1,

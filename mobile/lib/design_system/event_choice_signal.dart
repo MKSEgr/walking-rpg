@@ -83,6 +83,10 @@ abstract final class EventChoiceSignalCatalog {
     'uncharted-verge-v1::deploy-return-beacon': EventChoiceSignalKind.chart,
     'uncharted-verge-v1::follow-living-constellation':
         EventChoiceSignalKind.companion,
+    'uncharted-verge-v1::ignite-star-trail': EventChoiceSignalKind.companion,
+    'uncharted-verge-v1::root-return-beacon': EventChoiceSignalKind.stabilize,
+    'uncharted-verge-v1::decode-living-constellation':
+        EventChoiceSignalKind.echo,
   };
 
   static EventChoiceSignalKind kindFor({

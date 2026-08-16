@@ -45,20 +45,21 @@
 - server-authoritative ENERGY economy;
 - production `GET /api/v1/home`;
 - content-driven первая глава с 18 основными и staged optional узлами вплоть
-  до `uncharted-verge` за вторым рассветом, equipment-gated server-owned
-  choices;
+  до `uncharted-verge` за вторым рассветом, equipment- и active-pet-gated
+  server-owned choices;
 - guided «Первый путь» от разрешения шагов до первого решения;
 - server-authoritative funnel и time-to-value первого пути для alpha cohort,
   включая отдельное подтверждение показа первого результата;
 - cohort compass funnel: client-reported recipe/route impressions отдельно от
   server-authoritative craft/equip/choice/completion facts;
-- три питомца с реальным active selection и независимым progression;
+- три питомца с реальным active selection, независимым progression и
+  собственными исходами события на неизведанном рубеже;
 - material inventory с append-only credit/debit ledger, server-authoritative
   crafting, persistent unique item и equipment slot `NAVIGATION`;
 - последовательное улучшение призматического секстанта до уровня 3/EPIC на
   материалах эпилога второго рассвета;
-- level-3/EPIC маршрут секстанта к неизведанному рубежу с двумя финальными
-  server-owned исходами;
+- level-3/EPIC маршрут секстанта к неизведанному рубежу с двумя общими и тремя
+  зависящими от активного питомца финальными server-owned исходами;
 - durable event-result receipt, который восстанавливается через `GET /home`
   после потери ответа или restart;
 - foreground durable outbox для activity, gameplay, platform и telemetry

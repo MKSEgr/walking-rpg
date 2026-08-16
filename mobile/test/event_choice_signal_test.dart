@@ -142,7 +142,22 @@ void main() {
         'follow-living-constellation',
         EventChoiceSignalKind.companion,
       );
-      expect(currentPairCount, 49);
+      expectChoice(
+        'uncharted-verge-v1',
+        'ignite-star-trail',
+        EventChoiceSignalKind.companion,
+      );
+      expectChoice(
+        'uncharted-verge-v1',
+        'root-return-beacon',
+        EventChoiceSignalKind.stabilize,
+      );
+      expectChoice(
+        'uncharted-verge-v1',
+        'decode-living-constellation',
+        EventChoiceSignalKind.echo,
+      );
+      expect(currentPairCount, 52);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

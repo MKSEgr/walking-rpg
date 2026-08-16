@@ -1274,6 +1274,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('pet-guided choice shows the server lock reason', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: HomeScreen(loader: () async => _petGuidedEventReady())),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder choice = find.byKey(
+      const Key('home-event-choice-root-return-beacon'),
+    );
+    await _scrollAboveStickyAction(tester, choice);
+
+    expect(tester.widget<FilledButton>(choice).onPressed, isNull);
+    expect(
+      find.byKey(const Key('home-choice-locked-root-return-beacon')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Выберите Мха активным питомцем, чтобы укоренить маяк возврата.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const Key(
+          'event-choice-signal-uncharted-verge-v1-root-return-beacon-'
+          'stabilize-muted',
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'home screen keeps result visible until acknowledgement and reloads',
     (WidgetTester tester) async {
@@ -2206,6 +2241,67 @@ HomeSnapshot _resonanceEventReady({required bool equipped}) {
             : null,
       ),
     ],
+  );
+}
+
+HomeSnapshot _petGuidedEventReady() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 8,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v10',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'uncharted-verge',
+    currentNodeName: 'Неизведанный рубеж',
+    expeditionProgress: 70,
+    requiredEnergy: 70,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 42,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'uncharted-verge-v1',
+      title: 'Небо без карты',
+      summary: 'На рубеже за вторым рассветом нет знакомых ориентиров.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'root-return-beacon',
+          title: 'Укоренить маяк вместе с Мхом',
+          description: 'Доверить Мху опорную точку на незнакомой земле.',
+          pilotExperienceReward: 64,
+          petBondReward: 34,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'ash-seed',
+            itemName: 'Пепельное семя',
+            quantity: 3,
+          ),
+          availability: 'LOCKED',
+          requirement: HomeChoiceRequirement(
+            type: 'ACTIVE_PET',
+            slotId: 'ACTIVE_PET',
+            slotName: 'Активный питомец',
+            itemId: 'moss-v1',
+            itemName: 'Мох',
+            description:
+                'Выберите Мха активным питомцем, чтобы укоренить маяк возврата.',
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 2,
+    pilotCurrentExperience: 40,
+    pilotNextLevelExperience: 160,
+    petName: 'Искра',
+    petLevel: 2,
+    petBond: 40,
   );
 }
 

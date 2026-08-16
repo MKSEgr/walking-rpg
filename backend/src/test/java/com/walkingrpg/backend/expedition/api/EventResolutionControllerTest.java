@@ -242,6 +242,38 @@ class EventResolutionControllerTest {
                         .value(2));
     }
 
+    @Test
+    void shouldExposeRequiredActivePetForPetGuidedChoice() throws Exception {
+        MockMvc unchartedMockMvc = createMockMvc(new ExpeditionProgressState(
+                70,
+                70,
+                ExpeditionProgressStatus.EVENT_READY,
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID,
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                42
+        ), true);
+
+        unchartedMockMvc.perform(post(
+                        "/api/v1/events/uncharted-verge-v1/resolve"
+                )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "choiceId": "root-return-beacon",
+                                  "idempotencyKey": "locked-moss-route"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code")
+                        .value("EVENT_CHOICE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.details.choiceId")
+                        .value("root-return-beacon"))
+                .andExpect(jsonPath("$.details.requirementType")
+                        .value("ACTIVE_PET"))
+                .andExpect(jsonPath("$.details.requiredPetId")
+                        .value("moss-v1"));
+    }
+
     private MockMvc createMockMvc(
             ExpeditionProgressState state,
             boolean handoffEnabled

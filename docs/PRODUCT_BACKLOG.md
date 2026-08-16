@@ -494,13 +494,39 @@ tests реализованы. Стоимость второго улучшени
 **Статус:** backend/mobile/Flyway V25, unit/PostgreSQL/migration/catalog и
 visual-mapping tests реализованы. Баланс нового рубежа требует beta evidence.
 
+### US-022. Дать активному питомцу собственный путь на рубеже
+
+Как пользователь, выбравший спутника, я хочу увидеть его уникальный способ
+освоить неизведанный рубеж, чтобы active selection влиял на решение экспедиции,
+а не только на получателя bond.
+
+Критерии:
+
+- inactive `chapter-1-v10` сохраняет topology v9 и добавляет в
+  `uncharted-verge-v1` по одному choice для Искры, Мха и Руны; v1-v9 новые IDs
+  не проецируют и не принимают;
+- Home помещает choice активного питомца в `choices`, два остальных — в
+  `lockedChoices` с authoritative `type=ACTIVE_PET` и причиной блокировки;
+- прямой API-вызов чужого pet choice отклоняется до progression, inventory и
+  expedition mutation, а exact replay успешного выбора не дублирует награды;
+- Искра получает `+48 XP / +46 bond / 3 ion-bloom`, Мох —
+  `+64 XP / +34 bond / 3 ash-seed`, Руна —
+  `+56 XP / +40 bond / 3 echo-thread`; каждый исход завершает экспедицию;
+- V26 сохраняет active v9 и существующие active-pet/progression rows; v10
+  активируется только после drain pre-V26 backend instances.
+
+**Статус:** backend/mobile/Flyway V26, unit/API/PostgreSQL/migration/catalog,
+parser/widget и visual-mapping tests реализованы. Баланс pet-specific наград
+требует beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
-- первая глава из 18 основных узлов и пяти опциональных маршрутов, один из
-  которых разветвляется на два самостоятельных события;
-- три питомца, active selection, эволюция и навыки;
+- первая глава из 18 основных узлов и staged optional topology вплоть до
+  `uncharted-verge`;
+- три питомца, active selection, эволюция, навыки и собственные финальные
+  исходы экспедиции;
 - onboarding, задания и достижения;
 - development push provider boundary с local/test-only registration;
 - product analytics и experiment exposure;
@@ -510,7 +536,8 @@ visual-mapping tests реализованы. Баланс нового рубе�
   server-authoritative single-item equipment slot;
 - две последовательные server-authoritative ступени unique item вплоть до
   уровня 3/EPIC;
-- первый expedition choice с authoritative minimum item level prerequisite.
+- expedition choices с authoritative minimum item level и active-pet
+  prerequisites.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

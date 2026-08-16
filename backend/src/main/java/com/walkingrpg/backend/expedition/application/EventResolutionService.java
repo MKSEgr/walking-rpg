@@ -10,6 +10,7 @@ import com.walkingrpg.backend.equipment.application.EquipmentService;
 import com.walkingrpg.backend.equipment.application.StarterEquipmentContent;
 import com.walkingrpg.backend.equipment.infrastructure.InMemoryEquipmentRepository;
 import com.walkingrpg.backend.expedition.domain.ExpeditionChoiceEquipmentRequirement;
+import com.walkingrpg.backend.expedition.domain.ExpeditionChoicePetRequirement;
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventNextNodeResult;
@@ -83,7 +84,8 @@ public class EventResolutionService {
                 inventoryService,
                 content,
                 equipmentService,
-                () -> StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
+                () -> StarterExpeditionContent
+                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION,
                 clock
         );
     }
@@ -109,7 +111,8 @@ public class EventResolutionService {
                         eventRepository,
                         clock
                 ),
-                () -> StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
+                () -> StarterExpeditionContent
+                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION,
                 clock
         );
     }
@@ -164,6 +167,7 @@ public class EventResolutionService {
                 activeContentVersion
         );
         requireEquipment(command.userId(), choice);
+        requireActivePet(command.userId(), choice);
 
         ProgressionRewardResult progression = progressionService.rewardEvent(
                 command.userId(),
@@ -311,6 +315,24 @@ public class EventResolutionService {
                     requirement.slotId(),
                     requirement.item().itemId(),
                     requirement.minimumUpgradeLevel()
+            );
+        }
+    }
+
+    private void requireActivePet(
+            String userId,
+            ExpeditionEventChoiceDefinition choice
+    ) {
+        ExpeditionChoicePetRequirement requirement = choice.petRequirement();
+        if (requirement == null) {
+            return;
+        }
+        if (!requirement.petId().equals(
+                progressionService.activePetFor(userId).petId()
+        )) {
+            throw new EventChoicePetUnavailableException(
+                    choice.choiceId(),
+                    requirement.petId()
             );
         }
     }

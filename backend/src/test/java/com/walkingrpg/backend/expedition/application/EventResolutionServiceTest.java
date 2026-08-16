@@ -21,6 +21,7 @@ import com.walkingrpg.backend.expedition.infrastructure.InMemoryExpeditionReposi
 import com.walkingrpg.backend.inventory.application.InventoryService;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.infrastructure.InMemoryInventoryRepository;
+import com.walkingrpg.backend.progression.application.ActivePetSelection;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
 import com.walkingrpg.backend.progression.infrastructure.InMemoryProgressionRepository;
@@ -993,6 +994,80 @@ class EventResolutionServiceTest {
                 .findFirst()
                 .orElseThrow()
                 .quantity());
+    }
+
+    @Test
+    void shouldRequireAndRewardActivePetAtUnchartedVerge() {
+        activeContentVersion.set(
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION
+        );
+        var unchartedVerge = content.requireNode(
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(unchartedVerge, 42),
+                NOW
+        );
+        EventResolutionService mossService = new EventResolutionService(
+                expeditionRepository,
+                eventResolutionRepository,
+                new ProgressionService(
+                        new InMemoryProgressionRepository(),
+                        new StarterProgressionContent(),
+                        ignored -> new ActivePetSelection(
+                                StarterProgressionContent.MOSS_PET_ID,
+                                1,
+                                10
+                        )
+                ),
+                new InventoryService(inventoryRepository),
+                content,
+                equipmentService,
+                activeContentVersion::get,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        EventChoicePetUnavailableException unavailable = assertThrows(
+                EventChoicePetUnavailableException.class,
+                () -> mossService.resolve(command(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.SPARK_UNCHARTED_CHOICE_ID,
+                        "wrong-pet-at-verge"
+                ))
+        );
+        assertEquals(
+                StarterProgressionContent.PET_ID,
+                unavailable.requiredPetId()
+        );
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+        assertEquals(
+                ExpeditionProgressStatus.EVENT_READY,
+                expeditionRepository.findState(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().status()
+        );
+
+        EventResolutionCommand command = command(
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                StarterExpeditionContent.MOSS_UNCHARTED_CHOICE_ID,
+                "moss-at-uncharted-verge"
+        );
+        EventResolutionResult completed = mossService.resolve(command);
+        EventResolutionResult replayed = mossService.resolve(command);
+
+        assertSame(completed, replayed);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                completed.expeditionStatus());
+        assertEquals(StarterProgressionContent.MOSS_PET_ID,
+                completed.pet().petId());
+        assertEquals(34, completed.pet().bondGained());
+        assertEquals(StarterInventoryContent.ASH_SEED_ID,
+                completed.material().itemId());
+        assertEquals(3, completed.material().quantityGained());
+        assertNull(completed.nextNode());
     }
 
     @Test
