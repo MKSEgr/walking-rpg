@@ -46,6 +46,10 @@ class StarterExpeditionContentTest {
         String chapterV9 = content.activeContentVersion(
                 () -> StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
         );
+        String chapterV10 = content.activeContentVersion(
+                () -> StarterExpeditionContent
+                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -66,6 +70,10 @@ class StarterExpeditionContentTest {
         assertEquals(
                 StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
                 chapterV9
+        );
+        assertEquals(
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION,
+                chapterV10
         );
         assertEquals(1, activationReads.get());
         assertEquals(
@@ -140,6 +148,9 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsSecondDawnAttunement(
                 chapterV9
         ));
+        assertTrue(StarterExpeditionContent.supportsSecondDawnAttunement(
+                chapterV10
+        ));
         assertFalse(StarterExpeditionContent.supportsSecondDawnAttunement(
                 chapterV7
         ));
@@ -163,6 +174,23 @@ class StarterExpeditionContentTest {
                         .orElseThrow()
                         .equipmentRequirement()
                         .minimumUpgradeLevel()
+        );
+        assertFalse(hasPetGuidedChoice(content.eventChoices(
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                chapterV9
+        )));
+        List<ExpeditionEventChoiceDefinition> petGuidedChoices =
+                content.eventChoices(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        chapterV10
+                );
+        assertEquals(5, petGuidedChoices.size());
+        assertEquals(
+                List.of("spark-v1", "moss-v1", "rune-v1"),
+                petGuidedChoices.stream()
+                        .filter(choice -> choice.petRequirement() != null)
+                        .map(choice -> choice.petRequirement().petId())
+                        .toList()
         );
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
@@ -330,6 +358,14 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
                 StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
         ).size());
+        assertThrows(
+                EventResolutionValidationException.class,
+                () -> content.requireChoice(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.MOSS_UNCHARTED_CHOICE_ID,
+                        StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
+                )
+        );
     }
 
     private boolean hasStormRiftChoice(
@@ -391,6 +427,14 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.UNCHARTED_VERGE_ROUTE_CHOICE_ID.equals(
                         choice.choiceId()
                 )
+        );
+    }
+
+    private boolean hasPetGuidedChoice(
+            List<ExpeditionEventChoiceDefinition> choices
+    ) {
+        return choices.stream().anyMatch(choice ->
+                choice.petRequirement() != null
         );
     }
 }

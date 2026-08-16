@@ -55,7 +55,7 @@ class PrismSextantRouteMigrationTest {
                 .load();
         flyway.migrate();
 
-        assertEquals("25", flyway.info().current().getVersion().getVersion());
+        assertEquals("26", flyway.info().current().getVersion().getVersion());
         try (Connection connection = connection();
              Statement statement = connection.createStatement()) {
             assertEquals(1, scalar(statement, """

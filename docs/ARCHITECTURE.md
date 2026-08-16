@@ -335,6 +335,13 @@ Active `chapter-1-v9` добавляет equipment-gated
 экспедицию после собственной material reward. V1-V8 не проецируют новый
 choice ни как available, ни как locked.
 
+Active `chapter-1-v10` сохраняет 25-node topology и добавляет в
+`uncharted-verge-v1` три active-pet-gated исхода для Искры, Мха и Руны. Home
+проецирует только исход текущего питомца в `choices`, два остальных — в
+`lockedChoices` с `type=ACTIVE_PET`. Event service повторно читает active pet
+под тем же serialized user/expedition transaction boundary до XP, bond,
+material и completion mutations. V1-V9 не знают новые choice IDs.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
@@ -451,6 +458,10 @@ V25 stage-ит inactive `chapter-1-v9` с 25 узлами. В
 экипированный секстант минимум уровня 3 и ведущий к `uncharted-verge`.
 V1-V8 сохраняют прежнюю topology; activation выполняется только после drain
 pre-V25 backend instances.
+V26 stage-ит inactive `chapter-1-v10` с прежней 25-node topology и тремя
+pet-guided исходами `uncharted-verge-v1`. Миграция не меняет active v9,
+выбранного питомца или его progression; activation выполняется только после
+drain pre-V26 backend instances.
 
 ## 8. Конкурентность и транзакции
 

@@ -81,7 +81,7 @@ class HomeServiceTest {
         assertEquals("Искра", snapshot.pet().name());
         assertEquals(0, snapshot.pet().evolutionStage());
         assertEquals(
-                StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION,
                 snapshot.contentVersion()
         );
         assertEquals("starter-expedition-v1", snapshot.expedition().expeditionId());

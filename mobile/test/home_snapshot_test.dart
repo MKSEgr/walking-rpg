@@ -427,6 +427,27 @@ void main() {
     expect(requirement.minimumUpgradeLevel, 1);
   });
 
+  test('active pet choice requirement is mapped without client inference', () {
+    final HomeChoiceRequirement requirement =
+        HomeChoiceRequirement.fromJson(<String, dynamic>{
+          'type': 'ACTIVE_PET',
+          'slotId': 'ACTIVE_PET',
+          'slotName': 'Активный питомец',
+          'itemId': 'moss-v1',
+          'itemName': 'Мох',
+          'minimumUpgradeLevel': 1,
+          'description':
+              'Выберите Мха активным питомцем, чтобы укоренить маяк возврата.',
+        });
+
+    expect(requirement.type, 'ACTIVE_PET');
+    expect(requirement.slotId, 'ACTIVE_PET');
+    expect(requirement.itemId, 'moss-v1');
+    expect(requirement.itemName, 'Мох');
+    expect(requirement.minimumUpgradeLevel, 1);
+    expect(requirement.description, contains('Выберите Мха'));
+  });
+
   test('invalid nested response is rejected', () {
     expect(
       () => HomeSnapshot.fromJson(<String, dynamic>{'pilot': 'invalid'}),

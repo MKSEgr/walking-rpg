@@ -18,6 +18,7 @@ import com.walkingrpg.backend.equipment.application.EquipmentItemUnavailableExce
 import com.walkingrpg.backend.equipment.application.EquipmentSlotNotFoundException;
 import com.walkingrpg.backend.equipment.application.EquipmentValidationException;
 import com.walkingrpg.backend.expedition.application.EventChoiceUnavailableException;
+import com.walkingrpg.backend.expedition.application.EventChoicePetUnavailableException;
 import com.walkingrpg.backend.expedition.application.EventNotFoundException;
 import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.EventResolutionValidationException;
@@ -298,6 +299,22 @@ public class ApiExceptionHandler {
                         "slotId", exception.slotId(),
                         "requiredItemId", exception.requiredItemId(),
                         "requiredUpgradeLevel", exception.requiredUpgradeLevel()
+                )
+        );
+    }
+
+    @ExceptionHandler(EventChoicePetUnavailableException.class)
+    ResponseEntity<ApiErrorResponse> handleEventChoicePetUnavailable(
+            EventChoicePetUnavailableException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "EVENT_CHOICE_UNAVAILABLE",
+                exception.getMessage(),
+                Map.of(
+                        "choiceId", exception.choiceId(),
+                        "requirementType", "ACTIVE_PET",
+                        "requiredPetId", exception.requiredPetId()
                 )
         );
     }

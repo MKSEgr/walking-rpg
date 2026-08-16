@@ -552,6 +552,18 @@ uncharted-verge-v1 (chapter-1-v9)
   follow-living-constellation
                        → +50 pilot XP, +42 pet bond, +3 dawn-fragment,
                          завершение экспедиции
+
+uncharted-verge-v1 (additive chapter-1-v10 choices)
+  ignite-star-trail    → требует активную Искру,
+                         +48 pilot XP, +46 pet bond, +3 ion-bloom,
+                         завершение экспедиции
+  root-return-beacon   → требует активного Мха,
+                         +64 pilot XP, +34 pet bond, +3 ash-seed,
+                         завершение экспедиции
+  decode-living-constellation
+                       → требует активную Руну,
+                         +56 pilot XP, +40 pet bond, +3 echo-thread,
+                         завершение экспедиции
 ```
 
 До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses
@@ -637,12 +649,15 @@ expedition transition и durable result используют одно post-lock 
 - account-deletion subject lock и active check предшествуют expedition lock,
   replay lookup и всем reward/progression mutations в той же транзакции;
 - `choiceId` выбирается из server-owned definition соответствующего `eventId`;
-- gated choice повторно проверяет authoritative equipment под тем же
-  expedition lock; доступный вариант находится в `choices`, недоступный — в
-  additive `lockedChoices`. Home availability используется только для UX, а
-  прямой вызов без prerequisite возвращает
-  `409 EVENT_CHOICE_UNAVAILABLE`; additive requirement и error details содержат
+- gated choice повторно проверяет authoritative equipment или active pet под
+  тем же expedition lock; доступный вариант находится в `choices`, недоступный
+  — в additive `lockedChoices`. Home availability используется только для UX,
+  а прямой вызов без prerequisite возвращает
+  `409 EVENT_CHOICE_UNAVAILABLE`. Equipment requirement содержит
   `minimumUpgradeLevel`/`requiredUpgradeLevel` (legacy default — `1`);
+  active-pet requirement использует `type=ACTIVE_PET`, `slotId=ACTIVE_PET`,
+  `itemId=<petId>`, `itemName=<petName>`, а error details возвращает
+  `requirementType=ACTIVE_PET` и `requiredPetId`;
 - `receiptId`, immutable reward snapshot и `nextNode` сохраняются в той же
   транзакции, что и progression/inventory/expedition transition;
 - первый event resolution переводит progress на второй узел, второй — на

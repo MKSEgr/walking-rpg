@@ -166,6 +166,25 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldKeepUnchartedTopologyForPetGuidedRelease() {
+        Map<String, Object> petGuidedCatalog = publicCatalog(
+                StarterExpeditionContent
+                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION
+        );
+        Map<String, Object> unchartedCatalog = publicCatalog(
+                StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v10", petGuidedCatalog.get("contentVersion"));
+        assertEquals(25, petGuidedCatalog.get("chapterNodes"));
+        assertEquals(25, unchartedCatalog.get("chapterNodes"));
+        assertNotEquals(
+                petGuidedCatalog.get("catalogDigest"),
+                unchartedCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

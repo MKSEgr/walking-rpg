@@ -24,6 +24,7 @@ import javax.sql.DataSource;
 
 import com.walkingrpg.backend.activity.application.ActivitySyncService;
 import com.walkingrpg.backend.activity.domain.ActivitySyncCommand;
+import com.walkingrpg.backend.expedition.application.EventChoicePetUnavailableException;
 import com.walkingrpg.backend.expedition.application.EventResolutionIdempotencyConflictException;
 import com.walkingrpg.backend.expedition.application.EventResolutionService;
 import com.walkingrpg.backend.expedition.application.EventResultAcknowledgementService;
@@ -142,6 +143,15 @@ class EventResolutionIntegrationTest {
         jdbcTemplate.update("DELETE FROM economy_wallet");
         jdbcTemplate.update("DELETE FROM app_device");
         jdbcTemplate.update("DELETE FROM app_user");
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v1'
+                """);
     }
 
     @Test
@@ -764,6 +774,110 @@ class EventResolutionIntegrationTest {
         assertEquals("Мох", home.pet().name());
         assertEquals("Терра", home.pet().species());
         assertEquals(19, home.pet().bond());
+    }
+
+    @Test
+    void shouldProjectAndResolveOnlyTheActivePetsUnchartedOutcome() {
+        String userId = "pet-guided-verge-user";
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "select-moss-at-verge",
+                Map.of("petId", "moss-v1")
+        ));
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v10'
+                """));
+        jdbcTemplate.update("""
+                INSERT INTO expedition_progress (
+                    user_id, expedition_id, current_node_id,
+                    progress_energy, required_energy, status,
+                    unlocked_event_id, version, created_at, updated_at
+                ) VALUES (?, ?, ?, 70, 70, 'EVENT_READY', ?, 42, now(), now())
+                """,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID,
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID
+        );
+
+        HomeSnapshotResponse home = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+
+        assertEquals(
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION,
+                home.contentVersion()
+        );
+        assertEquals(1L, home.expedition().unlockedEvent().choices().stream()
+                .filter(choice -> choice.requirement() != null
+                        && "ACTIVE_PET".equals(choice.requirement().type()))
+                .count());
+        assertEquals(
+                StarterExpeditionContent.MOSS_UNCHARTED_CHOICE_ID,
+                home.expedition().unlockedEvent().choices().stream()
+                        .filter(choice -> choice.requirement() != null
+                                && "ACTIVE_PET".equals(
+                                        choice.requirement().type()
+                                ))
+                        .findFirst()
+                        .orElseThrow()
+                        .choiceId()
+        );
+        assertEquals(2L, home.expedition().unlockedEvent().lockedChoices().stream()
+                .filter(choice -> choice.requirement() != null
+                        && "ACTIVE_PET".equals(choice.requirement().type()))
+                .count());
+        assertEquals(
+                List.of("rune-v1", "spark-v1"),
+                home.expedition().unlockedEvent().lockedChoices().stream()
+                        .filter(choice -> choice.requirement() != null
+                                && "ACTIVE_PET".equals(
+                                        choice.requirement().type()
+                                ))
+                        .map(choice -> choice.requirement().itemId())
+                        .sorted()
+                        .toList()
+        );
+
+        assertThrows(
+                EventChoicePetUnavailableException.class,
+                () -> eventResolutionService.resolve(command(
+                        userId,
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.SPARK_UNCHARTED_CHOICE_ID,
+                        "reject-spark-with-moss"
+                ))
+        );
+        assertEquals(0, rowCount("processed_event_resolution"));
+        assertEquals(0, rowCount("inventory_stack"));
+        assertEquals(0, rowCount("pilot_progress"));
+        assertEquals(0, rowCount("pet_progress"));
+
+        EventResolutionCommand command = command(
+                userId,
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                StarterExpeditionContent.MOSS_UNCHARTED_CHOICE_ID,
+                "resolve-moss-at-verge"
+        );
+        EventResolutionResult result = eventResolutionService.resolve(command);
+        EventResolutionResult replayed = eventResolutionService.resolve(command);
+
+        assertEquals(result, replayed);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                result.expeditionStatus());
+        assertEquals("moss-v1", result.pet().petId());
+        assertEquals("ash-seed", result.material().itemId());
+        assertEquals(3, result.material().quantityGained());
+        assertEquals(3L, inventoryQuantity("ash-seed"));
+        assertEquals(1, rowCount("processed_event_resolution"));
+        assertEquals(1, rowCount("pilot_progress"));
+        assertEquals(1, rowCount("pet_progress"));
     }
 
     @Test

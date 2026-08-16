@@ -60,7 +60,8 @@ public class CraftingService {
                 content,
                 expeditionRepository,
                 eventResolutionRepository,
-                () -> StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
+                () -> StarterExpeditionContent
+                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION,
                 clock
         );
     }

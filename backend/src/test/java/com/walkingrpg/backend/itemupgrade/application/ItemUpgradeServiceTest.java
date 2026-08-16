@@ -156,6 +156,10 @@ class ItemUpgradeServiceTest {
         assertEquals(2, content.upgrades(
                 StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
         ).size());
+        assertEquals(2, content.upgrades(
+                StarterExpeditionContent
+                        .PET_GUIDED_UNCHARTED_CONTENT_VERSION
+        ).size());
         var definition = content.require(
                 StarterItemUpgradeContent.PRISM_SEXTANT_CALIBRATION_ID,
                 StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
