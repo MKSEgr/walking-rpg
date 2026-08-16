@@ -1375,6 +1375,72 @@ void main() {
     }
   });
 
+  testWidgets('Trail Memory route shows the server skill lock reason', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(loader: () async => _trailMemoryRouteLocked()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder choice = find.byKey(
+      const Key('home-event-choice-reconstruct-forgotten-route'),
+    );
+    await _scrollAboveStickyAction(tester, choice);
+
+    expect(tester.widget<FilledButton>(choice).onPressed, isNull);
+    expect(
+      find.byKey(const Key('home-choice-locked-reconstruct-forgotten-route')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Откройте навык «Память маршрута», чтобы восстановить забытый путь обсерватории.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const Key(
+          'event-choice-signal-hidden-signal-observatory-v1-'
+          'reconstruct-forgotten-route-echo-muted',
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('memory constellation renders both terminal route signals', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(loader: () async => _memoryConstellationReady()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    for (final (String choiceId, String signalKind) in <(String, String)>[
+      ('archive-return-path', 'chart'),
+      ('entrust-memory-to-pet', 'companion'),
+    ]) {
+      final Finder choice = find.byKey(Key('home-event-choice-$choiceId'));
+      await _scrollAboveStickyAction(tester, choice);
+      expect(tester.widget<FilledButton>(choice).onPressed, isNotNull);
+      expect(
+        find.byKey(
+          Key(
+            'event-choice-signal-memory-constellation-v1-'
+            '$choiceId-$signalKind-active',
+          ),
+        ),
+        findsOneWidget,
+      );
+    }
+  });
+
   testWidgets(
     'home screen keeps result visible until acknowledgement and reloads',
     (WidgetTester tester) async {
@@ -2493,6 +2559,130 @@ HomeSnapshot _hiddenSignalObservatoryReady() {
     petName: 'Искра-звездочёт',
     petLevel: 3,
     petBond: 220,
+  );
+}
+
+HomeSnapshot _trailMemoryRouteLocked() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 10,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v15',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'hidden-signal-observatory',
+    currentNodeName: 'Обсерватория скрытого сигнала',
+    expeditionProgress: 90,
+    requiredEnergy: 90,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 53,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'hidden-signal-observatory-v1',
+      title: 'Координаты за хором',
+      summary: 'Один забытый путь ещё можно восстановить.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'reconstruct-forgotten-route',
+          title: 'Восстановить забытый маршрут',
+          description: 'Собрать исчезнувшие шаги в новый путь.',
+          pilotExperienceReward: 104,
+          petBondReward: 64,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'dawn-fragment',
+            itemName: 'Фрагмент рассвета',
+            quantity: 3,
+          ),
+          availability: 'LOCKED',
+          requirement: HomeChoiceRequirement(
+            type: 'UNLOCKED_SKILL',
+            slotId: 'PILOT_SKILL',
+            slotName: 'Навык пилота',
+            itemId: 'trail-memory',
+            itemName: 'Память маршрута',
+            description:
+                'Откройте навык «Память маршрута», чтобы восстановить забытый путь обсерватории.',
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 4,
+    pilotCurrentExperience: 476,
+    pilotNextLevelExperience: 640,
+    petName: 'Искра-звездочёт',
+    petLevel: 3,
+    petBond: 220,
+  );
+}
+
+HomeSnapshot _memoryConstellationReady() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 11,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v15',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'memory-constellation',
+    currentNodeName: 'Созвездие памяти',
+    expeditionProgress: 95,
+    requiredEnergy: 95,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 55,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'memory-constellation-v1',
+      title: 'Маршрут, который помнит шаги',
+      summary: 'Забытые следы вспыхнули созвездием.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'archive-return-path',
+          title: 'Сохранить путь возвращения',
+          description: 'Закрепить восстановленные шаги в общей карте.',
+          pilotExperienceReward: 120,
+          petBondReward: 58,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'ion-bloom',
+            itemName: 'Ионный цветок',
+            quantity: 4,
+          ),
+        ),
+        HomeEventChoice(
+          choiceId: 'entrust-memory-to-pet',
+          title: 'Доверить память питомцу',
+          description: 'Позволить питомцу удержать живой ритм пути.',
+          pilotExperienceReward: 92,
+          petBondReward: 82,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'echo-thread',
+            itemName: 'Нить эха',
+            quantity: 6,
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 5,
+    pilotCurrentExperience: 580,
+    pilotNextLevelExperience: 1000,
+    petName: 'Искра-звездочёт',
+    petLevel: 4,
+    petBond: 284,
   );
 }
 

@@ -109,6 +109,59 @@ void main() {
     );
   });
 
+  test('chapter v15 maps the locked Trail Memory route generically', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['contentVersion'] = 'chapter-1-v15';
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['currentNodeId'] = 'hidden-signal-observatory'
+      ..['currentNode'] = 'Обсерватория скрытого сигнала'
+      ..['progress'] = 90
+      ..['requiredEnergy'] = 90
+      ..['version'] = 53
+      ..['unlockedEvent'] = <String, dynamic>{
+        'eventId': 'hidden-signal-observatory-v1',
+        'title': 'Координаты за хором',
+        'summary': 'Один забытый путь ещё можно восстановить.',
+        'status': 'READY',
+        'choices': <Map<String, dynamic>>[],
+        'lockedChoices': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'choiceId': 'reconstruct-forgotten-route',
+            'title': 'Восстановить забытый маршрут',
+            'description': 'Собрать исчезнувшие шаги в новый путь.',
+            'pilotExperienceReward': 104,
+            'petBondReward': 64,
+            'materialReward': <String, dynamic>{
+              'itemId': 'dawn-fragment',
+              'itemName': 'Фрагмент рассвета',
+              'quantity': 3,
+            },
+            'availability': 'LOCKED',
+            'requirement': <String, dynamic>{
+              'type': 'UNLOCKED_SKILL',
+              'slotId': 'PILOT_SKILL',
+              'slotName': 'Навык пилота',
+              'itemId': 'trail-memory',
+              'itemName': 'Память маршрута',
+              'description':
+                  'Откройте навык «Память маршрута», чтобы восстановить забытый путь обсерватории.',
+            },
+          },
+        ],
+      };
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+    final HomeEventChoice route = snapshot.unlockedEvent!.choices.single;
+
+    expect(snapshot.contentVersion, 'chapter-1-v15');
+    expect(route.choiceId, 'reconstruct-forgotten-route');
+    expect(route.isAvailable, isFalse);
+    expect(route.requirement?.type, 'UNLOCKED_SKILL');
+    expect(route.requirement?.itemId, 'trail-memory');
+  });
+
   test('legacy response keeps companion identity unknown', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> pet = response['pet'] as Map<String, dynamic>;

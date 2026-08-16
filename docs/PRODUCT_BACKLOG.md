@@ -624,12 +624,40 @@ parser/widget и visual-mapping tests реализованы. Ценность �
 parser/widget и visual-mapping tests реализованы. Баланс двух финалов требует
 beta evidence.
 
+### US-027. Восстановить забытый маршрут с «Памятью маршрута»
+
+Как пользователь с развитым пилотом, я хочу применить «Память маршрута» в
+Обсерватории скрытого сигнала, чтобы ранний навык открывал отдельное
+продолжение поздней экспедиции.
+
+Критерии:
+
+- inactive `chapter-1-v15` добавляет 28-й узел `memory-constellation`; v1-v14
+  не проецируют и не принимают новый route choice;
+- `hidden-signal-observatory-v1` получает skill-gated
+  `reconstruct-forgotten-route`; v14 сохраняет два прежних terminal outcome;
+- Home возвращает route в `choices` только при server-owned `trail-memory`,
+  иначе в `lockedChoices` с `UNLOCKED_SKILL`; event service повторяет проверку
+  до любых mutation;
+- успешный переход выдаёт `+104 XP / +64 bond / 3 dawn-fragment`, а событие
+  `memory-constellation-v1` завершает journey либо за
+  `+120 XP / +58 bond / 4 ion-bloom`, либо за
+  `+92 XP / +82 bond / 6 echo-thread`;
+- exact replay не дублирует награды, а content rollback v15 → v14 позволяет
+  завершить уже сохранённый 28-й узел;
+- V31 сохраняет active v14 и существующие platform/pet/expedition rows;
+  rollback binary на pre-V31 после сохранения нового node запрещён.
+
+**Статус:** backend/mobile/Flyway V31, unit/PostgreSQL/migration/catalog,
+parser/widget и visual-mapping tests реализованы. Ценность позднего применения
+раннего навыка и баланс финалов требуют beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
 - первая глава из 18 основных узлов и staged optional topology вплоть до
-  `hidden-signal-observatory`;
+  `memory-constellation`;
 - три питомца, active selection, две эволюции, навыки и собственные финальные
   исходы экспедиции;
 - onboarding, задания и достижения;

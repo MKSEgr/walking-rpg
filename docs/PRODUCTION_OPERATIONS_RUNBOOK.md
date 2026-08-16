@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V30 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V31 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -749,6 +749,41 @@ keeps the new event definitions readable so an already persisted observatory
 state can finish. Do not roll back to a pre-V30 binary after such a state has
 persisted: return content to v13 for new journeys, drain v14 traffic, and
 forward-fix binaries that must read the 27th node.
+
+## Trail Memory secret route rollout
+
+Flyway V31 stages `chapter-1-v15` inactive with a 28th node,
+`memory-constellation`, without changing active v14 or existing
+platform/pet/expedition state. Deploy and drain every pre-V31 backend before
+activation. V1-v14 retain the two terminal observatory outcomes and cannot
+accept `reconstruct-forgotten-route`.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v15",
+  "releaseNotes": "Первая глава: «Память маршрута» восстанавливает путь к Созвездию памяти.",
+  "content": {
+    "contentVersion": "chapter-1-v15",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 28,
+    "topology": "trail-memory-secret-route-v1"
+  }
+}
+```
+
+Before activation, verify that v14 users at the observatory see only two
+terminal outcomes. Activate v15 and compare otherwise identical users with
+and without `trail-memory`: Home must project the new route as AVAILABLE and
+LOCKED/UNLOCKED_SKILL respectively. Resolve the available route, complete
+both memory-constellation outcomes in separate journeys and replay commands
+without duplicate rewards.
+
+A content rollback from v15 to v14 blocks new memory-route transitions but
+keeps an already persisted `memory-constellation` state completable. Do not
+roll back to a pre-V31 binary after such a state has persisted; return content
+to v14 for new journeys and forward-fix binaries that must read the 28th node.
 
 ## Rollback
 

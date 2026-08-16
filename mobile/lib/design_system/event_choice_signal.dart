@@ -102,6 +102,11 @@ abstract final class EventChoiceSignalCatalog {
         EventChoiceSignalKind.chart,
     'hidden-signal-observatory-v1::preserve-echo-key':
         EventChoiceSignalKind.companion,
+    'hidden-signal-observatory-v1::reconstruct-forgotten-route':
+        EventChoiceSignalKind.echo,
+    'memory-constellation-v1::archive-return-path': EventChoiceSignalKind.chart,
+    'memory-constellation-v1::entrust-memory-to-pet':
+        EventChoiceSignalKind.companion,
   };
 
   static EventChoiceSignalKind kindFor({

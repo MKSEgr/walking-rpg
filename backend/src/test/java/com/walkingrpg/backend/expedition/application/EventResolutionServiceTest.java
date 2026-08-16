@@ -1347,6 +1347,127 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldRequireTrailMemoryAndFinishNewNodeAfterContentRollback() {
+        activeContentVersion.set(
+                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+        );
+        var hiddenObservatory = content.requireNode(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(hiddenObservatory, 53),
+                NOW
+        );
+        EventResolutionCommand routeCommand = command(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                StarterExpeditionContent
+                        .RECONSTRUCT_FORGOTTEN_ROUTE_CHOICE_ID,
+                "reconstruct-forgotten-route"
+        );
+
+        EventChoiceSkillUnavailableException unavailable = assertThrows(
+                EventChoiceSkillUnavailableException.class,
+                () -> service.resolve(routeCommand, false)
+        );
+
+        assertEquals(PlatformSkillIds.TRAIL_MEMORY,
+                unavailable.requiredSkillId());
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+        assertEquals(
+                ExpeditionProgressStatus.EVENT_READY,
+                expeditionRepository.findState(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().status()
+        );
+
+        ProgressionService progressionService = new ProgressionService(
+                new InMemoryProgressionRepository(),
+                new StarterProgressionContent()
+        );
+        EventResolutionService trailMemoryService = new EventResolutionService(
+                expeditionRepository,
+                eventResolutionRepository,
+                progressionService,
+                new InventoryService(inventoryRepository),
+                content,
+                equipmentService,
+                userId -> Set.of(PlatformSkillIds.TRAIL_MEMORY),
+                activeContentVersion::get,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        EventResolutionResult route = trailMemoryService.resolve(
+                routeCommand,
+                false
+        );
+        EventResolutionResult routeReplay = trailMemoryService.resolve(
+                routeCommand,
+                false
+        );
+
+        assertSame(route, routeReplay);
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS,
+                route.expeditionStatus());
+        assertEquals(
+                StarterExpeditionContent.MEMORY_CONSTELLATION_NODE_ID,
+                route.nextNode().nodeId()
+        );
+        assertEquals(104, route.pilot().experienceGained());
+        assertEquals(64, route.pet().bondGained());
+        assertEquals(StarterInventoryContent.DAWN_FRAGMENT_ID,
+                route.material().itemId());
+        assertEquals(3, route.material().quantityGained());
+
+        activeContentVersion.set(
+                StarterExpeditionContent
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+        );
+        var memoryConstellation = content.requireNode(
+                StarterExpeditionContent.MEMORY_CONSTELLATION_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(memoryConstellation, 55),
+                NOW
+        );
+        EventResolutionCommand finaleCommand = command(
+                StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
+                StarterExpeditionContent.ARCHIVE_RETURN_PATH_CHOICE_ID,
+                "archive-return-path"
+        );
+
+        EventResolutionResult finale = trailMemoryService.resolve(
+                finaleCommand,
+                false
+        );
+        EventResolutionResult finaleReplay = trailMemoryService.resolve(
+                finaleCommand,
+                false
+        );
+
+        assertSame(finale, finaleReplay);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                finale.expeditionStatus());
+        assertNull(finale.nextNode());
+        assertEquals(120, finale.pilot().experienceGained());
+        assertEquals(58, finale.pet().bondGained());
+        assertEquals(StarterInventoryContent.ION_BLOOM_ID,
+                finale.material().itemId());
+        assertEquals(4, finale.material().quantityGained());
+        assertEquals(4L, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.ION_BLOOM_ID.equals(
+                        item.itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION

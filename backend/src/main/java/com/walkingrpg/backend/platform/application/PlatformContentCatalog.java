@@ -376,6 +376,11 @@ public class PlatformContentCatalog {
     }
 
     private int chapterNodeCount(String contentVersion) {
+        if (StarterExpeditionContent.supportsTrailMemoryRoute(
+                contentVersion
+        )) {
+            return StarterExpeditionContent.TRAIL_MEMORY_ROUTE_NODE_COUNT;
+        }
         if (StarterExpeditionContent.supportsSignalReaderSecretRoute(
                 contentVersion
         )) {

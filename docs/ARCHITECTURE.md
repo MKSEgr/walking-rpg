@@ -373,6 +373,14 @@ terminal semantics неизменной, а определения нового 
 после content rollback, чтобы уже сохранённое v14 journey можно было
 завершить. V1-V13 не могут начать этот маршрут.
 
+Active `chapter-1-v15` добавляет в `hidden-signal-observatory-v1` choice
+`reconstruct-forgotten-route`, защищённый authoritative навыком
+`trail-memory`, и 28-й узел `memory-constellation`. V14 сохраняет два прежних
+terminal outcome; новый choice выдаёт награду и продолжает journey только в
+v15. Определение 28-го узла и его два terminal choice остаются читаемыми после
+content rollback, чтобы сохранённое v15 journey завершалось под v14 binary
+нового поколения. V1-V14 не могут начать маршрут.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
@@ -509,6 +517,10 @@ V30 stage-ит inactive `chapter-1-v14` с 27-м узлом
 `hidden-signal-observatory`. Миграция не меняет active v13,
 `roadmap_user_state`, `pet_progress` или текущие `expedition_progress` rows;
 activation выполняется только после drain pre-V30 backend instances.
+V31 stage-ит inactive `chapter-1-v15` с 28-м узлом
+`memory-constellation`. Миграция не меняет active v14,
+`roadmap_user_state`, `pet_progress` или текущие `expedition_progress` rows;
+activation выполняется только после drain pre-V31 backend instances.
 
 ## 8. Конкурентность и транзакции
 
