@@ -590,6 +590,13 @@ constellation-sanctuary-v1 (additive chapter-1-v13 choice)
   decode-sanctuary-signal
                        → требует открытый навык signal-reader,
                          +96 pilot XP, +50 pet bond, +4 echo-thread,
+                         завершение экспедиции в v13,
+                         переход к hidden-signal-observatory в v14
+
+hidden-signal-observatory-v1 (chapter-1-v14)
+  chart-hidden-sector  → +112 pilot XP, +54 pet bond, +4 prism-dust,
+                         завершение экспедиции
+  preserve-echo-key    → +86 pilot XP, +76 pet bond, +5 echo-thread,
                          завершение экспедиции
 ```
 
@@ -599,7 +606,9 @@ constellation-sanctuary-v1 (additive chapter-1-v13 choice)
 Exact replay уже сохранённого результата выполняется до проверки release gate.
 V1-v12 не проецируют и не принимают `decode-sanctuary-signal`; active v13
 проверяет `signal-reader` по authoritative platform state до любой награды или
-expedition mutation.
+expedition mutation и завершает journey. Active v14 выполняет ту же проверку,
+но продолжает journey в `hidden-signal-observatory`; v1-v13 не могут начать
+новый маршрут.
 
 Response второго события:
 

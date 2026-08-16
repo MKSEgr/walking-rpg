@@ -114,7 +114,7 @@ public class EventResolutionService {
                 equipmentService,
                 PlatformSkillAccess.none(),
                 () -> StarterExpeditionContent
-                        .PILOT_SKILL_CHOICE_CONTENT_VERSION,
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION,
                 clock
         );
     }
@@ -142,7 +142,7 @@ public class EventResolutionService {
                 ),
                 PlatformSkillAccess.none(),
                 () -> StarterExpeditionContent
-                        .PILOT_SKILL_CHOICE_CONTENT_VERSION,
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION,
                 clock
         );
     }

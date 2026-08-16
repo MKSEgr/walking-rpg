@@ -1250,6 +1250,103 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldContinueSignalReaderOutcomeAndFinishAfterContentRollback() {
+        activeContentVersion.set(
+                StarterExpeditionContent
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+        );
+        var sanctuary = content.requireNode(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(sanctuary, 51),
+                NOW
+        );
+        ProgressionService progressionService = new ProgressionService(
+                new InMemoryProgressionRepository(),
+                new StarterProgressionContent()
+        );
+        EventResolutionService secretRouteService = new EventResolutionService(
+                expeditionRepository,
+                eventResolutionRepository,
+                progressionService,
+                new InventoryService(inventoryRepository),
+                content,
+                equipmentService,
+                userId -> Set.of(PlatformSkillIds.SIGNAL_READER),
+                activeContentVersion::get,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        EventResolutionCommand sanctuaryCommand = command(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                "open-hidden-signal-observatory"
+        );
+
+        EventResolutionResult sanctuaryResult = secretRouteService.resolve(
+                sanctuaryCommand,
+                false
+        );
+        EventResolutionResult sanctuaryReplay = secretRouteService.resolve(
+                sanctuaryCommand,
+                false
+        );
+
+        assertSame(sanctuaryResult, sanctuaryReplay);
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS,
+                sanctuaryResult.expeditionStatus());
+        assertEquals(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_NODE_ID,
+                sanctuaryResult.nextNode().nodeId()
+        );
+        activeContentVersion.set(
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+        );
+        var hiddenObservatory = content.requireNode(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(hiddenObservatory, 53),
+                NOW
+        );
+        EventResolutionCommand finaleCommand = command(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                StarterExpeditionContent.CHART_HIDDEN_SECTOR_CHOICE_ID,
+                "chart-hidden-signal-sector"
+        );
+
+        EventResolutionResult finale = secretRouteService.resolve(
+                finaleCommand,
+                false
+        );
+        EventResolutionResult finaleReplay = secretRouteService.resolve(
+                finaleCommand,
+                false
+        );
+
+        assertSame(finale, finaleReplay);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                finale.expeditionStatus());
+        assertNull(finale.nextNode());
+        assertEquals(112, finale.pilot().experienceGained());
+        assertEquals(54, finale.pet().bondGained());
+        assertEquals(StarterInventoryContent.PRISM_DUST_ID,
+                finale.material().itemId());
+        assertEquals(4, finale.material().quantityGained());
+        assertEquals(4L, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.PRISM_DUST_ID.equals(
+                        item.itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION

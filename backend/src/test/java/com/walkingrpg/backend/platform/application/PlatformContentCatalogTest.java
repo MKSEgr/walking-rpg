@@ -271,6 +271,30 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeSecretSignalRouteOnlyInChapterV14Catalog() {
+        Map<String, Object> secretRouteCatalog = publicCatalog(
+                StarterExpeditionContent
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+        );
+        Map<String, Object> skillCatalog = publicCatalog(
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v14",
+                secretRouteCatalog.get("contentVersion"));
+        assertEquals(27, secretRouteCatalog.get("chapterNodes"));
+        assertEquals(26, skillCatalog.get("chapterNodes"));
+        assertEquals(
+                list(skillCatalog, "skills"),
+                list(secretRouteCatalog, "skills")
+        );
+        assertNotEquals(
+                skillCatalog.get("catalogDigest"),
+                secretRouteCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

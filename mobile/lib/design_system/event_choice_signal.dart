@@ -98,6 +98,10 @@ abstract final class EventChoiceSignalCatalog {
         EventChoiceSignalKind.companion,
     'constellation-sanctuary-v1::decode-sanctuary-signal':
         EventChoiceSignalKind.frequency,
+    'hidden-signal-observatory-v1::chart-hidden-sector':
+        EventChoiceSignalKind.chart,
+    'hidden-signal-observatory-v1::preserve-echo-key':
+        EventChoiceSignalKind.companion,
   };
 
   static EventChoiceSignalKind kindFor({

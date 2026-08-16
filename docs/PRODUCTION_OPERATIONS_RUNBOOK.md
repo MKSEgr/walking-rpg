@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V29 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V30 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -715,6 +715,40 @@ result and replay the command without duplicate rewards.
 Do not roll back to a pre-V29 binary while v13 is active: old instances do not
 know the choice ID. Return the active release to v12, drain v13 traffic, and
 forward-fix any persisted v13 result or state that an older binary cannot read.
+
+## Signal Reader secret route rollout
+
+Flyway V30 stages `chapter-1-v14` inactive with a 27th node,
+`hidden-signal-observatory`, without changing active v13 or existing
+platform/pet/expedition state. Deploy and drain every pre-V30 backend before
+activation. V1-v13 retain terminal `decode-sanctuary-signal` semantics and
+cannot start the new route.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v14",
+  "releaseNotes": "Первая глава: Чтение сигналов открывает Обсерваторию скрытого сигнала.",
+  "content": {
+    "contentVersion": "chapter-1-v14",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 27,
+    "topology": "signal-reader-secret-route-v1"
+  }
+}
+```
+
+Before activation, complete `decode-sanctuary-signal` once under v13 and
+verify terminal completion. Activate v14, repeat with another eligible user,
+verify the transition to `hidden-signal-observatory`, then complete and replay
+each terminal choice without duplicate rewards.
+
+A content rollback from v14 to v13 prevents new secret-route transitions but
+keeps the new event definitions readable so an already persisted observatory
+state can finish. Do not roll back to a pre-V30 binary after such a state has
+persisted: return content to v13 for new journeys, drain v14 traffic, and
+forward-fix binaries that must read the 27th node.
 
 ## Rollback
 

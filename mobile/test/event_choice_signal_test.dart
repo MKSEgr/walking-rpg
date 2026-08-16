@@ -187,7 +187,17 @@ void main() {
         'decode-sanctuary-signal',
         EventChoiceSignalKind.frequency,
       );
-      expect(currentPairCount, 58);
+      expectChoice(
+        'hidden-signal-observatory-v1',
+        'chart-hidden-sector',
+        EventChoiceSignalKind.chart,
+      );
+      expectChoice(
+        'hidden-signal-observatory-v1',
+        'preserve-echo-key',
+        EventChoiceSignalKind.companion,
+      );
+      expect(currentPairCount, 60);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

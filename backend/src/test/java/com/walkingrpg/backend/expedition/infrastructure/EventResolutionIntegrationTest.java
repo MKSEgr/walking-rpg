@@ -1165,6 +1165,131 @@ class EventResolutionIntegrationTest {
     }
 
     @Test
+    void shouldCompleteSignalReaderSecretRouteExactlyOnce() {
+        String userId = "signal-reader-secret-route-user";
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "select-pet-before-secret-route",
+                Map.of("petId", "spark-v1")
+        ));
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE roadmap_user_state
+                SET state_json = jsonb_set(
+                    state_json,
+                    '{seasonXp}',
+                    '360'::jsonb
+                )
+                WHERE user_id = ?
+                """, userId));
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v14'
+                """));
+        platformService.execute(userId, new PlatformCommandRequest(
+                "UNLOCK_SKILL",
+                "unlock-signal-reader-before-secret-route",
+                Map.of("skillId", PlatformSkillIds.SIGNAL_READER)
+        ));
+        jdbcTemplate.update("""
+                INSERT INTO expedition_progress (
+                    user_id, expedition_id, current_node_id,
+                    progress_energy, required_energy, status,
+                    unlocked_event_id, version, created_at, updated_at
+                ) VALUES (?, ?, ?, 80, 80, 'EVENT_READY', ?, 51, now(), now())
+                """,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID
+        );
+        EventResolutionCommand sanctuaryCommand = command(
+                userId,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                "open-signal-reader-secret-route"
+        );
+
+        EventResolutionResult sanctuary = eventResolutionService.resolve(
+                sanctuaryCommand,
+                false
+        );
+        EventResolutionResult sanctuaryReplay = eventResolutionService.resolve(
+                sanctuaryCommand,
+                false
+        );
+
+        assertEquals(sanctuary, sanctuaryReplay);
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS,
+                sanctuary.expeditionStatus());
+        assertEquals(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_NODE_ID,
+                sanctuary.nextNode().nodeId()
+        );
+        assertEquals(4L, inventoryQuantity(StarterInventoryContent.ECHO_THREAD_ID));
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE expedition_progress
+                SET progress_energy = required_energy,
+                    status = 'EVENT_READY',
+                    unlocked_event_id = ?,
+                    version = version + 1,
+                    updated_at = now()
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                  AND current_node_id = ?
+                """,
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_NODE_ID
+        ));
+        HomeSnapshotResponse hiddenHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        assertEquals(
+                StarterExpeditionContent
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION,
+                hiddenHome.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                hiddenHome.expedition().unlockedEvent().eventId()
+        );
+        assertEquals(2,
+                hiddenHome.expedition().unlockedEvent().choices().size());
+        EventResolutionCommand finaleCommand = command(
+                userId,
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                StarterExpeditionContent.CHART_HIDDEN_SECTOR_CHOICE_ID,
+                "chart-hidden-sector"
+        );
+
+        EventResolutionResult finale = eventResolutionService.resolve(
+                finaleCommand,
+                false
+        );
+        EventResolutionResult finaleReplay = eventResolutionService.resolve(
+                finaleCommand,
+                false
+        );
+
+        assertEquals(finale, finaleReplay);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                finale.expeditionStatus());
+        assertNull(finale.nextNode());
+        assertEquals(112, finale.pilot().experienceGained());
+        assertEquals(54, finale.pet().bondGained());
+        assertEquals(4L, inventoryQuantity(StarterInventoryContent.PRISM_DUST_ID));
+        assertEquals(2, rowCount("processed_event_resolution"));
+        assertEquals(1, rowCount("pilot_progress"));
+        assertEquals(1, rowCount("pet_progress"));
+    }
+
+    @Test
     void shouldSerializeEventRewardWithConcurrentPetSelection() throws Exception {
         String userId = "concurrent-pet-user";
         platformService.execute(userId, new PlatformCommandRequest(

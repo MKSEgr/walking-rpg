@@ -62,6 +62,10 @@ class StarterExpeditionContentTest {
                 () -> StarterExpeditionContent
                         .PILOT_SKILL_CHOICE_CONTENT_VERSION
         );
+        String chapterV14 = content.activeContentVersion(
+                () -> StarterExpeditionContent
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -98,6 +102,11 @@ class StarterExpeditionContentTest {
         assertEquals(
                 StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION,
                 chapterV13
+        );
+        assertEquals(
+                StarterExpeditionContent
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION,
+                chapterV14
         );
         assertEquals(1, activationReads.get());
         assertEquals(
@@ -269,6 +278,15 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsPilotSkillChoice(
                 chapterV13
         ));
+        assertTrue(StarterExpeditionContent.supportsPilotSkillChoice(
+                chapterV14
+        ));
+        assertFalse(StarterExpeditionContent.supportsSignalReaderSecretRoute(
+                chapterV13
+        ));
+        assertTrue(StarterExpeditionContent.supportsSignalReaderSecretRoute(
+                chapterV14
+        ));
         assertEquals(2, content.eventChoices(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 chapterV12
@@ -283,7 +301,7 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
-                StarterExpeditionContent.ADULT_PET_FRONTIER_NODE_COUNT,
+                StarterExpeditionContent.SIGNAL_READER_SECRET_ROUTE_NODE_COUNT,
                 content.nodes().size()
         );
     }
@@ -511,6 +529,37 @@ class StarterExpeditionContentTest {
                         StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
                 ).skillRequirement().skillId()
         );
+        assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                StarterExpeditionContent.SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+        ).isEmpty());
+        assertEquals(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_NODE_ID,
+                content.nextNodeAfterEvent(
+                        StarterExpeditionContent
+                                .CONSTELLATION_SANCTUARY_EVENT_ID,
+                        StarterExpeditionContent
+                                .SIGNAL_READER_SANCTUARY_CHOICE_ID,
+                        StarterExpeditionContent
+                                .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+                ).orElseThrow().currentNodeId()
+        );
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+        ).size());
+        assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                StarterExpeditionContent.CHART_HIDDEN_SECTOR_CHOICE_ID,
+                StarterExpeditionContent
+                        .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
+        ).isEmpty());
+        assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.HIDDEN_SIGNAL_OBSERVATORY_EVENT_ID,
+                StarterExpeditionContent.PRESERVE_ECHO_KEY_CHOICE_ID,
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+        ).isEmpty());
         assertTrue(content.nextNodeAfterEvent(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 "anchor-constellation-sanctuary",
