@@ -74,6 +74,30 @@ void main() {
     );
   });
 
+  test('maps a persisted adult pet after content rollback', () {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState = Map<String, dynamic>.from(
+      json['userState']! as Map<String, dynamic>,
+    );
+    final List<dynamic> pets = List<dynamic>.from(userState['pets']! as List);
+    pets[0] = <String, dynamic>{
+      ...Map<String, dynamic>.from(pets[0] as Map),
+      'level': 3,
+      'bond': 160,
+      'evolutionStage': 2,
+      'maximumEvolutionStage': 2,
+    };
+    userState['pets'] = pets;
+    json['userState'] = userState;
+
+    final PlatformPet pet = PlatformSnapshot.fromJson(json).activePet;
+
+    expect(pet.evolutionStage, 2);
+    expect(pet.maximumEvolutionStage, 2);
+    expect(pet.canEvolve, isFalse);
+    expect(pet.isFullyEvolved, isTrue);
+  });
+
   test('maps independent server-owned cosmetic slots', () {
     final PlatformSnapshot snapshot = platformSnapshot(
       ownedCosmetics: const <String>['pilot-scarf', 'spark-halo'],

@@ -667,6 +667,53 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldPreserveAdultPetProjectionAfterContentRollback() {
+        platformRepository.setContentVersion(
+                StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION
+        );
+        factsProvider.set("rollback-user", new PlatformProgressFacts(
+                0,
+                0,
+                160,
+                null
+        ));
+        service.execute("rollback-user", command(
+                "EVOLVE_PET",
+                "evolve-before-rollback-young",
+                Map.of("petId", "spark-v1")
+        ));
+        service.execute("rollback-user", command(
+                "EVOLVE_PET",
+                "evolve-before-rollback-adult",
+                Map.of("petId", "spark-v1")
+        ));
+
+        platformRepository.setContentVersion(
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION
+        );
+        PlatformSnapshotResponse rolledBack = service.getSnapshot("rollback-user");
+        PlatformCommandResponse blocked = service.execute("rollback-user", command(
+                "EVOLVE_PET",
+                "evolve-after-rollback",
+                Map.of("petId", "spark-v1")
+        ));
+
+        Map<String, Object> rolledBackSpark = pet(rolledBack, "spark-v1");
+        assertEquals(
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION,
+                rolledBack.contentVersion()
+        );
+        assertEquals(2, number(rolledBackSpark, "evolutionStage"));
+        assertEquals(2, number(rolledBackSpark, "maximumEvolutionStage"));
+        assertEquals(rolledBack.stateVersion(), blocked.stateVersion());
+        assertEquals("Питомец уже эволюционировал", blocked.message());
+        assertEquals(
+                2,
+                number(pet(blocked.snapshot(), "spark-v1"), "maximumEvolutionStage")
+        );
+    }
+
+    @Test
     void shouldKeepChapterV10PetAtLegacyMaximumStage() {
         platformRepository.setContentVersion(
                 StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION
