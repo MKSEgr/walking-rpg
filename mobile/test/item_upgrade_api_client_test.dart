@@ -9,7 +9,7 @@ import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_res
 import 'support/in_memory_read_snapshot_cache.dart';
 
 void main() {
-  test('client posts item upgrade and invalidates read cache', () async {
+  test('client posts second dawn attunement and maps epic result', () async {
     final _FakeTransport transport = _FakeTransport(
       HomeTransportResponse(
         statusCode: 200,
@@ -32,21 +32,22 @@ void main() {
     );
 
     final ItemUpgradeResult result = await client.apply(
-      upgradeId: 'prism-sextant-calibration-v1',
+      upgradeId: 'prism-sextant-second-dawn-attunement-v1',
       idempotencyKey: 'upgrade-1',
     );
 
     expect(
       transport.requestedUri?.path,
-      '/api/v1/item-upgrades/prism-sextant-calibration-v1/apply',
+      '/api/v1/item-upgrades/'
+      'prism-sextant-second-dawn-attunement-v1/apply',
     );
     expect(transport.requestedHeaders?.containsKey('X-User-Id'), isFalse);
     expect(transport.requestBody, <String, dynamic>{
       'idempotencyKey': 'upgrade-1',
     });
     expect(result.upgradedItem.itemId, 'prism-sextant');
-    expect(result.upgradedItem.upgradeLevel, 2);
-    expect(result.upgradedItem.rarity, 'RARE');
+    expect(result.upgradedItem.upgradeLevel, 3);
+    expect(result.upgradedItem.rarity, 'EPIC');
     expect(result.consumedIngredients, hasLength(3));
     expect(cache.invalidations, 1);
   });
@@ -90,10 +91,10 @@ void main() {
 
 Map<String, dynamic> _upgradeResponse() {
   return <String, dynamic>{
-    'contentVersion': 'item-upgrade-v1',
-    'upgradeId': 'prism-sextant-calibration-v1',
+    'contentVersion': 'item-upgrade-v2',
+    'upgradeId': 'prism-sextant-second-dawn-attunement-v1',
     'upgradeVersion': '1',
-    'upgradeName': 'Откалибровать призматический секстант',
+    'upgradeName': 'Настроить секстант на второй рассвет',
     'consumedIngredients': <Map<String, dynamic>>[
       <String, dynamic>{
         'itemId': 'echo-thread',
@@ -105,14 +106,14 @@ Map<String, dynamic> _upgradeResponse() {
       <String, dynamic>{
         'itemId': 'ion-bloom',
         'name': 'Ионный цветок',
-        'quantityConsumed': 1,
+        'quantityConsumed': 2,
         'quantityAfter': 0,
         'version': 2,
       },
       <String, dynamic>{
-        'itemId': 'prism-dust',
-        'name': 'Призматическая пыль',
-        'quantityConsumed': 1,
+        'itemId': 'dawn-fragment',
+        'name': 'Фрагмент рассвета',
+        'quantityConsumed': 2,
         'quantityAfter': 0,
         'version': 2,
       },
@@ -122,9 +123,9 @@ Map<String, dynamic> _upgradeResponse() {
       'itemId': 'prism-sextant',
       'name': 'Призматический секстант',
       'description': 'Уникальный прибор.',
-      'previousLevel': 1,
-      'upgradeLevel': 2,
-      'rarity': 'RARE',
+      'previousLevel': 2,
+      'upgradeLevel': 3,
+      'rarity': 'EPIC',
       'upgradedAt': '2026-08-15T08:00:00Z',
     },
     'serverTime': '2026-08-15T08:00:00Z',

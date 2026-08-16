@@ -322,6 +322,11 @@ Item upgrade content `item-upgrade-v1` появляется только при 
 `2 × echo-thread`, `1 × prism-dust`, `1 × ion-bloom` и переводит тот же
 `itemInstanceId` с уровня `1/UNCOMMON` на `2/RARE`. Клиент получает только
 authoritative Home projection и не задаёт target, стоимость, level или rarity.
+При active `chapter-1-v8` additive `item-upgrade-v2` открывает
+`prism-sextant-second-dawn-attunement-v1`: он расходует `2 × echo-thread`,
+`2 × ion-bloom`, `2 × dawn-fragment` и переводит тот же instance с
+`2/RARE` на `3/EPIC`. Предыдущие content versions видят только доступные им
+ступени.
 
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
@@ -429,6 +434,11 @@ V23 stage-ит inactive `chapter-1-v7` с 24 узлами. В `dawn-relay-v1`
 появляется `open-second-dawn`: choice требует экипированный секстант минимум
 уровня 2 и ведёт к `second-dawn-threshold`. V1-V6 сохраняют прежний финал и
 catalog; activation выполняется только после drain pre-V23 backend instances.
+V24 расширяет rarity и refinement invariants для состояния
+`prism-sextant 3/EPIC` и stage-ит inactive `chapter-1-v8` с прежней 24-node
+topology. Существующие `1/UNCOMMON`, `2/RARE` и immutable upgrade snapshots
+сохраняются; новый attunement принимается только после cluster-wide activation
+v8 и drain pre-V24 backend instances.
 
 ## 8. Конкурентность и транзакции
 
@@ -668,7 +678,7 @@ catalog; activation выполняется только после drain pre-V23
     response formatting.
 45. Item upgrade не принимает client-owned target/cost/result, не создаёт новый
     unique instance и не допускает частичного material debit; уровень и rarity
-    переходят только из `1/UNCOMMON` в `2/RARE`.
+    переходят последовательно `1/UNCOMMON → 2/RARE → 3/EPIC`.
 
 ## 10. Identity и authorization boundary
 

@@ -95,8 +95,8 @@ class BackupRestoreDrillIntegrationTest {
         assertEquals(latestRepositoryVersion, sourceFlywayVersion);
         assertTrue(
                 MigrationVersion.fromVersion(latestRepositoryVersion)
-                        .compareTo(MigrationVersion.fromVersion("23")) >= 0,
-                "The drill must cover Flyway V1-V23 or later"
+                        .compareTo(MigrationVersion.fromVersion("24")) >= 0,
+                "The drill must cover Flyway V1-V24 or later"
         );
 
         try (Connection sourceConnection = connection(SOURCE)) {

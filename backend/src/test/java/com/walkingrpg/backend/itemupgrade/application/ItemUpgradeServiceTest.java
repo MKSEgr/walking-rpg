@@ -136,12 +136,22 @@ class ItemUpgradeServiceTest {
     }
 
     @Test
-    void shouldExposeOnlyOneValidatedCalibrationDefinition() {
+    void shouldExposeValidatedUpgradeSequenceByChapterVersion() {
         assertEquals(0, content.upgrades(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
         ).size());
         assertEquals(1, content.upgrades(
                 StarterExpeditionContent.PRISM_SEXTANT_CONTENT_VERSION
+        ).size());
+        assertEquals(1, content.upgrades(
+                StarterExpeditionContent.CALIBRATED_SEXTANT_CONTENT_VERSION
+        ).size());
+        assertEquals(1, content.upgrades(
+                StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+        ).size());
+        assertEquals(2, content.upgrades(
+                StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
         ).size());
         var definition = content.require(
                 StarterItemUpgradeContent.PRISM_SEXTANT_CALIBRATION_ID,
@@ -152,6 +162,44 @@ class ItemUpgradeServiceTest {
         assertEquals(UniqueItemRarity.UNCOMMON, definition.initialRarity());
         assertEquals(UniqueItemRarity.RARE, definition.resultingRarity());
         assertEquals(3, definition.ingredients().size());
+
+        var attunement = content.require(
+                StarterItemUpgradeContent
+                        .PRISM_SEXTANT_SECOND_DAWN_ATTUNEMENT_ID,
+                StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
+        );
+        assertEquals(
+                StarterItemUpgradeContent.SECOND_DAWN_CONTENT_VERSION,
+                attunement.contentVersion()
+        );
+        assertEquals(2, attunement.requiredLevel());
+        assertEquals(3, attunement.resultingLevel());
+        assertEquals(UniqueItemRarity.RARE, attunement.initialRarity());
+        assertEquals(UniqueItemRarity.EPIC, attunement.resultingRarity());
+        assertEquals(
+                List.of(
+                        "echo-thread:2",
+                        "ion-bloom:2",
+                        "dawn-fragment:2"
+                ),
+                attunement.ingredients().stream()
+                        .map(ingredient -> ingredient.item().itemId()
+                                + ":" + ingredient.quantity())
+                        .toList()
+        );
+    }
+
+    @Test
+    void shouldHideSecondDawnAttunementBeforeChapterV8Activation() {
+        assertThrows(
+                ItemUpgradeNotFoundException.class,
+                () -> content.require(
+                        StarterItemUpgradeContent
+                                .PRISM_SEXTANT_SECOND_DAWN_ATTUNEMENT_ID,
+                        StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+                )
+        );
     }
 
     private ItemUpgradeService service(String activeContentVersion) {

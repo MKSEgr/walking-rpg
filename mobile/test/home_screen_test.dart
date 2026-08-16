@@ -1046,7 +1046,7 @@ void main() {
     expect(impressionCalls, 0);
   });
 
-  testWidgets('home upgrades item and reloads authoritative rarity', (
+  testWidgets('home attunes item and reloads authoritative epic rarity', (
     WidgetTester tester,
   ) async {
     int loads = 0;
@@ -1076,7 +1076,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final Finder upgradeButton = find.byKey(
-      const Key('item-upgrade-prism-sextant-calibration-v1'),
+      const Key('item-upgrade-prism-sextant-second-dawn-attunement-v1'),
     );
     await tester.scrollUntilVisible(
       upgradeButton,
@@ -1089,7 +1089,7 @@ void main() {
     await tester.tap(upgradeButton);
     await tester.pumpAndSettle();
 
-    expect(sentUpgradeId, 'prism-sextant-calibration-v1');
+    expect(sentUpgradeId, 'prism-sextant-second-dawn-attunement-v1');
     expect(sentKey, 'upgrade-key');
     expect(loads, 2);
     final Finder completed = find.text('Улучшение завершено');
@@ -1101,7 +1101,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(completed, findsOneWidget);
     expect(
-      find.text('Призматический секстант · уровень 2 · RARE'),
+      find.text('Призматический секстант · уровень 3 · EPIC'),
       findsOneWidget,
     );
   });
@@ -1926,10 +1926,10 @@ HomeSnapshot _upgradeReady() {
         name: 'Призматический секстант',
         description: 'Уникальный навигационный прибор.',
         quantity: 1,
-        version: 1,
+        version: 2,
         kind: 'UNIQUE',
         itemInstanceId: '44444444-4444-4444-4444-444444444444',
-        rarity: 'UNCOMMON',
+        rarity: 'RARE',
       ),
       HomeInventoryItem(
         itemId: 'echo-thread',
@@ -1942,14 +1942,14 @@ HomeSnapshot _upgradeReady() {
         itemId: 'ion-bloom',
         name: 'Ионный цветок',
         description: 'Заряженный цветок.',
-        quantity: 1,
+        quantity: 2,
         version: 1,
       ),
       HomeInventoryItem(
-        itemId: 'prism-dust',
-        name: 'Призматическая пыль',
-        description: 'Пыль преломлённого света.',
-        quantity: 1,
+        itemId: 'dawn-fragment',
+        name: 'Фрагмент рассвета',
+        description: 'Осколок нового горизонта.',
+        quantity: 2,
         version: 1,
       ),
     ],
@@ -1965,25 +1965,25 @@ HomeSnapshot _upgradeCompleted() {
         name: 'Призматический секстант',
         description: 'Уникальный навигационный прибор.',
         quantity: 1,
-        version: 2,
+        version: 3,
         kind: 'UNIQUE',
         itemInstanceId: '44444444-4444-4444-4444-444444444444',
-        rarity: 'RARE',
+        rarity: 'EPIC',
       ),
     ],
     itemUpgrades: const <HomeItemUpgrade>[
       HomeItemUpgrade(
-        upgradeId: 'prism-sextant-calibration-v1',
+        upgradeId: 'prism-sextant-second-dawn-attunement-v1',
         upgradeVersion: '1',
-        name: 'Откалибровать призматический секстант',
-        description: 'Закрепить карту невидимого спектра.',
+        name: 'Настроить секстант на второй рассвет',
+        description: 'Закрепить координаты нового горизонта.',
         status: 'COMPLETED',
         targetItemId: 'prism-sextant',
         targetItemName: 'Призматический секстант',
-        requiredLevel: 1,
-        resultingLevel: 2,
-        initialRarity: 'UNCOMMON',
-        resultingRarity: 'RARE',
+        requiredLevel: 2,
+        resultingLevel: 3,
+        initialRarity: 'RARE',
+        resultingRarity: 'EPIC',
         ingredients: <HomeItemUpgradeIngredient>[
           HomeItemUpgradeIngredient(
             itemId: 'echo-thread',
@@ -1994,13 +1994,13 @@ HomeSnapshot _upgradeCompleted() {
           HomeItemUpgradeIngredient(
             itemId: 'ion-bloom',
             name: 'Ионный цветок',
-            requiredQuantity: 1,
+            requiredQuantity: 2,
             availableQuantity: 0,
           ),
           HomeItemUpgradeIngredient(
-            itemId: 'prism-dust',
-            name: 'Призматическая пыль',
-            requiredQuantity: 1,
+            itemId: 'dawn-fragment',
+            name: 'Фрагмент рассвета',
+            requiredQuantity: 2,
             availableQuantity: 0,
           ),
         ],
@@ -2010,17 +2010,17 @@ HomeSnapshot _upgradeCompleted() {
 }
 
 const HomeItemUpgrade _readyItemUpgrade = HomeItemUpgrade(
-  upgradeId: 'prism-sextant-calibration-v1',
+  upgradeId: 'prism-sextant-second-dawn-attunement-v1',
   upgradeVersion: '1',
-  name: 'Откалибровать призматический секстант',
-  description: 'Закрепить карту невидимого спектра.',
+  name: 'Настроить секстант на второй рассвет',
+  description: 'Закрепить координаты нового горизонта.',
   status: 'READY',
   targetItemId: 'prism-sextant',
   targetItemName: 'Призматический секстант',
-  requiredLevel: 1,
-  resultingLevel: 2,
-  initialRarity: 'UNCOMMON',
-  resultingRarity: 'RARE',
+  requiredLevel: 2,
+  resultingLevel: 3,
+  initialRarity: 'RARE',
+  resultingRarity: 'EPIC',
   ingredients: <HomeItemUpgradeIngredient>[
     HomeItemUpgradeIngredient(
       itemId: 'echo-thread',
@@ -2031,14 +2031,14 @@ const HomeItemUpgrade _readyItemUpgrade = HomeItemUpgrade(
     HomeItemUpgradeIngredient(
       itemId: 'ion-bloom',
       name: 'Ионный цветок',
-      requiredQuantity: 1,
-      availableQuantity: 1,
+      requiredQuantity: 2,
+      availableQuantity: 2,
     ),
     HomeItemUpgradeIngredient(
-      itemId: 'prism-dust',
-      name: 'Призматическая пыль',
-      requiredQuantity: 1,
-      availableQuantity: 1,
+      itemId: 'dawn-fragment',
+      name: 'Фрагмент рассвета',
+      requiredQuantity: 2,
+      availableQuantity: 2,
     ),
   ],
 );
@@ -2554,10 +2554,10 @@ CraftingResult _craftingResult() {
 
 ItemUpgradeResult _itemUpgradeResult() {
   return const ItemUpgradeResult(
-    contentVersion: 'item-upgrade-v1',
-    upgradeId: 'prism-sextant-calibration-v1',
+    contentVersion: 'item-upgrade-v2',
+    upgradeId: 'prism-sextant-second-dawn-attunement-v1',
     upgradeVersion: '1',
-    upgradeName: 'Откалибровать призматический секстант',
+    upgradeName: 'Настроить секстант на второй рассвет',
     consumedIngredients: <ItemUpgradeIngredientResult>[
       ItemUpgradeIngredientResult(
         itemId: 'echo-thread',
@@ -2569,14 +2569,14 @@ ItemUpgradeResult _itemUpgradeResult() {
       ItemUpgradeIngredientResult(
         itemId: 'ion-bloom',
         name: 'Ионный цветок',
-        quantityConsumed: 1,
+        quantityConsumed: 2,
         quantityAfter: 0,
         version: 2,
       ),
       ItemUpgradeIngredientResult(
-        itemId: 'prism-dust',
-        name: 'Призматическая пыль',
-        quantityConsumed: 1,
+        itemId: 'dawn-fragment',
+        name: 'Фрагмент рассвета',
+        quantityConsumed: 2,
         quantityAfter: 0,
         version: 2,
       ),
@@ -2586,9 +2586,9 @@ ItemUpgradeResult _itemUpgradeResult() {
       itemId: 'prism-sextant',
       name: 'Призматический секстант',
       description: 'Уникальный навигационный прибор.',
-      previousLevel: 1,
-      upgradeLevel: 2,
-      rarity: 'RARE',
+      previousLevel: 2,
+      upgradeLevel: 3,
+      rarity: 'EPIC',
       upgradedAt: '2026-07-26T06:00:00Z',
     ),
     serverTime: '2026-07-26T06:00:00Z',

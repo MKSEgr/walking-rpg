@@ -54,6 +54,8 @@
 - три питомца с реальным active selection и независимым progression;
 - material inventory с append-only credit/debit ledger, server-authoritative
   crafting, persistent unique item и equipment slot `NAVIGATION`;
+- последовательное улучшение призматического секстанта до уровня 3/EPIC на
+  материалах эпилога второго рассвета;
 - durable event-result receipt, который восстанавливается через `GET /home`
   после потери ответа или restart;
 - foreground durable outbox для activity, gameplay, platform и telemetry

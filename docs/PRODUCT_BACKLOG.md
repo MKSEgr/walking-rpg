@@ -445,6 +445,31 @@ visual-mapping tests реализованы. Баланс награды тре�
 **Статус:** backend/mobile/Flyway V23, unit/PostgreSQL/migration/catalog и
 visual-mapping tests реализованы. Баланс эпилога требует beta evidence.
 
+### US-020. Настроить секстант на второй рассвет
+
+Как пользователь, завершивший эпилог второго рассвета, я хочу вложить
+полученные материалы в дальнейшее улучшение секстанта, чтобы поздняя экономика
+главы давала новую постоянную цель.
+
+Критерии:
+
+- inactive `chapter-1-v8` открывает
+  `prism-sextant-second-dawn-attunement-v1`, а v1-v7 его не проецируют и не
+  принимают;
+- upgrade требует тот же `prism-sextant` уровня `2/RARE`, расходует
+  `2 × echo-thread`, `2 × ion-bloom`, `2 × dawn-fragment` и переводит instance
+  на `3/EPIC`;
+- Home возвращает calibration и attunement в стабильном порядке с
+  authoritative `LOCKED|MISSING_MATERIALS|READY|COMPLETED`;
+- проверки материалов предшествуют debit, exact replay сохраняет item,
+  ingredient и timestamp snapshots без повторной мутации;
+- V24 сохраняет существующие item/upgrade rows и расширяет database invariants
+  для rarity `EPIC`; v8 активируется только после drain pre-V24 backend
+  instances.
+
+**Статус:** backend/mobile/Flyway V24, unit/PostgreSQL/migration/parser/widget
+tests реализованы. Стоимость второго улучшения требует beta/economy evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -459,7 +484,8 @@ visual-mapping tests реализованы. Баланс эпилога тре�
 - read-only offline cache валидированных `home` / `platform` snapshots;
 - расход материалов, два crafting recipe, два persistent unique item и
   server-authoritative single-item equipment slot;
-- первая server-authoritative калибровка unique item с уровнем и rarity;
+- две последовательные server-authoritative ступени unique item вплоть до
+  уровня 3/EPIC;
 - первый expedition choice с authoritative minimum item level prerequisite.
 
 После физической device-validation и beta остаются продуктовые расширения:

@@ -128,6 +128,25 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldKeepSecondDawnTopologyForAttunementRelease() {
+        Map<String, Object> attunementCatalog = publicCatalog(
+                StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
+        );
+        Map<String, Object> secondDawnCatalog = publicCatalog(
+                StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v8", attunementCatalog.get("contentVersion"));
+        assertEquals(24, attunementCatalog.get("chapterNodes"));
+        assertEquals(24, secondDawnCatalog.get("chapterNodes"));
+        assertNotEquals(
+                attunementCatalog.get("catalogDigest"),
+                secondDawnCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

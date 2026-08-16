@@ -50,7 +50,8 @@ class DemoHomeServiceTest {
         assertNull(snapshot.lastActivitySyncAt());
         assertEquals(NOW, snapshot.serverTime());
         assertEquals(
-                StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
+                StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
                 snapshot.contentVersion()
         );
         assertNotNull(snapshot.pilot());

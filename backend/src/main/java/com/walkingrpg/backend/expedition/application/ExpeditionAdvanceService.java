@@ -60,7 +60,8 @@ public class ExpeditionAdvanceService {
                 eventResolutionRepository,
                 economyService,
                 content,
-                () -> StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
+                () -> StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
                 clock
         );
     }
