@@ -45,7 +45,8 @@
 - server-authoritative ENERGY economy;
 - production `GET /api/v1/home`;
 - content-driven первая глава с 18 основными и staged optional узлами вплоть
-  до эпилога `second-dawn-threshold`, equipment-gated server-owned choices;
+  до `uncharted-verge` за вторым рассветом, equipment-gated server-owned
+  choices;
 - guided «Первый путь» от разрешения шагов до первого решения;
 - server-authoritative funnel и time-to-value первого пути для alpha cohort,
   включая отдельное подтверждение показа первого результата;
@@ -56,6 +57,8 @@
   crafting, persistent unique item и equipment slot `NAVIGATION`;
 - последовательное улучшение призматического секстанта до уровня 3/EPIC на
   материалах эпилога второго рассвета;
+- level-3/EPIC маршрут секстанта к неизведанному рубежу с двумя финальными
+  server-owned исходами;
 - durable event-result receipt, который восстанавливается через `GET /home`
   после потери ответа или restart;
 - foreground durable outbox для activity, gameplay, platform и telemetry

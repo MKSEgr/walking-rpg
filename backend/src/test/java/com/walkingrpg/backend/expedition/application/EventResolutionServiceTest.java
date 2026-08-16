@@ -883,6 +883,119 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldCrossAndCompleteUnchartedVergeWithEpicSextant() {
+        activeContentVersion.set(
+                StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
+        );
+        var secondDawn = content.requireNode(
+                StarterExpeditionContent.SECOND_DAWN_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(secondDawn, 39),
+                NOW
+        );
+        UUID sextantInstanceId = UUID.fromString(
+                "eeeeeeee-ffff-0000-1111-000000000003"
+        );
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                sextantInstanceId,
+                StarterInventoryContent.PRISM_SEXTANT_ID,
+                2
+        );
+        equipmentService.change(new EquipmentCommand(
+                "user-1",
+                StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                EquipmentAction.EQUIP,
+                sextantInstanceId,
+                "equip-rare-sextant-at-verge"
+        ));
+        EventResolutionCommand routeCommand = command(
+                StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                StarterExpeditionContent.UNCHARTED_VERGE_ROUTE_CHOICE_ID,
+                "cross-uncharted-verge"
+        );
+
+        EventChoiceUnavailableException unavailable = assertThrows(
+                EventChoiceUnavailableException.class,
+                () -> service.resolve(routeCommand)
+        );
+        assertEquals(3, unavailable.requiredUpgradeLevel());
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+
+        equipmentRepository.putUniqueItem(
+                "user-1",
+                sextantInstanceId,
+                StarterInventoryContent.PRISM_SEXTANT_ID,
+                3
+        );
+        EventResolutionResult crossed = service.resolve(routeCommand);
+
+        assertEquals(
+                StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
+                crossed.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID,
+                crossed.nextNode().nodeId()
+        );
+        assertEquals(58, crossed.pilot().experienceGained());
+        assertEquals(32, crossed.pet().bondGained());
+        assertEquals(StarterInventoryContent.ECHO_THREAD_ID,
+                crossed.material().itemId());
+        assertEquals(2, crossed.material().quantityGained());
+
+        eventResolutionRepository.acknowledgeResult(
+                "user-1",
+                crossed.receiptId(),
+                NOW
+        );
+        var unchartedVerge = content.requireNode(
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(unchartedVerge, 41),
+                NOW
+        );
+        EventResolutionCommand finaleCommand = command(
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                "follow-living-constellation",
+                "complete-uncharted-verge"
+        );
+
+        EventResolutionResult completed = service.resolve(finaleCommand);
+        EventResolutionResult replayed = service.resolve(finaleCommand);
+
+        assertSame(completed, replayed);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                completed.expeditionStatus());
+        assertNull(completed.nextNode());
+        assertEquals(50, completed.pilot().experienceGained());
+        assertEquals(42, completed.pet().bondGained());
+        assertEquals(StarterInventoryContent.DAWN_FRAGMENT_ID,
+                completed.material().itemId());
+        assertEquals(3, completed.material().quantityGained());
+        assertEquals(2, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.ECHO_THREAD_ID.equals(
+                        item.itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
+        assertEquals(3, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.DAWN_FRAGMENT_ID.equals(
+                        item.itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION

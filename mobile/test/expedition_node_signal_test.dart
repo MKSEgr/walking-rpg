@@ -28,6 +28,7 @@ void main() {
           'resonance-pocket': ExpeditionNodeSignalKind.resonancePocket,
           'spectrum-observatory': ExpeditionNodeSignalKind.spectrumObservatory,
           'second-dawn-threshold': ExpeditionNodeSignalKind.secondDawnThreshold,
+          'uncharted-verge': ExpeditionNodeSignalKind.unchartedVerge,
         };
 
     for (final MapEntry<String, ExpeditionNodeSignalKind> entry

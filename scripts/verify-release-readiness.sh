@@ -97,6 +97,7 @@ for file in \
   backend/src/main/resources/db/migration/V22__calibrated_sextant_choice.sql \
   backend/src/main/resources/db/migration/V23__second_dawn_epilogue.sql \
   backend/src/main/resources/db/migration/V24__second_dawn_attunement.sql \
+  backend/src/main/resources/db/migration/V25__epic_sextant_uncharted_verge.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -699,7 +700,7 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
 if versions != expected or not versions or versions[-1] < 24:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V24: {versions}')
+    raise SystemExit(f'Flyway versions must be contiguous through at least V25: {versions}')
 print('Flyway versions:', versions)
 PY
 

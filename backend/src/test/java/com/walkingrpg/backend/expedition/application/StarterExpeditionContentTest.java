@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StarterExpeditionContentTest {
@@ -42,6 +43,9 @@ class StarterExpeditionContentTest {
                 () -> StarterExpeditionContent
                         .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
         );
+        String chapterV9 = content.activeContentVersion(
+                () -> StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -58,6 +62,10 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent
                         .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
                 chapterV8
+        );
+        assertEquals(
+                StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
+                chapterV9
         );
         assertEquals(1, activationReads.get());
         assertEquals(
@@ -129,13 +137,37 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsSecondDawnAttunement(
                 chapterV8
         ));
+        assertTrue(StarterExpeditionContent.supportsSecondDawnAttunement(
+                chapterV9
+        ));
         assertFalse(StarterExpeditionContent.supportsSecondDawnAttunement(
                 chapterV7
         ));
+        assertFalse(hasUnchartedVergeChoice(content.eventChoices(
+                StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                chapterV8
+        )));
+        List<ExpeditionEventChoiceDefinition> unchartedChoices =
+                content.eventChoices(
+                        StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                        chapterV9
+                );
+        assertTrue(hasUnchartedVergeChoice(unchartedChoices));
+        assertEquals(
+                3,
+                unchartedChoices.stream()
+                        .filter(choice -> StarterExpeditionContent
+                                .UNCHARTED_VERGE_ROUTE_CHOICE_ID
+                                .equals(choice.choiceId()))
+                        .findFirst()
+                        .orElseThrow()
+                        .equipmentRequirement()
+                        .minimumUpgradeLevel()
+        );
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
-                StarterExpeditionContent.SECOND_DAWN_NODE_COUNT,
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_COUNT,
                 content.nodes().size()
         );
     }
@@ -270,6 +302,36 @@ class StarterExpeditionContentTest {
         ).size());
     }
 
+    @Test
+    void shouldCrossUnchartedVergeOnlyInChapterV9AndCompleteThere() {
+        assertThrows(
+                EventResolutionValidationException.class,
+                () -> content.requireChoice(
+                        StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                        StarterExpeditionContent.UNCHARTED_VERGE_ROUTE_CHOICE_ID,
+                        StarterExpeditionContent
+                                .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
+                )
+        );
+        assertEquals(
+                StarterExpeditionContent.UNCHARTED_VERGE_NODE_ID,
+                content.nextNodeAfterEvent(
+                        StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                        StarterExpeditionContent.UNCHARTED_VERGE_ROUTE_CHOICE_ID,
+                        StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
+                ).orElseThrow().currentNodeId()
+        );
+        assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                "deploy-return-beacon",
+                StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
+        ).isEmpty());
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
+        ).size());
+    }
+
     private boolean hasStormRiftChoice(
             List<ExpeditionEventChoiceDefinition> choices
     ) {
@@ -317,6 +379,16 @@ class StarterExpeditionContentTest {
     ) {
         return choices.stream().anyMatch(choice ->
                 StarterExpeditionContent.SECOND_DAWN_ROUTE_CHOICE_ID.equals(
+                        choice.choiceId()
+                )
+        );
+    }
+
+    private boolean hasUnchartedVergeChoice(
+            List<ExpeditionEventChoiceDefinition> choices
+    ) {
+        return choices.stream().anyMatch(choice ->
+                StarterExpeditionContent.UNCHARTED_VERGE_ROUTE_CHOICE_ID.equals(
                         choice.choiceId()
                 )
         );

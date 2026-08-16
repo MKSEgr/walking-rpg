@@ -319,6 +319,83 @@ class EquipmentIntegrationTest {
         assertTrue(v7Finale.expedition().unlockedEvent().choices().stream()
                 .anyMatch(choice -> StarterExpeditionContent
                         .SECOND_DAWN_ROUTE_CHOICE_ID.equals(choice.choiceId())));
+
+        jdbcTemplate.update("""
+                UPDATE expedition_progress
+                SET current_node_id = ?,
+                    progress_energy = 60,
+                    required_energy = 60,
+                    status = 'EVENT_READY',
+                    unlocked_event_id = ?,
+                    version = 37,
+                    updated_at = now()
+                WHERE user_id = ?
+                """,
+                StarterExpeditionContent.SECOND_DAWN_NODE_ID,
+                StarterExpeditionContent.SECOND_DAWN_EVENT_ID,
+                userId
+        );
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v8'
+                """));
+        HomeSnapshotResponse v8SecondDawn = homeService.getSnapshot(new HomeQuery(
+                userId,
+                LocalDate.of(2026, 8, 15)
+        ));
+        assertFalse(v8SecondDawn.expedition().unlockedEvent().choices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .UNCHARTED_VERGE_ROUTE_CHOICE_ID.equals(
+                                choice.choiceId()
+                        )));
+        assertFalse(v8SecondDawn.expedition().unlockedEvent().lockedChoices()
+                .stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .UNCHARTED_VERGE_ROUTE_CHOICE_ID.equals(
+                                choice.choiceId()
+                        )));
+
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v9'
+                """));
+        HomeSnapshotResponse lockedV9 = homeService.getSnapshot(new HomeQuery(
+                userId,
+                LocalDate.of(2026, 8, 15)
+        ));
+        assertTrue(lockedV9.expedition().unlockedEvent().lockedChoices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .UNCHARTED_VERGE_ROUTE_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ) && choice.requirement().minimumUpgradeLevel() == 3));
+
+        jdbcTemplate.update("""
+                UPDATE unique_inventory_item
+                SET version = 3,
+                    rarity = 'EPIC',
+                    upgraded_at = now()
+                WHERE user_id = ?
+                  AND item_instance_id = ?
+                """, userId, itemInstanceId);
+        HomeSnapshotResponse availableV9 = homeService.getSnapshot(new HomeQuery(
+                userId,
+                LocalDate.of(2026, 8, 15)
+        ));
+        assertTrue(availableV9.expedition().unlockedEvent().choices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .UNCHARTED_VERGE_ROUTE_CHOICE_ID.equals(
+                                choice.choiceId()
+                        )));
     }
 
     @Test
