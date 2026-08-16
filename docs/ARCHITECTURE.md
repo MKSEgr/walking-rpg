@@ -328,6 +328,13 @@ authoritative Home projection и не задаёт target, стоимость, l
 `2/RARE` на `3/EPIC`. Предыдущие content versions видят только доступные им
 ступени.
 
+Active `chapter-1-v9` добавляет equipment-gated
+`cross-uncharted-verge` к `second-dawn-threshold-v1`. Requirement принимает
+только экипированный `prism-sextant` минимум уровня 3; successful resolution
+ведёт к optional `uncharted-verge`, где оба server-owned выбора завершают
+экспедицию после собственной material reward. V1-V8 не проецируют новый
+choice ни как available, ни как locked.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
@@ -439,6 +446,11 @@ V24 расширяет rarity и refinement invariants для состояния
 topology. Существующие `1/UNCOMMON`, `2/RARE` и immutable upgrade snapshots
 сохраняются; новый attunement принимается только после cluster-wide activation
 v8 и drain pre-V24 backend instances.
+V25 stage-ит inactive `chapter-1-v9` с 25 узлами. В
+`second-dawn-threshold-v1` появляется `cross-uncharted-verge`, требующий
+экипированный секстант минимум уровня 3 и ведущий к `uncharted-verge`.
+V1-V8 сохраняют прежнюю topology; activation выполняется только после drain
+pre-V25 backend instances.
 
 ## 8. Конкурентность и транзакции
 

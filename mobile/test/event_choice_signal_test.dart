@@ -127,7 +127,22 @@ void main() {
         'leap-beyond-dawn',
         EventChoiceSignalKind.companion,
       );
-      expect(currentPairCount, 46);
+      expectChoice(
+        'second-dawn-threshold-v1',
+        'cross-uncharted-verge',
+        EventChoiceSignalKind.prism,
+      );
+      expectChoice(
+        'uncharted-verge-v1',
+        'deploy-return-beacon',
+        EventChoiceSignalKind.chart,
+      );
+      expectChoice(
+        'uncharted-verge-v1',
+        'follow-living-constellation',
+        EventChoiceSignalKind.companion,
+      );
+      expect(currentPairCount, 49);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

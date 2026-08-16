@@ -78,6 +78,11 @@ abstract final class EventChoiceSignalCatalog {
     'second-dawn-threshold-v1::anchor-second-dawn': EventChoiceSignalKind.chart,
     'second-dawn-threshold-v1::leap-beyond-dawn':
         EventChoiceSignalKind.companion,
+    'second-dawn-threshold-v1::cross-uncharted-verge':
+        EventChoiceSignalKind.prism,
+    'uncharted-verge-v1::deploy-return-beacon': EventChoiceSignalKind.chart,
+    'uncharted-verge-v1::follow-living-constellation':
+        EventChoiceSignalKind.companion,
   };
 
   static EventChoiceSignalKind kindFor({

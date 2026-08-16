@@ -29,6 +29,8 @@ public class StarterExpeditionContent {
     public static final String SECOND_DAWN_CONTENT_VERSION = "chapter-1-v7";
     public static final String SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION =
             "chapter-1-v8";
+    public static final String UNCHARTED_VERGE_CONTENT_VERSION =
+            "chapter-1-v9";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -36,6 +38,7 @@ public class StarterExpeditionContent {
     public static final int VOID_ORCHARD_NODE_COUNT = 22;
     public static final int PRISM_SEXTANT_NODE_COUNT = 23;
     public static final int SECOND_DAWN_NODE_COUNT = 24;
+    public static final int UNCHARTED_VERGE_NODE_COUNT = 25;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -82,6 +85,11 @@ public class StarterExpeditionContent {
     public static final String SECOND_DAWN_NODE_ID = "second-dawn-threshold";
     public static final String SECOND_DAWN_EVENT_ID =
             "second-dawn-threshold-v1";
+    public static final String UNCHARTED_VERGE_ROUTE_CHOICE_ID =
+            "cross-uncharted-verge";
+    public static final String UNCHARTED_VERGE_NODE_ID = "uncharted-verge";
+    public static final String UNCHARTED_VERGE_EVENT_ID =
+            "uncharted-verge-v1";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
 
@@ -154,7 +162,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
+                    UNCHARTED_VERGE_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -353,6 +361,46 @@ public class StarterExpeditionContent {
         dawnRelayChoices.add(secondDawnRouteChoice(inventoryContent));
         choices.put(FINAL_EVENT_ID, List.copyOf(dawnRelayChoices));
 
+        NodeSpec unchartedVergeSpec = new NodeSpec(
+                UNCHARTED_VERGE_NODE_ID,
+                "Неизведанный рубеж",
+                70,
+                UNCHARTED_VERGE_EVENT_ID,
+                "Созвездие без имени",
+                "За вторым рассветом секстант удерживает путь среди звёзд, которых ещё нет ни на одной карте."
+        );
+        ExpeditionDefinition unchartedVergeDefinition = definition(
+                unchartedVergeSpec
+        );
+        definitions.add(unchartedVergeDefinition);
+        byId.put(
+                unchartedVergeDefinition.currentNodeId(),
+                unchartedVergeDefinition
+        );
+        byEvent.put(
+                unchartedVergeDefinition.event().eventId(),
+                unchartedVergeDefinition
+        );
+        choices.put(
+                UNCHARTED_VERGE_EVENT_ID,
+                unchartedVergeChoices(inventoryContent)
+        );
+
+        choiceNext.put(
+                new EventChoiceKey(
+                        SECOND_DAWN_EVENT_ID,
+                        UNCHARTED_VERGE_ROUTE_CHOICE_ID
+                ),
+                unchartedVergeDefinition
+        );
+        List<ExpeditionEventChoiceDefinition> secondDawnRouteChoices =
+                new ArrayList<>(choices.get(SECOND_DAWN_EVENT_ID));
+        secondDawnRouteChoices.add(unchartedVergeRouteChoice(inventoryContent));
+        choices.put(
+                SECOND_DAWN_EVENT_ID,
+                List.copyOf(secondDawnRouteChoices)
+        );
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -398,7 +446,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
+                UNCHARTED_VERGE_CONTENT_VERSION
         );
     }
 
@@ -435,7 +483,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
+                UNCHARTED_VERGE_CONTENT_VERSION
         );
     }
 
@@ -466,7 +514,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION);
+        return eventChoices(eventId, UNCHARTED_VERGE_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -532,6 +580,14 @@ public class StarterExpeditionContent {
                     ))
                     .toList();
         }
+        if (SECOND_DAWN_EVENT_ID.equals(eventId)
+                && !supportsUnchartedVerge(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !UNCHARTED_VERGE_ROUTE_CHOICE_ID.equals(
+                            choice.choiceId()
+                    ))
+                    .toList();
+        }
         return choices;
     }
 
@@ -548,7 +604,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION;
+        return UNCHARTED_VERGE_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -557,6 +613,9 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (UNCHARTED_VERGE_CONTENT_VERSION.equals(activeContentVersion)) {
+            return UNCHARTED_VERGE_CONTENT_VERSION;
+        }
         if (SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
                 activeContentVersion
         )) {
@@ -592,7 +651,8 @@ public class StarterExpeditionContent {
                 || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
                 || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
                         contentVersion
-                );
+                )
+                || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsStormRift(String contentVersion) {
@@ -603,7 +663,8 @@ public class StarterExpeditionContent {
                 || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
                 || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
                         contentVersion
-                );
+                )
+                || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsVoidOrchardFork(String contentVersion) {
@@ -613,7 +674,8 @@ public class StarterExpeditionContent {
                 || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
                 || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
                         contentVersion
-                );
+                )
+                || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsPrismSextantRoute(String contentVersion) {
@@ -622,7 +684,8 @@ public class StarterExpeditionContent {
                 || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
                 || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
                         contentVersion
-                );
+                )
+                || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsCalibratedSextantChoice(
@@ -632,25 +695,32 @@ public class StarterExpeditionContent {
                 || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
                 || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
                         contentVersion
-                );
+                )
+                || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsSecondDawnRoute(String contentVersion) {
         return SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
                 || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
                         contentVersion
-                );
+                )
+                || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion);
     }
 
     public static boolean supportsSecondDawnAttunement(
             String contentVersion
     ) {
-        return SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(contentVersion);
+        return SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(contentVersion)
+                || UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsUnchartedVerge(String contentVersion) {
+        return UNCHARTED_VERGE_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
+                UNCHARTED_VERGE_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -1039,6 +1109,69 @@ public class StarterExpeditionContent {
                                 inventoryContent,
                                 StarterInventoryContent.DAWN_FRAGMENT_ID,
                                 2
+                        )
+                )
+        );
+    }
+
+    private ExpeditionEventChoiceDefinition unchartedVergeRouteChoice(
+            StarterInventoryContent inventoryContent
+    ) {
+        return new ExpeditionEventChoiceDefinition(
+                UNCHARTED_VERGE_ROUTE_CHOICE_ID,
+                "Пересечь неизведанный рубеж",
+                "Настроить EPIC-секстант на созвездие за вторым рассветом и удержать обратный путь.",
+                "Курс за пределы карты",
+                "Настроенный секстант связал безымянные звёзды в устойчивый маршрут к неизведанному рубежу.",
+                58,
+                32,
+                reward(
+                        inventoryContent,
+                        StarterInventoryContent.ECHO_THREAD_ID,
+                        2
+                ),
+                new ExpeditionChoiceEquipmentRequirement(
+                        StarterEquipmentContent.NAVIGATION_SLOT_ID,
+                        "Навигационный прибор",
+                        inventoryContent.require(
+                                StarterInventoryContent.PRISM_SEXTANT_ID
+                        ),
+                        3,
+                        "Экипируйте настроенный призматический секстант уровня 3, чтобы пересечь неизведанный рубеж."
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> unchartedVergeChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        "deploy-return-beacon",
+                        "Развернуть маяк возврата",
+                        "Закрепить путь домой и отметить первую безопасную точку нового сектора.",
+                        "Маяк на новой карте",
+                        "Пилот развернул опорный маяк и собрал призматическую пыль с границы устойчивого маршрута.",
+                        72,
+                        28,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.PRISM_DUST_ID,
+                                3
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        "follow-living-constellation",
+                        "Последовать за живым созвездием",
+                        "Доверить питомцу звёздный узор, который меняется с каждым шагом.",
+                        "След живого неба",
+                        "Питомец запомнил первый путь нового сектора и вернул свет трёх ещё не открытых рассветов.",
+                        50,
+                        42,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                3
                         )
                 )
         );

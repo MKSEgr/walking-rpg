@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V24 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V25 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -553,6 +553,37 @@ action, verify a level-2 item with all three material stacks projects the
 attunement as `READY`; exact replay must return the original level-3 result.
 Do not roll back to a pre-V24 binary after a level-3 item or EPIC processed
 result has persisted. Disable the action and use a forward fix instead.
+
+## EPIC Sextant uncharted-verge rollout
+
+Flyway V25 stages `chapter-1-v9` inactive and adds one optional node to the
+V8 topology. Deploy and drain every pre-V25 backend before activation. The
+server-owned `cross-uncharted-verge` choice remains absent on v1-v8.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v9",
+  "releaseNotes": "Первая глава: EPIC-секстант открывает неизведанный рубеж за вторым рассветом.",
+  "content": {
+    "contentVersion": "chapter-1-v9",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 25,
+    "topology": "epic-sextant-uncharted-verge-v1"
+  }
+}
+```
+
+Before activation, confirm that a level-2 equipped sextant projects
+`cross-uncharted-verge` as locked with `minimumUpgradeLevel: 3`, while a
+level-3 item projects it as available. Resolve the route and verify the next
+node is `uncharted-verge`; both of its choices must complete the expedition,
+and exact replay must not duplicate XP, bond or materials.
+
+Do not roll back to a pre-V25 binary while any user is at `uncharted-verge`
+or while v9 route results need replay/delivery. Stop activation and use a
+forward fix after the new route has persisted user state.
 
 ## Rollback
 

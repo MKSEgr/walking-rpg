@@ -26,6 +26,7 @@ enum ExpeditionNodeSignalKind {
   resonancePocket,
   spectrumObservatory,
   secondDawnThreshold,
+  unchartedVerge,
   unknown,
 }
 
@@ -62,6 +63,7 @@ abstract final class ExpeditionNodeSignalCatalog {
       'resonance-pocket' => ExpeditionNodeSignalKind.resonancePocket,
       'spectrum-observatory' => ExpeditionNodeSignalKind.spectrumObservatory,
       'second-dawn-threshold' => ExpeditionNodeSignalKind.secondDawnThreshold,
+      'uncharted-verge' => ExpeditionNodeSignalKind.unchartedVerge,
       _ => ExpeditionNodeSignalKind.unknown,
     };
   }
@@ -89,6 +91,7 @@ abstract final class ExpeditionNodeSignalCatalog {
       'horizon-spire' => ExpeditionNodeSignalTone.lumen,
       'spectrum-observatory' => ExpeditionNodeSignalTone.lumen,
       'second-dawn-threshold' => ExpeditionNodeSignalTone.lumen,
+      'uncharted-verge' => ExpeditionNodeSignalTone.lumen,
       _ => ExpeditionNodeSignalTone.neutral,
     };
   }
@@ -324,6 +327,8 @@ class _ExpeditionNodeSignalPainter extends CustomPainter {
         _paintSpectrumObservatory(canvas, size, stroke, fine, fill);
       case ExpeditionNodeSignalKind.secondDawnThreshold:
         _paintSecondDawnThreshold(canvas, size, stroke, fine, fill);
+      case ExpeditionNodeSignalKind.unchartedVerge:
+        _paintUnchartedVerge(canvas, size, stroke, fine, fill);
       case ExpeditionNodeSignalKind.unknown:
         _paintUnknown(canvas, size, fine, fill);
     }
@@ -874,6 +879,48 @@ class _ExpeditionNodeSignalPainter extends CustomPainter {
     canvas.drawLine(_at(size, 0.2, 0.66), _at(size, 0.8, 0.66), fine);
     canvas.drawLine(_at(size, 0.5, 0.66), _at(size, 0.62, 0.4), stroke);
     _dot(canvas, secondDawn, size, 0.052, fill);
+  }
+
+  void _paintUnchartedVerge(
+    Canvas canvas,
+    Size size,
+    Paint stroke,
+    Paint fine,
+    Paint fill,
+  ) {
+    const List<Offset> stars = <Offset>[
+      Offset(0.24, 0.6),
+      Offset(0.4, 0.32),
+      Offset(0.58, 0.46),
+      Offset(0.76, 0.25),
+    ];
+    final Path route = Path()
+      ..moveTo(size.width * stars.first.dx, size.height * stars.first.dy);
+    for (final Offset star in stars.skip(1)) {
+      route.lineTo(size.width * star.dx, size.height * star.dy);
+    }
+    canvas.drawPath(route, stroke);
+    canvas.drawArc(
+      Rect.fromLTRB(
+        size.width * 0.18,
+        size.height * 0.55,
+        size.width * 0.82,
+        size.height * 0.88,
+      ),
+      math.pi,
+      math.pi,
+      false,
+      fine,
+    );
+    for (int index = 0; index < stars.length; index++) {
+      _dot(
+        canvas,
+        _at(size, stars[index].dx, stars[index].dy),
+        size,
+        index == stars.length - 1 ? 0.052 : 0.035,
+        fill,
+      );
+    }
   }
 
   Offset _at(Size size, double x, double y) {

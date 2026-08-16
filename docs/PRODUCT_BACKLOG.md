@@ -470,6 +470,30 @@ visual-mapping tests реализованы. Баланс эпилога тре�
 **Статус:** backend/mobile/Flyway V24, unit/PostgreSQL/migration/parser/widget
 tests реализованы. Стоимость второго улучшения требует beta/economy evidence.
 
+### US-021. Пересечь неизведанный рубеж с EPIC-секстантом
+
+Как пользователь, настроивший секстант на второй рассвет, я хочу применить его
+в экспедиции, чтобы постоянное улучшение открывало новый маршрут и финальное
+решение.
+
+Критерии:
+
+- inactive `chapter-1-v9` добавляет `cross-uncharted-verge` только к
+  `second-dawn-threshold-v1`; v1-v8 сохраняют прежние choices и topology;
+- выбор требует экипированный `prism-sextant` уровня 3, выдаёт
+  `+58 pilot XP`, `+32 pet bond`, `+2 echo-thread` и переводит к optional
+  `uncharted-verge`;
+- `deploy-return-beacon` выдаёт `+72 pilot XP`, `+28 pet bond`,
+  `+3 prism-dust`, а `follow-living-constellation` — `+50 pilot XP`,
+  `+42 pet bond`, `+3 dawn-fragment`; оба завершают экспедицию;
+- Home показывает v9 choice как locked с authoritative level-3 requirement
+  либо available, а event service повторно проверяет его под expedition lock;
+- V25 сохраняет active v8 и существующие EPIC item/upgrade rows; v9
+  активируется только после drain pre-V25 backend instances.
+
+**Статус:** backend/mobile/Flyway V25, unit/PostgreSQL/migration/catalog и
+visual-mapping tests реализованы. Баланс нового рубежа требует beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

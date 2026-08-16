@@ -147,6 +147,25 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeUnchartedVergeOnlyInChapterV9Catalog() {
+        Map<String, Object> unchartedCatalog = publicCatalog(
+                StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION
+        );
+        Map<String, Object> attunementCatalog = publicCatalog(
+                StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v9", unchartedCatalog.get("contentVersion"));
+        assertEquals(25, unchartedCatalog.get("chapterNodes"));
+        assertEquals(24, attunementCatalog.get("chapterNodes"));
+        assertNotEquals(
+                unchartedCatalog.get("catalogDigest"),
+                attunementCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

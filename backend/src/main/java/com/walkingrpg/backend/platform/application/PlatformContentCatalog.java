@@ -319,6 +319,9 @@ public class PlatformContentCatalog {
     }
 
     private int chapterNodeCount(String contentVersion) {
+        if (StarterExpeditionContent.supportsUnchartedVerge(contentVersion)) {
+            return StarterExpeditionContent.UNCHARTED_VERGE_NODE_COUNT;
+        }
         if (StarterExpeditionContent.supportsSecondDawnRoute(contentVersion)) {
             return StarterExpeditionContent.SECOND_DAWN_NODE_COUNT;
         }

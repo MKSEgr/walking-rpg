@@ -60,8 +60,7 @@ public class CraftingService {
                 content,
                 expeditionRepository,
                 eventResolutionRepository,
-                () -> StarterExpeditionContent
-                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
+                () -> StarterExpeditionContent.UNCHARTED_VERGE_CONTENT_VERSION,
                 clock
         );
     }
