@@ -112,6 +112,12 @@ abstract final class EventChoiceSignalCatalog {
     'dawn-meridian-v1::anchor-dawn-flow': EventChoiceSignalKind.chart,
     'dawn-meridian-v1::share-dawn-flow-with-pet':
         EventChoiceSignalKind.companion,
+    'dawn-meridian-v1::cross-first-light-causeway':
+        EventChoiceSignalKind.stabilize,
+    'first-light-causeway-v1::map-first-light-pulse':
+        EventChoiceSignalKind.chart,
+    'first-light-causeway-v1::follow-pets-steady-pace':
+        EventChoiceSignalKind.companion,
   };
 
   static EventChoiceSignalKind kindFor({

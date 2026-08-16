@@ -343,6 +343,30 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeSteadyStepRouteOnlyInChapterV17Catalog() {
+        Map<String, Object> steadyStepCatalog = publicCatalog(
+                StarterExpeditionContent.STEADY_STEP_ROUTE_CONTENT_VERSION
+        );
+        Map<String, Object> energyDisciplineCatalog = publicCatalog(
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v17",
+                steadyStepCatalog.get("contentVersion"));
+        assertEquals(30, steadyStepCatalog.get("chapterNodes"));
+        assertEquals(29, energyDisciplineCatalog.get("chapterNodes"));
+        assertEquals(
+                list(energyDisciplineCatalog, "skills"),
+                list(steadyStepCatalog, "skills")
+        );
+        assertNotEquals(
+                energyDisciplineCatalog.get("catalogDigest"),
+                steadyStepCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

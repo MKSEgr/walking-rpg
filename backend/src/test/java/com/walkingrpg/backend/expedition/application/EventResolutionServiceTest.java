@@ -1590,6 +1590,125 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldRequireSteadyStepAndFinishFirstLightCausewayAfterRollback() {
+        activeContentVersion.set(
+                StarterExpeditionContent.STEADY_STEP_ROUTE_CONTENT_VERSION
+        );
+        var dawnMeridian = content.requireNode(
+                StarterExpeditionContent.DAWN_MERIDIAN_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(dawnMeridian, 58),
+                NOW
+        );
+        EventResolutionCommand routeCommand = command(
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                StarterExpeditionContent.CROSS_FIRST_LIGHT_CAUSEWAY_CHOICE_ID,
+                "cross-first-light-causeway"
+        );
+
+        EventChoiceSkillUnavailableException unavailable = assertThrows(
+                EventChoiceSkillUnavailableException.class,
+                () -> service.resolve(routeCommand, false)
+        );
+
+        assertEquals(PlatformSkillIds.STEADY_STEP,
+                unavailable.requiredSkillId());
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+        assertEquals(
+                ExpeditionProgressStatus.EVENT_READY,
+                expeditionRepository.findState(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().status()
+        );
+
+        EventResolutionService steadyStepService = new EventResolutionService(
+                expeditionRepository,
+                eventResolutionRepository,
+                new ProgressionService(
+                        new InMemoryProgressionRepository(),
+                        new StarterProgressionContent()
+                ),
+                new InventoryService(inventoryRepository),
+                content,
+                equipmentService,
+                userId -> Set.of(PlatformSkillIds.STEADY_STEP),
+                activeContentVersion::get,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        EventResolutionResult route = steadyStepService.resolve(
+                routeCommand,
+                false
+        );
+        EventResolutionResult routeReplay = steadyStepService.resolve(
+                routeCommand,
+                false
+        );
+
+        assertSame(route, routeReplay);
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS,
+                route.expeditionStatus());
+        assertEquals(
+                StarterExpeditionContent.FIRST_LIGHT_CAUSEWAY_NODE_ID,
+                route.nextNode().nodeId()
+        );
+        assertEquals(118, route.pilot().experienceGained());
+        assertEquals(76, route.pet().bondGained());
+        assertEquals(StarterInventoryContent.PRISM_DUST_ID,
+                route.material().itemId());
+        assertEquals(4, route.material().quantityGained());
+
+        activeContentVersion.set(
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        );
+        var firstLightCauseway = content.requireNode(
+                StarterExpeditionContent.FIRST_LIGHT_CAUSEWAY_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(firstLightCauseway, 59),
+                NOW
+        );
+        EventResolutionCommand finaleCommand = command(
+                StarterExpeditionContent.FIRST_LIGHT_CAUSEWAY_EVENT_ID,
+                StarterExpeditionContent.MAP_FIRST_LIGHT_PULSE_CHOICE_ID,
+                "map-first-light-pulse"
+        );
+
+        EventResolutionResult finale = steadyStepService.resolve(
+                finaleCommand,
+                false
+        );
+        EventResolutionResult finaleReplay = steadyStepService.resolve(
+                finaleCommand,
+                false
+        );
+
+        assertSame(finale, finaleReplay);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                finale.expeditionStatus());
+        assertNull(finale.nextNode());
+        assertEquals(144, finale.pilot().experienceGained());
+        assertEquals(72, finale.pet().bondGained());
+        assertEquals(StarterInventoryContent.ION_BLOOM_ID,
+                finale.material().itemId());
+        assertEquals(6, finale.material().quantityGained());
+        assertEquals(6L, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.ION_BLOOM_ID.equals(
+                        item.itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION
