@@ -652,12 +652,40 @@ beta evidence.
 parser/widget и visual-mapping tests реализованы. Ценность позднего применения
 раннего навыка и баланс финалов требуют beta evidence.
 
+### US-028. Стабилизировать Меридиан рассвета с «Дисциплиной энергии»
+
+Как пользователь с открытой «Дисциплиной энергии», я хочу выровнять поток в
+Созвездии памяти, чтобы навык управления ресурсом открывал отдельное
+продолжение поздней экспедиции.
+
+Критерии:
+
+- inactive `chapter-1-v16` добавляет 29-й узел `dawn-meridian`; v1-v15 не
+  проецируют и не принимают новый route choice;
+- `memory-constellation-v1` получает skill-gated
+  `stabilize-dawn-current`; v15 сохраняет два прежних terminal outcome;
+- Home возвращает route в `choices` только при server-owned
+  `energy-discipline`, иначе в `lockedChoices` с `UNLOCKED_SKILL`; event
+  service повторяет проверку до любых mutation;
+- успешный переход выдаёт `+112 XP / +70 bond / 3 ion-bloom`, а событие
+  `dawn-meridian-v1` завершает journey либо за
+  `+132 XP / +64 bond / 5 dawn-fragment`, либо за
+  `+100 XP / +90 bond / 7 echo-thread`;
+- exact replay не дублирует награды, а content rollback v16 → v15 позволяет
+  завершить уже сохранённый 29-й узел;
+- V32 сохраняет active v15 и существующие platform/pet/expedition rows;
+  rollback binary на pre-V32 после сохранения нового node запрещён.
+
+**Статус:** backend/mobile/Flyway V32, unit/PostgreSQL/migration/catalog,
+parser/widget и visual-mapping tests реализованы. Ценность позднего применения
+навыка и баланс финалов требуют beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
 - первая глава из 18 основных узлов и staged optional topology вплоть до
-  `memory-constellation`;
+  `dawn-meridian`;
 - три питомца, active selection, две эволюции, навыки и собственные финальные
   исходы экспедиции;
 - onboarding, задания и достижения;

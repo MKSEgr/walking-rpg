@@ -61,7 +61,7 @@ public class ExpeditionAdvanceService {
                 economyService,
                 content,
                 () -> StarterExpeditionContent
-                        .TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
                 clock
         );
     }

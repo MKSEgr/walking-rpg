@@ -204,10 +204,11 @@ public class PlatformContentCatalog {
             new SkillDefinition(PlatformSkillIds.STEADY_STEP, "Ровный шаг",
                     "Добавляет диагностический бонус к стабильным сериям активности.", 0),
             new SkillDefinition(PlatformSkillIds.TRAIL_MEMORY, "Память маршрута",
-                    "Открывает дополнительное описание пройденных узлов.", 100),
+                    "Сохраняет пройденные узлы и открывает забытые маршруты.", 100),
             new SkillDefinition(PlatformSkillIds.ENERGY_DISCIPLINE,
                     "Дисциплина энергии",
-                    "Показывает недельный бюджет энергии.", 220),
+                    "Показывает недельный бюджет энергии и открывает стабилизацию потоков.",
+                    220),
             new SkillDefinition(PlatformSkillIds.SIGNAL_READER,
                     "Чтение сигналов",
                     "Открывает расширенные сведения и скрытые исходы событий.",
@@ -376,6 +377,11 @@ public class PlatformContentCatalog {
     }
 
     private int chapterNodeCount(String contentVersion) {
+        if (StarterExpeditionContent.supportsEnergyDisciplineRoute(
+                contentVersion
+        )) {
+            return StarterExpeditionContent.ENERGY_DISCIPLINE_ROUTE_NODE_COUNT;
+        }
         if (StarterExpeditionContent.supportsTrailMemoryRoute(
                 contentVersion
         )) {

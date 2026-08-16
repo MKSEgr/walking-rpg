@@ -212,7 +212,22 @@ void main() {
         'entrust-memory-to-pet',
         EventChoiceSignalKind.companion,
       );
-      expect(currentPairCount, 63);
+      expectChoice(
+        'memory-constellation-v1',
+        'stabilize-dawn-current',
+        EventChoiceSignalKind.stabilize,
+      );
+      expectChoice(
+        'dawn-meridian-v1',
+        'anchor-dawn-flow',
+        EventChoiceSignalKind.chart,
+      );
+      expectChoice(
+        'dawn-meridian-v1',
+        'share-dawn-flow-with-pet',
+        EventChoiceSignalKind.companion,
+      );
+      expect(currentPairCount, 66);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

@@ -1468,6 +1468,128 @@ class EventResolutionServiceTest {
     }
 
     @Test
+    void shouldRequireEnergyDisciplineAndFinishDawnMeridianAfterRollback() {
+        activeContentVersion.set(
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        );
+        var memoryConstellation = content.requireNode(
+                StarterExpeditionContent.MEMORY_CONSTELLATION_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(memoryConstellation, 55),
+                NOW
+        );
+        EventResolutionCommand routeCommand = command(
+                StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
+                StarterExpeditionContent.STABILIZE_DAWN_CURRENT_CHOICE_ID,
+                "stabilize-dawn-current"
+        );
+
+        EventChoiceSkillUnavailableException unavailable = assertThrows(
+                EventChoiceSkillUnavailableException.class,
+                () -> service.resolve(routeCommand, false)
+        );
+
+        assertEquals(PlatformSkillIds.ENERGY_DISCIPLINE,
+                unavailable.requiredSkillId());
+        assertTrue(inventoryRepository.findAll("user-1").isEmpty());
+        assertEquals(
+                ExpeditionProgressStatus.EVENT_READY,
+                expeditionRepository.findState(
+                        "user-1",
+                        StarterExpeditionContent.EXPEDITION_ID
+                ).orElseThrow().status()
+        );
+
+        EventResolutionService energyDisciplineService =
+                new EventResolutionService(
+                        expeditionRepository,
+                        eventResolutionRepository,
+                        new ProgressionService(
+                                new InMemoryProgressionRepository(),
+                                new StarterProgressionContent()
+                        ),
+                        new InventoryService(inventoryRepository),
+                        content,
+                        equipmentService,
+                        userId -> Set.of(
+                                PlatformSkillIds.ENERGY_DISCIPLINE
+                        ),
+                        activeContentVersion::get,
+                        Clock.fixed(NOW, ZoneOffset.UTC)
+                );
+
+        EventResolutionResult route = energyDisciplineService.resolve(
+                routeCommand,
+                false
+        );
+        EventResolutionResult routeReplay = energyDisciplineService.resolve(
+                routeCommand,
+                false
+        );
+
+        assertSame(route, routeReplay);
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS,
+                route.expeditionStatus());
+        assertEquals(
+                StarterExpeditionContent.DAWN_MERIDIAN_NODE_ID,
+                route.nextNode().nodeId()
+        );
+        assertEquals(112, route.pilot().experienceGained());
+        assertEquals(70, route.pet().bondGained());
+        assertEquals(StarterInventoryContent.ION_BLOOM_ID,
+                route.material().itemId());
+        assertEquals(3, route.material().quantityGained());
+
+        activeContentVersion.set(
+                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+        );
+        var dawnMeridian = content.requireNode(
+                StarterExpeditionContent.DAWN_MERIDIAN_NODE_ID
+        );
+        expeditionRepository.saveState(
+                "user-1",
+                StarterExpeditionContent.EXPEDITION_ID,
+                readyState(dawnMeridian, 57),
+                NOW
+        );
+        EventResolutionCommand finaleCommand = command(
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                StarterExpeditionContent.ANCHOR_DAWN_FLOW_CHOICE_ID,
+                "anchor-dawn-flow"
+        );
+
+        EventResolutionResult finale = energyDisciplineService.resolve(
+                finaleCommand,
+                false
+        );
+        EventResolutionResult finaleReplay = energyDisciplineService.resolve(
+                finaleCommand,
+                false
+        );
+
+        assertSame(finale, finaleReplay);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                finale.expeditionStatus());
+        assertNull(finale.nextNode());
+        assertEquals(132, finale.pilot().experienceGained());
+        assertEquals(64, finale.pet().bondGained());
+        assertEquals(StarterInventoryContent.DAWN_FRAGMENT_ID,
+                finale.material().itemId());
+        assertEquals(5, finale.material().quantityGained());
+        assertEquals(5L, inventoryRepository.findAll("user-1").stream()
+                .filter(item -> StarterInventoryContent.DAWN_FRAGMENT_ID.equals(
+                        item.itemId()
+                ))
+                .findFirst()
+                .orElseThrow()
+                .quantity());
+    }
+
+    @Test
     void shouldReplayVoidOrchardBranchAfterActivationFallsBack() {
         activeContentVersion.set(
                 StarterExpeditionContent.VOID_ORCHARD_CONTENT_VERSION

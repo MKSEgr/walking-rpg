@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V31 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V32 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -784,6 +784,41 @@ A content rollback from v15 to v14 blocks new memory-route transitions but
 keeps an already persisted `memory-constellation` state completable. Do not
 roll back to a pre-V31 binary after such a state has persisted; return content
 to v14 for new journeys and forward-fix binaries that must read the 28th node.
+
+## Energy Discipline Dawn Meridian rollout
+
+Flyway V32 stages `chapter-1-v16` inactive with a 29th node,
+`dawn-meridian`, without changing active v15 or existing
+platform/pet/expedition state. Deploy and drain every pre-V32 backend before
+activation. V1-v15 retain the two terminal Memory Constellation outcomes and
+cannot accept `stabilize-dawn-current`.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v16",
+  "releaseNotes": "Первая глава: «Дисциплина энергии» стабилизирует путь к Меридиану рассвета.",
+  "content": {
+    "contentVersion": "chapter-1-v16",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 29,
+    "topology": "energy-discipline-dawn-meridian-v1"
+  }
+}
+```
+
+Before activation, verify that v15 users at `memory-constellation` see only
+two terminal outcomes. Activate v16 and compare otherwise identical users
+with and without `energy-discipline`: Home must project the new route as
+AVAILABLE and LOCKED/UNLOCKED_SKILL respectively. Resolve the available route,
+complete both `dawn-meridian` outcomes in separate journeys and replay
+commands without duplicate rewards.
+
+A content rollback from v16 to v15 blocks new Dawn Meridian transitions but
+keeps an already persisted `dawn-meridian` state completable. Do not roll back
+to a pre-V32 binary after such a state has persisted; return content to v15 for
+new journeys and forward-fix binaries that must read the 29th node.
 
 ## Rollback
 

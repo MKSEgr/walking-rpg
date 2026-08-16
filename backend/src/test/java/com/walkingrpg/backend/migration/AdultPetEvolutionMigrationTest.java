@@ -44,7 +44,7 @@ class AdultPetEvolutionMigrationTest {
                 .load();
         flyway.migrate();
 
-        assertEquals("31", flyway.info().current().getVersion().getVersion());
+        assertEquals("32", flyway.info().current().getVersion().getVersion());
         try (Connection connection = connection();
              Statement statement = connection.createStatement()) {
             assertEquals(1, scalar(statement, """
