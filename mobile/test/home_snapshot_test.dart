@@ -450,18 +450,18 @@ void main() {
   });
 
   test('adult pet requirement preserves authoritative evolution stage', () {
-    final HomeChoiceRequirement requirement =
-        HomeChoiceRequirement.fromJson(<String, dynamic>{
-          'type': 'ACTIVE_PET',
-          'slotId': 'ACTIVE_PET',
-          'slotName': 'Активный питомец',
-          'itemId': 'spark-v1',
-          'itemName': 'Искра-звездочёт',
-          'minimumUpgradeLevel': 1,
-          'minimumEvolutionStage': 2,
-          'description':
-              'Выберите взрослую Искру-звездочёта активным питомцем.',
-        });
+    final HomeChoiceRequirement requirement = HomeChoiceRequirement.fromJson(
+      <String, dynamic>{
+        'type': 'ACTIVE_PET',
+        'slotId': 'ACTIVE_PET',
+        'slotName': 'Активный питомец',
+        'itemId': 'spark-v1',
+        'itemName': 'Искра-звездочёт',
+        'minimumUpgradeLevel': 1,
+        'minimumEvolutionStage': 2,
+        'description': 'Выберите взрослую Искру-звездочёта активным питомцем.',
+      },
+    );
 
     expect(requirement.minimumEvolutionStage, 2);
     expect(requirement.itemName, 'Искра-звездочёт');

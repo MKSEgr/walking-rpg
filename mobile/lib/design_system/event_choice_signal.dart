@@ -91,8 +91,7 @@ abstract final class EventChoiceSignalCatalog {
         EventChoiceSignalKind.companion,
     'uncharted-verge-v1::root-constellation-gate':
         EventChoiceSignalKind.stabilize,
-    'uncharted-verge-v1::read-constellation-gate':
-        EventChoiceSignalKind.echo,
+    'uncharted-verge-v1::read-constellation-gate': EventChoiceSignalKind.echo,
     'constellation-sanctuary-v1::anchor-constellation-sanctuary':
         EventChoiceSignalKind.chart,
     'constellation-sanctuary-v1::carry-sanctuary-song':
