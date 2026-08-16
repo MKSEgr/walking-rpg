@@ -4,9 +4,11 @@ import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -77,6 +79,26 @@ public class JdbcPlatformRepository implements PlatformRepository {
                 WHERE user_id = ?
                 """, (resultSet, rowNumber) -> readState(resultSet.getString(1)), userId);
         return states.stream().findFirst();
+    }
+
+    @Override
+    public Set<String> findUnlockedSkills(String userId) {
+        List<String> skills = jdbcTemplate.queryForList("""
+                SELECT unlocked_skill.skill_id
+                FROM roadmap_user_state state
+                CROSS JOIN LATERAL jsonb_array_elements_text(
+                    CASE
+                        WHEN jsonb_typeof(
+                            state.state_json -> 'unlockedSkills'
+                        ) = 'array'
+                        THEN state.state_json -> 'unlockedSkills'
+                        ELSE '[]'::jsonb
+                    END
+                ) AS unlocked_skill(skill_id)
+                WHERE state.user_id = ?
+                ORDER BY unlocked_skill.skill_id
+                """, String.class, userId);
+        return Set.copyOf(new LinkedHashSet<>(skills));
     }
 
     @Override

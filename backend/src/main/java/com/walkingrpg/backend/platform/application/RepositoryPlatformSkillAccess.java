@@ -2,7 +2,6 @@ package com.walkingrpg.backend.platform.application;
 
 import java.util.Set;
 
-import com.walkingrpg.backend.platform.domain.PlatformUserState;
 import com.walkingrpg.backend.platform.infrastructure.PlatformRepository;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +16,6 @@ public class RepositoryPlatformSkillAccess implements PlatformSkillAccess {
 
     @Override
     public Set<String> unlockedSkills(String userId) {
-        return repository.findState(userId)
-                .map(PlatformUserState::unlockedSkills)
-                .orElseGet(Set::of);
+        return repository.findUnlockedSkills(userId);
     }
 }
