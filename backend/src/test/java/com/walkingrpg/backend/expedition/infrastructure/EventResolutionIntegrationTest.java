@@ -1450,6 +1450,182 @@ class EventResolutionIntegrationTest {
     }
 
     @Test
+    void shouldGateAndCompleteEnergyDisciplineRouteExactlyOnce() {
+        String userId = "energy-discipline-route-user";
+        platformService.execute(userId, new PlatformCommandRequest(
+                "SELECT_PET",
+                "select-pet-before-energy-discipline-route",
+                Map.of("petId", "spark-v1")
+        ));
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE roadmap_user_state
+                SET state_json = jsonb_set(
+                    state_json,
+                    '{seasonXp}',
+                    '220'::jsonb
+                )
+                WHERE user_id = ?
+                """, userId));
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v16'
+                """));
+        jdbcTemplate.update("""
+                INSERT INTO expedition_progress (
+                    user_id, expedition_id, current_node_id,
+                    progress_energy, required_energy, status,
+                    unlocked_event_id, version, created_at, updated_at
+                ) VALUES (?, ?, ?, 95, 95, 'EVENT_READY', ?, 55, now(), now())
+                """,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.MEMORY_CONSTELLATION_NODE_ID,
+                StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID
+        );
+
+        HomeSnapshotResponse lockedHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        var lockedChoice = lockedHome.expedition().unlockedEvent()
+                .lockedChoices().stream()
+                .filter(choice -> StarterExpeditionContent
+                        .STABILIZE_DAWN_CURRENT_CHOICE_ID.equals(
+                                choice.choiceId()
+                        ))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
+                lockedHome.contentVersion()
+        );
+        assertEquals("UNLOCKED_SKILL", lockedChoice.requirement().type());
+        assertEquals(PlatformSkillIds.ENERGY_DISCIPLINE,
+                lockedChoice.requirement().itemId());
+        EventResolutionCommand routeCommand = command(
+                userId,
+                StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
+                StarterExpeditionContent.STABILIZE_DAWN_CURRENT_CHOICE_ID,
+                "reject-locked-energy-discipline-route"
+        );
+        EventChoiceSkillUnavailableException unavailable = assertThrows(
+                EventChoiceSkillUnavailableException.class,
+                () -> eventResolutionService.resolve(routeCommand, false)
+        );
+        assertEquals(PlatformSkillIds.ENERGY_DISCIPLINE,
+                unavailable.requiredSkillId());
+        assertEquals(0, rowCount("processed_event_resolution"));
+        assertEquals(0, rowCount("inventory_stack"));
+
+        platformService.execute(userId, new PlatformCommandRequest(
+                "UNLOCK_SKILL",
+                "unlock-energy-discipline-before-route",
+                Map.of("skillId", PlatformSkillIds.ENERGY_DISCIPLINE)
+        ));
+        HomeSnapshotResponse unlockedHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        assertTrue(unlockedHome.expedition().unlockedEvent().choices().stream()
+                .anyMatch(choice -> StarterExpeditionContent
+                        .STABILIZE_DAWN_CURRENT_CHOICE_ID.equals(
+                                choice.choiceId()
+                        )));
+
+        EventResolutionResult route = eventResolutionService.resolve(
+                routeCommand,
+                false
+        );
+        EventResolutionResult routeReplay = eventResolutionService.resolve(
+                routeCommand,
+                false
+        );
+
+        assertEquals(route, routeReplay);
+        assertEquals(ExpeditionProgressStatus.IN_PROGRESS,
+                route.expeditionStatus());
+        assertEquals(
+                StarterExpeditionContent.DAWN_MERIDIAN_NODE_ID,
+                route.nextNode().nodeId()
+        );
+        assertEquals(112, route.pilot().experienceGained());
+        assertEquals(70, route.pet().bondGained());
+        assertEquals(3L,
+                inventoryQuantity(StarterInventoryContent.ION_BLOOM_ID));
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE expedition_progress
+                SET progress_energy = required_energy,
+                    status = 'EVENT_READY',
+                    unlocked_event_id = ?,
+                    version = version + 1,
+                    updated_at = now()
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                  AND current_node_id = ?
+                """,
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                userId,
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.DAWN_MERIDIAN_NODE_ID
+        ));
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        assertEquals(1, jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = 'chapter-1-v15'
+                """));
+
+        HomeSnapshotResponse dawnHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        assertEquals(
+                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
+                dawnHome.contentVersion()
+        );
+        assertEquals(
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                dawnHome.expedition().unlockedEvent().eventId()
+        );
+        assertEquals(2,
+                dawnHome.expedition().unlockedEvent().choices().size());
+        EventResolutionCommand finaleCommand = command(
+                userId,
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                StarterExpeditionContent.ANCHOR_DAWN_FLOW_CHOICE_ID,
+                "anchor-dawn-flow-after-rollback"
+        );
+
+        EventResolutionResult finale = eventResolutionService.resolve(
+                finaleCommand,
+                false
+        );
+        EventResolutionResult finaleReplay = eventResolutionService.resolve(
+                finaleCommand,
+                false
+        );
+
+        assertEquals(finale, finaleReplay);
+        assertEquals(ExpeditionProgressStatus.COMPLETED,
+                finale.expeditionStatus());
+        assertNull(finale.nextNode());
+        assertEquals(132, finale.pilot().experienceGained());
+        assertEquals(64, finale.pet().bondGained());
+        assertEquals(5L,
+                inventoryQuantity(StarterInventoryContent.DAWN_FRAGMENT_ID));
+        assertEquals(2, rowCount("processed_event_resolution"));
+        assertEquals(1, rowCount("pilot_progress"));
+        assertEquals(1, rowCount("pet_progress"));
+    }
+
+    @Test
     void shouldSerializeEventRewardWithConcurrentPetSelection() throws Exception {
         String userId = "concurrent-pet-user";
         platformService.execute(userId, new PlatformCommandRequest(

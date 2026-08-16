@@ -82,7 +82,7 @@ class HomeServiceTest {
         assertEquals(0, snapshot.pet().evolutionStage());
         assertEquals(
                 StarterExpeditionContent
-                        .TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
                 snapshot.contentVersion()
         );
         assertEquals("starter-expedition-v1", snapshot.expedition().expeditionId());

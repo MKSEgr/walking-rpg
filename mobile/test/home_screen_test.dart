@@ -1441,6 +1441,70 @@ void main() {
     }
   });
 
+  testWidgets('Energy Discipline route shows the server skill lock reason', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(loader: () async => _energyDisciplineRouteLocked()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder choice = find.byKey(
+      const Key('home-event-choice-stabilize-dawn-current'),
+    );
+    await _scrollAboveStickyAction(tester, choice);
+
+    expect(tester.widget<FilledButton>(choice).onPressed, isNull);
+    expect(
+      find.byKey(const Key('home-choice-locked-stabilize-dawn-current')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Откройте навык «Дисциплина энергии», чтобы стабилизировать поток рассвета.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const Key(
+          'event-choice-signal-memory-constellation-v1-'
+          'stabilize-dawn-current-stabilize-muted',
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('dawn meridian renders both terminal route signals', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: HomeScreen(loader: () async => _dawnMeridianReady())),
+    );
+    await tester.pumpAndSettle();
+
+    for (final (String choiceId, String signalKind) in <(String, String)>[
+      ('anchor-dawn-flow', 'chart'),
+      ('share-dawn-flow-with-pet', 'companion'),
+    ]) {
+      final Finder choice = find.byKey(Key('home-event-choice-$choiceId'));
+      await _scrollAboveStickyAction(tester, choice);
+      expect(tester.widget<FilledButton>(choice).onPressed, isNotNull);
+      expect(
+        find.byKey(
+          Key(
+            'event-choice-signal-dawn-meridian-v1-'
+            '$choiceId-$signalKind-active',
+          ),
+        ),
+        findsOneWidget,
+      );
+    }
+  });
+
   testWidgets(
     'home screen keeps result visible until acknowledgement and reloads',
     (WidgetTester tester) async {
@@ -2683,6 +2747,130 @@ HomeSnapshot _memoryConstellationReady() {
     petName: 'Искра-звездочёт',
     petLevel: 4,
     petBond: 284,
+  );
+}
+
+HomeSnapshot _energyDisciplineRouteLocked() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 12,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v16',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'memory-constellation',
+    currentNodeName: 'Созвездие памяти',
+    expeditionProgress: 95,
+    requiredEnergy: 95,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 55,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'memory-constellation-v1',
+      title: 'Маршрут, который помнит шаги',
+      summary: 'Поток рассвета можно выровнять в новый меридиан.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'stabilize-dawn-current',
+          title: 'Стабилизировать поток рассвета',
+          description: 'Выровнять импульсы созвездия в новый меридиан.',
+          pilotExperienceReward: 112,
+          petBondReward: 70,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'ion-bloom',
+            itemName: 'Ионный цветок',
+            quantity: 3,
+          ),
+          availability: 'LOCKED',
+          requirement: HomeChoiceRequirement(
+            type: 'UNLOCKED_SKILL',
+            slotId: 'PILOT_SKILL',
+            slotName: 'Навык пилота',
+            itemId: 'energy-discipline',
+            itemName: 'Дисциплина энергии',
+            description:
+                'Откройте навык «Дисциплина энергии», чтобы стабилизировать поток рассвета.',
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 5,
+    pilotCurrentExperience: 580,
+    pilotNextLevelExperience: 1000,
+    petName: 'Искра-звездочёт',
+    petLevel: 4,
+    petBond: 284,
+  );
+}
+
+HomeSnapshot _dawnMeridianReady() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 13,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v15',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'dawn-meridian',
+    currentNodeName: 'Меридиан рассвета',
+    expeditionProgress: 100,
+    requiredEnergy: 100,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 57,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'dawn-meridian-v1',
+      title: 'Ритм между шагами',
+      summary: 'Поток рассвета отвечает на движение отряда.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'anchor-dawn-flow',
+          title: 'Закрепить поток в маяках',
+          description: 'Распределить импульс между опорными точками.',
+          pilotExperienceReward: 132,
+          petBondReward: 64,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'dawn-fragment',
+            itemName: 'Фрагмент рассвета',
+            quantity: 5,
+          ),
+        ),
+        HomeEventChoice(
+          choiceId: 'share-dawn-flow-with-pet',
+          title: 'Разделить поток с питомцем',
+          description: 'Доверить питомцу живой ритм меридиана.',
+          pilotExperienceReward: 100,
+          petBondReward: 90,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'echo-thread',
+            itemName: 'Нить эха',
+            quantity: 7,
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 5,
+    pilotCurrentExperience: 692,
+    pilotNextLevelExperience: 1000,
+    petName: 'Искра-звездочёт',
+    petLevel: 4,
+    petBond: 354,
   );
 }
 

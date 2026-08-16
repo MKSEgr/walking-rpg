@@ -51,7 +51,7 @@ class DemoHomeServiceTest {
         assertEquals(NOW, snapshot.serverTime());
         assertEquals(
                 StarterExpeditionContent
-                        .TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
                 snapshot.contentVersion()
         );
         assertNotNull(snapshot.pilot());

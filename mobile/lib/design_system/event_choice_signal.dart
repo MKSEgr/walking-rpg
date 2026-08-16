@@ -107,6 +107,11 @@ abstract final class EventChoiceSignalCatalog {
     'memory-constellation-v1::archive-return-path': EventChoiceSignalKind.chart,
     'memory-constellation-v1::entrust-memory-to-pet':
         EventChoiceSignalKind.companion,
+    'memory-constellation-v1::stabilize-dawn-current':
+        EventChoiceSignalKind.stabilize,
+    'dawn-meridian-v1::anchor-dawn-flow': EventChoiceSignalKind.chart,
+    'dawn-meridian-v1::share-dawn-flow-with-pet':
+        EventChoiceSignalKind.companion,
   };
 
   static EventChoiceSignalKind kindFor({

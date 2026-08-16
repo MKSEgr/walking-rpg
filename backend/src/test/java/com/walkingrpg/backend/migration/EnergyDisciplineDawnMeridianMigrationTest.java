@@ -16,13 +16,13 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers
-class SignalReaderSanctuaryChoiceMigrationTest {
+class EnergyDisciplineDawnMeridianMigrationTest {
 
     @Container
     static final PostgreSQLContainer POSTGRES = PostgresTestContainer.create();
 
     @Test
-    void shouldStageV13WithoutReplacingV12OrChangingPilotJourney()
+    void shouldStageV16WithoutReplacingV15OrChangingMemoryJourney()
             throws Exception {
         Flyway.configure()
                 .dataSource(
@@ -30,10 +30,10 @@ class SignalReaderSanctuaryChoiceMigrationTest {
                         POSTGRES.getUsername(),
                         POSTGRES.getPassword()
                 )
-                .target(MigrationVersion.fromVersion("28"))
+                .target(MigrationVersion.fromVersion("31"))
                 .load()
                 .migrate();
-        seedV28State();
+        seedV31State();
 
         Flyway flyway = Flyway.configure()
                 .dataSource(
@@ -50,53 +50,51 @@ class SignalReaderSanctuaryChoiceMigrationTest {
             assertEquals(1, scalar(statement, """
                     SELECT count(*)
                     FROM content_release
-                    WHERE content_version = 'chapter-1-v13'
+                    WHERE content_version = 'chapter-1-v16'
                       AND NOT is_active
                       AND activated_at IS NULL
-                      AND content_json ->> 'nodeCount' = '26'
+                      AND content_json ->> 'nodeCount' = '29'
                       AND content_json ->> 'topology' =
-                          'signal-reader-sanctuary-choice-v1'
+                          'energy-discipline-dawn-meridian-v1'
                     """));
             assertEquals(1, scalar(statement, """
                     SELECT count(*)
                     FROM content_release
-                    WHERE content_version = 'chapter-1-v12'
+                    WHERE content_version = 'chapter-1-v15'
                       AND is_active
                     """));
             assertEquals(1, scalar(statement, """
                     SELECT count(*)
                     FROM roadmap_user_state
-                    WHERE user_id = 'signal-reader-migration-user'
-                      AND state_json -> 'unlockedSkills' ? 'signal-reader'
-                      AND state_json ->> 'seasonXp' = '360'
-                      AND version = 9
+                    WHERE user_id = 'energy-discipline-migration-user'
+                      AND state_json -> 'unlockedSkills' ? 'energy-discipline'
+                      AND state_json ->> 'seasonXp' = '220'
+                      AND version = 11
                     """));
             assertEquals(1, scalar(statement, """
                     SELECT count(*)
                     FROM pilot_progress
-                    WHERE user_id = 'signal-reader-migration-user'
+                    WHERE user_id = 'energy-discipline-migration-user'
                       AND pilot_id = 'navigator-v1'
-                      AND level = 4
-                      AND current_experience = 380
-                      AND version = 6
+                      AND current_experience = 596
+                      AND version = 8
                     """));
             assertEquals(1, scalar(statement, """
                     SELECT count(*)
                     FROM pet_progress
-                    WHERE user_id = 'signal-reader-migration-user'
+                    WHERE user_id = 'energy-discipline-migration-user'
                       AND pet_id = 'spark-v1'
-                      AND level = 3
-                      AND bond = 170
-                      AND version = 7
+                      AND bond = 304
+                      AND version = 9
                     """));
             assertEquals(1, scalar(statement, """
                     SELECT count(*)
                     FROM expedition_progress
-                    WHERE user_id = 'signal-reader-migration-user'
-                      AND current_node_id = 'constellation-sanctuary'
+                    WHERE user_id = 'energy-discipline-migration-user'
+                      AND current_node_id = 'memory-constellation'
                       AND status = 'EVENT_READY'
-                      AND unlocked_event_id = 'constellation-sanctuary-v1'
-                      AND version = 51
+                      AND unlocked_event_id = 'memory-constellation-v1'
+                      AND version = 55
                     """));
             assertEquals(1, scalar(statement, """
                     SELECT count(*)
@@ -106,20 +104,20 @@ class SignalReaderSanctuaryChoiceMigrationTest {
         }
     }
 
-    private void seedV28State() throws Exception {
+    private void seedV31State() throws Exception {
         try (Connection connection = connection();
              Statement statement = connection.createStatement()) {
             statement.executeUpdate("""
                     INSERT INTO app_user (user_id, created_at, last_seen_at)
-                    VALUES ('signal-reader-migration-user', now(), now())
+                    VALUES ('energy-discipline-migration-user', now(), now())
                     """);
             statement.executeUpdate("""
                     INSERT INTO roadmap_user_state (
                         user_id, state_json, version, created_at, updated_at
                     ) VALUES (
-                        'signal-reader-migration-user',
-                        '{"seasonXp":360,"unlockedSkills":["signal-reader"]}'::jsonb,
-                        9, now(), now()
+                        'energy-discipline-migration-user',
+                        '{"seasonXp":220,"unlockedSkills":["energy-discipline"]}'::jsonb,
+                        11, now(), now()
                     )
                     """);
             statement.executeUpdate("""
@@ -127,8 +125,8 @@ class SignalReaderSanctuaryChoiceMigrationTest {
                         user_id, pilot_id, level, current_experience,
                         next_level_experience, version, created_at, updated_at
                     ) VALUES (
-                        'signal-reader-migration-user', 'navigator-v1', 4, 380,
-                        640, 6, now(), now()
+                        'energy-discipline-migration-user', 'navigator-v1', 5,
+                        596, 800, 8, now(), now()
                     )
                     """);
             statement.executeUpdate("""
@@ -136,8 +134,8 @@ class SignalReaderSanctuaryChoiceMigrationTest {
                         user_id, pet_id, level, bond,
                         version, created_at, updated_at
                     ) VALUES (
-                        'signal-reader-migration-user', 'spark-v1', 3, 170,
-                        7, now(), now()
+                        'energy-discipline-migration-user', 'spark-v1', 4, 304,
+                        9, now(), now()
                     )
                     """);
             statement.executeUpdate("""
@@ -146,10 +144,10 @@ class SignalReaderSanctuaryChoiceMigrationTest {
                         progress_energy, required_energy, status,
                         unlocked_event_id, version, created_at, updated_at
                     ) VALUES (
-                        'signal-reader-migration-user',
-                        'starter-expedition-v1', 'constellation-sanctuary',
-                        80, 80, 'EVENT_READY', 'constellation-sanctuary-v1',
-                        51, now(), now()
+                        'energy-discipline-migration-user',
+                        'starter-expedition-v1', 'memory-constellation',
+                        95, 95, 'EVENT_READY',
+                        'memory-constellation-v1', 55, now(), now()
                     )
                     """);
             statement.executeUpdate(
@@ -159,7 +157,7 @@ class SignalReaderSanctuaryChoiceMigrationTest {
                     UPDATE content_release
                     SET is_active = true,
                         activated_at = COALESCE(activated_at, now())
-                    WHERE content_version = 'chapter-1-v12'
+                    WHERE content_version = 'chapter-1-v15'
                     """);
         }
     }

@@ -114,7 +114,7 @@ public class EventResolutionService {
                 equipmentService,
                 PlatformSkillAccess.none(),
                 () -> StarterExpeditionContent
-                        .TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
                 clock
         );
     }
@@ -142,7 +142,7 @@ public class EventResolutionService {
                 ),
                 PlatformSkillAccess.none(),
                 () -> StarterExpeditionContent
-                        .TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
                 clock
         );
     }

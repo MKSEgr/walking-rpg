@@ -71,6 +71,10 @@ class StarterExpeditionContentTest {
                 () -> StarterExpeditionContent
                         .TRAIL_MEMORY_ROUTE_CONTENT_VERSION
         );
+        String chapterV16 = content.activeContentVersion(
+                () -> StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -116,6 +120,11 @@ class StarterExpeditionContentTest {
         assertEquals(
                 StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
                 chapterV15
+        );
+        assertEquals(
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
+                chapterV16
         );
         assertEquals(1, activationReads.get());
         assertEquals(
@@ -305,6 +314,15 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsTrailMemoryRoute(
                 chapterV15
         ));
+        assertTrue(StarterExpeditionContent.supportsTrailMemoryRoute(
+                chapterV16
+        ));
+        assertFalse(StarterExpeditionContent.supportsEnergyDisciplineRoute(
+                chapterV15
+        ));
+        assertTrue(StarterExpeditionContent.supportsEnergyDisciplineRoute(
+                chapterV16
+        ));
         assertEquals(2, content.eventChoices(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 chapterV12
@@ -319,7 +337,7 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
-                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_NODE_COUNT,
+                StarterExpeditionContent.ENERGY_DISCIPLINE_ROUTE_NODE_COUNT,
                 content.nodes().size()
         );
     }
@@ -614,6 +632,50 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent
                         .SIGNAL_READER_SECRET_ROUTE_CONTENT_VERSION
         ).size());
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
+                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+        ).size());
+        assertEquals(3, content.eventChoices(
+                StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        ).size());
+        assertThrows(
+                EventResolutionValidationException.class,
+                () -> content.requireChoice(
+                        StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
+                        StarterExpeditionContent.STABILIZE_DAWN_CURRENT_CHOICE_ID,
+                        StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+                )
+        );
+        assertEquals(
+                PlatformSkillIds.ENERGY_DISCIPLINE,
+                content.requireChoice(
+                        StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
+                        StarterExpeditionContent.STABILIZE_DAWN_CURRENT_CHOICE_ID,
+                        StarterExpeditionContent
+                                .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+                ).skillRequirement().skillId()
+        );
+        assertEquals(
+                StarterExpeditionContent.DAWN_MERIDIAN_NODE_ID,
+                content.nextNodeAfterEvent(
+                        StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
+                        StarterExpeditionContent.STABILIZE_DAWN_CURRENT_CHOICE_ID,
+                        StarterExpeditionContent
+                                .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+                ).orElseThrow().currentNodeId()
+        );
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+        ).size());
+        assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                StarterExpeditionContent.ANCHOR_DAWN_FLOW_CHOICE_ID,
+                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+        ).isEmpty());
         assertTrue(content.nextNodeAfterEvent(
                 StarterExpeditionContent.MEMORY_CONSTELLATION_EVENT_ID,
                 StarterExpeditionContent.ENTRUST_MEMORY_TO_PET_CHOICE_ID,

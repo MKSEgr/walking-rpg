@@ -611,6 +611,19 @@ memory-constellation-v1 (chapter-1-v15)
   entrust-memory-to-pet
                        → +92 pilot XP, +82 pet bond, +6 echo-thread,
                          завершение экспедиции
+
+memory-constellation-v1 (additive chapter-1-v16 choice)
+  stabilize-dawn-current
+                       → требует открытый навык energy-discipline,
+                         +112 pilot XP, +70 pet bond, +3 ion-bloom,
+                         переход к dawn-meridian
+
+dawn-meridian-v1 (chapter-1-v16)
+  anchor-dawn-flow     → +132 pilot XP, +64 pet bond, +5 dawn-fragment,
+                         завершение экспедиции
+  share-dawn-flow-with-pet
+                       → +100 pilot XP, +90 pet bond, +7 echo-thread,
+                         завершение экспедиции
 ```
 
 До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses
@@ -623,6 +636,9 @@ expedition mutation и завершает journey. Active v14 выполняет
 но продолжает journey в `hidden-signal-observatory`; v1-v13 не могут начать
 новый маршрут. Active v15 дополнительно проверяет `trail-memory` перед
 переходом в `memory-constellation`; v1-v14 не принимают новый choice ID.
+Active v16 проверяет `energy-discipline` перед переходом в `dawn-meridian`;
+v1-v15 сохраняют два terminal outcome Созвездия памяти и не принимают новый
+choice ID.
 
 Response второго события:
 

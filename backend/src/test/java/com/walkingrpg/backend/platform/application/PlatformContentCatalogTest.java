@@ -319,6 +319,30 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldExposeEnergyDisciplineRouteOnlyInChapterV16Catalog() {
+        Map<String, Object> energyDisciplineCatalog = publicCatalog(
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        );
+        Map<String, Object> trailMemoryCatalog = publicCatalog(
+                StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v16",
+                energyDisciplineCatalog.get("contentVersion"));
+        assertEquals(29, energyDisciplineCatalog.get("chapterNodes"));
+        assertEquals(28, trailMemoryCatalog.get("chapterNodes"));
+        assertEquals(
+                list(trailMemoryCatalog, "skills"),
+                list(energyDisciplineCatalog, "skills")
+        );
+        assertNotEquals(
+                trailMemoryCatalog.get("catalogDigest"),
+                energyDisciplineCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

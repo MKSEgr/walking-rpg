@@ -162,6 +162,59 @@ void main() {
     expect(route.requirement?.itemId, 'trail-memory');
   });
 
+  test('chapter v16 maps the locked Energy Discipline route generically', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['contentVersion'] = 'chapter-1-v16';
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['currentNodeId'] = 'memory-constellation'
+      ..['currentNode'] = 'Созвездие памяти'
+      ..['progress'] = 95
+      ..['requiredEnergy'] = 95
+      ..['version'] = 55
+      ..['unlockedEvent'] = <String, dynamic>{
+        'eventId': 'memory-constellation-v1',
+        'title': 'Маршрут, который помнит шаги',
+        'summary': 'Поток рассвета можно выровнять в новый меридиан.',
+        'status': 'READY',
+        'choices': <Map<String, dynamic>>[],
+        'lockedChoices': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'choiceId': 'stabilize-dawn-current',
+            'title': 'Стабилизировать поток рассвета',
+            'description': 'Выровнять импульсы созвездия в новый меридиан.',
+            'pilotExperienceReward': 112,
+            'petBondReward': 70,
+            'materialReward': <String, dynamic>{
+              'itemId': 'ion-bloom',
+              'itemName': 'Ионный цветок',
+              'quantity': 3,
+            },
+            'availability': 'LOCKED',
+            'requirement': <String, dynamic>{
+              'type': 'UNLOCKED_SKILL',
+              'slotId': 'PILOT_SKILL',
+              'slotName': 'Навык пилота',
+              'itemId': 'energy-discipline',
+              'itemName': 'Дисциплина энергии',
+              'description':
+                  'Откройте навык «Дисциплина энергии», чтобы стабилизировать поток рассвета.',
+            },
+          },
+        ],
+      };
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+    final HomeEventChoice route = snapshot.unlockedEvent!.choices.single;
+
+    expect(snapshot.contentVersion, 'chapter-1-v16');
+    expect(route.choiceId, 'stabilize-dawn-current');
+    expect(route.isAvailable, isFalse);
+    expect(route.requirement?.type, 'UNLOCKED_SKILL');
+    expect(route.requirement?.itemId, 'energy-discipline');
+  });
+
   test('legacy response keeps companion identity unknown', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> pet = response['pet'] as Map<String, dynamic>;

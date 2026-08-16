@@ -47,6 +47,8 @@ public class StarterExpeditionContent {
             "chapter-1-v14";
     public static final String TRAIL_MEMORY_ROUTE_CONTENT_VERSION =
             "chapter-1-v15";
+    public static final String ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION =
+            "chapter-1-v16";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -58,6 +60,7 @@ public class StarterExpeditionContent {
     public static final int ADULT_PET_FRONTIER_NODE_COUNT = 26;
     public static final int SIGNAL_READER_SECRET_ROUTE_NODE_COUNT = 27;
     public static final int TRAIL_MEMORY_ROUTE_NODE_COUNT = 28;
+    public static final int ENERGY_DISCIPLINE_ROUTE_NODE_COUNT = 29;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -145,6 +148,14 @@ public class StarterExpeditionContent {
             "archive-return-path";
     public static final String ENTRUST_MEMORY_TO_PET_CHOICE_ID =
             "entrust-memory-to-pet";
+    public static final String STABILIZE_DAWN_CURRENT_CHOICE_ID =
+            "stabilize-dawn-current";
+    public static final String DAWN_MERIDIAN_NODE_ID = "dawn-meridian";
+    public static final String DAWN_MERIDIAN_EVENT_ID = "dawn-meridian-v1";
+    public static final String ANCHOR_DAWN_FLOW_CHOICE_ID =
+            "anchor-dawn-flow";
+    public static final String SHARE_DAWN_FLOW_WITH_PET_CHOICE_ID =
+            "share-dawn-flow-with-pet";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
 
@@ -217,7 +228,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
+                    ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -563,6 +574,38 @@ public class StarterExpeditionContent {
                 memoryConstellationDefinition
         );
 
+        NodeSpec dawnMeridianSpec = new NodeSpec(
+                DAWN_MERIDIAN_NODE_ID,
+                "Меридиан рассвета",
+                100,
+                DAWN_MERIDIAN_EVENT_ID,
+                "Ритм между шагами",
+                "Созвездие памяти выпустило поток рассвета. Его можно закрепить в маяках или разделить с живым проводником."
+        );
+        ExpeditionDefinition dawnMeridianDefinition = definition(
+                dawnMeridianSpec
+        );
+        definitions.add(dawnMeridianDefinition);
+        byId.put(
+                dawnMeridianDefinition.currentNodeId(),
+                dawnMeridianDefinition
+        );
+        byEvent.put(
+                dawnMeridianDefinition.event().eventId(),
+                dawnMeridianDefinition
+        );
+        choices.put(
+                DAWN_MERIDIAN_EVENT_ID,
+                dawnMeridianChoices(inventoryContent)
+        );
+        choiceNext.put(
+                new EventChoiceKey(
+                        MEMORY_CONSTELLATION_EVENT_ID,
+                        STABILIZE_DAWN_CURRENT_CHOICE_ID
+                ),
+                dawnMeridianDefinition
+        );
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -608,7 +651,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+                ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -650,7 +693,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+                ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -683,7 +726,7 @@ public class StarterExpeditionContent {
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
         return eventChoices(
                 eventId,
-                TRAIL_MEMORY_ROUTE_CONTENT_VERSION
+                ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -804,6 +847,14 @@ public class StarterExpeditionContent {
                             .equals(choice.choiceId()))
                     .toList();
         }
+        if (MEMORY_CONSTELLATION_EVENT_ID.equals(eventId)
+                && !supportsEnergyDisciplineRoute(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !STABILIZE_DAWN_CURRENT_CHOICE_ID.equals(
+                            choice.choiceId()
+                    ))
+                    .toList();
+        }
         return choices;
     }
 
@@ -820,7 +871,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return TRAIL_MEMORY_ROUTE_CONTENT_VERSION;
+        return ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -829,6 +880,11 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                activeContentVersion
+        )) {
+            return ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION;
+        }
         if (TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(activeContentVersion)) {
             return TRAIL_MEMORY_ROUTE_CONTENT_VERSION;
         }
@@ -904,6 +960,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -926,6 +985,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -947,6 +1009,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -966,6 +1031,9 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
                 );
     }
@@ -988,6 +1056,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1006,6 +1077,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1023,6 +1097,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1037,6 +1114,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1050,6 +1130,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1062,6 +1145,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1073,6 +1159,9 @@ public class StarterExpeditionContent {
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1082,6 +1171,9 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
+                )
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
                 );
     }
@@ -1093,16 +1185,27 @@ public class StarterExpeditionContent {
                 contentVersion
         ) || TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(
                 contentVersion
+        ) || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                contentVersion
         );
     }
 
     public static boolean supportsTrailMemoryRoute(String contentVersion) {
-        return TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(contentVersion);
+        return TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(contentVersion)
+                || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
+                );
+    }
+
+    public static boolean supportsEnergyDisciplineRoute(
+            String contentVersion
+    ) {
+        return ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                TRAIL_MEMORY_ROUTE_CONTENT_VERSION,
+                ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -1821,6 +1924,60 @@ public class StarterExpeditionContent {
                                 inventoryContent,
                                 StarterInventoryContent.ECHO_THREAD_ID,
                                 6
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        STABILIZE_DAWN_CURRENT_CHOICE_ID,
+                        "Стабилизировать поток рассвета",
+                        "Применить Дисциплину энергии и выровнять импульсы созвездия в новый меридиан.",
+                        "Рассвет обрёл ритм",
+                        "Пилот распределил избыток света между опорными точками и открыл меридиан, отвечающий на ровный расход энергии.",
+                        112,
+                        70,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ION_BLOOM_ID,
+                                3
+                        ),
+                        new ExpeditionChoiceSkillRequirement(
+                                PlatformSkillIds.ENERGY_DISCIPLINE,
+                                "Дисциплина энергии",
+                                "Откройте навык «Дисциплина энергии», чтобы стабилизировать поток рассвета."
+                        )
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> dawnMeridianChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        ANCHOR_DAWN_FLOW_CHOICE_ID,
+                        "Закрепить поток в маяках",
+                        "Распределить рассветный импульс между опорными точками маршрута.",
+                        "Меридиан стал картой",
+                        "Пилот закрепил поток в сети маяков и собрал пять устойчивых фрагментов рассвета.",
+                        132,
+                        64,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.DAWN_FRAGMENT_ID,
+                                5
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        SHARE_DAWN_FLOW_WITH_PET_CHOICE_ID,
+                        "Разделить поток с питомцем",
+                        "Доверить питомцу удержать живой ритм меридиана в движении.",
+                        "Общий ритм",
+                        "Питомец принял поток, связал его с шагами отряда и сохранил семь нитей эха.",
+                        100,
+                        90,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ECHO_THREAD_ID,
+                                7
                         )
                 )
         );
