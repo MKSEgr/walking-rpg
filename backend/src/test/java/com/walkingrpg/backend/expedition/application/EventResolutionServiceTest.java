@@ -1242,7 +1242,7 @@ class EventResolutionServiceTest {
         assertEquals(4, result.material().quantityGained());
         assertEquals(4L, inventoryRepository.findAll("user-1").stream()
                 .filter(item -> StarterInventoryContent.ECHO_THREAD_ID.equals(
-                        item.item().itemId()
+                        item.itemId()
                 ))
                 .findFirst()
                 .orElseThrow()

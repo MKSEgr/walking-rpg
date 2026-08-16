@@ -44,6 +44,7 @@ import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.inventory.application.InventoryService;
+import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.platform.api.PlatformCommandRequest;
 import com.walkingrpg.backend.platform.application.PlatformService;
 import com.walkingrpg.backend.platform.domain.PlatformSkillIds;
