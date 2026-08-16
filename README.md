@@ -46,7 +46,7 @@
 - production `GET /api/v1/home`;
 - content-driven первая глава с 18 основными и staged optional узлами вплоть
   до `constellation-sanctuary` за Неизведанным рубежом, equipment-, active-pet-
-  и adult-pet-gated server-owned choices;
+  adult-pet- и unlocked-skill-gated server-owned choices;
 - guided «Первый путь» от разрешения шагов до первого решения;
 - server-authoritative funnel и time-to-value первого пути для alpha cohort,
   включая отдельное подтверждение показа первого результата;
@@ -61,7 +61,8 @@
   материалах эпилога второго рассвета;
 - level-3/EPIC маршрут секстанта к неизведанному рубежу с двумя общими и тремя
   зависящими от активного питомца server-owned исходами, а взрослая форма
-  открывает 26-й узел и новое финальное событие;
+  открывает 26-й узел и новое финальное событие, где «Чтение сигналов» даёт
+  скрытый исход;
 - durable event-result receipt, который восстанавливается через `GET /home`
   после потери ответа или restart;
 - foreground durable outbox для activity, gameplay, platform и telemetry

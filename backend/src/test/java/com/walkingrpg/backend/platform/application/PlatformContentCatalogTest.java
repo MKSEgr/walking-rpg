@@ -249,6 +249,28 @@ class PlatformContentCatalogTest {
     }
 
     @Test
+    void shouldKeepAdultFrontierTopologyForPilotSkillRelease() {
+        Map<String, Object> skillCatalog = publicCatalog(
+                StarterExpeditionContent.PILOT_SKILL_CHOICE_CONTENT_VERSION
+        );
+        Map<String, Object> frontierCatalog = publicCatalog(
+                StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+        );
+
+        assertEquals("chapter-1-v13", skillCatalog.get("contentVersion"));
+        assertEquals(26, skillCatalog.get("chapterNodes"));
+        assertEquals(26, frontierCatalog.get("chapterNodes"));
+        assertEquals(
+                list(frontierCatalog, "skills"),
+                list(skillCatalog, "skills")
+        );
+        assertNotEquals(
+                frontierCatalog.get("catalogDigest"),
+                skillCatalog.get("catalogDigest")
+        );
+    }
+
+    @Test
     void shouldKeepOptionalRouteOutOfLegacyCatalog() {
         Map<String, Object> publicCatalog = publicCatalog(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION

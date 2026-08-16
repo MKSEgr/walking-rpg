@@ -571,6 +571,33 @@ tests реализованы. Баланс взрослых thresholds треб�
 parser/widget и visual-mapping tests реализованы. Баланс наград и ценность
 adult-only continuation требуют beta evidence.
 
+### US-025. Применить «Чтение сигналов» в финале первой главы
+
+Как пользователь, открывший навык «Чтение сигналов», я хочу обнаружить
+скрытый исход Святилища созвездий, чтобы развитие пилота меняло доступные
+решения экспедиции.
+
+Критерии:
+
+- inactive `chapter-1-v13` сохраняет 26-node topology v12 и добавляет в
+  `constellation-sanctuary-v1` choice `decode-sanctuary-signal`; v1-v12 новый
+  ID не проецируют и не принимают;
+- Home помещает choice в `choices` только при наличии `signal-reader` в
+  server-owned `unlockedSkills`, иначе возвращает его в `lockedChoices` с
+  `type=UNLOCKED_SKILL` и понятной причиной;
+- event service повторно читает authoritative platform state до XP, bond,
+  material и expedition mutation; прямой вызов без навыка не меняет state;
+- успешный choice выдаёт `+96 XP / +50 bond / 4 echo-thread`, завершает
+  экспедицию и сохраняет exactly-once результат;
+- additive mobile parser и UI показывают server-owned requirement без нового
+  клиентского источника истины;
+- V29 сохраняет active v12 и существующие platform/pet/expedition rows; v13
+  активируется только после drain pre-V29 backend instances.
+
+**Статус:** backend/mobile/Flyway V29, unit/API/PostgreSQL/migration/catalog,
+parser/widget и visual-mapping tests реализованы. Ценность скрытого исхода и
+баланс награды требуют beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -588,8 +615,8 @@ adult-only continuation требуют beta evidence.
   server-authoritative single-item equipment slot;
 - две последовательные server-authoritative ступени unique item вплоть до
   уровня 3/EPIC;
-- expedition choices с authoritative minimum item level, active-pet и
-  minimum evolution stage prerequisites.
+- expedition choices с authoritative minimum item level, active-pet,
+  minimum evolution stage и unlocked-skill prerequisites.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

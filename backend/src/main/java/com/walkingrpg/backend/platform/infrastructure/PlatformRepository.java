@@ -3,6 +3,7 @@ package com.walkingrpg.backend.platform.infrastructure;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import com.walkingrpg.backend.platform.domain.PlatformCommandScope;
 import com.walkingrpg.backend.platform.domain.PlatformUserState;
@@ -17,6 +18,12 @@ public interface PlatformRepository {
     void acquireSquadLock(String squadId);
 
     Optional<PlatformUserState> findState(String userId);
+
+    default Set<String> findUnlockedSkills(String userId) {
+        return findState(userId)
+                .map(PlatformUserState::unlockedSkills)
+                .orElseGet(Set::of);
+    }
 
     PlatformUserState lockOrCreateState(
             String userId,

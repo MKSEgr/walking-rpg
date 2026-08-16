@@ -96,6 +96,8 @@ abstract final class EventChoiceSignalCatalog {
         EventChoiceSignalKind.chart,
     'constellation-sanctuary-v1::carry-sanctuary-song':
         EventChoiceSignalKind.companion,
+    'constellation-sanctuary-v1::decode-sanctuary-signal':
+        EventChoiceSignalKind.frequency,
   };
 
   static EventChoiceSignalKind kindFor({

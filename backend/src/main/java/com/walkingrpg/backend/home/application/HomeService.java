@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.walkingrpg.backend.crafting.application.StarterCraftingContent;
 import com.walkingrpg.backend.crafting.domain.CraftingRecipeDefinition;
@@ -48,6 +49,7 @@ import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.domain.InventoryItemDefinition;
 import com.walkingrpg.backend.itemupgrade.application.StarterItemUpgradeContent;
 import com.walkingrpg.backend.itemupgrade.domain.ItemUpgradeDefinition;
+import com.walkingrpg.backend.platform.application.PlatformSkillAccess;
 import com.walkingrpg.backend.shared.time.DatabaseSnapshotClock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -67,6 +69,7 @@ public class HomeService {
     private final EquipmentRepository equipmentRepository;
     private final StarterEquipmentContent equipmentContent;
     private final ExpeditionContentActivation contentActivation;
+    private final PlatformSkillAccess skillAccess;
     private final DatabaseSnapshotClock snapshotClock;
 
     @Autowired
@@ -80,6 +83,7 @@ public class HomeService {
             EquipmentRepository equipmentRepository,
             StarterEquipmentContent equipmentContent,
             ExpeditionContentActivation contentActivation,
+            PlatformSkillAccess skillAccess,
             DatabaseSnapshotClock snapshotClock
     ) {
         this.repository = repository;
@@ -92,7 +96,35 @@ public class HomeService {
         this.equipmentRepository = equipmentRepository;
         this.equipmentContent = equipmentContent;
         this.contentActivation = contentActivation;
+        this.skillAccess = skillAccess;
         this.snapshotClock = snapshotClock;
+    }
+
+    public HomeService(
+            HomeReadRepository repository,
+            StarterHomeContent starterContent,
+            DailyGoalService dailyGoalService,
+            StarterExpeditionContent expeditionContent,
+            StarterInventoryContent inventoryContent,
+            StarterCraftingContent craftingContent,
+            EquipmentRepository equipmentRepository,
+            StarterEquipmentContent equipmentContent,
+            ExpeditionContentActivation contentActivation,
+            DatabaseSnapshotClock snapshotClock
+    ) {
+        this(
+                repository,
+                starterContent,
+                dailyGoalService,
+                expeditionContent,
+                inventoryContent,
+                craftingContent,
+                equipmentRepository,
+                equipmentContent,
+                contentActivation,
+                PlatformSkillAccess.none(),
+                snapshotClock
+        );
     }
 
     public HomeService(
@@ -117,6 +149,7 @@ public class HomeService {
                 equipmentRepository,
                 equipmentContent,
                 contentActivation,
+                PlatformSkillAccess.none(),
                 applicationClock(clock)
         );
     }
@@ -138,7 +171,7 @@ public class HomeService {
                 new InMemoryEquipmentRepository(),
                 new StarterEquipmentContent(),
                 () -> StarterExpeditionContent
-                        .ADULT_PET_FRONTIER_CONTENT_VERSION,
+                        .PILOT_SKILL_CHOICE_CONTENT_VERSION,
                 clock
         );
     }
@@ -185,6 +218,7 @@ public class HomeService {
                 ? initialDefinition
                 : expeditionContent.requireNode(state.currentNodeId());
         List<EquipmentSlotState> equipment = equipmentStates(query.userId());
+        Set<String> unlockedSkills = skillAccess.unlockedSkills(query.userId());
 
         return new HomeSnapshotResponse(
                 query.localDate(),
@@ -206,7 +240,8 @@ public class HomeService {
                 expeditionSnapshot(
                         currentDefinition,
                         state,
-                        activeContentVersion
+                        activeContentVersion,
+                        unlockedSkills
                 ),
                 craftingSnapshots(state, activeContentVersion),
                 itemUpgradeSnapshots(state, activeContentVersion)
@@ -424,7 +459,8 @@ public class HomeService {
     private ExpeditionSnapshot expeditionSnapshot(
             ExpeditionDefinition definition,
             HomeRuntimeState state,
-            String activeContentVersion
+            String activeContentVersion,
+            Set<String> unlockedSkills
     ) {
         long requiredEnergy = state.expeditionRequiredEnergy() > 0
                 ? state.expeditionRequiredEnergy()
@@ -447,7 +483,8 @@ public class HomeService {
                 eventSnapshot(
                         definition,
                         state,
-                        activeContentVersion
+                        activeContentVersion,
+                        unlockedSkills
                 )
         );
     }
@@ -455,7 +492,8 @@ public class HomeService {
     private ExpeditionEventSnapshot eventSnapshot(
             ExpeditionDefinition definition,
             HomeRuntimeState state,
-            String activeContentVersion
+            String activeContentVersion,
+            Set<String> unlockedSkills
     ) {
         if (state.unlockedEventId() == null) {
             return null;
@@ -472,7 +510,8 @@ public class HomeService {
                         choice,
                         state.inventory(),
                         state.petId(),
-                        state.petEvolutionStage()
+                        state.petEvolutionStage(),
+                        unlockedSkills
                 ))
                 .toList();
         List<ExpeditionEventChoiceSnapshot> choices = projectedChoices.stream()
@@ -500,7 +539,8 @@ public class HomeService {
             ExpeditionEventChoiceDefinition choice,
             List<InventoryRuntimeItem> inventory,
             String activePetId,
-            int activePetEvolutionStage
+            int activePetEvolutionStage,
+            Set<String> unlockedSkills
     ) {
         MaterialRewardPreviewSnapshot material = choice.materialReward() == null
                 ? null
@@ -511,6 +551,7 @@ public class HomeService {
                 );
         var equipmentRequirement = choice.equipmentRequirement();
         var petRequirement = choice.petRequirement();
+        var skillRequirement = choice.skillRequirement();
         boolean available = true;
         ExpeditionChoiceRequirementSnapshot requirementSnapshot = null;
         if (equipmentRequirement != null) {
@@ -546,6 +587,18 @@ public class HomeService {
                     1,
                     petRequirement.minimumEvolutionStage(),
                     petRequirement.lockedReason()
+            );
+        } else if (skillRequirement != null) {
+            available = unlockedSkills.contains(skillRequirement.skillId());
+            requirementSnapshot = new ExpeditionChoiceRequirementSnapshot(
+                    "UNLOCKED_SKILL",
+                    "PILOT_SKILL",
+                    "Навык пилота",
+                    skillRequirement.skillId(),
+                    skillRequirement.skillName(),
+                    1,
+                    0,
+                    skillRequirement.lockedReason()
             );
         }
         return new ExpeditionEventChoiceSnapshot(

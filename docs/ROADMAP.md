@@ -64,6 +64,8 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Три питомца, active selection, две эволюции и adult-pet route до
       `constellation-sanctuary`
 - [x] Навыки, задания, достижения и onboarding
+- [x] «Чтение сигналов» как authoritative prerequisite скрытого исхода
+      `constellation-sanctuary` в staged `chapter-1-v13`
 - [x] Push provider boundary + development implementation
 - [x] Remote config и базовый admin content API
 - [x] Flutter «Путевой журнал» для platform state/commands

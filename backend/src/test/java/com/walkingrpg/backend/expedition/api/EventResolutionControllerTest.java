@@ -314,6 +314,38 @@ class EventResolutionControllerTest {
                         .value(0));
     }
 
+    @Test
+    void shouldExposeRequiredSkillForSanctuaryChoice() throws Exception {
+        MockMvc sanctuaryMockMvc = createMockMvc(new ExpeditionProgressState(
+                80,
+                80,
+                ExpeditionProgressStatus.EVENT_READY,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_NODE_ID,
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                51
+        ), true);
+
+        sanctuaryMockMvc.perform(post(
+                        "/api/v1/events/constellation-sanctuary-v1/resolve"
+                )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "choiceId": "decode-sanctuary-signal",
+                                  "idempotencyKey": "locked-signal-reader"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code")
+                        .value("EVENT_CHOICE_UNAVAILABLE"))
+                .andExpect(jsonPath("$.details.choiceId")
+                        .value("decode-sanctuary-signal"))
+                .andExpect(jsonPath("$.details.requirementType")
+                        .value("UNLOCKED_SKILL"))
+                .andExpect(jsonPath("$.details.requiredSkillId")
+                        .value("signal-reader"));
+    }
+
     private MockMvc createMockMvc(
             ExpeditionProgressState state,
             boolean handoffEnabled

@@ -15,7 +15,7 @@ from typing import Any
 
 EVIDENCE_SCHEMA = "walking-rpg-backup-restore-evidence-v1"
 SYNTHETIC_SCOPE = "SYNTHETIC_CI"
-FLYWAY_VERSION = "28"
+FLYWAY_VERSION = "29"
 POSTGRES_IMAGE_TAG = "postgres:17.10-alpine3.24"
 POSTGRES_IMAGE_DIGEST = (
     "sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193"

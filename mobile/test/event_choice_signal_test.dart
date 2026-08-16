@@ -182,7 +182,12 @@ void main() {
         'carry-sanctuary-song',
         EventChoiceSignalKind.companion,
       );
-      expect(currentPairCount, 57);
+      expectChoice(
+        'constellation-sanctuary-v1',
+        'decode-sanctuary-signal',
+        EventChoiceSignalKind.frequency,
+      );
+      expect(currentPairCount, 58);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

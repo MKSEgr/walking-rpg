@@ -11,6 +11,7 @@ import com.walkingrpg.backend.equipment.application.StarterEquipmentContent;
 import com.walkingrpg.backend.equipment.infrastructure.InMemoryEquipmentRepository;
 import com.walkingrpg.backend.expedition.domain.ExpeditionChoiceEquipmentRequirement;
 import com.walkingrpg.backend.expedition.domain.ExpeditionChoicePetRequirement;
+import com.walkingrpg.backend.expedition.domain.ExpeditionChoiceSkillRequirement;
 import com.walkingrpg.backend.expedition.domain.EventIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.EventMaterialRewardResult;
 import com.walkingrpg.backend.expedition.domain.EventNextNodeResult;
@@ -29,6 +30,7 @@ import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepositor
 import com.walkingrpg.backend.expedition.infrastructure.ExpeditionRepository;
 import com.walkingrpg.backend.inventory.application.InventoryService;
 import com.walkingrpg.backend.inventory.domain.InventoryRewardResult;
+import com.walkingrpg.backend.platform.application.PlatformSkillAccess;
 import com.walkingrpg.backend.progression.application.ProgressionService;
 import com.walkingrpg.backend.progression.domain.ProgressionRewardResult;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,7 @@ public class EventResolutionService {
     private final InventoryService inventoryService;
     private final StarterExpeditionContent content;
     private final EquipmentService equipmentService;
+    private final PlatformSkillAccess skillAccess;
     private final ExpeditionContentActivation contentActivation;
     private final Clock clock;
 
@@ -55,6 +58,7 @@ public class EventResolutionService {
             InventoryService inventoryService,
             StarterExpeditionContent content,
             EquipmentService equipmentService,
+            PlatformSkillAccess skillAccess,
             ExpeditionContentActivation contentActivation,
             Clock clock
     ) {
@@ -64,8 +68,32 @@ public class EventResolutionService {
         this.inventoryService = inventoryService;
         this.content = content;
         this.equipmentService = equipmentService;
+        this.skillAccess = skillAccess;
         this.contentActivation = contentActivation;
         this.clock = clock;
+    }
+
+    public EventResolutionService(
+            ExpeditionRepository expeditionRepository,
+            EventResolutionRepository eventRepository,
+            ProgressionService progressionService,
+            InventoryService inventoryService,
+            StarterExpeditionContent content,
+            EquipmentService equipmentService,
+            ExpeditionContentActivation contentActivation,
+            Clock clock
+    ) {
+        this(
+                expeditionRepository,
+                eventRepository,
+                progressionService,
+                inventoryService,
+                content,
+                equipmentService,
+                PlatformSkillAccess.none(),
+                contentActivation,
+                clock
+        );
     }
 
     public EventResolutionService(
@@ -84,8 +112,9 @@ public class EventResolutionService {
                 inventoryService,
                 content,
                 equipmentService,
+                PlatformSkillAccess.none(),
                 () -> StarterExpeditionContent
-                        .ADULT_PET_FRONTIER_CONTENT_VERSION,
+                        .PILOT_SKILL_CHOICE_CONTENT_VERSION,
                 clock
         );
     }
@@ -111,8 +140,9 @@ public class EventResolutionService {
                         eventRepository,
                         clock
                 ),
+                PlatformSkillAccess.none(),
                 () -> StarterExpeditionContent
-                        .ADULT_PET_FRONTIER_CONTENT_VERSION,
+                        .PILOT_SKILL_CHOICE_CONTENT_VERSION,
                 clock
         );
     }
@@ -168,6 +198,7 @@ public class EventResolutionService {
         );
         requireEquipment(command.userId(), choice);
         requireActivePet(command.userId(), choice);
+        requireSkill(command.userId(), choice);
 
         ProgressionRewardResult progression = progressionService.rewardEvent(
                 command.userId(),
@@ -336,6 +367,23 @@ public class EventResolutionService {
                     requirement.petId(),
                     requirement.minimumEvolutionStage(),
                     activePet.evolutionStage()
+            );
+        }
+    }
+
+    private void requireSkill(
+            String userId,
+            ExpeditionEventChoiceDefinition choice
+    ) {
+        ExpeditionChoiceSkillRequirement requirement =
+                choice.skillRequirement();
+        if (requirement == null) {
+            return;
+        }
+        if (!skillAccess.isUnlocked(userId, requirement.skillId())) {
+            throw new EventChoiceSkillUnavailableException(
+                    choice.choiceId(),
+                    requirement.skillId()
             );
         }
     }
