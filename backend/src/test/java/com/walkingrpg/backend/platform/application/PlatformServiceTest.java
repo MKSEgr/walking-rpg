@@ -690,7 +690,7 @@ class PlatformServiceTest {
         ));
 
         assertEquals(1, number(pet(first.snapshot(), "spark-v1"), "evolutionStage"));
-        assertEquals(1, second.stateVersion());
+        assertEquals(first.stateVersion(), second.stateVersion());
         assertEquals("Питомец уже эволюционировал", second.message());
         assertEquals(
                 1,
