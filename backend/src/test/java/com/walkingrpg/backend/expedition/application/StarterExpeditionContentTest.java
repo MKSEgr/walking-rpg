@@ -38,6 +38,10 @@ class StarterExpeditionContentTest {
         String chapterV7 = content.activeContentVersion(
                 () -> StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION
         );
+        String chapterV8 = content.activeContentVersion(
+                () -> StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -50,6 +54,11 @@ class StarterExpeditionContentTest {
         );
         assertEquals(StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
                 chapterV7);
+        assertEquals(
+                StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
+                chapterV8
+        );
         assertEquals(1, activationReads.get());
         assertEquals(
                 StarterExpeditionContent.LEGACY_CONTENT_VERSION,
@@ -113,6 +122,16 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.FINAL_EVENT_ID,
                 chapterV7
         )));
+        assertTrue(hasSecondDawnChoice(content.eventChoices(
+                StarterExpeditionContent.FINAL_EVENT_ID,
+                chapterV8
+        )));
+        assertTrue(StarterExpeditionContent.supportsSecondDawnAttunement(
+                chapterV8
+        ));
+        assertFalse(StarterExpeditionContent.supportsSecondDawnAttunement(
+                chapterV7
+        ));
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(

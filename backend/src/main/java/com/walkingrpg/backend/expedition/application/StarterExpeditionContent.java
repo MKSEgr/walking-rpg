@@ -27,6 +27,8 @@ public class StarterExpeditionContent {
     public static final String CALIBRATED_SEXTANT_CONTENT_VERSION =
             "chapter-1-v6";
     public static final String SECOND_DAWN_CONTENT_VERSION = "chapter-1-v7";
+    public static final String SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION =
+            "chapter-1-v8";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -152,7 +154,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    SECOND_DAWN_CONTENT_VERSION,
+                    SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -396,7 +398,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                SECOND_DAWN_CONTENT_VERSION
+                SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
         );
     }
 
@@ -433,7 +435,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                SECOND_DAWN_CONTENT_VERSION
+                SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
         );
     }
 
@@ -464,7 +466,7 @@ public class StarterExpeditionContent {
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
-        return eventChoices(eventId, SECOND_DAWN_CONTENT_VERSION);
+        return eventChoices(eventId, SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION);
     }
 
     public List<ExpeditionEventChoiceDefinition> eventChoices(
@@ -546,7 +548,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return SECOND_DAWN_CONTENT_VERSION;
+        return SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -555,6 +557,11 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
+                activeContentVersion
+        )) {
+            return SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION;
+        }
         if (SECOND_DAWN_CONTENT_VERSION.equals(activeContentVersion)) {
             return SECOND_DAWN_CONTENT_VERSION;
         }
@@ -582,7 +589,10 @@ public class StarterExpeditionContent {
                 || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
                 || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
                 || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
+                        contentVersion
+                );
     }
 
     public static boolean supportsStormRift(String contentVersion) {
@@ -590,36 +600,57 @@ public class StarterExpeditionContent {
                 || VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
                 || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
                 || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
+                        contentVersion
+                );
     }
 
     public static boolean supportsVoidOrchardFork(String contentVersion) {
         return VOID_ORCHARD_CONTENT_VERSION.equals(contentVersion)
                 || PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
                 || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
+                        contentVersion
+                );
     }
 
     public static boolean supportsPrismSextantRoute(String contentVersion) {
         return PRISM_SEXTANT_CONTENT_VERSION.equals(contentVersion)
                 || CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
+                        contentVersion
+                );
     }
 
     public static boolean supportsCalibratedSextantChoice(
             String contentVersion
     ) {
         return CALIBRATED_SEXTANT_CONTENT_VERSION.equals(contentVersion)
-                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
+                || SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
+                        contentVersion
+                );
     }
 
     public static boolean supportsSecondDawnRoute(String contentVersion) {
-        return SECOND_DAWN_CONTENT_VERSION.equals(contentVersion);
+        return SECOND_DAWN_CONTENT_VERSION.equals(contentVersion)
+                || SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(
+                        contentVersion
+                );
+    }
+
+    public static boolean supportsSecondDawnAttunement(
+            String contentVersion
+    ) {
+        return SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                SECOND_DAWN_CONTENT_VERSION,
+                SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),

@@ -127,6 +127,72 @@ class ItemUpgradeIntegrationTest {
     }
 
     @Test
+    void shouldAttuneRareSextantToEpicExactlyOnceOnChapterV8() {
+        activateContent(
+                StarterExpeditionContent.SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION
+        );
+        seedOwnedPrism("attunement-user", 2, "RARE");
+        seedMaterials("attunement-user", 4, 0, 3);
+        insertStack("attunement-user", "dawn-fragment", 2);
+
+        HomeSnapshotResponse readyHome = homeService.getSnapshot(new HomeQuery(
+                "attunement-user",
+                LocalDate.of(2026, 8, 16)
+        ));
+        assertEquals(2, readyHome.itemUpgrades().size());
+        assertEquals("COMPLETED", readyHome.itemUpgrades().get(0).status());
+        assertEquals("READY", readyHome.itemUpgrades().get(1).status());
+
+        ItemUpgradeCommand command = command(
+                "attunement-user",
+                StarterItemUpgradeContent
+                        .PRISM_SEXTANT_SECOND_DAWN_ATTUNEMENT_ID,
+                "attune-1"
+        );
+        ItemUpgradeResult first = service.upgrade(command);
+        ItemUpgradeResult replay = service.upgrade(command);
+
+        assertEquals(first, replay);
+        assertEquals(ITEM_INSTANCE_ID, first.upgradedItem().itemInstanceId());
+        assertEquals(2, first.upgradedItem().previousLevel());
+        assertEquals(3, first.upgradedItem().upgradeLevel());
+        assertEquals("EPIC", first.upgradedItem().rarity().name());
+        assertEquals(1, rowCount("unique_inventory_item"));
+        assertEquals(1, rowCount("processed_item_upgrade_command"));
+        assertEquals(3, rowCount("processed_item_upgrade_ingredient"));
+        assertEquals(3, rowCount("inventory_ledger"));
+        assertEquals(2, quantity("attunement-user", "echo-thread"));
+        assertEquals(1, quantity("attunement-user", "ion-bloom"));
+        assertEquals(0, quantity("attunement-user", "dawn-fragment"));
+
+        HomeSnapshotResponse completedHome = homeService.getSnapshot(
+                new HomeQuery(
+                        "attunement-user",
+                        LocalDate.of(2026, 8, 16)
+                )
+        );
+        assertEquals("COMPLETED", completedHome.itemUpgrades().get(0).status());
+        assertEquals("COMPLETED", completedHome.itemUpgrades().get(1).status());
+        assertEquals("EPIC", completedHome.inventory().stream()
+                .filter(item -> item.itemId().equals("prism-sextant"))
+                .findFirst()
+                .orElseThrow()
+                .rarity());
+
+        ItemUpgradeStateConflictException error = assertThrows(
+                ItemUpgradeStateConflictException.class,
+                () -> service.upgrade(command(
+                        "attunement-user",
+                        StarterItemUpgradeContent
+                                .PRISM_SEXTANT_SECOND_DAWN_ATTUNEMENT_ID,
+                        "attune-2"
+                ))
+        );
+        assertEquals("ALREADY_COMPLETED", error.reason());
+        assertEquals(3, rowCount("inventory_ledger"));
+    }
+
+    @Test
     void shouldReportAllShortagesWithoutMutatingItemOrInventory() {
         seedOwnedPrism("missing-user");
         seedMaterials("missing-user", 1, 0, 0);
@@ -176,14 +242,18 @@ class ItemUpgradeIntegrationTest {
     }
 
     private void seedOwnedPrism(String userId) {
+        seedOwnedPrism(userId, 1, "UNCOMMON");
+    }
+
+    private void seedOwnedPrism(String userId, long level, String rarity) {
         seedUser(userId);
         jdbcTemplate.update("""
                 INSERT INTO unique_inventory_item (
                     item_instance_id, user_id, item_id, recipe_id,
-                    recipe_version, version, rarity, crafted_at
+                    recipe_version, version, rarity, crafted_at, upgraded_at
                 ) VALUES (?, ?, 'prism-sextant', 'prism-sextant-v1',
-                          '1', 1, 'UNCOMMON', now())
-                """, ITEM_INSTANCE_ID, userId);
+                          '1', ?, ?, now(), CASE WHEN ? > 1 THEN now() END)
+                """, ITEM_INSTANCE_ID, userId, level, rarity, level);
     }
 
     private void seedUser(String userId) {
@@ -213,11 +283,35 @@ class ItemUpgradeIntegrationTest {
     }
 
     private ItemUpgradeCommand command(String userId, String idempotencyKey) {
-        return new ItemUpgradeCommand(
+        return command(
                 userId,
                 StarterItemUpgradeContent.PRISM_SEXTANT_CALIBRATION_ID,
                 idempotencyKey
         );
+    }
+
+    private ItemUpgradeCommand command(
+            String userId,
+            String upgradeId,
+            String idempotencyKey
+    ) {
+        return new ItemUpgradeCommand(
+                userId,
+                upgradeId,
+                idempotencyKey
+        );
+    }
+
+    private void activateContent(String contentVersion) {
+        jdbcTemplate.update(
+                "UPDATE content_release SET is_active = false WHERE is_active"
+        );
+        jdbcTemplate.update("""
+                UPDATE content_release
+                SET is_active = true,
+                    activated_at = COALESCE(activated_at, now())
+                WHERE content_version = ?
+                """, contentVersion);
     }
 
     private long quantity(String userId, String itemId) {

@@ -137,7 +137,8 @@ public class HomeService {
                 new StarterCraftingContent(),
                 new InMemoryEquipmentRepository(),
                 new StarterEquipmentContent(),
-                () -> StarterExpeditionContent.SECOND_DAWN_CONTENT_VERSION,
+                () -> StarterExpeditionContent
+                        .SECOND_DAWN_ATTUNEMENT_CONTENT_VERSION,
                 clock
         );
     }

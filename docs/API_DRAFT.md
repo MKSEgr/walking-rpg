@@ -802,6 +802,18 @@ active `chapter-1-v5`:
 → тот же prism-sextant: 1/UNCOMMON → 2/RARE
 ```
 
+Active `chapter-1-v8` дополнительно открывает definition
+`prism-sextant-second-dawn-attunement-v1` из `item-upgrade-v2`:
+
+```text
+2 × echo-thread + 2 × ion-bloom + 2 × dawn-fragment
+→ тот же prism-sextant: 2/RARE → 3/EPIC
+```
+
+V1-V7 не проецируют и не принимают новый upgrade. Home возвращает определения
+в порядке `calibration → attunement`, поэтому завершённый первый шаг остаётся
+виден рядом со следующей постоянной целью.
+
 ```json
 {
   "idempotencyKey": "upgrade-prism-sextant-1"
