@@ -453,9 +453,7 @@ class HomeExpeditionDecisionLogEntry {
     final String? petName = HomeSnapshot._readNullableString(json, 'petName');
     if ((petId == null) != (petName == null) ||
         (petBondGained > 0 && petName == null)) {
-      throw const FormatException(
-        'Награда связи должна указывать питомца',
-      );
+      throw const FormatException('Награда связи должна указывать питомца');
     }
     final Object? materialJson = json['materialReward'];
     return HomeExpeditionDecisionLogEntry(
@@ -473,10 +471,7 @@ class HomeExpeditionDecisionLogEntry {
       materialReward: materialJson == null
           ? null
           : HomeJourneyMaterialReward.fromJson(
-              HomeSnapshot._asMap(
-                materialJson,
-                'decisionLog[].materialReward',
-              ),
+              HomeSnapshot._asMap(materialJson, 'decisionLog[].materialReward'),
             ),
     );
   }
@@ -495,9 +490,7 @@ class HomeExpeditionDecisionLogEntry {
   final HomeJourneyMaterialReward? materialReward;
 
   bool get hasRewards =>
-      pilotExperienceGained > 0 ||
-      petBondGained > 0 ||
-      materialReward != null;
+      pilotExperienceGained > 0 || petBondGained > 0 || materialReward != null;
 }
 
 class HomeJourneyMaterialReward {
