@@ -445,13 +445,17 @@ class HomeExpeditionDecisionLogEntry {
         ? 0
         : HomeSnapshot._readInt(json, 'petBondGained');
     if (pilotExperienceGained < 0 || petBondGained < 0) {
-      throw const FormatException('Награда решения не может быть отрицательной');
+      throw const FormatException(
+        'Награда решения не может быть отрицательной',
+      );
     }
     final String? petId = HomeSnapshot._readNullableString(json, 'petId');
     final String? petName = HomeSnapshot._readNullableString(json, 'petName');
     if ((petId == null) != (petName == null) ||
         (petBondGained > 0 && petName == null)) {
-      throw const FormatException('Награда связи должна указывать питомца');
+      throw const FormatException(
+        'Награда связи должна указывать питомца',
+      );
     }
     final Object? materialJson = json['materialReward'];
     return HomeExpeditionDecisionLogEntry(
@@ -506,7 +510,9 @@ class HomeJourneyMaterialReward {
   factory HomeJourneyMaterialReward.fromJson(Map<String, dynamic> json) {
     final int quantity = HomeSnapshot._readInt(json, 'quantity');
     if (quantity <= 0) {
-      throw const FormatException('Количество material reward должно быть положительным');
+      throw const FormatException(
+        'Количество material reward должно быть положительным',
+      );
     }
     return HomeJourneyMaterialReward(
       itemId: HomeSnapshot._readString(json, 'itemId'),
