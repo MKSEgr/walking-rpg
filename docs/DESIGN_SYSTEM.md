@@ -920,13 +920,16 @@ shows only entries from the current `journeyNumber`; a new journey therefore
 returns to an explicit empty state instead of mixing earlier routes.
 
 Each entry uses a numbered code-native signal, a decision arrow and separate
-outcome typography. One container semantic announces its position, event,
-choice and outcome, while the visual children are excluded from duplicate
-screen-reader output. Persisted copy is rendered literally and is never
-reconstructed from current content, node topology or display-name heuristics.
-Cached Home data is labelled as a saved entry; if Home is unavailable the
-platform journal remains usable and omits this server-owned section. Legacy
-snapshots without `decisionLog` render the same accessible empty state.
+outcome typography. Compact reward chips repeat the literal pilot XP, named
+companion bond and optional material quantity saved with that decision; they
+do not subtract current totals or read current content. One container semantic
+announces its position, event, choice, outcome and the same reward list, while
+the visual children are excluded from duplicate screen-reader output.
+Persisted copy is rendered literally and is never reconstructed from current
+content, node topology or display-name heuristics. Cached Home data is labelled
+as a saved entry; if Home is unavailable the platform journal remains usable
+and omits this server-owned section. Legacy snapshots without `decisionLog` or
+without additive reward fields remain readable and do not invent rewards.
 
 ## Next visual slices
 

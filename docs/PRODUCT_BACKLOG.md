@@ -776,6 +776,28 @@ RU/EN accessibility coverage реализованы. GPS и real-time walking ma
 **Статус:** additive Home projection, current-journey PostgreSQL scope,
 mobile parser и путевой журнал с unit/API/parser/widget coverage реализованы.
 
+### US-033. Видеть награды за решения текущего похода
+
+Как игрок, я хочу видеть фактически полученные награды рядом с каждым решением,
+чтобы понимать, как история похода изменила пилота, питомца и инвентарь.
+
+Критерии:
+
+- Home дополняет каждую запись `decisionLog` сохранёнными XP пилота, stable
+  identity/name питомца, полученной связью и nullable material reward;
+- backend читает значения из той же immutable event resolution текущего
+  `journeyNumber`, а не вычисляет разницу между текущими totals;
+- material reward содержит persisted item identity/name и quantity gained;
+- Flutter показывает literal reward chips и включает тот же список в одну
+  accessibility summary записи без client-side расчётов;
+- legacy snapshots без reward fields остаются читаемыми и не показывают
+  выдуманные нулевые награды;
+- unit/API/PostgreSQL/parser/widget coverage проверяет persisted copy,
+  nullable material и новый поход через существующий current-journey scope.
+
+**Статус:** additive backend/mobile projection и доступное отображение наград
+с regression coverage реализованы без новой миграции.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -800,6 +822,7 @@ mobile parser и путевой журнал с unit/API/parser/widget coverage 
   будущей топологии.
 - server-authoritative журнал решений текущего похода со стабильным
   persisted outcome copy.
+- persisted награды XP/связи/material рядом с каждой записью журнала решений.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

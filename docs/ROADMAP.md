@@ -379,6 +379,17 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/API/PostgreSQL/parser/widget coverage, включая пустой журнал нового
       похода и Home-unavailable fallback
 
+## Milestone 17 — Current journey decision rewards
+
+### CODE_COMPLETE
+
+- [x] Additive persisted XP, companion bond identity и nullable material reward
+      в каждой записи Home `decisionLog`
+- [x] Reward projection из immutable `processed_event_resolution` текущего
+      `journeyNumber` без content lookup или delta по текущим totals
+- [x] Compact reward chips и единая accessibility summary без client inference
+- [x] Unit/API/PostgreSQL/parser/widget coverage и legacy reward-field fallback
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

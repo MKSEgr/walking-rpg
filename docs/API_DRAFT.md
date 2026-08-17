@@ -299,6 +299,11 @@ Authorization: Bearer <access-token>
         "choiceTitle": "Разобрать сигнал",
         "outcomeTitle": "Карта отклика",
         "outcomeSummary": "Навигатор сохранил безопасный путь к маяку.",
+        "pilotExperienceGained": 40,
+        "petId": "spark-v1",
+        "petName": "Искра",
+        "petBondGained": 5,
+        "materialReward": null,
         "resolvedAt": "2026-07-26T06:20:00Z"
       },
       {
@@ -308,6 +313,15 @@ Authorization: Bearer <access-token>
         "choiceTitle": "Стабилизировать ядро",
         "outcomeTitle": "Ровный импульс",
         "outcomeSummary": "Маяк удержал безопасный курс.",
+        "pilotExperienceGained": 20,
+        "petId": "spark-v1",
+        "petName": "Искра",
+        "petBondGained": 15,
+        "materialReward": {
+          "itemId": "lumen-shard",
+          "itemName": "Люмен-осколок",
+          "quantity": 2
+        },
         "resolvedAt": "2026-07-26T07:00:00Z"
       }
     ],
@@ -335,8 +349,11 @@ Authorization: Bearer <access-token>
 - `expedition.decisionLog[]` — упорядоченный журнал уже принятых решений только
   текущего похода. Заголовки события, выбора и исхода, описание результата и
   `resolvedAt` читаются из immutable event resolution, поэтому republish или
-  rollback контента не переписывает прошлое; новый `journeyNumber` начинает
-  пустой журнал, а legacy response без поля остаётся валидным;
+  rollback контента не переписывает прошлое. Additive reward fields содержат
+  фактически выданные XP пилота, stable identity/name питомца, связь и nullable
+  material reward из той же записи; mobile не восстанавливает их из текущего
+  content или totals. Новый `journeyNumber` начинает пустой журнал, а legacy
+  response без журнала либо без reward fields остаётся валидным;
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а
   `pet.evolutionStage` — authoritative стадия из platform state; legacy state

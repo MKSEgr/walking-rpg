@@ -547,6 +547,11 @@ public class HomeService {
                         event.choiceTitle(),
                         event.outcomeTitle(),
                         event.outcomeSummary(),
+                        event.pilotExperienceGained(),
+                        event.petId(),
+                        event.petName(),
+                        event.petBondGained(),
+                        event.materialReward(),
                         event.resolvedAt()
                 ))
                 .toList();

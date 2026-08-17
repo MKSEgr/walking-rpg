@@ -17,6 +17,7 @@ import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
+import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
 import org.junit.jupiter.api.Test;
 
@@ -279,6 +280,11 @@ class HomeServiceTest {
                                 "Разобрать сигнал",
                                 "Карта отклика",
                                 "Навигатор сохранил первый маршрут.",
+                                40,
+                                "spark-v1",
+                                "Искра из записи",
+                                5,
+                                null,
                                 NOW.minusSeconds(60)
                         ),
                         journeyEvent(
@@ -288,6 +294,15 @@ class HomeServiceTest {
                                 "Стабилизировать ядро",
                                 "Ровный импульс",
                                 "Маяк удержал безопасный курс.",
+                                20,
+                                "moss-v1",
+                                "Мох из записи",
+                                15,
+                                new MaterialRewardPreviewSnapshot(
+                                        "echo-thread",
+                                        "Эхо-нити из записи",
+                                        3
+                                ),
                                 NOW
                         )
                 )
@@ -327,6 +342,16 @@ class HomeServiceTest {
                 expedition.decisionLog().getFirst().choiceTitle());
         assertEquals("Ровный импульс",
                 expedition.decisionLog().getLast().outcomeTitle());
+        assertEquals(40,
+                expedition.decisionLog().getFirst().pilotExperienceGained());
+        assertEquals("Мох из записи",
+                expedition.decisionLog().getLast().petName());
+        assertEquals(15,
+                expedition.decisionLog().getLast().petBondGained());
+        assertEquals("Эхо-нити из записи",
+                expedition.decisionLog().getLast().materialReward().itemName());
+        assertEquals(3,
+                expedition.decisionLog().getLast().materialReward().quantity());
         assertEquals(NOW, expedition.decisionLog().getLast().resolvedAt());
     }
 
@@ -337,6 +362,11 @@ class HomeServiceTest {
             String choiceTitle,
             String outcomeTitle,
             String outcomeSummary,
+            int pilotExperienceGained,
+            String petId,
+            String petName,
+            int petBondGained,
+            MaterialRewardPreviewSnapshot materialReward,
             Instant resolvedAt
     ) {
         return new ExpeditionJourneyEvent(
@@ -346,6 +376,11 @@ class HomeServiceTest {
                 choiceTitle,
                 outcomeTitle,
                 outcomeSummary,
+                pilotExperienceGained,
+                petId,
+                petName,
+                petBondGained,
+                materialReward,
                 resolvedAt
         );
     }

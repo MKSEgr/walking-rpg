@@ -848,13 +848,15 @@ class _JourneyDecisionEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final List<String> rewardLabels = _journeyDecisionRewardLabels(entry);
     return Semantics(
       key: Key('platform-journey-decision-${entry.eventId}'),
       container: true,
       label:
           'Запись ${index + 1} из $total. ${entry.eventTitle}. '
           'Решение: ${entry.choiceTitle}. Итог: ${entry.outcomeTitle}. '
-          '${entry.outcomeSummary}',
+          '${entry.outcomeSummary}'
+          '${rewardLabels.isEmpty ? '' : ' Награды: ${rewardLabels.join('; ')}.'}',
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -928,6 +930,36 @@ class _JourneyDecisionEntry extends StatelessWidget {
                           color: colors.onSurfaceVariant,
                         ),
                       ),
+                      if (rewardLabels.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 7,
+                          runSpacing: 7,
+                          children: <Widget>[
+                            if (entry.pilotExperienceGained > 0)
+                              _JourneyRewardChip(
+                                icon: Icons.star_outline,
+                                label:
+                                    '+${entry.pilotExperienceGained} XP пилота',
+                              ),
+                            if (entry.petBondGained > 0)
+                              _JourneyRewardChip(
+                                icon: Icons.favorite_border,
+                                label:
+                                    '${entry.petName} · '
+                                    '+${entry.petBondGained} связи',
+                              ),
+                            if (entry.materialReward
+                                case final HomeJourneyMaterialReward material)
+                              _JourneyRewardChip(
+                                icon: Icons.inventory_2_outlined,
+                                label:
+                                    '+${material.quantity} '
+                                    '${material.itemName}',
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -935,6 +967,42 @@ class _JourneyDecisionEntry extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+List<String> _journeyDecisionRewardLabels(
+  HomeExpeditionDecisionLogEntry entry,
+) {
+  return <String>[
+    if (entry.pilotExperienceGained > 0)
+      '+${entry.pilotExperienceGained} XP пилота',
+    if (entry.petBondGained > 0)
+      '${entry.petName}: +${entry.petBondGained} связи',
+    if (entry.materialReward case final HomeJourneyMaterialReward material)
+      '+${material.quantity} ${material.itemName}',
+  ];
+}
+
+class _JourneyRewardChip extends StatelessWidget {
+  const _JourneyRewardChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Chip(
+      avatar: Icon(icon, size: 16, color: colors.secondary),
+      label: Text(label),
+      visualDensity: VisualDensity.compact,
+      side: BorderSide(color: colors.outlineVariant),
+      backgroundColor: colors.secondaryContainer.withValues(alpha: 0.42),
+      labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: colors.onSecondaryContainer,
+        fontWeight: FontWeight.w700,
       ),
     );
   }

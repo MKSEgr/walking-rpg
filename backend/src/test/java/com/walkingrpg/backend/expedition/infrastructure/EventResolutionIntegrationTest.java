@@ -267,6 +267,23 @@ class EventResolutionIntegrationTest {
                 home.expedition().decisionLog().getLast().outcomeTitle());
         assertEquals(secondEvent.outcomeSummary(),
                 home.expedition().decisionLog().getLast().outcomeSummary());
+        assertEquals(firstEvent.pilot().experienceGained(),
+                home.expedition().decisionLog().getFirst()
+                        .pilotExperienceGained());
+        assertNull(home.expedition().decisionLog().getFirst().materialReward());
+        assertEquals(secondEvent.pet().petId(),
+                home.expedition().decisionLog().getLast().petId());
+        assertEquals(secondEvent.pet().name(),
+                home.expedition().decisionLog().getLast().petName());
+        assertEquals(secondEvent.pet().bondGained(),
+                home.expedition().decisionLog().getLast().petBondGained());
+        assertNotNull(home.expedition().decisionLog().getLast().materialReward());
+        assertEquals(secondEvent.material().itemId(),
+                home.expedition().decisionLog().getLast()
+                        .materialReward().itemId());
+        assertEquals(secondEvent.material().quantityGained(),
+                home.expedition().decisionLog().getLast()
+                        .materialReward().quantity());
         assertEquals(secondEvent.serverTime(),
                 home.expedition().decisionLog().getLast().resolvedAt());
         assertEquals("Пепельная орбита",

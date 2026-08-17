@@ -426,6 +426,11 @@ class HomeExpeditionDecisionLogEntry {
     required this.outcomeTitle,
     required this.outcomeSummary,
     required this.resolvedAt,
+    this.pilotExperienceGained = 0,
+    this.petId,
+    this.petName,
+    this.petBondGained = 0,
+    this.materialReward,
   });
 
   factory HomeExpeditionDecisionLogEntry.fromJson(Map<String, dynamic> json) {
@@ -433,6 +438,22 @@ class HomeExpeditionDecisionLogEntry {
     if (DateTime.tryParse(resolvedAt) == null) {
       throw const FormatException('resolvedAt должен быть ISO-8601 датой');
     }
+    final int pilotExperienceGained = json['pilotExperienceGained'] == null
+        ? 0
+        : HomeSnapshot._readInt(json, 'pilotExperienceGained');
+    final int petBondGained = json['petBondGained'] == null
+        ? 0
+        : HomeSnapshot._readInt(json, 'petBondGained');
+    if (pilotExperienceGained < 0 || petBondGained < 0) {
+      throw const FormatException('Награда решения не может быть отрицательной');
+    }
+    final String? petId = HomeSnapshot._readNullableString(json, 'petId');
+    final String? petName = HomeSnapshot._readNullableString(json, 'petName');
+    if ((petId == null) != (petName == null) ||
+        (petBondGained > 0 && petName == null)) {
+      throw const FormatException('Награда связи должна указывать питомца');
+    }
+    final Object? materialJson = json['materialReward'];
     return HomeExpeditionDecisionLogEntry(
       eventId: HomeSnapshot._readString(json, 'eventId'),
       eventTitle: HomeSnapshot._readString(json, 'eventTitle'),
@@ -441,6 +462,18 @@ class HomeExpeditionDecisionLogEntry {
       outcomeTitle: HomeSnapshot._readString(json, 'outcomeTitle'),
       outcomeSummary: HomeSnapshot._readString(json, 'outcomeSummary'),
       resolvedAt: resolvedAt,
+      pilotExperienceGained: pilotExperienceGained,
+      petId: petId,
+      petName: petName,
+      petBondGained: petBondGained,
+      materialReward: materialJson == null
+          ? null
+          : HomeJourneyMaterialReward.fromJson(
+              HomeSnapshot._asMap(
+                materialJson,
+                'decisionLog[].materialReward',
+              ),
+            ),
     );
   }
 
@@ -451,6 +484,40 @@ class HomeExpeditionDecisionLogEntry {
   final String outcomeTitle;
   final String outcomeSummary;
   final String resolvedAt;
+  final int pilotExperienceGained;
+  final String? petId;
+  final String? petName;
+  final int petBondGained;
+  final HomeJourneyMaterialReward? materialReward;
+
+  bool get hasRewards =>
+      pilotExperienceGained > 0 ||
+      petBondGained > 0 ||
+      materialReward != null;
+}
+
+class HomeJourneyMaterialReward {
+  const HomeJourneyMaterialReward({
+    required this.itemId,
+    required this.itemName,
+    required this.quantity,
+  });
+
+  factory HomeJourneyMaterialReward.fromJson(Map<String, dynamic> json) {
+    final int quantity = HomeSnapshot._readInt(json, 'quantity');
+    if (quantity <= 0) {
+      throw const FormatException('Количество material reward должно быть положительным');
+    }
+    return HomeJourneyMaterialReward(
+      itemId: HomeSnapshot._readString(json, 'itemId'),
+      itemName: HomeSnapshot._readString(json, 'itemName'),
+      quantity: quantity,
+    );
+  }
+
+  final String itemId;
+  final String itemName;
+  final int quantity;
 }
 
 class HomeExpeditionEvent {
