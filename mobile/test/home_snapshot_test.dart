@@ -22,6 +22,7 @@ void main() {
     expect(snapshot.petSpecies, 'Люмин');
     expect(snapshot.petBond, 10);
     expect(snapshot.petEvolutionStage, 0);
+    expect(snapshot.decisionLog, isEmpty);
     expect(snapshot.inventory, isEmpty);
     expect(snapshot.craftingRecipes, isEmpty);
     expect(snapshot.itemUpgrades, isEmpty);
@@ -47,6 +48,20 @@ void main() {
     expect(snapshot.routeTrail.first.state, 'VISITED');
     expect(snapshot.routeTrail.last.nodeId, 'lumen-gate');
     expect(snapshot.routeTrail.last.isCurrent, isTrue);
+    expect(snapshot.decisionLog, hasLength(1));
+    expect(snapshot.decisionLog.single.eventId, 'outer-beacon-v1');
+    expect(snapshot.decisionLog.single.eventTitle, 'Сигнал у границы');
+    expect(snapshot.decisionLog.single.choiceId, 'follow-pulse');
+    expect(snapshot.decisionLog.single.choiceTitle, 'Пойти за импульсом');
+    expect(snapshot.decisionLog.single.outcomeTitle, 'Найден маяк');
+    expect(
+      snapshot.decisionLog.single.outcomeSummary,
+      'Импульс вывел экспедицию к люминовым воротам.',
+    );
+    expect(
+      snapshot.decisionLog.single.resolvedAt,
+      '2026-07-26T05:58:00Z',
+    );
     expect(snapshot.expeditionStatus, 'EVENT_READY');
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
@@ -79,6 +94,28 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.routeTrail, isEmpty);
+  });
+
+  test('legacy response without decision log remains readable', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition.remove('decisionLog');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.decisionLog, isEmpty);
+  });
+
+  test('decision log rejects an invalid resolution time', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    final List<dynamic> decisionLog =
+        expedition['decisionLog'] as List<dynamic>;
+    (decisionLog.single as Map<String, dynamic>)['resolvedAt'] = 'yesterday';
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('unknown authoritative route state is rejected', () {
@@ -836,6 +873,18 @@ Map<String, dynamic> _readyHomeResponse() {
           'nodeId': 'lumen-gate',
           'nodeName': 'Люминовые ворота',
           'state': 'CURRENT',
+        },
+      ],
+      'decisionLog': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'eventId': 'outer-beacon-v1',
+          'eventTitle': 'Сигнал у границы',
+          'choiceId': 'follow-pulse',
+          'choiceTitle': 'Пойти за импульсом',
+          'outcomeTitle': 'Найден маяк',
+          'outcomeSummary':
+              'Импульс вывел экспедицию к люминовым воротам.',
+          'resolvedAt': '2026-07-26T05:58:00Z',
         },
       ],
       'unlockedEvent': <String, dynamic>{

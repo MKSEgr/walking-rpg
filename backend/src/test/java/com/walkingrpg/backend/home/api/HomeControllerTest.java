@@ -124,9 +124,97 @@ class HomeControllerTest {
                         .value("outer-beacon"))
                 .andExpect(jsonPath("$.expedition.routeTrail[0].state")
                         .value("CURRENT"))
+                .andExpect(jsonPath("$.expedition.decisionLog").isArray())
+                .andExpect(jsonPath("$.expedition.decisionLog").isEmpty())
                 .andExpect(jsonPath("$.expedition.status").value("EVENT_READY"))
                 .andExpect(jsonPath("$.expedition.unlockedEvent.eventId")
                         .value("signal-source-v1"));
+    }
+
+    @Test
+    void shouldReturnPersistedJourneyDecisionLog() throws Exception {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        0,
+                        content.requireNode(
+                                StarterExpeditionContent.SECOND_NODE_ID
+                        ).requiredEnergy(),
+                        "IN_PROGRESS",
+                        2,
+                        StarterExpeditionContent.SECOND_NODE_ID,
+                        null
+                ),
+                List.of(new ExpeditionJourneyEvent(
+                        StarterExpeditionContent.FIRST_EVENT_ID,
+                        "Сигнал у границы",
+                        "analyze-signal",
+                        "Разобрать сигнал",
+                        "Карта отклика",
+                        "Сохранён безопасный путь к маяку.",
+                        Instant.parse("2026-07-25T11:58:00Z")
+                ))
+        );
+        DailyGoalPolicyProperties goalProperties =
+                new DailyGoalPolicyProperties(
+                        "adaptive-median-v1",
+                        7,
+                        3,
+                        6_000,
+                        2_000,
+                        12_000,
+                        5,
+                        250
+                );
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(
+                        Instant.parse("2026-07-25T12:00:00Z"),
+                        ZoneOffset.UTC
+                )
+        );
+        MockMvc decisionLogMockMvc = MockMvcBuilders.standaloneSetup(
+                        new HomeController(
+                                new HomeQueryFactory(),
+                                service,
+                                FixedRequestIdentityProvider.user("user-1")
+                        )
+                )
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        decisionLogMockMvc.perform(get("/api/v1/home")
+                        .queryParam("localDate", "2026-07-25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.expedition.decisionLog.length()")
+                        .value(1))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].eventId")
+                        .value(StarterExpeditionContent.FIRST_EVENT_ID))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].eventTitle")
+                        .value("Сигнал у границы"))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].choiceId")
+                        .value("analyze-signal"))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].choiceTitle")
+                        .value("Разобрать сигнал"))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].outcomeTitle")
+                        .value("Карта отклика"))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].outcomeSummary")
+                        .value("Сохранён безопасный путь к маяку."))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].resolvedAt")
+                        .value("2026-07-25T11:58:00Z"));
     }
 
     @Test
@@ -140,6 +228,13 @@ class HomeControllerTest {
     }
 
     private HomeReadRepository repository(HomeRuntimeState state) {
+        return repository(state, List.of());
+    }
+
+    private HomeReadRepository repository(
+            HomeRuntimeState state,
+            List<ExpeditionJourneyEvent> journeyEvents
+    ) {
         return new HomeReadRepository() {
             @Override
             public HomeRuntimeState findState(
@@ -164,7 +259,7 @@ class HomeControllerTest {
                     String expeditionId,
                     long journeyNumber
             ) {
-                return List.of();
+                return journeyEvents;
             }
         };
     }

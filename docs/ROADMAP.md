@@ -366,6 +366,19 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/API/PostgreSQL/parser/widget coverage, включая сброс trail для
       нового похода
 
+## Milestone 16 — Current journey decision log
+
+### CODE_COMPLETE
+
+- [x] Additive Home `decisionLog` из durable event results только текущего
+      `journeyNumber`
+- [x] Persisted event/choice/outcome copy и `resolvedAt`, устойчивые к content
+      republish/rollback
+- [x] Code-native journal card, ordered entries, accessible empty state и
+      legacy parser fallback
+- [x] Unit/API/PostgreSQL/parser/widget coverage, включая пустой журнал нового
+      похода и Home-unavailable fallback
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

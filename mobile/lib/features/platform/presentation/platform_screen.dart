@@ -284,8 +284,10 @@ class _PlatformScreenState extends State<PlatformScreen> {
     final Future<PlatformSnapshot> platformFuture = platformLoader();
     int? availableEnergy;
     int? economyVersion;
+    HomeSnapshot? homeSnapshot;
     try {
       final HomeSnapshot home = await homeLoader();
+      homeSnapshot = home;
       availableEnergy = home.isCached ? null : home.availableEnergy;
       economyVersion = home.isCached ? null : home.economyVersion;
     } on Object {
@@ -301,6 +303,7 @@ class _PlatformScreenState extends State<PlatformScreen> {
       platform: platform,
       availableEnergy: availableEnergy,
       economyVersion: economyVersion,
+      home: homeSnapshot,
     );
   }
 
@@ -327,11 +330,13 @@ class _PlatformScreenState extends State<PlatformScreen> {
       );
       int? availableEnergy;
       int? economyVersion;
+      HomeSnapshot? homeSnapshot;
       try {
         final PlatformHomeLoader homeLoader =
             widget.homeLoader ??
             () => HomeApiClient.fromEnvironment().fetchHome(DateTime.now());
         final HomeSnapshot home = await homeLoader();
+        homeSnapshot = home;
         availableEnergy = home.isCached ? null : home.availableEnergy;
         economyVersion = home.isCached ? null : home.economyVersion;
       } on Object {
@@ -354,6 +359,7 @@ class _PlatformScreenState extends State<PlatformScreen> {
             platform: result.snapshot,
             availableEnergy: availableEnergy,
             economyVersion: economyVersion,
+            home: homeSnapshot,
           ),
         );
       });
@@ -449,11 +455,13 @@ class _PlatformViewData {
     required this.platform,
     required this.availableEnergy,
     required this.economyVersion,
+    required this.home,
   });
 
   final PlatformSnapshot platform;
   final int? availableEnergy;
   final int? economyVersion;
+  final HomeSnapshot? home;
 }
 
 class _PlatformAppActionsMenu extends StatelessWidget {
@@ -582,6 +590,10 @@ class _PlatformBody extends StatelessWidget {
           ],
           _JournalHero(data: data, equippedCosmeticIds: equippedCosmeticIds),
           const SizedBox(height: 12),
+          if (data.home case final HomeSnapshot home) ...<Widget>[
+            _JourneyDecisionLogCard(snapshot: home),
+            const SizedBox(height: 12),
+          ],
           _OnboardingCard(snapshot: snapshot, onResume: onResumeFirstJourney),
           const SizedBox(height: 12),
           _WeeklyRouteCard(
@@ -723,6 +735,200 @@ class _PlatformBody extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _JourneyDecisionLogCard extends StatelessWidget {
+  const _JourneyDecisionLogCard({required this.snapshot});
+
+  final HomeSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final List<HomeExpeditionDecisionLogEntry> decisions =
+        snapshot.decisionLog;
+    return ExpeditionPanel(
+      key: const Key('platform-journey-decision-log'),
+      tone: ExpeditionPanelTone.resonance,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ExpeditionBadge(
+              label:
+                  'Поход №${snapshot.expeditionJourneyNumber}'
+                  '${snapshot.isCached ? ' · сохранённая запись' : ''}',
+              icon: Icons.alt_route,
+              tone: ExpeditionPanelTone.resonance,
+              allowWrap: true,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text('Решения маршрута', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text(
+            'Только уже принятые сервером решения текущего похода.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (decisions.isEmpty)
+            Semantics(
+              label:
+                  'Поход ${snapshot.expeditionJourneyNumber}: '
+                  'решений пока нет',
+              child: ExcludeSemantics(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colors.surfaceContainerHighest.withValues(
+                      alpha: 0.56,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.outlineVariant),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.explore_outlined,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Первое решение появится после события маршрута.',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            for (int index = 0; index < decisions.length; index += 1) ...<Widget>[
+              _JourneyDecisionEntry(
+                entry: decisions[index],
+                index: index,
+                total: decisions.length,
+              ),
+              if (index < decisions.length - 1) const SizedBox(height: 10),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _JourneyDecisionEntry extends StatelessWidget {
+  const _JourneyDecisionEntry({
+    required this.entry,
+    required this.index,
+    required this.total,
+  });
+
+  final HomeExpeditionDecisionLogEntry entry;
+  final int index;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    return Semantics(
+      key: Key('platform-journey-decision-${entry.eventId}'),
+      container: true,
+      label:
+          'Запись ${index + 1} из $total. ${entry.eventTitle}. '
+          'Решение: ${entry.choiceTitle}. Итог: ${entry.outcomeTitle}. '
+          '${entry.outcomeSummary}',
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerHigh.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colors.secondaryContainer,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.secondary),
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colors.onSecondaryContainer,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        entry.eventTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Icon(
+                            Icons.subdirectory_arrow_right,
+                            size: 18,
+                            color: colors.secondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              entry.choiceTitle,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        entry.outcomeTitle,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: colors.secondary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        entry.outcomeSummary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

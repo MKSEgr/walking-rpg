@@ -911,6 +911,23 @@ node labels and state-specific icon geometry keep the visual map readable
 without relying on color alone. Legacy snapshots without `routeTrail` simply
 omit the map and retain the existing ENERGY progress signal.
 
+## Current journey decision log
+
+The journey places the accepted decisions directly below the journal hero.
+The additive Home `decisionLog` owns server order, stable event and choice
+identity, persisted event/choice/outcome copy and resolution time. The card
+shows only entries from the current `journeyNumber`; a new journey therefore
+returns to an explicit empty state instead of mixing earlier routes.
+
+Each entry uses a numbered code-native signal, a decision arrow and separate
+outcome typography. One container semantic announces its position, event,
+choice and outcome, while the visual children are excluded from duplicate
+screen-reader output. Persisted copy is rendered literally and is never
+reconstructed from current content, node topology or display-name heuristics.
+Cached Home data is labelled as a saved entry; if Home is unavailable the
+platform journal remains usable and omits this server-owned section. Legacy
+snapshots without `decisionLog` render the same accessible empty state.
+
 ## Next visual slices
 
 1. Extend the four pivotal event scenes across the remaining first-chapter

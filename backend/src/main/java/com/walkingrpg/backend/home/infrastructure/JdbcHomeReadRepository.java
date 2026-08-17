@@ -52,14 +52,26 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
             long journeyNumber
     ) {
         return jdbcTemplate.query("""
-                SELECT event_id
+                SELECT event_id,
+                       event_title,
+                       choice_id,
+                       choice_title,
+                       outcome_title,
+                       outcome_summary,
+                       server_time
                 FROM processed_event_resolution
                 WHERE user_id = ?
                   AND expedition_id = ?
                   AND journey_number = ?
                 ORDER BY expedition_version, receipt_id
                 """, (resultSet, rowNumber) -> new ExpeditionJourneyEvent(
-                resultSet.getString("event_id")
+                resultSet.getString("event_id"),
+                resultSet.getString("event_title"),
+                resultSet.getString("choice_id"),
+                resultSet.getString("choice_title"),
+                resultSet.getString("outcome_title"),
+                resultSet.getString("outcome_summary"),
+                resultSet.getTimestamp("server_time").toInstant()
         ), userId, expeditionId, journeyNumber);
     }
 

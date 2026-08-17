@@ -2,7 +2,7 @@ package com.walkingrpg.backend.home.domain;
 
 import java.time.Instant;
 
-public record ExpeditionJourneyEvent(
+public record ExpeditionDecisionSnapshot(
         String eventId,
         String eventTitle,
         String choiceId,
