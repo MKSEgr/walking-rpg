@@ -51,15 +51,11 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(
-        const Key('expedition-route-node-outer-beacon-visited'),
-      ),
+      find.byKey(const Key('expedition-route-node-outer-beacon-visited')),
       findsOneWidget,
     );
     expect(
-      find.byKey(
-        const Key('expedition-route-node-future-branch-v2-visited'),
-      ),
+      find.byKey(const Key('expedition-route-node-future-branch-v2-visited')),
       findsOneWidget,
     );
     expect(
@@ -88,7 +84,9 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('empty accepted trail stays absent', (WidgetTester tester) async {
+  testWidgets('empty accepted trail stays absent', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(

@@ -1457,12 +1457,11 @@ class _ExpeditionHero extends StatelessWidget {
             ExpeditionRouteTrail(
               nodes: snapshot.routeTrail
                   .map(
-                    (HomeExpeditionRouteNode node) =>
-                        ExpeditionRouteTrailNode(
-                          nodeId: node.nodeId,
-                          nodeName: node.nodeName,
-                          state: node.state,
-                        ),
+                    (HomeExpeditionRouteNode node) => ExpeditionRouteTrailNode(
+                      nodeId: node.nodeId,
+                      nodeName: node.nodeName,
+                      state: node.state,
+                    ),
                   )
                   .toList(growable: false),
             ),

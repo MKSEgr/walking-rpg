@@ -252,9 +252,8 @@ class HomeSnapshot {
     }
     return raw
         .map(
-          (Object? value) => HomeExpeditionRouteNode.fromJson(
-            _asMap(value, 'routeTrail[]'),
-          ),
+          (Object? value) =>
+              HomeExpeditionRouteNode.fromJson(_asMap(value, 'routeTrail[]')),
         )
         .toList(growable: false);
   }

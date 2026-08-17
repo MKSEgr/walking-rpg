@@ -34,17 +34,15 @@ class ExpeditionRouteTrail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (nodes.isEmpty) {
-      return const SizedBox.shrink(
-        key: Key('expedition-route-trail-empty'),
-      );
+      return const SizedBox.shrink(key: Key('expedition-route-trail-empty'));
     }
 
     final ExpeditionRouteTrailNode terminal = nodes.last;
-    return Semantics(
-      key: Key(
+    final String routeKey =
         'expedition-route-trail-${nodes.length}-'
-        '${terminal.state.toLowerCase()}',
-      ),
+        '${terminal.state.toLowerCase()}';
+    return Semantics(
+      key: Key(routeKey),
       container: true,
       label: context.l10n.expeditionRouteTrailSemantics(
         nodes.length,
@@ -58,22 +56,22 @@ class ExpeditionRouteTrail extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             reverse: true,
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              children: <Widget>[
-                for (
-                  int index = 0;
-                  index < nodes.length;
-                  index += 1
-                ) ...<Widget>[
-                  if (index > 0) const _RouteConnector(),
-                  _RouteNode(node: nodes[index]),
-                ],
-              ],
-            ),
+            child: Row(children: _routeChildren()),
           ),
         ),
       ),
     );
+  }
+
+  List<Widget> _routeChildren() {
+    final List<Widget> children = <Widget>[];
+    for (int index = 0; index < nodes.length; index += 1) {
+      if (index > 0) {
+        children.add(const _RouteConnector());
+      }
+      children.add(_RouteNode(node: nodes[index]));
+    }
+    return children;
   }
 }
 
@@ -116,11 +114,11 @@ class _RouteNode extends StatelessWidget {
       accent = colors.primary;
       icon = Icons.check_rounded;
     }
+    final String nodeKey =
+        'expedition-route-node-${node.nodeId}-${node.state.toLowerCase()}';
 
     return SizedBox(
-      key: Key(
-        'expedition-route-node-${node.nodeId}-${node.state.toLowerCase()}',
-      ),
+      key: Key(nodeKey),
       width: 88,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -135,14 +133,7 @@ class _RouteNode extends StatelessWidget {
                 colors.surfaceContainerHigh,
               ),
               border: Border.all(color: accent, width: 2),
-              boxShadow: node.isCurrent
-                  ? <BoxShadow>[
-                      BoxShadow(
-                        color: accent.withValues(alpha: 0.26),
-                        blurRadius: 12,
-                      ),
-                    ]
-                  : const <BoxShadow>[],
+              boxShadow: _shadows(accent),
             ),
             child: Icon(icon, size: 20, color: accent),
           ),
@@ -161,5 +152,17 @@ class _RouteNode extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<BoxShadow> _shadows(Color accent) {
+    if (!node.isCurrent) {
+      return const <BoxShadow>[];
+    }
+    return <BoxShadow>[
+      BoxShadow(
+        color: accent.withValues(alpha: 0.26),
+        blurRadius: 12,
+      ),
+    ];
   }
 }
