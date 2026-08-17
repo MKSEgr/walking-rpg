@@ -1786,7 +1786,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Поход №2'), findsOneWidget);
+    expect(find.text('ПОХОД №2'), findsOneWidget);
     final Finder begin = find.byKey(const Key('home-begin-next-journey'));
     expect(begin, findsOneWidget);
     expect(find.text('Начать поход №3'), findsOneWidget);
@@ -1799,7 +1799,7 @@ void main() {
     expect(sentKey, 'journey-key');
     expect(loads, 2);
     expect(find.text('Начат поход №3'), findsOneWidget);
-    expect(find.text('Поход №3'), findsOneWidget);
+    expect(find.text('ПОХОД №3'), findsOneWidget);
     expect(find.byKey(const Key('home-advance-expedition')), findsOneWidget);
   });
 

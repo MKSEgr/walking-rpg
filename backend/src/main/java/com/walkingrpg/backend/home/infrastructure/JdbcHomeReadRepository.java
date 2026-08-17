@@ -124,7 +124,11 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                     null,
                     null,
                     null,
-                    List.of()
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.<InventoryRuntimeItem>of()
             );
         },
                 userId,
