@@ -749,8 +749,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final List<HomeExpeditionDecisionLogEntry> decisions =
-        snapshot.decisionLog;
+    final List<HomeExpeditionDecisionLogEntry> decisions = snapshot.decisionLog;
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -813,7 +812,11 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               ),
             )
           else
-            for (int index = 0; index < decisions.length; index += 1) ...<Widget>[
+            for (
+              int index = 0;
+              index < decisions.length;
+              index += 1
+            ) ...<Widget>[
               _JourneyDecisionEntry(
                 entry: decisions[index],
                 index: index,

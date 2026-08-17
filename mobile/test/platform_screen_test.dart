@@ -61,29 +61,27 @@ void main() {
     WidgetTester tester,
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
-    final HomeSnapshot home = _homeSnapshotWithDecisions(
-      const <HomeExpeditionDecisionLogEntry>[
-        HomeExpeditionDecisionLogEntry(
-          eventId: 'outer-beacon-v1',
-          eventTitle: 'Сигнал у границы',
-          choiceId: 'follow-pulse',
-          choiceTitle: 'Пойти за импульсом',
-          outcomeTitle: 'Найден маяк',
-          outcomeSummary: 'Импульс открыл безопасный путь.',
-          resolvedAt: '2026-07-26T05:58:00Z',
-        ),
-        HomeExpeditionDecisionLogEntry(
-          eventId: 'lumen-gate-v1',
-          eventTitle: 'Люминовые ворота',
-          choiceId: 'stabilize-core',
-          choiceTitle: 'Стабилизировать ядро',
-          outcomeTitle: 'Ровный импульс',
-          outcomeSummary: 'Ворота удержали курс экспедиции.',
-          resolvedAt: '2026-07-26T06:12:00Z',
-        ),
-      ],
-      journeyNumber: 4,
-    );
+    final HomeSnapshot home =
+        _homeSnapshotWithDecisions(const <HomeExpeditionDecisionLogEntry>[
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'outer-beacon-v1',
+            eventTitle: 'Сигнал у границы',
+            choiceId: 'follow-pulse',
+            choiceTitle: 'Пойти за импульсом',
+            outcomeTitle: 'Найден маяк',
+            outcomeSummary: 'Импульс открыл безопасный путь.',
+            resolvedAt: '2026-07-26T05:58:00Z',
+          ),
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'lumen-gate-v1',
+            eventTitle: 'Люминовые ворота',
+            choiceId: 'stabilize-core',
+            choiceTitle: 'Стабилизировать ядро',
+            outcomeTitle: 'Ровный импульс',
+            outcomeSummary: 'Ворота удержали курс экспедиции.',
+            resolvedAt: '2026-07-26T06:12:00Z',
+          ),
+        ], journeyNumber: 4);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -149,9 +147,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final Finder card = find.byKey(
-      const Key('platform-journey-decision-log'),
-    );
+    final Finder card = find.byKey(const Key('platform-journey-decision-log'));
     await _bringIntoView(tester, card);
 
     expect(find.text('Решения маршрута'), findsOneWidget);
@@ -159,10 +155,7 @@ void main() {
       find.text('Первое решение появится после события маршрута.'),
       findsOneWidget,
     );
-    expect(
-      find.bySemanticsLabel('Поход 1: решений пока нет'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Поход 1: решений пока нет'), findsOneWidget);
     _expectNoLayoutException(tester);
     semantics.dispose();
   });

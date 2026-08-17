@@ -58,10 +58,7 @@ void main() {
       snapshot.decisionLog.single.outcomeSummary,
       'Импульс вывел экспедицию к люминовым воротам.',
     );
-    expect(
-      snapshot.decisionLog.single.resolvedAt,
-      '2026-07-26T05:58:00Z',
-    );
+    expect(snapshot.decisionLog.single.resolvedAt, '2026-07-26T05:58:00Z');
     expect(snapshot.expeditionStatus, 'EVENT_READY');
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
@@ -882,8 +879,7 @@ Map<String, dynamic> _readyHomeResponse() {
           'choiceId': 'follow-pulse',
           'choiceTitle': 'Пойти за импульсом',
           'outcomeTitle': 'Найден маяк',
-          'outcomeSummary':
-              'Импульс вывел экспедицию к люминовым воротам.',
+          'outcomeSummary': 'Импульс вывел экспедицию к люминовым воротам.',
           'resolvedAt': '2026-07-26T05:58:00Z',
         },
       ],
