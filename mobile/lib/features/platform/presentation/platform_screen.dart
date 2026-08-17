@@ -779,6 +779,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
           const SizedBox(height: 16),
           if (decisions.isEmpty)
             Semantics(
+              key: const Key('platform-journey-decision-empty'),
               label:
                   'Поход ${snapshot.expeditionJourneyNumber}: '
                   'решений пока нет',

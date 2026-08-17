@@ -95,22 +95,22 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final Finder second = find.byKey(
-      const Key('platform-journey-decision-lumen-gate-v1'),
+    final Finder log = find.byKey(
+      const Key('platform-journey-decision-log'),
     );
-    await _bringIntoView(tester, second);
+    await _bringIntoView(tester, log);
     final Finder first = find.byKey(
       const Key('platform-journey-decision-outer-beacon-v1'),
     );
-
-    expect(
-      find.byKey(const Key('platform-journey-decision-log')),
-      findsOneWidget,
+    final Finder second = find.byKey(
+      const Key('platform-journey-decision-lumen-gate-v1'),
     );
+
+    expect(log, findsOneWidget);
     expect(find.text('Поход №4'), findsOneWidget);
+
+    await _bringIntoView(tester, first);
     expect(find.text('Сигнал у границы'), findsOneWidget);
-    expect(find.text('Люминовые ворота'), findsOneWidget);
-    expect(tester.getTopLeft(first).dy, lessThan(tester.getTopLeft(second).dy));
     expect(
       find.bySemanticsLabel(
         'Запись 1 из 2. Сигнал у границы. '
@@ -119,6 +119,10 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    await _bringIntoView(tester, second);
+    expect(find.text('Люминовые ворота'), findsOneWidget);
+    expect(tester.getTopLeft(first).dy, lessThan(tester.getTopLeft(second).dy));
     expect(
       find.bySemanticsLabel(
         'Запись 2 из 2. Люминовые ворота. '
@@ -151,6 +155,10 @@ void main() {
     await _bringIntoView(tester, card);
 
     expect(find.text('Решения маршрута'), findsOneWidget);
+    final Finder empty = find.byKey(
+      const Key('platform-journey-decision-empty'),
+    );
+    await _bringIntoView(tester, empty);
     expect(
       find.text('Первое решение появится после события маршрута.'),
       findsOneWidget,
@@ -551,6 +559,11 @@ void main() {
     expect(recoveryOpened, isTrue);
     expect(find.text('Путевой журнал'), findsOneWidget);
     expect(find.text('Сезон первого сигнала'), findsWidgets);
+
+    final Finder firstJourney = find.byKey(
+      const Key('first-journey-route-signal-1-6'),
+    );
+    await _bringIntoView(tester, firstJourney);
     expect(find.text('1/6'), findsOneWidget);
 
     final Finder resume = find.byKey(
