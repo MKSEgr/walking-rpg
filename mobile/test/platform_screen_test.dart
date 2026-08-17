@@ -95,9 +95,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final Finder log = find.byKey(
-      const Key('platform-journey-decision-log'),
-    );
+    final Finder log = find.byKey(const Key('platform-journey-decision-log'));
     await _bringIntoView(tester, log);
     final Finder first = find.byKey(
       const Key('platform-journey-decision-outer-beacon-v1'),
