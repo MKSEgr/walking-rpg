@@ -293,13 +293,12 @@ class EventResolutionIntegrationTest {
                 ))
         );
 
-        jdbcTemplate.update("""
-                UPDATE expedition_journey_cycle
-                SET journey_number = 2,
-                    updated_at = now()
-                WHERE user_id = ?
-                  AND expedition_id = ?
-                """, "event-user", StarterExpeditionContent.EXPEDITION_ID);
+        expeditionRepository.saveJourneyNumber(
+                "event-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                2,
+                NOW
+        );
         jdbcTemplate.update("""
                 UPDATE expedition_progress
                 SET current_node_id = ?,
