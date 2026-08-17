@@ -272,11 +272,23 @@ class HomeServiceTest {
                         null
                 ),
                 List.of(
-                        new ExpeditionJourneyEvent(
-                                StarterExpeditionContent.FIRST_EVENT_ID
+                        journeyEvent(
+                                StarterExpeditionContent.FIRST_EVENT_ID,
+                                "Первый сигнал",
+                                "analyze-signal",
+                                "Разобрать сигнал",
+                                "Карта отклика",
+                                "Навигатор сохранил первый маршрут.",
+                                NOW.minusSeconds(60)
                         ),
-                        new ExpeditionJourneyEvent(
-                                StarterExpeditionContent.SECOND_EVENT_ID
+                        journeyEvent(
+                                StarterExpeditionContent.SECOND_EVENT_ID,
+                                "Сердце маяка",
+                                "stabilize-core",
+                                "Стабилизировать ядро",
+                                "Ровный импульс",
+                                "Маяк удержал безопасный курс.",
+                                NOW
                         )
                 )
         );
@@ -293,9 +305,10 @@ class HomeServiceTest {
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
 
-        var trail = service.getSnapshot(
+        var expedition = service.getSnapshot(
                 new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
-        ).expedition().routeTrail();
+        ).expedition();
+        var trail = expedition.routeTrail();
 
         assertEquals(3, trail.size());
         assertEquals(StarterExpeditionContent.FIRST_NODE_ID,
@@ -307,6 +320,34 @@ class HomeServiceTest {
         assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
                 trail.get(2).nodeId());
         assertEquals("CURRENT", trail.get(2).state());
+        assertEquals(2, expedition.decisionLog().size());
+        assertEquals("Первый сигнал",
+                expedition.decisionLog().getFirst().eventTitle());
+        assertEquals("Разобрать сигнал",
+                expedition.decisionLog().getFirst().choiceTitle());
+        assertEquals("Ровный импульс",
+                expedition.decisionLog().getLast().outcomeTitle());
+        assertEquals(NOW, expedition.decisionLog().getLast().resolvedAt());
+    }
+
+    private ExpeditionJourneyEvent journeyEvent(
+            String eventId,
+            String eventTitle,
+            String choiceId,
+            String choiceTitle,
+            String outcomeTitle,
+            String outcomeSummary,
+            Instant resolvedAt
+    ) {
+        return new ExpeditionJourneyEvent(
+                eventId,
+                eventTitle,
+                choiceId,
+                choiceTitle,
+                outcomeTitle,
+                outcomeSummary,
+                resolvedAt
+        );
     }
 
     private DailyGoalPolicyProperties goalProperties() {

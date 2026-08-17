@@ -291,6 +291,26 @@ Authorization: Bearer <access-token>
         "state": "CURRENT"
       }
     ],
+    "decisionLog": [
+      {
+        "eventId": "outer-beacon-v1",
+        "eventTitle": "Сигнал у границы",
+        "choiceId": "analyze-signal",
+        "choiceTitle": "Разобрать сигнал",
+        "outcomeTitle": "Карта отклика",
+        "outcomeSummary": "Навигатор сохранил безопасный путь к маяку.",
+        "resolvedAt": "2026-07-26T06:20:00Z"
+      },
+      {
+        "eventId": "lumen-gate-v1",
+        "eventTitle": "Сердце маяка",
+        "choiceId": "stabilize-core",
+        "choiceTitle": "Стабилизировать ядро",
+        "outcomeTitle": "Ровный импульс",
+        "outcomeSummary": "Маяк удержал безопасный курс.",
+        "resolvedAt": "2026-07-26T07:00:00Z"
+      }
+    ],
     "unlockedEvent": null
   }
 }
@@ -312,6 +332,11 @@ Authorization: Bearer <access-token>
   последнюю точку `CURRENT` либо `COMPLETED`, не раскрывает будущие развилки и
   не смешивает результаты других `journeyNumber`; legacy response без поля
   остаётся валидным, но не показывает карту;
+- `expedition.decisionLog[]` — упорядоченный журнал уже принятых решений только
+  текущего похода. Заголовки события, выбора и исхода, описание результата и
+  `resolvedAt` читаются из immutable event resolution, поэтому republish или
+  rollback контента не переписывает прошлое; новый `journeyNumber` начинает
+  пустой журнал, а legacy response без поля остаётся валидным;
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а
   `pet.evolutionStage` — authoritative стадия из platform state; legacy state

@@ -754,6 +754,28 @@ parser/outbox/widget, account export/delete и synthetic backup coverage реа�
 RU/EN accessibility coverage реализованы. GPS и real-time walking map не
 входят в этот slice.
 
+### US-032. Вспомнить решения текущего похода
+
+Как игрок, я хочу видеть в путевом журнале уже принятые решения текущего
+похода и их последствия, чтобы понимать историю своего маршрута.
+
+Критерии:
+
+- Home возвращает упорядоченный `decisionLog` только для текущего
+  `journeyNumber`;
+- каждая запись содержит stable event/choice identity, сохранённые заголовки
+  события, выбора и исхода, описание результата и `resolvedAt`;
+- backend читает copy из durable event resolution, поэтому content
+  republish/rollback не меняет уже принятую запись;
+- новый поход начинает пустой журнал и не смешивает решения предыдущего
+  прохождения;
+- Flutter сохраняет порядок ответа, показывает code-native записи и доступный
+  empty state без client-side topology inference;
+- legacy snapshots без `decisionLog` остаются читаемыми.
+
+**Статус:** additive Home projection, current-journey PostgreSQL scope,
+mobile parser и путевой журнал с unit/API/parser/widget coverage реализованы.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -776,6 +798,8 @@ RU/EN accessibility coverage реализованы. GPS и real-time walking ma
 - повторяемый цикл экспедиции с сохранением постоянной прогрессии.
 - server-authoritative визуальный след узлов текущего похода без спойлеров
   будущей топологии.
+- server-authoritative журнал решений текущего похода со стабильным
+  persisted outcome copy.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

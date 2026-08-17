@@ -32,6 +32,7 @@ import com.walkingrpg.backend.home.domain.CraftingResultPreviewSnapshot;
 import com.walkingrpg.backend.home.domain.EquipmentItemSnapshot;
 import com.walkingrpg.backend.home.domain.EquipmentSlotSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionChoiceRequirementSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
@@ -491,6 +492,7 @@ public class HomeService {
                 state.expeditionVersion(),
                 state.expeditionJourneyNumber(),
                 routeTrail(definition, status, journeyEvents),
+                decisionLog(journeyEvents),
                 eventSnapshot(
                         definition,
                         state,
@@ -532,6 +534,22 @@ public class HomeService {
             trail.add(terminal);
         }
         return List.copyOf(trail);
+    }
+
+    private List<ExpeditionDecisionSnapshot> decisionLog(
+            List<ExpeditionJourneyEvent> journeyEvents
+    ) {
+        return journeyEvents.stream()
+                .map(event -> new ExpeditionDecisionSnapshot(
+                        event.eventId(),
+                        event.eventTitle(),
+                        event.choiceId(),
+                        event.choiceTitle(),
+                        event.outcomeTitle(),
+                        event.outcomeSummary(),
+                        event.resolvedAt()
+                ))
+                .toList();
     }
 
     private ExpeditionEventSnapshot eventSnapshot(

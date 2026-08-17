@@ -256,6 +256,19 @@ class EventResolutionIntegrationTest {
         assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
                 home.expedition().routeTrail().get(2).nodeId());
         assertEquals("CURRENT", home.expedition().routeTrail().get(2).state());
+        assertEquals(2, home.expedition().decisionLog().size());
+        assertEquals(firstEvent.eventId(),
+                home.expedition().decisionLog().getFirst().eventId());
+        assertEquals(firstEvent.choiceTitle(),
+                home.expedition().decisionLog().getFirst().choiceTitle());
+        assertEquals(secondEvent.eventTitle(),
+                home.expedition().decisionLog().getLast().eventTitle());
+        assertEquals(secondEvent.outcomeTitle(),
+                home.expedition().decisionLog().getLast().outcomeTitle());
+        assertEquals(secondEvent.outcomeSummary(),
+                home.expedition().decisionLog().getLast().outcomeSummary());
+        assertEquals(secondEvent.serverTime(),
+                home.expedition().decisionLog().getLast().resolvedAt());
         assertEquals("Пепельная орбита",
                 home.pendingEventResult().nextNode().name());
         assertEquals(1, home.inventory().size());
@@ -324,6 +337,7 @@ class EventResolutionIntegrationTest {
                 nextJourney.expedition().routeTrail().getFirst().nodeId());
         assertEquals("CURRENT",
                 nextJourney.expedition().routeTrail().getFirst().state());
+        assertEquals(0, nextJourney.expedition().decisionLog().size());
     }
 
     @Test

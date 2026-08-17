@@ -57,6 +57,119 @@ void main() {
     expect(find.byKey(const Key('platform-journal-hero')), findsOneWidget);
   });
 
+  testWidgets('journal preserves authoritative current-journey decisions', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final HomeSnapshot home =
+        _homeSnapshotWithDecisions(const <HomeExpeditionDecisionLogEntry>[
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'outer-beacon-v1',
+            eventTitle: 'Сигнал у границы',
+            choiceId: 'follow-pulse',
+            choiceTitle: 'Пойти за импульсом',
+            outcomeTitle: 'Найден маяк',
+            outcomeSummary: 'Импульс открыл безопасный путь.',
+            resolvedAt: '2026-07-26T05:58:00Z',
+          ),
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'lumen-gate-v1',
+            eventTitle: 'Люминовые ворота',
+            choiceId: 'stabilize-core',
+            choiceTitle: 'Стабилизировать ядро',
+            outcomeTitle: 'Ровный импульс',
+            outcomeSummary: 'Ворота удержали курс экспедиции.',
+            resolvedAt: '2026-07-26T06:12:00Z',
+          ),
+        ], journeyNumber: 4);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => home,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder log = find.byKey(const Key('platform-journey-decision-log'));
+    await _bringIntoView(tester, log);
+    final Finder first = find.byKey(
+      const Key('platform-journey-decision-outer-beacon-v1'),
+    );
+    final Finder second = find.byKey(
+      const Key('platform-journey-decision-lumen-gate-v1'),
+    );
+
+    expect(log, findsOneWidget);
+    final Finder journey = find.byKey(
+      const Key('platform-journey-decision-journey'),
+    );
+    await _bringIntoView(tester, journey);
+    expect(find.text('ПОХОД №4'), findsOneWidget);
+
+    await _bringIntoView(tester, first);
+    expect(find.text('Сигнал у границы'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Запись 1 из 2. Сигнал у границы. '
+        'Решение: Пойти за импульсом. Итог: Найден маяк. '
+        'Импульс открыл безопасный путь.',
+      ),
+      findsOneWidget,
+    );
+
+    await _bringIntoView(tester, second);
+    expect(find.text('Люминовые ворота'), findsOneWidget);
+    expect(tester.getTopLeft(first).dy, lessThan(tester.getTopLeft(second).dy));
+    expect(
+      find.bySemanticsLabel(
+        'Запись 2 из 2. Люминовые ворота. '
+        'Решение: Стабилизировать ядро. Итог: Ровный импульс. '
+        'Ворота удержали курс экспедиции.',
+      ),
+      findsOneWidget,
+    );
+    _expectNoLayoutException(tester);
+    semantics.dispose();
+  });
+
+  testWidgets('journal shows an accessible empty decision state', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder card = find.byKey(const Key('platform-journey-decision-log'));
+    await _bringIntoView(tester, card);
+
+    expect(find.text('Решения маршрута'), findsOneWidget);
+    final Finder empty = find.byKey(
+      const Key('platform-journey-decision-empty'),
+    );
+    await _bringIntoView(tester, empty);
+    expect(
+      find.text('Первое решение появится после события маршрута.'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Поход 1: решений пока нет'), findsOneWidget);
+    _expectNoLayoutException(tester);
+    semantics.dispose();
+  });
+
   testWidgets('intermediate pet form keeps the adult evolution action', (
     WidgetTester tester,
   ) async {
@@ -448,6 +561,11 @@ void main() {
     expect(recoveryOpened, isTrue);
     expect(find.text('Путевой журнал'), findsOneWidget);
     expect(find.text('Сезон первого сигнала'), findsWidgets);
+
+    final Finder firstJourney = find.byKey(
+      const Key('first-journey-route-signal-1-6'),
+    );
+    await _bringIntoView(tester, firstJourney);
     expect(find.text('1/6'), findsOneWidget);
 
     final Finder resume = find.byKey(
@@ -1133,6 +1251,10 @@ void main() {
     expect(weeklyButton.onPressed, isNull);
     expect(find.text('Баланс ENERGY сейчас недоступен'), findsOneWidget);
     expect(find.text('Потратить 10 ENERGY'), findsNothing);
+    expect(
+      find.byKey(const Key('platform-journey-decision-log')),
+      findsNothing,
+    );
     expect(commands, 0);
   });
 
@@ -1439,6 +1561,48 @@ Finder _sandboxText() {
   return find.textContaining(
     RegExp('sandbox', caseSensitive: false),
     findRichText: true,
+  );
+}
+
+HomeSnapshot _homeSnapshotWithDecisions(
+  List<HomeExpeditionDecisionLogEntry> decisions, {
+  required int journeyNumber,
+}) {
+  const HomeSnapshot demo = HomeSnapshot.demo;
+  return HomeSnapshot(
+    localDate: demo.localDate,
+    timeZone: demo.timeZone,
+    dailySteps: demo.dailySteps,
+    dailyGoal: demo.dailyGoal,
+    availableEnergy: demo.availableEnergy,
+    activityStateVersion: demo.activityStateVersion,
+    economyVersion: demo.economyVersion,
+    lastActivitySyncAt: demo.lastActivitySyncAt,
+    serverTime: demo.serverTime,
+    contentVersion: demo.contentVersion,
+    expeditionId: demo.expeditionId,
+    expeditionName: demo.expeditionName,
+    currentNodeId: demo.currentNodeId,
+    currentNodeName: demo.currentNodeName,
+    expeditionProgress: demo.expeditionProgress,
+    requiredEnergy: demo.requiredEnergy,
+    expeditionStatus: demo.expeditionStatus,
+    expeditionVersion: demo.expeditionVersion,
+    expeditionJourneyNumber: journeyNumber,
+    routeTrail: demo.routeTrail,
+    decisionLog: decisions,
+    unlockedEvent: demo.unlockedEvent,
+    pilotName: demo.pilotName,
+    pilotLevel: demo.pilotLevel,
+    pilotCurrentExperience: demo.pilotCurrentExperience,
+    pilotNextLevelExperience: demo.pilotNextLevelExperience,
+    petId: demo.petId,
+    petName: demo.petName,
+    petSpecies: demo.petSpecies,
+    petLevel: demo.petLevel,
+    petBond: demo.petBond,
+    petEvolutionStage: demo.petEvolutionStage,
+    dailyGoalPolicy: demo.dailyGoalPolicy,
   );
 }
 

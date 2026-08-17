@@ -32,6 +32,7 @@ class HomeSnapshot {
     this.petEvolutionStage,
     this.expeditionJourneyNumber = 1,
     this.routeTrail = const <HomeExpeditionRouteNode>[],
+    this.decisionLog = const <HomeExpeditionDecisionLogEntry>[],
     this.pilotCurrentExperience = 0,
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
@@ -96,6 +97,7 @@ class HomeSnapshot {
       expeditionVersion: _readInt(expedition, 'version'),
       expeditionJourneyNumber: expeditionJourneyNumber,
       routeTrail: _readRouteTrail(expedition['routeTrail']),
+      decisionLog: _readDecisionLog(expedition['decisionLog']),
       unlockedEvent: eventJson == null
           ? null
           : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
@@ -143,6 +145,7 @@ class HomeSnapshot {
   final int expeditionVersion;
   final int expeditionJourneyNumber;
   final List<HomeExpeditionRouteNode> routeTrail;
+  final List<HomeExpeditionDecisionLogEntry> decisionLog;
   final HomeExpeditionEvent? unlockedEvent;
   final String pilotName;
   final int pilotLevel;
@@ -254,6 +257,22 @@ class HomeSnapshot {
         .map(
           (Object? value) =>
               HomeExpeditionRouteNode.fromJson(_asMap(value, 'routeTrail[]')),
+        )
+        .toList(growable: false);
+  }
+
+  static List<HomeExpeditionDecisionLogEntry> _readDecisionLog(Object? raw) {
+    if (raw == null) {
+      return const <HomeExpeditionDecisionLogEntry>[];
+    }
+    if (raw is! List<dynamic>) {
+      throw const FormatException('decisionLog должен быть JSON-массивом');
+    }
+    return raw
+        .map(
+          (Object? value) => HomeExpeditionDecisionLogEntry.fromJson(
+            _asMap(value, 'decisionLog[]'),
+          ),
         )
         .toList(growable: false);
   }
@@ -396,6 +415,42 @@ class HomeExpeditionRouteNode {
   bool get isVisited => state == 'VISITED';
   bool get isCurrent => state == 'CURRENT';
   bool get isCompleted => state == 'COMPLETED';
+}
+
+class HomeExpeditionDecisionLogEntry {
+  const HomeExpeditionDecisionLogEntry({
+    required this.eventId,
+    required this.eventTitle,
+    required this.choiceId,
+    required this.choiceTitle,
+    required this.outcomeTitle,
+    required this.outcomeSummary,
+    required this.resolvedAt,
+  });
+
+  factory HomeExpeditionDecisionLogEntry.fromJson(Map<String, dynamic> json) {
+    final String resolvedAt = HomeSnapshot._readString(json, 'resolvedAt');
+    if (DateTime.tryParse(resolvedAt) == null) {
+      throw const FormatException('resolvedAt должен быть ISO-8601 датой');
+    }
+    return HomeExpeditionDecisionLogEntry(
+      eventId: HomeSnapshot._readString(json, 'eventId'),
+      eventTitle: HomeSnapshot._readString(json, 'eventTitle'),
+      choiceId: HomeSnapshot._readString(json, 'choiceId'),
+      choiceTitle: HomeSnapshot._readString(json, 'choiceTitle'),
+      outcomeTitle: HomeSnapshot._readString(json, 'outcomeTitle'),
+      outcomeSummary: HomeSnapshot._readString(json, 'outcomeSummary'),
+      resolvedAt: resolvedAt,
+    );
+  }
+
+  final String eventId;
+  final String eventTitle;
+  final String choiceId;
+  final String choiceTitle;
+  final String outcomeTitle;
+  final String outcomeSummary;
+  final String resolvedAt;
 }
 
 class HomeExpeditionEvent {

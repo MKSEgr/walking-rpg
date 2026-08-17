@@ -63,6 +63,7 @@ class DemoHomeServiceTest {
         assertEquals(1, snapshot.expedition().routeTrail().size());
         assertEquals("CURRENT",
                 snapshot.expedition().routeTrail().getFirst().state());
+        assertEquals(0, snapshot.expedition().decisionLog().size());
         assertNull(snapshot.expedition().unlockedEvent());
     }
 }
