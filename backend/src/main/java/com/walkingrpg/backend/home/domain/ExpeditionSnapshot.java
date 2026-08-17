@@ -14,6 +14,7 @@ public record ExpeditionSnapshot(
         long journeyNumber,
         List<ExpeditionRouteNodeSnapshot> routeTrail,
         List<ExpeditionDecisionSnapshot> decisionLog,
+        ExpeditionCompletionRecapSnapshot completionRecap,
         ExpeditionEventSnapshot unlockedEvent
 ) {
     public ExpeditionSnapshot {
@@ -48,6 +49,7 @@ public record ExpeditionSnapshot(
                 journeyNumber,
                 routeTrail,
                 List.of(),
+                null,
                 unlockedEvent
         );
     }
@@ -76,6 +78,7 @@ public record ExpeditionSnapshot(
                 journeyNumber,
                 List.of(),
                 List.of(),
+                null,
                 unlockedEvent
         );
     }
@@ -103,6 +106,7 @@ public record ExpeditionSnapshot(
                 1,
                 List.of(),
                 List.of(),
+                null,
                 unlockedEvent
         );
     }

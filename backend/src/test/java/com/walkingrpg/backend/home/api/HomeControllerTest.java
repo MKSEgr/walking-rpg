@@ -242,7 +242,111 @@ class HomeControllerTest {
                         "$.expedition.decisionLog[0].materialReward.quantity"
                 ).value(2))
                 .andExpect(jsonPath("$.expedition.decisionLog[0].resolvedAt")
-                        .value("2026-07-25T11:58:00Z"));
+                        .value("2026-07-25T11:58:00Z"))
+                .andExpect(jsonPath("$.expedition.completionRecap")
+                        .doesNotExist());
+    }
+
+    @Test
+    void shouldReturnCompletionRecapFromPersistedJourneyRewards()
+            throws Exception {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        var finalNode = content.requireNode(
+                StarterExpeditionContent.THIRD_NODE_ID
+        );
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        finalNode.requiredEnergy(),
+                        finalNode.requiredEnergy(),
+                        "COMPLETED",
+                        3,
+                        finalNode.currentNodeId(),
+                        null
+                ),
+                List.of(new ExpeditionJourneyEvent(
+                        StarterExpeditionContent.SECOND_EVENT_ID,
+                        "Сердце маяка из записи",
+                        "stabilize-core",
+                        "Стабилизировать ядро",
+                        "Ровный импульс",
+                        "Сохранён финальный маршрут.",
+                        48,
+                        "spark-v1",
+                        "Искра из записи",
+                        11,
+                        new MaterialRewardPreviewSnapshot(
+                                "echo-thread",
+                                "Эхо-нити из записи",
+                                2
+                        ),
+                        Instant.parse("2026-07-25T11:58:00Z")
+                ))
+        );
+        DailyGoalPolicyProperties goalProperties =
+                new DailyGoalPolicyProperties(
+                        "adaptive-median-v1",
+                        7,
+                        3,
+                        6_000,
+                        2_000,
+                        12_000,
+                        5,
+                        250
+                );
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(
+                        Instant.parse("2026-07-25T12:00:00Z"),
+                        ZoneOffset.UTC
+                )
+        );
+        MockMvc completedMockMvc = MockMvcBuilders.standaloneSetup(
+                        new HomeController(
+                                new HomeQueryFactory(),
+                                service,
+                                FixedRequestIdentityProvider.user("user-1")
+                        )
+                )
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        completedMockMvc.perform(get("/api/v1/home")
+                        .queryParam("localDate", "2026-07-25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.journeyNumber"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisionCount"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.pilotExperienceGained"
+                ).value(48))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.petBondGained"
+                ).value(11))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.materials[0].itemId"
+                ).value("echo-thread"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.materials[0].itemName"
+                ).value("Эхо-нити из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.materials[0].quantity"
+                ).value(2));
     }
 
     @Test

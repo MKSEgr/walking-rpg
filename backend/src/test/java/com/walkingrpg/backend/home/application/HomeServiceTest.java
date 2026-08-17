@@ -145,6 +145,95 @@ class HomeServiceTest {
     }
 
     @Test
+    void shouldSummarizePersistedRewardsOnlyAfterJourneyCompletion() {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        var finalNode = content.requireNode(
+                StarterExpeditionContent.THIRD_NODE_ID
+        );
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        finalNode.requiredEnergy(),
+                        finalNode.requiredEnergy(),
+                        "COMPLETED",
+                        8,
+                        finalNode.currentNodeId(),
+                        finalNode.event().eventId()
+                ),
+                List.of(
+                        journeyEvent(
+                                StarterExpeditionContent.FIRST_EVENT_ID,
+                                "Первый сигнал из записи",
+                                "analyze-signal",
+                                "Разобрать сигнал",
+                                "Карта отклика",
+                                "Сохранён первый маршрут.",
+                                40,
+                                "spark-v1",
+                                "Искра из записи",
+                                5,
+                                new MaterialRewardPreviewSnapshot(
+                                        "echo-thread",
+                                        "Эхо-нити из записи",
+                                        2
+                                ),
+                                NOW.minusSeconds(60)
+                        ),
+                        journeyEvent(
+                                StarterExpeditionContent.SECOND_EVENT_ID,
+                                "Сердце маяка из записи",
+                                "stabilize-core",
+                                "Стабилизировать ядро",
+                                "Ровный импульс",
+                                "Сохранён финальный маршрут.",
+                                20,
+                                "moss-v1",
+                                "Мох из записи",
+                                15,
+                                new MaterialRewardPreviewSnapshot(
+                                        "echo-thread",
+                                        "Эхо-нити из записи",
+                                        3
+                                ),
+                                NOW
+                        )
+                )
+        );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        var recap = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        ).expedition().completionRecap();
+
+        assertNotNull(recap);
+        assertEquals(1, recap.journeyNumber());
+        assertEquals(2, recap.decisionCount());
+        assertEquals(60, recap.pilotExperienceGained());
+        assertEquals(20, recap.petBondGained());
+        assertEquals(1, recap.materials().size());
+        assertEquals("echo-thread", recap.materials().getFirst().itemId());
+        assertEquals("Эхо-нити из записи",
+                recap.materials().getFirst().itemName());
+        assertEquals(5, recap.materials().getFirst().quantity());
+    }
+
+    @Test
     void shouldRenderSelectedPetBeforeItsFirstReward() {
         HomeReadRepository repository = repository(
                 new HomeRuntimeState(
@@ -336,6 +425,7 @@ class HomeServiceTest {
                 trail.get(2).nodeId());
         assertEquals("CURRENT", trail.get(2).state());
         assertEquals(2, expedition.decisionLog().size());
+        assertNull(expedition.completionRecap());
         assertEquals("Первый сигнал",
                 expedition.decisionLog().getFirst().eventTitle());
         assertEquals("Разобрать сигнал",

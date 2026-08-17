@@ -325,6 +325,7 @@ Authorization: Bearer <access-token>
         "resolvedAt": "2026-07-26T07:00:00Z"
       }
     ],
+    "completionRecap": null,
     "unlockedEvent": null
   }
 }
@@ -354,6 +355,29 @@ Authorization: Bearer <access-token>
   material reward из той же записи; mobile не восстанавливает их из текущего
   content или totals. Новый `journeyNumber` начинает пустой журнал, а legacy
   response без журнала либо без reward fields остаётся валидным;
+- `expedition.completionRecap` — additive nullable итог только завершённого
+  текущего похода. Он содержит тот же `journeyNumber`, число immutable
+  resolutions, суммы фактически выданных XP пилота и связи питомцев, а также
+  ordered `materials[]`, сгруппированные по persisted `itemId + itemName`.
+  Для любого незавершённого или только что начатого похода значение равно
+  `null`; legacy response без поля остаётся валидным. Пример completed shape:
+
+  ```json
+  {
+    "journeyNumber": 2,
+    "decisionCount": 18,
+    "pilotExperienceGained": 1240,
+    "petBondGained": 620,
+    "materials": [
+      {
+        "itemId": "lumen-shard",
+        "itemName": "Люмен-осколок",
+        "quantity": 7
+      }
+    ]
+  }
+  ```
+
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а
   `pet.evolutionStage` — authoritative стадия из platform state; legacy state

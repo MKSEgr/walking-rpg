@@ -69,6 +69,7 @@ void main() {
       'Эхо-нити из записи',
     );
     expect(snapshot.decisionLog.single.materialReward?.quantity, 2);
+    expect(snapshot.completionRecap, isNull);
     expect(snapshot.expeditionStatus, 'EVENT_READY');
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
@@ -112,6 +113,95 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.decisionLog, isEmpty);
+  });
+
+  test('completed response maps the authoritative journey recap', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['status'] = 'COMPLETED'
+      ..['unlockedEvent'] = null
+      ..['completionRecap'] = <String, dynamic>{
+        'journeyNumber': 2,
+        'decisionCount': 3,
+        'pilotExperienceGained': 96,
+        'petBondGained': 24,
+        'materials': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'itemId': 'echo-thread',
+            'itemName': 'Эхо-нити из записи',
+            'quantity': 5,
+          },
+          <String, dynamic>{
+            'itemId': 'ash-seed',
+            'itemName': 'Пепельное семя из записи',
+            'quantity': 2,
+          },
+        ],
+      };
+
+    final HomeExpeditionCompletionRecap? recap = HomeSnapshot.fromJson(
+      response,
+    ).completionRecap;
+
+    expect(recap, isNotNull);
+    expect(recap?.journeyNumber, 2);
+    expect(recap?.decisionCount, 3);
+    expect(recap?.pilotExperienceGained, 96);
+    expect(recap?.petBondGained, 24);
+    expect(recap?.materials, hasLength(2));
+    expect(recap?.materials.first.itemId, 'echo-thread');
+    expect(recap?.materials.first.quantity, 5);
+    expect(recap?.materials.last.itemName, 'Пепельное семя из записи');
+    expect(recap?.hasRewards, isTrue);
+  });
+
+  test('legacy completed response without recap remains readable', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['status'] = 'COMPLETED'
+      ..['unlockedEvent'] = null;
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.expeditionStatus, 'COMPLETED');
+    expect(snapshot.completionRecap, isNull);
+  });
+
+  test('in-progress response rejects a completion recap', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['completionRecap'] = <String, dynamic>{
+      'journeyNumber': 2,
+      'decisionCount': 1,
+      'pilotExperienceGained': 42,
+      'petBondGained': 9,
+      'materials': <Map<String, dynamic>>[],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('completed response rejects a recap for another journey', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['status'] = 'COMPLETED'
+      ..['unlockedEvent'] = null
+      ..['completionRecap'] = <String, dynamic>{
+        'journeyNumber': 1,
+        'decisionCount': 1,
+        'pilotExperienceGained': 42,
+        'petBondGained': 9,
+        'materials': <Map<String, dynamic>>[],
+      };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('legacy decision entry without reward fields remains readable', () {

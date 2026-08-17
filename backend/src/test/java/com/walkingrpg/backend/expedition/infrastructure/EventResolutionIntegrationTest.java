@@ -954,6 +954,22 @@ class EventResolutionIntegrationTest {
         assertEquals(1, rowCount("processed_event_resolution"));
         assertEquals(1, rowCount("pilot_progress"));
         assertEquals(1, rowCount("pet_progress"));
+
+        HomeSnapshotResponse completedHome = homeService.getSnapshot(
+                new HomeQuery(userId, LOCAL_DATE)
+        );
+        assertNotNull(completedHome.expedition().completionRecap());
+        assertEquals(1,
+                completedHome.expedition().completionRecap().decisionCount());
+        assertEquals(result.pilot().experienceGained(), completedHome
+                .expedition().completionRecap().pilotExperienceGained());
+        assertEquals(result.pet().bondGained(), completedHome
+                .expedition().completionRecap().petBondGained());
+        assertEquals(result.material().itemId(), completedHome.expedition()
+                .completionRecap().materials().getFirst().itemId());
+        assertEquals(result.material().quantityGained(), completedHome
+                .expedition().completionRecap().materials().getFirst()
+                .quantity());
     }
 
     @Test
