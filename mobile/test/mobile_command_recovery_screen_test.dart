@@ -440,6 +440,36 @@ void main() {
     expect(find.textContaining('private telemetry error'), findsNothing);
   });
 
+  testWidgets('journey start has a recovery-safe gameplay label', (
+    WidgetTester tester,
+  ) async {
+    final MobileCommand journeyStart = MobileCommand.pending(
+      ownerId: 'owner-1',
+      type: MobileCommandType.expeditionJourneyStart,
+      idempotencyKey: 'private-journey-key',
+      fingerprint: 'private-journey-fingerprint',
+      payload: const <String, Object?>{
+        'expeditionId': 'starter-expedition-v1',
+        'expectedJourneyNumber': 2,
+      },
+      now: DateTime.utc(2026, 8, 17, 8),
+    );
+    final MobileCommandRuntime runtime = _runtime(
+      store: InMemoryMobileCommandStore(<MobileCommand>[journeyStart]),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: MobileCommandRecoveryScreen(runtime: runtime)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Новое путешествие'), findsOneWidget);
+    expect(find.text('Игра'), findsOneWidget);
+    expect(find.textContaining('private-journey-key'), findsNothing);
+    expect(find.textContaining('starter-expedition-v1'), findsNothing);
+    await runtime.close();
+  });
+
   testWidgets('compact recovery remains scrollable with enlarged text', (
     WidgetTester tester,
   ) async {
