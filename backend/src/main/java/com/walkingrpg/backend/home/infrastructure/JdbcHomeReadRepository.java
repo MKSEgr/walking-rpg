@@ -11,6 +11,7 @@ import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepositor
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
+import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
 import com.walkingrpg.backend.progression.application.ActivePetProvider;
 import com.walkingrpg.backend.progression.application.ActivePetSelection;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
@@ -58,21 +59,46 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        choice_title,
                        outcome_title,
                        outcome_summary,
+                       pilot_experience_gained,
+                       pet_id,
+                       pet_name,
+                       pet_bond_gained,
+                       material_item_id,
+                       material_item_name,
+                       material_quantity_gained,
                        server_time
                 FROM processed_event_resolution
                 WHERE user_id = ?
                   AND expedition_id = ?
                   AND journey_number = ?
                 ORDER BY expedition_version, receipt_id
-                """, (resultSet, rowNumber) -> new ExpeditionJourneyEvent(
-                resultSet.getString("event_id"),
-                resultSet.getString("event_title"),
-                resultSet.getString("choice_id"),
-                resultSet.getString("choice_title"),
-                resultSet.getString("outcome_title"),
-                resultSet.getString("outcome_summary"),
-                resultSet.getTimestamp("server_time").toInstant()
-        ), userId, expeditionId, journeyNumber);
+                """, (resultSet, rowNumber) -> {
+            Long materialQuantity = resultSet.getObject(
+                    "material_quantity_gained",
+                    Long.class
+            );
+            MaterialRewardPreviewSnapshot material = materialQuantity == null
+                    ? null
+                    : new MaterialRewardPreviewSnapshot(
+                            resultSet.getString("material_item_id"),
+                            resultSet.getString("material_item_name"),
+                            materialQuantity
+                    );
+            return new ExpeditionJourneyEvent(
+                    resultSet.getString("event_id"),
+                    resultSet.getString("event_title"),
+                    resultSet.getString("choice_id"),
+                    resultSet.getString("choice_title"),
+                    resultSet.getString("outcome_title"),
+                    resultSet.getString("outcome_summary"),
+                    resultSet.getInt("pilot_experience_gained"),
+                    resultSet.getString("pet_id"),
+                    resultSet.getString("pet_name"),
+                    resultSet.getInt("pet_bond_gained"),
+                    material,
+                    resultSet.getTimestamp("server_time").toInstant()
+            );
+        }, userId, expeditionId, journeyNumber);
     }
 
     @Override

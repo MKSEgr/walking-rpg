@@ -9,6 +9,11 @@ public record ExpeditionDecisionSnapshot(
         String choiceTitle,
         String outcomeTitle,
         String outcomeSummary,
+        int pilotExperienceGained,
+        String petId,
+        String petName,
+        int petBondGained,
+        MaterialRewardPreviewSnapshot materialReward,
         Instant resolvedAt
 ) {
 }

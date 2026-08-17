@@ -71,6 +71,15 @@ void main() {
             outcomeTitle: 'Найден маяк',
             outcomeSummary: 'Импульс открыл безопасный путь.',
             resolvedAt: '2026-07-26T05:58:00Z',
+            pilotExperienceGained: 42,
+            petId: 'spark-v1',
+            petName: 'Искра',
+            petBondGained: 9,
+            materialReward: HomeJourneyMaterialReward(
+              itemId: 'echo-thread',
+              itemName: 'Эхо-нити',
+              quantity: 2,
+            ),
           ),
           HomeExpeditionDecisionLogEntry(
             eventId: 'lumen-gate-v1',
@@ -80,6 +89,10 @@ void main() {
             outcomeTitle: 'Ровный импульс',
             outcomeSummary: 'Ворота удержали курс экспедиции.',
             resolvedAt: '2026-07-26T06:12:00Z',
+            pilotExperienceGained: 18,
+            petId: 'moss-v1',
+            petName: 'Мох',
+            petBondGained: 14,
           ),
         ], journeyNumber: 4);
 
@@ -113,23 +126,30 @@ void main() {
 
     await _bringIntoView(tester, first);
     expect(find.text('Сигнал у границы'), findsOneWidget);
+    expect(find.text('+42 XP пилота'), findsOneWidget);
+    expect(find.text('Искра · +9 связи'), findsOneWidget);
+    expect(find.text('+2 Эхо-нити'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Запись 1 из 2. Сигнал у границы. '
         'Решение: Пойти за импульсом. Итог: Найден маяк. '
-        'Импульс открыл безопасный путь.',
+        'Импульс открыл безопасный путь. '
+        'Награды: +42 XP пилота; Искра: +9 связи; +2 Эхо-нити.',
       ),
       findsOneWidget,
     );
 
     await _bringIntoView(tester, second);
     expect(find.text('Люминовые ворота'), findsOneWidget);
+    expect(find.text('+18 XP пилота'), findsOneWidget);
+    expect(find.text('Мох · +14 связи'), findsOneWidget);
     expect(tester.getTopLeft(first).dy, lessThan(tester.getTopLeft(second).dy));
     expect(
       find.bySemanticsLabel(
         'Запись 2 из 2. Люминовые ворота. '
         'Решение: Стабилизировать ядро. Итог: Ровный импульс. '
-        'Ворота удержали курс экспедиции.',
+        'Ворота удержали курс экспедиции. '
+        'Награды: +18 XP пилота; Мох: +14 связи.',
       ),
       findsOneWidget,
     );

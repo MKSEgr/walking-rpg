@@ -17,6 +17,7 @@ import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.application.StarterHomeContent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
+import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
 import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
 import com.walkingrpg.backend.shared.api.ApiExceptionHandler;
@@ -158,6 +159,15 @@ class HomeControllerTest {
                         "Разобрать сигнал",
                         "Карта отклика",
                         "Сохранён безопасный путь к маяку.",
+                        48,
+                        "spark-v1",
+                        "Искра из записи",
+                        11,
+                        new MaterialRewardPreviewSnapshot(
+                                "echo-thread",
+                                "Эхо-нити из записи",
+                                2
+                        ),
                         Instant.parse("2026-07-25T11:58:00Z")
                 ))
         );
@@ -213,6 +223,24 @@ class HomeControllerTest {
                         .value("Карта отклика"))
                 .andExpect(jsonPath("$.expedition.decisionLog[0].outcomeSummary")
                         .value("Сохранён безопасный путь к маяку."))
+                .andExpect(jsonPath(
+                        "$.expedition.decisionLog[0].pilotExperienceGained"
+                ).value(48))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].petId")
+                        .value("spark-v1"))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].petName")
+                        .value("Искра из записи"))
+                .andExpect(jsonPath("$.expedition.decisionLog[0].petBondGained")
+                        .value(11))
+                .andExpect(jsonPath(
+                        "$.expedition.decisionLog[0].materialReward.itemId"
+                ).value("echo-thread"))
+                .andExpect(jsonPath(
+                        "$.expedition.decisionLog[0].materialReward.itemName"
+                ).value("Эхо-нити из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.decisionLog[0].materialReward.quantity"
+                ).value(2))
                 .andExpect(jsonPath("$.expedition.decisionLog[0].resolvedAt")
                         .value("2026-07-25T11:58:00Z"));
     }

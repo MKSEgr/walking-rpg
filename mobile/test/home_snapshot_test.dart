@@ -59,6 +59,16 @@ void main() {
       'Импульс вывел экспедицию к люминовым воротам.',
     );
     expect(snapshot.decisionLog.single.resolvedAt, '2026-07-26T05:58:00Z');
+    expect(snapshot.decisionLog.single.pilotExperienceGained, 42);
+    expect(snapshot.decisionLog.single.petId, 'spark-v1');
+    expect(snapshot.decisionLog.single.petName, 'Искра из записи');
+    expect(snapshot.decisionLog.single.petBondGained, 9);
+    expect(snapshot.decisionLog.single.materialReward?.itemId, 'echo-thread');
+    expect(
+      snapshot.decisionLog.single.materialReward?.itemName,
+      'Эхо-нити из записи',
+    );
+    expect(snapshot.decisionLog.single.materialReward?.quantity, 2);
     expect(snapshot.expeditionStatus, 'EVENT_READY');
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
@@ -104,6 +114,34 @@ void main() {
     expect(snapshot.decisionLog, isEmpty);
   });
 
+  test('legacy decision entry without reward fields remains readable', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    final Map<String, dynamic> decision =
+        (expedition['decisionLog'] as List<dynamic>).single
+            as Map<String, dynamic>;
+    for (final String field in <String>[
+      'pilotExperienceGained',
+      'petId',
+      'petName',
+      'petBondGained',
+      'materialReward',
+    ]) {
+      decision.remove(field);
+    }
+
+    final HomeExpeditionDecisionLogEntry entry = HomeSnapshot.fromJson(
+      response,
+    ).decisionLog.single;
+
+    expect(entry.hasRewards, isFalse);
+    expect(entry.pilotExperienceGained, 0);
+    expect(entry.petName, isNull);
+    expect(entry.petBondGained, 0);
+    expect(entry.materialReward, isNull);
+  });
+
   test('decision log rejects an invalid resolution time', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> expedition =
@@ -111,6 +149,20 @@ void main() {
     final List<dynamic> decisionLog =
         expedition['decisionLog'] as List<dynamic>;
     (decisionLog.single as Map<String, dynamic>)['resolvedAt'] = 'yesterday';
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('decision log rejects a non-positive material reward', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    final List<dynamic> decisionLog =
+        expedition['decisionLog'] as List<dynamic>;
+    final Map<String, dynamic> reward =
+        (decisionLog.single as Map<String, dynamic>)['materialReward']
+            as Map<String, dynamic>;
+    reward['quantity'] = 0;
 
     expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
@@ -880,6 +932,15 @@ Map<String, dynamic> _readyHomeResponse() {
           'choiceTitle': 'Пойти за импульсом',
           'outcomeTitle': 'Найден маяк',
           'outcomeSummary': 'Импульс вывел экспедицию к люминовым воротам.',
+          'pilotExperienceGained': 42,
+          'petId': 'spark-v1',
+          'petName': 'Искра из записи',
+          'petBondGained': 9,
+          'materialReward': <String, dynamic>{
+            'itemId': 'echo-thread',
+            'itemName': 'Эхо-нити из записи',
+            'quantity': 2,
+          },
           'resolvedAt': '2026-07-26T05:58:00Z',
         },
       ],
