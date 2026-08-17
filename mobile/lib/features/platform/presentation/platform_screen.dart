@@ -761,8 +761,7 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
     final List<String> rewardLabels = <String>[
       if (recap.pilotExperienceGained > 0)
         '+${recap.pilotExperienceGained} XP пилота',
-      if (recap.petBondGained > 0)
-        '+${recap.petBondGained} связи спутников',
+      if (recap.petBondGained > 0) '+${recap.petBondGained} связи спутников',
       for (final HomeJourneyMaterialReward material in recap.materials)
         '+${material.quantity} ${material.itemName}',
     ];
@@ -815,14 +814,12 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                     if (recap.pilotExperienceGained > 0)
                       _JourneyRewardChip(
                         icon: Icons.star_outline,
-                        label:
-                            '+${recap.pilotExperienceGained} XP пилота',
+                        label: '+${recap.pilotExperienceGained} XP пилота',
                       ),
                     if (recap.petBondGained > 0)
                       _JourneyRewardChip(
                         icon: Icons.favorite_border,
-                        label:
-                            '+${recap.petBondGained} связи спутников',
+                        label: '+${recap.petBondGained} связи спутников',
                       ),
                     for (final HomeJourneyMaterialReward material
                         in recap.materials)
