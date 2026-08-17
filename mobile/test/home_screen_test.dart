@@ -233,7 +233,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Доступная энергия: 0 · версия 0'),
       200,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
 
     expect(find.text('XP 20 / 100'), findsOneWidget);
