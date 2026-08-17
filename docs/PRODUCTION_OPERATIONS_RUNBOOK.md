@@ -178,7 +178,7 @@ The verifier must confirm:
 - the JSON has no duplicate or undeclared fields and all timestamps are full
   RFC 3339 UTC instants;
 - archive and evidence checksums match;
-- the PostgreSQL image/tool versions, restore flags, Flyway V32 schema and
+- the PostgreSQL image/tool versions, restore flags, Flyway V33 schema and
   application-table set match the exact reviewed contract;
 - source and restored schema, data and sequence manifests match exactly;
 - the applied Flyway chain is current.
@@ -819,6 +819,41 @@ A content rollback from v16 to v15 blocks new Dawn Meridian transitions but
 keeps an already persisted `dawn-meridian` state completable. Do not roll back
 to a pre-V32 binary after such a state has persisted; return content to v15 for
 new journeys and forward-fix binaries that must read the 29th node.
+
+## Steady Step First-Light Causeway rollout
+
+Flyway V33 stages `chapter-1-v17` inactive with a 30th node,
+`first-light-causeway`, without changing active v16 or existing
+platform/pet/expedition state. Deploy and drain every pre-V33 backend before
+activation. V1-v16 retain the two terminal Dawn Meridian outcomes and cannot
+accept `cross-first-light-causeway`.
+
+Publish the exact staged payload:
+
+```json
+{
+  "contentVersion": "chapter-1-v17",
+  "releaseNotes": "Первая глава: «Ровный шаг» открывает Переход первого света.",
+  "content": {
+    "contentVersion": "chapter-1-v17",
+    "chapterId": "signal-chapter-1",
+    "nodeCount": 30,
+    "topology": "steady-step-first-light-causeway-v1"
+  }
+}
+```
+
+Before activation, verify that v16 users at `dawn-meridian` see only two
+terminal outcomes. Activate v17 and compare otherwise identical users with and
+without `steady-step`: Home must project the new route as AVAILABLE and
+LOCKED/UNLOCKED_SKILL respectively. Resolve the available route, complete both
+`first-light-causeway` outcomes in separate journeys and replay commands
+without duplicate rewards.
+
+A content rollback from v17 to v16 blocks new First-Light Causeway transitions
+but keeps an already persisted `first-light-causeway` state completable. Do not
+roll back to a pre-V33 binary after such a state has persisted; return content
+to v16 for new journeys and forward-fix binaries that must read the 30th node.
 
 ## Rollback
 

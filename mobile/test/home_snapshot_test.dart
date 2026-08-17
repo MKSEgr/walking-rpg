@@ -215,6 +215,59 @@ void main() {
     expect(route.requirement?.itemId, 'energy-discipline');
   });
 
+  test('chapter v17 maps the locked Steady Step route generically', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['contentVersion'] = 'chapter-1-v17';
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['currentNodeId'] = 'dawn-meridian'
+      ..['currentNode'] = 'Меридиан рассвета'
+      ..['progress'] = 100
+      ..['requiredEnergy'] = 100
+      ..['version'] = 56
+      ..['unlockedEvent'] = <String, dynamic>{
+        'eventId': 'dawn-meridian-v1',
+        'title': 'Ритм между шагами',
+        'summary': 'Первый свет собрался в подвижный переход.',
+        'status': 'READY',
+        'choices': <Map<String, dynamic>>[],
+        'lockedChoices': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'choiceId': 'cross-first-light-causeway',
+            'title': 'Перейти по первому свету',
+            'description': 'Удержать ритм подвижного перехода.',
+            'pilotExperienceReward': 118,
+            'petBondReward': 76,
+            'materialReward': <String, dynamic>{
+              'itemId': 'prism-dust',
+              'itemName': 'Призматическая пыль',
+              'quantity': 4,
+            },
+            'availability': 'LOCKED',
+            'requirement': <String, dynamic>{
+              'type': 'UNLOCKED_SKILL',
+              'slotId': 'PILOT_SKILL',
+              'slotName': 'Навык пилота',
+              'itemId': 'steady-step',
+              'itemName': 'Ровный шаг',
+              'description':
+                  'Откройте навык «Ровный шаг», чтобы перейти по первому свету.',
+            },
+          },
+        ],
+      };
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+    final HomeEventChoice route = snapshot.unlockedEvent!.choices.single;
+
+    expect(snapshot.contentVersion, 'chapter-1-v17');
+    expect(route.choiceId, 'cross-first-light-causeway');
+    expect(route.isAvailable, isFalse);
+    expect(route.requirement?.type, 'UNLOCKED_SKILL');
+    expect(route.requirement?.itemId, 'steady-step');
+  });
+
   test('legacy response keeps companion identity unknown', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> pet = response['pet'] as Map<String, dynamic>;

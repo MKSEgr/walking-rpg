@@ -72,6 +72,8 @@ Roadmap отражает снижение рисков. Статусы:
       узел `memory-constellation` в staged `chapter-1-v15`
 - [x] «Дисциплина энергии» как authoritative prerequisite продолжения в 29-й
       узел `dawn-meridian` в staged `chapter-1-v16`
+- [x] «Ровный шаг» как authoritative prerequisite продолжения в 30-й узел
+      `first-light-causeway` в staged `chapter-1-v17`
 - [x] Push provider boundary + development implementation
 - [x] Remote config и базовый admin content API
 - [x] Flutter «Путевой журнал» для platform state/commands

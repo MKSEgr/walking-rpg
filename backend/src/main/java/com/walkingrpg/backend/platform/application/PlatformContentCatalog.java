@@ -202,7 +202,7 @@ public class PlatformContentCatalog {
     );
     private final List<SkillDefinition> skills = List.of(
             new SkillDefinition(PlatformSkillIds.STEADY_STEP, "Ровный шаг",
-                    "Добавляет диагностический бонус к стабильным сериям активности.", 0),
+                    "Помогает удерживать стабильные серии активности и открывает переходы, требующие точного ритма.", 0),
             new SkillDefinition(PlatformSkillIds.TRAIL_MEMORY, "Память маршрута",
                     "Сохраняет пройденные узлы и открывает забытые маршруты.", 100),
             new SkillDefinition(PlatformSkillIds.ENERGY_DISCIPLINE,
@@ -377,6 +377,9 @@ public class PlatformContentCatalog {
     }
 
     private int chapterNodeCount(String contentVersion) {
+        if (StarterExpeditionContent.supportsSteadyStepRoute(contentVersion)) {
+            return StarterExpeditionContent.STEADY_STEP_ROUTE_NODE_COUNT;
+        }
         if (StarterExpeditionContent.supportsEnergyDisciplineRoute(
                 contentVersion
         )) {

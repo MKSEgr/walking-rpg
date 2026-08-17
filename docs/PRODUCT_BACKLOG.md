@@ -680,12 +680,40 @@ parser/widget и visual-mapping tests реализованы. Ценность �
 parser/widget и visual-mapping tests реализованы. Ценность позднего применения
 навыка и баланс финалов требуют beta evidence.
 
+### US-029. Перейти по первому свету с «Ровным шагом»
+
+Как пользователь с открытым «Ровным шагом», я хочу удержать ритм Меридиана
+рассвета, чтобы первый навык пилота открывал отдельное продолжение поздней
+экспедиции.
+
+Критерии:
+
+- inactive `chapter-1-v17` добавляет 30-й узел `first-light-causeway`; v1-v16
+  не проецируют и не принимают новый route choice;
+- `dawn-meridian-v1` получает skill-gated `cross-first-light-causeway`; v16
+  сохраняет два прежних terminal outcome;
+- Home возвращает route в `choices` только при server-owned `steady-step`,
+  иначе в `lockedChoices` с `UNLOCKED_SKILL`; event service повторяет проверку
+  до любых mutation;
+- успешный переход выдаёт `+118 XP / +76 bond / 4 prism-dust`, а событие
+  `first-light-causeway-v1` завершает journey либо за
+  `+144 XP / +72 bond / 6 ion-bloom`, либо за
+  `+110 XP / +100 bond / 8 echo-thread`;
+- exact replay не дублирует награды, а content rollback v17 → v16 позволяет
+  завершить уже сохранённый 30-й узел;
+- V33 сохраняет active v16 и существующие platform/pet/expedition rows;
+  rollback binary на pre-V33 после сохранения нового node запрещён.
+
+**Статус:** backend/mobile/Flyway V33, unit/PostgreSQL/migration/catalog,
+parser/widget и visual-mapping tests реализованы. Ценность позднего применения
+первого навыка и баланс финалов требуют beta evidence.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
 
 - первая глава из 18 основных узлов и staged optional topology вплоть до
-  `dawn-meridian`;
+  `first-light-causeway`;
 - три питомца, active selection, две эволюции, навыки и собственные финальные
   исходы экспедиции;
 - onboarding, задания и достижения;

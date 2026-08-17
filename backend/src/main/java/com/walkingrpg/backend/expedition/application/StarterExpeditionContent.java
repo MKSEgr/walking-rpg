@@ -49,6 +49,8 @@ public class StarterExpeditionContent {
             "chapter-1-v15";
     public static final String ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION =
             "chapter-1-v16";
+    public static final String STEADY_STEP_ROUTE_CONTENT_VERSION =
+            "chapter-1-v17";
     public static final String EXPEDITION_ID = "starter-expedition-v1";
     public static final int LEGACY_NODE_COUNT = 18;
     public static final int NODE_COUNT = 19;
@@ -61,6 +63,7 @@ public class StarterExpeditionContent {
     public static final int SIGNAL_READER_SECRET_ROUTE_NODE_COUNT = 27;
     public static final int TRAIL_MEMORY_ROUTE_NODE_COUNT = 28;
     public static final int ENERGY_DISCIPLINE_ROUTE_NODE_COUNT = 29;
+    public static final int STEADY_STEP_ROUTE_NODE_COUNT = 30;
 
     public static final String FIRST_NODE_ID = "outer-beacon";
     public static final String FIRST_EVENT_ID = "signal-source-v1";
@@ -156,6 +159,16 @@ public class StarterExpeditionContent {
             "anchor-dawn-flow";
     public static final String SHARE_DAWN_FLOW_WITH_PET_CHOICE_ID =
             "share-dawn-flow-with-pet";
+    public static final String CROSS_FIRST_LIGHT_CAUSEWAY_CHOICE_ID =
+            "cross-first-light-causeway";
+    public static final String FIRST_LIGHT_CAUSEWAY_NODE_ID =
+            "first-light-causeway";
+    public static final String FIRST_LIGHT_CAUSEWAY_EVENT_ID =
+            "first-light-causeway-v1";
+    public static final String MAP_FIRST_LIGHT_PULSE_CHOICE_ID =
+            "map-first-light-pulse";
+    public static final String FOLLOW_PETS_STEADY_PACE_CHOICE_ID =
+            "follow-pets-steady-pace";
 
     private static final String EXPEDITION_NAME = "Сигнал из туманного сектора";
 
@@ -228,7 +241,7 @@ public class StarterExpeditionContent {
         for (int index = 0; index < specs.size(); index++) {
             NodeSpec spec = specs.get(index);
             ExpeditionDefinition definition = new ExpeditionDefinition(
-                    ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
+                    STEADY_STEP_ROUTE_CONTENT_VERSION,
                     EXPEDITION_ID,
                     EXPEDITION_NAME,
                     spec.nodeId(),
@@ -606,6 +619,38 @@ public class StarterExpeditionContent {
                 dawnMeridianDefinition
         );
 
+        NodeSpec firstLightCausewaySpec = new NodeSpec(
+                FIRST_LIGHT_CAUSEWAY_NODE_ID,
+                "Переход первого света",
+                105,
+                FIRST_LIGHT_CAUSEWAY_EVENT_ID,
+                "Шаг над рассветом",
+                "Меридиан собрал свет в подвижный переход. Его ритм можно нанести на карту или доверить чутью питомца."
+        );
+        ExpeditionDefinition firstLightCausewayDefinition = definition(
+                firstLightCausewaySpec
+        );
+        definitions.add(firstLightCausewayDefinition);
+        byId.put(
+                firstLightCausewayDefinition.currentNodeId(),
+                firstLightCausewayDefinition
+        );
+        byEvent.put(
+                firstLightCausewayDefinition.event().eventId(),
+                firstLightCausewayDefinition
+        );
+        choices.put(
+                FIRST_LIGHT_CAUSEWAY_EVENT_ID,
+                firstLightCausewayChoices(inventoryContent)
+        );
+        choiceNext.put(
+                new EventChoiceKey(
+                        DAWN_MERIDIAN_EVENT_ID,
+                        CROSS_FIRST_LIGHT_CAUSEWAY_CHOICE_ID
+                ),
+                firstLightCausewayDefinition
+        );
+
         this.nodes = List.copyOf(definitions);
         this.nodeById = Map.copyOf(byId);
         this.nodeByEventId = Map.copyOf(byEvent);
@@ -651,7 +696,7 @@ public class StarterExpeditionContent {
         return nextNodeAfterEvent(
                 eventId,
                 choiceId,
-                ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+                STEADY_STEP_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -693,7 +738,7 @@ public class StarterExpeditionContent {
         return requireChoice(
                 eventId,
                 choiceId,
-                ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+                STEADY_STEP_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -726,7 +771,7 @@ public class StarterExpeditionContent {
     public List<ExpeditionEventChoiceDefinition> eventChoices(String eventId) {
         return eventChoices(
                 eventId,
-                ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+                STEADY_STEP_ROUTE_CONTENT_VERSION
         );
     }
 
@@ -855,6 +900,13 @@ public class StarterExpeditionContent {
                     ))
                     .toList();
         }
+        if (DAWN_MERIDIAN_EVENT_ID.equals(eventId)
+                && !supportsSteadyStepRoute(activeContentVersion)) {
+            return choices.stream()
+                    .filter(choice -> !CROSS_FIRST_LIGHT_CAUSEWAY_CHOICE_ID
+                            .equals(choice.choiceId()))
+                    .toList();
+        }
         return choices;
     }
 
@@ -871,7 +923,7 @@ public class StarterExpeditionContent {
     }
 
     public String contentVersion() {
-        return ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION;
+        return STEADY_STEP_ROUTE_CONTENT_VERSION;
     }
 
     public String contentVersion(boolean resonanceRouteActive) {
@@ -880,6 +932,9 @@ public class StarterExpeditionContent {
 
     public String activeContentVersion(ExpeditionContentActivation activation) {
         String activeContentVersion = activation.activeContentVersion();
+        if (STEADY_STEP_ROUTE_CONTENT_VERSION.equals(activeContentVersion)) {
+            return STEADY_STEP_ROUTE_CONTENT_VERSION;
+        }
         if (ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                 activeContentVersion
         )) {
@@ -963,6 +1018,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -988,6 +1046,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1012,6 +1073,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1034,6 +1098,9 @@ public class StarterExpeditionContent {
                         contentVersion
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
                 );
     }
@@ -1059,6 +1126,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1080,6 +1150,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1100,6 +1173,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1117,6 +1193,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1133,6 +1212,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1148,6 +1230,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1162,6 +1247,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1175,6 +1263,9 @@ public class StarterExpeditionContent {
                 )
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
@@ -1187,6 +1278,8 @@ public class StarterExpeditionContent {
                 contentVersion
         ) || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                 contentVersion
+        ) || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                contentVersion
         );
     }
 
@@ -1194,18 +1287,26 @@ public class StarterExpeditionContent {
         return TRAIL_MEMORY_ROUTE_CONTENT_VERSION.equals(contentVersion)
                 || ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(
                         contentVersion
+                )
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(
+                        contentVersion
                 );
     }
 
     public static boolean supportsEnergyDisciplineRoute(
             String contentVersion
     ) {
-        return ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(contentVersion);
+        return ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION.equals(contentVersion)
+                || STEADY_STEP_ROUTE_CONTENT_VERSION.equals(contentVersion);
+    }
+
+    public static boolean supportsSteadyStepRoute(String contentVersion) {
+        return STEADY_STEP_ROUTE_CONTENT_VERSION.equals(contentVersion);
     }
 
     private ExpeditionDefinition definition(NodeSpec spec) {
         return new ExpeditionDefinition(
-                ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
+                STEADY_STEP_ROUTE_CONTENT_VERSION,
                 EXPEDITION_ID,
                 EXPEDITION_NAME,
                 spec.nodeId(),
@@ -1978,6 +2079,60 @@ public class StarterExpeditionContent {
                                 inventoryContent,
                                 StarterInventoryContent.ECHO_THREAD_ID,
                                 7
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        CROSS_FIRST_LIGHT_CAUSEWAY_CHOICE_ID,
+                        "Перейти по первому свету",
+                        "Применить Ровный шаг и удержать ритм подвижного перехода над меридианом.",
+                        "Свет выдержал шаг",
+                        "Пилот удержал равномерный темп, провёл отряд по первому свету и собрал четыре порции призматической пыли.",
+                        118,
+                        76,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.PRISM_DUST_ID,
+                                4
+                        ),
+                        new ExpeditionChoiceSkillRequirement(
+                                PlatformSkillIds.STEADY_STEP,
+                                "Ровный шаг",
+                                "Откройте навык «Ровный шаг», чтобы перейти по первому свету."
+                        )
+                )
+        );
+    }
+
+    private List<ExpeditionEventChoiceDefinition> firstLightCausewayChoices(
+            StarterInventoryContent inventoryContent
+    ) {
+        return List.of(
+                new ExpeditionEventChoiceDefinition(
+                        MAP_FIRST_LIGHT_PULSE_CHOICE_ID,
+                        "Нанести импульс на карту",
+                        "Закрепить точный ритм перехода в навигационной карте экспедиции.",
+                        "Карта первого света",
+                        "Пилот сохранил устойчивый рисунок перехода и собрал шесть ионных цветов с его опорных точек.",
+                        144,
+                        72,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ION_BLOOM_ID,
+                                6
+                        )
+                ),
+                new ExpeditionEventChoiceDefinition(
+                        FOLLOW_PETS_STEADY_PACE_CHOICE_ID,
+                        "Следовать ровному темпу питомца",
+                        "Позволить питомцу провести отряд по живому ритму первого света.",
+                        "Проводник рассвета",
+                        "Питомец удержал переход движением и сохранил восемь нитей эха для будущего пути.",
+                        110,
+                        100,
+                        reward(
+                                inventoryContent,
+                                StarterInventoryContent.ECHO_THREAD_ID,
+                                8
                         )
                 )
         );

@@ -227,7 +227,22 @@ void main() {
         'share-dawn-flow-with-pet',
         EventChoiceSignalKind.companion,
       );
-      expect(currentPairCount, 66);
+      expectChoice(
+        'dawn-meridian-v1',
+        'cross-first-light-causeway',
+        EventChoiceSignalKind.stabilize,
+      );
+      expectChoice(
+        'first-light-causeway-v1',
+        'map-first-light-pulse',
+        EventChoiceSignalKind.chart,
+      );
+      expectChoice(
+        'first-light-causeway-v1',
+        'follow-pets-steady-pace',
+        EventChoiceSignalKind.companion,
+      );
+      expect(currentPairCount, 69);
 
       expect(
         EventChoiceSignalCatalog.kindFor(

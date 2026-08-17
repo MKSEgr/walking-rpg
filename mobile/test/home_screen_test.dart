@@ -1505,6 +1505,70 @@ void main() {
     }
   });
 
+  testWidgets('Steady Step route shows the server skill lock reason', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(loader: () async => _steadyStepRouteLocked()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder choice = find.byKey(
+      const Key('home-event-choice-cross-first-light-causeway'),
+    );
+    await _scrollAboveStickyAction(tester, choice);
+
+    expect(tester.widget<FilledButton>(choice).onPressed, isNull);
+    expect(
+      find.byKey(const Key('home-choice-locked-cross-first-light-causeway')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Откройте навык «Ровный шаг», чтобы перейти по первому свету.'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const Key(
+          'event-choice-signal-dawn-meridian-v1-'
+          'cross-first-light-causeway-stabilize-muted',
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('first-light causeway renders both terminal route signals', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(loader: () async => _firstLightCausewayReady()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    for (final (String choiceId, String signalKind) in <(String, String)>[
+      ('map-first-light-pulse', 'chart'),
+      ('follow-pets-steady-pace', 'companion'),
+    ]) {
+      final Finder choice = find.byKey(Key('home-event-choice-$choiceId'));
+      await _scrollAboveStickyAction(tester, choice);
+      expect(tester.widget<FilledButton>(choice).onPressed, isNotNull);
+      expect(
+        find.byKey(
+          Key(
+            'event-choice-signal-first-light-causeway-v1-'
+            '$choiceId-$signalKind-active',
+          ),
+        ),
+        findsOneWidget,
+      );
+    }
+  });
+
   testWidgets(
     'home screen keeps result visible until acknowledgement and reloads',
     (WidgetTester tester) async {
@@ -2871,6 +2935,130 @@ HomeSnapshot _dawnMeridianReady() {
     petName: 'Искра-звездочёт',
     petLevel: 4,
     petBond: 354,
+  );
+}
+
+HomeSnapshot _steadyStepRouteLocked() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 14,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v17',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'dawn-meridian',
+    currentNodeName: 'Меридиан рассвета',
+    expeditionProgress: 100,
+    requiredEnergy: 100,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 56,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'dawn-meridian-v1',
+      title: 'Ритм между шагами',
+      summary: 'Первый свет собрался в подвижный переход.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'cross-first-light-causeway',
+          title: 'Перейти по первому свету',
+          description: 'Удержать ритм подвижного перехода.',
+          pilotExperienceReward: 118,
+          petBondReward: 76,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'prism-dust',
+            itemName: 'Призматическая пыль',
+            quantity: 4,
+          ),
+          availability: 'LOCKED',
+          requirement: HomeChoiceRequirement(
+            type: 'UNLOCKED_SKILL',
+            slotId: 'PILOT_SKILL',
+            slotName: 'Навык пилота',
+            itemId: 'steady-step',
+            itemName: 'Ровный шаг',
+            description:
+                'Откройте навык «Ровный шаг», чтобы перейти по первому свету.',
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 6,
+    pilotCurrentExperience: 692,
+    pilotNextLevelExperience: 1200,
+    petName: 'Искра-звездочёт',
+    petLevel: 5,
+    petBond: 354,
+  );
+}
+
+HomeSnapshot _firstLightCausewayReady() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 3250,
+    dailyGoalPolicy: _adaptiveGoalPolicy,
+    availableEnergy: 0,
+    activityStateVersion: 1,
+    economyVersion: 15,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v16',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'first-light-causeway',
+    currentNodeName: 'Переход первого света',
+    expeditionProgress: 105,
+    requiredEnergy: 105,
+    expeditionStatus: 'EVENT_READY',
+    expeditionVersion: 59,
+    unlockedEvent: HomeExpeditionEvent(
+      eventId: 'first-light-causeway-v1',
+      title: 'Шаг над рассветом',
+      summary: 'Первый свет удерживает путь над меридианом.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'map-first-light-pulse',
+          title: 'Нанести импульс на карту',
+          description: 'Сохранить точный ритм перехода.',
+          pilotExperienceReward: 144,
+          petBondReward: 72,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'ion-bloom',
+            itemName: 'Ионный цветок',
+            quantity: 6,
+          ),
+        ),
+        HomeEventChoice(
+          choiceId: 'follow-pets-steady-pace',
+          title: 'Следовать ровному темпу питомца',
+          description: 'Доверить питомцу живой ритм перехода.',
+          pilotExperienceReward: 110,
+          petBondReward: 100,
+          materialReward: HomeMaterialRewardPreview(
+            itemId: 'echo-thread',
+            itemName: 'Нить эха',
+            quantity: 8,
+          ),
+        ),
+      ],
+    ),
+    pilotName: 'Навигатор',
+    pilotLevel: 6,
+    pilotCurrentExperience: 810,
+    pilotNextLevelExperience: 1200,
+    petName: 'Искра-звездочёт',
+    petLevel: 5,
+    petBond: 430,
   );
 }
 

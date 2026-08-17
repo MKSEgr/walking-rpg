@@ -75,6 +75,10 @@ class StarterExpeditionContentTest {
                 () -> StarterExpeditionContent
                         .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
         );
+        String chapterV17 = content.activeContentVersion(
+                () -> StarterExpeditionContent
+                        .STEADY_STEP_ROUTE_CONTENT_VERSION
+        );
 
         assertEquals(StarterExpeditionContent.CONTENT_VERSION, chapterV2);
         assertEquals(StarterExpeditionContent.STORM_RIFT_CONTENT_VERSION, chapterV3);
@@ -125,6 +129,10 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent
                         .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION,
                 chapterV16
+        );
+        assertEquals(
+                StarterExpeditionContent.STEADY_STEP_ROUTE_CONTENT_VERSION,
+                chapterV17
         );
         assertEquals(1, activationReads.get());
         assertEquals(
@@ -323,6 +331,15 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsEnergyDisciplineRoute(
                 chapterV16
         ));
+        assertTrue(StarterExpeditionContent.supportsEnergyDisciplineRoute(
+                chapterV17
+        ));
+        assertFalse(StarterExpeditionContent.supportsSteadyStepRoute(
+                chapterV16
+        ));
+        assertTrue(StarterExpeditionContent.supportsSteadyStepRoute(
+                chapterV17
+        ));
         assertEquals(2, content.eventChoices(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 chapterV12
@@ -337,7 +354,7 @@ class StarterExpeditionContentTest {
         assertTrue(StarterExpeditionContent.supportsStormRift(chapterV4));
         assertTrue(StarterExpeditionContent.supportsResonanceRoute(chapterV3));
         assertEquals(
-                StarterExpeditionContent.ENERGY_DISCIPLINE_ROUTE_NODE_COUNT,
+                StarterExpeditionContent.STEADY_STEP_ROUTE_NODE_COUNT,
                 content.nodes().size()
         );
     }
@@ -671,6 +688,54 @@ class StarterExpeditionContentTest {
                 StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
                 StarterExpeditionContent.TRAIL_MEMORY_ROUTE_CONTENT_VERSION
         ).size());
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        ).size());
+        assertEquals(3, content.eventChoices(
+                StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                StarterExpeditionContent.STEADY_STEP_ROUTE_CONTENT_VERSION
+        ).size());
+        assertThrows(
+                EventResolutionValidationException.class,
+                () -> content.requireChoice(
+                        StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                        StarterExpeditionContent
+                                .CROSS_FIRST_LIGHT_CAUSEWAY_CHOICE_ID,
+                        StarterExpeditionContent
+                                .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+                )
+        );
+        assertEquals(
+                PlatformSkillIds.STEADY_STEP,
+                content.requireChoice(
+                        StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                        StarterExpeditionContent
+                                .CROSS_FIRST_LIGHT_CAUSEWAY_CHOICE_ID,
+                        StarterExpeditionContent.STEADY_STEP_ROUTE_CONTENT_VERSION
+                ).skillRequirement().skillId()
+        );
+        assertEquals(
+                StarterExpeditionContent.FIRST_LIGHT_CAUSEWAY_NODE_ID,
+                content.nextNodeAfterEvent(
+                        StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
+                        StarterExpeditionContent
+                                .CROSS_FIRST_LIGHT_CAUSEWAY_CHOICE_ID,
+                        StarterExpeditionContent.STEADY_STEP_ROUTE_CONTENT_VERSION
+                ).orElseThrow().currentNodeId()
+        );
+        assertEquals(2, content.eventChoices(
+                StarterExpeditionContent.FIRST_LIGHT_CAUSEWAY_EVENT_ID,
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        ).size());
+        assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.FIRST_LIGHT_CAUSEWAY_EVENT_ID,
+                StarterExpeditionContent.MAP_FIRST_LIGHT_PULSE_CHOICE_ID,
+                StarterExpeditionContent
+                        .ENERGY_DISCIPLINE_ROUTE_CONTENT_VERSION
+        ).isEmpty());
         assertTrue(content.nextNodeAfterEvent(
                 StarterExpeditionContent.DAWN_MERIDIAN_EVENT_ID,
                 StarterExpeditionContent.ANCHOR_DAWN_FLOW_CHOICE_ID,

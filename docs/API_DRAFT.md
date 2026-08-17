@@ -624,6 +624,20 @@ dawn-meridian-v1 (chapter-1-v16)
   share-dawn-flow-with-pet
                        → +100 pilot XP, +90 pet bond, +7 echo-thread,
                          завершение экспедиции
+
+dawn-meridian-v1 (additive chapter-1-v17 choice)
+  cross-first-light-causeway
+                       → требует открытый навык steady-step,
+                         +118 pilot XP, +76 pet bond, +4 prism-dust,
+                         переход к first-light-causeway
+
+first-light-causeway-v1 (chapter-1-v17)
+  map-first-light-pulse
+                       → +144 pilot XP, +72 pet bond, +6 ion-bloom,
+                         завершение экспедиции
+  follow-pets-steady-pace
+                       → +110 pilot XP, +100 pet bond, +8 echo-thread,
+                         завершение экспедиции
 ```
 
 До cluster-wide активации `chapter-1-v2` bootstrap/home/advance/event responses
@@ -638,7 +652,9 @@ expedition mutation и завершает journey. Active v14 выполняет
 переходом в `memory-constellation`; v1-v14 не принимают новый choice ID.
 Active v16 проверяет `energy-discipline` перед переходом в `dawn-meridian`;
 v1-v15 сохраняют два terminal outcome Созвездия памяти и не принимают новый
-choice ID.
+choice ID. Active v17 проверяет `steady-step` перед переходом в
+`first-light-causeway`; v1-v16 сохраняют два terminal outcome Меридиана
+рассвета и не принимают новый choice ID.
 
 Response второго события:
 

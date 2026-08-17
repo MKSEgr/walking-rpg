@@ -389,6 +389,14 @@ v16. Определение 29-го узла и его два terminal choice о
 content rollback, чтобы сохранённое v16 journey завершалось под v15 binary
 нового поколения. V1-V15 не могут начать маршрут.
 
+Active `chapter-1-v17` добавляет в `dawn-meridian-v1` choice
+`cross-first-light-causeway`, защищённый authoritative навыком `steady-step`,
+и 30-й узел `first-light-causeway`. V16 сохраняет два прежних terminal outcome;
+новый choice выдаёт награду и продолжает journey только в v17. Определение
+30-го узла и его два terminal choice остаются читаемыми после content rollback,
+чтобы сохранённое v17 journey завершалось под v16 binary нового поколения.
+V1-V16 не могут начать маршрут.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
@@ -533,6 +541,10 @@ V32 stage-ит inactive `chapter-1-v16` с 29-м узлом `dawn-meridian`.
 Миграция не меняет active v15, `roadmap_user_state`, `pet_progress` или
 текущие `expedition_progress` rows; activation выполняется только после drain
 pre-V32 backend instances.
+V33 stage-ит inactive `chapter-1-v17` с 30-м узлом
+`first-light-causeway`. Миграция не меняет active v16,
+`roadmap_user_state`, `pet_progress` или текущие `expedition_progress` rows;
+activation выполняется только после drain pre-V33 backend instances.
 
 ## 8. Конкурентность и транзакции
 
