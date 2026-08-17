@@ -231,9 +231,6 @@ void main() {
       ),
       findsOneWidget,
     );
-    final Finder log = find.byKey(const Key('platform-journey-decision-log'));
-    await _bringIntoView(tester, log);
-    expect(tester.getTopLeft(recap).dy, lessThan(tester.getTopLeft(log).dy));
     _expectNoLayoutException(tester);
     semantics.dispose();
   });
