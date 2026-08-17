@@ -471,7 +471,7 @@ class HomeExpeditionDecisionLogEntry {
       materialReward: materialJson == null
           ? null
           : HomeJourneyMaterialReward.fromJson(
-              HomeSnapshot._asMap(materialJson, 'decisionLog[].materialReward'),
+              _asMap(materialJson, 'decisionLog[].materialReward'),
             ),
     );
   }
