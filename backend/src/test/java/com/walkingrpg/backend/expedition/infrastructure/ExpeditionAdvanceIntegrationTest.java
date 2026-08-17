@@ -31,6 +31,7 @@ import com.walkingrpg.backend.expedition.domain.ExpeditionIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionAdvance;
+import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionJourneyStart;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -458,6 +459,41 @@ class ExpeditionAdvanceIntegrationTest {
         ) {
             throw new IllegalStateException("forced processed response failure");
         }
+
+        @Override
+        public long findJourneyNumber(String userId, String expeditionId) {
+            return delegate.findJourneyNumber(userId, expeditionId);
+        }
+
+        @Override
+        public void saveJourneyNumber(
+                String userId,
+                String expeditionId,
+                long journeyNumber,
+                Instant updatedAt
+        ) {
+            delegate.saveJourneyNumber(
+                    userId,
+                    expeditionId,
+                    journeyNumber,
+                    updatedAt
+            );
+        }
+
+        @Override
+        public Optional<ProcessedExpeditionJourneyStart> findProcessedJourney(
+                ExpeditionIdempotencyScope scope
+        ) {
+            return delegate.findProcessedJourney(scope);
+        }
+
+        @Override
+        public void saveProcessedJourney(
+                ExpeditionIdempotencyScope scope,
+                ProcessedExpeditionJourneyStart processed
+        ) {
+            delegate.saveProcessedJourney(scope, processed);
+        }
     }
 
     private static final class LockSignallingRepository
@@ -511,6 +547,41 @@ class ExpeditionAdvanceIntegrationTest {
                 ProcessedExpeditionAdvance processed
         ) {
             delegate.saveProcessed(scope, processed);
+        }
+
+        @Override
+        public long findJourneyNumber(String userId, String expeditionId) {
+            return delegate.findJourneyNumber(userId, expeditionId);
+        }
+
+        @Override
+        public void saveJourneyNumber(
+                String userId,
+                String expeditionId,
+                long journeyNumber,
+                Instant updatedAt
+        ) {
+            delegate.saveJourneyNumber(
+                    userId,
+                    expeditionId,
+                    journeyNumber,
+                    updatedAt
+            );
+        }
+
+        @Override
+        public Optional<ProcessedExpeditionJourneyStart> findProcessedJourney(
+                ExpeditionIdempotencyScope scope
+        ) {
+            return delegate.findProcessedJourney(scope);
+        }
+
+        @Override
+        public void saveProcessedJourney(
+                ExpeditionIdempotencyScope scope,
+                ProcessedExpeditionJourneyStart processed
+        ) {
+            delegate.saveProcessedJourney(scope, processed);
         }
     }
 

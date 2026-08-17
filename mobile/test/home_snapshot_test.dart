@@ -41,6 +41,7 @@ void main() {
     expect(snapshot.expeditionId, 'starter-expedition-v1');
     expect(snapshot.expeditionProgress, 30);
     expect(snapshot.expeditionVersion, 1);
+    expect(snapshot.expeditionJourneyNumber, 2);
     expect(snapshot.expeditionStatus, 'EVENT_READY');
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
@@ -51,6 +52,26 @@ void main() {
     expect(snapshot.petSpecies, 'Люмин');
     expect(snapshot.petBond, 10);
     expect(snapshot.petEvolutionStage, 0);
+  });
+
+  test('response without journey number defaults to the first journey', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition.remove('journeyNumber');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.expeditionJourneyNumber, 1);
+  });
+
+  test('response rejects a non-positive journey number', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyNumber'] = 0;
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('chapter v14 maps the secret observatory without client inference', () {
@@ -778,6 +799,7 @@ Map<String, dynamic> _readyHomeResponse() {
       'requiredEnergy': 30,
       'status': 'EVENT_READY',
       'version': 1,
+      'journeyNumber': 2,
       'unlockedEvent': <String, dynamic>{
         'eventId': 'signal-source-v1',
         'title': 'Источник сигнала',

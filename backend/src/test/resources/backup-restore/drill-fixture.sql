@@ -300,6 +300,54 @@ INSERT INTO processed_expedition_advance (
     '2026-07-30T10:00:20Z'
 );
 
+INSERT INTO expedition_journey_cycle (
+    user_id,
+    expedition_id,
+    journey_number,
+    created_at,
+    updated_at
+) VALUES (
+    'backup-drill-user',
+    'starter-expedition-v1',
+    2,
+    '2026-07-30T10:00:15Z',
+    '2026-07-30T10:00:30Z'
+);
+
+INSERT INTO processed_expedition_journey_start (
+    user_id,
+    expedition_id,
+    idempotency_key,
+    request_fingerprint,
+    content_version,
+    expedition_name,
+    journey_number,
+    progress_after,
+    required_energy,
+    expedition_version,
+    expedition_status,
+    current_node_id,
+    current_node_name,
+    server_time,
+    created_at
+) VALUES (
+    'backup-drill-user',
+    'starter-expedition-v1',
+    'backup-drill-journey-2',
+    repeat('e', 64),
+    'chapter-1-v17',
+    'Сигнальный путь',
+    2,
+    0,
+    30,
+    2,
+    'IN_PROGRESS',
+    'outer-beacon',
+    'Внешний маяк',
+    '2026-07-30T10:00:15Z',
+    '2026-07-30T10:00:15Z'
+);
+
 INSERT INTO pilot_progress (
     user_id,
     pilot_id,

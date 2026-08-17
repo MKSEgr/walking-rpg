@@ -507,6 +507,7 @@ class _RecoveryCommandCard extends StatelessWidget {
     return switch (item.type) {
       MobileCommandType.activitySync => 'Синхронизация шагов',
       MobileCommandType.expeditionAdvance => 'Продвижение экспедиции',
+      MobileCommandType.expeditionJourneyStart => 'Новое путешествие',
       MobileCommandType.eventResolution => 'Выбор в событии',
       MobileCommandType.eventResultAcknowledgement =>
         'Подтверждение результата события',

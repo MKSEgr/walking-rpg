@@ -708,6 +708,29 @@ parser/widget и visual-mapping tests реализованы. Ценность �
 parser/widget и visual-mapping tests реализованы. Ценность позднего применения
 первого навыка и баланс финалов требуют beta evidence.
 
+### US-030. Начать новый поход после завершения главы
+
+Как игрок, завершивший экспедицию, я хочу снова выйти на маршрут,
+чтобы повторять игровой цикл и продолжать постоянную прогрессию.
+
+Критерии:
+
+- новый поход доступен только из `COMPLETED` и после ACK финального
+  event result;
+- route state возвращается на первый узел active content, а первое
+  продвижение снова требует ENERGY;
+- XP пилота, питомец/эволюция, skills, inventory, unique items и
+  equipment сохраняются;
+- persistent `journeyNumber` увеличивается ровно один раз; exact replay и
+  stale multi-device command имеют разные безопасные исходы;
+- Home и Flutter показывают номер похода; cached state и pending
+  result не разрешают mutation;
+- event uniqueness ограничена текущим походом, поэтому тот же event
+  может выдать награду в следующем цикле, но не дважды в одном.
+
+**Статус:** backend/mobile/Flyway V34, unit/API/PostgreSQL/migration,
+parser/outbox/widget, account export/delete и synthetic backup coverage реализованы.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -727,6 +750,7 @@ parser/widget и visual-mapping tests реализованы. Ценность �
   уровня 3/EPIC;
 - expedition choices с authoritative minimum item level, active-pet,
   minimum evolution stage и unlocked-skill prerequisites.
+- повторяемый цикл экспедиции с сохранением постоянной прогрессии.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

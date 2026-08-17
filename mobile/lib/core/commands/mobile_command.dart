@@ -11,6 +11,10 @@ enum MobileCommandLane {
 enum MobileCommandType {
   activitySync('ACTIVITY_SYNC', MobileCommandLane.activity),
   expeditionAdvance('EXPEDITION_ADVANCE', MobileCommandLane.gameplay),
+  expeditionJourneyStart(
+    'EXPEDITION_JOURNEY_START',
+    MobileCommandLane.gameplay,
+  ),
   eventResolution('EVENT_RESOLUTION', MobileCommandLane.gameplay),
   eventResultAcknowledgement(
     'EVENT_RESULT_ACKNOWLEDGEMENT',

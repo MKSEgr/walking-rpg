@@ -146,6 +146,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         key: ValueKey<String>('home-$_homeGeneration'),
         loader: widget.homeLoader,
         advancer: runtime?.advance,
+        expeditionJourneyStarter: runtime?.beginNextJourney,
         eventResolver: runtime?.resolve,
         eventResultAcknowledger: runtime?.acknowledgeEventResult,
         crafter: runtime?.craft,

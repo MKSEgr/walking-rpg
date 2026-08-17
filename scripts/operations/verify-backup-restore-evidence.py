@@ -15,7 +15,7 @@ from typing import Any
 
 EVIDENCE_SCHEMA = "walking-rpg-backup-restore-evidence-v1"
 SYNTHETIC_SCOPE = "SYNTHETIC_CI"
-FLYWAY_VERSION = "33"
+FLYWAY_VERSION = "34"
 POSTGRES_IMAGE_TAG = "postgres:17.10-alpine3.24"
 POSTGRES_IMAGE_DIGEST = (
     "sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193"
@@ -59,6 +59,7 @@ EXPECTED_TABLES = {
     "economy_ledger",
     "economy_wallet",
     "equipment_slot_state",
+    "expedition_journey_cycle",
     "expedition_progress",
     "first_journey_milestone",
     "flyway_schema_history",
@@ -78,6 +79,7 @@ EXPECTED_TABLES = {
     "processed_equipment_command",
     "processed_event_resolution",
     "processed_expedition_advance",
+    "processed_expedition_journey_start",
     "processed_roadmap_command",
     "push_registration",
     "remote_config_snapshot",

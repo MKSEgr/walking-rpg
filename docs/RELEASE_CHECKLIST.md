@@ -132,6 +132,9 @@ production signing, physical-device, stage, real-restore или store evidence.
       а не из mutable `created_at`; без evidence migration должна остановиться.
 - [ ] V15 заполнит `activated_at` только при первой активации; повторная
       публикация той же версии сохраняет timestamp и compass route baseline.
+- [ ] Перед стартом вторых походов все pre-V34 backend instances выведены
+      из pool; backfill cycle и exact/stale replay проверены. После первого
+      `journey_number > 1` binary rollback на pre-V34 запрещён.
 
 ## Operations
 

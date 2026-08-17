@@ -106,6 +106,7 @@ for file in \
   backend/src/main/resources/db/migration/V31__trail_memory_secret_route.sql \
   backend/src/main/resources/db/migration/V32__energy_discipline_dawn_meridian.sql \
   backend/src/main/resources/db/migration/V33__steady_step_first_light_causeway.sql \
+  backend/src/main/resources/db/migration/V34__repeatable_expedition_journeys.sql \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionRuntimeGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/ProductionOperationsGuardTest.java \
   backend/src/test/java/com/walkingrpg/backend/operations/BoundedDataSourceHealthIndicatorTest.java \
@@ -709,8 +710,8 @@ for path in Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
     versions.append(int(match.group(1)))
 versions.sort()
 expected=list(range(1, max(versions)+1)) if versions else []
-if versions != expected or not versions or versions[-1] < 33:
-    raise SystemExit(f'Flyway versions must be contiguous through at least V33: {versions}')
+if versions != expected or not versions or versions[-1] < 34:
+    raise SystemExit(f'Flyway versions must be contiguous through at least V34: {versions}')
 print('Flyway versions:', versions)
 PY
 

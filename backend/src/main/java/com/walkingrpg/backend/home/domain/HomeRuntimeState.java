@@ -14,6 +14,7 @@ public record HomeRuntimeState(
         long expeditionRequiredEnergy,
         String expeditionStatus,
         long expeditionVersion,
+        long expeditionJourneyNumber,
         String currentNodeId,
         String unlockedEventId,
         boolean pilotProgressPresent,
@@ -50,6 +51,9 @@ public record HomeRuntimeState(
                 || expeditionVersion < 0) {
             throw new IllegalArgumentException("Expedition state не может быть отрицательным");
         }
+        if (expeditionJourneyNumber <= 0) {
+            throw new IllegalArgumentException("Номер похода должен быть положительным");
+        }
         if (pilotLevel < 0 || pilotCurrentExperience < 0
                 || pilotNextLevelExperience < 0) {
             throw new IllegalArgumentException("Pilot state не может быть отрицательным");
@@ -79,6 +83,77 @@ public record HomeRuntimeState(
             throw new IllegalArgumentException("Material reward snapshot заполнен частично");
         }
         inventory = inventory == null ? List.of() : List.copyOf(inventory);
+    }
+
+    public HomeRuntimeState(
+            long dailySteps,
+            long activityStateVersion,
+            String timeZone,
+            Instant lastActivitySyncAt,
+            long availableEnergy,
+            long economyVersion,
+            long expeditionProgress,
+            long expeditionRequiredEnergy,
+            String expeditionStatus,
+            long expeditionVersion,
+            String currentNodeId,
+            String unlockedEventId,
+            boolean pilotProgressPresent,
+            int pilotLevel,
+            int pilotCurrentExperience,
+            int pilotNextLevelExperience,
+            String petId,
+            boolean petProgressPresent,
+            int petLevel,
+            int petBond,
+            int petEvolutionStage,
+            String resolvedChoiceId,
+            String resolvedChoiceTitle,
+            String outcomeTitle,
+            String outcomeSummary,
+            String materialItemId,
+            String materialItemName,
+            String materialItemDescription,
+            Long materialQuantityGained,
+            Long materialQuantityAfter,
+            Long materialVersion,
+            List<InventoryRuntimeItem> inventory
+    ) {
+        this(
+                dailySteps,
+                activityStateVersion,
+                timeZone,
+                lastActivitySyncAt,
+                availableEnergy,
+                economyVersion,
+                expeditionProgress,
+                expeditionRequiredEnergy,
+                expeditionStatus,
+                expeditionVersion,
+                1,
+                currentNodeId,
+                unlockedEventId,
+                pilotProgressPresent,
+                pilotLevel,
+                pilotCurrentExperience,
+                pilotNextLevelExperience,
+                petId,
+                petProgressPresent,
+                petLevel,
+                petBond,
+                petEvolutionStage,
+                resolvedChoiceId,
+                resolvedChoiceTitle,
+                outcomeTitle,
+                outcomeSummary,
+                materialItemId,
+                materialItemName,
+                materialItemDescription,
+                materialQuantityGained,
+                materialQuantityAfter,
+                materialVersion,
+                inventory
+        );
     }
 
     public HomeRuntimeState(
@@ -228,6 +303,7 @@ public record HomeRuntimeState(
                 expeditionRequiredEnergy,
                 expeditionStatus,
                 expeditionVersion,
+                1,
                 currentNodeId,
                 unlockedEventId,
                 pilotProgressPresent,
@@ -306,6 +382,7 @@ public record HomeRuntimeState(
                 expeditionRequiredEnergy,
                 expeditionStatus,
                 expeditionVersion,
+                expeditionJourneyNumber,
                 currentNodeId,
                 unlockedEventId,
                 pilotProgressPresent,

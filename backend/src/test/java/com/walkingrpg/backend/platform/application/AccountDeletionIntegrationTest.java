@@ -133,6 +133,8 @@ class AccountDeletionIntegrationTest {
         assertEquals(0, rowCount("equipment_slot_state"));
         assertEquals(0, rowCount("processed_equipment_command"));
         assertEquals(0, rowCount("platform_cosmetic_slot_state"));
+        assertEquals(0, rowCount("expedition_journey_cycle"));
+        assertEquals(0, rowCount("processed_expedition_journey_start"));
         assertEquals(1, rowCount("account_deletion_receipt"));
         assertNotEquals("delete-user", jdbcTemplate.queryForObject(
                 "SELECT subject_hash FROM account_deletion_receipt",
@@ -198,7 +200,9 @@ class AccountDeletionIntegrationTest {
                 "wallet",
                 "economyLedger",
                 "expedition",
+                "expeditionJourney",
                 "expeditionOperations",
+                "expeditionJourneyOperations",
                 "pilotProgress",
                 "petProgress",
                 "eventResolutions",
@@ -227,6 +231,8 @@ class AccountDeletionIntegrationTest {
         assertEquals(1, ((List<?>) export.get("activity")).size());
         assertEquals(1, ((List<?>) export.get("telemetry")).size());
         assertEquals(1, ((List<?>) export.get("firstJourneyMilestones")).size());
+        assertEquals(1, ((List<?>) export.get("expeditionJourney")).size());
+        assertEquals(1, ((List<?>) export.get("expeditionJourneyOperations")).size());
         assertEquals(2, ((List<?>) export.get("uniqueInventory")).size());
         assertEquals(1, ((List<?>) export.get("craftingOperations")).size());
         assertEquals(1, ((List<?>) export.get("craftingIngredients")).size());
@@ -738,6 +744,8 @@ class AccountDeletionIntegrationTest {
         assertEquals(0, rowCount("app_user"));
         assertEquals(0, rowCount("expedition_progress"));
         assertEquals(0, rowCount("processed_expedition_advance"));
+        assertEquals(0, rowCount("expedition_journey_cycle"));
+        assertEquals(0, rowCount("processed_expedition_journey_start"));
         assertEquals(0, rowCount("economy_wallet"));
         assertEquals(1, rowCount("account_deletion_receipt"));
         assertThrows(
@@ -799,6 +807,36 @@ class AccountDeletionIntegrationTest {
                     user_id, milestone, occurred_at, source, attributes, recorded_at
                 ) VALUES (
                     ?, 'JOURNEY_STARTED', ?, 'AUTHORITATIVE', '{}'::jsonb, ?
+                )
+                """, userId, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO expedition_progress (
+                    user_id, expedition_id, current_node_id,
+                    progress_energy, required_energy, status,
+                    unlocked_event_id, version, created_at, updated_at
+                ) VALUES (
+                    ?, 'starter-expedition-v1', 'outer-beacon',
+                    0, 30, 'IN_PROGRESS', NULL, 1, ?, ?
+                )
+                """, userId, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO expedition_journey_cycle (
+                    user_id, expedition_id, journey_number,
+                    created_at, updated_at
+                ) VALUES (?, 'starter-expedition-v1', 2, ?, ?)
+                """, userId, timestamp, timestamp);
+        jdbcTemplate.update("""
+                INSERT INTO processed_expedition_journey_start (
+                    user_id, expedition_id, idempotency_key,
+                    request_fingerprint, content_version, expedition_name,
+                    journey_number, progress_after, required_energy,
+                    expedition_version, expedition_status, current_node_id,
+                    current_node_name, server_time, created_at
+                ) VALUES (
+                    ?, 'starter-expedition-v1', 'account-test-journey',
+                    repeat('6', 64), 'chapter-1-v17', 'Сигнальный путь',
+                    2, 0, 30, 1, 'IN_PROGRESS', 'outer-beacon',
+                    'Внешний маяк', ?, ?
                 )
                 """, userId, timestamp, timestamp);
         jdbcTemplate.update("""

@@ -10,9 +10,11 @@ import com.walkingrpg.backend.account.application.AccountDeletionRegistry;
 import com.walkingrpg.backend.expedition.domain.ExpeditionAdvanceResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionEventDefinition;
 import com.walkingrpg.backend.expedition.domain.ExpeditionIdempotencyScope;
+import com.walkingrpg.backend.expedition.domain.ExpeditionJourneyStartResult;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressStatus;
 import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionAdvance;
+import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionJourneyStart;
 import com.walkingrpg.backend.operations.JdbcStatementTimeouts;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -233,6 +235,130 @@ public class JdbcExpeditionRepository implements ExpeditionRepository {
                 event == null ? null : event.eventId(),
                 event == null ? null : event.title(),
                 event == null ? null : event.summary(),
+                Timestamp.from(result.serverTime())
+        );
+    }
+
+    @Override
+    public long findJourneyNumber(String userId, String expeditionId) {
+        List<Long> journeyNumbers = jdbcTemplate.queryForList("""
+                SELECT journey_number
+                FROM expedition_journey_cycle
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                """, Long.class, userId, expeditionId);
+        return journeyNumbers.stream().findFirst().orElse(1L);
+    }
+
+    @Override
+    public void saveJourneyNumber(
+            String userId,
+            String expeditionId,
+            long journeyNumber,
+            Instant updatedAt
+    ) {
+        jdbcTemplate.update("""
+                INSERT INTO expedition_journey_cycle (
+                    user_id,
+                    expedition_id,
+                    journey_number,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (user_id, expedition_id) DO UPDATE
+                SET journey_number = EXCLUDED.journey_number,
+                    updated_at = EXCLUDED.updated_at
+                """,
+                userId,
+                expeditionId,
+                journeyNumber,
+                Timestamp.from(updatedAt),
+                Timestamp.from(updatedAt)
+        );
+    }
+
+    @Override
+    public Optional<ProcessedExpeditionJourneyStart> findProcessedJourney(
+            ExpeditionIdempotencyScope scope
+    ) {
+        List<ProcessedExpeditionJourneyStart> commands = jdbcTemplate.query("""
+                SELECT request_fingerprint,
+                       content_version,
+                       expedition_name,
+                       journey_number,
+                       progress_after,
+                       required_energy,
+                       expedition_version,
+                       expedition_status,
+                       current_node_id,
+                       current_node_name,
+                       server_time
+                FROM processed_expedition_journey_start
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                  AND idempotency_key = ?
+                """, (resultSet, rowNumber) -> new ProcessedExpeditionJourneyStart(
+                resultSet.getString("request_fingerprint"),
+                new ExpeditionJourneyStartResult(
+                        resultSet.getString("content_version"),
+                        scope.expeditionId(),
+                        resultSet.getString("expedition_name"),
+                        resultSet.getLong("journey_number"),
+                        resultSet.getLong("progress_after"),
+                        resultSet.getLong("required_energy"),
+                        resultSet.getLong("expedition_version"),
+                        ExpeditionProgressStatus.valueOf(
+                                resultSet.getString("expedition_status")
+                        ),
+                        resultSet.getString("current_node_id"),
+                        resultSet.getString("current_node_name"),
+                        resultSet.getTimestamp("server_time").toInstant()
+                )
+        ), scope.userId(), scope.expeditionId(), scope.idempotencyKey());
+        return commands.stream().findFirst();
+    }
+
+    @Override
+    public void saveProcessedJourney(
+            ExpeditionIdempotencyScope scope,
+            ProcessedExpeditionJourneyStart processed
+    ) {
+        ExpeditionJourneyStartResult result = processed.result();
+        jdbcTemplate.update("""
+                INSERT INTO processed_expedition_journey_start (
+                    user_id,
+                    expedition_id,
+                    idempotency_key,
+                    request_fingerprint,
+                    content_version,
+                    expedition_name,
+                    journey_number,
+                    progress_after,
+                    required_energy,
+                    expedition_version,
+                    expedition_status,
+                    current_node_id,
+                    current_node_name,
+                    server_time,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                scope.userId(),
+                scope.expeditionId(),
+                scope.idempotencyKey(),
+                processed.requestFingerprint(),
+                result.contentVersion(),
+                result.expeditionName(),
+                result.journeyNumber(),
+                result.progressAfter(),
+                result.requiredEnergy(),
+                result.expeditionVersion(),
+                result.status().name(),
+                result.currentNodeId(),
+                result.currentNodeName(),
+                Timestamp.from(result.serverTime()),
                 Timestamp.from(result.serverTime())
         );
     }

@@ -91,6 +91,7 @@ class HomeServiceTest {
         assertEquals("MISSING_MATERIALS",
                 snapshot.craftingRecipes().getFirst().status());
         assertEquals(30, snapshot.expedition().progress());
+        assertEquals(1, snapshot.expedition().journeyNumber());
         assertEquals("EVENT_READY", snapshot.expedition().status());
         assertNotNull(snapshot.expedition().unlockedEvent());
     }

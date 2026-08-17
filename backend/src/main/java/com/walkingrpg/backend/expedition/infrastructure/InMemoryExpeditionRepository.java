@@ -8,12 +8,16 @@ import java.util.Optional;
 import com.walkingrpg.backend.expedition.domain.ExpeditionIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
 import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionAdvance;
+import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionJourneyStart;
 
 public class InMemoryExpeditionRepository implements ExpeditionRepository {
 
     private final Map<StateKey, ExpeditionProgressState> states = new HashMap<>();
     private final Map<ExpeditionIdempotencyScope, ProcessedExpeditionAdvance> processed =
             new HashMap<>();
+    private final Map<StateKey, Long> journeyNumbers = new HashMap<>();
+    private final Map<ExpeditionIdempotencyScope, ProcessedExpeditionJourneyStart>
+            processedJourneys = new HashMap<>();
 
     @Override
     public synchronized void acquireLock(String userId, String expeditionId) {
@@ -51,6 +55,41 @@ public class InMemoryExpeditionRepository implements ExpeditionRepository {
             ProcessedExpeditionAdvance value
     ) {
         processed.put(scope, value);
+    }
+
+    @Override
+    public synchronized long findJourneyNumber(
+            String userId,
+            String expeditionId
+    ) {
+        return journeyNumbers.getOrDefault(
+                new StateKey(userId, expeditionId),
+                1L
+        );
+    }
+
+    @Override
+    public synchronized void saveJourneyNumber(
+            String userId,
+            String expeditionId,
+            long journeyNumber,
+            Instant updatedAt
+    ) {
+        journeyNumbers.put(new StateKey(userId, expeditionId), journeyNumber);
+    }
+
+    @Override
+    public synchronized Optional<ProcessedExpeditionJourneyStart>
+            findProcessedJourney(ExpeditionIdempotencyScope scope) {
+        return Optional.ofNullable(processedJourneys.get(scope));
+    }
+
+    @Override
+    public synchronized void saveProcessedJourney(
+            ExpeditionIdempotencyScope scope,
+            ProcessedExpeditionJourneyStart value
+    ) {
+        processedJourneys.put(scope, value);
     }
 
     private record StateKey(String userId, String expeditionId) {

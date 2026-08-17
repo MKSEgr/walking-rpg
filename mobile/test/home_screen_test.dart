@@ -18,6 +18,7 @@ import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/expedition/domain/expedition_journey_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -1753,6 +1754,90 @@ void main() {
     },
   );
 
+  testWidgets('completed expedition begins an idempotent next journey', (
+    WidgetTester tester,
+  ) async {
+    int loads = 0;
+    String? sentExpeditionId;
+    int? sentExpectedJourneyNumber;
+    String? sentKey;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async {
+            loads += 1;
+            return loads == 1 ? _completedJourney() : _startedThirdJourney();
+          },
+          idempotencyKeyFactory: () => 'journey-key',
+          expeditionJourneyStarter:
+              ({
+                required String expeditionId,
+                required int expectedJourneyNumber,
+                required String idempotencyKey,
+              }) async {
+                sentExpeditionId = expeditionId;
+                sentExpectedJourneyNumber = expectedJourneyNumber;
+                sentKey = idempotencyKey;
+                return _journeyResult();
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ПОХОД №2'), findsOneWidget);
+    final Finder begin = find.byKey(const Key('home-begin-next-journey'));
+    expect(begin, findsOneWidget);
+    expect(find.text('Начать поход №3'), findsOneWidget);
+
+    await tester.tap(begin);
+    await tester.pumpAndSettle();
+
+    expect(sentExpeditionId, 'starter-expedition-v1');
+    expect(sentExpectedJourneyNumber, 2);
+    expect(sentKey, 'journey-key');
+    expect(loads, 2);
+    expect(find.text('Начат поход №3'), findsOneWidget);
+    expect(find.text('ПОХОД №3'), findsOneWidget);
+    expect(find.byKey(const Key('home-advance-expedition')), findsOneWidget);
+  });
+
+  testWidgets('cached completed expedition cannot begin another journey', (
+    WidgetTester tester,
+  ) async {
+    int calls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async => _completedJourney(
+            cacheMetadata: CachedReadMetadata(
+              cachedAt: DateTime.utc(2026, 8, 17, 6),
+              reason: 'Нет соединения с сервером',
+            ),
+          ),
+          expeditionJourneyStarter:
+              ({
+                required String expeditionId,
+                required int expectedJourneyNumber,
+                required String idempotencyKey,
+              }) async {
+                calls += 1;
+                return _journeyResult();
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final FilledButton button = tester.widget<FilledButton>(
+      find.byKey(const Key('home-begin-next-journey')),
+    );
+    expect(button.onPressed, isNull);
+    expect(find.text('Изменения недоступны офлайн'), findsOneWidget);
+    expect(calls, 0);
+  });
+
   testWidgets(
     'pending result keeps future progression subjects fully neutral',
     (WidgetTester tester) async {
@@ -2153,6 +2238,88 @@ HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
     petLevel: 1,
     petBond: 10,
     cacheMetadata: cacheMetadata,
+  );
+}
+
+HomeSnapshot _completedJourney({CachedReadMetadata? cacheMetadata}) {
+  return HomeSnapshot(
+    localDate: '2026-08-17',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 12000,
+    dailyGoal: 6000,
+    availableEnergy: 84,
+    activityStateVersion: 9,
+    economyVersion: 12,
+    lastActivitySyncAt: '2026-08-17T05:55:00Z',
+    serverTime: '2026-08-17T06:00:00Z',
+    contentVersion: 'chapter-1-v15',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'first-light-causeway',
+    currentNodeName: 'Переход первого света',
+    expeditionProgress: 105,
+    requiredEnergy: 105,
+    expeditionStatus: 'COMPLETED',
+    expeditionVersion: 60,
+    expeditionJourneyNumber: 2,
+    unlockedEvent: null,
+    pilotName: 'Навигатор',
+    pilotLevel: 7,
+    pilotCurrentExperience: 888,
+    pilotNextLevelExperience: 1400,
+    petName: 'Искра',
+    petLevel: 6,
+    petBond: 777,
+    cacheMetadata: cacheMetadata,
+  );
+}
+
+HomeSnapshot _startedThirdJourney() {
+  final HomeSnapshot completed = _completedJourney();
+  return HomeSnapshot(
+    localDate: completed.localDate,
+    timeZone: completed.timeZone,
+    dailySteps: completed.dailySteps,
+    dailyGoal: completed.dailyGoal,
+    availableEnergy: completed.availableEnergy,
+    activityStateVersion: completed.activityStateVersion,
+    economyVersion: completed.economyVersion,
+    lastActivitySyncAt: completed.lastActivitySyncAt,
+    serverTime: completed.serverTime,
+    contentVersion: completed.contentVersion,
+    expeditionId: completed.expeditionId,
+    expeditionName: completed.expeditionName,
+    currentNodeId: 'outer-beacon',
+    currentNodeName: 'Внешний маяк',
+    expeditionProgress: 0,
+    requiredEnergy: 30,
+    expeditionStatus: 'IN_PROGRESS',
+    expeditionVersion: 61,
+    expeditionJourneyNumber: 3,
+    unlockedEvent: null,
+    pilotName: completed.pilotName,
+    pilotLevel: completed.pilotLevel,
+    pilotCurrentExperience: completed.pilotCurrentExperience,
+    pilotNextLevelExperience: completed.pilotNextLevelExperience,
+    petName: completed.petName,
+    petLevel: completed.petLevel,
+    petBond: completed.petBond,
+  );
+}
+
+ExpeditionJourneyResult _journeyResult() {
+  return const ExpeditionJourneyResult(
+    contentVersion: 'chapter-1-v15',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    journeyNumber: 3,
+    progressAfter: 0,
+    requiredEnergy: 30,
+    expeditionVersion: 61,
+    status: 'IN_PROGRESS',
+    currentNodeId: 'outer-beacon',
+    currentNodeName: 'Внешний маяк',
+    serverTime: '2026-08-17T06:00:00Z',
   );
 }
 

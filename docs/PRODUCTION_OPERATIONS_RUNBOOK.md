@@ -855,6 +855,37 @@ but keeps an already persisted `first-light-causeway` state completable. Do not
 roll back to a pre-V33 binary after such a state has persisted; return content
 to v16 for new journeys and forward-fix binaries that must read the 30th node.
 
+## Repeatable expedition journey rollout
+
+Flyway V34 creates `expedition_journey_cycle`, backfills every existing
+expedition as journey 1, adds immutable journey-start receipts and changes
+event uniqueness from once per account expedition to once per journey. It does
+not change route state, active content, ENERGY, pilot/pet progression, skills,
+inventory or equipment.
+
+Deploy V34-capable binaries and drain every pre-V34 backend before allowing a
+player to start journey 2. A pre-V34 event writer always stores the compatibility
+default `journey_number=1`; after a cycle advances, such a writer could assign a
+new event to the wrong journey. No separate content publication or remote-config
+activation is required.
+
+Before enabling traffic, verify:
+
+1. Flyway reports V34 and `expedition_journey_cycle` has one row for every
+   existing `expedition_progress` row;
+2. no pre-V34 application instance remains in the pool;
+3. a completed synthetic account starts journey 2 exactly once, returns to
+   `outer-beacon`, keeps its permanent progression and spends ENERGY only on
+   the following advance;
+4. replay of the start key returns the same receipt and a stale new key returns
+   `EXPEDITION_JOURNEY_STATE_CONFLICT`;
+5. the same event can resolve in journey 2, while duplicate resolution inside
+   that journey is still rejected.
+
+After any `journey_number > 1` or journey-start receipt exists, rollback to a
+pre-V34 binary is prohibited. Stop rollout expansion and forward-fix a V34+
+binary; content rollback remains available and does not reset the cycle.
+
 ## Rollback
 
 Operational rollback preparation can be documented and tested synthetically,

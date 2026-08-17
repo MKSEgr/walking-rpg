@@ -95,8 +95,8 @@ class BackupRestoreDrillIntegrationTest {
         assertEquals(latestRepositoryVersion, sourceFlywayVersion);
         assertTrue(
                 MigrationVersion.fromVersion(latestRepositoryVersion)
-                        .compareTo(MigrationVersion.fromVersion("33")) >= 0,
-                "The drill must cover Flyway V1-V33 or later"
+                        .compareTo(MigrationVersion.fromVersion("34")) >= 0,
+                "The drill must cover Flyway V1-V34 or later"
         );
 
         try (Connection sourceConnection = connection(SOURCE)) {
@@ -110,8 +110,8 @@ class BackupRestoreDrillIntegrationTest {
         try (Connection sourceConnection = connection(SOURCE)) {
             sourceManifest = PostgresDrillManifest.capture(sourceConnection);
         }
-        assertTrue(sourceManifest.tables().size() >= 34);
-        assertTrue(sourceManifest.applicationTableCount() >= 33);
+        assertTrue(sourceManifest.tables().size() >= 38);
+        assertTrue(sourceManifest.applicationTableCount() >= 37);
         assertEquals(
                 sourceManifest.applicationTableCount(),
                 sourceManifest.fixtureCoveredApplicationTableCount()

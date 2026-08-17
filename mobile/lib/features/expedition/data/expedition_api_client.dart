@@ -3,6 +3,7 @@ import 'package:walking_rpg_mobile/core/cache/file_read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/expedition/domain/expedition_journey_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/auth_home_transports.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 
@@ -106,6 +107,57 @@ class ExpeditionApiClient {
       );
     }
     return ExpeditionAdvanceResult.fromJson(decoded);
+  }
+
+  Future<ExpeditionJourneyResult> beginNextJourney({
+    required String expeditionId,
+    required int expectedJourneyNumber,
+    required String idempotencyKey,
+  }) async {
+    if (expectedJourneyNumber <= 0) {
+      throw ArgumentError.value(
+        expectedJourneyNumber,
+        'expectedJourneyNumber',
+        'Значение должно быть положительным',
+      );
+    }
+    final String normalizedExpeditionId = expeditionId.trim();
+    final String normalizedKey = idempotencyKey.trim();
+    if (normalizedExpeditionId.isEmpty || normalizedKey.isEmpty) {
+      throw ArgumentError('expeditionId и idempotencyKey обязательны');
+    }
+
+    await invalidateReadSnapshotsBeforeMutation(_cache, ownerId: userId);
+
+    final Uri uri = baseUri.resolve(
+      '/api/v1/expeditions/${Uri.encodeComponent(normalizedExpeditionId)}/journeys',
+    );
+    final HomeTransportResponse response = await transport.post(
+      uri: uri,
+      headers: <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(<String, Object>{
+        'expectedJourneyNumber': expectedJourneyNumber,
+        'idempotencyKey': normalizedKey,
+      }),
+    );
+
+    final Object? decoded = _decodeJson(response.body);
+    if (response.statusCode != 200) {
+      throw ExpeditionApiException(
+        statusCode: response.statusCode,
+        code: _errorCode(decoded),
+        message: _errorMessage(decoded),
+      );
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Expedition response должен быть JSON-объектом',
+      );
+    }
+    return ExpeditionJourneyResult.fromJson(decoded);
   }
 
   Object? _decodeJson(String body) {

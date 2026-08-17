@@ -6,6 +6,7 @@ import java.util.Optional;
 import com.walkingrpg.backend.expedition.domain.ExpeditionIdempotencyScope;
 import com.walkingrpg.backend.expedition.domain.ExpeditionProgressState;
 import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionAdvance;
+import com.walkingrpg.backend.expedition.domain.ProcessedExpeditionJourneyStart;
 
 public interface ExpeditionRepository {
 
@@ -27,5 +28,23 @@ public interface ExpeditionRepository {
     void saveProcessed(
             ExpeditionIdempotencyScope scope,
             ProcessedExpeditionAdvance processed
+    );
+
+    long findJourneyNumber(String userId, String expeditionId);
+
+    void saveJourneyNumber(
+            String userId,
+            String expeditionId,
+            long journeyNumber,
+            Instant updatedAt
+    );
+
+    Optional<ProcessedExpeditionJourneyStart> findProcessedJourney(
+            ExpeditionIdempotencyScope scope
+    );
+
+    void saveProcessedJourney(
+            ExpeditionIdempotencyScope scope,
+            ProcessedExpeditionJourneyStart processed
     );
 }

@@ -117,6 +117,7 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.expedition.expeditionId")
                         .value("starter-expedition-v1"))
                 .andExpect(jsonPath("$.expedition.progress").value(30))
+                .andExpect(jsonPath("$.expedition.journeyNumber").value(1))
                 .andExpect(jsonPath("$.expedition.status").value("EVENT_READY"))
                 .andExpect(jsonPath("$.expedition.unlockedEvent.eventId")
                         .value("signal-source-v1"));

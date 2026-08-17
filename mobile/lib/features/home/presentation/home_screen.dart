@@ -29,6 +29,7 @@ import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/expedition/domain/expedition_journey_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/data/item_upgrade_api_client.dart';
@@ -40,6 +41,12 @@ typedef ExpeditionAdvancer =
     Future<ExpeditionAdvanceResult> Function({
       required String expeditionId,
       required int energyToSpend,
+      required String idempotencyKey,
+    });
+typedef ExpeditionJourneyStarter =
+    Future<ExpeditionJourneyResult> Function({
+      required String expeditionId,
+      required int expectedJourneyNumber,
       required String idempotencyKey,
     });
 typedef EventResolver =
@@ -103,6 +110,7 @@ class HomeScreen extends StatefulWidget {
     super.key,
     this.loader,
     this.advancer,
+    this.expeditionJourneyStarter,
     this.eventResolver,
     this.eventResultAcknowledger,
     this.crafter,
@@ -120,6 +128,7 @@ class HomeScreen extends StatefulWidget {
 
   final HomeSnapshotLoader? loader;
   final ExpeditionAdvancer? advancer;
+  final ExpeditionJourneyStarter? expeditionJourneyStarter;
   final EventResolver? eventResolver;
   final EventResultAcknowledger? eventResultAcknowledger;
   final CraftingExecutor? crafter;
@@ -146,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isDestinationVisible = false;
   bool _isRouteCurrent = false;
   bool _isAdvancing = false;
+  bool _isBeginningJourney = false;
   bool _isResolving = false;
   bool _isAcknowledging = false;
   bool _isCrafting = false;
@@ -170,6 +180,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   bool get _isBusy =>
       _isAdvancing ||
+      _isBeginningJourney ||
       _isResolving ||
       _isAcknowledging ||
       _isCrafting ||
@@ -321,12 +332,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       recipeViewportKey: _recipeViewportKey,
                       stickyActionOcclusionKey: _stickyActionOcclusionKey,
                       isAdvancing: _isAdvancing,
+                      isBeginningJourney: _isBeginningJourney,
                       isResolving: _isResolving,
                       isAcknowledging: _isAcknowledging,
                       isCrafting: _isCrafting,
                       isUpgrading: _isUpgrading,
                       isChangingEquipment: _isChangingEquipment,
                       onAdvance: () => _advance(snapshot),
+                      onBeginNextJourney: () => _beginNextJourney(snapshot),
                       onResolve: (HomeEventChoice choice) =>
                           _resolveEvent(snapshot, choice),
                       onAcknowledgeEventResult: () =>
@@ -566,6 +579,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _isAdvancing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _beginNextJourney(HomeSnapshot snapshot) async {
+    if (_isBusy ||
+        snapshot.isCached ||
+        snapshot.pendingEventResult != null ||
+        snapshot.expeditionStatus != 'COMPLETED') {
+      return;
+    }
+
+    setState(() {
+      _isBeginningJourney = true;
+    });
+    try {
+      final ExpeditionJourneyStarter starter =
+          widget.expeditionJourneyStarter ??
+          ExpeditionApiClient.fromEnvironment().beginNextJourney;
+      final ExpeditionJourneyResult result = await starter(
+        expeditionId: snapshot.expeditionId,
+        expectedJourneyNumber: snapshot.expeditionJourneyNumber,
+        idempotencyKey: _nextKey('journey-${snapshot.expeditionId}'),
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Начат поход №${result.journeyNumber}')),
+      );
+      setState(() {
+        _snapshotFuture = _startSnapshotLoad();
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось начать новый поход: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBeginningJourney = false;
         });
       }
     }
@@ -913,12 +970,14 @@ class _HomeBody extends StatelessWidget {
     required this.recipeViewportKey,
     required this.stickyActionOcclusionKey,
     required this.isAdvancing,
+    required this.isBeginningJourney,
     required this.isResolving,
     required this.isAcknowledging,
     required this.isCrafting,
     required this.isUpgrading,
     required this.isChangingEquipment,
     required this.onAdvance,
+    required this.onBeginNextJourney,
     required this.onResolve,
     required this.onAcknowledgeEventResult,
     required this.onCraft,
@@ -935,12 +994,14 @@ class _HomeBody extends StatelessWidget {
   final GlobalKey<State<StatefulWidget>> recipeViewportKey;
   final GlobalKey<State<StatefulWidget>> stickyActionOcclusionKey;
   final bool isAdvancing;
+  final bool isBeginningJourney;
   final bool isResolving;
   final bool isAcknowledging;
   final bool isCrafting;
   final bool isUpgrading;
   final bool isChangingEquipment;
   final VoidCallback onAdvance;
+  final VoidCallback onBeginNextJourney;
   final ValueChanged<HomeEventChoice> onResolve;
   final VoidCallback onAcknowledgeEventResult;
   final ValueChanged<HomeCraftingRecipe> onCraft;
@@ -968,6 +1029,7 @@ class _HomeBody extends StatelessWidget {
     final bool readOnly = snapshot.isCached;
     final bool busy =
         isAdvancing ||
+        isBeginningJourney ||
         isResolving ||
         isAcknowledging ||
         isCrafting ||
@@ -977,10 +1039,10 @@ class _HomeBody extends StatelessWidget {
         busy || pendingEventResult != null || readOnly;
     final String actionLabel = readOnly
         ? 'Изменения недоступны офлайн'
-        : completed
-        ? 'Экспедиция завершена'
         : pendingEventResult != null
         ? 'Сначала подтвердите результат'
+        : completed
+        ? 'Начать поход №${snapshot.expeditionJourneyNumber + 1}'
         : eventReady
         ? 'Выберите решение события'
         : spendableEnergy > 0
@@ -988,11 +1050,9 @@ class _HomeBody extends StatelessWidget {
         : 'Нужно накопить энергию';
     final bool actionDisabled =
         readOnly ||
-        eventReady ||
-        completed ||
         pendingEventResult != null ||
-        spendableEnergy <= 0 ||
-        busy;
+        busy ||
+        (!completed && (eventReady || spendableEnergy <= 0));
 
     return ExpeditionBackdrop(
       child: Stack(
@@ -1139,15 +1199,26 @@ class _HomeBody extends StatelessWidget {
                         const SizedBox(height: 8),
                       ],
                       FilledButton.icon(
-                        onPressed: actionDisabled ? null : onAdvance,
-                        icon: isAdvancing
+                        key: completed
+                            ? const Key('home-begin-next-journey')
+                            : const Key('home-advance-expedition'),
+                        onPressed: actionDisabled
+                            ? null
+                            : completed
+                            ? onBeginNextJourney
+                            : onAdvance,
+                        icon: isAdvancing || isBeginningJourney
                             ? const SizedBox.square(
                                 dimension: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.near_me_outlined),
+                            : Icon(
+                                completed
+                                    ? Icons.replay_outlined
+                                    : Icons.near_me_outlined,
+                              ),
                         label: Text(
                           actionLabel,
                           maxLines: 2,
@@ -1321,6 +1392,12 @@ class _ExpeditionHero extends StatelessWidget {
                 nodeName: snapshot.currentNodeName,
                 completed: completed,
               ),
+              ExpeditionBadge(
+                key: const Key('home-expedition-journey-number'),
+                label: 'Поход №${snapshot.expeditionJourneyNumber}',
+                icon: Icons.route_outlined,
+                tone: ExpeditionPanelTone.energy,
+              ),
               if (!hasCompanionPortrait)
                 ExpeditionBadge(
                   key: const Key('home-active-companion-badge'),
@@ -1336,7 +1413,9 @@ class _ExpeditionHero extends StatelessWidget {
           ],
           const SizedBox(height: 16),
           Text(
-            completed ? 'Экспедиция завершена' : 'Экспедиция ждёт твоих шагов',
+            completed
+                ? 'Поход №${snapshot.expeditionJourneyNumber} завершён'
+                : 'Экспедиция ждёт твоих шагов',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
@@ -1375,7 +1454,7 @@ class _ExpeditionHero extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             completed
-                ? 'Маршрут пройден. Результат сохранён на сервере.'
+                ? 'Маршрут пройден. Постоянный прогресс сохранён; можно начать новый поход.'
                 : 'До следующего узла: '
                       '${snapshot.remainingExpeditionEnergy} ENERGY',
             style: Theme.of(

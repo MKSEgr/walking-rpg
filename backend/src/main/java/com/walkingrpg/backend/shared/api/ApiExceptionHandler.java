@@ -26,6 +26,7 @@ import com.walkingrpg.backend.expedition.application.EventResolutionValidationEx
 import com.walkingrpg.backend.expedition.application.EventResultReceiptNotFoundException;
 import com.walkingrpg.backend.expedition.application.EventStateConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionIdempotencyConflictException;
+import com.walkingrpg.backend.expedition.application.ExpeditionJourneyStateConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionNotFoundException;
 import com.walkingrpg.backend.expedition.application.ExpeditionStateConflictException;
 import com.walkingrpg.backend.expedition.application.ExpeditionValidationException;
@@ -271,6 +272,24 @@ public class ApiExceptionHandler {
                 Map.of(
                         "status", exception.status().name(),
                         "remainingEnergy", exception.remainingEnergy()
+                )
+        );
+    }
+
+    @ExceptionHandler(ExpeditionJourneyStateConflictException.class)
+    ResponseEntity<ApiErrorResponse> handleExpeditionJourneyStateConflict(
+            ExpeditionJourneyStateConflictException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "EXPEDITION_JOURNEY_STATE_CONFLICT",
+                exception.getMessage(),
+                Map.of(
+                        "status", exception.status().name(),
+                        "expectedJourneyNumber",
+                        exception.expectedJourneyNumber(),
+                        "currentJourneyNumber",
+                        exception.currentJourneyNumber()
                 )
         );
     }
