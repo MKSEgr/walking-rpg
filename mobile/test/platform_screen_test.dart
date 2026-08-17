@@ -105,6 +105,10 @@ void main() {
     );
 
     expect(log, findsOneWidget);
+    final Finder journey = find.byKey(
+      const Key('platform-journey-decision-journey'),
+    );
+    await _bringIntoView(tester, journey);
     expect(find.text('Поход №4'), findsOneWidget);
 
     await _bringIntoView(tester, first);

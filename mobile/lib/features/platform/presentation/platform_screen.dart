@@ -759,6 +759,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: ExpeditionBadge(
+              key: const Key('platform-journey-decision-journey'),
               label:
                   'Поход №${snapshot.expeditionJourneyNumber}'
                   '${snapshot.isCached ? ' · сохранённая запись' : ''}',
@@ -780,6 +781,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
           if (decisions.isEmpty)
             Semantics(
               key: const Key('platform-journey-decision-empty'),
+              container: true,
               label:
                   'Поход ${snapshot.expeditionJourneyNumber}: '
                   'решений пока нет',
