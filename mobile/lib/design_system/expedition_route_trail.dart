@@ -159,10 +159,7 @@ class _RouteNode extends StatelessWidget {
       return const <BoxShadow>[];
     }
     return <BoxShadow>[
-      BoxShadow(
-        color: accent.withValues(alpha: 0.26),
-        blurRadius: 12,
-      ),
+      BoxShadow(color: accent.withValues(alpha: 0.26), blurRadius: 12),
     ];
   }
 }

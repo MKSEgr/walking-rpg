@@ -84,9 +84,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('empty accepted trail stays absent', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('empty accepted trail stays absent', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
