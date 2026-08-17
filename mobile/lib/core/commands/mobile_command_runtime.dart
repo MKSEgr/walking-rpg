@@ -19,6 +19,7 @@ import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/expedition/domain/expedition_journey_result.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/data/item_upgrade_api_client.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
@@ -36,6 +37,12 @@ typedef ExpeditionCommandSender =
     Future<ExpeditionAdvanceResult> Function({
       required String expeditionId,
       required int energyToSpend,
+      required String idempotencyKey,
+    });
+typedef ExpeditionJourneyCommandSender =
+    Future<ExpeditionJourneyResult> Function({
+      required String expeditionId,
+      required int expectedJourneyNumber,
       required String idempotencyKey,
     });
 typedef EventCommandSender =
@@ -76,6 +83,7 @@ final class MobileCommandRuntime {
     required MobileCommandStore store,
     required ActivityCommandSender activitySender,
     required ExpeditionCommandSender expeditionSender,
+    ExpeditionJourneyCommandSender? expeditionJourneySender,
     required EventCommandSender eventSender,
     EventResultAcknowledgementSender? eventResultAcknowledgementSender,
     CraftingCommandSender? craftingSender,
@@ -88,6 +96,7 @@ final class MobileCommandRuntime {
        _store = store,
        _activitySender = activitySender,
        _expeditionSender = expeditionSender,
+       _expeditionJourneySender = expeditionJourneySender,
        _eventSender = eventSender,
        _eventResultAcknowledgementSender = eventResultAcknowledgementSender,
        _craftingSender = craftingSender,
@@ -116,6 +125,7 @@ final class MobileCommandRuntime {
       store: FileMobileCommandStore.fromEnvironment(),
       activitySender: activityClient.sync,
       expeditionSender: expeditionClient.advance,
+      expeditionJourneySender: expeditionClient.beginNextJourney,
       eventSender: eventClient.resolve,
       eventResultAcknowledgementSender: eventClient.acknowledge,
       craftingSender: craftingClient.craft,
@@ -129,6 +139,7 @@ final class MobileCommandRuntime {
   final MobileCommandStore _store;
   final ActivityCommandSender _activitySender;
   final ExpeditionCommandSender _expeditionSender;
+  final ExpeditionJourneyCommandSender? _expeditionJourneySender;
   final EventCommandSender _eventSender;
   final EventResultAcknowledgementSender? _eventResultAcknowledgementSender;
   final CraftingCommandSender? _craftingSender;
@@ -202,6 +213,39 @@ final class MobileCommandRuntime {
         payload: <String, Object?>{
           'expeditionId': normalizedExpeditionId,
           'energyToSpend': energyToSpend,
+        },
+      ),
+    );
+  }
+
+  Future<ExpeditionJourneyResult> beginNextJourney({
+    required String expeditionId,
+    required int expectedJourneyNumber,
+    required String idempotencyKey,
+  }) {
+    final String normalizedExpeditionId = _requireText(
+      expeditionId,
+      'expeditionId',
+    );
+    if (expectedJourneyNumber <= 0) {
+      throw ArgumentError.value(
+        expectedJourneyNumber,
+        'expectedJourneyNumber',
+        'Значение должно быть положительным',
+      );
+    }
+    return _runOpenOperation<ExpeditionJourneyResult>(
+      () => _submit<ExpeditionJourneyResult>(
+        type: MobileCommandType.expeditionJourneyStart,
+        proposedKey: idempotencyKey,
+        fingerprint: jsonEncode(<Object?>[
+          MobileCommandType.expeditionJourneyStart.wireName,
+          normalizedExpeditionId,
+          expectedJourneyNumber,
+        ]),
+        payload: <String, Object?>{
+          'expeditionId': normalizedExpeditionId,
+          'expectedJourneyNumber': expectedJourneyNumber,
         },
       ),
     );
@@ -750,6 +794,21 @@ final class MobileCommandRuntime {
         return _expeditionSender(
           expeditionId: expeditionId,
           energyToSpend: energyToSpend,
+          idempotencyKey: command.idempotencyKey,
+        );
+      case MobileCommandType.expeditionJourneyStart:
+        final ExpeditionJourneyCommandSender? sender = _expeditionJourneySender;
+        if (sender == null) {
+          throw const MobileCommandPayloadException();
+        }
+        final String expeditionId = _payloadString(command, 'expeditionId');
+        final int expectedJourneyNumber = _payloadInt(
+          command,
+          'expectedJourneyNumber',
+        );
+        return sender(
+          expeditionId: expeditionId,
+          expectedJourneyNumber: expectedJourneyNumber,
           idempotencyKey: command.idempotencyKey,
         );
       case MobileCommandType.eventResolution:

@@ -332,6 +332,27 @@ Roadmap отражает снижение рисков. Статусы:
 - [ ] Зафиксировать cohort, build, период и принятые пороги в beta evidence;
       code-complete analytics сама по себе не считается `VALIDATED`
 
+## Milestone 14 — Repeatable expedition journeys
+
+### CODE_COMPLETE
+
+- [x] `POST /expeditions/{id}/journeys` с exact replay и stale
+      `expectedJourneyNumber` guard
+- [x] Сброс только route state на первый узел active content без
+      сброса pilot/pet/skills/inventory/equipment progression
+- [x] Persistent Home `journeyNumber` и per-journey uniqueness награды
+      за event
+- [x] Restart-safe `EXPEDITION_JOURNEY_START` в GAMEPLAY outbox, authoritative
+      Home reload и read-only cached/pending-result guards
+- [x] Flyway V34 backfill, account export/delete, synthetic backup/restore и
+      unit/API/PostgreSQL/migration/parser/outbox/widget tests
+
+### EXTERNAL_VALIDATION_REQUIRED
+
+- [ ] Проверить заметность кнопки нового похода и понимание того, что
+      постоянная прогрессия сохранилась, на beta cohort
+- [ ] Оценить economy/retention повторных наград до изменения баланса
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

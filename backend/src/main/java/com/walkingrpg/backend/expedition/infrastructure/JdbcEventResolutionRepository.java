@@ -115,6 +115,10 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
     ) {
         EventResolutionResult result = processed.result();
         EventMaterialRewardResult material = result.material();
+        long journeyNumber = currentJourneyNumber(
+                scope.userId(),
+                result.expeditionId()
+        );
         jdbcTemplate.update("""
                 INSERT INTO processed_event_resolution (
                     receipt_id,
@@ -126,6 +130,7 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                     content_version,
                     expedition_status,
                     expedition_version,
+                    journey_number,
                     event_title,
                     resolution_status,
                     choice_id,
@@ -161,7 +166,7 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, now()
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, now()
                 )
                 """,
                 result.receiptId(),
@@ -173,6 +178,7 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                 result.contentVersion(),
                 result.expeditionStatus().name(),
                 result.expeditionVersion(),
+                journeyNumber,
                 result.eventTitle(),
                 result.status().name(),
                 result.choiceId(),
@@ -203,6 +209,21 @@ public class JdbcEventResolutionRepository implements EventResolutionRepository 
                 result.nextNode() == null ? null : result.nextNode().name(),
                 Timestamp.from(result.serverTime())
         );
+    }
+
+    private long currentJourneyNumber(String userId, String expeditionId) {
+        Long journeyNumber = jdbcTemplate.queryForObject("""
+                SELECT COALESCE((
+                    SELECT journey_number
+                    FROM expedition_journey_cycle
+                    WHERE user_id = ?
+                      AND expedition_id = ?
+                ), 1)
+                """, Long.class, userId, expeditionId);
+        if (journeyNumber == null) {
+            throw new IllegalStateException("Номер похода не найден");
+        }
+        return journeyNumber;
     }
 
     @Override

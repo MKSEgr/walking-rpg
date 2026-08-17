@@ -515,6 +515,11 @@ public class PlatformAdminService {
                         + "FROM expedition_progress WHERE user_id = ?",
                 normalized
         ));
+        export.put("expeditionJourney", jdbcTemplate.queryForList(
+                "SELECT expedition_id, journey_number, created_at, updated_at "
+                        + "FROM expedition_journey_cycle WHERE user_id = ?",
+                normalized
+        ));
         export.put("expeditionOperations", jdbcTemplate.queryForList(
                 "SELECT expedition_id, idempotency_key, content_version, expedition_name, "
                         + "energy_spent, energy_balance_after, economy_version, progress_after, "
@@ -522,6 +527,15 @@ public class PlatformAdminService {
                         + "current_node_id, current_node_name, event_id, event_title, "
                         + "event_summary, server_time, created_at "
                         + "FROM processed_expedition_advance "
+                        + "WHERE user_id = ? ORDER BY created_at",
+                normalized
+        ));
+        export.put("expeditionJourneyOperations", jdbcTemplate.queryForList(
+                "SELECT expedition_id, idempotency_key, content_version, "
+                        + "expedition_name, journey_number, progress_after, "
+                        + "required_energy, expedition_version, expedition_status, "
+                        + "current_node_id, current_node_name, server_time, created_at "
+                        + "FROM processed_expedition_journey_start "
                         + "WHERE user_id = ? ORDER BY created_at",
                 normalized
         ));
@@ -538,7 +552,8 @@ public class PlatformAdminService {
         ));
         export.put("eventResolutions", jdbcTemplate.queryForList(
                 "SELECT receipt_id, expedition_id, event_id, idempotency_key, content_version, "
-                        + "expedition_status, expedition_version, event_title, "
+                        + "expedition_status, expedition_version, journey_number, "
+                        + "event_title, "
                         + "resolution_status, choice_id, choice_title, outcome_title, "
                         + "outcome_summary, pilot_id, pilot_name, pilot_level_after, "
                         + "pilot_experience_gained, pilot_experience_after, "

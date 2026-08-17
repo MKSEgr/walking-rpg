@@ -421,9 +421,10 @@ app_user, app_device
 activity_sync_state, processed_activity_sync
 economy_wallet, economy_ledger
 expedition_progress, processed_expedition_advance
+expedition_journey_cycle, processed_expedition_journey_start
 pilot_progress, pet_progress
 processed_event_resolution
-  └─ receipt_id, handoff_required, next_node_*, acknowledged_at
+  └─ receipt_id, journey_number, handoff_required, next_node_*, acknowledged_at
 inventory_stack, inventory_ledger
 unique_inventory_item
   └─ rarity, upgraded_at
@@ -545,12 +546,21 @@ V33 stage-ит inactive `chapter-1-v17` с 30-м узлом
 `first-light-causeway`. Миграция не меняет active v16,
 `roadmap_user_state`, `pet_progress` или текущие `expedition_progress` rows;
 activation выполняется только после drain pre-V33 backend instances.
+V34 backfill-ит все существующие `expedition_progress` как первый
+поход, добавляет durable receipt старта нового похода и переносит
+уникальность event resolution на `(user, expedition, event, journey)`.
+Существующие progress, XP, bond, эволюция, skills, inventory и equipment
+не изменяются.
 
 ## 8. Конкурентность и транзакции
 
 - transaction-scoped advisory lock по user или user+expedition;
 - row lock wallet/progression/inventory при изменении;
 - idempotency lookup до мутации;
+- journey start под user+expedition lock сначала replay-ит receipt,
+  затем проверяет pending result, `expectedJourneyNumber` и `COMPLETED`,
+  после чего одной транзакцией обнуляет только route state и
+  увеличивает номер похода;
 - legacy `BUY_COSMETIC` и canonical `PURCHASE_COSMETIC` используют один
   логический idempotency scope. Новая покупка атомарно сохраняет один response
   под двумя physical scopes с command-specific fingerprints, поэтому старый и

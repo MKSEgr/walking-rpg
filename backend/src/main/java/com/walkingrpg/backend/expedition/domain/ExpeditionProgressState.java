@@ -101,6 +101,25 @@ public record ExpeditionProgressState(
         );
     }
 
+    public ExpeditionProgressState beginNextJourney(
+            ExpeditionDefinition initialDefinition
+    ) {
+        Objects.requireNonNull(initialDefinition, "initialDefinition");
+        if (status != ExpeditionProgressStatus.COMPLETED) {
+            throw new IllegalStateException(
+                    "Новый поход доступен только после завершения экспедиции"
+            );
+        }
+        return new ExpeditionProgressState(
+                0,
+                initialDefinition.requiredEnergy(),
+                ExpeditionProgressStatus.IN_PROGRESS,
+                initialDefinition.currentNodeId(),
+                null,
+                version + 1
+        );
+    }
+
     /** Backward-compatible helper for the final node semantics. */
     public ExpeditionProgressState resolve(String eventId) {
         return resolveAndComplete(eventId);

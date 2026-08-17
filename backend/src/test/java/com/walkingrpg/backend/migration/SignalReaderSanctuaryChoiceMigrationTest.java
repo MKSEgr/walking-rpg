@@ -44,7 +44,7 @@ class SignalReaderSanctuaryChoiceMigrationTest {
                 .load();
         flyway.migrate();
 
-        assertEquals("33", flyway.info().current().getVersion().getVersion());
+        assertEquals("34", flyway.info().current().getVersion().getVersion());
         try (Connection connection = connection();
              Statement statement = connection.createStatement()) {
             assertEquals(1, scalar(statement, """

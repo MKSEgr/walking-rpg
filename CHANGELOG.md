@@ -34,6 +34,11 @@
 
 ### Added
 
+- repeatable expedition journeys: after acknowledging the final event result,
+  a completed expedition can restart from the active chapter's first node while
+  preserving pilot, pet, skills, inventory and equipment progression;
+- durable `EXPEDITION_JOURNEY_START` replay, authoritative Home journey number,
+  per-journey event uniqueness and Flyway V34 upgrade/backup/export coverage;
 - protected manual workflow для публикации exact `master` SHA/tree как Linux
   AMD64 backend image в GHCR с immutable digest и redacted receipt;
 - Telegram login contract через Auth0 Universal Login: Enterprise OIDC

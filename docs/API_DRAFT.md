@@ -46,6 +46,8 @@ mobile outbox. Refined unique item содержит `rarity`/`upgradedAt`, а im
 операции входят в `itemUpgradeOperations` и `itemUpgradeIngredients`.
 Persistent loadout и его exact command snapshots входят в `equipment` и
 `equipmentOperations`; cosmetic loadout входит в `cosmeticEquipment`.
+Current expedition cycle и immutable start receipts входят в
+`expeditionJourney` и `expeditionJourneyOperations`.
 До формирования файла backend на одном database connection захватывает
 session-level subject lock, затем на том же connection начинает read-only
 `REPEATABLE_READ`. Первый statement возвращает PostgreSQL
@@ -271,6 +273,7 @@ Authorization: Bearer <access-token>
     "requiredEnergy": 55,
     "status": "IN_PROGRESS",
     "version": 4,
+    "journeyNumber": 2,
     "unlockedEvent": null
   }
 }
@@ -284,6 +287,9 @@ Authorization: Bearer <access-token>
 - текущий день не участвует в собственной цели;
 - `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
+- `expedition.journeyNumber` — положительный persistent номер текущего
+  прохождения; legacy response без поля трактуется mobile как первый
+  поход;
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а
   `pet.evolutionStage` — authoritative стадия из platform state; legacy state
@@ -486,6 +492,48 @@ response используют одно post-lock значение, поэтом�
 - account-deletion subject lock и active check удерживаются в той же
   транзакции до expedition lock, replay lookup, debit и progress mutation;
 - debit, ledger, progress и response сохраняются одной транзакцией.
+
+## `POST /api/v1/expeditions/{expeditionId}/journeys`
+
+Начинает следующий поход после `COMPLETED`. Команда не списывает
+ENERGY: первый узел снова получает `IN_PROGRESS`, и обычный `advance`
+по-прежнему требует ENERGY.
+
+```json
+{
+  "expectedJourneyNumber": 2,
+  "idempotencyKey": "starter-expedition-v1-journey-3"
+}
+```
+
+```json
+{
+  "contentVersion": "chapter-1-v17",
+  "expeditionId": "starter-expedition-v1",
+  "expeditionName": "Сигнал из туманного сектора",
+  "journeyNumber": 3,
+  "progressAfter": 0,
+  "requiredEnergy": 30,
+  "expeditionVersion": 61,
+  "status": "IN_PROGRESS",
+  "currentNodeId": "outer-beacon",
+  "currentNodeName": "Внешний маяк",
+  "serverTime": "2026-08-17T06:00:00Z"
+}
+```
+
+Правила:
+
+- `expectedJourneyNumber` защищает от stale-команды со второго устройства;
+- exact replay того же key возвращает исходный response даже после
+  перехода в `IN_PROGRESS`;
+- новая команда разрешена только из `COMPLETED` и при отсутствии
+  `pendingEventResult`;
+- пилот, питомец, эволюция, навыки, inventory и equipment не
+  изменяются;
+- stale/незавершённое состояние возвращает
+  `409 EXPEDITION_JOURNEY_STATE_CONFLICT` с `status`,
+  `expectedJourneyNumber` и `currentJourneyNumber`.
 
 ## `POST /api/v1/events/{eventId}/resolve`
 

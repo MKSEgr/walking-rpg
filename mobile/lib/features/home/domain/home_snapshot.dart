@@ -30,6 +30,7 @@ class HomeSnapshot {
     this.petId,
     this.petSpecies,
     this.petEvolutionStage,
+    this.expeditionJourneyNumber = 1,
     this.pilotCurrentExperience = 0,
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
@@ -63,6 +64,12 @@ class HomeSnapshot {
       );
     }
     final Map<String, dynamic> expedition = _readMap(json, 'expedition');
+    final int expeditionJourneyNumber = expedition['journeyNumber'] == null
+        ? 1
+        : _readInt(expedition, 'journeyNumber');
+    if (expeditionJourneyNumber <= 0) {
+      throw const FormatException('journeyNumber должен быть положительным');
+    }
     final Object? eventJson = expedition['unlockedEvent'];
     final Object? pendingEventResultJson = json['pendingEventResult'];
 
@@ -86,6 +93,7 @@ class HomeSnapshot {
       requiredEnergy: _readInt(expedition, 'requiredEnergy'),
       expeditionStatus: _readString(expedition, 'status'),
       expeditionVersion: _readInt(expedition, 'version'),
+      expeditionJourneyNumber: expeditionJourneyNumber,
       unlockedEvent: eventJson == null
           ? null
           : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
@@ -131,6 +139,7 @@ class HomeSnapshot {
   final int requiredEnergy;
   final String expeditionStatus;
   final int expeditionVersion;
+  final int expeditionJourneyNumber;
   final HomeExpeditionEvent? unlockedEvent;
   final String pilotName;
   final int pilotLevel;

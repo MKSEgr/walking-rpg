@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/expedition/domain/expedition_journey_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 
 import 'support/in_memory_read_snapshot_cache.dart';
@@ -82,6 +83,42 @@ void main() {
       ),
     );
   });
+
+  test('client begins next journey and invalidates read snapshots', () async {
+    final _FakeTransport transport = _FakeTransport(
+      HomeTransportResponse(
+        statusCode: 200,
+        body: jsonEncode(_journeyResponse()),
+      ),
+    );
+    final InMemoryReadSnapshotCache cache = InMemoryReadSnapshotCache();
+    await _seedReadCache(cache);
+    final ExpeditionApiClient client = ExpeditionApiClient(
+      baseUri: Uri.parse('http://localhost:8080'),
+      userId: 'user-1',
+      transport: transport,
+      cache: cache,
+    );
+
+    final ExpeditionJourneyResult result = await client.beginNextJourney(
+      expeditionId: 'starter-expedition-v1',
+      expectedJourneyNumber: 2,
+      idempotencyKey: 'journey-3',
+    );
+
+    expect(
+      transport.requestedUri?.path,
+      '/api/v1/expeditions/starter-expedition-v1/journeys',
+    );
+    expect(transport.requestBody?['expectedJourneyNumber'], 2);
+    expect(transport.requestBody?['idempotencyKey'], 'journey-3');
+    expect(result.journeyNumber, 3);
+    expect(result.status, 'IN_PROGRESS');
+    expect(result.progressAfter, 0);
+    expect(cache.invalidations, 1);
+    expect(await _readHome(cache), isNull);
+    expect(await _readPlatform(cache), isNull);
+  });
 }
 
 Future<void> _seedReadCache(InMemoryReadSnapshotCache cache) async {
@@ -138,6 +175,22 @@ Map<String, dynamic> _advanceResponse() {
       'status': 'READY',
     },
     'serverTime': '2026-07-25T12:00:00Z',
+  };
+}
+
+Map<String, dynamic> _journeyResponse() {
+  return <String, dynamic>{
+    'contentVersion': 'chapter-1-v15',
+    'expeditionId': 'starter-expedition-v1',
+    'expeditionName': 'Сигнал из туманного сектора',
+    'journeyNumber': 3,
+    'progressAfter': 0,
+    'requiredEnergy': 30,
+    'expeditionVersion': 61,
+    'status': 'IN_PROGRESS',
+    'currentNodeId': 'outer-beacon',
+    'currentNodeName': 'Внешний маяк',
+    'serverTime': '2026-08-17T06:00:00Z',
   };
 }
 

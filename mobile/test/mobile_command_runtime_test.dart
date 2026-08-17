@@ -14,6 +14,7 @@ import 'package:walking_rpg_mobile/features/event/data/event_api_client.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/expedition/data/expedition_api_client.dart';
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
+import 'package:walking_rpg_mobile/features/expedition/domain/expedition_journey_result.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
@@ -119,6 +120,67 @@ void main() {
     expect(replayedKey, 'second-event-original');
     expect(store.snapshot, isEmpty);
   });
+
+  test(
+    'journey start replays the expected number and key after restart',
+    () async {
+      final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
+      final MobileCommandRuntime firstRuntime = _runtime(
+        store: store,
+        expeditionJourneySender:
+            ({
+              required String expeditionId,
+              required int expectedJourneyNumber,
+              required String idempotencyKey,
+            }) async => throw StateError('response lost after journey start'),
+      );
+
+      await expectLater(
+        firstRuntime.beginNextJourney(
+          expeditionId: 'starter-expedition-v1',
+          expectedJourneyNumber: 2,
+          idempotencyKey: 'journey-original',
+        ),
+        throwsStateError,
+      );
+      expect(
+        store.snapshot.single.type,
+        MobileCommandType.expeditionJourneyStart,
+      );
+      expect(store.snapshot.single.lane, MobileCommandLane.gameplay);
+      expect(store.snapshot.single.payload, <String, Object?>{
+        'expeditionId': 'starter-expedition-v1',
+        'expectedJourneyNumber': 2,
+      });
+
+      String? replayedExpeditionId;
+      int? replayedExpectedJourneyNumber;
+      String? replayedKey;
+      final MobileCommandRuntime restartedRuntime = _runtime(
+        store: store,
+        expeditionJourneySender:
+            ({
+              required String expeditionId,
+              required int expectedJourneyNumber,
+              required String idempotencyKey,
+            }) async {
+              replayedExpeditionId = expeditionId;
+              replayedExpectedJourneyNumber = expectedJourneyNumber;
+              replayedKey = idempotencyKey;
+              return _journeyResult();
+            },
+      );
+
+      final MobileCommandReplayReport report = await restartedRuntime
+          .replayPending();
+
+      expect(report.succeeded, 1);
+      expect(replayedExpeditionId, 'starter-expedition-v1');
+      expect(replayedExpectedJourneyNumber, 2);
+      expect(replayedKey, 'journey-original');
+      expect(store.snapshot, isEmpty);
+    },
+  );
 
   test('crafting replays the same recipe and key after restart', () async {
     final InMemoryMobileCommandStore store = InMemoryMobileCommandStore();
@@ -1260,6 +1322,7 @@ MobileCommandRuntime _runtime({
   required InMemoryMobileCommandStore store,
   ActivityCommandSender? activitySender,
   ExpeditionCommandSender? expeditionSender,
+  ExpeditionJourneyCommandSender? expeditionJourneySender,
   EventCommandSender? eventSender,
   EventResultAcknowledgementSender? eventResultAcknowledgementSender,
   CraftingCommandSender? craftingSender,
@@ -1283,6 +1346,13 @@ MobileCommandRuntime _runtime({
           required int energyToSpend,
           required String idempotencyKey,
         }) async => _advanceResult(),
+    expeditionJourneySender:
+        expeditionJourneySender ??
+        ({
+          required String expeditionId,
+          required int expectedJourneyNumber,
+          required String idempotencyKey,
+        }) async => _journeyResult(),
     eventSender:
         eventSender ??
         ({
@@ -1359,6 +1429,22 @@ ExpeditionAdvanceResult _advanceResult() {
     currentNodeName: 'Внешний маяк',
     unlockedEvent: null,
     serverTime: '2026-07-26T10:00:00Z',
+  );
+}
+
+ExpeditionJourneyResult _journeyResult() {
+  return const ExpeditionJourneyResult(
+    contentVersion: 'chapter-1-v15',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    journeyNumber: 3,
+    progressAfter: 0,
+    requiredEnergy: 30,
+    expeditionVersion: 61,
+    status: 'IN_PROGRESS',
+    currentNodeId: 'outer-beacon',
+    currentNodeName: 'Внешний маяк',
+    serverTime: '2026-08-17T06:00:00Z',
   );
 }
 

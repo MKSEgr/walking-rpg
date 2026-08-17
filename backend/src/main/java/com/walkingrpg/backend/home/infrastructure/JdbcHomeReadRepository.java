@@ -63,6 +63,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        COALESCE(expedition.required_energy, 0) AS expedition_required_energy,
                        expedition.status AS expedition_status,
                        COALESCE(expedition.version, 0) AS expedition_version,
+                       COALESCE(journey.journey_number, 1) AS expedition_journey_number,
                        expedition.current_node_id,
                        expedition.unlocked_event_id,
                        (pilot.user_id IS NOT NULL) AS pilot_progress_present,
@@ -81,6 +82,9 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 LEFT JOIN expedition_progress expedition
                   ON expedition.user_id = ?
                  AND expedition.expedition_id = ?
+                LEFT JOIN expedition_journey_cycle journey
+                  ON journey.user_id = expedition.user_id
+                 AND journey.expedition_id = expedition.expedition_id
                 LEFT JOIN pilot_progress pilot
                   ON pilot.user_id = ?
                  AND pilot.pilot_id = ?
@@ -102,6 +106,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                     resultSet.getLong("expedition_required_energy"),
                     resultSet.getString("expedition_status"),
                     resultSet.getLong("expedition_version"),
+                    resultSet.getLong("expedition_journey_number"),
                     resultSet.getString("current_node_id"),
                     resultSet.getString("unlocked_event_id"),
                     resultSet.getBoolean("pilot_progress_present"),

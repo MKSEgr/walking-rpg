@@ -47,6 +47,9 @@
 - content-driven первая глава с 18 основными и staged optional узлами вплоть
   до `constellation-sanctuary` за Неизведанным рубежом, equipment-, active-pet-
   adult-pet- и unlocked-skill-gated server-owned choices;
+- повторяемые походы после завершения главы: новый цикл начинается
+  с первого узла, а пилот, питомец, навыки, инвентарь и снаряжение
+  сохраняются;
 - guided «Первый путь» от разрешения шагов до первого решения;
 - server-authoritative funnel и time-to-value первого пути для alpha cohort,
   включая отдельное подтверждение показа первого результата;
@@ -291,6 +294,7 @@ GET  /api/v1/system/info
 GET  /api/v1/home?localDate=YYYY-MM-DD
 POST /api/v1/activity/sync
 POST /api/v1/expeditions/starter-expedition-v1/advance
+POST /api/v1/expeditions/starter-expedition-v1/journeys
 POST /api/v1/events/signal-source-v1/resolve
 POST /api/v1/events/echo-vault-v1/resolve
 POST /api/v1/event-results/{receiptId}/acknowledge

@@ -12,4 +12,14 @@ public record ExpeditionIdempotencyScope(
                 command.idempotencyKey()
         );
     }
+
+    public static ExpeditionIdempotencyScope from(
+            ExpeditionJourneyCommand command
+    ) {
+        return new ExpeditionIdempotencyScope(
+                command.userId(),
+                command.expeditionId(),
+                command.idempotencyKey()
+        );
+    }
 }

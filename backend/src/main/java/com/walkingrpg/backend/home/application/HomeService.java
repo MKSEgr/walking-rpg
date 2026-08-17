@@ -480,6 +480,7 @@ public class HomeService {
                 requiredEnergy,
                 status,
                 state.expeditionVersion(),
+                state.expeditionJourneyNumber(),
                 eventSnapshot(
                         definition,
                         state,

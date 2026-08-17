@@ -97,6 +97,12 @@ class HomeReadIntegrationTest {
                 30,
                 "home-advance-1"
         ));
+        jdbcTemplate.update("""
+                INSERT INTO expedition_journey_cycle (
+                    user_id, expedition_id, journey_number,
+                    created_at, updated_at
+                ) VALUES (?, ?, 3, now(), now())
+                """, "home-user", StarterExpeditionContent.EXPEDITION_ID);
 
         HomeSnapshotResponse snapshot = homeService.getSnapshot(
                 new HomeQuery("home-user", ACTIVITY_DATE)
@@ -115,12 +121,14 @@ class HomeReadIntegrationTest {
         );
         assertEquals(30, snapshot.expedition().progress());
         assertEquals(1, snapshot.expedition().version());
+        assertEquals(3, snapshot.expedition().journeyNumber());
         assertEquals("EVENT_READY", snapshot.expedition().status());
         assertNotNull(snapshot.expedition().unlockedEvent());
         assertEquals(1, rowCount("activity_sync_state"));
         assertEquals(1, rowCount("economy_wallet"));
         assertEquals(2, rowCount("economy_ledger"));
         assertEquals(1, rowCount("expedition_progress"));
+        assertEquals(1, rowCount("expedition_journey_cycle"));
     }
 
     @Test
