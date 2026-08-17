@@ -274,6 +274,23 @@ Authorization: Bearer <access-token>
     "status": "IN_PROGRESS",
     "version": 4,
     "journeyNumber": 2,
+    "routeTrail": [
+      {
+        "nodeId": "outer-beacon",
+        "nodeName": "Внешний маяк",
+        "state": "VISITED"
+      },
+      {
+        "nodeId": "lumen-gate",
+        "nodeName": "Люминовые ворота",
+        "state": "VISITED"
+      },
+      {
+        "nodeId": "ash-orbit",
+        "nodeName": "Пепельная орбита",
+        "state": "CURRENT"
+      }
+    ],
     "unlockedEvent": null
   }
 }
@@ -290,6 +307,11 @@ Authorization: Bearer <access-token>
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;
+- `expedition.routeTrail[]` — упорядоченный server-owned след только текущего
+  похода. Он содержит уже обработанные event nodes со state `VISITED` и одну
+  последнюю точку `CURRENT` либо `COMPLETED`, не раскрывает будущие развилки и
+  не смешивает результаты других `journeyNumber`; legacy response без поля
+  остаётся валидным, но не показывает карту;
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а
   `pet.evolutionStage` — authoritative стадия из platform state; legacy state

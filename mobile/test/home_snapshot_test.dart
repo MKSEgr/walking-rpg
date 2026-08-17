@@ -42,6 +42,11 @@ void main() {
     expect(snapshot.expeditionProgress, 30);
     expect(snapshot.expeditionVersion, 1);
     expect(snapshot.expeditionJourneyNumber, 2);
+    expect(snapshot.routeTrail, hasLength(2));
+    expect(snapshot.routeTrail.first.nodeId, 'outer-beacon');
+    expect(snapshot.routeTrail.first.state, 'VISITED');
+    expect(snapshot.routeTrail.last.nodeId, 'lumen-gate');
+    expect(snapshot.routeTrail.last.isCurrent, isTrue);
     expect(snapshot.expeditionStatus, 'EVENT_READY');
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
@@ -63,6 +68,27 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.expeditionJourneyNumber, 1);
+  });
+
+  test('legacy response without route trail remains readable', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition.remove('routeTrail');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.routeTrail, isEmpty);
+  });
+
+  test('unknown authoritative route state is rejected', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    final List<dynamic> routeTrail = expedition['routeTrail'] as List<dynamic>;
+    (routeTrail.last as Map<String, dynamic>)['state'] = 'AVAILABLE';
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('response rejects a non-positive journey number', () {
@@ -800,6 +826,18 @@ Map<String, dynamic> _readyHomeResponse() {
       'status': 'EVENT_READY',
       'version': 1,
       'journeyNumber': 2,
+      'routeTrail': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'nodeId': 'outer-beacon',
+          'nodeName': 'Внешний маяк',
+          'state': 'VISITED',
+        },
+        <String, dynamic>{
+          'nodeId': 'lumen-gate',
+          'nodeName': 'Люминовые ворота',
+          'state': 'CURRENT',
+        },
+      ],
       'unlockedEvent': <String, dynamic>{
         'eventId': 'signal-source-v1',
         'title': 'Источник сигнала',

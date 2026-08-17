@@ -68,6 +68,8 @@
   "expeditionReadFailureBadge": "Сигнал недоступен",
   "expeditionReadLoadingSemantics": "Получение актуального состояния",
   "expeditionReadFailureSemantics": "Связь потеряна",
+  "expeditionRouteTrailTitle": "След этого похода",
+  "expeditionRouteTrailSemantics": "Маршрут похода: открыто узлов — {count}. Последняя точка: {terminalNode}.",
 
   "firstJourneyPendingActionsNotice": "Часть сохранённых действий ждёт соединения. Открой «Сохранённые действия» для безопасного повтора.",
   "firstJourneyRejectedActionNotice": "Одно из ранее сохранённых действий отклонено сервером. Проверь текущее состояние.",

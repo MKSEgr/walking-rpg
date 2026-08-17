@@ -31,6 +31,7 @@ class HomeSnapshot {
     this.petSpecies,
     this.petEvolutionStage,
     this.expeditionJourneyNumber = 1,
+    this.routeTrail = const <HomeExpeditionRouteNode>[],
     this.pilotCurrentExperience = 0,
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
@@ -94,6 +95,7 @@ class HomeSnapshot {
       expeditionStatus: _readString(expedition, 'status'),
       expeditionVersion: _readInt(expedition, 'version'),
       expeditionJourneyNumber: expeditionJourneyNumber,
+      routeTrail: _readRouteTrail(expedition['routeTrail']),
       unlockedEvent: eventJson == null
           ? null
           : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
@@ -140,6 +142,7 @@ class HomeSnapshot {
   final String expeditionStatus;
   final int expeditionVersion;
   final int expeditionJourneyNumber;
+  final List<HomeExpeditionRouteNode> routeTrail;
   final HomeExpeditionEvent? unlockedEvent;
   final String pilotName;
   final int pilotLevel;
@@ -231,7 +234,29 @@ class HomeSnapshot {
     petLevel: 1,
     petBond: 10,
     petEvolutionStage: 0,
+    routeTrail: <HomeExpeditionRouteNode>[
+      HomeExpeditionRouteNode(
+        nodeId: 'outer-beacon',
+        nodeName: 'Внешний маяк',
+        state: 'CURRENT',
+      ),
+    ],
   );
+
+  static List<HomeExpeditionRouteNode> _readRouteTrail(Object? raw) {
+    if (raw == null) {
+      return const <HomeExpeditionRouteNode>[];
+    }
+    if (raw is! List<dynamic>) {
+      throw const FormatException('routeTrail должен быть JSON-массивом');
+    }
+    return raw
+        .map(
+          (Object? value) =>
+              HomeExpeditionRouteNode.fromJson(_asMap(value, 'routeTrail[]')),
+        )
+        .toList(growable: false);
+  }
 
   static List<HomeInventoryItem> _readInventory(Object? raw) {
     if (raw == null) {
@@ -343,6 +368,34 @@ class HomeSnapshot {
     }
     throw FormatException('$field должен быть непустой строкой');
   }
+}
+
+class HomeExpeditionRouteNode {
+  const HomeExpeditionRouteNode({
+    required this.nodeId,
+    required this.nodeName,
+    required this.state,
+  });
+
+  factory HomeExpeditionRouteNode.fromJson(Map<String, dynamic> json) {
+    final String state = HomeSnapshot._readString(json, 'state');
+    if (!const <String>{'VISITED', 'CURRENT', 'COMPLETED'}.contains(state)) {
+      throw FormatException('Неизвестное состояние routeTrail: $state');
+    }
+    return HomeExpeditionRouteNode(
+      nodeId: HomeSnapshot._readString(json, 'nodeId'),
+      nodeName: HomeSnapshot._readString(json, 'nodeName'),
+      state: state,
+    );
+  }
+
+  final String nodeId;
+  final String nodeName;
+  final String state;
+
+  bool get isVisited => state == 'VISITED';
+  bool get isCurrent => state == 'CURRENT';
+  bool get isCompleted => state == 'COMPLETED';
 }
 
 class HomeExpeditionEvent {

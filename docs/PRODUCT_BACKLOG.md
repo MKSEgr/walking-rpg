@@ -731,6 +731,29 @@ parser/widget и visual-mapping tests реализованы. Ценность �
 **Статус:** backend/mobile/Flyway V34, unit/API/PostgreSQL/migration,
 parser/outbox/widget, account export/delete и synthetic backup coverage реализованы.
 
+### US-031. Видеть пройденный маршрут текущего похода
+
+Как игрок, я хочу видеть уже открытый след текущего похода, чтобы понимать,
+через какие узлы прошла моя экспедиция и где она находится сейчас.
+
+Критерии:
+
+- Home возвращает упорядоченный `routeTrail` только для текущего
+  `journeyNumber`;
+- обработанные event nodes имеют literal state `VISITED`, а последняя точка —
+  `CURRENT` или `COMPLETED`;
+- backend строит read model из durable event results и текущего expedition
+  state, не публикуя будущие узлы и развилки;
+- новый поход начинает новый след с первого текущего узла, не смешивая историю
+  предыдущего прохождения;
+- Flutter сохраняет порядок и state ответа, показывает code-native маршрут и
+  не выводит topology из content version, ID или отображаемых названий;
+- legacy snapshots без `routeTrail` остаются читаемыми.
+
+**Статус:** backend/mobile read model, unit/API/PostgreSQL, parser/widget и
+RU/EN accessibility coverage реализованы. GPS и real-time walking map не
+входят в этот slice.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -751,6 +774,8 @@ parser/outbox/widget, account export/delete и synthetic backup coverage реа�
 - expedition choices с authoritative minimum item level, active-pet,
   minimum evolution stage и unlocked-skill prerequisites.
 - повторяемый цикл экспедиции с сохранением постоянной прогрессии.
+- server-authoritative визуальный след узлов текущего похода без спойлеров
+  будущей топологии.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

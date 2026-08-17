@@ -893,15 +893,30 @@ label, selected state and callback; glyph painting is excluded from semantics
 and input. Compact dock and wide rail reuse the same two widgets without
 changing the stable `IndexedStack` or destination lifecycle.
 
+## Current journey route trail
+
+Home shows the accepted path of the current expedition journey as a quiet,
+horizontally scrollable node trail. The additive Home `routeTrail` read model
+owns ordering, node identity, display name and literal `VISITED`, `CURRENT` or
+`COMPLETED` state. The viewport opens on the last accepted point while the
+player can scroll back through the path already taken.
+
+The trail never loads or reconstructs the chapter graph on-device. It does not
+show future nodes, optional branches, GPS position or real-time walking. A new
+`journeyNumber` therefore begins with one current node even though permanent
+pilot, pet and inventory progression remains. Unknown future node IDs retain
+their server name and the same state geometry; visual identity is not inferred
+from names or content versions. One localized summary owns semantics, while
+node labels and state-specific icon geometry keep the visual map readable
+without relying on color alone. Legacy snapshots without `routeTrail` simply
+omit the map and retain the existing ENERGY progress signal.
+
 ## Next visual slices
 
-1. Turn the expedition chapter into a visual route map only from an
-   authoritative topology/read model, without adding GPS or real-time walking
-   interaction.
-2. Extend the four pivotal event scenes across the remaining first-chapter
+1. Extend the four pivotal event scenes across the remaining first-chapter
    event IDs only after the core illustrated loop is validated; application
    icon and native splash are already defined by the shared expedition emblem.
-3. Split the journal into player-facing tabs only when closed-beta content
+2. Split the journal into player-facing tabs only when closed-beta content
    density proves that the single expedition log no longer scans well.
-4. Produce store screenshots and motion guidelines after the first complete
+3. Produce store screenshots and motion guidelines after the first complete
    illustrated gameplay loop is captured on physical devices.

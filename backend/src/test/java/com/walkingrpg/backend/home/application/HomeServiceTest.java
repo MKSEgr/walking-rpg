@@ -14,6 +14,7 @@ import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
 import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
@@ -135,6 +136,9 @@ class HomeServiceTest {
 
         assertEquals("COMPLETED", snapshot.expedition().status());
         assertNull(snapshot.expedition().unlockedEvent());
+        assertEquals(1, snapshot.expedition().routeTrail().size());
+        assertEquals("COMPLETED",
+                snapshot.expedition().routeTrail().getFirst().state());
         assertEquals("MISSING_MATERIALS",
                 snapshot.craftingRecipes().getFirst().status());
     }
@@ -247,6 +251,64 @@ class HomeServiceTest {
         assertEquals(1, snapshot.pet().evolutionStage());
     }
 
+    @Test
+    void shouldProjectOnlyPersistedJourneyEventsBeforeCurrentNode() {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        0,
+                        content.requireNode(
+                                StarterExpeditionContent.THIRD_NODE_ID
+                        ).requiredEnergy(),
+                        "IN_PROGRESS",
+                        4,
+                        StarterExpeditionContent.THIRD_NODE_ID,
+                        null
+                ),
+                List.of(
+                        new ExpeditionJourneyEvent(
+                                StarterExpeditionContent.FIRST_EVENT_ID
+                        ),
+                        new ExpeditionJourneyEvent(
+                                StarterExpeditionContent.SECOND_EVENT_ID
+                        )
+                )
+        );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        var trail = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        ).expedition().routeTrail();
+
+        assertEquals(3, trail.size());
+        assertEquals(StarterExpeditionContent.FIRST_NODE_ID,
+                trail.get(0).nodeId());
+        assertEquals("VISITED", trail.get(0).state());
+        assertEquals(StarterExpeditionContent.SECOND_NODE_ID,
+                trail.get(1).nodeId());
+        assertEquals("VISITED", trail.get(1).state());
+        assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
+                trail.get(2).nodeId());
+        assertEquals("CURRENT", trail.get(2).state());
+    }
+
     private DailyGoalPolicyProperties goalProperties() {
         return new DailyGoalPolicyProperties(
                 "adaptive-median-v1",
@@ -261,6 +323,13 @@ class HomeServiceTest {
     }
 
     private HomeReadRepository repository(HomeRuntimeState state) {
+        return repository(state, List.of());
+    }
+
+    private HomeReadRepository repository(
+            HomeRuntimeState state,
+            List<ExpeditionJourneyEvent> journeyEvents
+    ) {
         return new HomeReadRepository() {
             @Override
             public HomeRuntimeState findState(
@@ -277,6 +346,15 @@ class HomeServiceTest {
                     String expeditionId
             ) {
                 return Optional.empty();
+            }
+
+            @Override
+            public List<ExpeditionJourneyEvent> findJourneyEvents(
+                    String userId,
+                    String expeditionId,
+                    long journeyNumber
+            ) {
+                return journeyEvents;
             }
         };
     }

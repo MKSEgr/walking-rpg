@@ -246,6 +246,16 @@ class EventResolutionIntegrationTest {
         assertEquals(secondEvent.receiptId(), home.pendingEventResult().receiptId());
         assertEquals(StarterExpeditionContent.SECOND_EVENT_ID,
                 home.pendingEventResult().eventId());
+        assertEquals(3, home.expedition().routeTrail().size());
+        assertEquals(StarterExpeditionContent.FIRST_NODE_ID,
+                home.expedition().routeTrail().get(0).nodeId());
+        assertEquals("VISITED", home.expedition().routeTrail().get(0).state());
+        assertEquals(StarterExpeditionContent.SECOND_NODE_ID,
+                home.expedition().routeTrail().get(1).nodeId());
+        assertEquals("VISITED", home.expedition().routeTrail().get(1).state());
+        assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
+                home.expedition().routeTrail().get(2).nodeId());
+        assertEquals("CURRENT", home.expedition().routeTrail().get(2).state());
         assertEquals("Пепельная орбита",
                 home.pendingEventResult().nextNode().name());
         assertEquals(1, home.inventory().size());
@@ -282,6 +292,38 @@ class EventResolutionIntegrationTest {
                         "resolve-second"
                 ))
         );
+
+        expeditionRepository.saveJourneyNumber(
+                "event-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                2,
+                NOW
+        );
+        jdbcTemplate.update("""
+                UPDATE expedition_progress
+                SET current_node_id = ?,
+                    progress_energy = 0,
+                    required_energy = 30,
+                    status = 'IN_PROGRESS',
+                    unlocked_event_id = NULL,
+                    version = version + 1,
+                    updated_at = now()
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                """,
+                StarterExpeditionContent.FIRST_NODE_ID,
+                "event-user",
+                StarterExpeditionContent.EXPEDITION_ID);
+
+        HomeSnapshotResponse nextJourney = homeService.getSnapshot(
+                new HomeQuery("event-user", LOCAL_DATE)
+        );
+        assertEquals(2, nextJourney.expedition().journeyNumber());
+        assertEquals(1, nextJourney.expedition().routeTrail().size());
+        assertEquals(StarterExpeditionContent.FIRST_NODE_ID,
+                nextJourney.expedition().routeTrail().getFirst().nodeId());
+        assertEquals("CURRENT",
+                nextJourney.expedition().routeTrail().getFirst().state());
     }
 
     @Test

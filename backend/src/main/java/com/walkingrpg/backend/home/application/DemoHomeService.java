@@ -15,6 +15,7 @@ import com.walkingrpg.backend.goal.domain.DailyGoal;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionRouteNodeSnapshot;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -65,6 +66,12 @@ public class DemoHomeService {
                         definition.requiredEnergy(),
                         ExpeditionProgressStatus.IN_PROGRESS.name(),
                         0,
+                        1,
+                        List.of(new ExpeditionRouteNodeSnapshot(
+                                definition.currentNodeId(),
+                                definition.currentNodeName(),
+                                "CURRENT"
+                        )),
                         null
                 )
         );
