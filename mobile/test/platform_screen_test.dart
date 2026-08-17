@@ -109,7 +109,7 @@ void main() {
       const Key('platform-journey-decision-journey'),
     );
     await _bringIntoView(tester, journey);
-    expect(find.text('Поход №4'), findsOneWidget);
+    expect(find.text('ПОХОД №4'), findsOneWidget);
 
     await _bringIntoView(tester, first);
     expect(find.text('Сигнал у границы'), findsOneWidget);
