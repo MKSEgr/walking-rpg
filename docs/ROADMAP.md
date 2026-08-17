@@ -353,6 +353,19 @@ Roadmap отражает снижение рисков. Статусы:
       постоянная прогрессия сохранилась, на beta cohort
 - [ ] Оценить economy/retention повторных наград до изменения баланса
 
+## Milestone 15 — Current journey route trail
+
+### CODE_COMPLETE
+
+- [x] Additive Home `routeTrail` из durable event results только текущего
+      `journeyNumber`
+- [x] Literal `VISITED`, `CURRENT`, `COMPLETED` state без публикации будущей
+      topology и без mobile inference
+- [x] Code-native scrollable Home map с RU/EN semantics и legacy parser
+      fallback
+- [x] Unit/API/PostgreSQL/parser/widget coverage, включая сброс trail для
+      нового похода
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

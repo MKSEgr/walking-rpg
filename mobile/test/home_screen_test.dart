@@ -11,6 +11,7 @@ import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -84,6 +85,19 @@ void main() {
     );
     expect(
       find.bySemanticsLabel('Текущий узел «Внешний маяк»'),
+      findsOneWidget,
+    );
+    expect(find.byType(ExpeditionRouteTrail), findsOneWidget);
+    expect(find.text('След этого похода'), findsOneWidget);
+    expect(
+      find.byKey(const Key('expedition-route-node-outer-beacon-current')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Маршрут похода: открыто узлов — 1. '
+        'Последняя точка: Внешний маяк.',
+      ),
       findsOneWidget,
     );
     final Finder companionBadge = find.byKey(

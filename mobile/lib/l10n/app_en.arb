@@ -80,6 +80,14 @@
   "expeditionReadFailureBadge": "Signal unavailable",
   "expeditionReadLoadingSemantics": "Retrieving the current state",
   "expeditionReadFailureSemantics": "Connection lost",
+  "expeditionRouteTrailTitle": "Trail of this journey",
+  "expeditionRouteTrailSemantics": "Journey route: {count} discovered nodes. Last point: {terminalNode}.",
+  "@expeditionRouteTrailSemantics": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "terminalNode": {"type": "String"}
+    }
+  },
 
   "firstJourneyPendingActionsNotice": "Some saved actions are waiting for a connection. Open Saved actions to retry them safely.",
   "firstJourneyRejectedActionNotice": "A previously saved action was rejected by the server. Check the current state.",

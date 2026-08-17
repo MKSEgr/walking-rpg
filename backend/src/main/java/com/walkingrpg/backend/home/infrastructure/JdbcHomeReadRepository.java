@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
 import com.walkingrpg.backend.progression.application.ActivePetProvider;
@@ -42,6 +43,24 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
             String expeditionId
     ) {
         return eventResolutionRepository.findPendingResult(userId, expeditionId);
+    }
+
+    @Override
+    public List<ExpeditionJourneyEvent> findJourneyEvents(
+            String userId,
+            String expeditionId,
+            long journeyNumber
+    ) {
+        return jdbcTemplate.query("""
+                SELECT event_id
+                FROM processed_event_resolution
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                  AND journey_number = ?
+                ORDER BY expedition_version, receipt_id
+                """, (resultSet, rowNumber) -> new ExpeditionJourneyEvent(
+                resultSet.getString("event_id")
+        ), userId, expeditionId, journeyNumber);
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.walkingrpg.backend.home.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,9 @@ import com.walkingrpg.backend.home.domain.EquipmentSlotSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionChoiceRequirementSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionRouteNodeSnapshot;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryItemSnapshot;
@@ -241,7 +244,12 @@ public class HomeService {
                         currentDefinition,
                         state,
                         activeContentVersion,
-                        unlockedSkills
+                        unlockedSkills,
+                        repository.findJourneyEvents(
+                                query.userId(),
+                                initialDefinition.expeditionId(),
+                                state.expeditionJourneyNumber()
+                        )
                 ),
                 craftingSnapshots(state, activeContentVersion),
                 itemUpgradeSnapshots(state, activeContentVersion)
@@ -460,7 +468,8 @@ public class HomeService {
             ExpeditionDefinition definition,
             HomeRuntimeState state,
             String activeContentVersion,
-            Set<String> unlockedSkills
+            Set<String> unlockedSkills,
+            List<ExpeditionJourneyEvent> journeyEvents
     ) {
         long requiredEnergy = state.expeditionRequiredEnergy() > 0
                 ? state.expeditionRequiredEnergy()
@@ -481,6 +490,7 @@ public class HomeService {
                 status,
                 state.expeditionVersion(),
                 state.expeditionJourneyNumber(),
+                routeTrail(definition, status, journeyEvents),
                 eventSnapshot(
                         definition,
                         state,
@@ -488,6 +498,40 @@ public class HomeService {
                         unlockedSkills
                 )
         );
+    }
+
+    private List<ExpeditionRouteNodeSnapshot> routeTrail(
+            ExpeditionDefinition currentDefinition,
+            String expeditionStatus,
+            List<ExpeditionJourneyEvent> journeyEvents
+    ) {
+        List<ExpeditionRouteNodeSnapshot> trail = new ArrayList<>();
+        journeyEvents.forEach(event -> {
+            ExpeditionDefinition resolved = expeditionContent.requireEvent(
+                    event.eventId()
+            );
+            trail.add(new ExpeditionRouteNodeSnapshot(
+                    resolved.currentNodeId(),
+                    resolved.currentNodeName(),
+                    "VISITED"
+            ));
+        });
+
+        String terminalState = ExpeditionProgressStatus.COMPLETED.name().equals(
+                expeditionStatus
+        ) ? "COMPLETED" : "CURRENT";
+        ExpeditionRouteNodeSnapshot terminal = new ExpeditionRouteNodeSnapshot(
+                currentDefinition.currentNodeId(),
+                currentDefinition.currentNodeName(),
+                terminalState
+        );
+        if (!trail.isEmpty()
+                && trail.getLast().nodeId().equals(terminal.nodeId())) {
+            trail.set(trail.size() - 1, terminal);
+        } else {
+            trail.add(terminal);
+        }
+        return List.copyOf(trail);
     }
 
     private ExpeditionEventSnapshot eventSnapshot(

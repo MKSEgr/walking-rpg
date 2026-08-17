@@ -15,6 +15,7 @@ import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.application.HomeQueryFactory;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.application.StarterHomeContent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
 import com.walkingrpg.backend.security.FixedRequestIdentityProvider;
@@ -118,6 +119,11 @@ class HomeControllerTest {
                         .value("starter-expedition-v1"))
                 .andExpect(jsonPath("$.expedition.progress").value(30))
                 .andExpect(jsonPath("$.expedition.journeyNumber").value(1))
+                .andExpect(jsonPath("$.expedition.routeTrail.length()").value(1))
+                .andExpect(jsonPath("$.expedition.routeTrail[0].nodeId")
+                        .value("outer-beacon"))
+                .andExpect(jsonPath("$.expedition.routeTrail[0].state")
+                        .value("CURRENT"))
                 .andExpect(jsonPath("$.expedition.status").value("EVENT_READY"))
                 .andExpect(jsonPath("$.expedition.unlockedEvent.eventId")
                         .value("signal-source-v1"));
@@ -150,6 +156,15 @@ class HomeControllerTest {
                     String expeditionId
             ) {
                 return Optional.empty();
+            }
+
+            @Override
+            public List<ExpeditionJourneyEvent> findJourneyEvents(
+                    String userId,
+                    String expeditionId,
+                    long journeyNumber
+            ) {
+                return List.of();
             }
         };
     }

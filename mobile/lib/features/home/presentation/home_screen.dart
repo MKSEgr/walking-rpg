@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
@@ -17,6 +18,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
@@ -1446,6 +1448,26 @@ class _ExpeditionHero extends StatelessWidget {
             ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
           ),
           const SizedBox(height: 12),
+          if (snapshot.routeTrail.isNotEmpty) ...<Widget>[
+            Text(
+              context.l10n.expeditionRouteTrailTitle,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            ExpeditionRouteTrail(
+              nodes: snapshot.routeTrail
+                  .map(
+                    (HomeExpeditionRouteNode node) =>
+                        ExpeditionRouteTrailNode(
+                          nodeId: node.nodeId,
+                          nodeName: node.nodeName,
+                          state: node.state,
+                        ),
+                  )
+                  .toList(growable: false),
+            ),
+            const SizedBox(height: 10),
+          ],
           ExpeditionProgressSignal(
             expeditionId: snapshot.expeditionId,
             progress: snapshot.expeditionProgress,

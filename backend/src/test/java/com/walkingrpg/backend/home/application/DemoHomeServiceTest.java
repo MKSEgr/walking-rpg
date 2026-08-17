@@ -60,6 +60,9 @@ class DemoHomeServiceTest {
         assertEquals("starter-expedition-v1", snapshot.expedition().expeditionId());
         assertEquals(30, snapshot.expedition().requiredEnergy());
         assertEquals("IN_PROGRESS", snapshot.expedition().status());
+        assertEquals(1, snapshot.expedition().routeTrail().size());
+        assertEquals("CURRENT",
+                snapshot.expedition().routeTrail().getFirst().state());
         assertNull(snapshot.expedition().unlockedEvent());
     }
 }
