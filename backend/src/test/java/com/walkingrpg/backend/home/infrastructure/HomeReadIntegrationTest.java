@@ -418,7 +418,7 @@ class HomeReadIntegrationTest {
                         .toList()
         );
         assertEquals(
-                List.of(7, 6, 5, 4, 3),
+                List.of(7L, 6L, 5L, 4L, 3L),
                 expedition.recentJourneyRecaps().stream()
                         .map(recap -> recap.pilotExperienceGained())
                         .toList()
