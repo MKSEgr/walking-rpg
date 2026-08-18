@@ -337,6 +337,7 @@ Authorization: Bearer <access-token>
     ],
     "completionRecap": null,
     "recentJourneyRecaps": [],
+    "journeyChronicle": null,
     "unlockedEvent": null
   }
 }
@@ -455,6 +456,26 @@ Authorization: Bearer <access-token>
   `finalDecision`. Additive `decisions[]` позволяет раскрыть полную сохранённую
   историю архивного похода без lookup current content или восстановления
   topology; legacy response без поля читается как пустой архив;
+
+- `expedition.journeyChronicle` — additive nullable lifetime-итог всех
+  подтверждённых завершённых походов этого пользователя и экспедиции:
+  `completedJourneyCount`, `decisionCount`, `pilotExperienceGained` и
+  `petBondGained`. Для прошлых походов completion proof — immutable receipt
+  старта следующего `journeyNumber`; текущий поход входит в итог только при
+  authoritative `COMPLETED`. Агрегат не ограничен пятью строками архива и
+  суммирует rewards только из persisted event resolutions, не перечитывая
+  current content и не вычисляя delta по текущим progression totals. Materials
+  намеренно не входят в lifetime-агрегат. До первого подтверждённого финиша
+  значение равно `null`; legacy response без поля остаётся валидным. Пример:
+
+  ```json
+  {
+    "completedJourneyCount": 8,
+    "decisionCount": 19,
+    "pilotExperienceGained": 476,
+    "petBondGained": 133
+  }
+  ```
 
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а

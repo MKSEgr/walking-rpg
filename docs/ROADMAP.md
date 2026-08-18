@@ -468,6 +468,19 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/API/PostgreSQL/parser/widget coverage order, exact copy, rewards,
       count/finale consistency, large text и legacy omission
 
+## Milestone 24 — Lifetime journey chronicle
+
+### CODE_COMPLETE
+
+- [x] Additive nullable Home `journeyChronicle` с lifetime completed journey,
+      decision, pilot XP и companion bond totals
+- [x] Completion proof прошлых походов из immutable next-journey receipts и
+      current `COMPLETED` inclusion без double count или archive-limit coupling
+- [x] Code-native accessible card между decision log и recent archive с
+      wrapping totals для compact large text
+- [x] Unit/API/PostgreSQL/parser/widget coverage current + previous totals,
+      history длиннее пяти, invalid shape и legacy omission
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

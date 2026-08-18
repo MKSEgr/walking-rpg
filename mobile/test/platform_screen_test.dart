@@ -274,6 +274,12 @@ void main() {
     final HomeSnapshot home = _homeSnapshotWithDecisions(
       const <HomeExpeditionDecisionLogEntry>[],
       journeyNumber: 4,
+      journeyChronicle: const HomeJourneyChronicle(
+        completedJourneyCount: 7,
+        decisionCount: 28,
+        pilotExperienceGained: 420,
+        petBondGained: 140,
+      ),
       recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
         HomeExpeditionCompletionRecap(
           journeyNumber: 3,
@@ -382,10 +388,37 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final Finder chronicle = find.byKey(
+      const Key('platform-journey-chronicle'),
+    );
+    await _bringIntoView(tester, chronicle);
+    expect(chronicle, findsOneWidget);
+    expect(find.text('Летопись походов'), findsOneWidget);
+    expect(find.text('ЗАВЕРШЕНО · 7'), findsOneWidget);
+    expect(find.text('Решений · 28'), findsOneWidget);
+    expect(find.text('+420 XP пилота'), findsOneWidget);
+    expect(find.text('+140 связи спутников'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Летопись походов. Завершено походов: 7. '
+        'Принято решений: 28. '
+        'Всего наград: +420 XP пилота; +140 связи спутников.',
+      ),
+      findsOneWidget,
+    );
     final Finder archive = find.byKey(const Key('platform-journey-archive'));
-    await _bringIntoView(tester, archive);
-
     expect(archive, findsOneWidget);
+    expect(
+      tester
+          .getTopLeft(find.byKey(const Key('platform-journey-decision-log')))
+          .dy,
+      lessThan(tester.getTopLeft(chronicle).dy),
+    );
+    expect(
+      tester.getTopLeft(chronicle).dy,
+      lessThan(tester.getTopLeft(archive).dy),
+    );
+    await _bringIntoView(tester, archive);
     expect(find.text('Недавние походы'), findsOneWidget);
     expect(find.text('АРХИВ · 2'), findsOneWidget);
     final Finder latest = find.byKey(const Key('platform-journey-archive-3'));
@@ -494,6 +527,12 @@ void main() {
     final HomeSnapshot home = _homeSnapshotWithDecisions(
       const <HomeExpeditionDecisionLogEntry>[],
       journeyNumber: 2,
+      journeyChronicle: const HomeJourneyChronicle(
+        completedJourneyCount: 123456,
+        decisionCount: 987654,
+        pilotExperienceGained: 123456789,
+        petBondGained: 987654321,
+      ),
       recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
         HomeExpeditionCompletionRecap(
           journeyNumber: 1,
@@ -535,6 +574,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    final Finder chronicle = find.byKey(
+      const Key('platform-journey-chronicle'),
+    );
+    await _bringIntoView(tester, chronicle);
+    expect(chronicle, findsOneWidget);
+    expect(find.text('+123456789 XP пилота'), findsOneWidget);
+    _expectNoLayoutException(tester);
 
     final Finder toggle = find.byKey(
       const Key('platform-journey-archive-1-history-toggle'),
@@ -578,6 +625,10 @@ void main() {
     expect(find.text('Решения маршрута'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-completion-recap')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('platform-journey-chronicle')),
       findsNothing,
     );
     final Finder empty = find.byKey(
@@ -1992,6 +2043,7 @@ HomeSnapshot _homeSnapshotWithDecisions(
   required int journeyNumber,
   String? expeditionStatus,
   HomeExpeditionCompletionRecap? completionRecap,
+  HomeJourneyChronicle? journeyChronicle,
   List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
       const <HomeExpeditionCompletionRecap>[],
 }) {
@@ -2020,6 +2072,7 @@ HomeSnapshot _homeSnapshotWithDecisions(
     decisionLog: decisions,
     completionRecap: completionRecap,
     recentJourneyRecaps: recentJourneyRecaps,
+    journeyChronicle: journeyChronicle,
     unlockedEvent: demo.unlockedEvent,
     pilotName: demo.pilotName,
     pilotLevel: demo.pilotLevel,

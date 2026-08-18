@@ -15,6 +15,7 @@ import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.application.HomeQueryFactory;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.application.StarterHomeContent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
@@ -256,6 +257,8 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.expedition.decisionLog[0].resolvedAt")
                         .value("2026-07-25T11:58:00Z"))
                 .andExpect(jsonPath("$.expedition.completionRecap")
+                        .doesNotExist())
+                .andExpect(jsonPath("$.expedition.journeyChronicle")
                         .doesNotExist());
     }
 
@@ -417,7 +420,21 @@ class HomeControllerTest {
                 ).value("Эхо-нити из записи"))
                 .andExpect(jsonPath(
                         "$.expedition.completionRecap.materials[0].quantity"
-                ).value(2));
+                ).value(2))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".completedJourneyCount"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle.decisionCount"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".pilotExperienceGained"
+                ).value(48))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle.petBondGained"
+                ).value(11));
     }
 
     @Test
@@ -636,6 +653,15 @@ class HomeControllerTest {
                     int limit
             ) {
                 return recentJourneyHistory;
+            }
+
+            @Override
+            public ExpeditionJourneyChronicleTotals findCompletedJourneyChronicle(
+                    String userId,
+                    String expeditionId,
+                    long currentJourneyNumber
+            ) {
+                return ExpeditionJourneyChronicleTotals.empty();
             }
         };
     }

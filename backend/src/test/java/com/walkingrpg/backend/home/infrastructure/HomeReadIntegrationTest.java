@@ -171,6 +171,7 @@ class HomeReadIntegrationTest {
         assertEquals(0, snapshot.economyVersion());
         assertEquals(0, snapshot.expedition().progress());
         assertEquals("IN_PROGRESS", snapshot.expedition().status());
+        assertNull(snapshot.expedition().journeyChronicle());
         assertEquals(0, rowCount("app_user"));
         assertEquals(0, rowCount("economy_wallet"));
         assertEquals(0, rowCount("activity_sync_state"));
@@ -411,6 +412,14 @@ class HomeReadIntegrationTest {
         ).expedition();
 
         assertNull(expedition.completionRecap());
+        assertNotNull(expedition.journeyChronicle());
+        assertEquals(7,
+                expedition.journeyChronicle().completedJourneyCount());
+        assertEquals(7, expedition.journeyChronicle().decisionCount());
+        assertEquals(28,
+                expedition.journeyChronicle().pilotExperienceGained());
+        assertEquals(28,
+                expedition.journeyChronicle().petBondGained());
         assertEquals(
                 List.of(7L, 6L, 5L, 4L, 3L),
                 expedition.recentJourneyRecaps().stream()

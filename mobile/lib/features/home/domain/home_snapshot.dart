@@ -35,6 +35,7 @@ class HomeSnapshot {
     this.decisionLog = const <HomeExpeditionDecisionLogEntry>[],
     this.completionRecap,
     this.recentJourneyRecaps = const <HomeExpeditionCompletionRecap>[],
+    this.journeyChronicle,
     this.pilotCurrentExperience = 0,
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
@@ -105,6 +106,12 @@ class HomeSnapshot {
       }
       previousJourneyNumber = recap.journeyNumber;
     }
+    final Object? journeyChronicleJson = expedition['journeyChronicle'];
+    final HomeJourneyChronicle? journeyChronicle = journeyChronicleJson == null
+        ? null
+        : HomeJourneyChronicle.fromJson(
+            _asMap(journeyChronicleJson, 'journeyChronicle'),
+          );
     final Object? eventJson = expedition['unlockedEvent'];
     final Object? pendingEventResultJson = json['pendingEventResult'];
 
@@ -133,6 +140,7 @@ class HomeSnapshot {
       decisionLog: _readDecisionLog(expedition['decisionLog']),
       completionRecap: completionRecap,
       recentJourneyRecaps: recentJourneyRecaps,
+      journeyChronicle: journeyChronicle,
       unlockedEvent: eventJson == null
           ? null
           : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
@@ -183,6 +191,7 @@ class HomeSnapshot {
   final List<HomeExpeditionDecisionLogEntry> decisionLog;
   final HomeExpeditionCompletionRecap? completionRecap;
   final List<HomeExpeditionCompletionRecap> recentJourneyRecaps;
+  final HomeJourneyChronicle? journeyChronicle;
   final HomeExpeditionEvent? unlockedEvent;
   final String pilotName;
   final int pilotLevel;
@@ -579,6 +588,47 @@ class HomeExpeditionDecisionLogEntry {
 
   bool get hasRewards =>
       pilotExperienceGained > 0 || petBondGained > 0 || materialReward != null;
+}
+
+class HomeJourneyChronicle {
+  const HomeJourneyChronicle({
+    required this.completedJourneyCount,
+    required this.decisionCount,
+    required this.pilotExperienceGained,
+    required this.petBondGained,
+  });
+
+  factory HomeJourneyChronicle.fromJson(Map<String, dynamic> json) {
+    final int completedJourneyCount = HomeSnapshot._readInt(
+      json,
+      'completedJourneyCount',
+    );
+    final int decisionCount = HomeSnapshot._readInt(json, 'decisionCount');
+    final int pilotExperienceGained = HomeSnapshot._readInt(
+      json,
+      'pilotExperienceGained',
+    );
+    final int petBondGained = HomeSnapshot._readInt(json, 'petBondGained');
+    if (completedJourneyCount <= 0 ||
+        decisionCount < 0 ||
+        pilotExperienceGained < 0 ||
+        petBondGained < 0) {
+      throw const FormatException(
+        'Летопись походов содержит недопустимое значение',
+      );
+    }
+    return HomeJourneyChronicle(
+      completedJourneyCount: completedJourneyCount,
+      decisionCount: decisionCount,
+      pilotExperienceGained: pilotExperienceGained,
+      petBondGained: petBondGained,
+    );
+  }
+
+  final int completedJourneyCount;
+  final int decisionCount;
+  final int pilotExperienceGained;
+  final int petBondGained;
 }
 
 class HomeExpeditionCompletionRecap {

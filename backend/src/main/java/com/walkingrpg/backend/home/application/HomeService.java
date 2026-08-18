@@ -38,6 +38,8 @@ import com.walkingrpg.backend.home.domain.ExpeditionDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionFinalDecisionSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.ExpeditionRouteDecisionSnapshot;
@@ -244,6 +246,12 @@ public class HomeService {
                         state.expeditionJourneyNumber(),
                         RECENT_JOURNEY_RECAP_LIMIT
                 );
+        ExpeditionJourneyChronicleTotals completedJourneyChronicle =
+                repository.findCompletedJourneyChronicle(
+                        query.userId(),
+                        initialDefinition.expeditionId(),
+                        state.expeditionJourneyNumber()
+                );
 
         return new HomeSnapshotResponse(
                 query.localDate(),
@@ -268,7 +276,8 @@ public class HomeService {
                         activeContentVersion,
                         unlockedSkills,
                         journeyEvents,
-                        recentJourneyHistory
+                        recentJourneyHistory,
+                        completedJourneyChronicle
                 ),
                 craftingSnapshots(state, activeContentVersion),
                 itemUpgradeSnapshots(state, activeContentVersion)
@@ -489,7 +498,8 @@ public class HomeService {
             String activeContentVersion,
             Set<String> unlockedSkills,
             List<ExpeditionJourneyEvent> journeyEvents,
-            List<ExpeditionJourneyHistory> recentJourneyHistory
+            List<ExpeditionJourneyHistory> recentJourneyHistory,
+            ExpeditionJourneyChronicleTotals completedJourneyChronicle
     ) {
         long requiredEnergy = state.expeditionRequiredEnergy() > 0
                 ? state.expeditionRequiredEnergy()
@@ -498,6 +508,11 @@ public class HomeService {
                 ? ExpeditionProgressStatus.IN_PROGRESS.name()
                 : state.expeditionStatus();
 
+        ExpeditionCompletionRecapSnapshot completionRecap = completionRecap(
+                status,
+                state.expeditionJourneyNumber(),
+                journeyEvents
+        );
         return new ExpeditionSnapshot(
                 definition.expeditionId(),
                 definition.name(),
@@ -512,18 +527,57 @@ public class HomeService {
                 state.expeditionJourneyNumber(),
                 routeTrail(definition, status, journeyEvents),
                 decisionLog(journeyEvents),
-                completionRecap(
-                        status,
-                        state.expeditionJourneyNumber(),
-                        journeyEvents
-                ),
+                completionRecap,
                 recentJourneyRecaps(recentJourneyHistory),
+                journeyChronicle(
+                        completedJourneyChronicle,
+                        completionRecap
+                ),
                 eventSnapshot(
                         definition,
                         state,
                         activeContentVersion,
                         unlockedSkills
                 )
+        );
+    }
+
+    private ExpeditionJourneyChronicleSnapshot journeyChronicle(
+            ExpeditionJourneyChronicleTotals completedJourneys,
+            ExpeditionCompletionRecapSnapshot currentJourney
+    ) {
+        long completedJourneyCount =
+                completedJourneys.completedJourneyCount();
+        long decisionCount = completedJourneys.decisionCount();
+        long pilotExperienceGained =
+                completedJourneys.pilotExperienceGained();
+        long petBondGained = completedJourneys.petBondGained();
+        if (currentJourney != null) {
+            completedJourneyCount = Math.addExact(
+                    completedJourneyCount,
+                    1
+            );
+            decisionCount = Math.addExact(
+                    decisionCount,
+                    currentJourney.decisionCount()
+            );
+            pilotExperienceGained = Math.addExact(
+                    pilotExperienceGained,
+                    currentJourney.pilotExperienceGained()
+            );
+            petBondGained = Math.addExact(
+                    petBondGained,
+                    currentJourney.petBondGained()
+            );
+        }
+        if (completedJourneyCount == 0) {
+            return null;
+        }
+        return new ExpeditionJourneyChronicleSnapshot(
+                completedJourneyCount,
+                decisionCount,
+                pilotExperienceGained,
+                petBondGained
         );
     }
 

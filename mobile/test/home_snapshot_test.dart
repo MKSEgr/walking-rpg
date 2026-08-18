@@ -24,6 +24,7 @@ void main() {
     expect(snapshot.petEvolutionStage, 0);
     expect(snapshot.decisionLog, isEmpty);
     expect(snapshot.recentJourneyRecaps, isEmpty);
+    expect(snapshot.journeyChronicle, isNull);
     expect(snapshot.inventory, isEmpty);
     expect(snapshot.craftingRecipes, isEmpty);
     expect(snapshot.itemUpgrades, isEmpty);
@@ -79,6 +80,7 @@ void main() {
     expect(snapshot.decisionLog.single.materialReward?.quantity, 2);
     expect(snapshot.completionRecap, isNull);
     expect(snapshot.recentJourneyRecaps, isEmpty);
+    expect(snapshot.journeyChronicle, isNull);
     expect(snapshot.expeditionStatus, 'EVENT_READY');
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
@@ -144,6 +146,12 @@ void main() {
     expedition
       ..['status'] = 'COMPLETED'
       ..['unlockedEvent'] = null
+      ..['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 8,
+        'decisionCount': 19,
+        'pilotExperienceGained': 476,
+        'petBondGained': 133,
+      }
       ..['completionRecap'] = <String, dynamic>{
         'journeyNumber': 2,
         'decisionCount': 3,
@@ -237,9 +245,8 @@ void main() {
         ],
       };
 
-    final HomeExpeditionCompletionRecap? recap = HomeSnapshot.fromJson(
-      response,
-    ).completionRecap;
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+    final HomeExpeditionCompletionRecap? recap = snapshot.completionRecap;
 
     expect(recap, isNotNull);
     expect(recap?.journeyNumber, 2);
@@ -267,6 +274,10 @@ void main() {
     expect(recap?.materials.first.quantity, 5);
     expect(recap?.materials.last.itemName, 'Пепельное семя из записи');
     expect(recap?.hasRewards, isTrue);
+    expect(snapshot.journeyChronicle?.completedJourneyCount, 8);
+    expect(snapshot.journeyChronicle?.decisionCount, 19);
+    expect(snapshot.journeyChronicle?.pilotExperienceGained, 476);
+    expect(snapshot.journeyChronicle?.petBondGained, 133);
   });
 
   test('legacy completed response without recap remains readable', () {
@@ -281,7 +292,31 @@ void main() {
 
     expect(snapshot.expeditionStatus, 'COMPLETED');
     expect(snapshot.completionRecap, isNull);
+    expect(snapshot.journeyChronicle, isNull);
   });
+
+  for (final MapEntry<String, int> invalidValue
+      in <String, int>{
+        'completedJourneyCount': 0,
+        'decisionCount': -1,
+        'pilotExperienceGained': -1,
+        'petBondGained': -1,
+      }.entries) {
+    test('journey chronicle rejects ${invalidValue.key}', () {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 1,
+        'decisionCount': 0,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+        invalidValue.key: invalidValue.value,
+      };
+
+      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+    });
+  }
 
   test('response maps recent completed journeys newest first', () {
     final Map<String, dynamic> response = _readyHomeResponse();
