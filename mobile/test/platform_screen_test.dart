@@ -190,6 +190,18 @@ void main() {
         decisionCount: 2,
         pilotExperienceGained: 60,
         petBondGained: 23,
+        petBondRewards: <HomeJourneyPetBondReward>[
+          HomeJourneyPetBondReward(
+            petId: 'spark-v1',
+            petName: 'Искра',
+            bondGained: 9,
+          ),
+          HomeJourneyPetBondReward(
+            petId: 'moss-v1',
+            petName: 'Мох',
+            bondGained: 14,
+          ),
+        ],
         materials: <HomeJourneyMaterialReward>[
           HomeJourneyMaterialReward(
             itemId: 'echo-thread',
@@ -222,13 +234,15 @@ void main() {
     expect(find.text('ПОХОД №4 ЗАВЕРШЁН'), findsOneWidget);
     expect(find.text('Принято решений: 2'), findsOneWidget);
     expect(find.text('+60 XP пилота'), findsOneWidget);
-    expect(find.text('+23 связи спутников'), findsOneWidget);
+    expect(find.text('Искра · +9 связи'), findsOneWidget);
+    expect(find.text('Мох · +14 связи'), findsOneWidget);
+    expect(find.text('+23 связи спутников'), findsNothing);
     expect(find.text('+5 Эхо-нити'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Поход 4 завершён. Принято решений: 2. '
-        'Итоговые награды: +60 XP пилота; +23 связи спутников; '
-        '+5 Эхо-нити.',
+        'Итоговые награды: +60 XP пилота; Искра: +9 связи; '
+        'Мох: +14 связи; +5 Эхо-нити.',
       ),
       findsOneWidget,
     );
@@ -249,6 +263,13 @@ void main() {
           decisionCount: 3,
           pilotExperienceGained: 90,
           petBondGained: 21,
+          petBondRewards: <HomeJourneyPetBondReward>[
+            HomeJourneyPetBondReward(
+              petId: 'navigator-v1',
+              petName: 'Навигатор',
+              bondGained: 21,
+            ),
+          ],
           materials: <HomeJourneyMaterialReward>[
             HomeJourneyMaterialReward(
               itemId: 'echo-thread',
@@ -291,11 +312,12 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Поход 3. Принято решений: 3. '
-        'Итоговые награды: +90 XP пилота; +21 связи спутников; '
+        'Итоговые награды: +90 XP пилота; Навигатор: +21 связи; '
         '+6 Эхо-нити.',
       ),
       findsOneWidget,
     );
+    expect(find.text('Навигатор · +21 связи'), findsOneWidget);
     final Finder previous = find.byKey(const Key('platform-journey-archive-2'));
     await _bringIntoView(tester, previous);
     expect(find.text('Поход №2'), findsOneWidget);

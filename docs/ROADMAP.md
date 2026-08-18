@@ -416,6 +416,19 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/PostgreSQL/parser/widget coverage limit, order, legacy fallback и
       исключения ложного current completion
 
+## Milestone 20 — Journey companion bond breakdown
+
+### CODE_COMPLETE
+
+- [x] Additive ordered `petBondRewards[]` в current и recent journey recap из
+      persisted pet identity/name и фактически выданной связи
+- [x] First-appearance grouping с exact sum к совместимому `petBondGained` без
+      current-content, current-pet или total-delta inference
+- [x] Named companion chips и единая accessibility summary с legacy fallback
+      на общий итог при отсутствии additive массива
+- [x] Unit/API/PostgreSQL/parser/widget coverage aggregation, order, invalid
+      sum, duplicate identity и legacy response
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

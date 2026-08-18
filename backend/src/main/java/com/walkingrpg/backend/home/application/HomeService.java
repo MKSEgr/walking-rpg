@@ -48,6 +48,7 @@ import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
 import com.walkingrpg.backend.home.domain.ItemUpgradeIngredientSnapshot;
 import com.walkingrpg.backend.home.domain.ItemUpgradeSnapshot;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
+import com.walkingrpg.backend.home.domain.PetBondRewardSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
 import com.walkingrpg.backend.home.domain.PendingEventResultSnapshot;
 import com.walkingrpg.backend.home.domain.PilotSnapshot;
@@ -609,6 +610,7 @@ public class HomeService {
     ) {
         long pilotExperienceGained = 0;
         long petBondGained = 0;
+        Map<PetIdentity, Long> petBondRewards = new LinkedHashMap<>();
         Map<MaterialIdentity, Long> materials = new LinkedHashMap<>();
         for (ExpeditionJourneyEvent event : journeyEvents) {
             pilotExperienceGained = Math.addExact(
@@ -619,6 +621,17 @@ public class HomeService {
                     petBondGained,
                     event.petBondGained()
             );
+            if (event.petBondGained() > 0) {
+                PetIdentity identity = new PetIdentity(
+                        event.petId(),
+                        event.petName()
+                );
+                petBondRewards.merge(
+                        identity,
+                        (long) event.petBondGained(),
+                        Math::addExact
+                );
+            }
             if (event.materialReward() != null) {
                 MaterialIdentity identity = new MaterialIdentity(
                         event.materialReward().itemId(),
@@ -631,6 +644,14 @@ public class HomeService {
                 );
             }
         }
+        List<PetBondRewardSnapshot> petBondTotals = petBondRewards.entrySet()
+                .stream()
+                .map(entry -> new PetBondRewardSnapshot(
+                        entry.getKey().petId(),
+                        entry.getKey().petName(),
+                        entry.getValue()
+                ))
+                .toList();
         List<MaterialRewardPreviewSnapshot> materialTotals = materials.entrySet()
                 .stream()
                 .map(entry -> new MaterialRewardPreviewSnapshot(
@@ -644,8 +665,12 @@ public class HomeService {
                 journeyEvents.size(),
                 pilotExperienceGained,
                 petBondGained,
+                petBondTotals,
                 materialTotals
         );
+    }
+
+    private record PetIdentity(String petId, String petName) {
     }
 
     private record MaterialIdentity(String itemId, String itemName) {

@@ -340,6 +340,16 @@ class HomeControllerTest {
                         "$.expedition.completionRecap.petBondGained"
                 ).value(11))
                 .andExpect(jsonPath(
+                        "$.expedition.completionRecap.petBondRewards[0].petId"
+                ).value("spark-v1"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.petBondRewards[0].petName"
+                ).value("Искра из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.petBondRewards[0]"
+                                + ".bondGained"
+                ).value(11))
+                .andExpect(jsonPath(
                         "$.expedition.completionRecap.materials[0].itemId"
                 ).value("echo-thread"))
                 .andExpect(jsonPath(
@@ -462,6 +472,18 @@ class HomeControllerTest {
                 ).value(48))
                 .andExpect(jsonPath(
                         "$.expedition.recentJourneyRecaps[0].petBondGained"
+                ).value(11))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".petBondRewards[0].petId"
+                ).value("spark-v1"))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".petBondRewards[0].petName"
+                ).value("Искра из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".petBondRewards[0].bondGained"
                 ).value(11));
     }
 

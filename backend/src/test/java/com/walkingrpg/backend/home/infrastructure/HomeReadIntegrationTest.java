@@ -425,6 +425,15 @@ class HomeReadIntegrationTest {
         );
         assertEquals(1,
                 expedition.recentJourneyRecaps().getFirst().decisionCount());
+        assertEquals("spark-v1",
+                expedition.recentJourneyRecaps().getFirst()
+                        .petBondRewards().getFirst().petId());
+        assertEquals("Искра",
+                expedition.recentJourneyRecaps().getFirst()
+                        .petBondRewards().getFirst().petName());
+        assertEquals(7,
+                expedition.recentJourneyRecaps().getFirst()
+                        .petBondRewards().getFirst().bondGained());
     }
 
     @Test
