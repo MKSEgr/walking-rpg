@@ -957,9 +957,7 @@ class _JourneyArchiveEntry extends StatelessWidget {
   }
 }
 
-List<String> _journeyRecapRewardLabels(
-  HomeExpeditionCompletionRecap recap,
-) {
+List<String> _journeyRecapRewardLabels(HomeExpeditionCompletionRecap recap) {
   return <String>[
     if (recap.pilotExperienceGained > 0)
       '+${recap.pilotExperienceGained} XP пилота',

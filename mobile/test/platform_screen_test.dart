@@ -285,9 +285,7 @@ void main() {
     expect(archive, findsOneWidget);
     expect(find.text('Недавние походы'), findsOneWidget);
     expect(find.text('АРХИВ · 2'), findsOneWidget);
-    final Finder latest = find.byKey(
-      const Key('platform-journey-archive-3'),
-    );
+    final Finder latest = find.byKey(const Key('platform-journey-archive-3'));
     await _bringIntoView(tester, latest);
     expect(find.text('Поход №3'), findsOneWidget);
     expect(
@@ -298,9 +296,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    final Finder previous = find.byKey(
-      const Key('platform-journey-archive-2'),
-    );
+    final Finder previous = find.byKey(const Key('platform-journey-archive-2'));
     await _bringIntoView(tester, previous);
     expect(find.text('Поход №2'), findsOneWidget);
     expect(
