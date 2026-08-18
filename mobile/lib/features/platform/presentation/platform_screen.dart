@@ -814,8 +814,7 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                         icon: Icons.star_outline,
                         label: '+${recap.pilotExperienceGained} XP пилота',
                       ),
-                    if (recap.petBondRewards.isEmpty &&
-                        recap.petBondGained > 0)
+                    if (recap.petBondRewards.isEmpty && recap.petBondGained > 0)
                       _JourneyRewardChip(
                         icon: Icons.favorite_border,
                         label: '+${recap.petBondGained} связи спутников',
