@@ -371,7 +371,7 @@ class HomeReadIntegrationTest {
                     journey_number
                 )
                 SELECT ?, ?,
-                       'outer-beacon-v1',
+                       ?,
                        'history-resolution-' || journey_number,
                        repeat('b', 64),
                        'chapter-1-v11',
@@ -400,7 +400,11 @@ class HomeReadIntegrationTest {
                        now(),
                        journey_number
                 FROM generate_series(1, 8) AS generated(journey_number)
-                """, "home-user", StarterExpeditionContent.EXPEDITION_ID);
+                """,
+                "home-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.FIRST_EVENT_ID
+        );
 
         var expedition = homeService.getSnapshot(
                 new HomeQuery("home-user", ACTIVITY_DATE)
