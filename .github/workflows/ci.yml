@@ -175,11 +175,8 @@ jobs:
       - name: Check formatting
         shell: bash
         run: |
-          set +e
-          dart format --output=none --set-exit-if-changed lib test
-          status=$?
-          git diff -- lib test
-          exit "$status"
+          dart format lib test
+          git diff --exit-code -- lib test
 
       - name: Analyze for diagnostics
         id: mobile-analyze
