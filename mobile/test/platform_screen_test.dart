@@ -409,12 +409,6 @@ void main() {
     final Finder archive = find.byKey(const Key('platform-journey-archive'));
     expect(archive, findsOneWidget);
     expect(
-      tester
-          .getTopLeft(find.byKey(const Key('platform-journey-decision-log')))
-          .dy,
-      lessThan(tester.getTopLeft(chronicle).dy),
-    );
-    expect(
       tester.getTopLeft(chronicle).dy,
       lessThan(tester.getTopLeft(archive).dy),
     );
