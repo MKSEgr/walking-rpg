@@ -425,6 +425,21 @@ class HomeReadIntegrationTest {
         );
         assertEquals(1,
                 expedition.recentJourneyRecaps().getFirst().decisionCount());
+        assertEquals(1,
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().size());
+        assertEquals("Событие похода 7",
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().getFirst().eventTitle());
+        assertEquals("Решение из неизменяемой истории.",
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().getFirst().outcomeSummary());
+        assertEquals(7,
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().getFirst().pilotExperienceGained());
+        assertEquals("Искра",
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().getFirst().petName());
         assertEquals("Событие похода 7",
                 expedition.recentJourneyRecaps().getFirst()
                         .finalDecision().eventTitle());

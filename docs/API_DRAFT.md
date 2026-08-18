@@ -380,36 +380,51 @@ Authorization: Bearer <access-token>
 
   ```json
   {
-    "journeyNumber": 2,
-    "decisionCount": 18,
+    "journeyNumber": 1,
+    "decisionCount": 1,
+    "decisions": [
+      {
+        "eventId": "signal-source-v1",
+        "eventTitle": "Источник сигнала",
+        "choiceId": "analyze-signal",
+        "choiceTitle": "Разобрать сигнал",
+        "outcomeTitle": "Карта отклика",
+        "outcomeSummary": "Маршрут к люминовым воротам сохранён.",
+        "pilotExperienceGained": 40,
+        "petId": "spark-v1",
+        "petName": "Искра",
+        "petBondGained": 5,
+        "materialReward": {
+          "itemId": "lumen-shard",
+          "itemName": "Люмен-осколок",
+          "quantity": 2
+        },
+        "resolvedAt": "2026-07-26T06:12:00Z"
+      }
+    ],
     "finalDecision": {
-      "eventId": "dawn-relay-v1",
-      "eventTitle": "Реле рассвета",
-      "choiceId": "stabilize-relay",
-      "choiceTitle": "Стабилизировать реле",
-      "outcomeTitle": "Маршрут сохранён",
-      "outcomeSummary": "Реле удержало световой коридор.",
+      "eventId": "signal-source-v1",
+      "eventTitle": "Источник сигнала",
+      "choiceId": "analyze-signal",
+      "choiceTitle": "Разобрать сигнал",
+      "outcomeTitle": "Карта отклика",
+      "outcomeSummary": "Маршрут к люминовым воротам сохранён.",
       "resolvedAt": "2026-07-26T06:12:00Z"
     },
-    "pilotExperienceGained": 1240,
-    "petBondGained": 620,
+    "pilotExperienceGained": 40,
+    "petBondGained": 5,
     "petBondRewards": [
       {
         "petId": "spark-v1",
         "petName": "Искра",
-        "bondGained": 240
-      },
-      {
-        "petId": "moss-v1",
-        "petName": "Мох",
-        "bondGained": 380
+        "bondGained": 5
       }
     ],
     "materials": [
       {
         "itemId": "lumen-shard",
         "itemName": "Люмен-осколок",
-        "quantity": 7
+        "quantity": 2
       }
     ]
   }
@@ -423,6 +438,12 @@ Authorization: Bearer <access-token>
   порядке `expedition_version, receipt_id`; её event/choice/outcome copy и
   `resolvedAt` не перечитываются из current content. Legacy response без поля
   остаётся валидным и просто не показывает финал.
+  Additive ordered `decisions[]` содержит те же полные persisted записи, что
+  current `decisionLog`: event/choice/outcome copy, `resolvedAt` и фактически
+  выданные XP, pet bond identity и nullable material reward. Массив строится
+  только из immutable resolutions exact `journeyNumber`; при наличии его длина
+  равна `decisionCount`, а последняя запись совпадает с `finalDecision`.
+  Legacy recap без массива остаётся валидным.
 
 - `expedition.recentJourneyRecaps[]` — не более пяти итогов предыдущих
   завершённых походов, от нового к старому. Факт завершения определяется
@@ -431,7 +452,9 @@ Authorization: Bearer <access-token>
   не добавляет незавершённый или текущий поход в архив. Награды агрегируются
   из persisted event resolutions соответствующего похода по тем же правилам,
   что `completionRecap`, включая ordered `petBondRewards[]` и persisted
-  `finalDecision`; legacy response без поля читается как пустой архив;
+  `finalDecision`. Additive `decisions[]` позволяет раскрыть полную сохранённую
+  историю архивного похода без lookup current content или восстановления
+  topology; legacy response без поля читается как пустой архив;
 
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а

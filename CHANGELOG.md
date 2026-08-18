@@ -34,6 +34,8 @@
 
 ### Added
 
+- expandable full persisted decision histories for recent completed journeys,
+  with reward facts, strict legacy-compatible parsing and accessibility;
 - persisted choice and outcome annotations on resolved points of the current
   journey route, including legacy-compatible parsing and RU/EN accessibility;
 - repeatable expedition journeys: after acknowledging the final event result,

@@ -967,7 +967,7 @@ class _JourneyArchiveEntry extends StatelessWidget {
     final String finalDecisionSummary = _journeyFinalDecisionSemantic(
       recap.finalDecision,
     );
-    return Semantics(
+    final Widget summary = Semantics(
       key: Key('platform-journey-archive-${recap.journeyNumber}'),
       container: true,
       label:
@@ -1049,6 +1049,96 @@ class _JourneyArchiveEntry extends StatelessWidget {
           ),
         ),
       ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        summary,
+        if (recap.decisions.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 8),
+          _JourneyArchiveDecisionHistory(
+            key: Key(
+              'platform-journey-archive-${recap.journeyNumber}-history',
+            ),
+            journeyNumber: recap.journeyNumber,
+            decisions: recap.decisions,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _JourneyArchiveDecisionHistory extends StatefulWidget {
+  const _JourneyArchiveDecisionHistory({
+    super.key,
+    required this.journeyNumber,
+    required this.decisions,
+  });
+
+  final int journeyNumber;
+  final List<HomeExpeditionDecisionLogEntry> decisions;
+
+  @override
+  State<_JourneyArchiveDecisionHistory> createState() =>
+      _JourneyArchiveDecisionHistoryState();
+}
+
+class _JourneyArchiveDecisionHistoryState
+    extends State<_JourneyArchiveDecisionHistory> {
+  bool _expanded = false;
+
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String keyPrefix =
+        'platform-journey-archive-${widget.journeyNumber}-history';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Semantics(
+          key: Key('$keyPrefix-toggle-semantics'),
+          button: true,
+          label: _expanded
+              ? 'Скрыть решения похода ${widget.journeyNumber}'
+              : 'Показать решения похода ${widget.journeyNumber}. '
+                    'Записей: ${widget.decisions.length}',
+          onTap: _toggle,
+          child: ExcludeSemantics(
+            child: OutlinedButton.icon(
+              key: Key('$keyPrefix-toggle'),
+              onPressed: _toggle,
+              icon: Icon(
+                _expanded ? Icons.expand_less : Icons.expand_more,
+              ),
+              label: Text(
+                _expanded
+                    ? 'Скрыть решения'
+                    : 'Показать решения (${widget.decisions.length})',
+              ),
+            ),
+          ),
+        ),
+        if (_expanded) ...<Widget>[
+          const SizedBox(height: 10),
+          for (
+            int index = 0;
+            index < widget.decisions.length;
+            index += 1
+          ) ...<Widget>[
+            _JourneyDecisionEntry(
+              entry: widget.decisions[index],
+              index: index,
+              total: widget.decisions.length,
+            ),
+            if (index < widget.decisions.length - 1)
+              const SizedBox(height: 10),
+          ],
+        ],
+      ],
     );
   }
 }

@@ -246,6 +246,17 @@ class HomeServiceTest {
         assertNotNull(recap);
         assertEquals(1, recap.journeyNumber());
         assertEquals(3, recap.decisionCount());
+        assertEquals(3, recap.decisions().size());
+        assertEquals("Первый сигнал из записи",
+                recap.decisions().getFirst().eventTitle());
+        assertEquals("Разобрать сигнал",
+                recap.decisions().getFirst().choiceTitle());
+        assertEquals("Зеркальная дельта из записи",
+                recap.decisions().getLast().eventTitle());
+        assertEquals("Искра из записи",
+                recap.decisions().getLast().petName());
+        assertEquals(1,
+                recap.decisions().getLast().materialReward().quantity());
         assertNotNull(recap.finalDecision());
         assertEquals(StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
                 recap.finalDecision().eventId());
@@ -390,6 +401,18 @@ class HomeServiceTest {
         assertEquals(20,
                 expedition.recentJourneyRecaps().getFirst()
                         .pilotExperienceGained());
+        assertEquals(1,
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().size());
+        assertEquals("Сердце второго похода",
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().getFirst().eventTitle());
+        assertEquals("Второй маршрут сохранён.",
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().getFirst().outcomeSummary());
+        assertEquals(3,
+                expedition.recentJourneyRecaps().getFirst()
+                        .decisions().getFirst().materialReward().quantity());
         assertEquals("Сердце второго похода",
                 expedition.recentJourneyRecaps().getFirst()
                         .finalDecision().eventTitle());

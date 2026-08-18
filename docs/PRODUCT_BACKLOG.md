@@ -907,6 +907,30 @@ immutable receipts без миграции и без изменения экон
 **Статус:** additive backend/mobile annotation реализована без миграции,
 изменения topology или экономики.
 
+### US-039. Раскрыть полную историю недавнего похода
+
+Как игрок, я хочу раскрыть завершённый поход в архиве и увидеть все его
+сохранённые решения, чтобы вспомнить путь целиком, а не только финал и награды.
+
+Критерии:
+
+- `completionRecap` и каждый `recentJourneyRecaps[]` получают additive ordered
+  `decisions[]` из immutable resolutions exact `journeyNumber`;
+- каждая запись содержит persisted event/choice/outcome copy, `resolvedAt` и
+  фактически выданные XP, pet bond identity и nullable material reward;
+- backend не читает current content, не восстанавливает topology и не выводит
+  историю из агрегированных totals;
+- mobile принимает legacy recap без массива, а при наличии проверяет длину
+  относительно `decisionCount` и совпадение последней записи с
+  `finalDecision`;
+- архив по умолчанию остаётся компактным и раскрывает numbered decision entries
+  отдельной accessible кнопкой; текущий recap не дублирует уже видимый журнал;
+- unit/API/PostgreSQL/parser/widget coverage проверяет порядок, literal copy,
+  rewards, invalid shape, large text и legacy fallback.
+
+**Статус:** полный persisted журнал недавних походов реализован поверх
+существующей immutable history без миграции, изменения topology или экономики.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

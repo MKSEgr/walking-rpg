@@ -405,6 +405,14 @@ immutable event resolutions exact текущего `journeyNumber`. Additive nul
 меняет literal state на `COMPLETED`, сохраняя фактическую annotation, а новый
 поход начинает один неаннотированный `CURRENT` node без schema migration.
 
+Тот же immutable источник наполняет additive `decisions[]` в current и recent
+journey recap. Каждая запись переносит полный persisted decision/reward fact,
+поэтому архивный журнал не обращается к current content и не восстанавливает
+историю из totals, node IDs или topology. Mobile требует exact `decisionCount`
+и совпадение последней записи с `finalDecision`, но legacy recap без массива
+остаётся читаемым. UI раскрывает detail только для recent archive: текущий
+завершённый поход уже показывает тот же порядок в `decisionLog`.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является
