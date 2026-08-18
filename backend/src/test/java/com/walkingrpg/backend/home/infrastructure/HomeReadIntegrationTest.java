@@ -278,7 +278,7 @@ class HomeReadIntegrationTest {
 
     @Test
     void shouldReturnFiveRecentJourneysProvenByTheirSuccessors() {
-        activitySyncService.synchronize(command(1_000));
+        activitySyncService.synchronize(command(6_842));
         expeditionService.advance(new ExpeditionAdvanceCommand(
                 "home-user",
                 StarterExpeditionContent.EXPEDITION_ID,
