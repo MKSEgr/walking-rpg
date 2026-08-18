@@ -23,6 +23,7 @@ void main() {
     expect(snapshot.petBond, 10);
     expect(snapshot.petEvolutionStage, 0);
     expect(snapshot.decisionLog, isEmpty);
+    expect(snapshot.recentJourneyRecaps, isEmpty);
     expect(snapshot.inventory, isEmpty);
     expect(snapshot.craftingRecipes, isEmpty);
     expect(snapshot.itemUpgrades, isEmpty);
@@ -70,6 +71,7 @@ void main() {
     );
     expect(snapshot.decisionLog.single.materialReward?.quantity, 2);
     expect(snapshot.completionRecap, isNull);
+    expect(snapshot.recentJourneyRecaps, isEmpty);
     expect(snapshot.expeditionStatus, 'EVENT_READY');
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
@@ -169,6 +171,87 @@ void main() {
 
     expect(snapshot.expeditionStatus, 'COMPLETED');
     expect(snapshot.completionRecap, isNull);
+  });
+
+  test('response maps recent completed journeys newest first', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['journeyNumber'] = 3
+      ..['recentJourneyRecaps'] = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'journeyNumber': 2,
+          'decisionCount': 3,
+          'pilotExperienceGained': 96,
+          'petBondGained': 24,
+          'materials': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'itemId': 'echo-thread',
+              'itemName': 'Эхо-нити из записи',
+              'quantity': 5,
+            },
+          ],
+        },
+        <String, dynamic>{
+          'journeyNumber': 1,
+          'decisionCount': 2,
+          'pilotExperienceGained': 60,
+          'petBondGained': 14,
+          'materials': <Map<String, dynamic>>[],
+        },
+      ];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.recentJourneyRecaps, hasLength(2));
+    expect(snapshot.recentJourneyRecaps.first.journeyNumber, 2);
+    expect(snapshot.recentJourneyRecaps.first.materials.single.quantity, 5);
+    expect(snapshot.recentJourneyRecaps.last.journeyNumber, 1);
+    expect(snapshot.recentJourneyRecaps.last.petBondGained, 14);
+  });
+
+  test('recent journeys reject the current or a future journey', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['recentJourneyRecaps'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'journeyNumber': 2,
+        'decisionCount': 1,
+        'pilotExperienceGained': 42,
+        'petBondGained': 9,
+        'materials': <Map<String, dynamic>>[],
+      },
+    ];
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('recent journeys reject duplicates and non-descending order', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['journeyNumber'] = 4
+      ..['recentJourneyRecaps'] = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'journeyNumber': 2,
+          'decisionCount': 1,
+          'pilotExperienceGained': 42,
+          'petBondGained': 9,
+          'materials': <Map<String, dynamic>>[],
+        },
+        <String, dynamic>{
+          'journeyNumber': 2,
+          'decisionCount': 1,
+          'pilotExperienceGained': 40,
+          'petBondGained': 7,
+          'materials': <Map<String, dynamic>>[],
+        },
+      ];
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('in-progress response rejects a completion recap', () {

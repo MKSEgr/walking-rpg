@@ -15,6 +15,7 @@ public record ExpeditionSnapshot(
         List<ExpeditionRouteNodeSnapshot> routeTrail,
         List<ExpeditionDecisionSnapshot> decisionLog,
         ExpeditionCompletionRecapSnapshot completionRecap,
+        List<ExpeditionCompletionRecapSnapshot> recentJourneyRecaps,
         ExpeditionEventSnapshot unlockedEvent
 ) {
     public ExpeditionSnapshot {
@@ -22,6 +23,9 @@ public record ExpeditionSnapshot(
         decisionLog = decisionLog == null
                 ? List.of()
                 : List.copyOf(decisionLog);
+        recentJourneyRecaps = recentJourneyRecaps == null
+                ? List.of()
+                : List.copyOf(recentJourneyRecaps);
     }
 
     public ExpeditionSnapshot(
@@ -50,6 +54,7 @@ public record ExpeditionSnapshot(
                 routeTrail,
                 List.of(),
                 null,
+                List.of(),
                 unlockedEvent
         );
     }
@@ -79,6 +84,7 @@ public record ExpeditionSnapshot(
                 List.of(),
                 List.of(),
                 null,
+                List.of(),
                 unlockedEvent
         );
     }
@@ -107,6 +113,7 @@ public record ExpeditionSnapshot(
                 List.of(),
                 List.of(),
                 null,
+                List.of(),
                 unlockedEvent
         );
     }

@@ -597,6 +597,10 @@ class _PlatformBody extends StatelessWidget {
               const SizedBox(height: 12),
             ],
             _JourneyDecisionLogCard(snapshot: home),
+            if (home.recentJourneyRecaps.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 12),
+              _JourneyArchiveCard(recaps: home.recentJourneyRecaps),
+            ],
             const SizedBox(height: 12),
           ],
           _OnboardingCard(snapshot: snapshot, onResume: onResumeFirstJourney),
@@ -758,13 +762,7 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final List<String> rewardLabels = <String>[
-      if (recap.pilotExperienceGained > 0)
-        '+${recap.pilotExperienceGained} XP пилота',
-      if (recap.petBondGained > 0) '+${recap.petBondGained} связи спутников',
-      for (final HomeJourneyMaterialReward material in recap.materials)
-        '+${material.quantity} ${material.itemName}',
-    ];
+    final List<String> rewardLabels = _journeyRecapRewardLabels(recap);
     final String rewardSummary = rewardLabels.isEmpty
         ? 'Наград нет.'
         : 'Итоговые награды: ${rewardLabels.join('; ')}.';
@@ -835,6 +833,140 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _JourneyArchiveCard extends StatelessWidget {
+  const _JourneyArchiveCard({required this.recaps});
+
+  final List<HomeExpeditionCompletionRecap> recaps;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    return ExpeditionPanel(
+      key: const Key('platform-journey-archive'),
+      tone: ExpeditionPanelTone.neutral,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ExpeditionBadge(
+              label: 'Архив · ${recaps.length}',
+              icon: Icons.history,
+              tone: ExpeditionPanelTone.neutral,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text('Недавние походы', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text(
+            'Подтверждённые итоги предыдущих маршрутов.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (int index = 0; index < recaps.length; index += 1) ...<Widget>[
+            _JourneyArchiveEntry(recap: recaps[index]),
+            if (index < recaps.length - 1) const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _JourneyArchiveEntry extends StatelessWidget {
+  const _JourneyArchiveEntry({required this.recap});
+
+  final HomeExpeditionCompletionRecap recap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final List<String> rewardLabels = _journeyRecapRewardLabels(recap);
+    final String rewardSummary = rewardLabels.isEmpty
+        ? 'Наград нет.'
+        : 'Итоговые награды: ${rewardLabels.join('; ')}.';
+    return Semantics(
+      key: Key('platform-journey-archive-${recap.journeyNumber}'),
+      container: true,
+      label:
+          'Поход ${recap.journeyNumber}. '
+          'Принято решений: ${recap.decisionCount}. $rewardSummary',
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerHigh.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Поход №${recap.journeyNumber}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Принято решений: ${recap.decisionCount}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (rewardLabels.isEmpty)
+                  Text('Наград нет.', style: theme.textTheme.bodyMedium)
+                else
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: <Widget>[
+                      if (recap.pilotExperienceGained > 0)
+                        _JourneyRewardChip(
+                          icon: Icons.star_outline,
+                          label: '+${recap.pilotExperienceGained} XP пилота',
+                        ),
+                      if (recap.petBondGained > 0)
+                        _JourneyRewardChip(
+                          icon: Icons.favorite_border,
+                          label: '+${recap.petBondGained} связи спутников',
+                        ),
+                      for (final HomeJourneyMaterialReward material
+                          in recap.materials)
+                        _JourneyRewardChip(
+                          icon: Icons.inventory_2_outlined,
+                          label: '+${material.quantity} ${material.itemName}',
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+List<String> _journeyRecapRewardLabels(
+  HomeExpeditionCompletionRecap recap,
+) {
+  return <String>[
+    if (recap.pilotExperienceGained > 0)
+      '+${recap.pilotExperienceGained} XP пилота',
+    if (recap.petBondGained > 0) '+${recap.petBondGained} связи спутников',
+    for (final HomeJourneyMaterialReward material in recap.materials)
+      '+${material.quantity} ${material.itemName}',
+  ];
 }
 
 class _JourneyDecisionLogCard extends StatelessWidget {

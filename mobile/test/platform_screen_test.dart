@@ -55,6 +55,7 @@ void main() {
 
     expect(find.byKey(const Key('platform-loading-state')), findsNothing);
     expect(find.byKey(const Key('platform-journal-hero')), findsOneWidget);
+    expect(find.byKey(const Key('platform-journey-archive')), findsNothing);
   });
 
   testWidgets('journal preserves authoritative current-journey decisions', (
@@ -228,6 +229,84 @@ void main() {
         'Поход 4 завершён. Принято решений: 2. '
         'Итоговые награды: +60 XP пилота; +23 связи спутников; '
         '+5 Эхо-нити.',
+      ),
+      findsOneWidget,
+    );
+    _expectNoLayoutException(tester);
+    semantics.dispose();
+  });
+
+  testWidgets('journal shows recent completed journeys in server order', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final HomeSnapshot home = _homeSnapshotWithDecisions(
+      const <HomeExpeditionDecisionLogEntry>[],
+      journeyNumber: 4,
+      recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
+        HomeExpeditionCompletionRecap(
+          journeyNumber: 3,
+          decisionCount: 3,
+          pilotExperienceGained: 90,
+          petBondGained: 21,
+          materials: <HomeJourneyMaterialReward>[
+            HomeJourneyMaterialReward(
+              itemId: 'echo-thread',
+              itemName: 'Эхо-нити',
+              quantity: 6,
+            ),
+          ],
+        ),
+        HomeExpeditionCompletionRecap(
+          journeyNumber: 2,
+          decisionCount: 2,
+          pilotExperienceGained: 60,
+          petBondGained: 14,
+          materials: <HomeJourneyMaterialReward>[],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => home,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder archive = find.byKey(const Key('platform-journey-archive'));
+    await _bringIntoView(tester, archive);
+
+    expect(archive, findsOneWidget);
+    expect(find.text('Недавние походы'), findsOneWidget);
+    expect(find.text('АРХИВ · 2'), findsOneWidget);
+    final Finder latest = find.byKey(
+      const Key('platform-journey-archive-3'),
+    );
+    await _bringIntoView(tester, latest);
+    expect(find.text('Поход №3'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Поход 3. Принято решений: 3. '
+        'Итоговые награды: +90 XP пилота; +21 связи спутников; '
+        '+6 Эхо-нити.',
+      ),
+      findsOneWidget,
+    );
+    final Finder previous = find.byKey(
+      const Key('platform-journey-archive-2'),
+    );
+    await _bringIntoView(tester, previous);
+    expect(find.text('Поход №2'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Поход 2. Принято решений: 2. '
+        'Итоговые награды: +60 XP пилота; +14 связи спутников.',
       ),
       findsOneWidget,
     );
@@ -1671,6 +1750,8 @@ HomeSnapshot _homeSnapshotWithDecisions(
   required int journeyNumber,
   String? expeditionStatus,
   HomeExpeditionCompletionRecap? completionRecap,
+  List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
+      const <HomeExpeditionCompletionRecap>[],
 }) {
   const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
@@ -1696,6 +1777,7 @@ HomeSnapshot _homeSnapshotWithDecisions(
     routeTrail: demo.routeTrail,
     decisionLog: decisions,
     completionRecap: completionRecap,
+    recentJourneyRecaps: recentJourneyRecaps,
     unlockedEvent: demo.unlockedEvent,
     pilotName: demo.pilotName,
     pilotLevel: demo.pilotLevel,

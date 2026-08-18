@@ -34,6 +34,7 @@ class HomeSnapshot {
     this.routeTrail = const <HomeExpeditionRouteNode>[],
     this.decisionLog = const <HomeExpeditionDecisionLogEntry>[],
     this.completionRecap,
+    this.recentJourneyRecaps = const <HomeExpeditionCompletionRecap>[],
     this.pilotCurrentExperience = 0,
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
@@ -92,6 +93,18 @@ class HomeSnapshot {
         'completionRecap должен относиться к текущему походу',
       );
     }
+    final List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
+        _readRecentJourneyRecaps(expedition['recentJourneyRecaps']);
+    int previousJourneyNumber = expeditionJourneyNumber;
+    for (final HomeExpeditionCompletionRecap recap in recentJourneyRecaps) {
+      if (recap.journeyNumber >= previousJourneyNumber) {
+        throw const FormatException(
+          'recentJourneyRecaps должны содержать прошлые походы '
+          'в убывающем порядке',
+        );
+      }
+      previousJourneyNumber = recap.journeyNumber;
+    }
     final Object? eventJson = expedition['unlockedEvent'];
     final Object? pendingEventResultJson = json['pendingEventResult'];
 
@@ -119,6 +132,7 @@ class HomeSnapshot {
       routeTrail: _readRouteTrail(expedition['routeTrail']),
       decisionLog: _readDecisionLog(expedition['decisionLog']),
       completionRecap: completionRecap,
+      recentJourneyRecaps: recentJourneyRecaps,
       unlockedEvent: eventJson == null
           ? null
           : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
@@ -168,6 +182,7 @@ class HomeSnapshot {
   final List<HomeExpeditionRouteNode> routeTrail;
   final List<HomeExpeditionDecisionLogEntry> decisionLog;
   final HomeExpeditionCompletionRecap? completionRecap;
+  final List<HomeExpeditionCompletionRecap> recentJourneyRecaps;
   final HomeExpeditionEvent? unlockedEvent;
   final String pilotName;
   final int pilotLevel;
@@ -294,6 +309,26 @@ class HomeSnapshot {
         .map(
           (Object? value) => HomeExpeditionDecisionLogEntry.fromJson(
             _asMap(value, 'decisionLog[]'),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  static List<HomeExpeditionCompletionRecap> _readRecentJourneyRecaps(
+    Object? raw,
+  ) {
+    if (raw == null) {
+      return const <HomeExpeditionCompletionRecap>[];
+    }
+    if (raw is! List<dynamic>) {
+      throw const FormatException(
+        'recentJourneyRecaps должен быть JSON-массивом',
+      );
+    }
+    return raw
+        .map(
+          (Object? value) => HomeExpeditionCompletionRecap.fromJson(
+            _asMap(value, 'recentJourneyRecaps[]'),
           ),
         )
         .toList(growable: false);

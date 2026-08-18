@@ -403,6 +403,19 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/API/PostgreSQL/parser/widget coverage completed, in-progress,
       legacy, invalid и grouped-material cases
 
+## Milestone 19 — Recent completed journey archive
+
+### CODE_COMPLETE
+
+- [x] Additive Home `recentJourneyRecaps` максимум для пяти предыдущих
+      завершённых `journeyNumber`, ordered newest-first
+- [x] Completion proof из immutable receipt старта следующего похода без
+      доверия historical `expedition_status=COMPLETED`
+- [x] Exact persisted reward aggregation и code-native accessible archive
+      после decision log; текущий поход остаётся отдельным
+- [x] Unit/PostgreSQL/parser/widget coverage limit, order, legacy fallback и
+      исключения ложного current completion
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
