@@ -129,6 +129,18 @@ void main() {
         'decisionCount': 3,
         'pilotExperienceGained': 96,
         'petBondGained': 24,
+        'petBondRewards': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'petId': 'spark-v1',
+            'petName': 'Искра из записи',
+            'bondGained': 9,
+          },
+          <String, dynamic>{
+            'petId': 'moss-v1',
+            'petName': 'Мох из записи',
+            'bondGained': 15,
+          },
+        ],
         'materials': <Map<String, dynamic>>[
           <String, dynamic>{
             'itemId': 'echo-thread',
@@ -152,6 +164,11 @@ void main() {
     expect(recap?.decisionCount, 3);
     expect(recap?.pilotExperienceGained, 96);
     expect(recap?.petBondGained, 24);
+    expect(recap?.petBondRewards, hasLength(2));
+    expect(recap?.petBondRewards.first.petId, 'spark-v1');
+    expect(recap?.petBondRewards.first.bondGained, 9);
+    expect(recap?.petBondRewards.last.petName, 'Мох из записи');
+    expect(recap?.petBondRewards.last.bondGained, 15);
     expect(recap?.materials, hasLength(2));
     expect(recap?.materials.first.itemId, 'echo-thread');
     expect(recap?.materials.first.quantity, 5);
@@ -185,6 +202,13 @@ void main() {
           'decisionCount': 3,
           'pilotExperienceGained': 96,
           'petBondGained': 24,
+          'petBondRewards': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'petId': 'spark-v1',
+              'petName': 'Искра из записи',
+              'bondGained': 24,
+            },
+          ],
           'materials': <Map<String, dynamic>>[
             <String, dynamic>{
               'itemId': 'echo-thread',
@@ -206,9 +230,69 @@ void main() {
 
     expect(snapshot.recentJourneyRecaps, hasLength(2));
     expect(snapshot.recentJourneyRecaps.first.journeyNumber, 2);
+    expect(
+      snapshot.recentJourneyRecaps.first.petBondRewards.single.petName,
+      'Искра из записи',
+    );
     expect(snapshot.recentJourneyRecaps.first.materials.single.quantity, 5);
     expect(snapshot.recentJourneyRecaps.last.journeyNumber, 1);
     expect(snapshot.recentJourneyRecaps.last.petBondGained, 14);
+    expect(snapshot.recentJourneyRecaps.last.petBondRewards, isEmpty);
+  });
+
+  test('recap rejects a pet bond breakdown with a mismatched total', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['status'] = 'COMPLETED'
+      ..['unlockedEvent'] = null
+      ..['completionRecap'] = <String, dynamic>{
+        'journeyNumber': 1,
+        'decisionCount': 1,
+        'pilotExperienceGained': 42,
+        'petBondGained': 9,
+        'petBondRewards': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'petId': 'spark-v1',
+            'petName': 'Искра',
+            'bondGained': 8,
+          },
+        ],
+        'materials': <Map<String, dynamic>>[],
+      };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('recap rejects duplicate persisted pet identities', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['status'] = 'COMPLETED'
+      ..['unlockedEvent'] = null
+      ..['completionRecap'] = <String, dynamic>{
+        'journeyNumber': 1,
+        'decisionCount': 2,
+        'pilotExperienceGained': 42,
+        'petBondGained': 9,
+        'petBondRewards': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'petId': 'spark-v1',
+            'petName': 'Искра',
+            'bondGained': 4,
+          },
+          <String, dynamic>{
+            'petId': 'spark-v1',
+            'petName': 'Искра',
+            'bondGained': 5,
+          },
+        ],
+        'materials': <Map<String, dynamic>>[],
+      };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('recent journeys reject the current or a future journey', () {

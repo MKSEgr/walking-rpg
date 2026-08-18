@@ -183,7 +183,7 @@ class HomeServiceTest {
                                         "Эхо-нити из записи",
                                         2
                                 ),
-                                NOW.minusSeconds(60)
+                                NOW.minusSeconds(120)
                         ),
                         journeyEvent(
                                 StarterExpeditionContent.SECOND_EVENT_ID,
@@ -200,6 +200,24 @@ class HomeServiceTest {
                                         "echo-thread",
                                         "Эхо-нити из записи",
                                         3
+                                ),
+                                NOW.minusSeconds(60)
+                        ),
+                        journeyEvent(
+                                StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                                "Зеркальная дельта из записи",
+                                "follow-reflection",
+                                "Следовать за отражением",
+                                "Отражение принято",
+                                "Искра сохранила отклик дельты.",
+                                10,
+                                "spark-v1",
+                                "Искра из записи",
+                                3,
+                                new MaterialRewardPreviewSnapshot(
+                                        "echo-thread",
+                                        "Эхо-нити из записи",
+                                        1
                                 ),
                                 NOW
                         )
@@ -224,14 +242,25 @@ class HomeServiceTest {
 
         assertNotNull(recap);
         assertEquals(1, recap.journeyNumber());
-        assertEquals(2, recap.decisionCount());
-        assertEquals(60, recap.pilotExperienceGained());
-        assertEquals(20, recap.petBondGained());
+        assertEquals(3, recap.decisionCount());
+        assertEquals(70, recap.pilotExperienceGained());
+        assertEquals(23, recap.petBondGained());
+        assertEquals(2, recap.petBondRewards().size());
+        assertEquals("spark-v1",
+                recap.petBondRewards().getFirst().petId());
+        assertEquals("Искра из записи",
+                recap.petBondRewards().getFirst().petName());
+        assertEquals(8,
+                recap.petBondRewards().getFirst().bondGained());
+        assertEquals("moss-v1",
+                recap.petBondRewards().getLast().petId());
+        assertEquals(15,
+                recap.petBondRewards().getLast().bondGained());
         assertEquals(1, recap.materials().size());
         assertEquals("echo-thread", recap.materials().getFirst().itemId());
         assertEquals("Эхо-нити из записи",
                 recap.materials().getFirst().itemName());
-        assertEquals(5, recap.materials().getFirst().quantity());
+        assertEquals(6, recap.materials().getFirst().quantity());
     }
 
     @Test
@@ -343,10 +372,19 @@ class HomeServiceTest {
         assertEquals(3,
                 expedition.recentJourneyRecaps().getFirst()
                         .materials().getFirst().quantity());
+        assertEquals("spark-v1",
+                expedition.recentJourneyRecaps().getFirst()
+                        .petBondRewards().getFirst().petId());
+        assertEquals(7,
+                expedition.recentJourneyRecaps().getFirst()
+                        .petBondRewards().getFirst().bondGained());
         assertEquals(1,
                 expedition.recentJourneyRecaps().getLast().journeyNumber());
         assertEquals(5,
                 expedition.recentJourneyRecaps().getLast().petBondGained());
+        assertEquals("Мох",
+                expedition.recentJourneyRecaps().getLast()
+                        .petBondRewards().getFirst().petName());
     }
 
     @Test

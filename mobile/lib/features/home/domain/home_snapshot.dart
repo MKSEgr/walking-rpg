@@ -557,6 +557,7 @@ class HomeExpeditionCompletionRecap {
     required this.pilotExperienceGained,
     required this.petBondGained,
     required this.materials,
+    this.petBondRewards = const <HomeJourneyPetBondReward>[],
   });
 
   factory HomeExpeditionCompletionRecap.fromJson(Map<String, dynamic> json) {
@@ -574,6 +575,40 @@ class HomeExpeditionCompletionRecap {
       throw const FormatException(
         'Итог завершённого похода содержит отрицательное значение',
       );
+    }
+    final Object? petBondRewardsJson = json['petBondRewards'];
+    final List<HomeJourneyPetBondReward> petBondRewards;
+    if (petBondRewardsJson == null) {
+      petBondRewards = const <HomeJourneyPetBondReward>[];
+    } else {
+      if (petBondRewardsJson is! List<dynamic>) {
+        throw const FormatException(
+          'completionRecap.petBondRewards должен быть JSON-массивом',
+        );
+      }
+      petBondRewards = petBondRewardsJson
+          .map(
+            (Object? value) => HomeJourneyPetBondReward.fromJson(
+              _asMap(value, 'completionRecap.petBondRewards[]'),
+            ),
+          )
+          .toList(growable: false);
+      final Set<String> petIdentities = <String>{};
+      int bondTotal = 0;
+      for (final HomeJourneyPetBondReward reward in petBondRewards) {
+        final String identity = '${reward.petId}\u0000${reward.petName}';
+        if (!petIdentities.add(identity)) {
+          throw const FormatException(
+            'completionRecap.petBondRewards содержит повтор',
+          );
+        }
+        bondTotal += reward.bondGained;
+      }
+      if (bondTotal != petBondGained) {
+        throw const FormatException(
+          'completionRecap.petBondRewards не совпадает с общим итогом',
+        );
+      }
     }
     final Object? materialsJson = json['materials'];
     if (materialsJson is! List<dynamic>) {
@@ -602,6 +637,7 @@ class HomeExpeditionCompletionRecap {
       decisionCount: decisionCount,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
+      petBondRewards: petBondRewards,
       materials: materials,
     );
   }
@@ -610,10 +646,37 @@ class HomeExpeditionCompletionRecap {
   final int decisionCount;
   final int pilotExperienceGained;
   final int petBondGained;
+  final List<HomeJourneyPetBondReward> petBondRewards;
   final List<HomeJourneyMaterialReward> materials;
 
   bool get hasRewards =>
       pilotExperienceGained > 0 || petBondGained > 0 || materials.isNotEmpty;
+}
+
+class HomeJourneyPetBondReward {
+  const HomeJourneyPetBondReward({
+    required this.petId,
+    required this.petName,
+    required this.bondGained,
+  });
+
+  factory HomeJourneyPetBondReward.fromJson(Map<String, dynamic> json) {
+    final int bondGained = HomeSnapshot._readInt(json, 'bondGained');
+    if (bondGained <= 0) {
+      throw const FormatException(
+        'Количество связи питомца должно быть положительным',
+      );
+    }
+    return HomeJourneyPetBondReward(
+      petId: HomeSnapshot._readString(json, 'petId'),
+      petName: HomeSnapshot._readString(json, 'petName'),
+      bondGained: bondGained,
+    );
+  }
+
+  final String petId;
+  final String petName;
+  final int bondGained;
 }
 
 class HomeJourneyMaterialReward {

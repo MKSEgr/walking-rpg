@@ -814,10 +814,18 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                         icon: Icons.star_outline,
                         label: '+${recap.pilotExperienceGained} XP пилота',
                       ),
-                    if (recap.petBondGained > 0)
+                    if (recap.petBondRewards.isEmpty && recap.petBondGained > 0)
                       _JourneyRewardChip(
                         icon: Icons.favorite_border,
                         label: '+${recap.petBondGained} связи спутников',
+                      ),
+                    for (final HomeJourneyPetBondReward reward
+                        in recap.petBondRewards)
+                      _JourneyRewardChip(
+                        icon: Icons.favorite_border,
+                        label:
+                            '${reward.petName} · '
+                            '+${reward.bondGained} связи',
                       ),
                     for (final HomeJourneyMaterialReward material
                         in recap.materials)
@@ -935,10 +943,19 @@ class _JourneyArchiveEntry extends StatelessWidget {
                           icon: Icons.star_outline,
                           label: '+${recap.pilotExperienceGained} XP пилота',
                         ),
-                      if (recap.petBondGained > 0)
+                      if (recap.petBondRewards.isEmpty &&
+                          recap.petBondGained > 0)
                         _JourneyRewardChip(
                           icon: Icons.favorite_border,
                           label: '+${recap.petBondGained} связи спутников',
+                        ),
+                      for (final HomeJourneyPetBondReward reward
+                          in recap.petBondRewards)
+                        _JourneyRewardChip(
+                          icon: Icons.favorite_border,
+                          label:
+                              '${reward.petName} · '
+                              '+${reward.bondGained} связи',
                         ),
                       for (final HomeJourneyMaterialReward material
                           in recap.materials)
@@ -961,7 +978,10 @@ List<String> _journeyRecapRewardLabels(HomeExpeditionCompletionRecap recap) {
   return <String>[
     if (recap.pilotExperienceGained > 0)
       '+${recap.pilotExperienceGained} XP пилота',
-    if (recap.petBondGained > 0) '+${recap.petBondGained} связи спутников',
+    if (recap.petBondRewards.isEmpty && recap.petBondGained > 0)
+      '+${recap.petBondGained} связи спутников',
+    for (final HomeJourneyPetBondReward reward in recap.petBondRewards)
+      '${reward.petName}: +${reward.bondGained} связи',
     for (final HomeJourneyMaterialReward material in recap.materials)
       '+${material.quantity} ${material.itemName}',
   ];

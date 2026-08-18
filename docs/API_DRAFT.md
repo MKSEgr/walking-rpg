@@ -369,6 +369,18 @@ Authorization: Bearer <access-token>
     "decisionCount": 18,
     "pilotExperienceGained": 1240,
     "petBondGained": 620,
+    "petBondRewards": [
+      {
+        "petId": "spark-v1",
+        "petName": "Искра",
+        "bondGained": 240
+      },
+      {
+        "petId": "moss-v1",
+        "petName": "Мох",
+        "bondGained": 380
+      }
+    ],
     "materials": [
       {
         "itemId": "lumen-shard",
@@ -379,13 +391,19 @@ Authorization: Bearer <access-token>
   }
   ```
 
+  Additive `petBondRewards[]` группирует только положительную сохранённую связь
+  по persisted `petId + petName` в порядке первого появления. Сумма
+  `bondGained` равна совместимому общему `petBondGained`; legacy response без
+  массива остаётся валидным и показывает общий итог без имён питомцев.
+
 - `expedition.recentJourneyRecaps[]` — не более пяти итогов предыдущих
   завершённых походов, от нового к старому. Факт завершения определяется
   immutable receipt старта следующего `journeyNumber`, поэтому старый
   `expedition_status=COMPLETED` внутри event resolution после расширения главы
   не добавляет незавершённый или текущий поход в архив. Награды агрегируются
   из persisted event resolutions соответствующего похода по тем же правилам,
-  что `completionRecap`; legacy response без поля читается как пустой архив;
+  что `completionRecap`, включая ordered `petBondRewards[]`; legacy response
+  без поля читается как пустой архив;
 
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а

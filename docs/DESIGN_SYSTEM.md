@@ -937,9 +937,11 @@ When Home marks the current expedition `COMPLETED`, the journey places one
 code-native recap directly above the decision log. Its badge confirms the
 completed `journeyNumber`, while compact reward chips show the server-owned
 decision count, total pilot XP, combined companion bond and ordered material
-totals. The card never sums the visible decisions on-device: every displayed
-value comes from the additive Home `completionRecap` built from immutable event
-resolutions for that exact journey.
+totals. When additive pet bond detail is available, the combined companion
+chip becomes one named chip per persisted pet in first-appearance order. The
+card never sums the visible decisions on-device: every displayed value comes
+from the additive Home `completionRecap` built from immutable event resolutions
+for that exact journey.
 
 One container semantic announces completion, decision count and the same
 ordered reward list; all visual children are excluded from duplicate
@@ -954,8 +956,9 @@ invent totals.
 When earlier completed journeys exist, the journal places a compact archive
 directly below the current decision log. It shows at most five server-ordered
 recaps, newest first. Each entry repeats the authoritative journey number,
-decision count and persisted reward totals; mobile neither aggregates visible
-decisions nor looks up current content copy.
+decision count and persisted reward totals, including the same named companion
+bond breakdown when supplied; mobile neither aggregates visible decisions nor
+looks up current content copy.
 
 The server treats the immutable start receipt for journey N+1 as proof that
 journey N finished. This keeps an old event resolution whose historical status
@@ -965,6 +968,15 @@ completion card when applicable. One semantic container per archived journey
 announces its decision count and ordered reward list, with visual children
 excluded from duplicate output. Legacy snapshots without
 `recentJourneyRecaps` omit the archive.
+
+## Journey companion bond breakdown
+
+Current and archived recap cards retain the compatible combined bond total,
+but prefer ordered named companion chips when Home supplies
+`petBondRewards`. Each visual chip uses persisted pet copy and the semantic
+summary announces the same pet/name totals. Missing legacy detail falls back
+to one combined companion chip; an explicit breakdown is never reconstructed
+from current pet state, current content or the visible decision list.
 
 ## Next visual slices
 
