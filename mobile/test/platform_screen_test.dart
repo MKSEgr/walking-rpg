@@ -548,7 +548,10 @@ void main() {
     await _bringIntoView(tester, entry);
 
     expect(entry, findsOneWidget);
-    expect(find.text(decision.outcomeSummary), findsOneWidget);
+    expect(
+      find.descendant(of: entry, matching: find.text(decision.outcomeSummary)),
+      findsOneWidget,
+    );
     _expectNoLayoutException(tester);
     semantics.dispose();
   });

@@ -1099,6 +1099,7 @@ class _JourneyArchiveDecisionHistoryState
       children: <Widget>[
         Semantics(
           key: Key('$keyPrefix-toggle-semantics'),
+          container: true,
           button: true,
           label: _expanded
               ? 'Скрыть решения похода ${widget.journeyNumber}'
