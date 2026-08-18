@@ -1057,9 +1057,7 @@ class _JourneyArchiveEntry extends StatelessWidget {
         if (recap.decisions.isNotEmpty) ...<Widget>[
           const SizedBox(height: 8),
           _JourneyArchiveDecisionHistory(
-            key: Key(
-              'platform-journey-archive-${recap.journeyNumber}-history',
-            ),
+            key: Key('platform-journey-archive-${recap.journeyNumber}-history'),
             journeyNumber: recap.journeyNumber,
             decisions: recap.decisions,
           ),
@@ -1111,9 +1109,7 @@ class _JourneyArchiveDecisionHistoryState
             child: OutlinedButton.icon(
               key: Key('$keyPrefix-toggle'),
               onPressed: _toggle,
-              icon: Icon(
-                _expanded ? Icons.expand_less : Icons.expand_more,
-              ),
+              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
               label: Text(
                 _expanded
                     ? 'Скрыть решения'
@@ -1134,8 +1130,7 @@ class _JourneyArchiveDecisionHistoryState
               index: index,
               total: widget.decisions.length,
             ),
-            if (index < widget.decisions.length - 1)
-              const SizedBox(height: 10),
+            if (index < widget.decisions.length - 1) const SizedBox(height: 10),
           ],
         ],
       ],

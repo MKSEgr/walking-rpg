@@ -424,10 +424,7 @@ void main() {
     await tester.tap(historyToggle);
     await tester.pumpAndSettle();
 
-    expect(
-      find.bySemanticsLabel('Скрыть решения похода 3'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Скрыть решения похода 3'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-decision-signal-source-v1')),
       findsOneWidget,
