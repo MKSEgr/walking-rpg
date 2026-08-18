@@ -277,6 +277,157 @@ class HomeReadIntegrationTest {
     }
 
     @Test
+    void shouldReturnFiveRecentJourneysProvenByTheirSuccessors() {
+        activitySyncService.synchronize(command(6_842));
+        expeditionService.advance(new ExpeditionAdvanceCommand(
+                "home-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                20,
+                "history-current-advance"
+        ));
+        jdbcTemplate.update("""
+                INSERT INTO expedition_journey_cycle (
+                    user_id, expedition_id, journey_number,
+                    created_at, updated_at
+                ) VALUES (?, ?, 8, now(), now())
+                """, "home-user", StarterExpeditionContent.EXPEDITION_ID);
+        jdbcTemplate.update("""
+                INSERT INTO pilot_progress (
+                    user_id, pilot_id, level, current_experience,
+                    next_level_experience, version, created_at, updated_at
+                ) VALUES (?, 'navigator-v1', 1, 0, 100, 1, now(), now())
+                """, "home-user");
+        jdbcTemplate.update("""
+                INSERT INTO pet_progress (
+                    user_id, pet_id, level, bond, version,
+                    created_at, updated_at
+                ) VALUES (?, 'spark-v1', 1, 0, 1, now(), now())
+                """, "home-user");
+        jdbcTemplate.update("""
+                INSERT INTO processed_expedition_journey_start (
+                    user_id,
+                    expedition_id,
+                    idempotency_key,
+                    request_fingerprint,
+                    content_version,
+                    expedition_name,
+                    journey_number,
+                    progress_after,
+                    required_energy,
+                    expedition_version,
+                    expedition_status,
+                    current_node_id,
+                    current_node_name,
+                    server_time,
+                    created_at
+                )
+                SELECT ?, ?,
+                       'history-start-' || journey_number,
+                       repeat('a', 64),
+                       'chapter-1-v11',
+                       'Зов внешнего маяка',
+                       journey_number,
+                       0,
+                       30,
+                       journey_number,
+                       'IN_PROGRESS',
+                       'outer-beacon',
+                       'Внешний маяк',
+                       now(),
+                       now()
+                FROM generate_series(2, 8) AS generated(journey_number)
+                """, "home-user", StarterExpeditionContent.EXPEDITION_ID);
+        jdbcTemplate.update("""
+                INSERT INTO processed_event_resolution (
+                    user_id,
+                    expedition_id,
+                    event_id,
+                    idempotency_key,
+                    request_fingerprint,
+                    content_version,
+                    expedition_status,
+                    expedition_version,
+                    event_title,
+                    resolution_status,
+                    choice_id,
+                    choice_title,
+                    outcome_title,
+                    outcome_summary,
+                    pilot_id,
+                    pilot_name,
+                    pilot_level_after,
+                    pilot_experience_gained,
+                    pilot_experience_after,
+                    pilot_next_level_experience,
+                    pilot_version,
+                    pet_id,
+                    pet_name,
+                    pet_level_after,
+                    pet_bond_gained,
+                    pet_bond_after,
+                    pet_version,
+                    server_time,
+                    created_at,
+                    journey_number
+                )
+                SELECT ?, ?,
+                       ?,
+                       'history-resolution-' || journey_number,
+                       repeat('b', 64),
+                       'chapter-1-v11',
+                       'COMPLETED',
+                       journey_number,
+                       'Событие похода ' || journey_number,
+                       'RESOLVED',
+                       'history-choice',
+                       'Сохранить маршрут',
+                       'Маршрут сохранён',
+                       'Решение из неизменяемой истории.',
+                       'navigator-v1',
+                       'Навигатор',
+                       1,
+                       journey_number,
+                       journey_number,
+                       100,
+                       journey_number,
+                       'spark-v1',
+                       'Искра',
+                       1,
+                       journey_number,
+                       journey_number,
+                       journey_number,
+                       now(),
+                       now(),
+                       journey_number
+                FROM generate_series(1, 8) AS generated(journey_number)
+                """,
+                "home-user",
+                StarterExpeditionContent.EXPEDITION_ID,
+                StarterExpeditionContent.FIRST_EVENT_ID
+        );
+
+        var expedition = homeService.getSnapshot(
+                new HomeQuery("home-user", ACTIVITY_DATE)
+        ).expedition();
+
+        assertNull(expedition.completionRecap());
+        assertEquals(
+                List.of(7L, 6L, 5L, 4L, 3L),
+                expedition.recentJourneyRecaps().stream()
+                        .map(recap -> recap.journeyNumber())
+                        .toList()
+        );
+        assertEquals(
+                List.of(7L, 6L, 5L, 4L, 3L),
+                expedition.recentJourneyRecaps().stream()
+                        .map(recap -> recap.pilotExperienceGained())
+                        .toList()
+        );
+        assertEquals(1,
+                expedition.recentJourneyRecaps().getFirst().decisionCount());
+    }
+
+    @Test
     void shouldAnchorHomeServerTimeToFirstDatabaseSnapshotStatement()
             throws Exception {
         jdbcTemplate.update("""

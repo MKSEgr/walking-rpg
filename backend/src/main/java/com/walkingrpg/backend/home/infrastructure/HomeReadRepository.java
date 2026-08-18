@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 
 public interface HomeReadRepository {
@@ -25,5 +26,12 @@ public interface HomeReadRepository {
             String userId,
             String expeditionId,
             long journeyNumber
+    );
+
+    List<ExpeditionJourneyHistory> findRecentCompletedJourneys(
+            String userId,
+            String expeditionId,
+            long currentJourneyNumber,
+            int limit
     );
 }

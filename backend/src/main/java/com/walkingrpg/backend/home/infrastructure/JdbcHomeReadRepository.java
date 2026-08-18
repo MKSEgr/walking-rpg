@@ -1,14 +1,18 @@
 package com.walkingrpg.backend.home.infrastructure;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
@@ -72,33 +76,109 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                   AND expedition_id = ?
                   AND journey_number = ?
                 ORDER BY expedition_version, receipt_id
-                """, (resultSet, rowNumber) -> {
-            Long materialQuantity = resultSet.getObject(
-                    "material_quantity_gained",
-                    Long.class
-            );
-            MaterialRewardPreviewSnapshot material = materialQuantity == null
-                    ? null
-                    : new MaterialRewardPreviewSnapshot(
-                            resultSet.getString("material_item_id"),
-                            resultSet.getString("material_item_name"),
-                            materialQuantity
-                    );
-            return new ExpeditionJourneyEvent(
-                    resultSet.getString("event_id"),
-                    resultSet.getString("event_title"),
-                    resultSet.getString("choice_id"),
-                    resultSet.getString("choice_title"),
-                    resultSet.getString("outcome_title"),
-                    resultSet.getString("outcome_summary"),
-                    resultSet.getInt("pilot_experience_gained"),
-                    resultSet.getString("pet_id"),
-                    resultSet.getString("pet_name"),
-                    resultSet.getInt("pet_bond_gained"),
-                    material,
-                    resultSet.getTimestamp("server_time").toInstant()
-            );
-        }, userId, expeditionId, journeyNumber);
+                """, (resultSet, rowNumber) -> journeyEvent(resultSet),
+                userId, expeditionId, journeyNumber);
+    }
+
+    @Override
+    public List<ExpeditionJourneyHistory> findRecentCompletedJourneys(
+            String userId,
+            String expeditionId,
+            long currentJourneyNumber,
+            int limit
+    ) {
+        return jdbcTemplate.query("""
+                WITH recent_completed_journey AS (
+                    SELECT DISTINCT
+                           journey_number - 1 AS completed_journey_number
+                    FROM processed_expedition_journey_start
+                    WHERE user_id = ?
+                      AND expedition_id = ?
+                      AND journey_number <= ?
+                    ORDER BY completed_journey_number DESC
+                    LIMIT ?
+                )
+                SELECT resolution.journey_number,
+                       resolution.event_id,
+                       resolution.event_title,
+                       resolution.choice_id,
+                       resolution.choice_title,
+                       resolution.outcome_title,
+                       resolution.outcome_summary,
+                       resolution.pilot_experience_gained,
+                       resolution.pet_id,
+                       resolution.pet_name,
+                       resolution.pet_bond_gained,
+                       resolution.material_item_id,
+                       resolution.material_item_name,
+                       resolution.material_quantity_gained,
+                       resolution.server_time
+                FROM recent_completed_journey completed
+                JOIN processed_event_resolution resolution
+                 ON resolution.user_id = ?
+                 AND resolution.expedition_id = ?
+                 AND resolution.journey_number =
+                         completed.completed_journey_number
+                ORDER BY resolution.journey_number DESC,
+                         resolution.expedition_version,
+                         resolution.receipt_id
+                """, resultSet -> {
+            List<ExpeditionJourneyHistory> histories = new ArrayList<>();
+            List<ExpeditionJourneyEvent> events = null;
+            long journeyNumber = -1;
+            while (resultSet.next()) {
+                long rowJourneyNumber = resultSet.getLong("journey_number");
+                if (rowJourneyNumber != journeyNumber) {
+                    if (events != null) {
+                        histories.add(new ExpeditionJourneyHistory(
+                                journeyNumber,
+                                events
+                        ));
+                    }
+                    journeyNumber = rowJourneyNumber;
+                    events = new ArrayList<>();
+                }
+                events.add(journeyEvent(resultSet));
+            }
+            if (events != null) {
+                histories.add(new ExpeditionJourneyHistory(
+                        journeyNumber,
+                        events
+                ));
+            }
+            return List.copyOf(histories);
+        }, userId, expeditionId, currentJourneyNumber, limit,
+                userId, expeditionId);
+    }
+
+    private ExpeditionJourneyEvent journeyEvent(
+            ResultSet resultSet
+    ) throws SQLException {
+        Long materialQuantity = resultSet.getObject(
+                "material_quantity_gained",
+                Long.class
+        );
+        MaterialRewardPreviewSnapshot material = materialQuantity == null
+                ? null
+                : new MaterialRewardPreviewSnapshot(
+                        resultSet.getString("material_item_id"),
+                        resultSet.getString("material_item_name"),
+                        materialQuantity
+                );
+        return new ExpeditionJourneyEvent(
+                resultSet.getString("event_id"),
+                resultSet.getString("event_title"),
+                resultSet.getString("choice_id"),
+                resultSet.getString("choice_title"),
+                resultSet.getString("outcome_title"),
+                resultSet.getString("outcome_summary"),
+                resultSet.getInt("pilot_experience_gained"),
+                resultSet.getString("pet_id"),
+                resultSet.getString("pet_name"),
+                resultSet.getInt("pet_bond_gained"),
+                material,
+                resultSet.getTimestamp("server_time").toInstant()
+        );
     }
 
     @Override

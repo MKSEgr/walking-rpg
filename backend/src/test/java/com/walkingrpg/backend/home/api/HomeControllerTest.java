@@ -16,6 +16,7 @@ import com.walkingrpg.backend.home.application.HomeQueryFactory;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.application.StarterHomeContent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
@@ -350,6 +351,121 @@ class HomeControllerTest {
     }
 
     @Test
+    void shouldReturnRecentCompletedJourneyRecaps() throws Exception {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        HomeRuntimeState state = new HomeRuntimeState(
+                0,
+                0,
+                "Europe/Berlin",
+                null,
+                0,
+                0,
+                0,
+                30,
+                "IN_PROGRESS",
+                5,
+                3,
+                StarterExpeditionContent.FIRST_NODE_ID,
+                null,
+                false,
+                0,
+                0,
+                0,
+                "spark-v1",
+                false,
+                0,
+                0,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of()
+        );
+        HomeReadRepository repository = repository(
+                state,
+                List.of(),
+                List.of(new ExpeditionJourneyHistory(
+                        2,
+                        List.of(new ExpeditionJourneyEvent(
+                                StarterExpeditionContent.SECOND_EVENT_ID,
+                                "Сердце маяка из записи",
+                                "stabilize-core",
+                                "Стабилизировать ядро",
+                                "Ровный импульс",
+                                "Второй маршрут сохранён.",
+                                48,
+                                "spark-v1",
+                                "Искра из записи",
+                                11,
+                                null,
+                                Instant.parse("2026-07-25T11:58:00Z")
+                        ))
+                ))
+        );
+        DailyGoalPolicyProperties goalProperties =
+                new DailyGoalPolicyProperties(
+                        "adaptive-median-v1",
+                        7,
+                        3,
+                        6_000,
+                        2_000,
+                        12_000,
+                        5,
+                        250
+                );
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(
+                        Instant.parse("2026-07-25T12:00:00Z"),
+                        ZoneOffset.UTC
+                )
+        );
+        MockMvc archiveMockMvc = MockMvcBuilders.standaloneSetup(
+                        new HomeController(
+                                new HomeQueryFactory(),
+                                service,
+                                FixedRequestIdentityProvider.user("user-1")
+                        )
+                )
+                .setControllerAdvice(new ApiExceptionHandler())
+                .build();
+
+        archiveMockMvc.perform(get("/api/v1/home")
+                        .queryParam("localDate", "2026-07-25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps.length()"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0].journeyNumber"
+                ).value(2))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0].decisionCount"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".pilotExperienceGained"
+                ).value(48))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0].petBondGained"
+                ).value(11));
+    }
+
+    @Test
     void shouldRejectInvalidDateWithStableError() throws Exception {
         mockMvc.perform(get("/api/v1/home")
                         .queryParam("localDate", "25.07.2026"))
@@ -366,6 +482,14 @@ class HomeControllerTest {
     private HomeReadRepository repository(
             HomeRuntimeState state,
             List<ExpeditionJourneyEvent> journeyEvents
+    ) {
+        return repository(state, journeyEvents, List.of());
+    }
+
+    private HomeReadRepository repository(
+            HomeRuntimeState state,
+            List<ExpeditionJourneyEvent> journeyEvents,
+            List<ExpeditionJourneyHistory> recentJourneyHistory
     ) {
         return new HomeReadRepository() {
             @Override
@@ -392,6 +516,16 @@ class HomeControllerTest {
                     long journeyNumber
             ) {
                 return journeyEvents;
+            }
+
+            @Override
+            public List<ExpeditionJourneyHistory> findRecentCompletedJourneys(
+                    String userId,
+                    String expeditionId,
+                    long currentJourneyNumber,
+                    int limit
+            ) {
+                return recentJourneyHistory;
             }
         };
     }

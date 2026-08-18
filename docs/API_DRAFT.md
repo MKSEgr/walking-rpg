@@ -326,6 +326,7 @@ Authorization: Bearer <access-token>
       }
     ],
     "completionRecap": null,
+    "recentJourneyRecaps": [],
     "unlockedEvent": null
   }
 }
@@ -377,6 +378,14 @@ Authorization: Bearer <access-token>
     ]
   }
   ```
+
+- `expedition.recentJourneyRecaps[]` — не более пяти итогов предыдущих
+  завершённых походов, от нового к старому. Факт завершения определяется
+  immutable receipt старта следующего `journeyNumber`, поэтому старый
+  `expedition_status=COMPLETED` внутри event resolution после расширения главы
+  не добавляет незавершённый или текущий поход в архив. Награды агрегируются
+  из persisted event resolutions соответствующего похода по тем же правилам,
+  что `completionRecap`; legacy response без поля читается как пустой архив;
 
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а

@@ -949,6 +949,23 @@ In-progress and newly started journeys omit the card, while legacy completed
 snapshots without `completionRecap` keep the decision log usable and do not
 invent totals.
 
+## Recent journey archive
+
+When earlier completed journeys exist, the journal places a compact archive
+directly below the current decision log. It shows at most five server-ordered
+recaps, newest first. Each entry repeats the authoritative journey number,
+decision count and persisted reward totals; mobile neither aggregates visible
+decisions nor looks up current content copy.
+
+The server treats the immutable start receipt for journey N+1 as proof that
+journey N finished. This keeps an old event resolution whose historical status
+was `COMPLETED` from becoming a false archive entry after a chapter extension.
+The current journey is always outside the archive and keeps its separate
+completion card when applicable. One semantic container per archived journey
+announces its decision count and ordered reward list, with visual children
+excluded from duplicate output. Legacy snapshots without
+`recentJourneyRecaps` omit the archive.
+
 ## Next visual slices
 
 1. Extend the four pivotal event scenes across the remaining first-chapter

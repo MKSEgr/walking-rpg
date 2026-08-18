@@ -15,6 +15,7 @@ import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
@@ -231,6 +232,121 @@ class HomeServiceTest {
         assertEquals("Эхо-нити из записи",
                 recap.materials().getFirst().itemName());
         assertEquals(5, recap.materials().getFirst().quantity());
+    }
+
+    @Test
+    void shouldProjectRecentCompletedJourneyRecapsInRepositoryOrder() {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        HomeRuntimeState state = new HomeRuntimeState(
+                0,
+                0,
+                "Europe/Berlin",
+                null,
+                0,
+                0,
+                0,
+                30,
+                "IN_PROGRESS",
+                9,
+                3,
+                StarterExpeditionContent.FIRST_NODE_ID,
+                null,
+                false,
+                0,
+                0,
+                0,
+                "spark-v1",
+                false,
+                0,
+                0,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of()
+        );
+        HomeReadRepository repository = repository(
+                state,
+                List.of(),
+                List.of(
+                        new ExpeditionJourneyHistory(
+                                2,
+                                List.of(journeyEvent(
+                                        StarterExpeditionContent.SECOND_EVENT_ID,
+                                        "Сердце второго похода",
+                                        "stabilize-core",
+                                        "Стабилизировать ядро",
+                                        "Ровный импульс",
+                                        "Второй маршрут сохранён.",
+                                        20,
+                                        "spark-v1",
+                                        "Искра",
+                                        7,
+                                        new MaterialRewardPreviewSnapshot(
+                                                "echo-thread",
+                                                "Эхо-нити",
+                                                3
+                                        ),
+                                        NOW
+                                ))
+                        ),
+                        new ExpeditionJourneyHistory(
+                                1,
+                                List.of(journeyEvent(
+                                        StarterExpeditionContent.FIRST_EVENT_ID,
+                                        "Сигнал первого похода",
+                                        "analyze-signal",
+                                        "Разобрать сигнал",
+                                        "Карта отклика",
+                                        "Первый маршрут сохранён.",
+                                        40,
+                                        "moss-v1",
+                                        "Мох",
+                                        5,
+                                        null,
+                                        NOW.minusSeconds(60)
+                                ))
+                        )
+                )
+        );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        var expedition = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        ).expedition();
+
+        assertNull(expedition.completionRecap());
+        assertEquals(2, expedition.recentJourneyRecaps().size());
+        assertEquals(2,
+                expedition.recentJourneyRecaps().getFirst().journeyNumber());
+        assertEquals(20,
+                expedition.recentJourneyRecaps().getFirst()
+                        .pilotExperienceGained());
+        assertEquals(3,
+                expedition.recentJourneyRecaps().getFirst()
+                        .materials().getFirst().quantity());
+        assertEquals(1,
+                expedition.recentJourneyRecaps().getLast().journeyNumber());
+        assertEquals(5,
+                expedition.recentJourneyRecaps().getLast().petBondGained());
     }
 
     @Test
@@ -496,6 +612,14 @@ class HomeServiceTest {
             HomeRuntimeState state,
             List<ExpeditionJourneyEvent> journeyEvents
     ) {
+        return repository(state, journeyEvents, List.of());
+    }
+
+    private HomeReadRepository repository(
+            HomeRuntimeState state,
+            List<ExpeditionJourneyEvent> journeyEvents,
+            List<ExpeditionJourneyHistory> recentJourneyHistory
+    ) {
         return new HomeReadRepository() {
             @Override
             public HomeRuntimeState findState(
@@ -521,6 +645,16 @@ class HomeServiceTest {
                     long journeyNumber
             ) {
                 return journeyEvents;
+            }
+
+            @Override
+            public List<ExpeditionJourneyHistory> findRecentCompletedJourneys(
+                    String userId,
+                    String expeditionId,
+                    long currentJourneyNumber,
+                    int limit
+            ) {
+                return recentJourneyHistory;
             }
         };
     }

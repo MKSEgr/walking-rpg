@@ -38,6 +38,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionRouteNodeSnapshot;
 import com.walkingrpg.backend.home.domain.HomeQuery;
@@ -64,6 +65,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class HomeService {
+
+    private static final int RECENT_JOURNEY_RECAP_LIMIT = 5;
 
     private final HomeReadRepository repository;
     private final StarterHomeContent starterContent;
@@ -225,6 +228,19 @@ public class HomeService {
                 : expeditionContent.requireNode(state.currentNodeId());
         List<EquipmentSlotState> equipment = equipmentStates(query.userId());
         Set<String> unlockedSkills = skillAccess.unlockedSkills(query.userId());
+        List<ExpeditionJourneyEvent> journeyEvents =
+                repository.findJourneyEvents(
+                        query.userId(),
+                        initialDefinition.expeditionId(),
+                        state.expeditionJourneyNumber()
+                );
+        List<ExpeditionJourneyHistory> recentJourneyHistory =
+                repository.findRecentCompletedJourneys(
+                        query.userId(),
+                        initialDefinition.expeditionId(),
+                        state.expeditionJourneyNumber(),
+                        RECENT_JOURNEY_RECAP_LIMIT
+                );
 
         return new HomeSnapshotResponse(
                 query.localDate(),
@@ -248,11 +264,8 @@ public class HomeService {
                         state,
                         activeContentVersion,
                         unlockedSkills,
-                        repository.findJourneyEvents(
-                                query.userId(),
-                                initialDefinition.expeditionId(),
-                                state.expeditionJourneyNumber()
-                        )
+                        journeyEvents,
+                        recentJourneyHistory
                 ),
                 craftingSnapshots(state, activeContentVersion),
                 itemUpgradeSnapshots(state, activeContentVersion)
@@ -472,7 +485,8 @@ public class HomeService {
             HomeRuntimeState state,
             String activeContentVersion,
             Set<String> unlockedSkills,
-            List<ExpeditionJourneyEvent> journeyEvents
+            List<ExpeditionJourneyEvent> journeyEvents,
+            List<ExpeditionJourneyHistory> recentJourneyHistory
     ) {
         long requiredEnergy = state.expeditionRequiredEnergy() > 0
                 ? state.expeditionRequiredEnergy()
@@ -500,6 +514,7 @@ public class HomeService {
                         state.expeditionJourneyNumber(),
                         journeyEvents
                 ),
+                recentJourneyRecaps(recentJourneyHistory),
                 eventSnapshot(
                         definition,
                         state,
@@ -574,7 +589,24 @@ public class HomeService {
         )) {
             return null;
         }
+        return journeyRecap(journeyNumber, journeyEvents);
+    }
 
+    private List<ExpeditionCompletionRecapSnapshot> recentJourneyRecaps(
+            List<ExpeditionJourneyHistory> histories
+    ) {
+        return histories.stream()
+                .map(history -> journeyRecap(
+                        history.journeyNumber(),
+                        history.events()
+                ))
+                .toList();
+    }
+
+    private ExpeditionCompletionRecapSnapshot journeyRecap(
+            long journeyNumber,
+            List<ExpeditionJourneyEvent> journeyEvents
+    ) {
         long pilotExperienceGained = 0;
         long petBondGained = 0;
         Map<MaterialIdentity, Long> materials = new LinkedHashMap<>();
