@@ -188,6 +188,15 @@ void main() {
       completionRecap: const HomeExpeditionCompletionRecap(
         journeyNumber: 4,
         decisionCount: 2,
+        finalDecision: HomeJourneyFinalDecision(
+          eventId: 'lumen-gate-v1',
+          eventTitle: 'Люминовые ворота',
+          choiceId: 'stabilize-core',
+          choiceTitle: 'Стабилизировать ядро',
+          outcomeTitle: 'Ровный импульс',
+          outcomeSummary: 'Ворота удержали курс экспедиции.',
+          resolvedAt: '2026-07-26T06:12:00Z',
+        ),
         pilotExperienceGained: 60,
         petBondGained: 23,
         petBondRewards: <HomeJourneyPetBondReward>[
@@ -233,6 +242,12 @@ void main() {
     expect(find.text('Итог похода'), findsOneWidget);
     expect(find.text('ПОХОД №4 ЗАВЕРШЁН'), findsOneWidget);
     expect(find.text('Принято решений: 2'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-completion-final')),
+      findsOneWidget,
+    );
+    expect(find.text('Финал маршрута'), findsOneWidget);
+    expect(find.text('Стабилизировать ядро → Ровный импульс'), findsOneWidget);
     expect(find.text('+60 XP пилота'), findsOneWidget);
     expect(find.text('Искра · +9 связи'), findsOneWidget);
     expect(find.text('Мох · +14 связи'), findsOneWidget);
@@ -241,6 +256,8 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Поход 4 завершён. Принято решений: 2. '
+        'Финал: Люминовые ворота. Решение: Стабилизировать ядро. '
+        'Исход: Ровный импульс. Ворота удержали курс экспедиции. '
         'Итоговые награды: +60 XP пилота; Искра: +9 связи; '
         'Мох: +14 связи; +5 Эхо-нити.',
       ),
@@ -261,6 +278,15 @@ void main() {
         HomeExpeditionCompletionRecap(
           journeyNumber: 3,
           decisionCount: 3,
+          finalDecision: HomeJourneyFinalDecision(
+            eventId: 'echo-vault-v1',
+            eventTitle: 'Сердце маяка',
+            choiceId: 'stabilize-core',
+            choiceTitle: 'Стабилизировать ядро',
+            outcomeTitle: 'Ровный импульс',
+            outcomeSummary: 'Второй маршрут сохранён.',
+            resolvedAt: '2026-07-26T06:02:00Z',
+          ),
           pilotExperienceGained: 90,
           petBondGained: 21,
           petBondRewards: <HomeJourneyPetBondReward>[
@@ -312,11 +338,18 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Поход 3. Принято решений: 3. '
+        'Финал: Сердце маяка. Решение: Стабилизировать ядро. '
+        'Исход: Ровный импульс. Второй маршрут сохранён. '
         'Итоговые награды: +90 XP пилота; Навигатор: +21 связи; '
         '+6 Эхо-нити.',
       ),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const Key('platform-journey-archive-3-final')),
+      findsOneWidget,
+    );
+    expect(find.text('Стабилизировать ядро → Ровный импульс'), findsOneWidget);
     expect(find.text('Навигатор · +21 связи'), findsOneWidget);
     final Finder previous = find.byKey(const Key('platform-journey-archive-2'));
     await _bringIntoView(tester, previous);

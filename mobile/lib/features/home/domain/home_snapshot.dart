@@ -557,6 +557,7 @@ class HomeExpeditionCompletionRecap {
     required this.pilotExperienceGained,
     required this.petBondGained,
     required this.materials,
+    this.finalDecision,
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
   });
 
@@ -574,6 +575,17 @@ class HomeExpeditionCompletionRecap {
         petBondGained < 0) {
       throw const FormatException(
         'Итог завершённого похода содержит отрицательное значение',
+      );
+    }
+    final Object? finalDecisionJson = json['finalDecision'];
+    final HomeJourneyFinalDecision? finalDecision = finalDecisionJson == null
+        ? null
+        : HomeJourneyFinalDecision.fromJson(
+            _asMap(finalDecisionJson, 'completionRecap.finalDecision'),
+          );
+    if (finalDecision != null && decisionCount == 0) {
+      throw const FormatException(
+        'finalDecision требует хотя бы одного решения',
       );
     }
     final Object? petBondRewardsJson = json['petBondRewards'];
@@ -635,6 +647,7 @@ class HomeExpeditionCompletionRecap {
     return HomeExpeditionCompletionRecap(
       journeyNumber: journeyNumber,
       decisionCount: decisionCount,
+      finalDecision: finalDecision,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
       petBondRewards: petBondRewards,
@@ -644,6 +657,7 @@ class HomeExpeditionCompletionRecap {
 
   final int journeyNumber;
   final int decisionCount;
+  final HomeJourneyFinalDecision? finalDecision;
   final int pilotExperienceGained;
   final int petBondGained;
   final List<HomeJourneyPetBondReward> petBondRewards;
@@ -651,6 +665,44 @@ class HomeExpeditionCompletionRecap {
 
   bool get hasRewards =>
       pilotExperienceGained > 0 || petBondGained > 0 || materials.isNotEmpty;
+}
+
+class HomeJourneyFinalDecision {
+  const HomeJourneyFinalDecision({
+    required this.eventId,
+    required this.eventTitle,
+    required this.choiceId,
+    required this.choiceTitle,
+    required this.outcomeTitle,
+    required this.outcomeSummary,
+    required this.resolvedAt,
+  });
+
+  factory HomeJourneyFinalDecision.fromJson(Map<String, dynamic> json) {
+    final String resolvedAt = HomeSnapshot._readString(json, 'resolvedAt');
+    if (DateTime.tryParse(resolvedAt) == null) {
+      throw const FormatException(
+        'finalDecision.resolvedAt должен быть ISO-8601 датой',
+      );
+    }
+    return HomeJourneyFinalDecision(
+      eventId: HomeSnapshot._readString(json, 'eventId'),
+      eventTitle: HomeSnapshot._readString(json, 'eventTitle'),
+      choiceId: HomeSnapshot._readString(json, 'choiceId'),
+      choiceTitle: HomeSnapshot._readString(json, 'choiceTitle'),
+      outcomeTitle: HomeSnapshot._readString(json, 'outcomeTitle'),
+      outcomeSummary: HomeSnapshot._readString(json, 'outcomeSummary'),
+      resolvedAt: resolvedAt,
+    );
+  }
+
+  final String eventId;
+  final String eventTitle;
+  final String choiceId;
+  final String choiceTitle;
+  final String outcomeTitle;
+  final String outcomeSummary;
+  final String resolvedAt;
 }
 
 class HomeJourneyPetBondReward {

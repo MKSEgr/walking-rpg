@@ -429,6 +429,19 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/API/PostgreSQL/parser/widget coverage aggregation, order, invalid
       sum, duplicate identity и legacy response
 
+## Milestone 21 — Completed journey finale
+
+### CODE_COMPLETE
+
+- [x] Additive nullable `finalDecision` в current и recent journey recaps из
+      последней ordered immutable event resolution exact-похода
+- [x] Persisted event/choice/outcome copy и `resolvedAt` без current-content,
+      node-ID или status inference
+- [x] Compact finale block перед наградами и тот же текст в единой recap
+      accessibility summary с legacy omission
+- [x] Unit/API/PostgreSQL/parser/widget coverage current, recent, exact copy,
+      invalid timestamp и legacy response
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

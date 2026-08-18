@@ -5,6 +5,7 @@ import java.util.List;
 public record ExpeditionCompletionRecapSnapshot(
         long journeyNumber,
         int decisionCount,
+        ExpeditionFinalDecisionSnapshot finalDecision,
         long pilotExperienceGained,
         long petBondGained,
         List<PetBondRewardSnapshot> petBondRewards,

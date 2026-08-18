@@ -766,12 +766,16 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
     final String rewardSummary = rewardLabels.isEmpty
         ? 'Наград нет.'
         : 'Итоговые награды: ${rewardLabels.join('; ')}.';
+    final String finalDecisionSummary = _journeyFinalDecisionSemantic(
+      recap.finalDecision,
+    );
     return Semantics(
       key: const Key('platform-journey-completion-recap'),
       container: true,
       label:
           'Поход ${recap.journeyNumber} завершён. '
-          'Принято решений: ${recap.decisionCount}. $rewardSummary',
+          'Принято решений: ${recap.decisionCount}. '
+          '$finalDecisionSummary$rewardSummary',
       child: ExcludeSemantics(
         child: ExpeditionPanel(
           tone: ExpeditionPanelTone.lumen,
@@ -798,6 +802,14 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                   color: colors.onSurfaceVariant,
                 ),
               ),
+              if (recap.finalDecision
+                  case final HomeJourneyFinalDecision decision) ...<Widget>[
+                const SizedBox(height: 12),
+                _JourneyFinalDecisionSummary(
+                  key: const Key('platform-journey-completion-final'),
+                  decision: decision,
+                ),
+              ],
               const SizedBox(height: 14),
               if (rewardLabels.isEmpty)
                 Text(
@@ -837,6 +849,59 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _JourneyFinalDecisionSummary extends StatelessWidget {
+  const _JourneyFinalDecisionSummary({super.key, required this.decision});
+
+  final HomeJourneyFinalDecision decision;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.secondaryContainer.withValues(alpha: 0.32),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Финал маршрута',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colors.secondary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              decision.eventTitle,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              '${decision.choiceTitle} → ${decision.outcomeTitle}',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              decision.outcomeSummary,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -899,12 +964,16 @@ class _JourneyArchiveEntry extends StatelessWidget {
     final String rewardSummary = rewardLabels.isEmpty
         ? 'Наград нет.'
         : 'Итоговые награды: ${rewardLabels.join('; ')}.';
+    final String finalDecisionSummary = _journeyFinalDecisionSemantic(
+      recap.finalDecision,
+    );
     return Semantics(
       key: Key('platform-journey-archive-${recap.journeyNumber}'),
       container: true,
       label:
           'Поход ${recap.journeyNumber}. '
-          'Принято решений: ${recap.decisionCount}. $rewardSummary',
+          'Принято решений: ${recap.decisionCount}. '
+          '$finalDecisionSummary$rewardSummary',
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -930,6 +999,16 @@ class _JourneyArchiveEntry extends StatelessWidget {
                     color: colors.onSurfaceVariant,
                   ),
                 ),
+                if (recap.finalDecision
+                    case final HomeJourneyFinalDecision decision) ...<Widget>[
+                  const SizedBox(height: 10),
+                  _JourneyFinalDecisionSummary(
+                    key: Key(
+                      'platform-journey-archive-${recap.journeyNumber}-final',
+                    ),
+                    decision: decision,
+                  ),
+                ],
                 const SizedBox(height: 10),
                 if (rewardLabels.isEmpty)
                   Text('Наград нет.', style: theme.textTheme.bodyMedium)
@@ -972,6 +1051,16 @@ class _JourneyArchiveEntry extends StatelessWidget {
       ),
     );
   }
+}
+
+String _journeyFinalDecisionSemantic(HomeJourneyFinalDecision? decision) {
+  if (decision == null) {
+    return '';
+  }
+  return 'Финал: ${decision.eventTitle}. '
+      'Решение: ${decision.choiceTitle}. '
+      'Исход: ${decision.outcomeTitle}. '
+      '${decision.outcomeSummary} ';
 }
 
 List<String> _journeyRecapRewardLabels(HomeExpeditionCompletionRecap recap) {

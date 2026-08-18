@@ -138,6 +138,8 @@ class HomeServiceTest {
 
         assertEquals("COMPLETED", snapshot.expedition().status());
         assertNull(snapshot.expedition().unlockedEvent());
+        assertNotNull(snapshot.expedition().completionRecap());
+        assertNull(snapshot.expedition().completionRecap().finalDecision());
         assertEquals(1, snapshot.expedition().routeTrail().size());
         assertEquals("COMPLETED",
                 snapshot.expedition().routeTrail().getFirst().state());
@@ -243,6 +245,18 @@ class HomeServiceTest {
         assertNotNull(recap);
         assertEquals(1, recap.journeyNumber());
         assertEquals(3, recap.decisionCount());
+        assertNotNull(recap.finalDecision());
+        assertEquals(StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                recap.finalDecision().eventId());
+        assertEquals("Зеркальная дельта из записи",
+                recap.finalDecision().eventTitle());
+        assertEquals("Следовать за отражением",
+                recap.finalDecision().choiceTitle());
+        assertEquals("Отражение принято",
+                recap.finalDecision().outcomeTitle());
+        assertEquals("Искра сохранила отклик дельты.",
+                recap.finalDecision().outcomeSummary());
+        assertEquals(NOW, recap.finalDecision().resolvedAt());
         assertEquals(70, recap.pilotExperienceGained());
         assertEquals(23, recap.petBondGained());
         assertEquals(2, recap.petBondRewards().size());
@@ -369,6 +383,12 @@ class HomeServiceTest {
         assertEquals(20,
                 expedition.recentJourneyRecaps().getFirst()
                         .pilotExperienceGained());
+        assertEquals("Сердце второго похода",
+                expedition.recentJourneyRecaps().getFirst()
+                        .finalDecision().eventTitle());
+        assertEquals("Ровный импульс",
+                expedition.recentJourneyRecaps().getFirst()
+                        .finalDecision().outcomeTitle());
         assertEquals(3,
                 expedition.recentJourneyRecaps().getFirst()
                         .materials().getFirst().quantity());
@@ -385,6 +405,9 @@ class HomeServiceTest {
         assertEquals("Мох",
                 expedition.recentJourneyRecaps().getLast()
                         .petBondRewards().getFirst().petName());
+        assertEquals("Карта отклика",
+                expedition.recentJourneyRecaps().getLast()
+                        .finalDecision().outcomeTitle());
     }
 
     @Test

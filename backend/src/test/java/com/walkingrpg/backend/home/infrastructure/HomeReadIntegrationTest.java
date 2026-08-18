@@ -425,6 +425,15 @@ class HomeReadIntegrationTest {
         );
         assertEquals(1,
                 expedition.recentJourneyRecaps().getFirst().decisionCount());
+        assertEquals("Событие похода 7",
+                expedition.recentJourneyRecaps().getFirst()
+                        .finalDecision().eventTitle());
+        assertEquals("Сохранить маршрут",
+                expedition.recentJourneyRecaps().getFirst()
+                        .finalDecision().choiceTitle());
+        assertEquals("Маршрут сохранён",
+                expedition.recentJourneyRecaps().getFirst()
+                        .finalDecision().outcomeTitle());
         assertEquals("spark-v1",
                 expedition.recentJourneyRecaps().getFirst()
                         .petBondRewards().getFirst().petId());
