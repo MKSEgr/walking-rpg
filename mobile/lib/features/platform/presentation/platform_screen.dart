@@ -856,10 +856,7 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
 }
 
 class _JourneyFinalDecisionSummary extends StatelessWidget {
-  const _JourneyFinalDecisionSummary({
-    super.key,
-    required this.decision,
-  });
+  const _JourneyFinalDecisionSummary({super.key, required this.decision});
 
   final HomeJourneyFinalDecision decision;
 

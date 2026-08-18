@@ -172,16 +172,10 @@ void main() {
     expect(recap?.journeyNumber, 2);
     expect(recap?.decisionCount, 3);
     expect(recap?.finalDecision?.eventId, 'mirror-delta-v1');
-    expect(
-      recap?.finalDecision?.eventTitle,
-      'Зеркальная дельта из записи',
-    );
+    expect(recap?.finalDecision?.eventTitle, 'Зеркальная дельта из записи');
     expect(recap?.finalDecision?.choiceTitle, 'Следовать за отражением');
     expect(recap?.finalDecision?.outcomeTitle, 'Отражение принято');
-    expect(
-      recap?.finalDecision?.resolvedAt,
-      '2026-07-26T06:12:00Z',
-    );
+    expect(recap?.finalDecision?.resolvedAt, '2026-07-26T06:12:00Z');
     expect(recap?.pilotExperienceGained, 96);
     expect(recap?.petBondGained, 24);
     expect(recap?.petBondRewards, hasLength(2));

@@ -247,10 +247,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Финал маршрута'), findsOneWidget);
-    expect(
-      find.text('Стабилизировать ядро → Ровный импульс'),
-      findsOneWidget,
-    );
+    expect(find.text('Стабилизировать ядро → Ровный импульс'), findsOneWidget);
     expect(find.text('+60 XP пилота'), findsOneWidget);
     expect(find.text('Искра · +9 связи'), findsOneWidget);
     expect(find.text('Мох · +14 связи'), findsOneWidget);
@@ -352,10 +349,7 @@ void main() {
       find.byKey(const Key('platform-journey-archive-3-final')),
       findsOneWidget,
     );
-    expect(
-      find.text('Стабилизировать ядро → Ровный импульс'),
-      findsOneWidget,
-    );
+    expect(find.text('Стабилизировать ядро → Ровный импульс'), findsOneWidget);
     expect(find.text('Навигатор · +21 связи'), findsOneWidget);
     final Finder previous = find.byKey(const Key('platform-journey-archive-2'));
     await _bringIntoView(tester, previous);
