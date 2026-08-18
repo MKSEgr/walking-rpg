@@ -24,11 +24,21 @@ void main() {
                     nodeId: 'outer-beacon',
                     nodeName: 'Внешний маяк',
                     state: 'VISITED',
+                    decision: ExpeditionRouteTrailDecision(
+                      choiceId: 'follow-pulse',
+                      choiceTitle: 'Пойти за импульсом',
+                      outcomeTitle: 'Найден маяк',
+                    ),
                   ),
                   ExpeditionRouteTrailNode(
                     nodeId: 'future-branch-v2',
                     nodeName: 'Неизвестная ветвь',
                     state: 'VISITED',
+                    decision: ExpeditionRouteTrailDecision(
+                      choiceId: 'keep-course',
+                      choiceTitle: 'Удержать курс',
+                      outcomeTitle: 'Тропа сохранена',
+                    ),
                   ),
                   ExpeditionRouteTrailNode(
                     nodeId: 'lumen-gate',
@@ -63,13 +73,25 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.byKey(const Key('expedition-route-decision-outer-beacon')),
+      findsOneWidget,
+    );
+    expect(find.text('Пойти за импульсом → Найден маяк'), findsOneWidget);
+    expect(
+      find.byKey(const Key('expedition-route-decision-lumen-gate')),
+      findsNothing,
+    );
+    expect(
       find.byKey(const Key('expedition-route-trail-connector')),
       findsNWidgets(2),
     );
     expect(
       find.bySemanticsLabel(
         'Маршрут похода: открыто узлов — 3. '
-        'Последняя точка: Люминовые ворота.',
+        'Последняя точка: Люминовые ворота. '
+        'Принятые решения: Внешний маяк: Пойти за импульсом → '
+        'Найден маяк; Неизвестная ветвь: Удержать курс → '
+        'Тропа сохранена.',
       ),
       findsOneWidget,
     );
@@ -101,5 +123,48 @@ void main() {
       find.byKey(const Key('expedition-route-trail-scroll')),
       findsNothing,
     );
+  });
+
+  testWidgets('long persisted decision copy stays bounded at large text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 240));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: const Scaffold(
+          body: ExpeditionRouteTrail(
+            nodes: <ExpeditionRouteTrailNode>[
+              ExpeditionRouteTrailNode(
+                nodeId: 'long-copy-node',
+                nodeName: 'Узел с очень длинным сохранённым названием',
+                state: 'COMPLETED',
+                decision: ExpeditionRouteTrailDecision(
+                  choiceId: 'persisted-choice',
+                  choiceTitle: 'Следовать по сохранённому световому коридору',
+                  outcomeTitle: 'Маршрут удержан вопреки нестабильному сигналу',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('expedition-route-decision-long-copy-node')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 }

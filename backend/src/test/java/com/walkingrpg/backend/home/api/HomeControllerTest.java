@@ -210,6 +210,17 @@ class HomeControllerTest {
         decisionLogMockMvc.perform(get("/api/v1/home")
                         .queryParam("localDate", "2026-07-25"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.expedition.routeTrail[0].decision.choiceId"
+                ).value("analyze-signal"))
+                .andExpect(jsonPath(
+                        "$.expedition.routeTrail[0].decision.choiceTitle"
+                ).value("Разобрать сигнал"))
+                .andExpect(jsonPath(
+                        "$.expedition.routeTrail[0].decision.outcomeTitle"
+                ).value("Карта отклика"))
+                .andExpect(jsonPath("$.expedition.routeTrail[1].decision")
+                        .doesNotExist())
                 .andExpect(jsonPath("$.expedition.decisionLog.length()")
                         .value(1))
                 .andExpect(jsonPath("$.expedition.decisionLog[0].eventId")

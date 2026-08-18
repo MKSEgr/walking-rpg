@@ -451,6 +451,7 @@ class HomeExpeditionRouteNode {
     required this.nodeId,
     required this.nodeName,
     required this.state,
+    this.decision,
   });
 
   factory HomeExpeditionRouteNode.fromJson(Map<String, dynamic> json) {
@@ -458,20 +459,47 @@ class HomeExpeditionRouteNode {
     if (!const <String>{'VISITED', 'CURRENT', 'COMPLETED'}.contains(state)) {
       throw FormatException('Неизвестное состояние routeTrail: $state');
     }
+    final Object? decisionJson = json['decision'];
     return HomeExpeditionRouteNode(
       nodeId: HomeSnapshot._readString(json, 'nodeId'),
       nodeName: HomeSnapshot._readString(json, 'nodeName'),
       state: state,
+      decision: decisionJson == null
+          ? null
+          : HomeExpeditionRouteDecision.fromJson(
+              _asMap(decisionJson, 'routeTrail[].decision'),
+            ),
     );
   }
 
   final String nodeId;
   final String nodeName;
   final String state;
+  final HomeExpeditionRouteDecision? decision;
 
   bool get isVisited => state == 'VISITED';
   bool get isCurrent => state == 'CURRENT';
   bool get isCompleted => state == 'COMPLETED';
+}
+
+class HomeExpeditionRouteDecision {
+  const HomeExpeditionRouteDecision({
+    required this.choiceId,
+    required this.choiceTitle,
+    required this.outcomeTitle,
+  });
+
+  factory HomeExpeditionRouteDecision.fromJson(Map<String, dynamic> json) {
+    return HomeExpeditionRouteDecision(
+      choiceId: HomeSnapshot._readString(json, 'choiceId'),
+      choiceTitle: HomeSnapshot._readString(json, 'choiceTitle'),
+      outcomeTitle: HomeSnapshot._readString(json, 'outcomeTitle'),
+    );
+  }
+
+  final String choiceId;
+  final String choiceTitle;
+  final String outcomeTitle;
 }
 
 class HomeExpeditionDecisionLogEntry {

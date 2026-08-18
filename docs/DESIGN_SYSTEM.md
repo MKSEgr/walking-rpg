@@ -901,15 +901,22 @@ owns ordering, node identity, display name and literal `VISITED`, `CURRENT` or
 `COMPLETED` state. The viewport opens on the last accepted point while the
 player can scroll back through the path already taken.
 
+Resolved points may carry one additive server-owned `decision`. A compact
+second label places the persisted choice before its persisted outcome with the
+same directional arrow used by the journal. The completed terminal keeps that
+annotation when its state changes from `VISITED` to `COMPLETED`; an unresolved
+current point reserves the same geometry but shows no invented copy.
+
 The trail never loads or reconstructs the chapter graph on-device. It does not
 show future nodes, optional branches, GPS position or real-time walking. A new
 `journeyNumber` therefore begins with one current node even though permanent
 pilot, pet and inventory progression remains. Unknown future node IDs retain
 their server name and the same state geometry; visual identity is not inferred
-from names or content versions. One localized summary owns semantics, while
-node labels and state-specific icon geometry keep the visual map readable
-without relying on color alone. Legacy snapshots without `routeTrail` simply
-omit the map and retain the existing ENERGY progress signal.
+from names or content versions. One localized summary owns semantics and
+repeats the ordered node/choice/outcome sequence, while node labels and
+state-specific icon geometry keep the visual map readable without relying on
+color alone. Legacy snapshots without `routeTrail` simply omit the map; route
+nodes without the additive `decision` retain the original compact presentation.
 
 ## Current journey decision log
 

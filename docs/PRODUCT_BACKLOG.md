@@ -886,6 +886,27 @@ immutable receipts без миграции и без изменения экон
 **Статус:** additive финал текущего и недавних походов реализован поверх
 существующей immutable history без миграции и без изменения экономики.
 
+### US-038. Увидеть решения прямо на следе текущего похода
+
+Как игрок, я хочу видеть сохранённый выбор и исход у каждой пройденной точки,
+чтобы считывать историю маршрута на карте без перехода к полному журналу.
+
+Критерии:
+
+- resolved points в `routeTrail[]` получают nullable `decision` со stable
+  `choiceId` и persisted `choiceTitle + outcomeTitle`;
+- backend сопоставляет узел и решение из одного repository-ordered списка
+  immutable resolutions exact текущего `journeyNumber`;
+- unresolved `CURRENT` не получает выдуманной annotation, а completed terminal
+  сохраняет фактическое решение при смене literal state;
+- mobile не соединяет route trail с `decisionLog`, показывает компактный
+  `choice → outcome` и озвучивает тот же ordered текст в RU/EN;
+- legacy route nodes без поля остаются валидными; unit/API/PostgreSQL/parser,
+  widget и Home integration coverage проверяет persisted copy и long text.
+
+**Статус:** additive backend/mobile annotation реализована без миграции,
+изменения topology или экономики.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -908,6 +929,7 @@ immutable receipts без миграции и без изменения экон
 - повторяемый цикл экспедиции с сохранением постоянной прогрессии.
 - server-authoritative визуальный след узлов текущего похода без спойлеров
   будущей топологии.
+- persisted выборы и исходы прямо на разрешённых точках текущего следа.
 - server-authoritative журнал решений текущего похода со стабильным
   persisted outcome copy.
 - persisted награды XP/связи/material рядом с каждой записью журнала решений.

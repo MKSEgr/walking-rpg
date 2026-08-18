@@ -1461,6 +1461,13 @@ class _ExpeditionHero extends StatelessWidget {
                       nodeId: node.nodeId,
                       nodeName: node.nodeName,
                       state: node.state,
+                      decision: node.decision == null
+                          ? null
+                          : ExpeditionRouteTrailDecision(
+                              choiceId: node.decision!.choiceId,
+                              choiceTitle: node.decision!.choiceTitle,
+                              outcomeTitle: node.decision!.outcomeTitle,
+                            ),
                     ),
                   )
                   .toList(growable: false),
