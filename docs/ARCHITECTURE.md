@@ -397,6 +397,14 @@ Active `chapter-1-v17` добавляет в `dawn-meridian-v1` choice
 чтобы сохранённое v17 journey завершалось под v16 binary нового поколения.
 V1-V16 не могут начать маршрут.
 
+Home строит `routeTrail` и `decisionLog` из одного repository-ordered набора
+immutable event resolutions exact текущего `journeyNumber`. Additive nullable
+`routeTrail[].decision` переносит stable choice identity и сохранённые
+`choiceTitle + outcomeTitle` прямо к разрешённому узлу; mobile не соединяет два
+массива по index, node ID или current content. При завершении последний узел
+меняет literal state на `COMPLETED`, сохраняя фактическую annotation, а новый
+поход начинает один неаннотированный `CURRENT` node без schema migration.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является

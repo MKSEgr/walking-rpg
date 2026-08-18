@@ -34,6 +34,8 @@
 
 ### Added
 
+- persisted choice and outcome annotations on resolved points of the current
+  journey route, including legacy-compatible parsing and RU/EN accessibility;
 - repeatable expedition journeys: after acknowledging the final event result,
   a completed expedition can restart from the active chapter's first node while
   preserving pilot, pet, skills, inventory and equipment progression;

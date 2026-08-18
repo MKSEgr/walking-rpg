@@ -40,8 +40,9 @@ import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionFinalDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
-import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionRouteDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionRouteNodeSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryItemSnapshot;
@@ -539,7 +540,12 @@ public class HomeService {
             trail.add(new ExpeditionRouteNodeSnapshot(
                     resolved.currentNodeId(),
                     resolved.currentNodeName(),
-                    "VISITED"
+                    "VISITED",
+                    new ExpeditionRouteDecisionSnapshot(
+                            event.choiceId(),
+                            event.choiceTitle(),
+                            event.outcomeTitle()
+                    )
             ));
         });
 
@@ -553,7 +559,13 @@ public class HomeService {
         );
         if (!trail.isEmpty()
                 && trail.getLast().nodeId().equals(terminal.nodeId())) {
-            trail.set(trail.size() - 1, terminal);
+            ExpeditionRouteNodeSnapshot resolvedTerminal = trail.getLast();
+            trail.set(trail.size() - 1, new ExpeditionRouteNodeSnapshot(
+                    terminal.nodeId(),
+                    terminal.nodeName(),
+                    terminal.state(),
+                    resolvedTerminal.decision()
+            ));
         } else {
             trail.add(terminal);
         }

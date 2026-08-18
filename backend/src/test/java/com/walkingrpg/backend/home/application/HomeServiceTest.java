@@ -238,9 +238,10 @@ class HomeServiceTest {
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
 
-        var recap = service.getSnapshot(
+        var expedition = service.getSnapshot(
                 new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
-        ).expedition().completionRecap();
+        ).expedition();
+        var recap = expedition.completionRecap();
 
         assertNotNull(recap);
         assertEquals(1, recap.journeyNumber());
@@ -275,6 +276,12 @@ class HomeServiceTest {
         assertEquals("Эхо-нити из записи",
                 recap.materials().getFirst().itemName());
         assertEquals(6, recap.materials().getFirst().quantity());
+        assertEquals("COMPLETED", expedition.routeTrail().getLast().state());
+        assertNotNull(expedition.routeTrail().getLast().decision());
+        assertEquals("Следовать за отражением",
+                expedition.routeTrail().getLast().decision().choiceTitle());
+        assertEquals("Отражение принято",
+                expedition.routeTrail().getLast().decision().outcomeTitle());
     }
 
     @Test
@@ -595,12 +602,25 @@ class HomeServiceTest {
         assertEquals(StarterExpeditionContent.FIRST_NODE_ID,
                 trail.get(0).nodeId());
         assertEquals("VISITED", trail.get(0).state());
+        assertNotNull(trail.get(0).decision());
+        assertEquals("analyze-signal",
+                trail.get(0).decision().choiceId());
+        assertEquals("Разобрать сигнал",
+                trail.get(0).decision().choiceTitle());
+        assertEquals("Карта отклика",
+                trail.get(0).decision().outcomeTitle());
         assertEquals(StarterExpeditionContent.SECOND_NODE_ID,
                 trail.get(1).nodeId());
         assertEquals("VISITED", trail.get(1).state());
+        assertNotNull(trail.get(1).decision());
+        assertEquals("Стабилизировать ядро",
+                trail.get(1).decision().choiceTitle());
+        assertEquals("Ровный импульс",
+                trail.get(1).decision().outcomeTitle());
         assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
                 trail.get(2).nodeId());
         assertEquals("CURRENT", trail.get(2).state());
+        assertNull(trail.get(2).decision());
         assertEquals(2, expedition.decisionLog().size());
         assertNull(expedition.completionRecap());
         assertEquals("Первый сигнал",

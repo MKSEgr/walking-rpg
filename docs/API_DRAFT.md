@@ -278,12 +278,22 @@ Authorization: Bearer <access-token>
       {
         "nodeId": "outer-beacon",
         "nodeName": "Внешний маяк",
-        "state": "VISITED"
+        "state": "VISITED",
+        "decision": {
+          "choiceId": "analyze-signal",
+          "choiceTitle": "Разобрать сигнал",
+          "outcomeTitle": "Карта отклика"
+        }
       },
       {
         "nodeId": "lumen-gate",
         "nodeName": "Люминовые ворота",
-        "state": "VISITED"
+        "state": "VISITED",
+        "decision": {
+          "choiceId": "stabilize-core",
+          "choiceTitle": "Стабилизировать ядро",
+          "outcomeTitle": "Ровный импульс"
+        }
       },
       {
         "nodeId": "ash-orbit",
@@ -346,8 +356,13 @@ Authorization: Bearer <access-token>
 - `expedition.routeTrail[]` — упорядоченный server-owned след только текущего
   похода. Он содержит уже обработанные event nodes со state `VISITED` и одну
   последнюю точку `CURRENT` либо `COMPLETED`, не раскрывает будущие развилки и
-  не смешивает результаты других `journeyNumber`; legacy response без поля
-  остаётся валидным, но не показывает карту;
+  не смешивает результаты других `journeyNumber`. Additive nullable
+  `decision` у разрешённой точки содержит stable `choiceId` и persisted
+  `choiceTitle + outcomeTitle` из той же ordered immutable event resolution;
+  завершённая последняя точка сохраняет annotation после смены state на
+  `COMPLETED`, а ещё не разрешённый `CURRENT` не получает выдуманного выбора.
+  Legacy response без `routeTrail` не показывает карту, а без `decision`
+  сохраняет прежний вид узла;
 - `expedition.decisionLog[]` — упорядоченный журнал уже принятых решений только
   текущего похода. Заголовки события, выбора и исхода, описание результата и
   `resolvedAt` читаются из immutable event resolution, поэтому republish или

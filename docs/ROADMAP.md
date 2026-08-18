@@ -442,6 +442,19 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/API/PostgreSQL/parser/widget coverage current, recent, exact copy,
       invalid timestamp и legacy response
 
+## Milestone 22 — Decisions on the current journey route
+
+### CODE_COMPLETE
+
+- [x] Additive nullable `routeTrail[].decision` из той же ordered immutable
+      event resolution exact текущего `journeyNumber`
+- [x] Persisted choice identity/title и outcome title без mobile join,
+      current-content lookup или topology inference
+- [x] Compact `choice → outcome` у разрешённых точек и тот же ordered текст в
+      единой RU/EN accessibility summary
+- [x] Unit/API/PostgreSQL/parser/widget/Home coverage visited, current,
+      completed, persisted copy, long text и legacy omission
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

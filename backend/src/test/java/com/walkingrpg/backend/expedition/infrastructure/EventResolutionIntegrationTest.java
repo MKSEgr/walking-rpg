@@ -250,12 +250,25 @@ class EventResolutionIntegrationTest {
         assertEquals(StarterExpeditionContent.FIRST_NODE_ID,
                 home.expedition().routeTrail().get(0).nodeId());
         assertEquals("VISITED", home.expedition().routeTrail().get(0).state());
+        assertNotNull(home.expedition().routeTrail().get(0).decision());
+        assertEquals(firstEvent.choiceId(),
+                home.expedition().routeTrail().get(0).decision().choiceId());
+        assertEquals(firstEvent.choiceTitle(),
+                home.expedition().routeTrail().get(0).decision().choiceTitle());
+        assertEquals(firstEvent.outcomeTitle(),
+                home.expedition().routeTrail().get(0).decision().outcomeTitle());
         assertEquals(StarterExpeditionContent.SECOND_NODE_ID,
                 home.expedition().routeTrail().get(1).nodeId());
         assertEquals("VISITED", home.expedition().routeTrail().get(1).state());
+        assertNotNull(home.expedition().routeTrail().get(1).decision());
+        assertEquals(secondEvent.choiceTitle(),
+                home.expedition().routeTrail().get(1).decision().choiceTitle());
+        assertEquals(secondEvent.outcomeTitle(),
+                home.expedition().routeTrail().get(1).decision().outcomeTitle());
         assertEquals(StarterExpeditionContent.THIRD_NODE_ID,
                 home.expedition().routeTrail().get(2).nodeId());
         assertEquals("CURRENT", home.expedition().routeTrail().get(2).state());
+        assertNull(home.expedition().routeTrail().get(2).decision());
         assertEquals(2, home.expedition().decisionLog().size());
         assertEquals(firstEvent.eventId(),
                 home.expedition().decisionLog().getFirst().eventId());

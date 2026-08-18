@@ -145,6 +145,40 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('home maps saved route decisions without joining the log', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(home: HomeScreen(loader: () async => _routeWithDecision())),
+    );
+    await tester.pumpAndSettle();
+
+    final ExpeditionRouteTrail trail = tester.widget<ExpeditionRouteTrail>(
+      find.byType(ExpeditionRouteTrail),
+    );
+    expect(trail.nodes.first.decision?.choiceId, 'follow-pulse');
+    expect(trail.nodes.first.decision?.choiceTitle, 'Пойти за импульсом');
+    expect(trail.nodes.first.decision?.outcomeTitle, 'Найден маяк');
+    expect(trail.nodes.last.decision, isNull);
+    expect(
+      find.byKey(const Key('expedition-route-decision-outer-beacon')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Маршрут похода: открыто узлов — 2. '
+        'Последняя точка: Люминовые ворота. '
+        'Принятые решения: Внешний маяк: Пойти за импульсом → '
+        'Найден маяк.',
+      ),
+      findsOneWidget,
+    );
+
+    semantics.dispose();
+  });
+
   testWidgets('future current node keeps neutral landmark despite known copy', (
     WidgetTester tester,
   ) async {
@@ -2147,6 +2181,53 @@ void main() {
       expect(find.text('Подтверждение недоступно офлайн'), findsOneWidget);
       expect(acknowledgementCalls, 0);
     },
+  );
+}
+
+HomeSnapshot _routeWithDecision() {
+  return const HomeSnapshot(
+    localDate: '2026-07-26',
+    timeZone: 'Europe/Berlin',
+    dailySteps: 6842,
+    dailyGoal: 6000,
+    availableEnergy: 38,
+    activityStateVersion: 1,
+    economyVersion: 2,
+    lastActivitySyncAt: '2026-07-26T05:55:00Z',
+    serverTime: '2026-07-26T06:00:00Z',
+    contentVersion: 'chapter-1-v1',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    currentNodeId: 'lumen-gate',
+    currentNodeName: 'Люминовые ворота',
+    expeditionProgress: 30,
+    requiredEnergy: 45,
+    expeditionStatus: 'IN_PROGRESS',
+    expeditionVersion: 2,
+    unlockedEvent: null,
+    pilotName: 'Навигатор',
+    pilotLevel: 1,
+    petId: 'spark-v1',
+    petName: 'Искра',
+    petSpecies: 'Люмин',
+    petLevel: 1,
+    routeTrail: <HomeExpeditionRouteNode>[
+      HomeExpeditionRouteNode(
+        nodeId: 'outer-beacon',
+        nodeName: 'Внешний маяк',
+        state: 'VISITED',
+        decision: HomeExpeditionRouteDecision(
+          choiceId: 'follow-pulse',
+          choiceTitle: 'Пойти за импульсом',
+          outcomeTitle: 'Найден маяк',
+        ),
+      ),
+      HomeExpeditionRouteNode(
+        nodeId: 'lumen-gate',
+        nodeName: 'Люминовые ворота',
+        state: 'CURRENT',
+      ),
+    ],
   );
 }
 

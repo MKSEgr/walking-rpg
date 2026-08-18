@@ -7,14 +7,28 @@ class ExpeditionRouteTrailNode {
     required this.nodeId,
     required this.nodeName,
     required this.state,
+    this.decision,
   });
 
   final String nodeId;
   final String nodeName;
   final String state;
+  final ExpeditionRouteTrailDecision? decision;
 
   bool get isCurrent => state == 'CURRENT';
   bool get isCompleted => state == 'COMPLETED';
+}
+
+class ExpeditionRouteTrailDecision {
+  const ExpeditionRouteTrailDecision({
+    required this.choiceId,
+    required this.choiceTitle,
+    required this.outcomeTitle,
+  });
+
+  final String choiceId;
+  final String choiceTitle;
+  final String outcomeTitle;
 }
 
 /// A code-native map of the server-authored trail for one expedition journey.
@@ -25,7 +39,7 @@ class ExpeditionRouteTrail extends StatelessWidget {
   const ExpeditionRouteTrail({
     super.key,
     required this.nodes,
-    this.height = 104,
+    this.height = 156,
   });
 
   final List<ExpeditionRouteTrailNode> nodes;
@@ -41,13 +55,27 @@ class ExpeditionRouteTrail extends StatelessWidget {
     final String routeKey =
         'expedition-route-trail-${nodes.length}-'
         '${terminal.state.toLowerCase()}';
+    final List<String> decisions = nodes
+        .where((ExpeditionRouteTrailNode node) => node.decision != null)
+        .map((ExpeditionRouteTrailNode node) {
+          final ExpeditionRouteTrailDecision decision = node.decision!;
+          return '${node.nodeName}: '
+              '${decision.choiceTitle} → ${decision.outcomeTitle}';
+        })
+        .toList(growable: false);
+    final String decisionSummary = decisions.isEmpty
+        ? ''
+        : ' ${context.l10n.expeditionRouteTrailDecisionsSemantics(
+            decisions.join('; '),
+          )}';
     return Semantics(
       key: Key(routeKey),
       container: true,
-      label: context.l10n.expeditionRouteTrailSemantics(
-        nodes.length,
-        terminal.nodeName,
-      ),
+      label:
+          '${context.l10n.expeditionRouteTrailSemantics(
+            nodes.length,
+            terminal.nodeName,
+          )}$decisionSummary',
       child: ExcludeSemantics(
         child: SizedBox(
           height: height,
@@ -84,7 +112,7 @@ class _RouteConnector extends StatelessWidget {
       key: const Key('expedition-route-trail-connector'),
       width: 34,
       height: 3,
-      margin: const EdgeInsets.only(bottom: 32),
+      margin: const EdgeInsets.only(bottom: 94),
       decoration: BoxDecoration(
         color: context.walkingRpgPalette.routeLine,
         borderRadius: BorderRadius.circular(99),
@@ -116,10 +144,12 @@ class _RouteNode extends StatelessWidget {
     }
     final String nodeKey =
         'expedition-route-node-${node.nodeId}-${node.state.toLowerCase()}';
+    final ExpeditionRouteTrailDecision? decision = node.decision;
 
     return SizedBox(
       key: Key(nodeKey),
-      width: 88,
+      width: 132,
+      height: double.infinity,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
@@ -138,16 +168,36 @@ class _RouteNode extends StatelessWidget {
             child: Icon(icon, size: 20, color: accent),
           ),
           const SizedBox(height: 8),
-          Text(
-            node.nodeName,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: node.isCurrent || node.isCompleted
-                  ? colors.onSurface
-                  : colors.onSurfaceVariant,
+          SizedBox(
+            height: 32,
+            child: Text(
+              node.nodeName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: node.isCurrent || node.isCompleted
+                    ? colors.onSurface
+                    : colors.onSurfaceVariant,
+              ),
             ),
+          ),
+          const SizedBox(height: 5),
+          SizedBox(
+            height: 48,
+            child: decision == null
+                ? null
+                : Text(
+                    key: Key('expedition-route-decision-${node.nodeId}'),
+                    '${decision.choiceTitle} → ${decision.outcomeTitle}',
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colors.secondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ],
       ),

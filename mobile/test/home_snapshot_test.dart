@@ -47,8 +47,18 @@ void main() {
     expect(snapshot.routeTrail, hasLength(2));
     expect(snapshot.routeTrail.first.nodeId, 'outer-beacon');
     expect(snapshot.routeTrail.first.state, 'VISITED');
+    expect(snapshot.routeTrail.first.decision?.choiceId, 'follow-pulse');
+    expect(
+      snapshot.routeTrail.first.decision?.choiceTitle,
+      'Пойти за импульсом',
+    );
+    expect(
+      snapshot.routeTrail.first.decision?.outcomeTitle,
+      'Найден маяк',
+    );
     expect(snapshot.routeTrail.last.nodeId, 'lumen-gate');
     expect(snapshot.routeTrail.last.isCurrent, isTrue);
+    expect(snapshot.routeTrail.last.decision, isNull);
     expect(snapshot.decisionLog, hasLength(1));
     expect(snapshot.decisionLog.single.eventId, 'outer-beacon-v1');
     expect(snapshot.decisionLog.single.eventTitle, 'Сигнал у границы');
@@ -104,6 +114,19 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.routeTrail, isEmpty);
+  });
+
+  test('legacy route node without saved decision remains readable', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    final List<dynamic> routeTrail = expedition['routeTrail'] as List<dynamic>;
+    (routeTrail.first as Map<String, dynamic>).remove('decision');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.routeTrail.first.decision, isNull);
+    expect(snapshot.routeTrail.first.isVisited, isTrue);
   });
 
   test('legacy response without decision log remains readable', () {
@@ -512,6 +535,19 @@ void main() {
         response['expedition'] as Map<String, dynamic>;
     final List<dynamic> routeTrail = expedition['routeTrail'] as List<dynamic>;
     (routeTrail.last as Map<String, dynamic>)['state'] = 'AVAILABLE';
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('route decision rejects incomplete persisted copy', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    final List<dynamic> routeTrail = expedition['routeTrail'] as List<dynamic>;
+    final Map<String, dynamic> decision =
+        (routeTrail.first as Map<String, dynamic>)['decision']
+            as Map<String, dynamic>;
+    decision.remove('outcomeTitle');
 
     expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
@@ -1256,6 +1292,11 @@ Map<String, dynamic> _readyHomeResponse() {
           'nodeId': 'outer-beacon',
           'nodeName': 'Внешний маяк',
           'state': 'VISITED',
+          'decision': <String, dynamic>{
+            'choiceId': 'follow-pulse',
+            'choiceTitle': 'Пойти за импульсом',
+            'outcomeTitle': 'Найден маяк',
+          },
         },
         <String, dynamic>{
           'nodeId': 'lumen-gate',
