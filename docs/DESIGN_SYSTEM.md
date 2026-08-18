@@ -931,6 +931,24 @@ as a saved entry; if Home is unavailable the platform journal remains usable
 and omits this server-owned section. Legacy snapshots without `decisionLog` or
 without additive reward fields remain readable and do not invent rewards.
 
+## Completed journey recap
+
+When Home marks the current expedition `COMPLETED`, the journey places one
+code-native recap directly above the decision log. Its badge confirms the
+completed `journeyNumber`, while compact reward chips show the server-owned
+decision count, total pilot XP, combined companion bond and ordered material
+totals. The card never sums the visible decisions on-device: every displayed
+value comes from the additive Home `completionRecap` built from immutable event
+resolutions for that exact journey.
+
+One container semantic announces completion, decision count and the same
+ordered reward list; all visual children are excluded from duplicate
+screen-reader output. Persisted material identity and copy remain literal after
+content republish or rollback. Cached data is labelled as a saved result.
+In-progress and newly started journeys omit the card, while legacy completed
+snapshots without `completionRecap` keep the decision log usable and do not
+invent totals.
+
 ## Next visual slices
 
 1. Extend the four pivotal event scenes across the remaining first-chapter

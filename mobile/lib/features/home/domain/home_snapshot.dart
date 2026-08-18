@@ -33,6 +33,7 @@ class HomeSnapshot {
     this.expeditionJourneyNumber = 1,
     this.routeTrail = const <HomeExpeditionRouteNode>[],
     this.decisionLog = const <HomeExpeditionDecisionLogEntry>[],
+    this.completionRecap,
     this.pilotCurrentExperience = 0,
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
@@ -72,6 +73,25 @@ class HomeSnapshot {
     if (expeditionJourneyNumber <= 0) {
       throw const FormatException('journeyNumber должен быть положительным');
     }
+    final String expeditionStatus = _readString(expedition, 'status');
+    final Object? completionRecapJson = expedition['completionRecap'];
+    final HomeExpeditionCompletionRecap? completionRecap =
+        completionRecapJson == null
+        ? null
+        : HomeExpeditionCompletionRecap.fromJson(
+            _asMap(completionRecapJson, 'completionRecap'),
+          );
+    if (completionRecap != null && expeditionStatus != 'COMPLETED') {
+      throw const FormatException(
+        'completionRecap допустим только для завершённого похода',
+      );
+    }
+    if (completionRecap != null &&
+        completionRecap.journeyNumber != expeditionJourneyNumber) {
+      throw const FormatException(
+        'completionRecap должен относиться к текущему походу',
+      );
+    }
     final Object? eventJson = expedition['unlockedEvent'];
     final Object? pendingEventResultJson = json['pendingEventResult'];
 
@@ -93,11 +113,12 @@ class HomeSnapshot {
       currentNodeName: _readString(expedition, 'currentNode'),
       expeditionProgress: _readInt(expedition, 'progress'),
       requiredEnergy: _readInt(expedition, 'requiredEnergy'),
-      expeditionStatus: _readString(expedition, 'status'),
+      expeditionStatus: expeditionStatus,
       expeditionVersion: _readInt(expedition, 'version'),
       expeditionJourneyNumber: expeditionJourneyNumber,
       routeTrail: _readRouteTrail(expedition['routeTrail']),
       decisionLog: _readDecisionLog(expedition['decisionLog']),
+      completionRecap: completionRecap,
       unlockedEvent: eventJson == null
           ? null
           : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
@@ -146,6 +167,7 @@ class HomeSnapshot {
   final int expeditionJourneyNumber;
   final List<HomeExpeditionRouteNode> routeTrail;
   final List<HomeExpeditionDecisionLogEntry> decisionLog;
+  final HomeExpeditionCompletionRecap? completionRecap;
   final HomeExpeditionEvent? unlockedEvent;
   final String pilotName;
   final int pilotLevel;
@@ -491,6 +513,72 @@ class HomeExpeditionDecisionLogEntry {
 
   bool get hasRewards =>
       pilotExperienceGained > 0 || petBondGained > 0 || materialReward != null;
+}
+
+class HomeExpeditionCompletionRecap {
+  const HomeExpeditionCompletionRecap({
+    required this.journeyNumber,
+    required this.decisionCount,
+    required this.pilotExperienceGained,
+    required this.petBondGained,
+    required this.materials,
+  });
+
+  factory HomeExpeditionCompletionRecap.fromJson(Map<String, dynamic> json) {
+    final int journeyNumber = HomeSnapshot._readInt(json, 'journeyNumber');
+    final int decisionCount = HomeSnapshot._readInt(json, 'decisionCount');
+    final int pilotExperienceGained = HomeSnapshot._readInt(
+      json,
+      'pilotExperienceGained',
+    );
+    final int petBondGained = HomeSnapshot._readInt(json, 'petBondGained');
+    if (journeyNumber <= 0 ||
+        decisionCount < 0 ||
+        pilotExperienceGained < 0 ||
+        petBondGained < 0) {
+      throw const FormatException(
+        'Итог завершённого похода содержит отрицательное значение',
+      );
+    }
+    final Object? materialsJson = json['materials'];
+    if (materialsJson is! List<dynamic>) {
+      throw const FormatException(
+        'completionRecap.materials должен быть JSON-массивом',
+      );
+    }
+    final List<HomeJourneyMaterialReward> materials = materialsJson
+        .map(
+          (Object? value) => HomeJourneyMaterialReward.fromJson(
+            _asMap(value, 'completionRecap.materials[]'),
+          ),
+        )
+        .toList(growable: false);
+    final Set<String> identities = <String>{};
+    for (final HomeJourneyMaterialReward material in materials) {
+      final String identity = '${material.itemId}\u0000${material.itemName}';
+      if (!identities.add(identity)) {
+        throw const FormatException(
+          'completionRecap.materials содержит повтор',
+        );
+      }
+    }
+    return HomeExpeditionCompletionRecap(
+      journeyNumber: journeyNumber,
+      decisionCount: decisionCount,
+      pilotExperienceGained: pilotExperienceGained,
+      petBondGained: petBondGained,
+      materials: materials,
+    );
+  }
+
+  final int journeyNumber;
+  final int decisionCount;
+  final int pilotExperienceGained;
+  final int petBondGained;
+  final List<HomeJourneyMaterialReward> materials;
+
+  bool get hasRewards =>
+      pilotExperienceGained > 0 || petBondGained > 0 || materials.isNotEmpty;
 }
 
 class HomeJourneyMaterialReward {

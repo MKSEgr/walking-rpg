@@ -591,6 +591,11 @@ class _PlatformBody extends StatelessWidget {
           _JournalHero(data: data, equippedCosmeticIds: equippedCosmeticIds),
           const SizedBox(height: 12),
           if (data.home case final HomeSnapshot home) ...<Widget>[
+            if (home.completionRecap
+                case final HomeExpeditionCompletionRecap recap) ...<Widget>[
+              _JourneyCompletionRecapCard(snapshot: home, recap: recap),
+              const SizedBox(height: 12),
+            ],
             _JourneyDecisionLogCard(snapshot: home),
             const SizedBox(height: 12),
           ],
@@ -735,6 +740,98 @@ class _PlatformBody extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _JourneyCompletionRecapCard extends StatelessWidget {
+  const _JourneyCompletionRecapCard({
+    required this.snapshot,
+    required this.recap,
+  });
+
+  final HomeSnapshot snapshot;
+  final HomeExpeditionCompletionRecap recap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final List<String> rewardLabels = <String>[
+      if (recap.pilotExperienceGained > 0)
+        '+${recap.pilotExperienceGained} XP пилота',
+      if (recap.petBondGained > 0) '+${recap.petBondGained} связи спутников',
+      for (final HomeJourneyMaterialReward material in recap.materials)
+        '+${material.quantity} ${material.itemName}',
+    ];
+    final String rewardSummary = rewardLabels.isEmpty
+        ? 'Наград нет.'
+        : 'Итоговые награды: ${rewardLabels.join('; ')}.';
+    return Semantics(
+      key: const Key('platform-journey-completion-recap'),
+      container: true,
+      label:
+          'Поход ${recap.journeyNumber} завершён. '
+          'Принято решений: ${recap.decisionCount}. $rewardSummary',
+      child: ExcludeSemantics(
+        child: ExpeditionPanel(
+          tone: ExpeditionPanelTone.lumen,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: ExpeditionBadge(
+                  label:
+                      'Поход №${recap.journeyNumber} завершён'
+                      '${snapshot.isCached ? ' · сохранённый итог' : ''}',
+                  icon: Icons.flag_outlined,
+                  tone: ExpeditionPanelTone.lumen,
+                  allowWrap: true,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text('Итог похода', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                'Принято решений: ${recap.decisionCount}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 14),
+              if (rewardLabels.isEmpty)
+                Text(
+                  'В этом походе награды не выдавались.',
+                  style: theme.textTheme.bodyMedium,
+                )
+              else
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: <Widget>[
+                    if (recap.pilotExperienceGained > 0)
+                      _JourneyRewardChip(
+                        icon: Icons.star_outline,
+                        label: '+${recap.pilotExperienceGained} XP пилота',
+                      ),
+                    if (recap.petBondGained > 0)
+                      _JourneyRewardChip(
+                        icon: Icons.favorite_border,
+                        label: '+${recap.petBondGained} связи спутников',
+                      ),
+                    for (final HomeJourneyMaterialReward material
+                        in recap.materials)
+                      _JourneyRewardChip(
+                        icon: Icons.inventory_2_outlined,
+                        label: '+${material.quantity} ${material.itemName}',
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

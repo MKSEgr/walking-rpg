@@ -798,6 +798,28 @@ mobile parser и путевой журнал с unit/API/parser/widget coverage 
 **Статус:** additive backend/mobile projection и доступное отображение наград
 с regression coverage реализованы без новой миграции.
 
+### US-034. Увидеть итог завершённого похода
+
+Как игрок, я хочу после финиша увидеть суммарный результат текущего похода,
+чтобы быстро понять, что маршрут дал пилоту, спутникам и инвентарю.
+
+Критерии:
+
+- Home возвращает nullable `completionRecap` только при `COMPLETED` и только
+  для текущего `journeyNumber`;
+- backend суммирует XP пилота и связь по immutable event resolutions, а
+  materials группирует по persisted `itemId + itemName` в порядке первого
+  появления без current-content lookup;
+- новый или незавершённый поход не получает recap, а legacy completed snapshot
+  без поля остаётся читаемым;
+- Flutter показывает отдельную code-native карточку перед журналом решений и
+  озвучивает решение/награды одной accessibility summary без client totals;
+- unit/API/PostgreSQL/parser/widget coverage проверяет completed, in-progress,
+  legacy, invalid и aggregated material cases.
+
+**Статус:** additive Home recap и доступная mobile-карточка реализованы без
+изменения экономики и без новой миграции.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -823,6 +845,7 @@ mobile parser и путевой журнал с unit/API/parser/widget coverage 
 - server-authoritative журнал решений текущего похода со стабильным
   persisted outcome copy.
 - persisted награды XP/связи/material рядом с каждой записью журнала решений.
+- server-authoritative суммарный итог завершённого текущего похода.
 
 После физической device-validation и beta остаются продуктовые расширения:
 

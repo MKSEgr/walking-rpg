@@ -390,6 +390,19 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Compact reward chips и единая accessibility summary без client inference
 - [x] Unit/API/PostgreSQL/parser/widget coverage и legacy reward-field fallback
 
+## Milestone 18 — Completed journey recap
+
+### CODE_COMPLETE
+
+- [x] Additive nullable Home `completionRecap` только для `COMPLETED` и exact
+      current `journeyNumber`
+- [x] Суммы persisted XP/companion bond и ordered material totals из immutable
+      event resolutions без content lookup или mobile aggregation
+- [x] Code-native completion card и единая accessibility summary перед
+      decision log; in-progress/new/legacy snapshots не получают ложных totals
+- [x] Unit/API/PostgreSQL/parser/widget coverage completed, in-progress,
+      legacy, invalid и grouped-material cases
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

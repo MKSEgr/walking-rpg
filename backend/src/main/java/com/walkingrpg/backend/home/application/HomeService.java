@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ import com.walkingrpg.backend.home.domain.CraftingResultPreviewSnapshot;
 import com.walkingrpg.backend.home.domain.EquipmentItemSnapshot;
 import com.walkingrpg.backend.home.domain.EquipmentSlotSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionChoiceRequirementSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionCompletionRecapSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
@@ -493,6 +495,11 @@ public class HomeService {
                 state.expeditionJourneyNumber(),
                 routeTrail(definition, status, journeyEvents),
                 decisionLog(journeyEvents),
+                completionRecap(
+                        status,
+                        state.expeditionJourneyNumber(),
+                        journeyEvents
+                ),
                 eventSnapshot(
                         definition,
                         state,
@@ -555,6 +562,61 @@ public class HomeService {
                         event.resolvedAt()
                 ))
                 .toList();
+    }
+
+    private ExpeditionCompletionRecapSnapshot completionRecap(
+            String expeditionStatus,
+            long journeyNumber,
+            List<ExpeditionJourneyEvent> journeyEvents
+    ) {
+        if (!ExpeditionProgressStatus.COMPLETED.name().equals(
+                expeditionStatus
+        )) {
+            return null;
+        }
+
+        long pilotExperienceGained = 0;
+        long petBondGained = 0;
+        Map<MaterialIdentity, Long> materials = new LinkedHashMap<>();
+        for (ExpeditionJourneyEvent event : journeyEvents) {
+            pilotExperienceGained = Math.addExact(
+                    pilotExperienceGained,
+                    event.pilotExperienceGained()
+            );
+            petBondGained = Math.addExact(
+                    petBondGained,
+                    event.petBondGained()
+            );
+            if (event.materialReward() != null) {
+                MaterialIdentity identity = new MaterialIdentity(
+                        event.materialReward().itemId(),
+                        event.materialReward().itemName()
+                );
+                materials.merge(
+                        identity,
+                        event.materialReward().quantity(),
+                        Math::addExact
+                );
+            }
+        }
+        List<MaterialRewardPreviewSnapshot> materialTotals = materials.entrySet()
+                .stream()
+                .map(entry -> new MaterialRewardPreviewSnapshot(
+                        entry.getKey().itemId(),
+                        entry.getKey().itemName(),
+                        entry.getValue()
+                ))
+                .toList();
+        return new ExpeditionCompletionRecapSnapshot(
+                journeyNumber,
+                journeyEvents.size(),
+                pilotExperienceGained,
+                petBondGained,
+                materialTotals
+        );
+    }
+
+    private record MaterialIdentity(String itemId, String itemName) {
     }
 
     private ExpeditionEventSnapshot eventSnapshot(

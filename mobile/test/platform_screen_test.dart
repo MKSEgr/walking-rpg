@@ -157,6 +157,84 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('journal shows an authoritative completed journey recap', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final HomeSnapshot home = _homeSnapshotWithDecisions(
+      const <HomeExpeditionDecisionLogEntry>[
+        HomeExpeditionDecisionLogEntry(
+          eventId: 'outer-beacon-v1',
+          eventTitle: 'Сигнал у границы',
+          choiceId: 'follow-pulse',
+          choiceTitle: 'Пойти за импульсом',
+          outcomeTitle: 'Найден маяк',
+          outcomeSummary: 'Импульс открыл безопасный путь.',
+          resolvedAt: '2026-07-26T05:58:00Z',
+        ),
+        HomeExpeditionDecisionLogEntry(
+          eventId: 'lumen-gate-v1',
+          eventTitle: 'Люминовые ворота',
+          choiceId: 'stabilize-core',
+          choiceTitle: 'Стабилизировать ядро',
+          outcomeTitle: 'Ровный импульс',
+          outcomeSummary: 'Ворота удержали курс экспедиции.',
+          resolvedAt: '2026-07-26T06:12:00Z',
+        ),
+      ],
+      journeyNumber: 4,
+      expeditionStatus: 'COMPLETED',
+      completionRecap: const HomeExpeditionCompletionRecap(
+        journeyNumber: 4,
+        decisionCount: 2,
+        pilotExperienceGained: 60,
+        petBondGained: 23,
+        materials: <HomeJourneyMaterialReward>[
+          HomeJourneyMaterialReward(
+            itemId: 'echo-thread',
+            itemName: 'Эхо-нити',
+            quantity: 5,
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => home,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder recap = find.byKey(
+      const Key('platform-journey-completion-recap'),
+    );
+    await _bringIntoView(tester, recap);
+
+    expect(recap, findsOneWidget);
+    expect(find.text('Итог похода'), findsOneWidget);
+    expect(find.text('ПОХОД №4 ЗАВЕРШЁН'), findsOneWidget);
+    expect(find.text('Принято решений: 2'), findsOneWidget);
+    expect(find.text('+60 XP пилота'), findsOneWidget);
+    expect(find.text('+23 связи спутников'), findsOneWidget);
+    expect(find.text('+5 Эхо-нити'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Поход 4 завершён. Принято решений: 2. '
+        'Итоговые награды: +60 XP пилота; +23 связи спутников; '
+        '+5 Эхо-нити.',
+      ),
+      findsOneWidget,
+    );
+    _expectNoLayoutException(tester);
+    semantics.dispose();
+  });
+
   testWidgets('journal shows an accessible empty decision state', (
     WidgetTester tester,
   ) async {
@@ -177,6 +255,10 @@ void main() {
     await _bringIntoView(tester, card);
 
     expect(find.text('Решения маршрута'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-completion-recap')),
+      findsNothing,
+    );
     final Finder empty = find.byKey(
       const Key('platform-journey-decision-empty'),
     );
@@ -1587,6 +1669,8 @@ Finder _sandboxText() {
 HomeSnapshot _homeSnapshotWithDecisions(
   List<HomeExpeditionDecisionLogEntry> decisions, {
   required int journeyNumber,
+  String? expeditionStatus,
+  HomeExpeditionCompletionRecap? completionRecap,
 }) {
   const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
@@ -1606,11 +1690,12 @@ HomeSnapshot _homeSnapshotWithDecisions(
     currentNodeName: demo.currentNodeName,
     expeditionProgress: demo.expeditionProgress,
     requiredEnergy: demo.requiredEnergy,
-    expeditionStatus: demo.expeditionStatus,
+    expeditionStatus: expeditionStatus ?? demo.expeditionStatus,
     expeditionVersion: demo.expeditionVersion,
     expeditionJourneyNumber: journeyNumber,
     routeTrail: demo.routeTrail,
     decisionLog: decisions,
+    completionRecap: completionRecap,
     unlockedEvent: demo.unlockedEvent,
     pilotName: demo.pilotName,
     pilotLevel: demo.pilotLevel,
