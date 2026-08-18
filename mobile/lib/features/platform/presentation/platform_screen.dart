@@ -825,7 +825,8 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                       _JourneyRewardChip(
                         icon: Icons.favorite_border,
                         label:
-                            '${reward.petName} · +${reward.bondGained} связи',
+                            '${reward.petName} · '
+                            '+${reward.bondGained} связи',
                       ),
                     for (final HomeJourneyMaterialReward material
                         in recap.materials)
