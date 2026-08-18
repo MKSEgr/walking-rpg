@@ -151,7 +151,7 @@ class HomeServiceTest {
     void shouldSummarizePersistedRewardsOnlyAfterJourneyCompletion() {
         StarterExpeditionContent content = new StarterExpeditionContent();
         var finalNode = content.requireNode(
-                StarterExpeditionContent.THIRD_NODE_ID
+                StarterExpeditionContent.MIRROR_DELTA_NODE_ID
         );
         HomeReadRepository repository = repository(
                 new HomeRuntimeState(

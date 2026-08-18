@@ -71,11 +71,10 @@ class ExpeditionRouteTrail extends StatelessWidget {
     return Semantics(
       key: Key(routeKey),
       container: true,
-      label:
-          '${context.l10n.expeditionRouteTrailSemantics(
-            nodes.length,
-            terminal.nodeName,
-          )}$decisionSummary',
+      label: '${context.l10n.expeditionRouteTrailSemantics(
+        nodes.length,
+        terminal.nodeName,
+      )}$decisionSummary',
       child: ExcludeSemantics(
         child: SizedBox(
           height: height,

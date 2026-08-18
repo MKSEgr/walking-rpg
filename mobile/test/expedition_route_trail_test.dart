@@ -153,10 +153,8 @@ void main() {
                 state: 'COMPLETED',
                 decision: ExpeditionRouteTrailDecision(
                   choiceId: 'persisted-choice',
-                  choiceTitle:
-                      'Следовать по сохранённому световому коридору',
-                  outcomeTitle:
-                      'Маршрут удержан вопреки нестабильному сигналу',
+                  choiceTitle: 'Следовать по сохранённому световому коридору',
+                  outcomeTitle: 'Маршрут удержан вопреки нестабильному сигналу',
                 ),
               ),
             ],

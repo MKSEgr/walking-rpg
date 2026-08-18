@@ -52,10 +52,7 @@ void main() {
       snapshot.routeTrail.first.decision?.choiceTitle,
       'Пойти за импульсом',
     );
-    expect(
-      snapshot.routeTrail.first.decision?.outcomeTitle,
-      'Найден маяк',
-    );
+    expect(snapshot.routeTrail.first.decision?.outcomeTitle, 'Найден маяк');
     expect(snapshot.routeTrail.last.nodeId, 'lumen-gate');
     expect(snapshot.routeTrail.last.isCurrent, isTrue);
     expect(snapshot.routeTrail.last.decision, isNull);
