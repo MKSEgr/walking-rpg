@@ -345,6 +345,33 @@ class HomeControllerTest {
                         "$.expedition.completionRecap.decisionCount"
                 ).value(1))
                 .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisions.length()"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisions[0].eventTitle"
+                ).value("Сердце маяка из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisions[0].choiceTitle"
+                ).value("Стабилизировать ядро"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisions[0].outcomeTitle"
+                ).value("Ровный импульс"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisions[0]"
+                                + ".pilotExperienceGained"
+                ).value(48))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisions[0].petName"
+                ).value("Искра из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisions[0]"
+                                + ".materialReward.itemName"
+                ).value("Эхо-нити из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap.decisions[0]"
+                                + ".materialReward.quantity"
+                ).value(2))
+                .andExpect(jsonPath(
                         "$.expedition.completionRecap.finalDecision.eventId"
                 ).value(StarterExpeditionContent.SECOND_EVENT_ID))
                 .andExpect(jsonPath(
@@ -499,6 +526,22 @@ class HomeControllerTest {
                 .andExpect(jsonPath(
                         "$.expedition.recentJourneyRecaps[0].decisionCount"
                 ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".decisions.length()"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".decisions[0].eventTitle"
+                ).value("Сердце маяка из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".decisions[0].outcomeSummary"
+                ).value("Второй маршрут сохранён."))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".decisions[0].resolvedAt"
+                ).value("2026-07-25T11:58:00Z"))
                 .andExpect(jsonPath(
                         "$.expedition.recentJourneyRecaps[0]"
                                 + ".finalDecision.eventTitle"

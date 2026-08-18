@@ -976,6 +976,15 @@ An archived entry also shows its persisted `finalDecision` before rewards, so
 two journeys with identical totals can remain narratively distinct. The same
 finale wording is included in that entry's single semantic summary.
 
+When additive `decisions` are available, a separate full-width accessible
+control expands the complete saved history for that archived journey. The
+collapsed archive remains compact; the expanded region reuses the numbered
+decision entries, literal persisted copy and reward chips of the current
+journey log. The control announces the journey identity, entry count and its
+show/hide action, while every revealed entry keeps its own ordered semantic.
+The current completion card does not render the same list again because its
+existing decision log immediately follows it.
+
 The server treats the immutable start receipt for journey N+1 as proof that
 journey N finished. This keeps an old event resolution whose historical status
 was `COMPLETED` from becoming a false archive entry after a chapter extension.

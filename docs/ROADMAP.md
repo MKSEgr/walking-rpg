@@ -455,6 +455,19 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/API/PostgreSQL/parser/widget/Home coverage visited, current,
       completed, persisted copy, long text и legacy omission
 
+## Milestone 23 — Full decision history in the journey archive
+
+### CODE_COMPLETE
+
+- [x] Additive ordered `decisions[]` в current и recent recap из immutable
+      resolutions exact `journeyNumber`
+- [x] Persisted event/choice/outcome copy, resolution time и reward facts без
+      current-content, totals или topology inference
+- [x] Compact-by-default archive с accessible show/hide control и повторным
+      использованием numbered decision entries только после раскрытия
+- [x] Unit/API/PostgreSQL/parser/widget coverage order, exact copy, rewards,
+      count/finale consistency, large text и legacy omission
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -673,9 +673,11 @@ public class HomeService {
                         entry.getValue()
                 ))
                 .toList();
+        List<ExpeditionDecisionSnapshot> decisions = decisionLog(journeyEvents);
         return new ExpeditionCompletionRecapSnapshot(
                 journeyNumber,
-                journeyEvents.size(),
+                decisions.size(),
+                decisions,
                 finalDecision(journeyEvents),
                 pilotExperienceGained,
                 petBondGained,

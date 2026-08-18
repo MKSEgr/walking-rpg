@@ -278,6 +278,62 @@ void main() {
         HomeExpeditionCompletionRecap(
           journeyNumber: 3,
           decisionCount: 3,
+          decisions: <HomeExpeditionDecisionLogEntry>[
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'signal-source-v1',
+              eventTitle: 'Первый сигнал второго похода',
+              choiceId: 'analyze-signal',
+              choiceTitle: 'Разобрать сигнал',
+              outcomeTitle: 'Карта отклика',
+              outcomeSummary: 'Первое решение сохранено.',
+              resolvedAt: '2026-07-26T05:50:00Z',
+              pilotExperienceGained: 20,
+              petId: 'navigator-v1',
+              petName: 'Навигатор',
+              petBondGained: 5,
+              materialReward: HomeJourneyMaterialReward(
+                itemId: 'echo-thread',
+                itemName: 'Эхо-нити',
+                quantity: 1,
+              ),
+            ),
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'ash-orbit-v1',
+              eventTitle: 'Пепельная орбита второго похода',
+              choiceId: 'hold-ember',
+              choiceTitle: 'Удержать искру',
+              outcomeTitle: 'Орбита пройдена',
+              outcomeSummary: 'Второе решение сохранено.',
+              resolvedAt: '2026-07-26T05:56:00Z',
+              pilotExperienceGained: 30,
+              petId: 'navigator-v1',
+              petName: 'Навигатор',
+              petBondGained: 7,
+              materialReward: HomeJourneyMaterialReward(
+                itemId: 'echo-thread',
+                itemName: 'Эхо-нити',
+                quantity: 2,
+              ),
+            ),
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'echo-vault-v1',
+              eventTitle: 'Сердце маяка',
+              choiceId: 'stabilize-core',
+              choiceTitle: 'Стабилизировать ядро',
+              outcomeTitle: 'Ровный импульс',
+              outcomeSummary: 'Второй маршрут сохранён.',
+              resolvedAt: '2026-07-26T06:02:00Z',
+              pilotExperienceGained: 40,
+              petId: 'navigator-v1',
+              petName: 'Навигатор',
+              petBondGained: 9,
+              materialReward: HomeJourneyMaterialReward(
+                itemId: 'echo-thread',
+                itemName: 'Эхо-нити',
+                quantity: 3,
+              ),
+            ),
+          ],
           finalDecision: HomeJourneyFinalDecision(
             eventId: 'echo-vault-v1',
             eventTitle: 'Сердце маяка',
@@ -351,6 +407,55 @@ void main() {
     );
     expect(find.text('Стабилизировать ядро → Ровный импульс'), findsOneWidget);
     expect(find.text('Навигатор · +21 связи'), findsOneWidget);
+    final Finder historyToggle = find.byKey(
+      const Key('platform-journey-archive-3-history-toggle'),
+    );
+    await _bringIntoView(tester, historyToggle);
+    expect(historyToggle, findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Показать решения похода 3. Записей: 3'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('platform-journey-decision-signal-source-v1')),
+      findsNothing,
+    );
+
+    await tester.tap(historyToggle);
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Скрыть решения похода 3'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-decision-signal-source-v1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('platform-journey-decision-echo-vault-v1')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Запись 1 из 3. Первый сигнал второго похода. '
+        'Решение: Разобрать сигнал. Итог: Карта отклика. '
+        'Первое решение сохранено. Награды: +20 XP пилота; '
+        'Навигатор: +5 связи; +1 Эхо-нити.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Второе решение сохранено.'), findsOneWidget);
+    expect(find.text('Навигатор · +9 связи'), findsOneWidget);
+
+    await tester.tap(historyToggle);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel('Показать решения похода 3. Записей: 3'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('platform-journey-decision-signal-source-v1')),
+      findsNothing,
+    );
     final Finder previous = find.byKey(const Key('platform-journey-archive-2'));
     await _bringIntoView(tester, previous);
     expect(find.text('Поход №2'), findsOneWidget);
@@ -359,6 +464,92 @@ void main() {
         'Поход 2. Принято решений: 2. '
         'Итоговые награды: +60 XP пилота; +14 связи спутников.',
       ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('platform-journey-archive-2-history')),
+      findsNothing,
+    );
+    _expectNoLayoutException(tester);
+    semantics.dispose();
+  });
+
+  testWidgets('archived decisions stay bounded at compact enlarged text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    const HomeExpeditionDecisionLogEntry decision =
+        HomeExpeditionDecisionLogEntry(
+          eventId: 'long-archive-event-v1',
+          eventTitle: 'Сохранённое событие с очень длинным названием',
+          choiceId: 'follow-saved-starlight',
+          choiceTitle: 'Следовать по сохранённому звёздному коридору',
+          outcomeTitle: 'Маршрут удержан вопреки нестабильному сигналу',
+          outcomeSummary:
+              'Спутник запомнил каждый поворот завершённого маршрута.',
+          resolvedAt: '2026-07-26T06:02:00Z',
+        );
+    final HomeSnapshot home = _homeSnapshotWithDecisions(
+      const <HomeExpeditionDecisionLogEntry>[],
+      journeyNumber: 2,
+      recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
+        HomeExpeditionCompletionRecap(
+          journeyNumber: 1,
+          decisionCount: 1,
+          decisions: <HomeExpeditionDecisionLogEntry>[decision],
+          finalDecision: HomeJourneyFinalDecision(
+            eventId: 'long-archive-event-v1',
+            eventTitle: 'Сохранённое событие с очень длинным названием',
+            choiceId: 'follow-saved-starlight',
+            choiceTitle: 'Следовать по сохранённому звёздному коридору',
+            outcomeTitle: 'Маршрут удержан вопреки нестабильному сигналу',
+            outcomeSummary:
+                'Спутник запомнил каждый поворот завершённого маршрута.',
+            resolvedAt: '2026-07-26T06:02:00Z',
+          ),
+          pilotExperienceGained: 0,
+          petBondGained: 0,
+          materials: <HomeJourneyMaterialReward>[],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => home,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder toggle = find.byKey(
+      const Key('platform-journey-archive-1-history-toggle'),
+    );
+    await _bringIntoView(tester, toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    final Finder entry = find.byKey(
+      const Key('platform-journey-decision-long-archive-event-v1'),
+    );
+    await _bringIntoView(tester, entry);
+
+    expect(entry, findsOneWidget);
+    expect(
+      find.descendant(of: entry, matching: find.text(decision.outcomeSummary)),
       findsOneWidget,
     );
     _expectNoLayoutException(tester);

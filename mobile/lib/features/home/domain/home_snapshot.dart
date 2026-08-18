@@ -518,10 +518,13 @@ class HomeExpeditionDecisionLogEntry {
     this.materialReward,
   });
 
-  factory HomeExpeditionDecisionLogEntry.fromJson(Map<String, dynamic> json) {
+  factory HomeExpeditionDecisionLogEntry.fromJson(
+    Map<String, dynamic> json, {
+    String field = 'decisionLog[]',
+  }) {
     final String resolvedAt = HomeSnapshot._readString(json, 'resolvedAt');
     if (DateTime.tryParse(resolvedAt) == null) {
-      throw const FormatException('resolvedAt должен быть ISO-8601 датой');
+      throw FormatException('$field.resolvedAt должен быть ISO-8601 датой');
     }
     final int pilotExperienceGained = json['pilotExperienceGained'] == null
         ? 0
@@ -556,7 +559,7 @@ class HomeExpeditionDecisionLogEntry {
       materialReward: materialJson == null
           ? null
           : HomeJourneyMaterialReward.fromJson(
-              _asMap(materialJson, 'decisionLog[].materialReward'),
+              _asMap(materialJson, '$field.materialReward'),
             ),
     );
   }
@@ -586,6 +589,7 @@ class HomeExpeditionCompletionRecap {
     required this.petBondGained,
     required this.materials,
     this.finalDecision,
+    this.decisions = const <HomeExpeditionDecisionLogEntry>[],
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
   });
 
@@ -615,6 +619,36 @@ class HomeExpeditionCompletionRecap {
       throw const FormatException(
         'finalDecision требует хотя бы одного решения',
       );
+    }
+    final Object? decisionsJson = json['decisions'];
+    final List<HomeExpeditionDecisionLogEntry> decisions;
+    if (decisionsJson == null) {
+      decisions = const <HomeExpeditionDecisionLogEntry>[];
+    } else {
+      if (decisionsJson is! List<dynamic>) {
+        throw const FormatException(
+          'completionRecap.decisions должен быть JSON-массивом',
+        );
+      }
+      decisions = decisionsJson
+          .map(
+            (Object? value) => HomeExpeditionDecisionLogEntry.fromJson(
+              _asMap(value, 'completionRecap.decisions[]'),
+              field: 'completionRecap.decisions[]',
+            ),
+          )
+          .toList(growable: false);
+      if (decisions.length != decisionCount) {
+        throw const FormatException(
+          'completionRecap.decisions не совпадает с decisionCount',
+        );
+      }
+      if (decisions.isNotEmpty &&
+          !_matchesFinalDecision(decisions.last, finalDecision)) {
+        throw const FormatException(
+          'completionRecap.decisions не совпадает с finalDecision',
+        );
+      }
     }
     final Object? petBondRewardsJson = json['petBondRewards'];
     final List<HomeJourneyPetBondReward> petBondRewards;
@@ -676,6 +710,7 @@ class HomeExpeditionCompletionRecap {
       journeyNumber: journeyNumber,
       decisionCount: decisionCount,
       finalDecision: finalDecision,
+      decisions: decisions,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
       petBondRewards: petBondRewards,
@@ -686,6 +721,7 @@ class HomeExpeditionCompletionRecap {
   final int journeyNumber;
   final int decisionCount;
   final HomeJourneyFinalDecision? finalDecision;
+  final List<HomeExpeditionDecisionLogEntry> decisions;
   final int pilotExperienceGained;
   final int petBondGained;
   final List<HomeJourneyPetBondReward> petBondRewards;
@@ -693,6 +729,20 @@ class HomeExpeditionCompletionRecap {
 
   bool get hasRewards =>
       pilotExperienceGained > 0 || petBondGained > 0 || materials.isNotEmpty;
+
+  static bool _matchesFinalDecision(
+    HomeExpeditionDecisionLogEntry decision,
+    HomeJourneyFinalDecision? finalDecision,
+  ) {
+    return finalDecision != null &&
+        decision.eventId == finalDecision.eventId &&
+        decision.eventTitle == finalDecision.eventTitle &&
+        decision.choiceId == finalDecision.choiceId &&
+        decision.choiceTitle == finalDecision.choiceTitle &&
+        decision.outcomeTitle == finalDecision.outcomeTitle &&
+        decision.outcomeSummary == finalDecision.outcomeSummary &&
+        decision.resolvedAt == finalDecision.resolvedAt;
+  }
 }
 
 class HomeJourneyFinalDecision {
