@@ -627,10 +627,7 @@ void main() {
       find.byKey(const Key('platform-journey-completion-recap')),
       findsNothing,
     );
-    expect(
-      find.byKey(const Key('platform-journey-chronicle')),
-      findsNothing,
-    );
+    expect(find.byKey(const Key('platform-journey-chronicle')), findsNothing);
     final Finder empty = find.byKey(
       const Key('platform-journey-decision-empty'),
     );

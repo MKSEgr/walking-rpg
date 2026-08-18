@@ -295,13 +295,12 @@ void main() {
     expect(snapshot.journeyChronicle, isNull);
   });
 
-  for (final MapEntry<String, int> invalidValue
-      in <String, int>{
-        'completedJourneyCount': 0,
-        'decisionCount': -1,
-        'pilotExperienceGained': -1,
-        'petBondGained': -1,
-      }.entries) {
+  for (final MapEntry<String, int> invalidValue in <String, int>{
+    'completedJourneyCount': 0,
+    'decisionCount': -1,
+    'pilotExperienceGained': -1,
+    'petBondGained': -1,
+  }.entries) {
     test('journey chronicle rejects ${invalidValue.key}', () {
       final Map<String, dynamic> response = _readyHomeResponse();
       final Map<String, dynamic> expedition =
