@@ -65,16 +65,12 @@ class ExpeditionRouteTrail extends StatelessWidget {
         .toList(growable: false);
     final String decisionSummary = decisions.isEmpty
         ? ''
-        : ' ${context.l10n.expeditionRouteTrailDecisionsSemantics(
-            decisions.join('; '),
-          )}';
+        : ' ${context.l10n.expeditionRouteTrailDecisionsSemantics(decisions.join('; '))}';
     return Semantics(
       key: Key(routeKey),
       container: true,
-      label: '${context.l10n.expeditionRouteTrailSemantics(
-        nodes.length,
-        terminal.nodeName,
-      )}$decisionSummary',
+      label:
+          '${context.l10n.expeditionRouteTrailSemantics(nodes.length, terminal.nodeName)}$decisionSummary',
       child: ExcludeSemantics(
         child: SizedBox(
           height: height,

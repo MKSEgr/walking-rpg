@@ -76,10 +76,7 @@ void main() {
       find.byKey(const Key('expedition-route-decision-outer-beacon')),
       findsOneWidget,
     );
-    expect(
-      find.text('Пойти за импульсом → Найден маяк'),
-      findsOneWidget,
-    );
+    expect(find.text('Пойти за импульсом → Найден маяк'), findsOneWidget);
     expect(
       find.byKey(const Key('expedition-route-decision-lumen-gate')),
       findsNothing,
