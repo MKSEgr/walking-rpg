@@ -367,6 +367,15 @@ Authorization: Bearer <access-token>
   {
     "journeyNumber": 2,
     "decisionCount": 18,
+    "finalDecision": {
+      "eventId": "dawn-relay-v1",
+      "eventTitle": "Реле рассвета",
+      "choiceId": "stabilize-relay",
+      "choiceTitle": "Стабилизировать реле",
+      "outcomeTitle": "Маршрут сохранён",
+      "outcomeSummary": "Реле удержало световой коридор.",
+      "resolvedAt": "2026-07-26T06:12:00Z"
+    },
     "pilotExperienceGained": 1240,
     "petBondGained": 620,
     "petBondRewards": [
@@ -395,6 +404,10 @@ Authorization: Bearer <access-token>
   по persisted `petId + petName` в порядке первого появления. Сумма
   `bondGained` равна совместимому общему `petBondGained`; legacy response без
   массива остаётся валидным и показывает общий итог без имён питомцев.
+  Additive nullable `finalDecision` — последняя immutable event resolution в
+  порядке `expedition_version, receipt_id`; её event/choice/outcome copy и
+  `resolvedAt` не перечитываются из current content. Legacy response без поля
+  остаётся валидным и просто не показывает финал.
 
 - `expedition.recentJourneyRecaps[]` — не более пяти итогов предыдущих
   завершённых походов, от нового к старому. Факт завершения определяется
@@ -402,8 +415,8 @@ Authorization: Bearer <access-token>
   `expedition_status=COMPLETED` внутри event resolution после расширения главы
   не добавляет незавершённый или текущий поход в архив. Награды агрегируются
   из persisted event resolutions соответствующего похода по тем же правилам,
-  что `completionRecap`, включая ordered `petBondRewards[]`; legacy response
-  без поля читается как пустой архив;
+  что `completionRecap`, включая ordered `petBondRewards[]` и persisted
+  `finalDecision`; legacy response без поля читается как пустой архив;
 
 - неизвестный пользователь получает zero-state и starter content;
 - `pet.petId` — стабильный server-owned идентификатор активного питомца, а

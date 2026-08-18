@@ -127,6 +127,15 @@ void main() {
       ..['completionRecap'] = <String, dynamic>{
         'journeyNumber': 2,
         'decisionCount': 3,
+        'finalDecision': <String, dynamic>{
+          'eventId': 'mirror-delta-v1',
+          'eventTitle': 'Зеркальная дельта из записи',
+          'choiceId': 'follow-reflection',
+          'choiceTitle': 'Следовать за отражением',
+          'outcomeTitle': 'Отражение принято',
+          'outcomeSummary': 'Искра сохранила отклик дельты.',
+          'resolvedAt': '2026-07-26T06:12:00Z',
+        },
         'pilotExperienceGained': 96,
         'petBondGained': 24,
         'petBondRewards': <Map<String, dynamic>>[
@@ -162,6 +171,17 @@ void main() {
     expect(recap, isNotNull);
     expect(recap?.journeyNumber, 2);
     expect(recap?.decisionCount, 3);
+    expect(recap?.finalDecision?.eventId, 'mirror-delta-v1');
+    expect(
+      recap?.finalDecision?.eventTitle,
+      'Зеркальная дельта из записи',
+    );
+    expect(recap?.finalDecision?.choiceTitle, 'Следовать за отражением');
+    expect(recap?.finalDecision?.outcomeTitle, 'Отражение принято');
+    expect(
+      recap?.finalDecision?.resolvedAt,
+      '2026-07-26T06:12:00Z',
+    );
     expect(recap?.pilotExperienceGained, 96);
     expect(recap?.petBondGained, 24);
     expect(recap?.petBondRewards, hasLength(2));
@@ -200,6 +220,15 @@ void main() {
         <String, dynamic>{
           'journeyNumber': 2,
           'decisionCount': 3,
+          'finalDecision': <String, dynamic>{
+            'eventId': 'echo-vault-v1',
+            'eventTitle': 'Сердце маяка из записи',
+            'choiceId': 'stabilize-core',
+            'choiceTitle': 'Стабилизировать ядро',
+            'outcomeTitle': 'Ровный импульс',
+            'outcomeSummary': 'Второй маршрут сохранён.',
+            'resolvedAt': '2026-07-26T06:02:00Z',
+          },
           'pilotExperienceGained': 96,
           'petBondGained': 24,
           'petBondRewards': <Map<String, dynamic>>[
@@ -231,6 +260,10 @@ void main() {
     expect(snapshot.recentJourneyRecaps, hasLength(2));
     expect(snapshot.recentJourneyRecaps.first.journeyNumber, 2);
     expect(
+      snapshot.recentJourneyRecaps.first.finalDecision?.outcomeTitle,
+      'Ровный импульс',
+    );
+    expect(
       snapshot.recentJourneyRecaps.first.petBondRewards.single.petName,
       'Искра из записи',
     );
@@ -238,6 +271,61 @@ void main() {
     expect(snapshot.recentJourneyRecaps.last.journeyNumber, 1);
     expect(snapshot.recentJourneyRecaps.last.petBondGained, 14);
     expect(snapshot.recentJourneyRecaps.last.petBondRewards, isEmpty);
+    expect(snapshot.recentJourneyRecaps.last.finalDecision, isNull);
+  });
+
+  test('recap rejects an invalid final decision timestamp', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['status'] = 'COMPLETED'
+      ..['unlockedEvent'] = null
+      ..['completionRecap'] = <String, dynamic>{
+        'journeyNumber': 1,
+        'decisionCount': 1,
+        'finalDecision': <String, dynamic>{
+          'eventId': 'signal-source-v1',
+          'eventTitle': 'Источник сигнала',
+          'choiceId': 'analyze-signal',
+          'choiceTitle': 'Разобрать сигнал',
+          'outcomeTitle': 'Карта отклика',
+          'outcomeSummary': 'Маршрут сохранён.',
+          'resolvedAt': 'yesterday',
+        },
+        'pilotExperienceGained': 42,
+        'petBondGained': 9,
+        'materials': <Map<String, dynamic>>[],
+      };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('recap rejects a final decision without any decisions', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['status'] = 'COMPLETED'
+      ..['unlockedEvent'] = null
+      ..['completionRecap'] = <String, dynamic>{
+        'journeyNumber': 1,
+        'decisionCount': 0,
+        'finalDecision': <String, dynamic>{
+          'eventId': 'signal-source-v1',
+          'eventTitle': 'Источник сигнала',
+          'choiceId': 'analyze-signal',
+          'choiceTitle': 'Разобрать сигнал',
+          'outcomeTitle': 'Карта отклика',
+          'outcomeSummary': 'Маршрут сохранён.',
+          'resolvedAt': '2026-07-26T06:12:00Z',
+        },
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+        'materials': <Map<String, dynamic>>[],
+      };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('recap rejects a pet bond breakdown with a mismatched total', () {

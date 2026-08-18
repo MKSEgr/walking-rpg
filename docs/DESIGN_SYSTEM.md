@@ -943,6 +943,11 @@ card never sums the visible decisions on-device: every displayed value comes
 from the additive Home `completionRecap` built from immutable event resolutions
 for that exact journey.
 
+When Home supplies `finalDecision`, the card places a compact finale block
+between the decision count and rewards. It repeats persisted event, choice,
+outcome and summary copy; it does not infer an ending from the current node,
+status or content catalog.
+
 One container semantic announces completion, decision count and the same
 ordered reward list; all visual children are excluded from duplicate
 screen-reader output. Persisted material identity and copy remain literal after
@@ -959,6 +964,10 @@ recaps, newest first. Each entry repeats the authoritative journey number,
 decision count and persisted reward totals, including the same named companion
 bond breakdown when supplied; mobile neither aggregates visible decisions nor
 looks up current content copy.
+
+An archived entry also shows its persisted `finalDecision` before rewards, so
+two journeys with identical totals can remain narratively distinct. The same
+finale wording is included in that entry's single semantic summary.
 
 The server treats the immutable start receipt for journey N+1 as proof that
 journey N finished. This keeps an old event resolution whose historical status
@@ -977,6 +986,15 @@ but prefer ordered named companion chips when Home supplies
 summary announces the same pet/name totals. Missing legacy detail falls back
 to one combined companion chip; an explicit breakdown is never reconstructed
 from current pet state, current content or the visible decision list.
+
+## Completed journey finale
+
+The current completion card and every recent archive entry may carry one
+server-ordered `finalDecision`. The visual block labels the finale, shows the
+persisted event title, connects choice to outcome and repeats the saved outcome
+summary. Its containing recap semantic announces the same sequence before the
+reward list. Legacy recaps without the additive object omit the block; mobile
+never substitutes the last visible current-journey entry for missing history.
 
 ## Next visual slices
 

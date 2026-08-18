@@ -37,6 +37,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionCompletionRecapSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventChoiceSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
+import com.walkingrpg.backend.home.domain.ExpeditionFinalDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
@@ -663,10 +664,29 @@ public class HomeService {
         return new ExpeditionCompletionRecapSnapshot(
                 journeyNumber,
                 journeyEvents.size(),
+                finalDecision(journeyEvents),
                 pilotExperienceGained,
                 petBondGained,
                 petBondTotals,
                 materialTotals
+        );
+    }
+
+    private ExpeditionFinalDecisionSnapshot finalDecision(
+            List<ExpeditionJourneyEvent> journeyEvents
+    ) {
+        if (journeyEvents.isEmpty()) {
+            return null;
+        }
+        ExpeditionJourneyEvent event = journeyEvents.getLast();
+        return new ExpeditionFinalDecisionSnapshot(
+                event.eventId(),
+                event.eventTitle(),
+                event.choiceId(),
+                event.choiceTitle(),
+                event.outcomeTitle(),
+                event.outcomeSummary(),
+                event.resolvedAt()
         );
     }
 

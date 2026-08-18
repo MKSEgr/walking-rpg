@@ -865,6 +865,27 @@ immutable receipts без миграции и без изменения экон
 **Статус:** additive backend/mobile breakdown реализован без миграции и без
 изменения экономики.
 
+### US-037. Вспомнить финал завершённого похода
+
+Как игрок, я хочу видеть последнее решение и исход в итогах похода, чтобы
+архив сохранял историю маршрута, а не только числовые награды.
+
+Критерии:
+
+- `completionRecap` и каждый `recentJourneyRecaps[]` получают nullable
+  `finalDecision` с persisted event/choice/outcome copy и `resolvedAt`;
+- backend выбирает последнюю immutable resolution по repository-owned порядку
+  `expedition_version, receipt_id`, не используя current content или node ID;
+- content republish/rollback не переписывает сохранённый финал, а пустая или
+  legacy history безопасно даёт `null`;
+- mobile валидирует обязательные строки и ISO timestamp, показывает компактный
+  finale block перед наградами и включает тот же текст в recap semantics;
+- unit/API/PostgreSQL/parser/widget coverage проверяет current, recent, legacy,
+  invalid timestamp и точную persisted copy.
+
+**Статус:** additive финал текущего и недавних походов реализован поверх
+существующей immutable history без миграции и без изменения экономики.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -893,6 +914,7 @@ immutable receipts без миграции и без изменения экон
 - server-authoritative суммарный итог завершённого текущего похода.
 - persisted разбивка полученной связи по питомцам в итогах текущего и недавних
   походов.
+- persisted финальное решение и исход в итогах текущего и недавних походов.
 
 После физической device-validation и beta остаются продуктовые расширения:
 
