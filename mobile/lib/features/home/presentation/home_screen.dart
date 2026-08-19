@@ -2897,6 +2897,7 @@ class _HomeError extends StatelessWidget {
       key: const Key('home-error-state'),
       title: context.l10n.homeLoadFailureTitle,
       message: context.l10n.homeLoadFailureMessage,
+      details: null,
       primaryActionKey: const Key('home-error-retry'),
       primaryActionLabel: context.l10n.retryButton,
       onPrimaryAction: onRetry,
