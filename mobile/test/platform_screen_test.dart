@@ -716,10 +716,7 @@ void main() {
     expect(find.byType(ExpeditionReadState), findsOneWidget);
     expect(find.byKey(const Key('platform-journal-hero')), findsNothing);
     expect(find.text('Не удалось загрузить путевой журнал'), findsOneWidget);
-    expect(
-      find.textContaining('Актуальные записи не приняты'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Актуальные записи не приняты'), findsOneWidget);
     expect(find.textContaining('Backend недоступен'), findsNothing);
 
     await tester.tap(find.byKey(const Key('platform-error-retry')));
