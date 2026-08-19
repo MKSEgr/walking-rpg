@@ -121,12 +121,11 @@ void main() {
           locale: localeCase.locale,
           child: Builder(
             builder: (BuildContext context) {
-              final AppLocalizations localizations =
-                  AppLocalizations.of(context)!;
+              final AppLocalizations l10n = AppLocalizations.of(context)!;
               return Text(
-                '${localizations.journeyPetName('rune-v1', 'legacy')} · '
-                '${localizations.journeyPetSpecies('rune-v1', 'legacy')} · '
-                '${localizations.journeyPetTrait('rune-v1', 'legacy')}',
+                '${l10n.journeyPetName('rune-v1', 'legacy')} · '
+                '${l10n.journeyPetSpecies('rune-v1', 'legacy')} · '
+                '${l10n.journeyPetTrait('rune-v1', 'legacy')}',
               );
             },
           ),
