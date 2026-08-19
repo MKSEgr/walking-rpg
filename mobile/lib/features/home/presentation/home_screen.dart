@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/core/localization/current_content_localizations.dart';
+import 'package:walking_rpg_mobile/core/localization/current_event_localizations.dart';
 import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
@@ -564,7 +565,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
       final String message = result.unlockedEvent == null
           ? context.l10n.homeAdvanceSucceeded(result.energySpent)
-          : context.l10n.homeEventUnlocked(result.unlockedEvent!.title);
+          : context.l10n.homeEventUnlocked(
+              context.l10n.currentEventTitle(
+                result.unlockedEvent!.eventId,
+                result.unlockedEvent!.title,
+              ),
+            );
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -2122,6 +2128,12 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String eventTitle = event.isResolved
+        ? event.title
+        : context.l10n.currentEventTitle(event.eventId, event.title);
+    final String eventSummary = event.isResolved
+        ? event.summary
+        : context.l10n.currentEventSummary(event.eventId, event.summary);
     return ExpeditionPanel(
       tone: ExpeditionPanelTone.resonance,
       child: Column(
@@ -2137,13 +2149,13 @@ class _EventCard extends StatelessWidget {
           const SizedBox(height: 12),
           ExpeditionEventScene(
             eventId: event.eventId,
-            eventTitle: event.title,
-            fallbackSemanticLabel: context.l10n.eventFallbackScene(event.title),
+            eventTitle: eventTitle,
+            fallbackSemanticLabel: context.l10n.eventFallbackScene(eventTitle),
           ),
           const SizedBox(height: 14),
-          Text(event.title, style: Theme.of(context).textTheme.titleMedium),
+          Text(eventTitle, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
-          Text(event.summary),
+          Text(eventSummary),
           if (event.isResolved) ...<Widget>[
             const SizedBox(height: 12),
             if (event.selectedChoiceId != null)
@@ -2203,12 +2215,22 @@ class _EventCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(choice.description),
+              Text(
+                context.l10n.currentEventChoiceDescription(
+                  event.eventId,
+                  choice.choiceId,
+                  choice.description,
+                ),
+              ),
               if (!choice.isAvailable &&
                   choice.requirement != null) ...<Widget>[
                 const SizedBox(height: 4),
                 Text(
-                  choice.requirement!.description,
+                  context.l10n.currentEventRequirementDescription(
+                    event.eventId,
+                    choice.choiceId,
+                    choice.requirement!.description,
+                  ),
                   key: Key('home-choice-locked-${choice.choiceId}'),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
@@ -2251,10 +2273,15 @@ class _EventChoiceLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String choiceTitle = context.l10n.currentEventChoiceTitle(
+      eventId,
+      choice.choiceId,
+      choice.title,
+    );
     final Widget copy = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(choice.title),
+        Text(choiceTitle),
         Text(rewardText, style: Theme.of(context).textTheme.bodySmall),
       ],
     );

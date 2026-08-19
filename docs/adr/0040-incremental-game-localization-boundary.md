@@ -3,7 +3,8 @@
 - **Статус:** Accepted
 - **Дата:** 2026-08-19
 - **Связанные задачи:** [issue #339](https://github.com/MKSEgr/walking-rpg/issues/339),
-  [issue #341](https://github.com/MKSEgr/walking-rpg/issues/341)
+  [issue #341](https://github.com/MKSEgr/walking-rpg/issues/341),
+  [issue #343](https://github.com/MKSEgr/walking-rpg/issues/343)
 
 ## Контекст
 
@@ -31,9 +32,12 @@ Milestone 26 выполняется последовательными верт�
 4. второй срез разрешает по stable ID текущие expedition/node/pilot/pet,
    item/equipment/recipe/upgrade identities через RU/EN catalog. Additive
    `pilotId` допускает legacy omission, а unknown ID возвращает server literal;
-5. current event title/summary/choice/requirement narrative остаётся следующим
-   отдельным срезом и до него выводится literal fallback;
-6. immutable historical copy всегда остаётся фактическим persisted literal;
+5. третий срез разрешает title/summary известных READY events и
+   title/description/requirement choices только по exact `eventId + choiceId`;
+   неизвестные ID сохраняют server literal fallback, а feedback нового события
+   использует тот же event resolver;
+6. immutable resolved event copy, selected decisions, outcomes, pending
+   results, receipts и recaps всегда остаются фактическим persisted literal;
 7. Platform journal, account/recovery/validation и остальные игровые
    поверхности сохраняют `CODE_PENDING`, пока их отдельные срезы не получат
    tests и документацию.
@@ -48,8 +52,9 @@ RU/EN widget tests проверяют compact/wide layout, text scale 1.6 и sem
 - русская копия сохраняет прежнее поведение, а English shell не зависит от
   server locale;
 - rollout остаётся reviewable и не требует backend/schema migration;
-- английский интерфейс больше не зависит от server locale для известных
-  current identities, но временно может содержать literal event narrative;
+- английский Home больше не зависит от server locale для известных current
+  identities и открытого event narrative; неизвестная или историческая copy
+  остаётся literal по определённой выше границе;
 - milestone нельзя отмечать `CODE_COMPLETE`, пока остаются перечисленные
   player-facing поверхности.
 
@@ -57,5 +62,6 @@ RU/EN widget tests проверяют compact/wide layout, text scale 1.6 и sem
 
 Первый срез откатывается возвратом вызовов generated localization к прежним
 client literals. Второй — удалением current-content resolver и additive
-`pilotId`; legacy-compatible mobile parser не требует миграции cache. Stable
-IDs, receipts, historical copy и `alpha-rc1` при этом не меняются.
+`pilotId`. Третий — удалением current-event resolver из READY event card и
+unlock feedback. Legacy-compatible mobile parser не требует миграции cache.
+Stable IDs, receipts, historical copy и `alpha-rc1` при этом не меняются.

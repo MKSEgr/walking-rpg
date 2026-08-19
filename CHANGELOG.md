@@ -13,6 +13,10 @@
   recipe and upgrade identities now resolve through a generated RU/EN catalog
   by stable ID; Home adds compatible `pilotId`, while unknown content and
   immutable event history retain their literal server copy;
+- all 30 known unresolved events, 78 exact event/choice pairs and 16 gated
+  requirement narratives now resolve through the RU/EN catalog by stable ID;
+  unlock feedback follows the same boundary, while resolved events, outcomes,
+  receipts, decisions and recaps remain immutable literal history;
 - Milestone 26 uses an incremental stable-ID localization boundary: current
   server content retains a literal fallback and immutable historical copy is
   never rewritten during locale changes;
