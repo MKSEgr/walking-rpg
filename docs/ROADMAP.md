@@ -535,9 +535,21 @@ remain separate and unchanged.
 - [x] Backend inventory counts, exhaustive RU/EN resolver tests, compact
       text-scale 1.6 widgets and accessibility semantics protect the boundary
 
+### CODE_COMPLETE — Platform journal slice
+
+- [x] Complete Platform journal chrome, loading/error states, journey history,
+      progression/catalog actions and semantics use generated RU/EN resources
+- [x] Six onboarding steps, four skills, five quests, eight achievements, four
+      cosmetics, current season and two experiment descriptions resolve only
+      by stable backend identity; unknown content retains literal fallback
+- [x] Known Platform command feedback resolves by command type without exposing
+      Russian backend messages in the English player surface
+- [x] Weekly route, quest progress and companion bond signals share the same
+      locale at compact text scale 1.6, while immutable decisions and recaps
+      remain persisted literal history
+
 ### CODE_PENDING
 
-- [ ] Localize the complete Platform journal and progression/catalog actions
 - [ ] Localize account, recovery, validation, activity and remaining boundary
       screens without exposing raw diagnostic copy as player text
 - [ ] Add repo-wide RU/EN accessibility/large-text coverage and remove the

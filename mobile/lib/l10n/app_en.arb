@@ -918,6 +918,509 @@
     }
   },
 
+  "platformOnboardingWelcome": "Meet the Navigator",
+  "platformOnboardingHealthPermission": "Allow activity reading",
+  "platformOnboardingFirstSync": "Sync your first steps",
+  "platformOnboardingPetSelection": "Choose a companion",
+  "platformOnboardingFirstExpedition": "Start your first expedition",
+  "platformOnboardingFirstEvent": "Make your first decision",
+  "platformSkillSteadyStepName": "Steady Step",
+  "platformSkillSteadyStepDescription": "Helps sustain consistent activity streaks and unlocks crossings that require precise rhythm.",
+  "platformSkillTrailMemoryName": "Route Memory",
+  "platformSkillTrailMemoryDescription": "Preserves visited nodes and opens forgotten routes.",
+  "platformSkillEnergyDisciplineName": "Energy Discipline",
+  "platformSkillEnergyDisciplineDescription": "Reveals the weekly energy budget and unlocks current stabilization.",
+  "platformSkillSignalReaderName": "Signal Reading",
+  "platformSkillSignalReaderDescription": "Unlocks extended details and hidden event outcomes.",
+  "platformQuestWalk3000Name": "First Route",
+  "platformQuestWalk15000Name": "Week in Motion",
+  "platformQuestResolve3Name": "Explorer",
+  "platformQuestResolve10Name": "Chapter Navigator",
+  "platformQuestJoinSquadName": "Onward Together",
+  "platformAchievementOnboardingCompleteName": "Path Open",
+  "platformAchievementPetFriendName": "Loyal Companion",
+  "platformAchievementSkillApprenticeName": "Pilot Apprentice",
+  "platformAchievementQuestRunnerName": "Task Runner",
+  "platformAchievementWeeklyRouteName": "Weekly Route",
+  "platformAchievementSquadMemberName": "In a Squad",
+  "platformAchievementFirstCosmeticName": "New Look",
+  "platformAchievementSeasonLevel3Name": "Season Level Three",
+  "platformCosmeticPilotScarfName": "Navigator Scarf",
+  "platformCosmeticSparkHaloName": "Spark Halo",
+  "platformCosmeticTrailBannerName": "Route Banner",
+  "platformCosmeticDawnFrameName": "Dawn Frame",
+  "platformSeasonFirstSignalName": "Season of the First Signal",
+  "platformExperimentHomeEnergyDescription": "Home energy panel copy",
+  "platformExperimentQuestOrderDescription": "Quest card information order",
+
+  "platformCompactTitle": "Journal",
+  "platformTitle": "Path Journal",
+  "platformLoadingTitle": "Opening the path journal",
+  "platformLoadingMessage": "Loading the season, companions and server-accepted entries.",
+  "platformMissingSnapshotDetails": "The backend returned no Platform state",
+  "platformRefreshJournal": "Refresh journal",
+  "platformEnergyMotivational": "Energy turns walks into new routes.",
+  "platformEnergyControl": "ENERGY powers expeditions and the weekly route.",
+  "platformPetsTitle": "Companions",
+  "platformPetsSubtitle": "Choose a companion and strengthen your bond.",
+  "platformSkillsTitle": "Pilot skills",
+  "platformSkillsSubtitle": "Skills unlock through season XP.",
+  "platformQuestsTitle": "Quests",
+  "platformQuestSummary": "{steps} steps · {events} events",
+  "@platformQuestSummary": {
+    "placeholders": {
+      "steps": {"type": "int"},
+      "events": {"type": "int"}
+    }
+  },
+  "platformCosmeticsTitle": "Cosmetics",
+  "platformSandboxPurchasesAvailable": "Purchases use the sandbox provider.",
+  "platformPurchasesUnavailable": "Purchases are currently unavailable.",
+  "platformJournalFooter": "Content {contentVersion} · config {seasonId}",
+  "@platformJournalFooter": {
+    "placeholders": {
+      "contentVersion": {"type": "String"},
+      "seasonId": {"type": "String"}
+    }
+  },
+
+  "platformNoRewardsSummary": "No rewards.",
+  "platformRewardsSummary": "Total rewards: {rewards}.",
+  "@platformRewardsSummary": {
+    "placeholders": {
+      "rewards": {"type": "String"}
+    }
+  },
+  "platformJourneyCompletedSemantics": "Journey {journey} completed. Decisions made: {decisions}. {finalDecision}{rewards}",
+  "@platformJourneyCompletedSemantics": {
+    "placeholders": {
+      "journey": {"type": "int"},
+      "decisions": {"type": "int"},
+      "finalDecision": {"type": "String"},
+      "rewards": {"type": "String"}
+    }
+  },
+  "platformJourneyCompletedBadge": "Journey #{journey} completed{saved}",
+  "@platformJourneyCompletedBadge": {
+    "placeholders": {
+      "journey": {"type": "int"},
+      "saved": {"type": "String"}
+    }
+  },
+  "platformSavedResultSuffix": " · saved result",
+  "platformJourneySummaryTitle": "Journey summary",
+  "platformDecisionsAcceptedCount": "Decisions made: {count}",
+  "@platformDecisionsAcceptedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "platformNoJourneyRewards": "No rewards were granted in this journey.",
+  "platformPilotXpReward": "+{amount} pilot XP",
+  "@platformPilotXpReward": {
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "platformCompanionBondReward": "+{amount} companion bond",
+  "@platformCompanionBondReward": {
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "platformNamedCompanionBondReward": "{name} · +{amount} bond",
+  "@platformNamedCompanionBondReward": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "amount": {"type": "int"}
+    }
+  },
+  "platformNamedCompanionBondSemantic": "{name}: +{amount} bond",
+  "@platformNamedCompanionBondSemantic": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "amount": {"type": "int"}
+    }
+  },
+  "platformMaterialReward": "+{quantity} {name}",
+  "@platformMaterialReward": {
+    "placeholders": {
+      "quantity": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "platformFinalRouteTitle": "Route finale",
+  "platformFinalDecisionSemantics": "Finale: {event}. Decision: {choice}. Outcome: {outcome}. {summary}",
+  "@platformFinalDecisionSemantics": {
+    "placeholders": {
+      "event": {"type": "String"},
+      "choice": {"type": "String"},
+      "outcome": {"type": "String"},
+      "summary": {"type": "String"}
+    }
+  },
+  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. Total rewards: +{experience} pilot XP; +{bond} companion bond.",
+  "@platformJourneyChronicleSemantics": {
+    "placeholders": {
+      "journeys": {"type": "int"},
+      "decisions": {"type": "int"},
+      "experience": {"type": "int"},
+      "bond": {"type": "int"}
+    }
+  },
+  "platformJourneyChronicleBadge": "Completed · {count}",
+  "@platformJourneyChronicleBadge": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "platformJourneyChronicleTitle": "Journey chronicle",
+  "platformJourneyChronicleSubtitle": "Permanent totals from every confirmed route.",
+  "platformDecisionsChip": "Decisions · {count}",
+  "@platformDecisionsChip": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "platformJourneyArchiveBadge": "Archive · {count}",
+  "@platformJourneyArchiveBadge": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "platformJourneyArchiveTitle": "Recent journeys",
+  "platformJourneyArchiveSubtitle": "Confirmed results from previous routes.",
+  "platformJourneyArchiveEntrySemantics": "Journey {journey}. Decisions made: {decisions}. {finalDecision}{rewards}",
+  "@platformJourneyArchiveEntrySemantics": {
+    "placeholders": {
+      "journey": {"type": "int"},
+      "decisions": {"type": "int"},
+      "finalDecision": {"type": "String"},
+      "rewards": {"type": "String"}
+    }
+  },
+  "platformJourneyNumber": "Journey #{journey}",
+  "@platformJourneyNumber": {
+    "placeholders": {
+      "journey": {"type": "int"}
+    }
+  },
+  "platformHideJourneyDecisionsSemantics": "Hide decisions from journey {journey}",
+  "@platformHideJourneyDecisionsSemantics": {
+    "placeholders": {
+      "journey": {"type": "int"}
+    }
+  },
+  "platformShowJourneyDecisionsSemantics": "Show decisions from journey {journey}. Entries: {count}",
+  "@platformShowJourneyDecisionsSemantics": {
+    "placeholders": {
+      "journey": {"type": "int"},
+      "count": {"type": "int"}
+    }
+  },
+  "platformHideJourneyDecisions": "Hide decisions",
+  "platformShowJourneyDecisions": "Show decisions ({count})",
+  "@platformShowJourneyDecisions": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "platformJourneyLabel": "Journey #{journey}{saved}",
+  "@platformJourneyLabel": {
+    "placeholders": {
+      "journey": {"type": "int"},
+      "saved": {"type": "String"}
+    }
+  },
+  "platformSavedEntrySuffix": " · saved entry",
+  "platformDecisionLogTitle": "Route decisions",
+  "platformDecisionLogSubtitle": "Only server-accepted decisions from the current journey.",
+  "platformNoDecisions": "Journey {journey}: no decisions yet",
+  "@platformNoDecisions": {
+    "placeholders": {
+      "journey": {"type": "int"}
+    }
+  },
+  "platformFirstDecisionHint": "The first decision appears after a route event.",
+  "platformDecisionEntrySemantics": "Entry {index} of {total}. {event}. Decision: {choice}. Outcome: {outcome}. {summary}{rewards}",
+  "@platformDecisionEntrySemantics": {
+    "placeholders": {
+      "index": {"type": "int"},
+      "total": {"type": "int"},
+      "event": {"type": "String"},
+      "choice": {"type": "String"},
+      "outcome": {"type": "String"},
+      "summary": {"type": "String"},
+      "rewards": {"type": "String"}
+    }
+  },
+  "platformRewardsSuffix": " Rewards: {rewards}.",
+  "@platformRewardsSuffix": {
+    "placeholders": {
+      "rewards": {"type": "String"}
+    }
+  },
+
+  "platformCrewSemantics": "Route crew: pilot and {companion}. {cosmetics}",
+  "@platformCrewSemantics": {
+    "placeholders": {
+      "companion": {"type": "String"},
+      "cosmetics": {"type": "String"}
+    }
+  },
+  "platformCrewTitle": "Pilot and {companion}",
+  "@platformCrewTitle": {
+    "placeholders": {
+      "companion": {"type": "String"}
+    }
+  },
+  "platformNoActiveCosmetics": "No active cosmetics",
+  "platformEquippedCosmetics": "Equipped: {names}",
+  "@platformEquippedCosmetics": {
+    "placeholders": {
+      "names": {"type": "String"}
+    }
+  },
+  "platformPilotJournalBadge": "Pilot journal",
+  "platformChapterVistaSemantics": "Misty sector, visual for the first chapter",
+  "platformChapterState": "Chapter with {nodes} nodes · state {stateVersion}",
+  "@platformChapterState": {
+    "placeholders": {
+      "nodes": {"type": "int"},
+      "stateVersion": {"type": "int"}
+    }
+  },
+  "platformCompanionLevelShort": "{name} · lv. {level}",
+  "@platformCompanionLevelShort": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "platformPathOpen": "Path open",
+  "platformPathBeginning": "Path beginning",
+  "platformPathOpenDescription": "All core expedition systems are available.",
+  "platformPathBeginningDescription": "Complete the introductory route with the Navigator.",
+  "platformOnboardingStepSemantics": "{step}: {status}",
+  "@platformOnboardingStepSemantics": {
+    "placeholders": {
+      "step": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "platformCompletedStatus": "completed",
+  "platformIncompleteStatus": "not completed",
+  "platformResumeFirstJourney": "Continue the first journey",
+
+  "platformWeeklyRouteTitle": "Weekly route",
+  "platformSeasonLevel": "Lv. {level}",
+  "@platformSeasonLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "platformEnergyRemaining": "{energy} ENERGY to finish",
+  "@platformEnergyRemaining": {
+    "placeholders": {
+      "energy": {"type": "int"}
+    }
+  },
+  "platformEnergyBalanceUnavailable": "ENERGY balance is currently unavailable",
+  "platformEnergyAvailable": "{energy} ENERGY available{version}",
+  "@platformEnergyAvailable": {
+    "placeholders": {
+      "energy": {"type": "int"},
+      "version": {"type": "String"}
+    }
+  },
+  "platformEconomyVersionSuffix": " · version {version}",
+  "@platformEconomyVersionSuffix": {
+    "placeholders": {
+      "version": {"type": "int"}
+    }
+  },
+  "platformWeeklyRouteCompleted": "Route completed",
+  "platformSpendEnergy": "Spend {energy} ENERGY",
+  "@platformSpendEnergy": {
+    "placeholders": {
+      "energy": {"type": "int"}
+    }
+  },
+  "platformSeasonRewardLevel": "Level {level} reward",
+  "@platformSeasonRewardLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+
+  "platformPetLevelSemantics": "{name} · level {level}",
+  "@platformPetLevelSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "platformInSquadBadge": "In the squad",
+  "platformPetFullyEvolved": "final server-authored companion form.",
+  "platformPetReadyToEvolve": "Bond is ready for evolution.",
+  "platformPetBondToEvolve": "strengthen the bond for the next evolution.",
+  "platformPetBondFromEvents": "Event decisions strengthen your companion bond.",
+  "platformCompanionBondGrowingSemantics": "Companion “{name}” bond: {bond} of {target}",
+  "@platformCompanionBondGrowingSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "bond": {"type": "int"},
+      "target": {"type": "int"}
+    }
+  },
+  "platformCompanionBondReadySemantics": "Companion “{name}” bond: {bond} of {target}. Ready to evolve",
+  "@platformCompanionBondReadySemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "bond": {"type": "int"},
+      "target": {"type": "int"}
+    }
+  },
+  "platformCompanionBondEvolvedSemantics": "Companion “{name}” bond: {bond}",
+  "@platformCompanionBondEvolvedSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "bond": {"type": "int"}
+    }
+  },
+  "platformBondLabel": "Bond",
+  "platformQuestProgressSemantics": "Quest “{name}” progress: {progress} of {target}",
+  "@platformQuestProgressSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "progress": {"type": "int"},
+      "target": {"type": "int"}
+    }
+  },
+  "platformWeeklyRouteSemantics": "Weekly route “{season}”: {progress} of {target} ENERGY",
+  "@platformWeeklyRouteSemantics": {
+    "placeholders": {
+      "season": {"type": "String"},
+      "progress": {"type": "int"},
+      "target": {"type": "int"}
+    }
+  },
+  "platformSelectCompanion": "Add to squad",
+  "platformActiveCompanion": "Active companion",
+  "platformEvolveCompanion": "Evolve",
+  "platformNeedMoreBond": "More bond required",
+  "platformSkillRequiredXp": "Requires {experience} season XP",
+  "@platformSkillRequiredXp": {
+    "placeholders": {
+      "experience": {"type": "int"}
+    }
+  },
+  "platformSkillUnlocked": "Skill unlocked",
+  "platformUnlockSkill": "Unlock skill",
+  "platformSkillUnavailable": "Skill not yet available",
+  "platformQuestReward": "+{experience} season XP · +{bond} bond",
+  "@platformQuestReward": {
+    "placeholders": {
+      "experience": {"type": "int"},
+      "bond": {"type": "int"}
+    }
+  },
+  "platformQuestReceived": "Received",
+  "platformQuestReady": "Ready",
+  "platformQuestInProgress": "On route",
+  "platformClaimQuestReward": "Claim reward",
+  "platformQuestWorking": "In progress",
+
+  "platformSquadTitle": "Squad",
+  "platformSquadSubtitle": "A shared route and common call sign.",
+  "platformSquadSemantics": "Squad “{name}”. Members: {count}",
+  "@platformSquadSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "platformSquadMembers": "Members: {count}",
+  "@platformSquadMembers": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "platformLeaveSquad": "Leave squad",
+  "platformFreeChannel": "Open channel",
+  "platformFreeChannelDescription": "Create a call sign for a new squad or tune in to an existing signal.",
+  "platformCreateSquad": "Create squad",
+  "platformJoinSquad": "Join",
+  "platformSquadEmptySubtitle": "Create a group or join by ID.",
+  "platformNewSquadNameLabel": "New squad name",
+  "platformExistingSquadIdLabel": "Existing squad ID",
+  "platformSquadId": "ID: {id}",
+  "@platformSquadId": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+
+  "platformCosmeticPilotSlot": "Pilot",
+  "platformCosmeticPetSlot": "Companion",
+  "platformCosmeticProfileSlot": "Profile",
+  "platformCosmeticBasePrice": "base",
+  "platformCosmeticSandboxPrice": "{price} sandbox credits",
+  "@platformCosmeticSandboxPrice": {
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "platformCosmeticEquipped": "Equipped",
+  "platformEquipCosmetic": "Equip",
+  "platformBuyCosmetic": "Buy",
+  "platformAchievementsTitle": "Achievements",
+  "platformAchievementsProgress": "{unlocked} of {total} unlocked",
+  "@platformAchievementsProgress": {
+    "placeholders": {
+      "unlocked": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "platformAchievementUnlocked": "Unlocked",
+  "platformAchievementLocked": "Locked",
+  "platformAchievementSemantics": "Achievement “{name}”: {status}",
+  "@platformAchievementSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "platformExperimentsTitle": "Experiments and configuration",
+  "platformExperimentsSubtitle": "Internal diagnostics · expand manually",
+  "platformExperimentUnassigned": "unassigned",
+  "platformBackgroundSyncTitle": "Background sync",
+  "platformEnabledByConfig": "enabled by configuration",
+  "platformDisabledByConfig": "disabled by configuration",
+  "platformActivityCommandRetentionTitle": "Activity command retention",
+  "platformRetentionDays": "{days} days",
+  "@platformRetentionDays": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+
+  "platformLoadFailureTitle": "Path journal could not be loaded",
+  "platformLoadFailureMessage": "Current entries were not accepted. Until a successful retry, the journal neither shows nor runs server actions.",
+  "platformCommandFailed": "The action could not be completed. Refresh the journal and try again.",
+  "platformCommandOnboardingUpdated": "First-journey progress updated",
+  "platformCommandCompanionSelected": "Active companion updated",
+  "platformCommandCompanionEvolved": "Companion evolution updated",
+  "platformCommandSkillUnlocked": "Pilot skill updated",
+  "platformCommandQuestClaimed": "Quest reward updated",
+  "platformCommandWeeklyRouteAdvanced": "Weekly route updated",
+  "platformCommandSquadCreated": "Squad created",
+  "platformCommandSquadJoined": "Squad joined",
+  "platformCommandSquadLeft": "Squad left",
+  "platformCommandCosmeticPurchased": "Cosmetic added to the catalog",
+  "platformCommandCosmeticEquipped": "Active appearance updated",
+  "platformCommandSeasonRewardClaimed": "Season reward updated",
+
   "companionGrowthKnownSemantics": "{name}, stage {current} of {total}",
   "@companionGrowthKnownSemantics": {
     "placeholders": {

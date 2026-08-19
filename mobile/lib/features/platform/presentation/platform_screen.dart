@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/core/localization/current_content_localizations.dart';
+import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
+import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
@@ -27,15 +31,6 @@ import 'package:walking_rpg_mobile/features/platform/data/platform_api_client.da
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
-
-const Map<String, String> _onboardingNames = <String, String>{
-  'welcome': 'Познакомиться с навигатором',
-  'health-permission': 'Разрешить чтение активности',
-  'first-sync': 'Синхронизировать первые шаги',
-  'pet-selection': 'Выбрать питомца',
-  'first-expedition': 'Начать первую экспедицию',
-  'first-event': 'Принять первое решение',
-};
 
 const String _sandboxPurchaseCommand = 'BUY_COSMETIC';
 const double _platformBaseBottomReserve = 46;
@@ -189,14 +184,16 @@ class _PlatformScreenState extends State<PlatformScreen> {
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             title: Text(
-              compactChrome ? 'Журнал' : 'Путевой журнал',
+              compactChrome
+                  ? context.l10n.platformCompactTitle
+                  : context.l10n.platformTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             actions: <Widget>[
               if (!compactChrome)
                 IconButton(
-                  tooltip: 'Обновить',
+                  tooltip: context.l10n.homeRefreshTooltip,
                   onPressed: _busyCommand == null ? _reload : null,
                   icon: const Icon(Icons.refresh),
                 ),
@@ -214,7 +211,7 @@ class _PlatformScreenState extends State<PlatformScreen> {
                 )
               else
                 IconButton(
-                  tooltip: 'Аккаунт',
+                  tooltip: context.l10n.accountTooltip,
                   onPressed: widget.onOpenAccount,
                   icon: const Icon(Icons.account_circle_outlined),
                 ),
@@ -230,26 +227,20 @@ class _PlatformScreenState extends State<PlatformScreen> {
                       AsyncSnapshot<_PlatformViewData> snapshot,
                     ) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const ExpeditionReadState.loading(
-                          key: Key('platform-loading-state'),
-                          title: 'Открываем путевой журнал',
-                          message:
-                              'Получаем сезон, спутников и принятые сервером '
-                              'записи.',
+                        return ExpeditionReadState.loading(
+                          key: const Key('platform-loading-state'),
+                          title: context.l10n.platformLoadingTitle,
+                          message: context.l10n.platformLoadingMessage,
                         );
                       }
                       if (snapshot.hasError) {
                         return _PlatformError(
-                          error: snapshot.error!,
                           onRetry: _reload,
                         );
                       }
                       final _PlatformViewData? data = snapshot.data;
                       if (data == null) {
                         return _PlatformError(
-                          error: const FormatException(
-                            'Backend не вернул platform-состояние',
-                          ),
                           onRetry: _reload,
                         );
                       }
@@ -364,14 +355,21 @@ class _PlatformScreenState extends State<PlatformScreen> {
         );
       });
       widget.onServerStateChanged?.call();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(result.message)));
-    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.currentPlatformCommandMessage(
+              result.commandType,
+              result.message,
+            ),
+          ),
+        ),
+      );
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(_commandErrorMessage(error))));
+        ).showSnackBar(SnackBar(content: Text(context.l10n.platformCommandFailed)));
       }
     } finally {
       if (mounted) {
@@ -479,7 +477,7 @@ class _PlatformAppActionsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<_PlatformAppAction>(
       key: const Key('platform-more-actions'),
-      tooltip: 'Ещё действия',
+      tooltip: context.l10n.moreActionsTooltip,
       icon: const Icon(Icons.more_vert),
       onSelected: (_PlatformAppAction action) {
         switch (action) {
@@ -497,18 +495,18 @@ class _PlatformAppActionsMenu extends StatelessWidget {
               key: const Key('platform-menu-refresh'),
               value: _PlatformAppAction.refresh,
               enabled: refreshEnabled,
-              child: const _PlatformMenuLabel(
+              child: _PlatformMenuLabel(
                 icon: Icons.refresh,
-                label: 'Обновить журнал',
+                label: context.l10n.platformRefreshJournal,
               ),
             ),
             PopupMenuItem<_PlatformAppAction>(
               key: const Key('platform-menu-account'),
               value: _PlatformAppAction.account,
               enabled: onOpenAccount != null,
-              child: const _PlatformMenuLabel(
+              child: _PlatformMenuLabel(
                 icon: Icons.account_circle_outlined,
-                label: 'Аккаунт',
+                label: context.l10n.accountTooltip,
               ),
             ),
           ],
@@ -570,8 +568,8 @@ class _PlatformBody extends StatelessWidget {
     final String energyCopy =
         snapshot.userState.experimentAssignments['home-energy-copy-v1'] ==
             'MOTIVATIONAL'
-        ? 'Энергия превращает прогулки в новые маршруты.'
-        : 'ENERGY расходуется на экспедицию и недельный маршрут.';
+        ? context.l10n.platformEnergyMotivational
+        : context.l10n.platformEnergyControl;
 
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
@@ -626,9 +624,9 @@ class _PlatformBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const _SectionTitle(
-            title: 'Питомцы',
-            subtitle: 'Выберите спутника и развивайте связь.',
+          _SectionTitle(
+            title: context.l10n.platformPetsTitle,
+            subtitle: context.l10n.platformPetsSubtitle,
             icon: Icons.pets_outlined,
           ),
           for (final PlatformPet pet in snapshot.userState.pets) ...<Widget>[
@@ -646,9 +644,9 @@ class _PlatformBody extends StatelessWidget {
             const SizedBox(height: 8),
           ],
           const SizedBox(height: 12),
-          const _SectionTitle(
-            title: 'Навыки пилота',
-            subtitle: 'Навыки открываются за сезонный опыт.',
+          _SectionTitle(
+            title: context.l10n.platformSkillsTitle,
+            subtitle: context.l10n.platformSkillsSubtitle,
             icon: Icons.hub_outlined,
           ),
           for (final PlatformSkill skill
@@ -668,10 +666,11 @@ class _PlatformBody extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           _SectionTitle(
-            title: 'Задания',
-            subtitle:
-                '${snapshot.userState.totalAcceptedSteps} шагов · '
-                '${snapshot.userState.resolvedEventCount} событий',
+            title: context.l10n.platformQuestsTitle,
+            subtitle: context.l10n.platformQuestSummary(
+              snapshot.userState.totalAcceptedSteps,
+              snapshot.userState.resolvedEventCount,
+            ),
             icon: Icons.assignment_outlined,
           ),
           for (final PlatformQuest quest
@@ -704,10 +703,10 @@ class _PlatformBody extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _SectionTitle(
-            title: 'Косметика',
+            title: context.l10n.platformCosmeticsTitle,
             subtitle: sandboxPaymentsAvailable
-                ? 'Покупки работают через sandbox-провайдер.'
-                : 'Покупки сейчас недоступны.',
+                ? context.l10n.platformSandboxPurchasesAvailable
+                : context.l10n.platformPurchasesUnavailable,
             icon: Icons.auto_awesome_outlined,
           ),
           for (final PlatformCosmetic cosmetic
@@ -738,13 +737,15 @@ class _PlatformBody extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: _busy ? null : onRefresh,
             icon: const Icon(Icons.sync),
-            label: const Text('Обновить журнал'),
+            label: Text(context.l10n.platformRefreshJournal),
           ),
           const SizedBox(height: 12),
           Text(
             key: const Key('platform-journal-footer'),
-            'Контент ${snapshot.contentVersion} · '
-            'конфигурация ${snapshot.remoteConfig.seasonId}',
+            context.l10n.platformJournalFooter(
+              snapshot.contentVersion,
+              snapshot.remoteConfig.seasonId,
+            ),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -767,20 +768,26 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final List<String> rewardLabels = _journeyRecapRewardLabels(recap);
+    final List<String> rewardLabels = _journeyRecapRewardLabels(
+      context,
+      recap,
+    );
     final String rewardSummary = rewardLabels.isEmpty
-        ? 'Наград нет.'
-        : 'Итоговые награды: ${rewardLabels.join('; ')}.';
+        ? context.l10n.platformNoRewardsSummary
+        : context.l10n.platformRewardsSummary(rewardLabels.join('; '));
     final String finalDecisionSummary = _journeyFinalDecisionSemantic(
+      context,
       recap.finalDecision,
     );
     return Semantics(
       key: const Key('platform-journey-completion-recap'),
       container: true,
-      label:
-          'Поход ${recap.journeyNumber} завершён. '
-          'Принято решений: ${recap.decisionCount}. '
-          '$finalDecisionSummary$rewardSummary',
+      label: context.l10n.platformJourneyCompletedSemantics(
+        recap.journeyNumber,
+        recap.decisionCount,
+        finalDecisionSummary,
+        rewardSummary,
+      ),
       child: ExcludeSemantics(
         child: ExpeditionPanel(
           tone: ExpeditionPanelTone.lumen,
@@ -791,18 +798,27 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: ExpeditionBadge(
                   label:
-                      'Поход №${recap.journeyNumber} завершён'
-                      '${snapshot.isCached ? ' · сохранённый итог' : ''}',
+                      context.l10n.platformJourneyCompletedBadge(
+                        recap.journeyNumber,
+                        snapshot.isCached
+                            ? context.l10n.platformSavedResultSuffix
+                            : '',
+                      ),
                   icon: Icons.flag_outlined,
                   tone: ExpeditionPanelTone.lumen,
                   allowWrap: true,
                 ),
               ),
               const SizedBox(height: 14),
-              Text('Итог похода', style: theme.textTheme.titleLarge),
+              Text(
+                context.l10n.platformJourneySummaryTitle,
+                style: theme.textTheme.titleLarge,
+              ),
               const SizedBox(height: 4),
               Text(
-                'Принято решений: ${recap.decisionCount}',
+                context.l10n.platformDecisionsAcceptedCount(
+                  recap.decisionCount,
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
@@ -818,7 +834,7 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
               const SizedBox(height: 14),
               if (rewardLabels.isEmpty)
                 Text(
-                  'В этом походе награды не выдавались.',
+                  context.l10n.platformNoJourneyRewards,
                   style: theme.textTheme.bodyMedium,
                 )
               else
@@ -829,26 +845,34 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                     if (recap.pilotExperienceGained > 0)
                       _JourneyRewardChip(
                         icon: Icons.star_outline,
-                        label: '+${recap.pilotExperienceGained} XP пилота',
+                        label: context.l10n.platformPilotXpReward(
+                          recap.pilotExperienceGained,
+                        ),
                       ),
                     if (recap.petBondRewards.isEmpty && recap.petBondGained > 0)
                       _JourneyRewardChip(
                         icon: Icons.favorite_border,
-                        label: '+${recap.petBondGained} связи спутников',
+                        label: context.l10n.platformCompanionBondReward(
+                          recap.petBondGained,
+                        ),
                       ),
                     for (final HomeJourneyPetBondReward reward
                         in recap.petBondRewards)
                       _JourneyRewardChip(
                         icon: Icons.favorite_border,
-                        label:
-                            '${reward.petName} · '
-                            '+${reward.bondGained} связи',
+                        label: context.l10n.platformNamedCompanionBondReward(
+                          reward.petName,
+                          reward.bondGained,
+                        ),
                       ),
                     for (final HomeJourneyMaterialReward material
                         in recap.materials)
                       _JourneyRewardChip(
                         icon: Icons.inventory_2_outlined,
-                        label: '+${material.quantity} ${material.itemName}',
+                        label: context.l10n.platformMaterialReward(
+                          material.quantity,
+                          material.itemName,
+                        ),
                       ),
                   ],
                 ),
@@ -881,7 +905,7 @@ class _JourneyFinalDecisionSummary extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Финал маршрута',
+              context.l10n.platformFinalRouteTitle,
               style: theme.textTheme.labelLarge?.copyWith(
                 color: colors.secondary,
                 fontWeight: FontWeight.w800,
@@ -925,12 +949,12 @@ class _JourneyChronicleCard extends StatelessWidget {
     return Semantics(
       key: const Key('platform-journey-chronicle'),
       container: true,
-      label:
-          'Летопись походов. '
-          'Завершено походов: ${chronicle.completedJourneyCount}. '
-          'Принято решений: ${chronicle.decisionCount}. '
-          'Всего наград: +${chronicle.pilotExperienceGained} XP пилота; '
-          '+${chronicle.petBondGained} связи спутников.',
+      label: context.l10n.platformJourneyChronicleSemantics(
+        chronicle.completedJourneyCount,
+        chronicle.decisionCount,
+        chronicle.pilotExperienceGained,
+        chronicle.petBondGained,
+      ),
       child: ExcludeSemantics(
         child: ExpeditionPanel(
           tone: ExpeditionPanelTone.resonance,
@@ -940,17 +964,22 @@ class _JourneyChronicleCard extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: ExpeditionBadge(
-                  label: 'Завершено · ${chronicle.completedJourneyCount}',
+                  label: context.l10n.platformJourneyChronicleBadge(
+                    chronicle.completedJourneyCount,
+                  ),
                   icon: Icons.auto_stories_outlined,
                   tone: ExpeditionPanelTone.resonance,
                   allowWrap: true,
                 ),
               ),
               const SizedBox(height: 14),
-              Text('Летопись походов', style: theme.textTheme.titleLarge),
+              Text(
+                context.l10n.platformJourneyChronicleTitle,
+                style: theme.textTheme.titleLarge,
+              ),
               const SizedBox(height: 4),
               Text(
-                'Постоянный итог всех подтверждённых маршрутов.',
+                context.l10n.platformJourneyChronicleSubtitle,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
@@ -962,15 +991,21 @@ class _JourneyChronicleCard extends StatelessWidget {
                 children: <Widget>[
                   _JourneyRewardChip(
                     icon: Icons.alt_route,
-                    label: 'Решений · ${chronicle.decisionCount}',
+                    label: context.l10n.platformDecisionsChip(
+                      chronicle.decisionCount,
+                    ),
                   ),
                   _JourneyRewardChip(
                     icon: Icons.star_outline,
-                    label: '+${chronicle.pilotExperienceGained} XP пилота',
+                    label: context.l10n.platformPilotXpReward(
+                      chronicle.pilotExperienceGained,
+                    ),
                   ),
                   _JourneyRewardChip(
                     icon: Icons.favorite_border,
-                    label: '+${chronicle.petBondGained} связи спутников',
+                    label: context.l10n.platformCompanionBondReward(
+                      chronicle.petBondGained,
+                    ),
                   ),
                 ],
               ),
@@ -1000,16 +1035,19 @@ class _JourneyArchiveCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: ExpeditionBadge(
-              label: 'Архив · ${recaps.length}',
+              label: context.l10n.platformJourneyArchiveBadge(recaps.length),
               icon: Icons.history,
               tone: ExpeditionPanelTone.neutral,
             ),
           ),
           const SizedBox(height: 14),
-          Text('Недавние походы', style: theme.textTheme.titleLarge),
+          Text(
+            context.l10n.platformJourneyArchiveTitle,
+            style: theme.textTheme.titleLarge,
+          ),
           const SizedBox(height: 4),
           Text(
-            'Подтверждённые итоги предыдущих маршрутов.',
+            context.l10n.platformJourneyArchiveSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -1034,20 +1072,26 @@ class _JourneyArchiveEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final List<String> rewardLabels = _journeyRecapRewardLabels(recap);
+    final List<String> rewardLabels = _journeyRecapRewardLabels(
+      context,
+      recap,
+    );
     final String rewardSummary = rewardLabels.isEmpty
-        ? 'Наград нет.'
-        : 'Итоговые награды: ${rewardLabels.join('; ')}.';
+        ? context.l10n.platformNoRewardsSummary
+        : context.l10n.platformRewardsSummary(rewardLabels.join('; '));
     final String finalDecisionSummary = _journeyFinalDecisionSemantic(
+      context,
       recap.finalDecision,
     );
     final Widget summary = Semantics(
       key: Key('platform-journey-archive-${recap.journeyNumber}'),
       container: true,
-      label:
-          'Поход ${recap.journeyNumber}. '
-          'Принято решений: ${recap.decisionCount}. '
-          '$finalDecisionSummary$rewardSummary',
+      label: context.l10n.platformJourneyArchiveEntrySemantics(
+        recap.journeyNumber,
+        recap.decisionCount,
+        finalDecisionSummary,
+        rewardSummary,
+      ),
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -1061,14 +1105,16 @@ class _JourneyArchiveEntry extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Поход №${recap.journeyNumber}',
+                  context.l10n.platformJourneyNumber(recap.journeyNumber),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Принято решений: ${recap.decisionCount}',
+                  context.l10n.platformDecisionsAcceptedCount(
+                    recap.decisionCount,
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),
@@ -1085,7 +1131,10 @@ class _JourneyArchiveEntry extends StatelessWidget {
                 ],
                 const SizedBox(height: 10),
                 if (rewardLabels.isEmpty)
-                  Text('Наград нет.', style: theme.textTheme.bodyMedium)
+                  Text(
+                    context.l10n.platformNoRewardsSummary,
+                    style: theme.textTheme.bodyMedium,
+                  )
                 else
                   Wrap(
                     spacing: 7,
@@ -1094,27 +1143,35 @@ class _JourneyArchiveEntry extends StatelessWidget {
                       if (recap.pilotExperienceGained > 0)
                         _JourneyRewardChip(
                           icon: Icons.star_outline,
-                          label: '+${recap.pilotExperienceGained} XP пилота',
+                          label: context.l10n.platformPilotXpReward(
+                            recap.pilotExperienceGained,
+                          ),
                         ),
                       if (recap.petBondRewards.isEmpty &&
                           recap.petBondGained > 0)
                         _JourneyRewardChip(
                           icon: Icons.favorite_border,
-                          label: '+${recap.petBondGained} связи спутников',
+                          label: context.l10n.platformCompanionBondReward(
+                            recap.petBondGained,
+                          ),
                         ),
                       for (final HomeJourneyPetBondReward reward
                           in recap.petBondRewards)
                         _JourneyRewardChip(
                           icon: Icons.favorite_border,
-                          label:
-                              '${reward.petName} · '
-                              '+${reward.bondGained} связи',
+                          label: context.l10n.platformNamedCompanionBondReward(
+                            reward.petName,
+                            reward.bondGained,
+                          ),
                         ),
                       for (final HomeJourneyMaterialReward material
                           in recap.materials)
                         _JourneyRewardChip(
                           icon: Icons.inventory_2_outlined,
-                          label: '+${material.quantity} ${material.itemName}',
+                          label: context.l10n.platformMaterialReward(
+                            material.quantity,
+                            material.itemName,
+                          ),
                         ),
                     ],
                   ),
@@ -1176,9 +1233,13 @@ class _JourneyArchiveDecisionHistoryState
           container: true,
           button: true,
           label: _expanded
-              ? 'Скрыть решения похода ${widget.journeyNumber}'
-              : 'Показать решения похода ${widget.journeyNumber}. '
-                    'Записей: ${widget.decisions.length}',
+              ? context.l10n.platformHideJourneyDecisionsSemantics(
+                  widget.journeyNumber,
+                )
+              : context.l10n.platformShowJourneyDecisionsSemantics(
+                  widget.journeyNumber,
+                  widget.decisions.length,
+                ),
           onTap: _toggle,
           child: ExcludeSemantics(
             child: OutlinedButton.icon(
@@ -1187,8 +1248,10 @@ class _JourneyArchiveDecisionHistoryState
               icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
               label: Text(
                 _expanded
-                    ? 'Скрыть решения'
-                    : 'Показать решения (${widget.decisions.length})',
+                    ? context.l10n.platformHideJourneyDecisions
+                    : context.l10n.platformShowJourneyDecisions(
+                        widget.decisions.length,
+                      ),
               ),
             ),
           ),
@@ -1213,26 +1276,40 @@ class _JourneyArchiveDecisionHistoryState
   }
 }
 
-String _journeyFinalDecisionSemantic(HomeJourneyFinalDecision? decision) {
+String _journeyFinalDecisionSemantic(
+  BuildContext context,
+  HomeJourneyFinalDecision? decision,
+) {
   if (decision == null) {
     return '';
   }
-  return 'Финал: ${decision.eventTitle}. '
-      'Решение: ${decision.choiceTitle}. '
-      'Исход: ${decision.outcomeTitle}. '
-      '${decision.outcomeSummary} ';
+  return '${context.l10n.platformFinalDecisionSemantics(
+    decision.eventTitle,
+    decision.choiceTitle,
+    decision.outcomeTitle,
+    decision.outcomeSummary,
+  )} ';
 }
 
-List<String> _journeyRecapRewardLabels(HomeExpeditionCompletionRecap recap) {
+List<String> _journeyRecapRewardLabels(
+  BuildContext context,
+  HomeExpeditionCompletionRecap recap,
+) {
   return <String>[
     if (recap.pilotExperienceGained > 0)
-      '+${recap.pilotExperienceGained} XP пилота',
+      context.l10n.platformPilotXpReward(recap.pilotExperienceGained),
     if (recap.petBondRewards.isEmpty && recap.petBondGained > 0)
-      '+${recap.petBondGained} связи спутников',
+      context.l10n.platformCompanionBondReward(recap.petBondGained),
     for (final HomeJourneyPetBondReward reward in recap.petBondRewards)
-      '${reward.petName}: +${reward.bondGained} связи',
+      context.l10n.platformNamedCompanionBondSemantic(
+        reward.petName,
+        reward.bondGained,
+      ),
     for (final HomeJourneyMaterialReward material in recap.materials)
-      '+${material.quantity} ${material.itemName}',
+      context.l10n.platformMaterialReward(
+        material.quantity,
+        material.itemName,
+      ),
   ];
 }
 
@@ -1256,19 +1333,23 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: ExpeditionBadge(
               key: const Key('platform-journey-decision-journey'),
-              label:
-                  'Поход №${snapshot.expeditionJourneyNumber}'
-                  '${snapshot.isCached ? ' · сохранённая запись' : ''}',
+              label: context.l10n.platformJourneyLabel(
+                snapshot.expeditionJourneyNumber,
+                snapshot.isCached ? context.l10n.platformSavedEntrySuffix : '',
+              ),
               icon: Icons.alt_route,
               tone: ExpeditionPanelTone.resonance,
               allowWrap: true,
             ),
           ),
           const SizedBox(height: 14),
-          Text('Решения маршрута', style: theme.textTheme.titleLarge),
+          Text(
+            context.l10n.platformDecisionLogTitle,
+            style: theme.textTheme.titleLarge,
+          ),
           const SizedBox(height: 4),
           Text(
-            'Только уже принятые сервером решения текущего похода.',
+            context.l10n.platformDecisionLogSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -1278,9 +1359,9 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             Semantics(
               key: const Key('platform-journey-decision-empty'),
               container: true,
-              label:
-                  'Поход ${snapshot.expeditionJourneyNumber}: '
-                  'решений пока нет',
+              label: context.l10n.platformNoDecisions(
+                snapshot.expeditionJourneyNumber,
+              ),
               child: ExcludeSemantics(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -1299,10 +1380,8 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                           color: colors.onSurfaceVariant,
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Первое решение появится после события маршрута.',
-                          ),
+                        Expanded(
+                          child: Text(context.l10n.platformFirstDecisionHint),
                         ),
                       ],
                     ),
@@ -1344,15 +1423,24 @@ class _JourneyDecisionEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final List<String> rewardLabels = _journeyDecisionRewardLabels(entry);
+    final List<String> rewardLabels = _journeyDecisionRewardLabels(
+      context,
+      entry,
+    );
     return Semantics(
       key: Key('platform-journey-decision-${entry.eventId}'),
       container: true,
-      label:
-          'Запись ${index + 1} из $total. ${entry.eventTitle}. '
-          'Решение: ${entry.choiceTitle}. Итог: ${entry.outcomeTitle}. '
-          '${entry.outcomeSummary}'
-          '${rewardLabels.isEmpty ? '' : ' Награды: ${rewardLabels.join('; ')}.'}',
+      label: context.l10n.platformDecisionEntrySemantics(
+        index + 1,
+        total,
+        entry.eventTitle,
+        entry.choiceTitle,
+        entry.outcomeTitle,
+        entry.outcomeSummary,
+        rewardLabels.isEmpty
+            ? ''
+            : context.l10n.platformRewardsSuffix(rewardLabels.join('; ')),
+      ),
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -1435,23 +1523,28 @@ class _JourneyDecisionEntry extends StatelessWidget {
                             if (entry.pilotExperienceGained > 0)
                               _JourneyRewardChip(
                                 icon: Icons.star_outline,
-                                label:
-                                    '+${entry.pilotExperienceGained} XP пилота',
+                                label: context.l10n.platformPilotXpReward(
+                                  entry.pilotExperienceGained,
+                                ),
                               ),
                             if (entry.petBondGained > 0)
                               _JourneyRewardChip(
                                 icon: Icons.favorite_border,
-                                label:
-                                    '${entry.petName} · '
-                                    '+${entry.petBondGained} связи',
+                                label: context
+                                    .l10n
+                                    .platformNamedCompanionBondReward(
+                                      entry.petName,
+                                      entry.petBondGained,
+                                    ),
                               ),
                             if (entry.materialReward
                                 case final HomeJourneyMaterialReward material)
                               _JourneyRewardChip(
                                 icon: Icons.inventory_2_outlined,
-                                label:
-                                    '+${material.quantity} '
-                                    '${material.itemName}',
+                                label: context.l10n.platformMaterialReward(
+                                  material.quantity,
+                                  material.itemName,
+                                ),
                               ),
                           ],
                         ),
@@ -1469,15 +1562,19 @@ class _JourneyDecisionEntry extends StatelessWidget {
 }
 
 List<String> _journeyDecisionRewardLabels(
+  BuildContext context,
   HomeExpeditionDecisionLogEntry entry,
 ) {
   return <String>[
     if (entry.pilotExperienceGained > 0)
-      '+${entry.pilotExperienceGained} XP пилота',
+      context.l10n.platformPilotXpReward(entry.pilotExperienceGained),
     if (entry.petBondGained > 0)
-      '${entry.petName}: +${entry.petBondGained} связи',
+      context.l10n.platformNamedCompanionBondSemantic(
+        entry.petName,
+        entry.petBondGained,
+      ),
     if (entry.materialReward case final HomeJourneyMaterialReward material)
-      '+${material.quantity} ${material.itemName}',
+      context.l10n.platformMaterialReward(material.quantity, material.itemName),
   ];
 }
 
@@ -1514,6 +1611,18 @@ class _JournalHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final PlatformSnapshot snapshot = data.platform;
     final PlatformPet activePet = snapshot.activePet;
+    final String activePetName = context.l10n.currentPetName(
+      activePet.petId,
+      activePet.name,
+    );
+    final String activePetSpecies = context.l10n.currentPetSpecies(
+      activePet.petId,
+      activePet.species,
+    );
+    final String pilotName = context.l10n.currentPilotName(
+      'navigator-v1',
+      'Navigator',
+    );
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final List<String> equippedCosmeticNames = snapshot.content.cosmetics
@@ -1521,7 +1630,10 @@ class _JournalHero extends StatelessWidget {
           (PlatformCosmetic cosmetic) =>
               equippedCosmeticIds.contains(cosmetic.cosmeticId),
         )
-        .map((PlatformCosmetic cosmetic) => cosmetic.name)
+        .map(
+          (PlatformCosmetic cosmetic) => context.l10n
+              .currentPlatformCosmeticName(cosmetic.cosmeticId, cosmetic.name),
+        )
         .toList(growable: false);
     final Widget crewPortraits = ExcludeSemantics(
       child: Row(
@@ -1529,7 +1641,7 @@ class _JournalHero extends StatelessWidget {
         children: <Widget>[
           PilotPortrait(
             key: const Key('platform-hero-pilot-portrait'),
-            name: 'Навигатор',
+            name: pilotName,
             size: 64,
             highlighted: true,
             equippedCosmeticIds: equippedCosmeticIds,
@@ -1538,8 +1650,8 @@ class _JournalHero extends StatelessWidget {
           CompanionPortrait(
             key: const Key('platform-hero-pet-portrait'),
             petId: activePet.petId,
-            name: activePet.name,
-            species: activePet.species,
+            name: activePetName,
+            species: activePetSpecies,
             evolutionStage: activePet.evolutionStage,
             active: true,
             size: 64,
@@ -1552,14 +1664,16 @@ class _JournalHero extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Пилот и ${activePet.name}',
+          context.l10n.platformCrewTitle(activePetName),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 4),
         Text(
           equippedCosmeticNames.isEmpty
-              ? 'Без активной косметики'
-              : 'Экипировано: ${equippedCosmeticNames.join(' · ')}',
+              ? context.l10n.platformNoActiveCosmetics
+              : context.l10n.platformEquippedCosmetics(
+                  equippedCosmeticNames.join(' · '),
+                ),
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
@@ -1575,11 +1689,11 @@ class _JournalHero extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Expanded(
+              Expanded(
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: ExpeditionBadge(
-                    label: 'Журнал пилота',
+                    label: context.l10n.platformPilotJournalBadge,
                     icon: Icons.route_outlined,
                     tone: ExpeditionPanelTone.resonance,
                     allowWrap: true,
@@ -1594,20 +1708,25 @@ class _JournalHero extends StatelessWidget {
           ProfileCosmeticFrame(
             key: const Key('platform-profile-cosmetic-frame'),
             cosmeticId: _profileCosmeticIdFor(snapshot),
-            child: const ChapterVista(
-              key: Key('platform-chapter-vista'),
-              semanticLabel: 'Туманный сектор, визуальный образ первой главы',
+            child: ChapterVista(
+              key: const Key('platform-chapter-vista'),
+              semanticLabel: context.l10n.platformChapterVistaSemantics,
             ),
           ),
           const SizedBox(height: 18),
           Text(
-            snapshot.content.season.name,
+            context.l10n.currentPlatformSeasonName(
+              snapshot.content.season.seasonId,
+              snapshot.content.season.name,
+            ),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 6),
           Text(
-            'Глава из ${snapshot.content.chapterNodes} узлов · '
-            'состояние ${snapshot.stateVersion}',
+            context.l10n.platformChapterState(
+              snapshot.content.chapterNodes,
+              snapshot.stateVersion,
+            ),
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
@@ -1618,11 +1737,16 @@ class _JournalHero extends StatelessWidget {
             runSpacing: 8,
             children: <Widget>[
               ExpeditionBadge(
-                label: '${activePet.name} · ур. ${activePet.level}',
+                label: context.l10n.platformCompanionLevelShort(
+                  activePetName,
+                  activePet.level,
+                ),
                 icon: Icons.pets_outlined,
               ),
               ExpeditionBadge(
-                label: CompanionGrowth.formLabel(activePet.evolutionStage),
+                label: context.l10n.companionFormLabel(
+                  activePet.evolutionStage,
+                ),
                 icon: Icons.auto_awesome_outlined,
                 tone: ExpeditionPanelTone.resonance,
                 allowWrap: true,
@@ -1645,9 +1769,14 @@ class _JournalHero extends StatelessWidget {
           Semantics(
             key: const Key('platform-journal-crew'),
             container: true,
-            label:
-                'Экипаж маршрута: пилот и ${activePet.name}. '
-                '${equippedCosmeticNames.isEmpty ? 'Без активной косметики' : 'Экипировано: ${equippedCosmeticNames.join(', ')}'}',
+            label: context.l10n.platformCrewSemantics(
+              activePetName,
+              equippedCosmeticNames.isEmpty
+                  ? context.l10n.platformNoActiveCosmetics
+                  : context.l10n.platformEquippedCosmetics(
+                      equippedCosmeticNames.join(', '),
+                    ),
+            ),
             child: ExcludeSemantics(
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
@@ -1707,14 +1836,16 @@ class _OnboardingCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          snapshot.userState.onboardingComplete ? 'Путь открыт' : 'Начало пути',
+          snapshot.userState.onboardingComplete
+              ? context.l10n.platformPathOpen
+              : context.l10n.platformPathBeginning,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 3),
         Text(
           snapshot.userState.onboardingComplete
-              ? 'Все основные системы экспедиции доступны.'
-              : 'Завершите маршрут знакомства с навигатором.',
+              ? context.l10n.platformPathOpenDescription
+              : context.l10n.platformPathBeginningDescription,
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
@@ -1767,9 +1898,12 @@ class _OnboardingCard extends StatelessWidget {
               child: Semantics(
                 key: Key('platform-onboarding-step-$step'),
                 container: true,
-                label:
-                    '${_onboardingNames[step] ?? step}: '
-                    '${completed.contains(step) ? 'завершено' : 'не завершено'}',
+                label: context.l10n.platformOnboardingStepSemantics(
+                  context.l10n.currentPlatformOnboardingStep(step, step),
+                  completed.contains(step)
+                      ? context.l10n.platformCompletedStatus
+                      : context.l10n.platformIncompleteStatus,
+                ),
                 child: ExcludeSemantics(
                   child: Row(
                     children: <Widget>[
@@ -1783,7 +1917,14 @@ class _OnboardingCard extends StatelessWidget {
                             : colors.onSurfaceVariant,
                       ),
                       const SizedBox(width: 10),
-                      Expanded(child: Text(_onboardingNames[step] ?? step)),
+                      Expanded(
+                        child: Text(
+                          context.l10n.currentPlatformOnboardingStep(
+                            step,
+                            step,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1797,8 +1938,8 @@ class _OnboardingCard extends StatelessWidget {
                 key: const Key('platform-resume-first-journey'),
                 onPressed: onResume,
                 icon: const Icon(Icons.route_outlined),
-                label: const Text(
-                  'Продолжить первый путь',
+                label: Text(
+                  context.l10n.platformResumeFirstJourney,
                   maxLines: 2,
                   overflow: TextOverflow.visible,
                   textAlign: TextAlign.center,
@@ -1846,6 +1987,10 @@ class _WeeklyRouteCard extends StatelessWidget {
         break;
       }
     }
+    final String seasonName = context.l10n.currentPlatformSeasonName(
+      snapshot.content.season.seasonId,
+      snapshot.content.season.name,
+    );
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     return ExpeditionPanel(
@@ -1855,14 +2000,16 @@ class _WeeklyRouteCard extends StatelessWidget {
         children: <Widget>[
           LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              const Widget badge = ExpeditionBadge(
-                label: 'Недельный маршрут',
+              final Widget badge = ExpeditionBadge(
+                label: context.l10n.platformWeeklyRouteTitle,
                 icon: Icons.route_outlined,
                 tone: ExpeditionPanelTone.energy,
                 allowWrap: true,
               );
               final Widget level = Text(
-                'Ур. ${snapshot.userState.seasonLevel}',
+                context.l10n.platformSeasonLevel(
+                  snapshot.userState.seasonLevel,
+                ),
                 style: Theme.of(context).textTheme.labelLarge,
               );
               if (_usesCompactPlatformSection(context, constraints)) {
@@ -1885,13 +2032,13 @@ class _WeeklyRouteCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    snapshot.content.season.name,
+                    seasonName,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${snapshot.userState.seasonXp} XP · '
-                    '$remaining ENERGY до финиша',
+                    '${context.l10n.platformEnergyRemaining(remaining)}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -1901,15 +2048,21 @@ class _WeeklyRouteCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     availableEnergy == null
-                        ? 'Баланс ENERGY сейчас недоступен'
-                        : 'Доступно $availableEnergy ENERGY'
-                              '${economyVersion == null ? '' : ' · версия $economyVersion'}',
+                        ? context.l10n.platformEnergyBalanceUnavailable
+                        : context.l10n.platformEnergyAvailable(
+                            availableEnergy!,
+                            economyVersion == null
+                                ? ''
+                                : context.l10n.platformEconomyVersionSuffix(
+                                    economyVersion!,
+                                  ),
+                          ),
                   ),
                 ],
               );
               final Widget routeSignal = WeeklyRouteSignal(
                 routeId: snapshot.content.weeklyRoute.routeId,
-                seasonName: snapshot.content.season.name,
+                seasonName: seasonName,
                 progress: snapshot.userState.weeklyRouteProgress,
                 target: snapshot.userState.weeklyRouteRequiredEnergy,
                 size: 120,
@@ -1952,8 +2105,8 @@ class _WeeklyRouteCard extends StatelessWidget {
                 icon: const Icon(Icons.route_outlined),
                 label: Text(
                   remaining == 0
-                      ? 'Маршрут завершён'
-                      : 'Потратить $spendable ENERGY',
+                      ? context.l10n.platformWeeklyRouteCompleted
+                      : context.l10n.platformSpendEnergy(spendable),
                   maxLines: 2,
                   overflow: TextOverflow.visible,
                   textAlign: TextAlign.center,
@@ -1971,7 +2124,7 @@ class _WeeklyRouteCard extends StatelessWidget {
                     totalLevels: snapshot.content.season.levels,
                   ),
                   label: Text(
-                    'Награда уровня $rewardLevel',
+                    context.l10n.platformSeasonRewardLevel(rewardLevel),
                     maxLines: 2,
                     overflow: TextOverflow.visible,
                     textAlign: TextAlign.center,
@@ -2003,11 +2156,23 @@ class _PetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final String petName = context.l10n.currentPetName(pet.petId, pet.name);
+    final String petSpecies = context.l10n.currentPetSpecies(
+      pet.petId,
+      pet.species,
+    );
+    final String petTrait = context.l10n.journeyPetTrait(
+      pet.petId,
+      pet.trait,
+    );
+    final String evolutionStage = context.l10n.companionStageName(
+      pet.evolutionStage,
+    );
     final Widget portrait = CompanionPortrait(
       key: Key('platform-pet-portrait-${pet.petId}'),
       petId: pet.petId,
-      name: pet.name,
-      species: pet.species,
+      name: petName,
+      species: petSpecies,
       evolutionStage: pet.evolutionStage,
       active: pet.active,
       size: 78,
@@ -2017,12 +2182,12 @@ class _PetCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          '${pet.name} · уровень ${pet.level}',
+          context.l10n.platformPetLevelSemantics(petName, pet.level),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 5),
         Text(
-          '${pet.species} · ${pet.trait}',
+          '$petSpecies · $petTrait',
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
@@ -2033,12 +2198,12 @@ class _PetCard extends StatelessWidget {
           runSpacing: 6,
           children: <Widget>[
             if (pet.active)
-              const ExpeditionBadge(
-                label: 'В отряде',
+              ExpeditionBadge(
+                label: context.l10n.platformInSquadBadge,
                 icon: Icons.check_circle_outline,
               ),
             ExpeditionBadge(
-              label: CompanionGrowth.formLabel(pet.evolutionStage),
+              label: context.l10n.companionFormLabel(pet.evolutionStage),
               icon: Icons.auto_awesome_outlined,
               tone: pet.evolutionStage > 0
                   ? ExpeditionPanelTone.resonance
@@ -2087,7 +2252,7 @@ class _PetCard extends StatelessWidget {
           const SizedBox(height: 16),
           CompanionBondSignal(
             petId: pet.petId,
-            petName: pet.name,
+            petName: petName,
             bond: pet.bond,
             evolutionBond: pet.evolutionBond,
             canEvolve: pet.canEvolve,
@@ -2096,14 +2261,13 @@ class _PetCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             pet.isFullyEvolved
-                ? '${CompanionGrowth.stageName(pet.evolutionStage)} — '
-                      'финальная серверная форма спутника.'
+                ? '$evolutionStage — ${context.l10n.platformPetFullyEvolved}'
                 : pet.canEvolve
-                ? 'Связь готова к эволюции.'
+                ? context.l10n.platformPetReadyToEvolve
                 : pet.evolutionStage > 0
-                ? '${CompanionGrowth.stageName(pet.evolutionStage)} — '
-                      'укрепляйте связь для следующей эволюции.'
-                : 'Решения событий укрепляют связь со спутником.',
+                ? '$evolutionStage — '
+                      '${context.l10n.platformPetBondToEvolve}'
+                : context.l10n.platformPetBondFromEvents,
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
@@ -2119,16 +2283,16 @@ class _PetCard extends StatelessWidget {
                   key: Key('platform-select-pet-${pet.petId}'),
                   onPressed: busy ? null : onSelect,
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text(
-                    'Взять в отряд',
+                  label: Text(
+                    context.l10n.platformSelectCompanion,
                     maxLines: 2,
                     overflow: TextOverflow.visible,
                     textAlign: TextAlign.center,
                   ),
                 )
               else
-                const ExpeditionBadge(
-                  label: 'Активный спутник',
+                ExpeditionBadge(
+                  label: context.l10n.platformActiveCompanion,
                   icon: Icons.pets,
                 ),
               if (!pet.isFullyEvolved)
@@ -2137,7 +2301,9 @@ class _PetCard extends StatelessWidget {
                   onPressed: busy || !pet.canEvolve ? null : onEvolve,
                   icon: const Icon(Icons.auto_awesome_outlined),
                   label: Text(
-                    pet.canEvolve ? 'Эволюционировать' : 'Нужно больше связи',
+                    pet.canEvolve
+                        ? context.l10n.platformEvolveCompanion
+                        : context.l10n.platformNeedMoreBond,
                     maxLines: 2,
                     overflow: TextOverflow.visible,
                     textAlign: TextAlign.center,
@@ -2169,6 +2335,12 @@ class _SkillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool available = seasonXp >= skill.requiredSeasonXp;
+    final String skillName = context.l10n.currentPlatformSkillName(
+      skill.skillId,
+      skill.name,
+    );
+    final String skillDescription = context.l10n
+        .currentPlatformSkillDescription(skill.skillId, skill.description);
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (_usesCompactPlatformSection(context, constraints)) {
@@ -2191,22 +2363,26 @@ class _SkillCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        skill.name,
+                        skillName,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(skill.description),
+                Text(skillDescription),
                 const SizedBox(height: 4),
-                Text('Нужно ${skill.requiredSeasonXp} сезонного XP'),
+                Text(
+                  context.l10n.platformSkillRequiredXp(
+                    skill.requiredSeasonXp,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 if (unlocked)
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: ExpeditionBadge(
-                      label: 'Навык открыт',
+                      label: context.l10n.platformSkillUnlocked,
                       icon: Icons.lock_open,
                     ),
                   )
@@ -2216,7 +2392,9 @@ class _SkillCard extends StatelessWidget {
                     onPressed: busy || !available ? null : onUnlock,
                     icon: const Icon(Icons.lock_outline),
                     label: Text(
-                      available ? 'Открыть навык' : 'Навык пока недоступен',
+                      available
+                          ? context.l10n.platformUnlockSkill
+                          : context.l10n.platformSkillUnavailable,
                       maxLines: 2,
                       overflow: TextOverflow.visible,
                       textAlign: TextAlign.center,
@@ -2242,19 +2420,22 @@ class _SkillCard extends StatelessWidget {
               active: unlocked,
               size: 52,
             ),
-            title: Text(skill.name),
+            title: Text(skillName),
             subtitle: Text(
-              '${skill.description}\n'
-              'Нужно ${skill.requiredSeasonXp} сезонного XP',
+              '$skillDescription\n'
+              '${context.l10n.platformSkillRequiredXp(skill.requiredSeasonXp)}',
             ),
             isThreeLine: true,
             trailing: unlocked
-                ? const Icon(Icons.lock_open, semanticLabel: 'Навык открыт')
+                ? Icon(
+                    Icons.lock_open,
+                    semanticLabel: context.l10n.platformSkillUnlocked,
+                  )
                 : IconButton(
                     key: Key('platform-unlock-skill-${skill.skillId}'),
                     tooltip: available
-                        ? 'Открыть навык'
-                        : 'Навык пока недоступен',
+                        ? context.l10n.platformUnlockSkill
+                        : context.l10n.platformSkillUnavailable,
                     onPressed: busy || !available ? null : onUnlock,
                     icon: const Icon(Icons.lock_outline),
                   ),
@@ -2280,9 +2461,13 @@ class _QuestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String questName = context.l10n.currentPlatformQuestName(
+      quest.questId,
+      quest.name,
+    );
     final Widget progress = QuestRouteProgress(
       questId: quest.questId,
-      questName: quest.name,
+      questName: questName,
       metric: quest.metric,
       progress: quest.progress,
       target: quest.target,
@@ -2290,15 +2475,17 @@ class _QuestCard extends StatelessWidget {
       claimed: quest.claimed,
     );
     final Widget reward = Text(
-      '+${quest.seasonXpReward} сезонного XP · '
-      '+${quest.petBondReward} связи',
+      context.l10n.platformQuestReward(
+        quest.seasonXpReward,
+        quest.petBondReward,
+      ),
     );
     final ExpeditionBadge status = ExpeditionBadge(
       label: quest.claimed
-          ? 'Получено'
+          ? context.l10n.platformQuestReceived
           : quest.ready
-          ? 'Готово'
-          : 'В пути',
+          ? context.l10n.platformQuestReady
+          : context.l10n.platformQuestInProgress,
       icon: quest.claimed
           ? Icons.check_circle_outline
           : Icons.assignment_outlined,
@@ -2329,10 +2516,10 @@ class _QuestCard extends StatelessWidget {
             onPressed: busy || !quest.ready || quest.claimed ? null : onClaim,
             child: Text(
               quest.claimed
-                  ? 'Получено'
+                  ? context.l10n.platformQuestReceived
                   : quest.ready
-                  ? 'Забрать награду'
-                  : 'В процессе',
+                  ? context.l10n.platformClaimQuestReward
+                  : context.l10n.platformQuestWorking,
               maxLines: 2,
               overflow: TextOverflow.visible,
               textAlign: TextAlign.center,
@@ -2361,7 +2548,7 @@ class _QuestCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  quest.name,
+                  questName,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ] else
@@ -2372,7 +2559,7 @@ class _QuestCard extends StatelessWidget {
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
-                        quest.name,
+                        questName,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
@@ -2426,9 +2613,9 @@ class _SquadCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const ExpeditionSectionTitle(
-              title: 'Отряд',
-              subtitle: 'Совместный маршрут и общий позывной.',
+            ExpeditionSectionTitle(
+              title: context.l10n.platformSquadTitle,
+              subtitle: context.l10n.platformSquadSubtitle,
               icon: Icons.groups_outlined,
             ),
             const SizedBox(height: 14),
@@ -2449,9 +2636,10 @@ class _SquadCard extends StatelessWidget {
                     Semantics(
                       key: const Key('platform-squad-summary'),
                       container: true,
-                      label:
-                          'Отряд «${current.name}». '
-                          'Участников: $memberCount',
+                      label: context.l10n.platformSquadSemantics(
+                        current.name,
+                        memberCount,
+                      ),
                       child: ExcludeSemantics(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2462,7 +2650,9 @@ class _SquadCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             ExpeditionBadge(
-                              label: 'Участников: $memberCount',
+                              label: context.l10n.platformSquadMembers(
+                                memberCount,
+                              ),
                               icon: Icons.group_outlined,
                               tone: ExpeditionPanelTone.resonance,
                             ),
@@ -2471,15 +2661,17 @@ class _SquadCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    SelectableText('ID: ${current.squadId}'),
+                    SelectableText(
+                      context.l10n.platformSquadId(current.squadId),
+                    ),
                   ],
                 );
                 final Widget action = OutlinedButton.icon(
                   key: const Key('platform-leave-squad'),
                   onPressed: busy ? null : onLeave,
                   icon: const Icon(Icons.logout),
-                  label: const Text(
-                    'Покинуть отряд',
+                  label: Text(
+                    context.l10n.platformLeaveSquad,
                     maxLines: 2,
                     overflow: TextOverflow.visible,
                     textAlign: TextAlign.center,
@@ -2539,13 +2731,12 @@ class _SquadCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                'Свободный канал',
+                context.l10n.platformFreeChannel,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 5),
               Text(
-                'Создайте позывной для нового отряда или настройтесь на '
-                'существующий сигнал.',
+                context.l10n.platformFreeChannelDescription,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -2558,8 +2749,8 @@ class _SquadCard extends StatelessWidget {
                 ? null
                 : onCreate,
             icon: const Icon(Icons.group_add_outlined),
-            label: const Text(
-              'Создать отряд',
+            label: Text(
+              context.l10n.platformCreateSquad,
               maxLines: 2,
               overflow: TextOverflow.visible,
               textAlign: TextAlign.center,
@@ -2569,8 +2760,8 @@ class _SquadCard extends StatelessWidget {
             key: const Key('platform-join-squad'),
             onPressed: busy || idController.text.trim().isEmpty ? null : onJoin,
             icon: const Icon(Icons.login),
-            label: const Text(
-              'Вступить',
+            label: Text(
+              context.l10n.platformJoinSquad,
               maxLines: 2,
               overflow: TextOverflow.visible,
               textAlign: TextAlign.center,
@@ -2580,9 +2771,9 @@ class _SquadCard extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const ExpeditionSectionTitle(
-                title: 'Отряд',
-                subtitle: 'Создайте группу или присоединитесь по ID.',
+              ExpeditionSectionTitle(
+                title: context.l10n.platformSquadTitle,
+                subtitle: context.l10n.platformSquadEmptySubtitle,
                 icon: Icons.groups_outlined,
               ),
               const SizedBox(height: 14),
@@ -2611,8 +2802,8 @@ class _SquadCard extends StatelessWidget {
                 key: const Key('platform-squad-name'),
                 controller: nameController,
                 enabled: !busy,
-                decoration: const InputDecoration(
-                  labelText: 'Название нового отряда',
+                decoration: InputDecoration(
+                  labelText: context.l10n.platformNewSquadNameLabel,
                 ),
               ),
               const SizedBox(height: 8),
@@ -2625,8 +2816,8 @@ class _SquadCard extends StatelessWidget {
                 key: const Key('platform-squad-id'),
                 controller: idController,
                 enabled: !busy,
-                decoration: const InputDecoration(
-                  labelText: 'ID существующего отряда',
+                decoration: InputDecoration(
+                  labelText: context.l10n.platformExistingSquadIdLabel,
                 ),
               ),
               const SizedBox(height: 8),
@@ -2665,32 +2856,36 @@ class _CosmeticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String cosmeticName = context.l10n.currentPlatformCosmeticName(
+      cosmetic.cosmeticId,
+      cosmetic.name,
+    );
     final String slotLabel = switch (cosmetic.slot) {
-      'PILOT' => 'Пилот',
-      'PET' => 'Спутник',
-      'PROFILE' => 'Профиль',
+      'PILOT' => context.l10n.platformCosmeticPilotSlot,
+      'PET' => context.l10n.platformCosmeticPetSlot,
+      'PROFILE' => context.l10n.platformCosmeticProfileSlot,
       _ => cosmetic.slot,
     };
     final String subtitle = paymentsEnabled
         ? '$slotLabel · '
-              '${cosmetic.sandboxPrice == 0 ? 'базовая' : '${cosmetic.sandboxPrice} sandbox-кредитов'}'
+              '${cosmetic.sandboxPrice == 0 ? context.l10n.platformCosmeticBasePrice : context.l10n.platformCosmeticSandboxPrice(cosmetic.sandboxPrice)}'
         : slotLabel;
     final Widget? action = active
         ? Chip(
             key: Key('platform-equipped-cosmetic-${cosmetic.cosmeticId}'),
-            label: const Text('Экипировано'),
+            label: Text(context.l10n.platformCosmeticEquipped),
           )
         : owned
         ? FilledButton.tonal(
             key: Key('platform-equip-cosmetic-${cosmetic.cosmeticId}'),
             onPressed: busy ? null : onEquip,
-            child: const Text('Надеть'),
+            child: Text(context.l10n.platformEquipCosmetic),
           )
         : paymentsEnabled
         ? FilledButton.tonal(
             key: Key('platform-buy-cosmetic-${cosmetic.cosmeticId}'),
             onPressed: busy ? null : onBuy,
-            child: const Text('Купить'),
+            child: Text(context.l10n.platformBuyCosmetic),
           )
         : null;
     final Widget icon = switch (cosmetic.cosmeticId) {
@@ -2698,7 +2893,7 @@ class _CosmeticCard extends StatelessWidget {
         child: PilotMotionPortrait(
           key: Key('platform-cosmetic-preview-${cosmetic.cosmeticId}'),
           pilotId: PilotMotionPortrait.navigatorPilotId,
-          name: 'Навигатор',
+          name: context.l10n.currentPilotName('navigator-v1', 'Navigator'),
           size: 52,
           equippedCosmeticIds: <String>{cosmetic.cosmeticId},
         ),
@@ -2708,8 +2903,14 @@ class _CosmeticCard extends StatelessWidget {
           child: CompanionPortrait(
             key: Key('platform-cosmetic-preview-${cosmetic.cosmeticId}'),
             petId: previewPet!.petId,
-            name: previewPet!.name,
-            species: previewPet!.species,
+            name: context.l10n.currentPetName(
+              previewPet!.petId,
+              previewPet!.name,
+            ),
+            species: context.l10n.currentPetSpecies(
+              previewPet!.petId,
+              previewPet!.species,
+            ),
             evolutionStage: previewPet!.evolutionStage,
             size: 52,
             equippedCosmeticIds: <String>{cosmetic.cosmeticId},
@@ -2748,7 +2949,7 @@ class _CosmeticCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        cosmetic.name,
+                        cosmeticName,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
@@ -2779,7 +2980,7 @@ class _CosmeticCard extends StatelessWidget {
               vertical: 8,
             ),
             leading: icon,
-            title: Text(cosmetic.name),
+            title: Text(cosmeticName),
             subtitle: Text(subtitle),
             trailing: action,
           ),
@@ -2803,10 +3004,11 @@ class _AchievementsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           ExpeditionSectionTitle(
-            title: 'Достижения',
-            subtitle:
-                '${unlocked.length} из '
-                '${snapshot.content.achievements.length} открыто',
+            title: context.l10n.platformAchievementsTitle,
+            subtitle: context.l10n.platformAchievementsProgress(
+              unlocked.length,
+              snapshot.content.achievements.length,
+            ),
             icon: Icons.emoji_events_outlined,
           ),
           const SizedBox(height: 14),
@@ -2858,6 +3060,14 @@ class _AchievementTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String achievementName = context.l10n
+        .currentPlatformAchievementName(
+          achievement.achievementId,
+          achievement.name,
+        );
+    final String achievementStatus = unlocked
+        ? context.l10n.platformAchievementUnlocked
+        : context.l10n.platformAchievementLocked;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final Color accent = unlocked ? palette.resonance : colors.onSurfaceVariant;
@@ -2868,7 +3078,7 @@ class _AchievementTile extends StatelessWidget {
           : CrossAxisAlignment.center,
       children: <Widget>[
         Text(
-          achievement.name,
+          achievementName,
           textAlign: horizontal ? TextAlign.start : TextAlign.center,
           style: Theme.of(context).textTheme.titleSmall,
         ),
@@ -2884,7 +3094,7 @@ class _AchievementTile extends StatelessWidget {
             const SizedBox(width: 5),
             Flexible(
               child: Text(
-                unlocked ? 'Открыто' : 'Закрыто',
+                achievementStatus,
                 style: Theme.of(
                   context,
                 ).textTheme.labelMedium?.copyWith(color: accent),
@@ -2898,9 +3108,10 @@ class _AchievementTile extends StatelessWidget {
     return Semantics(
       key: Key('platform-achievement-${achievement.achievementId}'),
       container: true,
-      label:
-          'Достижение «${achievement.name}»: '
-          '${unlocked ? 'открыто' : 'закрыто'}',
+      label: context.l10n.platformAchievementSemantics(
+        achievementName,
+        achievementStatus.toLowerCase(),
+      ),
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -2957,31 +3168,40 @@ class _ExperimentsCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: ExpansionTile(
         leading: const Icon(Icons.tune_outlined),
-        title: const Text('Эксперименты и конфигурация'),
-        subtitle: const Text('Служебная диагностика · раскрывается вручную'),
+        title: Text(context.l10n.platformExperimentsTitle),
+        subtitle: Text(context.l10n.platformExperimentsSubtitle),
         children: <Widget>[
           ...snapshot.content.experiments.map(
             (PlatformExperiment experiment) => ListTile(
-              title: Text(experiment.description),
+              title: Text(
+                context.l10n.currentPlatformExperimentDescription(
+                  experiment.experimentId,
+                  experiment.description,
+                ),
+              ),
               subtitle: Text(
                 snapshot.userState.experimentAssignments[experiment
                         .experimentId] ??
-                    'не назначен',
+                    context.l10n.platformExperimentUnassigned,
               ),
             ),
           ),
           ListTile(
-            title: const Text('Фоновая синхронизация'),
+            title: Text(context.l10n.platformBackgroundSyncTitle),
             subtitle: Text(
               snapshot.remoteConfig.backgroundHealthSyncEnabled
-                  ? 'включена конфигурацией'
-                  : 'выключена конфигурацией',
+                  ? context.l10n.platformEnabledByConfig
+                  : context.l10n.platformDisabledByConfig,
             ),
           ),
           ListTile(
-            title: const Text('Хранение activity-команд'),
+            title: Text(
+              context.l10n.platformActivityCommandRetentionTitle,
+            ),
             subtitle: Text(
-              '${snapshot.remoteConfig.activityRetentionDays} дней',
+              context.l10n.platformRetentionDays(
+                snapshot.remoteConfig.activityRetentionDays,
+              ),
             ),
           ),
         ],
@@ -3015,32 +3235,22 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _PlatformError extends StatelessWidget {
-  const _PlatformError({required this.error, required this.onRetry});
+  const _PlatformError({required this.onRetry});
 
-  final Object error;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return ExpeditionReadState.failure(
       key: const Key('platform-error-state'),
-      title: 'Не удалось загрузить путевой журнал',
-      message:
-          'Актуальные записи не приняты. До успешного повтора журнал не '
-          'показывает и не выполняет серверные действия.',
-      details: error.toString(),
+      title: context.l10n.platformLoadFailureTitle,
+      message: context.l10n.platformLoadFailureMessage,
+      details: null,
       primaryActionKey: const Key('platform-error-retry'),
-      primaryActionLabel: 'Повторить',
+      primaryActionLabel: context.l10n.retryButton,
       onPrimaryAction: onRetry,
     );
   }
-}
-
-String _commandErrorMessage(Object error) {
-  if (error is PlatformApiException) {
-    return 'Не удалось выполнить действие: ${error.message}';
-  }
-  return 'Не удалось выполнить действие: $error';
 }
 
 int _minimum(int left, int right) => left < right ? left : right;

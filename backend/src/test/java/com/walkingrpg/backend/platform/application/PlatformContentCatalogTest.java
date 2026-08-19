@@ -34,6 +34,7 @@ class PlatformContentCatalogTest {
         assertEquals(4, catalog.cosmetics().size());
         assertEquals(2, catalog.experiments().size());
         assertEquals(6, catalog.onboardingSteps().size());
+        assertEquals(8, list(publicCatalog, "achievements").size());
         assertEquals(6, list(publicCatalog, "materials").size());
         assertEquals(64, String.valueOf(publicCatalog.get("catalogDigest")).length());
     }

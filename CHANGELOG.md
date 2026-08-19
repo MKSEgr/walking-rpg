@@ -6,6 +6,12 @@
 
 ### Changed
 
+- the complete Platform journal now follows the selected RU/EN locale across
+  loading/error states, journey summaries, progression/catalog actions and
+  accessibility signals at compact large text;
+- current onboarding steps, skills, quests, achievements, cosmetics, season,
+  experiments and known command feedback resolve by stable identity/type;
+  future server content and immutable journey history retain literal fallback;
 - selected RU/EN locale now continues beyond the guided first journey through
   compact/wide navigation and the complete client-authored Home expedition
   chrome, including offline/error states, actions, rewards and accessibility;

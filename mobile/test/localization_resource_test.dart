@@ -11,7 +11,7 @@ void main() {
     final Set<String> russianKeys = _messageKeys(russian);
 
     expect(englishKeys, equals(russianKeys));
-    expect(englishKeys.length, greaterThanOrEqualTo(500));
+    expect(englishKeys.length, greaterThanOrEqualTo(680));
 
     for (final String key in englishKeys) {
       expect(
@@ -48,15 +48,20 @@ void main() {
     }
   });
 
-  test('expedition shell keeps Russian player copy in ARB resources', () {
+  test('localized game surfaces keep Russian player copy in ARB resources', () {
     const List<String> shellFiles = <String>[
       'lib/app/main_navigation_shell.dart',
       'lib/core/cache/cached_snapshot_banner.dart',
       'lib/core/localization/current_content_localizations.dart',
       'lib/core/localization/current_event_localizations.dart',
+      'lib/core/localization/current_platform_content_localizations.dart',
+      'lib/design_system/companion_bond_signal.dart',
       'lib/design_system/companion_motion.dart',
       'lib/design_system/pilot_motion.dart',
+      'lib/design_system/quest_route_signal.dart',
+      'lib/design_system/weekly_route_signal.dart',
       'lib/features/home/presentation/home_screen.dart',
+      'lib/features/platform/presentation/platform_screen.dart',
       'lib/features/recovery/presentation/mobile_command_recovery_action.dart',
     ];
 
@@ -90,6 +95,22 @@ void main() {
     expect(source, contains("'first-light-causeway-v1'"));
     expect(source, contains("'mirror-delta-v1::follow-resonance'"));
     expect(source, contains("'dawn-meridian-v1::cross-first-light-causeway'"));
+  });
+
+  test('current Platform resolver uses stable catalog and command identities', () {
+    final String source = File(
+      'lib/core/localization/current_platform_content_localizations.dart',
+    ).readAsStringSync();
+
+    expect(RegExp(r'fallback\s*==|==\s*fallback').hasMatch(source), isFalse);
+    expect(source, contains("'first-event'"));
+    expect(source, contains("'signal-reader'"));
+    expect(source, contains("'join-squad'"));
+    expect(source, contains("'season-level-3'"));
+    expect(source, contains("'dawn-frame'"));
+    expect(source, contains("'signal-season-1'"));
+    expect(source, contains("'quest-order-v1'"));
+    expect(source, contains("'CLAIM_SEASON_REWARD'"));
   });
 }
 

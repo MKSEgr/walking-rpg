@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 enum QuestRouteSignalKind { steps, events, squad, unknown }
@@ -134,9 +135,11 @@ class QuestRouteProgress extends StatelessWidget {
     return Semantics(
       key: Key('quest-route-progress-$questId'),
       container: true,
-      label:
-          'Прогресс задания «$questName»: '
-          '$progress из $target',
+      label: context.l10n.platformQuestProgressSemantics(
+        questName,
+        progress,
+        target,
+      ),
       child: ExcludeSemantics(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,7 @@
 import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 enum CompanionBondIdentity { spark, moss, rune, unknown }
@@ -76,12 +77,20 @@ class CompanionBondSignal extends StatelessWidget {
         ? '$bond'
         : '$bond/$evolutionBond';
     final String semantics = switch (acceptedStatus) {
-      CompanionBondStatus.growing =>
-        'Связь спутника «$petName»: $bond из $evolutionBond',
-      CompanionBondStatus.ready =>
-        'Связь спутника «$petName»: $bond из $evolutionBond. '
-            'Готова к эволюции',
-      CompanionBondStatus.evolved => 'Связь спутника «$petName»: $bond',
+      CompanionBondStatus.growing => context.l10n
+          .platformCompanionBondGrowingSemantics(
+            petName,
+            bond,
+            evolutionBond,
+          ),
+      CompanionBondStatus.ready => context.l10n
+          .platformCompanionBondReadySemantics(
+            petName,
+            bond,
+            evolutionBond,
+          ),
+      CompanionBondStatus.evolved => context.l10n
+          .platformCompanionBondEvolvedSemantics(petName, bond),
     };
 
     return Semantics(
@@ -97,7 +106,10 @@ class CompanionBondSignal extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Text('Связь', style: Theme.of(context).textTheme.labelLarge),
+                Text(
+                  context.l10n.platformBondLabel,
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
                 const Spacer(),
                 Text(
                   amount,

@@ -1360,6 +1360,15 @@ projection: `content.season.seasonId` равен `remoteConfig.seasonId`, а
 effective config snapshot, поэтому clean install и последующая admin-публикация
 не могут выдать противоречащие друг другу значения.
 
+Mobile рассматривает display copy current Platform catalog как mutable
+presentation: шесть известных onboarding step IDs, четыре skill IDs, пять
+quest IDs, восемь achievement IDs, четыре cosmetic IDs, текущий season ID и
+два experiment IDs разрешаются через generated RU/EN resources только по
+stable identity. Unknown ID сохраняет literal server value. Squad name и ID
+остаются пользовательскими literal values, а decision log, completion recap,
+archive и их reward names остаются immutable persisted copy и не переводятся
+повторно при смене locale.
+
 ## Admin-публикация platform config и content
 
 `PUT /api/v1/admin/platform/remote-config` и
@@ -1403,6 +1412,12 @@ lock; непустой content сохраняет прежний `201` response 
   }
 }
 ```
+
+Успешный response сохраняет `commandType` и server-authored `message` для
+совместимости. Mobile показывает локализованный player feedback по известному
+stable `commandType`; unknown future command сохраняет literal `message`.
+Ошибка команды показывается как локализованное fail-closed состояние без
+вывода server diagnostic message в player-facing English copy.
 
 `payload` обязан явно присутствовать как JSON object. Missing/null возвращает
 `400 VALIDATION_ERROR` до application service, изменения platform state и
