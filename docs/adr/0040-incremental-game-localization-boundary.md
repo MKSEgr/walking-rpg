@@ -4,7 +4,8 @@
 - **Дата:** 2026-08-19
 - **Связанные задачи:** [issue #339](https://github.com/MKSEgr/walking-rpg/issues/339),
   [issue #341](https://github.com/MKSEgr/walking-rpg/issues/341),
-  [issue #343](https://github.com/MKSEgr/walking-rpg/issues/343)
+  [issue #343](https://github.com/MKSEgr/walking-rpg/issues/343),
+  [issue #345](https://github.com/MKSEgr/walking-rpg/issues/345)
 
 ## Контекст
 
@@ -38,12 +39,19 @@ Milestone 26 выполняется последовательными верт�
    использует тот же event resolver;
 6. immutable resolved event copy, selected decisions, outcomes, pending
    results, receipts и recaps всегда остаются фактическим persisted literal;
-7. Platform journal, account/recovery/validation и остальные игровые
-   поверхности сохраняют `CODE_PENDING`, пока их отдельные срезы не получат
-   tests и документацию.
+7. четвёртый срез локализует полный Platform journal и его accessibility-
+   сигналы. Current onboarding/skill/quest/achievement/cosmetic/season/
+   experiment copy разрешается по stable ID, а known command feedback — по
+   command type; unknown content сохраняет server literal fallback;
+8. immutable decisions, outcomes, reward names и current/archive recaps внутри
+   Platform journal остаются persisted literal history;
+9. account/recovery/validation/activity и остальные игровые поверхности
+   сохраняют `CODE_PENDING`, пока их отдельные срезы не получат tests и
+   документацию.
 
-Source-level regression запрещает кириллицу в файлах первого shell slice, а
-RU/EN widget tests проверяют compact/wide layout, text scale 1.6 и semantics.
+Source-level regression запрещает кириллицу в локализованных shell/Platform
+presentation и связанных accessibility signals, а RU/EN widget tests проверяют
+compact/wide layout, text scale 1.6 и semantics.
 
 ## Последствия
 
@@ -55,6 +63,9 @@ RU/EN widget tests проверяют compact/wide layout, text scale 1.6 и sem
 - английский Home больше не зависит от server locale для известных current
   identities и открытого event narrative; неизвестная или историческая copy
   остаётся literal по определённой выше границе;
+- английский Platform journal не зависит от server locale для известных
+  current catalog identities и командного feedback, но не переписывает
+  сохранённую историю маршрута;
 - milestone нельзя отмечать `CODE_COMPLETE`, пока остаются перечисленные
   player-facing поверхности.
 
@@ -63,5 +74,7 @@ RU/EN widget tests проверяют compact/wide layout, text scale 1.6 и sem
 Первый срез откатывается возвратом вызовов generated localization к прежним
 client literals. Второй — удалением current-content resolver и additive
 `pilotId`. Третий — удалением current-event resolver из READY event card и
-unlock feedback. Legacy-compatible mobile parser не требует миграции cache.
-Stable IDs, receipts, historical copy и `alpha-rc1` при этом не меняются.
+unlock feedback. Четвёртый — удалением Platform catalog/command resolver и
+возвратом journal chrome к прежней copy. Legacy-compatible mobile parser не
+требует миграции cache. Stable IDs, receipts, historical copy и `alpha-rc1`
+при этом не меняются.

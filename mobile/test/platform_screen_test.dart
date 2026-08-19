@@ -681,7 +681,7 @@ void main() {
     _expectNoLayoutException(tester);
   });
 
-  testWidgets('journal retries without exposing stale actions after error', (
+  testWidgets('journal retries with a localized error and no stale actions', (
     WidgetTester tester,
   ) async {
     int attempts = 0;
@@ -715,7 +715,9 @@ void main() {
     expect(find.byKey(const Key('platform-error-state')), findsOneWidget);
     expect(find.byType(ExpeditionReadState), findsOneWidget);
     expect(find.byKey(const Key('platform-journal-hero')), findsNothing);
-    expect(find.textContaining('Backend недоступен'), findsOneWidget);
+    expect(find.text('Не удалось загрузить путевой журнал'), findsOneWidget);
+    expect(find.textContaining('Актуальные записи не приняты'), findsOneWidget);
+    expect(find.textContaining('Backend недоступен'), findsNothing);
 
     await tester.tap(find.byKey(const Key('platform-error-retry')));
     await tester.pumpAndSettle();
@@ -1271,7 +1273,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('shows backend message instead of exception internals', (
+  testWidgets('shows localized command failure without backend diagnostics', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -1303,9 +1305,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Не удалось выполнить действие: Недостаточно сезонного опыта'),
+      find.text(
+        'Не удалось выполнить действие. Обновите журнал и повторите попытку.',
+      ),
       findsOneWidget,
     );
+    expect(find.textContaining('Недостаточно сезонного опыта'), findsNothing);
   });
 
   testWidgets('cached journal is read-only and does not guess ENERGY balance', (

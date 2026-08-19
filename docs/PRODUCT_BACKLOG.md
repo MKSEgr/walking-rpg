@@ -1004,12 +1004,17 @@ gameplay identity, экономики, topology или external validation statu
   использует ту же границу, а unknown content сохраняет server literal;
 - resolved event copy, immutable decisions, outcomes, pending results, receipts
   и recaps не переписываются при смене locale;
-- Platform journal и остальные экраны остаются явно `CODE_PENDING` до своих
-  вертикальных срезов.
+- полный Platform journal, progression/catalog actions и accessibility-сигналы
+  weekly route, quest progress и companion bond используют generated RU/EN;
+- current onboarding/skill/quest/achievement/cosmetic/season/experiment copy
+  разрешается только по stable ID, известные command results — по command type,
+  а unknown content и immutable journey history сохраняют literal fallback;
+- account, recovery, validation, activity и остальные boundary-экраны остаются
+  явно `CODE_PENDING` до своих вертикальных срезов.
 
 **Статус:** expedition shell, current identity catalog и current event
-narrative реализованы. Platform journal и оставшиеся экраны продолжают
-Milestone 26.
+narrative, а также полный Platform journal реализованы. Оставшиеся boundary-
+экраны продолжают Milestone 26.
 
 ## P1 — расширение MVP
 
