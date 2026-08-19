@@ -291,6 +291,18 @@ void main() {
             bondGained: 60,
           ),
         ],
+        materials: <HomeJourneyMaterialReward>[
+          HomeJourneyMaterialReward(
+            itemId: 'echo-thread',
+            itemName: 'Эхо-нити',
+            quantity: 35,
+          ),
+          HomeJourneyMaterialReward(
+            itemId: 'ash-seed',
+            itemName: 'Пепельное семя',
+            quantity: 12,
+          ),
+        ],
       ),
       recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
         HomeExpeditionCompletionRecap(
@@ -412,11 +424,14 @@ void main() {
     expect(find.text('Искра · +80 связи'), findsOneWidget);
     expect(find.text('Мох · +60 связи'), findsOneWidget);
     expect(find.text('+140 связи спутников'), findsNothing);
+    expect(find.text('+35 Эхо-нити'), findsOneWidget);
+    expect(find.text('+12 Пепельное семя'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Летопись походов. Завершено походов: 7. '
         'Принято решений: 28. '
-        'Всего наград: +420 XP пилота; Искра: +80 связи; Мох: +60 связи.',
+        'Всего наград: +420 XP пилота; Искра: +80 связи; Мох: +60 связи; '
+        '+35 Эхо-нити; +12 Пепельное семя.',
       ),
       findsOneWidget,
     );

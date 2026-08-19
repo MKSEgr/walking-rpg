@@ -601,6 +601,7 @@ class HomeJourneyChronicle {
     required this.pilotExperienceGained,
     required this.petBondGained,
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
+    this.materials = const <HomeJourneyMaterialReward>[],
   });
 
   factory HomeJourneyChronicle.fromJson(Map<String, dynamic> json) {
@@ -656,12 +657,40 @@ class HomeJourneyChronicle {
         );
       }
     }
+    final Object? materialsJson = json['materials'];
+    final List<HomeJourneyMaterialReward> materials;
+    if (materialsJson == null) {
+      materials = const <HomeJourneyMaterialReward>[];
+    } else {
+      if (materialsJson is! List<dynamic>) {
+        throw const FormatException(
+          'journeyChronicle.materials должен быть JSON-массивом',
+        );
+      }
+      materials = materialsJson
+          .map(
+            (Object? value) => HomeJourneyMaterialReward.fromJson(
+              _asMap(value, 'journeyChronicle.materials[]'),
+            ),
+          )
+          .toList(growable: false);
+      final Set<String> materialIdentities = <String>{};
+      for (final HomeJourneyMaterialReward material in materials) {
+        final String identity = '${material.itemId}\u0000${material.itemName}';
+        if (!materialIdentities.add(identity)) {
+          throw const FormatException(
+            'journeyChronicle.materials содержит повтор',
+          );
+        }
+      }
+    }
     return HomeJourneyChronicle(
       completedJourneyCount: completedJourneyCount,
       decisionCount: decisionCount,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
       petBondRewards: petBondRewards,
+      materials: materials,
     );
   }
 
@@ -670,6 +699,7 @@ class HomeJourneyChronicle {
   final int pilotExperienceGained;
   final int petBondGained;
   final List<HomeJourneyPetBondReward> petBondRewards;
+  final List<HomeJourneyMaterialReward> materials;
 }
 
 class HomeExpeditionCompletionRecap {

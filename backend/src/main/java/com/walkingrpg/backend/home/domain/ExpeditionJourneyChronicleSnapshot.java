@@ -7,11 +7,15 @@ public record ExpeditionJourneyChronicleSnapshot(
         long decisionCount,
         long pilotExperienceGained,
         long petBondGained,
-        List<PetBondRewardSnapshot> petBondRewards
+        List<PetBondRewardSnapshot> petBondRewards,
+        List<MaterialRewardPreviewSnapshot> materials
 ) {
     public ExpeditionJourneyChronicleSnapshot {
         petBondRewards = petBondRewards == null
                 ? List.of()
                 : List.copyOf(petBondRewards);
+        materials = materials == null
+                ? List.of()
+                : List.copyOf(materials);
     }
 }

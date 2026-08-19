@@ -192,6 +192,18 @@ void main() {
             'bondGained': 53,
           },
         ],
+        'materials': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'itemId': 'echo-thread',
+            'itemName': 'Эхо-нити из летописи',
+            'quantity': 41,
+          },
+          <String, dynamic>{
+            'itemId': 'ash-seed',
+            'itemName': 'Пепельное семя из летописи',
+            'quantity': 12,
+          },
+        ],
       }
       ..['completionRecap'] = <String, dynamic>{
         'journeyNumber': 2,
@@ -327,6 +339,14 @@ void main() {
     expect(snapshot.journeyChronicle?.petBondRewards.first.bondGained, 80);
     expect(snapshot.journeyChronicle?.petBondRewards.last.petId, 'moss-v1');
     expect(snapshot.journeyChronicle?.petBondRewards.last.bondGained, 53);
+    expect(snapshot.journeyChronicle?.materials, hasLength(2));
+    expect(
+      snapshot.journeyChronicle?.materials.first.itemName,
+      'Эхо-нити из летописи',
+    );
+    expect(snapshot.journeyChronicle?.materials.first.quantity, 41);
+    expect(snapshot.journeyChronicle?.materials.last.itemId, 'ash-seed');
+    expect(snapshot.journeyChronicle?.materials.last.quantity, 12);
   });
 
   test('legacy completed response without recap remains readable', () {
@@ -381,6 +401,7 @@ void main() {
 
     expect(snapshot.journeyChronicle?.petBondGained, 72);
     expect(snapshot.journeyChronicle?.petBondRewards, isEmpty);
+    expect(snapshot.journeyChronicle?.materials, isEmpty);
   });
 
   test('journey chronicle rejects a mismatched pet bond breakdown', () {
@@ -444,6 +465,68 @@ void main() {
           'petId': 'spark-v1',
           'petName': 'Искра',
           'bondGained': 0,
+        },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects a non-list material breakdown', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'materials': <String, dynamic>{},
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects duplicate persisted material identities', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 2,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'materials': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'itemId': 'echo-thread',
+          'itemName': 'Эхо-нити',
+          'quantity': 2,
+        },
+        <String, dynamic>{
+          'itemId': 'echo-thread',
+          'itemName': 'Эхо-нити',
+          'quantity': 3,
+        },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects non-positive material quantities', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'materials': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'itemId': 'echo-thread',
+          'itemName': 'Эхо-нити',
+          'quantity': 0,
         },
       ],
     };

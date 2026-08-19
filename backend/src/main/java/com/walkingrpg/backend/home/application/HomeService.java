@@ -560,6 +560,16 @@ public class HomeService {
                         reward.bondGained(),
                         Math::addExact
                 ));
+        Map<MaterialIdentity, Long> materials = new LinkedHashMap<>();
+        completedJourneys.materials().forEach(reward ->
+                materials.merge(
+                        new MaterialIdentity(
+                                reward.itemId(),
+                                reward.itemName()
+                        ),
+                        reward.quantity(),
+                        Math::addExact
+                ));
         if (currentJourney != null) {
             completedJourneyCount = Math.addExact(
                     completedJourneyCount,
@@ -586,6 +596,15 @@ public class HomeService {
                             reward.bondGained(),
                             Math::addExact
                     ));
+            currentJourney.materials().forEach(reward ->
+                    materials.merge(
+                            new MaterialIdentity(
+                                    reward.itemId(),
+                                    reward.itemName()
+                            ),
+                            reward.quantity(),
+                            Math::addExact
+                    ));
         }
         if (completedJourneyCount == 0) {
             return null;
@@ -599,6 +618,13 @@ public class HomeService {
                         .map(entry -> new PetBondRewardSnapshot(
                                 entry.getKey().petId(),
                                 entry.getKey().petName(),
+                                entry.getValue()
+                        ))
+                        .toList(),
+                materials.entrySet().stream()
+                        .map(entry -> new MaterialRewardPreviewSnapshot(
+                                entry.getKey().itemId(),
+                                entry.getKey().itemName(),
                                 entry.getValue()
                         ))
                         .toList()

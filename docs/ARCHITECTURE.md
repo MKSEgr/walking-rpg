@@ -425,9 +425,13 @@ companion breakdown с historical группами; после старта сл
 же результат уже входит через receipt и больше не добавляется как current.
 Сумма breakdown точно равна совместимому `petBondGained`, а legacy snapshot
 без массива остаётся читаемым как общий неназванный итог. Поэтому расширение
-главы не превращает historical `expedition_status=COMPLETED` в ложный финиш,
-current-pet/content lookup не переписывает имена, а content republish не
-меняет сохранённые decision и reward totals.
+главы не превращает historical `expedition_status=COMPLETED` в ложный финиш.
+Та же receipt-proven граница агрегирует ordered lifetime `materials[]` по
+persisted `material_item_id + material_item_name`: SQL сохраняет порядок
+первого immutable появления, а service один раз добавляет материалы current
+`COMPLETED` recap. Inventory balance, current material catalog и пять строк
+recent archive не участвуют, поэтому republish или расход предметов не
+переписывает сохранённые decision и reward totals.
 
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только

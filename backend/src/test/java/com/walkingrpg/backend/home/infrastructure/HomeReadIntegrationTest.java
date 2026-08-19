@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -368,6 +369,12 @@ class HomeReadIntegrationTest {
                     pet_bond_gained,
                     pet_bond_after,
                     pet_version,
+                    material_item_id,
+                    material_item_name,
+                    material_item_description,
+                    material_quantity_gained,
+                    material_quantity_after,
+                    material_version,
                     server_time,
                     created_at,
                     journey_number
@@ -404,6 +411,28 @@ class HomeReadIntegrationTest {
                        journey_number,
                        journey_number,
                        journey_number,
+                       CASE journey_number
+                            WHEN 1 THEN 'echo-thread'
+                            WHEN 2 THEN 'ash-seed'
+                            WHEN 8 THEN 'unconfirmed-dust'
+                       END,
+                       CASE journey_number
+                            WHEN 1 THEN 'Эхо-нити из старого похода'
+                            WHEN 2 THEN 'Пепельное семя из старого похода'
+                            WHEN 8 THEN 'Неподтверждённая пыль'
+                       END,
+                       CASE WHEN journey_number IN (1, 2, 8)
+                            THEN 'Награда из неизменяемой истории.'
+                       END,
+                       CASE WHEN journey_number IN (1, 2, 8)
+                            THEN journey_number
+                       END,
+                       CASE WHEN journey_number IN (1, 2, 8)
+                            THEN journey_number
+                       END,
+                       CASE WHEN journey_number IN (1, 2, 8)
+                            THEN journey_number
+                       END,
                        now(),
                        now(),
                        journey_number
@@ -447,6 +476,23 @@ class HomeReadIntegrationTest {
         assertEquals(2,
                 expedition.journeyChronicle().petBondRewards()
                         .getLast().bondGained());
+        assertEquals(2,
+                expedition.journeyChronicle().materials().size());
+        assertEquals("echo-thread",
+                expedition.journeyChronicle().materials()
+                        .getFirst().itemId());
+        assertEquals("Эхо-нити из старого похода",
+                expedition.journeyChronicle().materials()
+                        .getFirst().itemName());
+        assertEquals(1,
+                expedition.journeyChronicle().materials()
+                        .getFirst().quantity());
+        assertEquals("ash-seed",
+                expedition.journeyChronicle().materials()
+                        .getLast().itemId());
+        assertEquals(2,
+                expedition.journeyChronicle().materials()
+                        .getLast().quantity());
         assertEquals(
                 List.of(7L, 6L, 5L, 4L, 3L),
                 expedition.recentJourneyRecaps().stream()
@@ -459,6 +505,8 @@ class HomeReadIntegrationTest {
                         .map(recap -> recap.pilotExperienceGained())
                         .toList()
         );
+        assertTrue(expedition.recentJourneyRecaps().stream()
+                .allMatch(recap -> recap.materials().isEmpty()));
         assertEquals(1,
                 expedition.recentJourneyRecaps().getFirst().decisionCount());
         assertEquals(1,

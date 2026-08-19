@@ -171,6 +171,18 @@ void main() {
                   bondGained: 85,
                 ),
               ],
+              materials: <HomeJourneyMaterialReward>[
+                HomeJourneyMaterialReward(
+                  itemId: 'lumen-shard',
+                  itemName: 'Lumen Shard',
+                  quantity: 44,
+                ),
+                HomeJourneyMaterialReward(
+                  itemId: 'ash-seed',
+                  itemName: 'Ash Seed',
+                  quantity: 19,
+                ),
+              ],
             ),
           ),
           recordExperimentExposures: false,
@@ -192,10 +204,13 @@ void main() {
     expect(find.text('Spark · +120 bond'), findsOneWidget);
     expect(find.text('Moss · +85 bond'), findsOneWidget);
     expect(find.text('+205 companion bond'), findsNothing);
+    expect(find.text('+44 Lumen Shard'), findsOneWidget);
+    expect(find.text('+19 Ash Seed'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
-        'Total rewards: +620 pilot XP; Spark: +120 bond; Moss: +85 bond.',
+        'Total rewards: +620 pilot XP; Spark: +120 bond; Moss: +85 bond; '
+        '+44 Lumen Shard; +19 Ash Seed.',
       ),
       findsOneWidget,
     );
