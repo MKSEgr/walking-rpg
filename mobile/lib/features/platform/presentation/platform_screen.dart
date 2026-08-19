@@ -1511,11 +1511,18 @@ class _JourneyDecisionEntry extends StatelessWidget {
                             if (entry.petBondGained > 0)
                               _JourneyRewardChip(
                                 icon: Icons.favorite_border,
-                                label: context.l10n
-                                    .platformNamedCompanionBondReward(
-                                      entry.petName,
+                                label: switch (entry.petName) {
+                                  final String petName =>
+                                    context.l10n
+                                        .platformNamedCompanionBondReward(
+                                          petName,
+                                          entry.petBondGained,
+                                        ),
+                                  null =>
+                                    context.l10n.platformCompanionBondReward(
                                       entry.petBondGained,
                                     ),
+                                },
                               ),
                             if (entry.materialReward
                                 case final HomeJourneyMaterialReward material)
@@ -1549,10 +1556,14 @@ List<String> _journeyDecisionRewardLabels(
     if (entry.pilotExperienceGained > 0)
       context.l10n.platformPilotXpReward(entry.pilotExperienceGained),
     if (entry.petBondGained > 0)
-      context.l10n.platformNamedCompanionBondSemantic(
-        entry.petName,
-        entry.petBondGained,
-      ),
+      switch (entry.petName) {
+        final String petName =>
+          context.l10n.platformNamedCompanionBondSemantic(
+            petName,
+            entry.petBondGained,
+          ),
+        null => context.l10n.platformCompanionBondReward(entry.petBondGained),
+      },
     if (entry.materialReward case final HomeJourneyMaterialReward material)
       context.l10n.platformMaterialReward(material.quantity, material.itemName),
   ];
