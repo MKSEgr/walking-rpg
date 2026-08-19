@@ -25,7 +25,8 @@ void main() {
         expeditionName: 'Сигнал из туманного сектора',
         nodeName: 'Внешний маяк',
         petName: 'Искра',
-        currentNodeSemantic: 'Текущий узел «Внешний маяк»',
+        currentNodeSemantic:
+            'Текущий узел «Внешний маяк»',
       ),
       const _ShellLocaleCase(
         locale: Locale('en'),
@@ -55,10 +56,7 @@ void main() {
       expect(find.text(localeCase.expedition), findsOneWidget);
       expect(find.text(localeCase.journal), findsOneWidget);
       expect(find.text(localeCase.waiting), findsOneWidget);
-      expect(
-        find.text(localeCase.expeditionName),
-        findsAtLeastNWidgets(1),
-      );
+      expect(find.text(localeCase.expeditionName), findsAtLeastNWidgets(1));
       expect(find.text(localeCase.nodeName), findsAtLeastNWidgets(1));
       expect(find.textContaining(localeCase.petName), findsAtLeastNWidgets(1));
       expect(

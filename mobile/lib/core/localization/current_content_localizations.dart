@@ -41,8 +41,7 @@ extension CurrentContentLocalizations on AppLocalizations {
       'second-dawn-threshold' => catalogNodeSecondDawnThresholdName,
       'uncharted-verge' => catalogNodeUnchartedVergeName,
       'constellation-sanctuary' => catalogNodeConstellationSanctuaryName,
-      'hidden-signal-observatory' =>
-        catalogNodeHiddenSignalObservatoryName,
+      'hidden-signal-observatory' => catalogNodeHiddenSignalObservatoryName,
       'memory-constellation' => catalogNodeMemoryConstellationName,
       'dawn-meridian' => catalogNodeDawnMeridianName,
       'first-light-causeway' => catalogNodeFirstLightCausewayName,

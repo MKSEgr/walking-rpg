@@ -1700,10 +1700,7 @@ class _ExpeditionTeam extends StatelessWidget {
     );
     final String? petSpecies = snapshot.petSpecies == null
         ? null
-        : context.l10n.currentPetSpecies(
-            snapshot.petId,
-            snapshot.petSpecies!,
-          );
+        : context.l10n.currentPetSpecies(snapshot.petId, snapshot.petSpecies!);
     final bool hasCompanionPortrait =
         snapshot.petId != null &&
         petSpecies != null &&
@@ -1785,10 +1782,7 @@ class _ActiveCompanionCard extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final String petId = snapshot.petId!;
-    final String petName = context.l10n.currentPetName(
-      petId,
-      snapshot.petName,
-    );
+    final String petName = context.l10n.currentPetName(petId, snapshot.petName);
     final String species = context.l10n.currentPetSpecies(
       petId,
       snapshot.petSpecies!,
@@ -2234,10 +2228,7 @@ class _EventCard extends StatelessWidget {
         ? ''
         : context.l10n.homeMaterialRewardSuffix(
             material.quantity,
-            context.l10n.currentItemName(
-              material.itemId,
-              material.itemName,
-            ),
+            context.l10n.currentItemName(material.itemId, material.itemName),
           );
     return context.l10n.homeChoiceReward(
       choice.pilotExperienceReward,
@@ -2558,10 +2549,7 @@ class _CraftingRecipeView extends StatelessWidget {
           Semantics(
             container: true,
             label: context.l10n.homeIngredientSemantics(
-              context.l10n.currentItemName(
-                ingredient.itemId,
-                ingredient.name,
-              ),
+              context.l10n.currentItemName(ingredient.itemId, ingredient.name),
               ingredient.availableQuantity,
               ingredient.requiredQuantity,
               ingredient.isAvailable
@@ -2752,10 +2740,7 @@ class _ItemUpgradeView extends StatelessWidget {
           Semantics(
             container: true,
             label: context.l10n.homeIngredientSemantics(
-              context.l10n.currentItemName(
-                ingredient.itemId,
-                ingredient.name,
-              ),
+              context.l10n.currentItemName(ingredient.itemId, ingredient.name),
               ingredient.availableQuantity,
               ingredient.requiredQuantity,
               ingredient.isAvailable

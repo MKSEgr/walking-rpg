@@ -973,48 +973,49 @@ void main() {
     expect(eventStateButton, findsOneWidget);
   });
 
-  testWidgets('English Home resolves current catalog and ingredient semantics', (
-    WidgetTester tester,
-  ) async {
-    final SemanticsHandle semantics = tester.ensureSemantics();
+  testWidgets(
+    'English Home resolves current catalog and ingredient semantics',
+    (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
 
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: HomeScreen(loader: () async => _craftingReady()),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeScreen(loader: () async => _craftingReady()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Signal from the Fog Sector'), findsOneWidget);
-    expect(find.text('Ash Orbit'), findsOneWidget);
+      expect(find.text('Signal from the Fog Sector'), findsOneWidget);
+      expect(find.text('Ash Orbit'), findsOneWidget);
 
-    final Finder craftButton = find.byKey(
-      const Key('craft-resonance-compass-v1'),
-    );
-    await tester.scrollUntilVisible(
-      craftButton,
-      200,
-      scrollable: find.byType(Scrollable),
-    );
-    await tester.pumpAndSettle();
+      final Finder craftButton = find.byKey(
+        const Key('craft-resonance-compass-v1'),
+      );
+      await tester.scrollUntilVisible(
+        craftButton,
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Lumen Shard × 2'), findsOneWidget);
-    expect(find.text('Assemble a Resonance Compass'), findsOneWidget);
-    expect(
-      find.text('Bind the light core to the living route thread.'),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel('Lumen Shard, 2 of 2, enough materials'),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
+      expect(find.text('Lumen Shard × 2'), findsOneWidget);
+      expect(find.text('Assemble a Resonance Compass'), findsOneWidget);
+      expect(
+        find.text('Bind the light core to the living route thread.'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Lumen Shard, 2 of 2, enough materials'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
 
-    semantics.dispose();
-  });
+      semantics.dispose();
+    },
+  );
 
   testWidgets('home screen crafts and reloads authoritative inventory', (
     WidgetTester tester,

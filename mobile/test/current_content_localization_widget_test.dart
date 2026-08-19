@@ -32,8 +32,7 @@ void main() {
         l10n.currentPilotName('navigator-v1', _fallback),
         localeCase.pilotName,
       );
-      for (final MapEntry<String, String> pet
-          in localeCase.petNames.entries) {
+      for (final MapEntry<String, String> pet in localeCase.petNames.entries) {
         expect(l10n.currentPetName(pet.key, _fallback), pet.value);
         expect(
           l10n.currentPetSpecies(pet.key, _fallback),
@@ -136,7 +135,8 @@ void main() {
   });
 }
 
-const String _fallback = 'Серверная строка будущего контента';
+const String _fallback =
+    'Серверная строка будущего контента';
 
 class _IdentityCopy {
   const _IdentityCopy(this.name, this.description);
@@ -209,11 +209,13 @@ const List<_CatalogLocaleCase> _localeCases = <_CatalogLocaleCase>[
       'storm-scriptorium': 'Грозовой скрипторий',
       'root-memory': 'Память корней',
       'light-canopy': 'Световая крона',
-      'spectrum-observatory': 'Спектральная обсерватория',
+      'spectrum-observatory':
+          'Спектральная обсерватория',
       'second-dawn-threshold': 'Порог второго рассвета',
       'uncharted-verge': 'Неизведанный рубеж',
       'constellation-sanctuary': 'Святилище созвездий',
-      'hidden-signal-observatory': 'Обсерватория скрытого сигнала',
+      'hidden-signal-observatory':
+          'Обсерватория скрытого сигнала',
       'memory-constellation': 'Созвездие памяти',
       'dawn-meridian': 'Меридиан рассвета',
       'first-light-causeway': 'Переход первого света',
