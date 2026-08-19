@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 
 class CachedSnapshotBanner extends StatelessWidget {
-  const CachedSnapshotBanner({
-    super.key,
-    required this.metadata,
-    this.title = 'Маршрут доступен только для чтения',
-  });
+  const CachedSnapshotBanner({super.key, required this.metadata, this.title});
 
   final CachedReadMetadata metadata;
-  final String title;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final String heading = title ?? context.l10n.cachedSnapshotDefaultTitle;
     return Semantics(
       key: const Key('cached-snapshot-banner'),
       container: true,
@@ -27,7 +25,7 @@ class CachedSnapshotBanner extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: ExpeditionBadge(
-                label: 'Сохранённый маршрут',
+                label: context.l10n.cachedSnapshotBadge,
                 icon: Icons.cloud_off_outlined,
                 tone: ExpeditionPanelTone.neutral,
                 allowWrap: true,
@@ -40,15 +38,13 @@ class CachedSnapshotBanner extends StatelessWidget {
               container: true,
               header: true,
               child: Text(
-                title,
+                heading,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              'Показано сохранённое состояние от '
-              '${_format(metadata.cachedAt)}. Изменения временно '
-              'недоступны до восстановления связи.',
+              context.l10n.cachedSnapshotBody(_format(metadata.cachedAt)),
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
@@ -78,7 +74,7 @@ class CachedSnapshotBanner extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            'Почему показана копия',
+                            context.l10n.cachedSnapshotReasonTitle,
                             style: Theme.of(context).textTheme.labelLarge,
                           ),
                           const SizedBox(height: 3),

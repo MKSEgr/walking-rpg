@@ -55,3 +55,5 @@ NNNN-short-title.md
 - [0036 — DigitalOcean production-like stage для internal alpha](0036-digitalocean-alpha-stage.md)
 - [0037 — Telegram login through Auth0](0037-telegram-login-through-auth0.md)
 - [0038 — repeatable expedition journeys](0038-repeatable-expedition-journeys.md)
+- [0039 — post-alpha gameplay track и Navigator canon](0039-post-alpha-gameplay-track-and-navigator-canon.md)
+- [0040 — incremental game localization boundary](0040-incremental-game-localization-boundary.md)

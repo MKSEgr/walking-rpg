@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/character_motion_atlas.dart';
-import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
@@ -105,13 +106,15 @@ class CompanionMotionPortrait extends StatelessWidget {
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
-    final String activeLabel = active ? ', активный спутник' : '';
-
     return Semantics(
       image: true,
-      label:
-          '$name, $species, ${CompanionGrowth.formLabel(evolutionStage)}'
-          '$activeLabel',
+      label: context.l10n.companionPortraitDescription(
+        name: name,
+        species: species,
+        stage: evolutionStage,
+        active: active,
+        hasSparkHalo: false,
+      ),
       child: RepaintBoundary(
         child: DecoratedBox(
           decoration: BoxDecoration(

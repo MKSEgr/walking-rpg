@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 
 class MobileCommandRecoveryAction extends StatelessWidget {
   const MobileCommandRecoveryAction({
@@ -22,10 +23,10 @@ class MobileCommandRecoveryAction extends StatelessWidget {
         : '$count';
     return IconButton(
       tooltip: unavailable
-          ? 'Сохранённые действия требуют внимания'
+          ? context.l10n.savedActionsAttentionTooltip
           : count > 0
-          ? 'Сохранённые действия: $count'
-          : 'Сохранённые действия',
+          ? context.l10n.savedActionsCountTooltip(count)
+          : context.l10n.savedActionsTooltip,
       onPressed: onPressed,
       icon: Badge(
         isLabelVisible: showBadge,

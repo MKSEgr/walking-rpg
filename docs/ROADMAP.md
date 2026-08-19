@@ -498,6 +498,33 @@ This milestone starts the post-alpha code-only gameplay track approved in
 ADR 0039. The immutable `alpha-rc1` baseline and all external validation gates
 remain separate and unchanged.
 
+## Milestone 26 — Full RU/EN game localization
+
+### CODE_COMPLETE — expedition shell slice
+
+- [x] Selected device locale continues through compact/wide navigation and
+      the full client-authored Home chrome after the guided first journey
+- [x] Loading, error, offline, journey action, feedback, event reward,
+      equipment, inventory, crafting and upgrade copy comes from generated ARB
+- [x] Dynamic values use typed placeholders; companion growth, motion and
+      saved-action entry semantics follow RU/EN at large text
+- [x] Resource parity, source audit and compact/wide widget coverage protect
+      both locales without changing backend payloads or persisted history
+
+### CODE_PENDING
+
+- [ ] Resolve all known current server-authored chapter/catalog stable IDs to
+      RU/EN while retaining unknown and immutable historical literal fallback
+- [ ] Localize the complete Platform journal and progression/catalog actions
+- [ ] Localize account, recovery, validation, activity and remaining boundary
+      screens without exposing raw diagnostic copy as player text
+- [ ] Add repo-wide RU/EN accessibility/large-text coverage and remove the
+      remaining client-authored Russian literals
+
+The incremental identity and persistence boundary is fixed by ADR 0040.
+This first slice does not complete Milestone 26 and does not change any
+external validation gate or the immutable `alpha-rc1` baseline.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

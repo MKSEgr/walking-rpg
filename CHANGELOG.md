@@ -6,6 +6,12 @@
 
 ### Changed
 
+- selected RU/EN locale now continues beyond the guided first journey through
+  compact/wide navigation and the complete client-authored Home expedition
+  chrome, including offline/error states, actions, rewards and accessibility;
+- Milestone 26 uses an incremental stable-ID localization boundary: current
+  server content retains a literal fallback and immutable historical copy is
+  never rewritten during locale changes;
 - canonical player-facing copy now presents the stable `rune-v1` companion as
   «Навигатор», «Навигатор потоков» and «Навигатор созвездий» while preserving
   server IDs, asset paths and historical persistence;
