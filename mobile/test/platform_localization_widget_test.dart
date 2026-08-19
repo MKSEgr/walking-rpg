@@ -164,6 +164,11 @@ void main() {
     expect(find.text('PILOT JOURNAL'), findsOneWidget);
     expect(find.text('Season of the First Signal'), findsOneWidget);
     expect(find.text('SPARK · LV. 1'), findsOneWidget);
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-onboarding-step-welcome')),
+    );
     expect(
       find.bySemanticsLabel('Meet the Navigator: completed'),
       findsOneWidget,
