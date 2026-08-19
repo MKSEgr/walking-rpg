@@ -34,6 +34,8 @@
 
 ### Added
 
+- lifetime journey chronicle in Home and the Flutter journal, aggregating all
+  receipt-proven completed routes, decisions, pilot XP and companion bond;
 - expandable full persisted decision histories for recent completed journeys,
   with reward facts, strict legacy-compatible parsing and accessibility;
 - persisted choice and outcome annotations on resolved points of the current

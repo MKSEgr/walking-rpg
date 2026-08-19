@@ -14,6 +14,7 @@ import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
 import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeQuery;
@@ -223,7 +224,9 @@ class HomeServiceTest {
                                 ),
                                 NOW
                         )
-                )
+                ),
+                List.of(),
+                new ExpeditionJourneyChronicleTotals(7, 7, 28, 28)
         );
         DailyGoalPolicyProperties goalProperties = goalProperties();
         HomeService service = new HomeService(
@@ -287,6 +290,14 @@ class HomeServiceTest {
         assertEquals("Эхо-нити из записи",
                 recap.materials().getFirst().itemName());
         assertEquals(6, recap.materials().getFirst().quantity());
+        assertNotNull(expedition.journeyChronicle());
+        assertEquals(8,
+                expedition.journeyChronicle().completedJourneyCount());
+        assertEquals(10, expedition.journeyChronicle().decisionCount());
+        assertEquals(98,
+                expedition.journeyChronicle().pilotExperienceGained());
+        assertEquals(51,
+                expedition.journeyChronicle().petBondGained());
         assertEquals("COMPLETED", expedition.routeTrail().getLast().state());
         assertNotNull(expedition.routeTrail().getLast().decision());
         assertEquals("Следовать за отражением",
@@ -724,6 +735,20 @@ class HomeServiceTest {
             List<ExpeditionJourneyEvent> journeyEvents,
             List<ExpeditionJourneyHistory> recentJourneyHistory
     ) {
+        return repository(
+                state,
+                journeyEvents,
+                recentJourneyHistory,
+                ExpeditionJourneyChronicleTotals.empty()
+        );
+    }
+
+    private HomeReadRepository repository(
+            HomeRuntimeState state,
+            List<ExpeditionJourneyEvent> journeyEvents,
+            List<ExpeditionJourneyHistory> recentJourneyHistory,
+            ExpeditionJourneyChronicleTotals journeyChronicle
+    ) {
         return new HomeReadRepository() {
             @Override
             public HomeRuntimeState findState(
@@ -759,6 +784,15 @@ class HomeServiceTest {
                     int limit
             ) {
                 return recentJourneyHistory;
+            }
+
+            @Override
+            public ExpeditionJourneyChronicleTotals findCompletedJourneyChronicle(
+                    String userId,
+                    String expeditionId,
+                    long currentJourneyNumber
+            ) {
+                return journeyChronicle;
             }
         };
     }

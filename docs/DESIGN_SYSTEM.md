@@ -963,14 +963,30 @@ In-progress and newly started journeys omit the card, while legacy completed
 snapshots without `completionRecap` keep the decision log usable and do not
 invent totals.
 
+## Journey chronicle
+
+After at least one confirmed finish, the journal places one lifetime chronicle
+between the current decision log and the recent archive. Its badge reports the
+number of completed journeys, while wrapping chips show total accepted
+decisions, pilot XP and companion bond. The card uses only the nullable Home
+`journeyChronicle`; it does not sum the five visible archive entries, current
+progression values or material rewards.
+
+One container semantic announces all four totals and excludes the visual
+children from duplicate screen-reader output. Chips wrap instead of shrinking,
+so large values remain bounded at compact width and enlarged text. A legacy
+snapshot or an account without a confirmed completed journey omits the card;
+zero values for decisions or rewards remain literal when the server supplies a
+valid positive completed-journey count.
+
 ## Recent journey archive
 
 When earlier completed journeys exist, the journal places a compact archive
-directly below the current decision log. It shows at most five server-ordered
-recaps, newest first. Each entry repeats the authoritative journey number,
-decision count and persisted reward totals, including the same named companion
-bond breakdown when supplied; mobile neither aggregates visible decisions nor
-looks up current content copy.
+directly below the lifetime chronicle when present, otherwise below the current
+decision log. It shows at most five server-ordered recaps, newest first. Each
+entry repeats the authoritative journey number, decision count and persisted
+reward totals, including the same named companion bond breakdown when supplied;
+mobile neither aggregates visible decisions nor looks up current content copy.
 
 An archived entry also shows its persisted `finalDecision` before rewards, so
 two journeys with identical totals can remain narratively distinct. The same

@@ -931,6 +931,32 @@ immutable receipts без миграции и без изменения экон
 **Статус:** полный persisted журнал недавних походов реализован поверх
 существующей immutable history без миграции, изменения topology или экономики.
 
+### US-040. Видеть летопись всех завершённых походов
+
+Как игрок, я хочу видеть постоянный итог всех завершённых походов, чтобы
+ощущать накопленную историю даже после выхода старых маршрутов из недавнего
+архива.
+
+Критерии:
+
+- Home возвращает additive nullable `journeyChronicle` с lifetime totals
+  завершённых походов, решений, pilot XP и companion bond;
+- прошлый поход считается завершённым только по immutable receipt старта
+  следующего `journeyNumber`, а authoritative current `COMPLETED` добавляется
+  ровно один раз до старта следующего похода;
+- агрегат охватывает всю доказанную историю независимо от archive limit 5 и
+  читает rewards только из persisted resolutions без current-content lookup,
+  progression delta или material aggregation;
+- mobile принимает legacy omission, отклоняет нулевой completed count и
+  отрицательные totals, показывает wrapping code-native card между decision
+  log и archive и озвучивает один полный semantic summary;
+- unit/API/PostgreSQL/parser/widget coverage проверяет current + previous
+  totals, отсутствие double count, историю длиннее архива, invalid shape,
+  compact large text и legacy fallback.
+
+**Статус:** lifetime-летопись реализована без миграции, изменения topology,
+экономики или archive pagination.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

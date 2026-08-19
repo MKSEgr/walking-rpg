@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
@@ -149,6 +150,55 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
             return List.copyOf(histories);
         }, userId, expeditionId, currentJourneyNumber, limit,
                 userId, expeditionId);
+    }
+
+    @Override
+    public ExpeditionJourneyChronicleTotals findCompletedJourneyChronicle(
+            String userId,
+            String expeditionId,
+            long currentJourneyNumber
+    ) {
+        return jdbcTemplate.queryForObject("""
+                WITH completed_journey AS (
+                    SELECT DISTINCT
+                           journey_number - 1 AS completed_journey_number
+                    FROM processed_expedition_journey_start
+                    WHERE user_id = ?
+                      AND expedition_id = ?
+                      AND journey_number <= ?
+                )
+                SELECT COUNT(DISTINCT completed.completed_journey_number)
+                           AS completed_journey_count,
+                       COUNT(resolution.event_id) AS decision_count,
+                       COALESCE(SUM(
+                           resolution.pilot_experience_gained
+                       ), 0) AS pilot_experience_gained,
+                       COALESCE(SUM(
+                           resolution.pet_bond_gained
+                       ), 0) AS pet_bond_gained
+                FROM completed_journey completed
+                LEFT JOIN processed_event_resolution resolution
+                  ON resolution.user_id = ?
+                 AND resolution.expedition_id = ?
+                 AND resolution.journey_number =
+                         completed.completed_journey_number
+                """, (resultSet, rowNumber) ->
+                        new ExpeditionJourneyChronicleTotals(
+                                resultSet.getLong(
+                                        "completed_journey_count"
+                                ),
+                                resultSet.getLong("decision_count"),
+                                resultSet.getLong(
+                                        "pilot_experience_gained"
+                                ),
+                                resultSet.getLong("pet_bond_gained")
+                        ),
+                userId,
+                expeditionId,
+                currentJourneyNumber,
+                userId,
+                expeditionId
+        );
     }
 
     private ExpeditionJourneyEvent journeyEvent(

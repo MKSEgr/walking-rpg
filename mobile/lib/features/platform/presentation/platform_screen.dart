@@ -597,6 +597,11 @@ class _PlatformBody extends StatelessWidget {
               const SizedBox(height: 12),
             ],
             _JourneyDecisionLogCard(snapshot: home),
+            if (home.journeyChronicle
+                case final HomeJourneyChronicle chronicle) ...<Widget>[
+              const SizedBox(height: 12),
+              _JourneyChronicleCard(chronicle: chronicle),
+            ],
             if (home.recentJourneyRecaps.isNotEmpty) ...<Widget>[
               const SizedBox(height: 12),
               _JourneyArchiveCard(recaps: home.recentJourneyRecaps),
@@ -902,6 +907,75 @@ class _JourneyFinalDecisionSummary extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _JourneyChronicleCard extends StatelessWidget {
+  const _JourneyChronicleCard({required this.chronicle});
+
+  final HomeJourneyChronicle chronicle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    return Semantics(
+      key: const Key('platform-journey-chronicle'),
+      container: true,
+      label:
+          'Летопись походов. '
+          'Завершено походов: ${chronicle.completedJourneyCount}. '
+          'Принято решений: ${chronicle.decisionCount}. '
+          'Всего наград: +${chronicle.pilotExperienceGained} XP пилота; '
+          '+${chronicle.petBondGained} связи спутников.',
+      child: ExcludeSemantics(
+        child: ExpeditionPanel(
+          tone: ExpeditionPanelTone.resonance,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: ExpeditionBadge(
+                  label: 'Завершено · ${chronicle.completedJourneyCount}',
+                  icon: Icons.auto_stories_outlined,
+                  tone: ExpeditionPanelTone.resonance,
+                  allowWrap: true,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text('Летопись походов', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                'Постоянный итог всех подтверждённых маршрутов.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                children: <Widget>[
+                  _JourneyRewardChip(
+                    icon: Icons.alt_route,
+                    label: 'Решений · ${chronicle.decisionCount}',
+                  ),
+                  _JourneyRewardChip(
+                    icon: Icons.star_outline,
+                    label: '+${chronicle.pilotExperienceGained} XP пилота',
+                  ),
+                  _JourneyRewardChip(
+                    icon: Icons.favorite_border,
+                    label: '+${chronicle.petBondGained} связи спутников',
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
