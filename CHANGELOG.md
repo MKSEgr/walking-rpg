@@ -9,6 +9,10 @@
 - selected RU/EN locale now continues beyond the guided first journey through
   compact/wide navigation and the complete client-authored Home expedition
   chrome, including offline/error states, actions, rewards and accessibility;
+- known current expedition, route node, pilot/companion, item, equipment,
+  recipe and upgrade identities now resolve through a generated RU/EN catalog
+  by stable ID; Home adds compatible `pilotId`, while unknown content and
+  immutable event history retain their literal server copy;
 - Milestone 26 uses an incremental stable-ID localization boundary: current
   server content retains a literal fallback and immutable historical copy is
   never rewritten during locale changes;

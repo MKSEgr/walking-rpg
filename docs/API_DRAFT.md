@@ -158,6 +158,7 @@ Authorization: Bearer <access-token>
   "serverTime": "2026-07-26T07:00:00Z",
   "contentVersion": "chapter-1-v2",
   "pilot": {
+    "pilotId": "navigator-v1",
     "name": "Навигатор",
     "level": 1,
     "currentExperience": 90,
@@ -351,6 +352,14 @@ Authorization: Bearer <access-token>
 - текущий день не участвует в собственной цели;
 - `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
+- `pilot.pilotId` — additive stable identity текущего пилота. Mobile разрешает
+  известный ID через выбранный RU/EN catalog; legacy snapshot без поля,
+  неизвестный ID и copy от более нового backend сохраняют literal `name` без
+  попытки определить identity по display text;
+- имена текущей экспедиции, узлов route trail, питомца, inventory/equipment,
+  recipes и upgrades разрешаются mobile только по их существующим stable IDs.
+  Event/choice/outcome/requirement copy, durable result, decision log и recap
+  остаются persisted literal history и не переписываются при смене locale;
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;

@@ -22,6 +22,10 @@ void main() {
         crew: 'Команда экспедиции',
         savedActions: 'Сохранённые действия',
         companionSemantic: 'активный спутник',
+        expeditionName: 'Сигнал из туманного сектора',
+        nodeName: 'Внешний маяк',
+        petName: 'Искра',
+        currentNodeSemantic: 'Текущий узел «Внешний маяк»',
       ),
       const _ShellLocaleCase(
         locale: Locale('en'),
@@ -31,6 +35,10 @@ void main() {
         crew: 'Expedition crew',
         savedActions: 'Saved actions',
         companionSemantic: 'active companion',
+        expeditionName: 'Signal from the Fog Sector',
+        nodeName: 'Outer Beacon',
+        petName: 'Spark',
+        currentNodeSemantic: 'Current node “Outer Beacon”',
       ),
     ]) {
       await tester.pumpWidget(
@@ -47,6 +55,13 @@ void main() {
       expect(find.text(localeCase.expedition), findsOneWidget);
       expect(find.text(localeCase.journal), findsOneWidget);
       expect(find.text(localeCase.waiting), findsOneWidget);
+      expect(find.text(localeCase.expeditionName), findsAtLeastNWidgets(1));
+      expect(find.text(localeCase.nodeName), findsAtLeastNWidgets(1));
+      expect(find.textContaining(localeCase.petName), findsAtLeastNWidgets(1));
+      expect(
+        find.bySemanticsLabel(localeCase.currentNodeSemantic),
+        findsOneWidget,
+      );
       expect(find.byTooltip(localeCase.savedActions), findsOneWidget);
       expect(
         find.bySemanticsLabel(
@@ -139,6 +154,10 @@ class _ShellLocaleCase {
     required this.crew,
     required this.savedActions,
     required this.companionSemantic,
+    required this.expeditionName,
+    required this.nodeName,
+    required this.petName,
+    required this.currentNodeSemantic,
   });
 
   final Locale locale;
@@ -148,4 +167,8 @@ class _ShellLocaleCase {
   final String crew;
   final String savedActions;
   final String companionSemantic;
+  final String expeditionName;
+  final String nodeName;
+  final String petName;
+  final String currentNodeSemantic;
 }

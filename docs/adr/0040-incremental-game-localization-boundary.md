@@ -2,7 +2,8 @@
 
 - **Статус:** Accepted
 - **Дата:** 2026-08-19
-- **Связанная задача:** [issue #339](https://github.com/MKSEgr/walking-rpg/issues/339)
+- **Связанные задачи:** [issue #339](https://github.com/MKSEgr/walking-rpg/issues/339),
+  [issue #341](https://github.com/MKSEgr/walking-rpg/issues/341)
 
 ## Контекст
 
@@ -27,11 +28,13 @@ Milestone 26 выполняется последовательными верт�
    semantics;
 3. динамические числа и диагностические значения передаются только typed ARB
    placeholders;
-4. current server-authored content пока выводится literal fallback. Следующий
-   content slice будет разрешать известные current stable IDs через RU/EN
-   catalog, не сравнивая и не изменяя display text;
-5. immutable historical copy всегда остаётся фактическим persisted literal;
-6. Platform journal, account/recovery/validation и остальные игровые
+4. второй срез разрешает по stable ID текущие expedition/node/pilot/pet,
+   item/equipment/recipe/upgrade identities через RU/EN catalog. Additive
+   `pilotId` допускает legacy omission, а unknown ID возвращает server literal;
+5. current event title/summary/choice/requirement narrative остаётся следующим
+   отдельным срезом и до него выводится literal fallback;
+6. immutable historical copy всегда остаётся фактическим persisted literal;
+7. Platform journal, account/recovery/validation и остальные игровые
    поверхности сохраняют `CODE_PENDING`, пока их отдельные срезы не получат
    tests и документацию.
 
@@ -45,13 +48,14 @@ RU/EN widget tests проверяют compact/wide layout, text scale 1.6 и sem
 - русская копия сохраняет прежнее поведение, а English shell не зависит от
   server locale;
 - rollout остаётся reviewable и не требует backend/schema migration;
-- английский интерфейс временно может содержать server-authored русский
-  content fallback, пока не завершён stable-ID catalog slice;
+- английский интерфейс больше не зависит от server locale для известных
+  current identities, но временно может содержать literal event narrative;
 - milestone нельзя отмечать `CODE_COMPLETE`, пока остаются перечисленные
   player-facing поверхности.
 
 ## Откат
 
 Первый срез откатывается возвратом вызовов generated localization к прежним
-client literals. Backend payload, stable IDs, cached snapshots, receipts,
-historical copy и `alpha-rc1` при этом не меняются.
+client literals. Второй — удалением current-content resolver и additive
+`pilotId`; legacy-compatible mobile parser не требует миграции cache. Stable
+IDs, receipts, historical copy и `alpha-rc1` при этом не меняются.

@@ -16,6 +16,7 @@ void main() {
     expect(snapshot.expeditionProgressValue, 0);
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent, isNull);
+    expect(snapshot.pilotId, 'navigator-v1');
     expect(snapshot.pilotCurrentExperience, 20);
     expect(snapshot.pilotNextLevelExperience, 100);
     expect(snapshot.petId, 'spark-v1');
@@ -86,6 +87,7 @@ void main() {
     expect(snapshot.unlockedEvent?.title, 'Источник сигнала');
     expect(snapshot.unlockedEvent?.choices, hasLength(2));
     expect(snapshot.unlockedEvent?.choices.first.choiceId, 'analyze-signal');
+    expect(snapshot.pilotId, 'navigator-v1');
     expect(snapshot.pilotCurrentExperience, 20);
     expect(snapshot.petId, 'spark-v1');
     expect(snapshot.petSpecies, 'Люмин');
@@ -102,6 +104,33 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.expeditionJourneyNumber, 1);
+  });
+
+  test('legacy response without pilot ID keeps the literal pilot fallback', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> pilot =
+        response['pilot'] as Map<String, dynamic>;
+    pilot.remove('pilotId');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.pilotId, isNull);
+    expect(snapshot.pilotName, 'Навигатор');
+  });
+
+  test('present pilot ID must be a non-empty string', () {
+    for (final Object? invalid in <Object?>[null, '', 42]) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> pilot =
+          response['pilot'] as Map<String, dynamic>;
+      pilot['pilotId'] = invalid;
+
+      expect(
+        () => HomeSnapshot.fromJson(response),
+        throwsA(isA<FormatException>()),
+        reason: 'invalid pilotId $invalid must fail closed',
+      );
+    }
   });
 
   test('legacy response without route trail remains readable', () {
@@ -1532,6 +1561,7 @@ Map<String, dynamic> _readyHomeResponse() {
     'serverTime': '2026-07-26T06:00:00Z',
     'contentVersion': 'chapter-1-v1',
     'pilot': <String, dynamic>{
+      'pilotId': 'navigator-v1',
       'name': 'Навигатор',
       'level': 1,
       'currentExperience': 20,

@@ -27,6 +27,7 @@ class HomeSnapshot {
     required this.pilotLevel,
     required this.petName,
     required this.petLevel,
+    this.pilotId,
     this.petId,
     this.petSpecies,
     this.petEvolutionStage,
@@ -144,6 +145,7 @@ class HomeSnapshot {
       unlockedEvent: eventJson == null
           ? null
           : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
+      pilotId: _readOptionalString(pilot, 'pilotId'),
       pilotName: _readString(pilot, 'name'),
       pilotLevel: _readInt(pilot, 'level'),
       pilotCurrentExperience: _readInt(pilot, 'currentExperience'),
@@ -193,6 +195,7 @@ class HomeSnapshot {
   final List<HomeExpeditionCompletionRecap> recentJourneyRecaps;
   final HomeJourneyChronicle? journeyChronicle;
   final HomeExpeditionEvent? unlockedEvent;
+  final String? pilotId;
   final String pilotName;
   final int pilotLevel;
   final int pilotCurrentExperience;
@@ -273,6 +276,7 @@ class HomeSnapshot {
     expeditionStatus: 'IN_PROGRESS',
     expeditionVersion: 0,
     unlockedEvent: null,
+    pilotId: 'navigator-v1',
     pilotName: 'Навигатор',
     pilotLevel: 1,
     pilotCurrentExperience: 20,

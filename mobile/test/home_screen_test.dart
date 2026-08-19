@@ -25,6 +25,7 @@ import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('home loading waits for an accepted route snapshot', (
@@ -133,7 +134,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Искра, Люмин, Малыш · форма 1, активный спутник'),
+      find.bySemanticsLabel('Искра, люмин, Малыш · форма 1, активный спутник'),
       findsOneWidget,
     );
     expect(find.byType(CompanionGrowthTrack), findsOneWidget);
@@ -971,6 +972,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(eventStateButton, findsOneWidget);
   });
+
+  testWidgets(
+    'English Home resolves current catalog and ingredient semantics',
+    (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeScreen(loader: () async => _craftingReady()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Signal from the Fog Sector'), findsOneWidget);
+      expect(find.bySemanticsLabel('Current node “Ash Orbit”'), findsOneWidget);
+
+      final Finder craftButton = find.byKey(
+        const Key('craft-resonance-compass-v1'),
+      );
+      await tester.scrollUntilVisible(
+        craftButton,
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lumen Shard × 2'), findsOneWidget);
+      expect(find.text('Assemble a Resonance Compass'), findsOneWidget);
+      expect(
+        find.text('Bind the light core to the living route thread.'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Lumen Shard, 2 of 2, enough materials'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+
+      semantics.dispose();
+    },
+  );
 
   testWidgets('home screen crafts and reloads authoritative inventory', (
     WidgetTester tester,
@@ -1988,6 +2033,9 @@ void main() {
       Future<void> pump(HomeExpeditionEvent event) async {
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             theme: WalkingRpgTheme.dark(),
             home: HomeScreen(
               key: ValueKey<String>(event.eventId),
@@ -2025,6 +2073,9 @@ void main() {
         scrollable: find.byType(Scrollable),
       );
       expect(known, findsOneWidget);
+      expect(find.text('Хранилище эха'), findsOneWidget);
+      expect(find.text('Стабилизировать ядро'), findsOneWidget);
+      expect(find.text('Стабильный резонанс'), findsOneWidget);
 
       await pump(
         const HomeExpeditionEvent(

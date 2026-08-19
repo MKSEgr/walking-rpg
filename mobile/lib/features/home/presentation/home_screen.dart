@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/core/localization/current_content_localizations.dart';
 import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
@@ -766,7 +767,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.l10n.homeCraftedItem(result.craftedItem.name)),
+          content: Text(
+            context.l10n.homeCraftedItem(
+              context.l10n.currentItemName(
+                result.craftedItem.itemId,
+                result.craftedItem.name,
+              ),
+            ),
+          ),
         ),
       );
       setState(() {
@@ -813,7 +821,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         SnackBar(
           content: Text(
             context.l10n.homeItemUpgraded(
-              result.upgradedItem.name,
+              context.l10n.currentItemName(
+                result.upgradedItem.itemId,
+                result.upgradedItem.name,
+              ),
               result.upgradedItem.upgradeLevel,
               result.upgradedItem.rarity,
             ),
@@ -887,7 +898,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
       final String message = result.action == 'EQUIP'
-          ? context.l10n.homeEquippedItem(result.equippedItem!.name)
+          ? context.l10n.homeEquippedItem(
+              context.l10n.currentItemName(
+                result.equippedItem!.itemId,
+                result.equippedItem!.name,
+              ),
+            )
           : context.l10n.homeNavigationItemRemoved;
       ScaffoldMessenger.of(
         context,
@@ -1404,6 +1420,18 @@ class _ExpeditionHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final String expeditionName = context.l10n.currentExpeditionName(
+      snapshot.expeditionId,
+      snapshot.expeditionName,
+    );
+    final String currentNodeName = context.l10n.currentNodeName(
+      snapshot.currentNodeId,
+      snapshot.currentNodeName,
+    );
+    final String petName = context.l10n.currentPetName(
+      snapshot.petId,
+      snapshot.petName,
+    );
     final bool hasCompanionPortrait =
         snapshot.petId != null &&
         snapshot.petSpecies != null &&
@@ -1416,8 +1444,7 @@ class _ExpeditionHero extends StatelessWidget {
         children: <Widget>[
           ChapterVista(
             key: const Key('home-expedition-vista'),
-            semanticLabel:
-                '${snapshot.expeditionName}, ${snapshot.currentNodeName}',
+            semanticLabel: '$expeditionName, $currentNodeName',
             progress: snapshot.expeditionProgressValue,
             height: 178,
           ),
@@ -1429,7 +1456,7 @@ class _ExpeditionHero extends StatelessWidget {
               ExpeditionNodeSignal(
                 key: const Key('home-current-node-badge'),
                 nodeId: snapshot.currentNodeId,
-                nodeName: snapshot.currentNodeName,
+                nodeName: currentNodeName,
                 completed: completed,
               ),
               ExpeditionBadge(
@@ -1444,7 +1471,7 @@ class _ExpeditionHero extends StatelessWidget {
                 ExpeditionBadge(
                   key: const Key('home-active-companion-badge'),
                   label: context.l10n.homeCompanionLevel(
-                    snapshot.petName,
+                    petName,
                     snapshot.petLevel,
                   ),
                   icon: Icons.pets_outlined,
@@ -1481,7 +1508,7 @@ class _ExpeditionHero extends StatelessWidget {
           Divider(color: context.walkingRpgPalette.panelBorder),
           const SizedBox(height: 2),
           _RouteEnergySummary(
-            expeditionName: snapshot.expeditionName,
+            expeditionName: expeditionName,
             availableEnergy: snapshot.availableEnergy,
           ),
           const SizedBox(height: 8),
@@ -1489,7 +1516,7 @@ class _ExpeditionHero extends StatelessWidget {
             context.l10n.homeEnergyProgress(
               snapshot.expeditionProgress,
               snapshot.requiredEnergy,
-              snapshot.currentNodeName,
+              currentNodeName,
             ),
             style: Theme.of(
               context,
@@ -1507,7 +1534,10 @@ class _ExpeditionHero extends StatelessWidget {
                   .map(
                     (HomeExpeditionRouteNode node) => ExpeditionRouteTrailNode(
                       nodeId: node.nodeId,
-                      nodeName: node.nodeName,
+                      nodeName: context.l10n.currentNodeName(
+                        node.nodeId,
+                        node.nodeName,
+                      ),
                       state: node.state,
                       decision: node.decision == null
                           ? null
@@ -1660,14 +1690,25 @@ class _ExpeditionTeam extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String pilotName = context.l10n.currentPilotName(
+      snapshot.pilotId,
+      snapshot.pilotName,
+    );
+    final String petName = context.l10n.currentPetName(
+      snapshot.petId,
+      snapshot.petName,
+    );
+    final String? petSpecies = snapshot.petSpecies == null
+        ? null
+        : context.l10n.currentPetSpecies(snapshot.petId, snapshot.petSpecies!);
     final bool hasCompanionPortrait =
         snapshot.petId != null &&
-        snapshot.petSpecies != null &&
+        petSpecies != null &&
         snapshot.petEvolutionStage != null;
     final Widget pilot = _CharacterCard(
       key: const Key('home-pilot-card'),
       label: context.l10n.homePilotLabel,
-      name: snapshot.pilotName,
+      name: pilotName,
       level: snapshot.pilotLevel,
       detail:
           'XP ${snapshot.pilotCurrentExperience} / '
@@ -1677,7 +1718,7 @@ class _ExpeditionTeam extends StatelessWidget {
         child: PilotMotionPortrait(
           key: const Key('home-pilot-motion-portrait'),
           pilotId: PilotMotionPortrait.navigatorPilotId,
-          name: snapshot.pilotName,
+          name: pilotName,
           size: 72,
         ),
       ),
@@ -1685,7 +1726,7 @@ class _ExpeditionTeam extends StatelessWidget {
     final Widget pet = _CharacterCard(
       key: const Key('home-pet-card'),
       label: context.l10n.homePetLabel,
-      name: snapshot.petName,
+      name: petName,
       level: snapshot.petLevel,
       detail: snapshot.petEvolutionStage == null
           ? context.l10n.homePetBond(snapshot.petBond)
@@ -1699,8 +1740,8 @@ class _ExpeditionTeam extends StatelessWidget {
               child: CompanionPortrait(
                 key: const Key('home-team-companion-portrait'),
                 petId: snapshot.petId!,
-                name: snapshot.petName,
-                species: snapshot.petSpecies!,
+                name: petName,
+                species: petSpecies,
                 evolutionStage: snapshot.petEvolutionStage!,
                 active: true,
                 size: 72,
@@ -1741,13 +1782,17 @@ class _ActiveCompanionCard extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final String petId = snapshot.petId!;
-    final String species = snapshot.petSpecies!;
+    final String petName = context.l10n.currentPetName(petId, snapshot.petName);
+    final String species = context.l10n.currentPetSpecies(
+      petId,
+      snapshot.petSpecies!,
+    );
     final int evolutionStage = snapshot.petEvolutionStage!;
 
     final Widget portrait = CompanionMotionPortrait(
       key: const Key('home-active-companion-portrait'),
       petId: petId,
-      name: snapshot.petName,
+      name: petName,
       species: species,
       evolutionStage: evolutionStage,
       active: true,
@@ -1771,7 +1816,7 @@ class _ActiveCompanionCard extends StatelessWidget {
           children: <Widget>[
             ExpeditionBadge(
               label: context.l10n.homeCompanionLevel(
-                snapshot.petName,
+                petName,
                 snapshot.petLevel,
               ),
               icon: Icons.pets_outlined,
@@ -2183,7 +2228,7 @@ class _EventCard extends StatelessWidget {
         ? ''
         : context.l10n.homeMaterialRewardSuffix(
             material.quantity,
-            material.itemName,
+            context.l10n.currentItemName(material.itemId, material.itemName),
           );
     return context.l10n.homeChoiceReward(
       choice.pilotExperienceReward,
@@ -2255,9 +2300,17 @@ class _EquipmentCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           for (final HomeEquipmentSlot slot in slots) ...<Widget>[
-            Text(slot.name, style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              context.l10n.currentEquipmentSlotName(slot.slotId, slot.name),
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(height: 2),
-            Text(slot.description),
+            Text(
+              context.l10n.currentEquipmentSlotDescription(
+                slot.slotId,
+                slot.description,
+              ),
+            ),
             const SizedBox(height: 8),
             EquipmentMountSignal(
               slotId: slot.slotId,
@@ -2271,9 +2324,15 @@ class _EquipmentCard extends StatelessWidget {
               _IllustratedItemIdentity(
                 layoutKey: 'equipment-item-layout-${slot.slotId}',
                 itemId: slot.item!.itemId,
-                title: slot.item!.name,
+                title: context.l10n.currentItemName(
+                  slot.item!.itemId,
+                  slot.item!.name,
+                ),
                 titleKey: Key('equipment-item-${slot.slotId}'),
-                description: slot.item!.description,
+                description: context.l10n.currentItemDescription(
+                  slot.item!.itemId,
+                  slot.item!.description,
+                ),
                 highlighted: true,
                 footer: SizedBox(
                   width: double.infinity,
@@ -2331,12 +2390,18 @@ class _InventoryCard extends StatelessWidget {
               itemId: item.itemId,
               title: item.isUnique
                   ? context.l10n.homeItemLevel(
-                      item.name,
+                      context.l10n.currentItemName(item.itemId, item.name),
                       item.version,
                       item.rarity == null ? '' : ' · ${item.rarity}',
                     )
-                  : '${item.name} × ${item.quantity}',
-              description: item.description,
+                  : context.l10n.homeItemQuantity(
+                      context.l10n.currentItemName(item.itemId, item.name),
+                      item.quantity,
+                    ),
+              description: context.l10n.currentItemDescription(
+                item.itemId,
+                item.description,
+              ),
               highlighted: item.isUnique || item.isEquipped,
               footer: item.isEquippable
                   ? SizedBox(
@@ -2442,14 +2507,30 @@ class _CraftingRecipeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String recipeName = context.l10n.currentRecipeName(
+      recipe.recipeId,
+      recipe.name,
+    );
+    final String recipeDescription = context.l10n.currentRecipeDescription(
+      recipe.recipeId,
+      recipe.description,
+    );
+    final String resultName = context.l10n.currentItemName(
+      recipe.result.itemId,
+      recipe.result.name,
+    );
+    final String resultDescription = context.l10n.currentItemDescription(
+      recipe.result.itemId,
+      recipe.result.description,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _IllustratedItemIdentity(
           layoutKey: 'crafting-result-layout-${recipe.result.itemId}',
           itemId: recipe.result.itemId,
-          title: recipe.name,
-          description: recipe.description,
+          title: recipeName,
+          description: recipeDescription,
           highlighted: recipe.canCraft || recipe.isCrafted,
         ),
         const SizedBox(height: 12),
@@ -2468,7 +2549,7 @@ class _CraftingRecipeView extends StatelessWidget {
           Semantics(
             container: true,
             label: context.l10n.homeIngredientSemantics(
-              ingredient.name,
+              context.l10n.currentItemName(ingredient.itemId, ingredient.name),
               ingredient.availableQuantity,
               ingredient.requiredQuantity,
               ingredient.isAvailable
@@ -2481,7 +2562,14 @@ class _CraftingRecipeView extends StatelessWidget {
                 children: <Widget>[
                   ExpeditionItemEmblem(itemId: ingredient.itemId, size: 38),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(ingredient.name)),
+                  Expanded(
+                    child: Text(
+                      context.l10n.currentItemName(
+                        ingredient.itemId,
+                        ingredient.name,
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -2506,14 +2594,11 @@ class _CraftingRecipeView extends StatelessWidget {
         ],
         const SizedBox(height: 6),
         Text(
-          context.l10n.homeCraftingResult(recipe.result.name),
+          context.l10n.homeCraftingResult(resultName),
           style: Theme.of(context).textTheme.labelLarge,
         ),
         const SizedBox(height: 2),
-        Text(
-          recipe.result.description,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(resultDescription, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 12),
         FilledButton.tonalIcon(
           key: Key('craft-${recipe.recipeId}'),
@@ -2605,14 +2690,22 @@ class _ItemUpgradeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String upgradeName = context.l10n.currentUpgradeName(
+      upgrade.upgradeId,
+      upgrade.name,
+    );
+    final String upgradeDescription = context.l10n.currentUpgradeDescription(
+      upgrade.upgradeId,
+      upgrade.description,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _IllustratedItemIdentity(
           layoutKey: 'item-upgrade-layout-${upgrade.upgradeId}',
           itemId: upgrade.targetItemId,
-          title: upgrade.name,
-          description: upgrade.description,
+          title: upgradeName,
+          description: upgradeDescription,
           highlighted: upgrade.canApply || upgrade.isCompleted,
         ),
         const SizedBox(height: 12),
@@ -2644,7 +2737,7 @@ class _ItemUpgradeView extends StatelessWidget {
           Semantics(
             container: true,
             label: context.l10n.homeIngredientSemantics(
-              ingredient.name,
+              context.l10n.currentItemName(ingredient.itemId, ingredient.name),
               ingredient.availableQuantity,
               ingredient.requiredQuantity,
               ingredient.isAvailable
@@ -2656,7 +2749,14 @@ class _ItemUpgradeView extends StatelessWidget {
                 children: <Widget>[
                   ExpeditionItemEmblem(itemId: ingredient.itemId, size: 38),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(ingredient.name)),
+                  Expanded(
+                    child: Text(
+                      context.l10n.currentItemName(
+                        ingredient.itemId,
+                        ingredient.name,
+                      ),
+                    ),
+                  ),
                   Text(
                     '${ingredient.availableQuantity} / '
                     '${ingredient.requiredQuantity}',

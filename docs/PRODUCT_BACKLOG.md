@@ -996,13 +996,16 @@ gameplay identity, экономики, topology или external validation statu
   не определяется по display text;
 - companion growth/motion и saved-action entry имеют RU/EN semantics при
   compact viewport и text scale 1.6;
-- known current server content в следующем slice локализуется только по stable
-  ID; unknown и immutable historical literal copy не переписываются;
+- current expedition/node/pilot/pet/item/equipment/recipe/upgrade identities
+  локализуются только по stable ID; additive `pilotId` допускает legacy
+  omission, а unknown content сохраняет server literal;
+- current event title/summary/choice/requirement narrative остаётся следующим
+  slice; immutable decisions, outcomes, receipts и recaps не переписываются;
 - Platform journal и остальные экраны остаются явно `CODE_PENDING` до своих
   вертикальных срезов.
 
-**Статус:** первый expedition-shell slice реализован. Full current-content
-catalog, Platform journal и оставшиеся экраны продолжают Milestone 26.
+**Статус:** expedition shell и current identity catalog реализованы. Current
+event narrative, Platform journal и оставшиеся экраны продолжают Milestone 26.
 
 ## P1 — расширение MVP
 
