@@ -2095,9 +2095,7 @@ class _EventCard extends StatelessWidget {
           ExpeditionEventScene(
             eventId: event.eventId,
             eventTitle: event.title,
-            fallbackSemanticLabel: context.l10n.eventFallbackScene(
-              event.title,
-            ),
+            fallbackSemanticLabel: context.l10n.eventFallbackScene(event.title),
           ),
           const SizedBox(height: 14),
           Text(event.title, style: Theme.of(context).textTheme.titleMedium),

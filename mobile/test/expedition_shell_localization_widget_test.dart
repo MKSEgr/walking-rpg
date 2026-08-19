@@ -21,7 +21,7 @@ void main() {
           waiting: 'Экспедиция ждёт твоих шагов',
           crew: 'Команда экспедиции',
           savedActions: 'Сохранённые действия',
-          companionSemanticFragment: 'активный спутник',
+          companionSemantic: 'активный спутник',
         ),
         const _ShellLocaleCase(
           locale: Locale('en'),
@@ -30,10 +30,18 @@ void main() {
           waiting: 'The expedition is waiting for your steps',
           crew: 'Expedition crew',
           savedActions: 'Saved actions',
-          companionSemanticFragment: 'active companion',
+          companionSemantic: 'active companion',
         ),
       ]) {
-        await tester.pumpWidget(_LocalizedShell(localeCase.locale));
+        await tester.pumpWidget(
+          _LocalizedTestApp(
+            locale: localeCase.locale,
+            child: MainNavigationShell(
+              home: HomeScreen(loader: () async => HomeSnapshot.demo),
+              platform: const Center(child: Text('platform-placeholder')),
+            ),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text(localeCase.expedition), findsOneWidget);
@@ -42,7 +50,7 @@ void main() {
         expect(find.byTooltip(localeCase.savedActions), findsOneWidget);
         expect(
           find.bySemanticsLabel(
-            RegExp(RegExp.escape(localeCase.companionSemanticFragment)),
+            RegExp(RegExp.escape(localeCase.companionSemantic)),
           ),
           findsOneWidget,
         );
@@ -79,7 +87,13 @@ void main() {
           ),
         ]) {
       await tester.pumpWidget(
-        _LocalizedShell(localeCase.locale, usePlaceholderDestinations: true),
+        _LocalizedTestApp(
+          locale: localeCase.locale,
+          child: const MainNavigationShell(
+            home: Center(child: Text('home-placeholder')),
+            platform: Center(child: Text('platform-placeholder')),
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -91,11 +105,11 @@ void main() {
   });
 }
 
-class _LocalizedShell extends StatelessWidget {
-  const _LocalizedShell(this.locale, {this.usePlaceholderDestinations = false});
+class _LocalizedTestApp extends StatelessWidget {
+  const _LocalizedTestApp({required this.locale, required this.child});
 
   final Locale locale;
-  final bool usePlaceholderDestinations;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -112,12 +126,7 @@ class _LocalizedShell extends StatelessWidget {
           child: child!,
         );
       },
-      home: MainNavigationShell(
-        home: usePlaceholderDestinations
-            ? const Center(child: Text('home-placeholder'))
-            : HomeScreen(loader: () async => HomeSnapshot.demo),
-        platform: const Center(child: Text('platform-placeholder')),
-      ),
+      home: child,
     );
   }
 }
@@ -130,7 +139,7 @@ class _ShellLocaleCase {
     required this.waiting,
     required this.crew,
     required this.savedActions,
-    required this.companionSemanticFragment,
+    required this.companionSemantic,
   });
 
   final Locale locale;
@@ -139,5 +148,5 @@ class _ShellLocaleCase {
   final String waiting;
   final String crew;
   final String savedActions;
-  final String companionSemanticFragment;
+  final String companionSemantic;
 }
