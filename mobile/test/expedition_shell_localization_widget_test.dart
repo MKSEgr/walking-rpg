@@ -7,65 +7,64 @@ import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets(
-    'compact post-onboarding shell follows RU and EN at large text',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+  testWidgets('compact post-onboarding shell follows RU and EN at large text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      for (final _ShellLocaleCase localeCase in <_ShellLocaleCase>[
-        const _ShellLocaleCase(
-          locale: Locale('ru'),
-          expedition: 'Экспедиция',
-          journal: 'Журнал',
-          waiting: 'Экспедиция ждёт твоих шагов',
-          crew: 'Команда экспедиции',
-          savedActions: 'Сохранённые действия',
-          companionSemantic: 'активный спутник',
-        ),
-        const _ShellLocaleCase(
-          locale: Locale('en'),
-          expedition: 'Expedition',
-          journal: 'Journal',
-          waiting: 'The expedition is waiting for your steps',
-          crew: 'Expedition crew',
-          savedActions: 'Saved actions',
-          companionSemantic: 'active companion',
-        ),
-      ]) {
-        await tester.pumpWidget(
-          _LocalizedTestApp(
-            locale: localeCase.locale,
-            child: MainNavigationShell(
-              home: HomeScreen(loader: () async => HomeSnapshot.demo),
-              platform: const Center(child: Text('platform-placeholder')),
-            ),
+    for (final _ShellLocaleCase localeCase in <_ShellLocaleCase>[
+      const _ShellLocaleCase(
+        locale: Locale('ru'),
+        expedition: 'Экспедиция',
+        journal: 'Журнал',
+        waiting: 'Экспедиция ждёт твоих шагов',
+        crew: 'Команда экспедиции',
+        savedActions: 'Сохранённые действия',
+        companionSemantic: 'активный спутник',
+      ),
+      const _ShellLocaleCase(
+        locale: Locale('en'),
+        expedition: 'Expedition',
+        journal: 'Journal',
+        waiting: 'The expedition is waiting for your steps',
+        crew: 'Expedition crew',
+        savedActions: 'Saved actions',
+        companionSemantic: 'active companion',
+      ),
+    ]) {
+      await tester.pumpWidget(
+        _LocalizedTestApp(
+          locale: localeCase.locale,
+          child: MainNavigationShell(
+            home: HomeScreen(loader: () async => HomeSnapshot.demo),
+            platform: const Center(child: Text('platform-placeholder')),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.text(localeCase.expedition), findsOneWidget);
-        expect(find.text(localeCase.journal), findsOneWidget);
-        expect(find.text(localeCase.waiting), findsOneWidget);
-        expect(find.byTooltip(localeCase.savedActions), findsOneWidget);
-        expect(
-          find.bySemanticsLabel(
-            RegExp(RegExp.escape(localeCase.companionSemantic)),
-          ),
-          findsOneWidget,
-        );
+      expect(find.text(localeCase.expedition), findsOneWidget);
+      expect(find.text(localeCase.journal), findsOneWidget);
+      expect(find.text(localeCase.waiting), findsOneWidget);
+      expect(find.byTooltip(localeCase.savedActions), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          RegExp(RegExp.escape(localeCase.companionSemantic)),
+        ),
+        findsOneWidget,
+      );
 
-        await tester.scrollUntilVisible(
-          find.text(localeCase.crew),
-          220,
-          scrollable: find.byType(Scrollable).first,
-        );
+      await tester.scrollUntilVisible(
+        find.text(localeCase.crew),
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
 
-        expect(find.text(localeCase.crew), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
+      expect(find.text(localeCase.crew), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+  });
 
   testWidgets('wide terminal navigation follows RU and EN locale', (
     WidgetTester tester,

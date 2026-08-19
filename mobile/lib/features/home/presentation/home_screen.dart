@@ -730,9 +730,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.homeEventAcknowledgeFailed('$error'),
-            ),
+            content: Text(context.l10n.homeEventAcknowledgeFailed('$error')),
           ),
         );
       }
