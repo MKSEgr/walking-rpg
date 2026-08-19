@@ -524,10 +524,19 @@ remain separate and unchanged.
 - [x] Backend contract tests, exhaustive RU/EN catalog tests, compact large-text
       widgets and accessibility assertions protect the boundary
 
+### CODE_COMPLETE — current event narrative slice
+
+- [x] All 30 known READY event titles/summaries and 78 exact event/choice pairs
+      resolve through generated RU/EN copy by stable identity
+- [x] All 16 gated choice requirements and event-unlock feedback use the same
+      exact-ID resolver; unknown content retains literal server fallback
+- [x] Resolved event copy, selected decisions, outcomes, pending results,
+      durable receipts and current or archived recaps remain persisted literal
+- [x] Backend inventory counts, exhaustive RU/EN resolver tests, compact
+      text-scale 1.6 widgets and accessibility semantics protect the boundary
+
 ### CODE_PENDING
 
-- [ ] Resolve remaining current event title/summary/choice/requirement narrative
-      by stable ID while retaining unknown and immutable historical fallback
 - [ ] Localize the complete Platform journal and progression/catalog actions
 - [ ] Localize account, recovery, validation, activity and remaining boundary
       screens without exposing raw diagnostic copy as player text
@@ -535,7 +544,7 @@ remain separate and unchanged.
       remaining client-authored Russian literals
 
 The incremental identity and persistence boundary is fixed by ADR 0040.
-This first slice does not complete Milestone 26 and does not change any
+These slices do not complete Milestone 26 and do not change any
 external validation gate or the immutable `alpha-rc1` baseline.
 
 ## Exit criteria autonomous scope

@@ -973,6 +973,54 @@ void main() {
     expect(eventStateButton, findsOneWidget);
   });
 
+  testWidgets('English advance feedback resolves an unlocked event by ID', (
+    WidgetTester tester,
+  ) async {
+    int loads = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: HomeScreen(
+          loader: () async {
+            loads += 1;
+            return loads == 1 ? _readyToAdvance() : _eventReady();
+          },
+          advancer:
+              ({
+                required String expeditionId,
+                required int energyToSpend,
+                required String idempotencyKey,
+              }) async {
+                return _advanceResult(
+                  unlockedEvent: const ExpeditionEventResult(
+                    eventId: 'mirror-delta-v1',
+                    title: 'Раздвоенный сигнал',
+                    summary: 'Два сигнала ведут к разным берегам.',
+                    status: 'READY',
+                  ),
+                );
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder advanceButton = find.widgetWithText(
+      FilledButton,
+      'Spend 30 ENERGY',
+    );
+    await _scrollAboveStickyAction(tester, advanceButton);
+    await tester.tap(advanceButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Event unlocked: Split Signal'), findsOneWidget);
+    expect(loads, 2);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'English Home resolves current catalog and ingredient semantics',
     (WidgetTester tester) async {
@@ -1332,6 +1380,76 @@ void main() {
       'compass-impression-chapter-1-v2-'
           'route-mirror-delta-v1-follow-resonance-ROUTE_AVAILABLE',
     ]);
+  });
+
+  testWidgets('current READY event localizes on compact enlarged text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(
+          loader: () async => _resonanceEventReady(equipped: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder eventScene = find.byKey(
+      const Key('event-scene-mirror-delta-v1'),
+    );
+    await tester.scrollUntilVisible(
+      eventScene,
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.bySemanticsLabel(
+        'Event scene “Split Signal”: two reflected signals diverge above a '
+        'hidden resonance current.',
+      ),
+      findsOneWidget,
+    );
+
+    final Finder lockedChoice = find.byKey(
+      const Key('home-event-choice-follow-resonance'),
+    );
+    await _scrollAboveStickyAction(tester, lockedChoice);
+
+    expect(find.text('Split Signal'), findsOneWidget);
+    expect(
+      find.text('Two identical signals lead to different shores.'),
+      findsOneWidget,
+    );
+    expect(find.text('Survey the node'), findsOneWidget);
+    expect(find.text('Follow the resonance'), findsOneWidget);
+    expect(
+      find.text("Tune the equipped compass to the delta's hidden reflection."),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Equip the Resonance Compass to reveal the hidden route.'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    semantics.dispose();
   });
 
   testWidgets('equipment mount stays reachable on compact enlarged text', (
@@ -2074,8 +2192,11 @@ void main() {
       );
       expect(known, findsOneWidget);
       expect(find.text('Хранилище эха'), findsOneWidget);
+      expect(find.text('Архивное ядро стабилизировано.'), findsOneWidget);
       expect(find.text('Стабилизировать ядро'), findsOneWidget);
       expect(find.text('Стабильный резонанс'), findsOneWidget);
+      expect(find.text('Ядро перестало разрушаться.'), findsOneWidget);
+      expect(find.text('Echo Vault'), findsNothing);
 
       await pump(
         const HomeExpeditionEvent(
@@ -3618,8 +3739,15 @@ HomeSnapshot _acknowledgedEventResultHome() {
   return _pendingEventResultHome(includePending: false);
 }
 
-ExpeditionAdvanceResult _advanceResult() {
-  return const ExpeditionAdvanceResult(
+ExpeditionAdvanceResult _advanceResult({
+  ExpeditionEventResult unlockedEvent = const ExpeditionEventResult(
+    eventId: 'signal-source-v1',
+    title: 'Источник сигнала',
+    summary: 'Маяк отвечает импульсом.',
+    status: 'READY',
+  ),
+}) {
+  return ExpeditionAdvanceResult(
     contentVersion: 'chapter-1-v1',
     expeditionId: 'starter-expedition-v1',
     expeditionName: 'Сигнал из туманного сектора',
@@ -3632,12 +3760,7 @@ ExpeditionAdvanceResult _advanceResult() {
     status: 'EVENT_READY',
     currentNodeId: 'outer-beacon',
     currentNodeName: 'Внешний маяк',
-    unlockedEvent: ExpeditionEventResult(
-      eventId: 'signal-source-v1',
-      title: 'Источник сигнала',
-      summary: 'Маяк отвечает импульсом.',
-      status: 'READY',
-    ),
+    unlockedEvent: unlockedEvent,
     serverTime: '2026-07-26T06:00:00Z',
   );
 }

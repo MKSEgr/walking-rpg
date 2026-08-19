@@ -11,7 +11,7 @@ void main() {
     final Set<String> russianKeys = _messageKeys(russian);
 
     expect(englishKeys, equals(russianKeys));
-    expect(englishKeys.length, greaterThanOrEqualTo(330));
+    expect(englishKeys.length, greaterThanOrEqualTo(500));
 
     for (final String key in englishKeys) {
       expect(
@@ -53,6 +53,7 @@ void main() {
       'lib/app/main_navigation_shell.dart',
       'lib/core/cache/cached_snapshot_banner.dart',
       'lib/core/localization/current_content_localizations.dart',
+      'lib/core/localization/current_event_localizations.dart',
       'lib/design_system/companion_motion.dart',
       'lib/design_system/pilot_motion.dart',
       'lib/features/home/presentation/home_screen.dart',
@@ -77,6 +78,18 @@ void main() {
     expect(source, contains("'starter-expedition-v1'"));
     expect(source, contains("'first-light-causeway'"));
     expect(source, contains("'prism-sextant-second-dawn-attunement-v1'"));
+  });
+
+  test('current event resolver uses stable event and choice identities', () {
+    final String source = File(
+      'lib/core/localization/current_event_localizations.dart',
+    ).readAsStringSync();
+
+    expect(RegExp(r'fallback\s*==|==\s*fallback').hasMatch(source), isFalse);
+    expect(source, contains("'echo-vault-v1'"));
+    expect(source, contains("'first-light-causeway-v1'"));
+    expect(source, contains("'mirror-delta-v1::follow-resonance'"));
+    expect(source, contains("'dawn-meridian-v1::cross-first-light-causeway'"));
   });
 }
 

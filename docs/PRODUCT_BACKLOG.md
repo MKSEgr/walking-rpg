@@ -999,13 +999,17 @@ gameplay identity, экономики, topology или external validation statu
 - current expedition/node/pilot/pet/item/equipment/recipe/upgrade identities
   локализуются только по stable ID; additive `pilotId` допускает legacy
   omission, а unknown content сохраняет server literal;
-- current event title/summary/choice/requirement narrative остаётся следующим
-  slice; immutable decisions, outcomes, receipts и recaps не переписываются;
+- все 30 известных READY event title/summary, 78 exact event/choice pairs и 16
+  gated requirements локализуются только по stable ID; unlock feedback
+  использует ту же границу, а unknown content сохраняет server literal;
+- resolved event copy, immutable decisions, outcomes, pending results, receipts
+  и recaps не переписываются при смене locale;
 - Platform journal и остальные экраны остаются явно `CODE_PENDING` до своих
   вертикальных срезов.
 
-**Статус:** expedition shell и current identity catalog реализованы. Current
-event narrative, Platform journal и оставшиеся экраны продолжают Milestone 26.
+**Статус:** expedition shell, current identity catalog и current event
+narrative реализованы. Platform journal и оставшиеся экраны продолжают
+Milestone 26.
 
 ## P1 — расширение MVP
 

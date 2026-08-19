@@ -17,6 +17,36 @@ class StarterExpeditionContentTest {
     private final StarterExpeditionContent content = new StarterExpeditionContent();
 
     @Test
+    void shouldKeepCurrentEventLocalizationInventoryStable() {
+        List<String> eventIds = content.nodes().stream()
+                .map(definition -> definition.event().eventId())
+                .toList();
+        List<String> choicePairs = content.nodes().stream()
+                .flatMap(definition -> content.eventChoices(
+                        definition.event().eventId(),
+                        StarterExpeditionContent.STEADY_STEP_ROUTE_CONTENT_VERSION
+                ).stream().map(choice -> definition.event().eventId()
+                        + "::"
+                        + choice.choiceId()))
+                .toList();
+        long requirementCount = content.nodes().stream()
+                .flatMap(definition -> content.eventChoices(
+                        definition.event().eventId(),
+                        StarterExpeditionContent.STEADY_STEP_ROUTE_CONTENT_VERSION
+                ).stream())
+                .filter(choice -> choice.equipmentRequirement() != null
+                        || choice.petRequirement() != null
+                        || choice.skillRequirement() != null)
+                .count();
+
+        assertEquals(30, eventIds.size());
+        assertEquals(30, eventIds.stream().distinct().count());
+        assertEquals(78, choicePairs.size());
+        assertEquals(78, choicePairs.stream().distinct().count());
+        assertEquals(16, requirementCount);
+    }
+
+    @Test
     void shouldExposeCanonicalNavigatorCopyForStableRuneRoutes() {
         ExpeditionEventChoiceDefinition guidedChoice = content.requireChoice(
                 StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,

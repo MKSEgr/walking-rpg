@@ -358,8 +358,12 @@ Authorization: Bearer <access-token>
   попытки определить identity по display text;
 - имена текущей экспедиции, узлов route trail, питомца, inventory/equipment,
   recipes и upgrades разрешаются mobile только по их существующим stable IDs.
-  Event/choice/outcome/requirement copy, durable result, decision log и recap
-  остаются persisted literal history и не переписываются при смене locale;
+  У известного `expedition.unlockedEvent` со status `READY` mobile разрешает
+  title/summary по exact `eventId`, а title/description/requirement выбора — по
+  exact `eventId + choiceId`. Неизвестные ID сохраняют server literal. Event со
+  status `RESOLVED`, selected choice, outcome, durable result, decision log и
+  recap остаются persisted literal history и не переписываются при смене
+  locale;
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;
@@ -500,7 +504,10 @@ Authorization: Bearer <access-token>
 - в `expedition.unlockedEvent` legacy-массив `choices` содержит только
   доступные варианты; additive `lockedChoices` содержит недоступные gated
   варианты с `availability=LOCKED` и server-owned `requirement`. Новый mobile
-  объединяет массивы для UI, старый mobile игнорирует locked choices;
+  объединяет массивы для UI, старый mobile игнорирует locked choices. Для
+  открытого READY event локализация narrative использует только exact
+  `eventId + choiceId`; `availability` и requirement facts остаются
+  authoritative server state;
 - `craftingRecipes[]` — additive server-owned projection; `status` принимает
   `READY`, `MISSING_MATERIALS` или `CRAFTED`, а available quantities отражают
   тот же repeatable-read snapshot, что и inventory;
