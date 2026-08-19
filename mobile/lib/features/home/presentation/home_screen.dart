@@ -575,9 +575,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
     } on Object {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.homeAdvanceFailed)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.homeAdvanceFailed)));
       }
     } finally {
       if (mounted) {
@@ -778,9 +778,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
     } on Object {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.homeCraftFailed)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.homeCraftFailed)));
       }
     } finally {
       if (mounted) {
@@ -832,9 +832,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
     } on Object {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.homeUpgradeFailed)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.homeUpgradeFailed)));
       }
     } finally {
       if (mounted) {
