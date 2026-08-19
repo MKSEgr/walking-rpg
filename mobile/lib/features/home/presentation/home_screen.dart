@@ -2598,10 +2598,7 @@ class _CraftingRecipeView extends StatelessWidget {
           style: Theme.of(context).textTheme.labelLarge,
         ),
         const SizedBox(height: 2),
-        Text(
-          resultDescription,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(resultDescription, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 12),
         FilledButton.tonalIcon(
           key: Key('craft-${recipe.recipeId}'),

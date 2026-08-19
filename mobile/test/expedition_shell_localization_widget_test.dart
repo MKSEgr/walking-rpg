@@ -25,8 +25,7 @@ void main() {
         expeditionName: 'Сигнал из туманного сектора',
         nodeName: 'Внешний маяк',
         petName: 'Искра',
-        currentNodeSemantic:
-            'Текущий узел «Внешний маяк»',
+        currentNodeSemantic: 'Текущий узел «Внешний маяк»',
       ),
       const _ShellLocaleCase(
         locale: Locale('en'),
