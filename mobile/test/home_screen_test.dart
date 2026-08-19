@@ -976,6 +976,8 @@ void main() {
   testWidgets(
     'English Home resolves current catalog and ingredient semantics',
     (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       final SemanticsHandle semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
