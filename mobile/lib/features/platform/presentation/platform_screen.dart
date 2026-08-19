@@ -1557,11 +1557,10 @@ List<String> _journeyDecisionRewardLabels(
       context.l10n.platformPilotXpReward(entry.pilotExperienceGained),
     if (entry.petBondGained > 0)
       switch (entry.petName) {
-        final String petName =>
-          context.l10n.platformNamedCompanionBondSemantic(
-            petName,
-            entry.petBondGained,
-          ),
+        final String petName => context.l10n.platformNamedCompanionBondSemantic(
+          petName,
+          entry.petBondGained,
+        ),
         null => context.l10n.platformCompanionBondReward(entry.petBondGained),
       },
     if (entry.materialReward case final HomeJourneyMaterialReward material)
