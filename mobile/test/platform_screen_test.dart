@@ -681,9 +681,9 @@ void main() {
     _expectNoLayoutException(tester);
   });
 
-  testWidgets(
-    'journal retries with a localized error and no stale actions',
-    (WidgetTester tester) async {
+  testWidgets('journal retries with a localized error and no stale actions', (
+    WidgetTester tester,
+  ) async {
     int attempts = 0;
     final Completer<PlatformSnapshot> firstLoad = Completer<PlatformSnapshot>();
 
