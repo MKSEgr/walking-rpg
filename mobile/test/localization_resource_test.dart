@@ -11,7 +11,7 @@ void main() {
     final Set<String> russianKeys = _messageKeys(russian);
 
     expect(englishKeys, equals(russianKeys));
-    expect(englishKeys.length, greaterThanOrEqualTo(270));
+    expect(englishKeys.length, greaterThanOrEqualTo(330));
 
     for (final String key in englishKeys) {
       expect(
@@ -52,6 +52,7 @@ void main() {
     const List<String> shellFiles = <String>[
       'lib/app/main_navigation_shell.dart',
       'lib/core/cache/cached_snapshot_banner.dart',
+      'lib/core/localization/current_content_localizations.dart',
       'lib/design_system/companion_motion.dart',
       'lib/design_system/pilot_motion.dart',
       'lib/features/home/presentation/home_screen.dart',
@@ -65,6 +66,17 @@ void main() {
         reason: '$path must use generated localization resources',
       );
     }
+  });
+
+  test('current content resolver never identifies copy by display text', () {
+    final String source = File(
+      'lib/core/localization/current_content_localizations.dart',
+    ).readAsStringSync();
+
+    expect(RegExp(r'fallback\s*==|==\s*fallback').hasMatch(source), isFalse);
+    expect(source, contains("'starter-expedition-v1'"));
+    expect(source, contains("'first-light-causeway'"));
+    expect(source, contains("'prism-sextant-second-dawn-attunement-v1'"));
   });
 }
 

@@ -80,6 +80,7 @@ class HomeServiceTest {
         assertEquals("Europe/Berlin", snapshot.timeZone());
         assertEquals(LAST_SYNC, snapshot.lastActivitySyncAt());
         assertEquals(NOW, snapshot.serverTime());
+        assertEquals("navigator-v1", snapshot.pilot().pilotId());
         assertEquals("Навигатор", snapshot.pilot().name());
         assertEquals("spark-v1", snapshot.pet().petId());
         assertEquals("Искра", snapshot.pet().name());

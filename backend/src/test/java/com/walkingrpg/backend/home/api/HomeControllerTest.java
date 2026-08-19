@@ -109,6 +109,7 @@ class HomeControllerTest {
                                 StarterExpeditionContent
                                         .STEADY_STEP_ROUTE_CONTENT_VERSION
                         ))
+                .andExpect(jsonPath("$.pilot.pilotId").value("navigator-v1"))
                 .andExpect(jsonPath("$.pilot.name").value("Навигатор"))
                 .andExpect(jsonPath("$.pet.petId").value("spark-v1"))
                 .andExpect(jsonPath("$.pet.name").value("Искра"))

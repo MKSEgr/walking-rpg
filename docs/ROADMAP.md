@@ -511,10 +511,23 @@ remain separate and unchanged.
 - [x] Resource parity, source audit and compact/wide widget coverage protect
       both locales without changing backend payloads or persisted history
 
+### CODE_COMPLETE — current identity catalog slice
+
+- [x] Current expedition, all known route nodes, pilot/companion, inventory,
+      equipment, recipes and upgrades resolve RU/EN copy by stable ID
+- [x] Home exposes additive `pilotId`; legacy cached snapshots accept omission
+      and retain their literal pilot name
+- [x] Unknown IDs and content from newer backends retain literal fallback;
+      display text is never used to infer identity
+- [x] Event decisions, outcomes, durable receipts, decision logs and current or
+      archived recaps remain immutable persisted copy
+- [x] Backend contract tests, exhaustive RU/EN catalog tests, compact large-text
+      widgets and accessibility assertions protect the boundary
+
 ### CODE_PENDING
 
-- [ ] Resolve all known current server-authored chapter/catalog stable IDs to
-      RU/EN while retaining unknown and immutable historical literal fallback
+- [ ] Resolve remaining current event title/summary/choice/requirement narrative
+      by stable ID while retaining unknown and immutable historical fallback
 - [ ] Localize the complete Platform journal and progression/catalog actions
 - [ ] Localize account, recovery, validation, activity and remaining boundary
       screens without exposing raw diagnostic copy as player text

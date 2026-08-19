@@ -30,6 +30,7 @@ public class StarterHomeContent {
     public PilotSnapshot pilot() {
         PilotDefinition pilot = progressionContent.pilot();
         return new PilotSnapshot(
+                pilot.pilotId(),
                 pilot.name(),
                 pilot.initialLevel(),
                 pilot.initialExperience(),

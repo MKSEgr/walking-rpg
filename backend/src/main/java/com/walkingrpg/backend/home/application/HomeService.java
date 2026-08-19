@@ -317,6 +317,7 @@ public class HomeService {
             return starter;
         }
         return new PilotSnapshot(
+                starter.pilotId(),
                 starter.name(),
                 state.pilotLevel(),
                 state.pilotCurrentExperience(),
