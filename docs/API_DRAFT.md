@@ -473,20 +473,37 @@ Authorization: Bearer <access-token>
 - `expedition.journeyChronicle` — additive nullable lifetime-итог всех
   подтверждённых завершённых походов этого пользователя и экспедиции:
   `completedJourneyCount`, `decisionCount`, `pilotExperienceGained` и
+  `petBondGained`. Additive `petBondRewards[]` группирует только положительную
+  сохранённую связь по persisted `petId + petName` в порядке первого
+  immutable появления; сумма `bondGained` точно равна совместимому общему
   `petBondGained`. Для прошлых походов completion proof — immutable receipt
   старта следующего `journeyNumber`; текущий поход входит в итог только при
-  authoritative `COMPLETED`. Агрегат не ограничен пятью строками архива и
-  суммирует rewards только из persisted event resolutions, не перечитывая
-  current content и не вычисляя delta по текущим progression totals. Materials
-  намеренно не входят в lifetime-агрегат. До первого подтверждённого финиша
-  значение равно `null`; legacy response без поля остаётся валидным. Пример:
+  authoritative `COMPLETED` и объединяется с исторической разбивкой ровно
+  один раз. Агрегат не ограничен пятью строками архива и суммирует rewards
+  только из persisted event resolutions, не перечитывая current content и не
+  вычисляя delta по текущим progression totals. Materials намеренно не входят
+  в lifetime-агрегат. До первого подтверждённого финиша значение равно `null`;
+  legacy response без поля или без `petBondRewards` остаётся валидным и во
+  втором случае показывает общий итог связи без имён спутников. Пример:
 
   ```json
   {
     "completedJourneyCount": 8,
     "decisionCount": 19,
     "pilotExperienceGained": 476,
-    "petBondGained": 133
+    "petBondGained": 133,
+    "petBondRewards": [
+      {
+        "petId": "spark-v1",
+        "petName": "Искра",
+        "bondGained": 80
+      },
+      {
+        "petId": "moss-v1",
+        "petName": "Мох",
+        "bondGained": 53
+      }
+    ]
   }
   ```
 

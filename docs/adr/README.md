@@ -57,3 +57,4 @@ NNNN-short-title.md
 - [0038 — repeatable expedition journeys](0038-repeatable-expedition-journeys.md)
 - [0039 — post-alpha gameplay track и Navigator canon](0039-post-alpha-gameplay-track-and-navigator-canon.md)
 - [0040 — incremental game localization boundary](0040-incremental-game-localization-boundary.md)
+- [0041 — lifetime companion bond chronicle](0041-lifetime-companion-bond-chronicle.md)

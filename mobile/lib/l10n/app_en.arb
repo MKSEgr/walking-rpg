@@ -1024,13 +1024,13 @@
       "summary": {"type": "String"}
     }
   },
-  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. Total rewards: +{experience} pilot XP; +{bond} companion bond.",
+  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. Total rewards: +{experience} pilot XP; {bondRewards}.",
   "@platformJourneyChronicleSemantics": {
     "placeholders": {
       "journeys": {"type": "int"},
       "decisions": {"type": "int"},
       "experience": {"type": "int"},
-      "bond": {"type": "int"}
+      "bondRewards": {"type": "String"}
     }
   },
   "platformJourneyChronicleBadge": "Completed · {count}",

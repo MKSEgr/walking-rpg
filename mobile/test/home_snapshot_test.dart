@@ -180,6 +180,18 @@ void main() {
         'decisionCount': 19,
         'pilotExperienceGained': 476,
         'petBondGained': 133,
+        'petBondRewards': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'petId': 'spark-v1',
+            'petName': 'Искра из летописи',
+            'bondGained': 80,
+          },
+          <String, dynamic>{
+            'petId': 'moss-v1',
+            'petName': 'Мох из летописи',
+            'bondGained': 53,
+          },
+        ],
       }
       ..['completionRecap'] = <String, dynamic>{
         'journeyNumber': 2,
@@ -307,6 +319,14 @@ void main() {
     expect(snapshot.journeyChronicle?.decisionCount, 19);
     expect(snapshot.journeyChronicle?.pilotExperienceGained, 476);
     expect(snapshot.journeyChronicle?.petBondGained, 133);
+    expect(snapshot.journeyChronicle?.petBondRewards, hasLength(2));
+    expect(
+      snapshot.journeyChronicle?.petBondRewards.first.petName,
+      'Искра из летописи',
+    );
+    expect(snapshot.journeyChronicle?.petBondRewards.first.bondGained, 80);
+    expect(snapshot.journeyChronicle?.petBondRewards.last.petId, 'moss-v1');
+    expect(snapshot.journeyChronicle?.petBondRewards.last.bondGained, 53);
   });
 
   test('legacy completed response without recap remains readable', () {
@@ -345,6 +365,91 @@ void main() {
       expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
     });
   }
+
+  test('legacy journey chronicle without pet breakdown remains readable', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 4,
+      'decisionCount': 12,
+      'pilotExperienceGained': 240,
+      'petBondGained': 72,
+    };
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.journeyChronicle?.petBondGained, 72);
+    expect(snapshot.journeyChronicle?.petBondRewards, isEmpty);
+  });
+
+  test('journey chronicle rejects a mismatched pet bond breakdown', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 4,
+      'decisionCount': 12,
+      'pilotExperienceGained': 240,
+      'petBondGained': 72,
+      'petBondRewards': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'petId': 'spark-v1',
+          'petName': 'Искра',
+          'bondGained': 71,
+        },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects duplicate persisted pet identities', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 4,
+      'decisionCount': 12,
+      'pilotExperienceGained': 240,
+      'petBondGained': 72,
+      'petBondRewards': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'petId': 'spark-v1',
+          'petName': 'Искра',
+          'bondGained': 40,
+        },
+        <String, dynamic>{
+          'petId': 'spark-v1',
+          'petName': 'Искра',
+          'bondGained': 32,
+        },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects non-positive pet bond entries', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'petBondRewards': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'petId': 'spark-v1',
+          'petName': 'Искра',
+          'bondGained': 0,
+        },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
 
   test('response maps recent completed journeys newest first', () {
     final Map<String, dynamic> response = _readyHomeResponse();

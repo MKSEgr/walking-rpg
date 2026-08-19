@@ -279,6 +279,18 @@ void main() {
         decisionCount: 28,
         pilotExperienceGained: 420,
         petBondGained: 140,
+        petBondRewards: <HomeJourneyPetBondReward>[
+          HomeJourneyPetBondReward(
+            petId: 'spark-v1',
+            petName: 'Искра',
+            bondGained: 80,
+          ),
+          HomeJourneyPetBondReward(
+            petId: 'moss-v1',
+            petName: 'Мох',
+            bondGained: 60,
+          ),
+        ],
       ),
       recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
         HomeExpeditionCompletionRecap(
@@ -397,12 +409,14 @@ void main() {
     expect(find.text('ЗАВЕРШЕНО · 7'), findsOneWidget);
     expect(find.text('Решений · 28'), findsOneWidget);
     expect(find.text('+420 XP пилота'), findsOneWidget);
-    expect(find.text('+140 связи спутников'), findsOneWidget);
+    expect(find.text('Искра · +80 связи'), findsOneWidget);
+    expect(find.text('Мох · +60 связи'), findsOneWidget);
+    expect(find.text('+140 связи спутников'), findsNothing);
     expect(
       find.bySemanticsLabel(
         'Летопись походов. Завершено походов: 7. '
         'Принято решений: 28. '
-        'Всего наград: +420 XP пилота; +140 связи спутников.',
+        'Всего наград: +420 XP пилота; Искра: +80 связи; Мох: +60 связи.',
       ),
       findsOneWidget,
     );

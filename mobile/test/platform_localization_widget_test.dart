@@ -153,7 +153,26 @@ void main() {
         textScale: 1.6,
         child: PlatformScreen(
           loader: () async => platformSnapshot(includeProfileCosmetics: true),
-          homeLoader: () async => HomeSnapshot.demo,
+          homeLoader: () async => _homeWithPersistedDecision(
+            journeyChronicle: const HomeJourneyChronicle(
+              completedJourneyCount: 9,
+              decisionCount: 31,
+              pilotExperienceGained: 620,
+              petBondGained: 205,
+              petBondRewards: <HomeJourneyPetBondReward>[
+                HomeJourneyPetBondReward(
+                  petId: 'spark-v1',
+                  petName: 'Spark',
+                  bondGained: 120,
+                ),
+                HomeJourneyPetBondReward(
+                  petId: 'moss-v1',
+                  petName: 'Moss',
+                  bondGained: 85,
+                ),
+              ],
+            ),
+          ),
           recordExperimentExposures: false,
         ),
       ),
@@ -164,6 +183,22 @@ void main() {
     expect(find.text('PILOT JOURNAL'), findsOneWidget);
     expect(find.text('Season of the First Signal'), findsOneWidget);
     expect(find.text('SPARK · LV. 1'), findsOneWidget);
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-journey-chronicle')),
+    );
+    expect(find.text('Journey chronicle'), findsOneWidget);
+    expect(find.text('Spark · +120 bond'), findsOneWidget);
+    expect(find.text('Moss · +85 bond'), findsOneWidget);
+    expect(find.text('+205 companion bond'), findsNothing);
+    expect(
+      find.bySemanticsLabel(
+        'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
+        'Total rewards: +620 pilot XP; Spark: +120 bond; Moss: +85 bond.',
+      ),
+      findsOneWidget,
+    );
 
     await _bringIntoView(
       tester,
@@ -343,7 +378,9 @@ class _LocalizedPlatformApp extends StatelessWidget {
   }
 }
 
-HomeSnapshot _homeWithPersistedDecision() {
+HomeSnapshot _homeWithPersistedDecision({
+  HomeJourneyChronicle? journeyChronicle,
+}) {
   const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
     localDate: demo.localDate,
@@ -377,6 +414,7 @@ HomeSnapshot _homeWithPersistedDecision() {
         resolvedAt: '2026-08-19T10:00:00Z',
       ),
     ],
+    journeyChronicle: journeyChronicle,
     unlockedEvent: demo.unlockedEvent,
     pilotName: demo.pilotName,
     pilotLevel: demo.pilotLevel,

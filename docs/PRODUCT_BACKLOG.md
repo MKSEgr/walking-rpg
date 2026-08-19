@@ -1020,6 +1020,32 @@ narrative, полный Platform journal и оставшиеся client-authored
 экраны реализованы. Milestone 26 `CODE_COMPLETE`; external validation gates и
 immutable `alpha-rc1` не изменены.
 
+### US-043. Увидеть вклад спутников во всей летописи
+
+Как игрок, я хочу видеть вклад каждого спутника в накопленную связь всех
+завершённых походов, чтобы lifetime-итог сохранял не только сумму, но и историю
+моей команды.
+
+Критерии:
+
+- `journeyChronicle` получает additive ordered `petBondRewards[]` из
+  положительных persisted reward facts всех receipt-proven завершённых
+  походов;
+- связь группируется по persisted `petId + petName` в порядке первого
+  immutable появления, а её сумма точно равна совместимому `petBondGained`;
+- authoritative current `COMPLETED` объединяется ровно один раз до старта
+  следующего похода; archive limit, current pet/content и progression totals
+  не используются для вывода истории;
+- mobile принимает legacy omission, отклоняет не-массив, неположительную
+  связь, повтор identity и несовпадающую сумму;
+- летопись показывает ordered именные chips и один полный RU/EN semantic
+  summary, сохраняя общий неназванный fallback для legacy snapshot;
+- backend unit/API/PostgreSQL и Flutter parser/widget coverage проверяют
+  persisted copy, порядок, current merge, invalid data и compact large text.
+
+**Статус:** lifetime-разбивка связи реализована без миграции, изменения
+экономики, topology, archive pagination или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -1049,6 +1075,8 @@ immutable `alpha-rc1` не изменены.
 - server-authoritative суммарный итог завершённого текущего похода.
 - persisted разбивка полученной связи по питомцам в итогах текущего и недавних
   походов.
+- lifetime-летопись всех подтверждённых походов с persisted разбивкой связи по
+  спутникам и legacy fallback на общий итог.
 - persisted финальное решение и исход в итогах текущего и недавних походов.
 
 После физической device-validation и beta остаются продуктовые расширения:

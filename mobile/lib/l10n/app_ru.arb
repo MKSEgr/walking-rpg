@@ -587,7 +587,7 @@
   "platformMaterialReward": "+{quantity} {name}",
   "platformFinalRouteTitle": "Финал маршрута",
   "platformFinalDecisionSemantics": "Финал: {event}. Решение: {choice}. Исход: {outcome}. {summary}",
-  "platformJourneyChronicleSemantics": "Летопись походов. Завершено походов: {journeys}. Принято решений: {decisions}. Всего наград: +{experience} XP пилота; +{bond} связи спутников.",
+  "platformJourneyChronicleSemantics": "Летопись походов. Завершено походов: {journeys}. Принято решений: {decisions}. Всего наград: +{experience} XP пилота; {bondRewards}.",
   "platformJourneyChronicleBadge": "Завершено · {count}",
   "platformJourneyChronicleTitle": "Летопись походов",
   "platformJourneyChronicleSubtitle": "Постоянный итог всех подтверждённых маршрутов.",

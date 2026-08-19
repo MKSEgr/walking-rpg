@@ -20,6 +20,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
+import com.walkingrpg.backend.home.domain.PetBondRewardSnapshot;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
 import org.junit.jupiter.api.Test;
 
@@ -227,7 +228,24 @@ class HomeServiceTest {
                         )
                 ),
                 List.of(),
-                new ExpeditionJourneyChronicleTotals(7, 7, 28, 28)
+                new ExpeditionJourneyChronicleTotals(
+                        7,
+                        7,
+                        28,
+                        28,
+                        List.of(
+                                new PetBondRewardSnapshot(
+                                        "moss-v1",
+                                        "Мох из записи",
+                                        8
+                                ),
+                                new PetBondRewardSnapshot(
+                                        "spark-v1",
+                                        "Искра из записи",
+                                        20
+                                )
+                        )
+                )
         );
         DailyGoalPolicyProperties goalProperties = goalProperties();
         HomeService service = new HomeService(
@@ -299,6 +317,20 @@ class HomeServiceTest {
                 expedition.journeyChronicle().pilotExperienceGained());
         assertEquals(51,
                 expedition.journeyChronicle().petBondGained());
+        assertEquals(2,
+                expedition.journeyChronicle().petBondRewards().size());
+        assertEquals("moss-v1",
+                expedition.journeyChronicle().petBondRewards()
+                        .getFirst().petId());
+        assertEquals(23,
+                expedition.journeyChronicle().petBondRewards()
+                        .getFirst().bondGained());
+        assertEquals("spark-v1",
+                expedition.journeyChronicle().petBondRewards()
+                        .getLast().petId());
+        assertEquals(28,
+                expedition.journeyChronicle().petBondRewards()
+                        .getLast().bondGained());
         assertEquals("COMPLETED", expedition.routeTrail().getLast().state());
         assertNotNull(expedition.routeTrail().getLast().decision());
         assertEquals("Следовать за отражением",

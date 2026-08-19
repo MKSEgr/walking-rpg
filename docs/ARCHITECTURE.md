@@ -417,12 +417,17 @@ journey recap. Каждая запись переносит полный persist
 Home также строит nullable lifetime `journeyChronicle` без отдельной таблицы и
 без зависимости от ограниченного recent archive. Repository считает каждый
 immutable receipt старта journey N+1 доказательством завершения journey N и
-одним SQL-агрегатом суммирует его persisted event resolutions. Service
-добавляет текущий journey ровно один раз только при authoritative
-`COMPLETED`; после старта следующего похода тот же результат уже входит через
-receipt и больше не добавляется как current. Поэтому расширение главы не
-превращает historical `expedition_status=COMPLETED` в ложный финиш, а content
-republish не меняет сохранённые decision и reward totals.
+SQL-проекцией суммирует его persisted event resolutions. Та же проекция
+группирует положительную связь по persisted `pet_id + pet_name`, сохраняя
+порядок первого immutable появления. Service добавляет текущий journey ровно
+один раз только при authoritative `COMPLETED` и объединяет его ordered
+companion breakdown с historical группами; после старта следующего похода тот
+же результат уже входит через receipt и больше не добавляется как current.
+Сумма breakdown точно равна совместимому `petBondGained`, а legacy snapshot
+без массива остаётся читаемым как общий неназванный итог. Поэтому расширение
+главы не превращает historical `expedition_status=COMPLETED` в ложный финиш,
+current-pet/content lookup не переписывает имена, а content republish не
+меняет сохранённые decision и reward totals.
 
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только

@@ -553,6 +553,13 @@ public class HomeService {
         long pilotExperienceGained =
                 completedJourneys.pilotExperienceGained();
         long petBondGained = completedJourneys.petBondGained();
+        Map<PetIdentity, Long> petBondRewards = new LinkedHashMap<>();
+        completedJourneys.petBondRewards().forEach(reward ->
+                petBondRewards.merge(
+                        new PetIdentity(reward.petId(), reward.petName()),
+                        reward.bondGained(),
+                        Math::addExact
+                ));
         if (currentJourney != null) {
             completedJourneyCount = Math.addExact(
                     completedJourneyCount,
@@ -570,6 +577,15 @@ public class HomeService {
                     petBondGained,
                     currentJourney.petBondGained()
             );
+            currentJourney.petBondRewards().forEach(reward ->
+                    petBondRewards.merge(
+                            new PetIdentity(
+                                    reward.petId(),
+                                    reward.petName()
+                            ),
+                            reward.bondGained(),
+                            Math::addExact
+                    ));
         }
         if (completedJourneyCount == 0) {
             return null;
@@ -578,7 +594,14 @@ public class HomeService {
                 completedJourneyCount,
                 decisionCount,
                 pilotExperienceGained,
-                petBondGained
+                petBondGained,
+                petBondRewards.entrySet().stream()
+                        .map(entry -> new PetBondRewardSnapshot(
+                                entry.getKey().petId(),
+                                entry.getKey().petName(),
+                                entry.getValue()
+                        ))
+                        .toList()
         );
     }
 

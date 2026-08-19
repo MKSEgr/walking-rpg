@@ -17,6 +17,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
+import com.walkingrpg.backend.home.domain.PetBondRewardSnapshot;
 import com.walkingrpg.backend.progression.application.ActivePetProvider;
 import com.walkingrpg.backend.progression.application.ActivePetSelection;
 import com.walkingrpg.backend.progression.application.StarterProgressionContent;
@@ -158,7 +159,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
             String expeditionId,
             long currentJourneyNumber
     ) {
-        return jdbcTemplate.queryForObject("""
+        ExpeditionJourneyChronicleTotals totals = jdbcTemplate.queryForObject("""
                 WITH completed_journey AS (
                     SELECT DISTINCT
                            journey_number - 1 AS completed_journey_number
@@ -191,13 +192,76 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 resultSet.getLong(
                                         "pilot_experience_gained"
                                 ),
-                                resultSet.getLong("pet_bond_gained")
+                                resultSet.getLong("pet_bond_gained"),
+                                List.of()
                         ),
                 userId,
                 expeditionId,
                 currentJourneyNumber,
                 userId,
                 expeditionId
+        );
+        List<PetBondRewardSnapshot> petBondRewards = jdbcTemplate.query("""
+                WITH completed_journey AS (
+                    SELECT DISTINCT
+                           journey_number - 1 AS completed_journey_number
+                    FROM processed_expedition_journey_start
+                    WHERE user_id = ?
+                      AND expedition_id = ?
+                      AND journey_number <= ?
+                ),
+                eligible_resolution AS (
+                    SELECT resolution.journey_number,
+                           resolution.expedition_version,
+                           resolution.receipt_id,
+                           resolution.pet_id,
+                           resolution.pet_name,
+                           resolution.pet_bond_gained
+                    FROM completed_journey completed
+                    JOIN processed_event_resolution resolution
+                      ON resolution.user_id = ?
+                     AND resolution.expedition_id = ?
+                     AND resolution.journey_number =
+                             completed.completed_journey_number
+                    WHERE resolution.pet_bond_gained > 0
+                ),
+                ordered_pet AS (
+                    SELECT pet_id,
+                           pet_name,
+                           SUM(pet_bond_gained) OVER (
+                               PARTITION BY pet_id, pet_name
+                           ) AS bond_gained,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY pet_id, pet_name
+                               ORDER BY journey_number,
+                                        expedition_version,
+                                        receipt_id
+                           ) AS identity_row,
+                           journey_number,
+                           expedition_version,
+                           receipt_id
+                    FROM eligible_resolution
+                )
+                SELECT pet_id,
+                       pet_name,
+                       bond_gained
+                FROM ordered_pet
+                WHERE identity_row = 1
+                ORDER BY journey_number,
+                         expedition_version,
+                         receipt_id
+                """, (resultSet, rowNumber) -> new PetBondRewardSnapshot(
+                        resultSet.getString("pet_id"),
+                        resultSet.getString("pet_name"),
+                        resultSet.getLong("bond_gained")
+                ), userId, expeditionId, currentJourneyNumber,
+                userId, expeditionId);
+        return new ExpeditionJourneyChronicleTotals(
+                totals.completedJourneyCount(),
+                totals.decisionCount(),
+                totals.pilotExperienceGained(),
+                totals.petBondGained(),
+                petBondRewards
         );
     }
 
