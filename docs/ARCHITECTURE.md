@@ -336,18 +336,19 @@ Active `chapter-1-v9` добавляет equipment-gated
 choice ни как available, ни как locked.
 
 Active `chapter-1-v10` сохраняет 25-node topology и добавляет в
-`uncharted-verge-v1` три active-pet-gated исхода для Искры, Мха и Руны. Home
-проецирует только исход текущего питомца в `choices`, два остальных — в
+`uncharted-verge-v1` три active-pet-gated исхода для Искры, Мха и Навигатора.
+Home проецирует только исход текущего питомца в `choices`, два остальных — в
 `lockedChoices` с `type=ACTIVE_PET`. Event service повторно читает active pet
 под тем же serialized user/expedition transaction boundary до XP, bond,
 material и completion mutations. V1-V9 не знают новые choice IDs.
 
 Active `chapter-1-v11` сохраняет ту же topology и открывает вторую
 server-authoritative эволюцию для всех starter pets: Spark `140`, Moss `125`,
-Rune `150` bond. V1-V10 ограничивают `EVOLVE_PET` стадией `1`; v11 проецирует
-следующий threshold и `maximumEvolutionStage=2`, а достигнутая стадия `2`
-получает взрослое имя. State JSON не требует schema rewrite, а level/bond
-продолжают синхронизироваться с независимой `pet_progress` строкой.
+`rune-v1` / Navigator `150` bond. V1-V10 ограничивают `EVOLVE_PET` стадией
+`1`; v11 проецирует следующий threshold и `maximumEvolutionStage=2`, а
+достигнутая стадия `2` получает взрослое имя. State JSON не требует schema
+rewrite, а level/bond продолжают синхронизироваться с независимой
+`pet_progress` строкой.
 
 Active `chapter-1-v12` добавляет 26-й узел `constellation-sanctuary`. Три
 новых choice в `uncharted-verge-v1` требуют одновременно exact active pet и

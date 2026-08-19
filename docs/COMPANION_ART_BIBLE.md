@@ -21,11 +21,12 @@ companion anatomy reference.
 - Люма is a discarded draft and is not a companion, evolution form or style
   reference.
 
-The current server catalog still exposes the violet companion as `rune-v1` /
-«Руна» and uses «Навигатор» as pilot copy. That naming mismatch is an explicit
-migration gap. Art changes must not silently rename a server-owned ID or
-player-facing catalog entry; the content/API migration needs its own reviewed
-change while the visual canon above remains unambiguous.
+The current server catalog exposes the violet companion as `rune-v1` with the
+player-facing forms «Навигатор», «Навигатор потоков» and «Навигатор
+созвездий». The stable ID and `companion_rune_*` asset paths intentionally
+remain unchanged for compatibility. The separate `navigator-v1` pilot keeps
+its identity name in portrait and dossier contexts; paired crew copy uses the
+neutral role «Пилот» so the two characters remain unambiguous.
 
 ## Shared visual language
 

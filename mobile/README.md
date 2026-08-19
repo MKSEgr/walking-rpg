@@ -221,7 +221,7 @@ authoritative flow:
 знакомство
 → STEPS permission и sync
 → reward ENERGY
-→ выбор Искры / Мха / Руны
+→ выбор Искры / Мха / Навигатора
 → расход ENERGY на outer-beacon
 → решение signal-source-v1
 → подтверждение durable result receipt, если handoffRequired=true

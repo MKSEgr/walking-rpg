@@ -35,7 +35,7 @@ void main() {
               CompanionPortrait(
                 key: Key('portrait-rune'),
                 petId: 'rune-v1',
-                name: 'Руна',
+                name: 'Навигатор',
                 species: 'эхо',
                 evolutionStage: 2,
               ),
@@ -101,7 +101,7 @@ void main() {
     );
     expect(find.bySemanticsLabel('Мох, терра, Юный · форма 2'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('Руна, эхо, Взрослый · форма 3'),
+      find.bySemanticsLabel('Навигатор, эхо, Взрослый · форма 3'),
       findsOneWidget,
     );
     semantics.dispose();

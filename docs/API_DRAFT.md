@@ -796,7 +796,7 @@ uncharted-verge-v1 (additive chapter-1-v10 choices)
                          +64 pilot XP, +34 pet bond, +3 ash-seed,
                          завершение экспедиции
   decode-living-constellation
-                       → требует активную Руну,
+                       → требует активного Навигатора,
                          +56 pilot XP, +40 pet bond, +3 echo-thread,
                          завершение экспедиции
 
@@ -810,7 +810,7 @@ uncharted-verge-v1 (additive chapter-1-v12 choices)
                          +70 pilot XP, +40 pet bond, +2 ash-seed,
                          переход к constellation-sanctuary
   read-constellation-gate
-                       → требует активную Руну-провидицу stage 2,
+                       → требует активного Навигатора созвездий stage 2,
                          +62 pilot XP, +46 pet bond, +2 echo-thread,
                          переход к constellation-sanctuary
 
@@ -1312,7 +1312,8 @@ remote config. Канонический первый путь содержит �
 клиент со старым backend и старый клиент с новым backend не показывают
 недоступную вторую команду. На v11+ переходы разрешены только
 `0 → 1` и `1 → 2`; thresholds равны `50/140` для Spark, `45/125` для Moss и
-`55/150` для Rune. `userState.hasSuccessfulActivitySync` — долговечный
+`55/150` для `rune-v1` («Навигатор»).
+`userState.hasSuccessfulActivitySync` — долговечный
 authoritative fact наличия хотя бы одной успешно обработанной activity-команды,
 включая sync с нулём шагов; он не сбрасывается при смене локальной даты или
 очистке идемпотентных activity-receipts по retention policy и не выводится из

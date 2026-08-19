@@ -481,6 +481,23 @@ Roadmap отражает снижение рисков. Статусы:
 - [x] Unit/API/PostgreSQL/parser/widget coverage current + previous totals,
       history длиннее пяти, invalid shape и legacy omission
 
+## Milestone 25 — Canonical Navigator companion
+
+### CODE_COMPLETE
+
+- [x] Current catalog, progression and pet-gated route copy present stable
+      `rune-v1` as «Навигатор», «Навигатор потоков» and «Навигатор созвездий»
+- [x] RU/EN mandatory-flow localization resolves the stable ID without
+      changing internal enums or `companion_rune_*` assets
+- [x] Paired crew copy uses the neutral pilot role while `navigator-v1`
+      retains «Навигатор» in portrait and dossier contexts
+- [x] Backend, Flutter and accessibility coverage protects current copy and
+      stable-ID compatibility; historical migrations and receipts stay intact
+
+This milestone starts the post-alpha code-only gameplay track approved in
+ADR 0039. The immutable `alpha-rc1` baseline and all external validation gates
+remain separate and unchanged.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
