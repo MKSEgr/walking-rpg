@@ -1106,10 +1106,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.byTooltip('Сохранённые действия требуют внимания'),
-      findsOneWidget,
-    );
+    expect(find.text('Состояние недоступно.'), findsOneWidget);
     expect(find.textContaining('/private/outbox.json'), findsNothing);
     expect(find.textContaining('private-token'), findsNothing);
 
