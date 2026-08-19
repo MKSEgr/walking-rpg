@@ -302,8 +302,9 @@ class HomeReadIntegrationTest {
                 INSERT INTO pet_progress (
                     user_id, pet_id, level, bond, version,
                     created_at, updated_at
-                ) VALUES (?, 'spark-v1', 1, 0, 1, now(), now())
-                """, "home-user");
+                ) VALUES (?, 'spark-v1', 1, 0, 1, now(), now()),
+                         (?, 'moss-v1', 1, 0, 1, now(), now())
+                """, "home-user", "home-user");
         jdbcTemplate.update("""
                 INSERT INTO processed_expedition_journey_start (
                     user_id,
