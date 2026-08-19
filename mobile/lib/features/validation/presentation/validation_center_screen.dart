@@ -71,8 +71,7 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                             header: true,
                             child: ExpeditionSectionTitle(
                               title: context.l10n.validationScenarioTitle,
-                              subtitle:
-                                  context.l10n.validationScenarioSubtitle,
+                              subtitle: context.l10n.validationScenarioSubtitle,
                               icon: Icons.route,
                             ),
                           ),
@@ -115,11 +114,9 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                               container: true,
                               header: true,
                               child: ExpeditionSectionTitle(
-                                title:
-                                    context.l10n.validationObservationsTitle,
-                                subtitle: context
-                                    .l10n
-                                    .validationObservationsSubtitle,
+                                title: context.l10n.validationObservationsTitle,
+                                subtitle:
+                                    context.l10n.validationObservationsSubtitle,
                                 icon: Icons.radar,
                               ),
                             ),
@@ -145,11 +142,9 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                             container: true,
                             header: true,
                             child: ExpeditionSectionTitle(
-                              title:
-                                  context.l10n.validationJournalSectionTitle,
-                              subtitle: context
-                                  .l10n
-                                  .validationJournalSectionSubtitle,
+                              title: context.l10n.validationJournalSectionTitle,
+                              subtitle:
+                                  context.l10n.validationJournalSectionSubtitle,
                               icon: Icons.receipt_long_outlined,
                             ),
                           ),
@@ -341,9 +336,7 @@ class _ValidationHero extends StatelessWidget {
                   children: <Widget>[
                     const Icon(Icons.policy_outlined, size: 21),
                     const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(context.l10n.validationSafetyNote),
-                    ),
+                    Expanded(child: Text(context.l10n.validationSafetyNote)),
                   ],
                 ),
               ),
@@ -553,9 +546,7 @@ class _HealthCard extends StatelessWidget {
       tone: ExpeditionPanelTone.lumen,
       facts: <String>[
         context.l10n.validationFactStatus(observation.status.wireName),
-        context.l10n.validationFactProvider(
-          observation.providerState.wireName,
-        ),
+        context.l10n.validationFactProvider(observation.providerState.wireName),
         context.l10n.validationFactPermission(
           observation.permissionState.wireName,
         ),
@@ -904,8 +895,7 @@ String _validationMessage(AppLocalizations l10n, Object error) {
         l10n.validationErrorInvalidResponse,
       EvidenceErrorCategory.journalLimitReached =>
         l10n.validationErrorJournalLimit,
-      EvidenceErrorCategory.unexpectedFailure =>
-        l10n.validationErrorUnexpected,
+      EvidenceErrorCategory.unexpectedFailure => l10n.validationErrorUnexpected,
     };
   }
   if (error is FormatException) {

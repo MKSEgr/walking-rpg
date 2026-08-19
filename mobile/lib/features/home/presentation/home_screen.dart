@@ -2886,10 +2886,7 @@ class _IllustratedItemIdentity extends StatelessWidget {
 }
 
 class _HomeError extends StatelessWidget {
-  const _HomeError({
-    required this.onRetry,
-    required this.onOpenDemo,
-  });
+  const _HomeError({required this.onRetry, required this.onOpenDemo});
 
   final VoidCallback onRetry;
   final VoidCallback onOpenDemo;

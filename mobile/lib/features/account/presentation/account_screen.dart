@@ -164,8 +164,7 @@ class _AccountScreenState extends State<AccountScreen> {
                           const SizedBox(height: 22),
                           ExpeditionSectionTitle(
                             title: context.l10n.accountAccessSectionTitle,
-                            subtitle:
-                                context.l10n.accountAccessSectionSubtitle,
+                            subtitle: context.l10n.accountAccessSectionSubtitle,
                             icon: Icons.hub_outlined,
                           ),
                           const SizedBox(height: 12),
@@ -228,8 +227,7 @@ class _AccountScreenState extends State<AccountScreen> {
                           const SizedBox(height: 22),
                           ExpeditionSectionTitle(
                             title: context.l10n.accountPersonalDataTitle,
-                            subtitle:
-                                context.l10n.accountPersonalDataSubtitle,
+                            subtitle: context.l10n.accountPersonalDataSubtitle,
                             icon: Icons.folder_shared_outlined,
                           ),
                           const SizedBox(height: 12),

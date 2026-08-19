@@ -309,9 +309,7 @@ class _RecoveryBody extends StatelessWidget {
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(context.l10n.recoverySafetyNote),
-                      ),
+                      Expanded(child: Text(context.l10n.recoverySafetyNote)),
                     ],
                   ),
                 ),
@@ -446,10 +444,7 @@ class _RecoveryCommandCard extends StatelessWidget {
                           ? context.l10n.recoveryFailedStatus
                           : item.attemptCount == 0
                           ? context.l10n.recoveryStoredStatus
-                          : _pendingStatus(
-                              context.l10n,
-                              item.failureCategory,
-                            ),
+                          : _pendingStatus(context.l10n, item.failureCategory),
                       style: failed
                           ? TextStyle(color: colors.error)
                           : TextStyle(color: colors.onSurfaceVariant),
@@ -501,8 +496,7 @@ class _RecoveryCommandCard extends StatelessWidget {
         l10n.recoveryExpeditionAdvanceCommand,
       MobileCommandType.expeditionJourneyStart =>
         l10n.recoveryJourneyStartCommand,
-      MobileCommandType.eventResolution =>
-        l10n.recoveryEventResolutionCommand,
+      MobileCommandType.eventResolution => l10n.recoveryEventResolutionCommand,
       MobileCommandType.eventResultAcknowledgement =>
         l10n.recoveryEventAcknowledgementCommand,
       MobileCommandType.crafting => l10n.recoveryCraftingCommand,
