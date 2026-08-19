@@ -44,8 +44,7 @@ void main() {
         expect(
           l10n.currentEventChoiceTitle(pair.$1, pair.$2, _fallback),
           isNot(_fallback),
-          reason:
-              '${locale.languageCode} choice title ${pair.$1}::${pair.$2}',
+          reason: '${locale.languageCode} choice title ${pair.$1}::${pair.$2}',
         );
         expect(
           l10n.currentEventChoiceDescription(pair.$1, pair.$2, _fallback),
@@ -57,14 +56,9 @@ void main() {
       }
       for (final (String, String) pair in _requirementPairs) {
         expect(
-          l10n.currentEventRequirementDescription(
-            pair.$1,
-            pair.$2,
-            _fallback,
-          ),
+          l10n.currentEventRequirementDescription(pair.$1, pair.$2, _fallback),
           isNot(_fallback),
-          reason:
-              '${locale.languageCode} requirement ${pair.$1}::${pair.$2}',
+          reason: '${locale.languageCode} requirement ${pair.$1}::${pair.$2}',
         );
       }
 
@@ -119,11 +113,7 @@ void main() {
     expect(l10n.currentEventTitle('future-event-v2', _fallback), _fallback);
     expect(l10n.currentEventSummary('future-event-v2', _fallback), _fallback);
     expect(
-      l10n.currentEventChoiceTitle(
-        'echo-vault-v1',
-        'future-choice',
-        _fallback,
-      ),
+      l10n.currentEventChoiceTitle('echo-vault-v1', 'future-choice', _fallback),
       _fallback,
     );
     expect(

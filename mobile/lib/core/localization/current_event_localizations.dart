@@ -33,8 +33,7 @@ extension CurrentEventLocalizations on AppLocalizations {
       'spectrum-observatory-v1' => catalogEventSpectrumObservatoryTitle,
       'second-dawn-threshold-v1' => catalogEventSecondDawnThresholdTitle,
       'uncharted-verge-v1' => catalogEventUnchartedVergeTitle,
-      'constellation-sanctuary-v1' =>
-        catalogEventConstellationSanctuaryTitle,
+      'constellation-sanctuary-v1' => catalogEventConstellationSanctuaryTitle,
       'hidden-signal-observatory-v1' =>
         catalogEventHiddenSignalObservatoryTitle,
       'memory-constellation-v1' => catalogEventMemoryConstellationTitle,
@@ -71,8 +70,7 @@ extension CurrentEventLocalizations on AppLocalizations {
       'spectrum-observatory-v1' => catalogEventSpectrumObservatorySummary,
       'second-dawn-threshold-v1' => catalogEventSecondDawnThresholdSummary,
       'uncharted-verge-v1' => catalogEventUnchartedVergeSummary,
-      'constellation-sanctuary-v1' =>
-        catalogEventConstellationSanctuarySummary,
+      'constellation-sanctuary-v1' => catalogEventConstellationSanctuarySummary,
       'hidden-signal-observatory-v1' =>
         catalogEventHiddenSignalObservatorySummary,
       'memory-constellation-v1' => catalogEventMemoryConstellationSummary,
@@ -125,28 +123,24 @@ extension CurrentEventLocalizations on AppLocalizations {
       'star-well-v1::trust-star-well' ||
       'horizon-spire-v1::trust-horizon-spire' ||
       'dawn-relay-v1::trust-dawn-relay' => catalogChoiceTrustNodeTitle,
-      'mirror-delta-v1::follow-resonance' =>
-        catalogChoiceFollowResonanceTitle,
+      'mirror-delta-v1::follow-resonance' => catalogChoiceFollowResonanceTitle,
       'resonance-pocket-v1::map-hidden-current' =>
         catalogChoiceMapHiddenCurrentTitle,
       'resonance-pocket-v1::follow-compass-pulse' =>
         catalogChoiceFollowCompassPulseTitle,
-      'storm-archive-v1::enter-storm-rift' =>
-        catalogChoiceEnterStormRiftTitle,
+      'storm-archive-v1::enter-storm-rift' => catalogChoiceEnterStormRiftTitle,
       'storm-scriptorium-v1::decode-lightning-script' =>
         catalogChoiceDecodeLightningScriptTitle,
       'storm-scriptorium-v1::chase-rolling-thunder' =>
         catalogChoiceChaseRollingThunderTitle,
-      'void-orchard-v1::descend-root-echo' =>
-        catalogChoiceDescendRootEchoTitle,
+      'void-orchard-v1::descend-root-echo' => catalogChoiceDescendRootEchoTitle,
       'void-orchard-v1::climb-light-canopy' =>
         catalogChoiceClimbLightCanopyTitle,
       'root-memory-v1::map-root-memory' => catalogChoiceMapRootMemoryTitle,
       'root-memory-v1::wake-buried-seed' => catalogChoiceWakeBuriedSeedTitle,
       'light-canopy-v1::calibrate-light-fruit' =>
         catalogChoiceCalibrateLightFruitTitle,
-      'light-canopy-v1::leap-between-rays' =>
-        catalogChoiceLeapBetweenRaysTitle,
+      'light-canopy-v1::leap-between-rays' => catalogChoiceLeapBetweenRaysTitle,
       'star-well-v1::align-prism-sextant' =>
         catalogChoiceAlignPrismSextantTitle,
       'spectrum-observatory-v1::chart-invisible-constellation' =>
@@ -196,8 +190,7 @@ extension CurrentEventLocalizations on AppLocalizations {
         catalogChoiceEntrustMemoryToPetTitle,
       'memory-constellation-v1::stabilize-dawn-current' =>
         catalogChoiceStabilizeDawnCurrentTitle,
-      'dawn-meridian-v1::anchor-dawn-flow' =>
-        catalogChoiceAnchorDawnFlowTitle,
+      'dawn-meridian-v1::anchor-dawn-flow' => catalogChoiceAnchorDawnFlowTitle,
       'dawn-meridian-v1::share-dawn-flow-with-pet' =>
         catalogChoiceShareDawnFlowWithPetTitle,
       'dawn-meridian-v1::cross-first-light-causeway' =>
@@ -219,8 +212,7 @@ extension CurrentEventLocalizations on AppLocalizations {
       return journeyChoiceDescription(eventId, choiceId, fallback);
     }
     return switch ('$eventId::$choiceId') {
-      'echo-vault-v1::stabilize-core' =>
-        catalogChoiceStabilizeCoreDescription,
+      'echo-vault-v1::stabilize-core' => catalogChoiceStabilizeCoreDescription,
       'echo-vault-v1::follow-echo' => catalogChoiceFollowEchoDescription,
       'ash-orbit-v1::survey-ash-orbit' ||
       'glass-marsh-v1::survey-glass-marsh' ||
@@ -237,8 +229,7 @@ extension CurrentEventLocalizations on AppLocalizations {
       'void-orchard-v1::survey-void-orchard' ||
       'star-well-v1::survey-star-well' ||
       'horizon-spire-v1::survey-horizon-spire' ||
-      'dawn-relay-v1::survey-dawn-relay' =>
-        catalogChoiceSurveyNodeDescription,
+      'dawn-relay-v1::survey-dawn-relay' => catalogChoiceSurveyNodeDescription,
       'ash-orbit-v1::trust-ash-orbit' ||
       'glass-marsh-v1::trust-glass-marsh' ||
       'silent-quarry-v1::trust-silent-quarry' ||
@@ -254,8 +245,7 @@ extension CurrentEventLocalizations on AppLocalizations {
       'void-orchard-v1::trust-void-orchard' ||
       'star-well-v1::trust-star-well' ||
       'horizon-spire-v1::trust-horizon-spire' ||
-      'dawn-relay-v1::trust-dawn-relay' =>
-        catalogChoiceTrustNodeDescription,
+      'dawn-relay-v1::trust-dawn-relay' => catalogChoiceTrustNodeDescription,
       'mirror-delta-v1::follow-resonance' =>
         catalogChoiceFollowResonanceDescription,
       'resonance-pocket-v1::map-hidden-current' =>
@@ -350,16 +340,13 @@ extension CurrentEventLocalizations on AppLocalizations {
     String fallback,
   ) {
     return switch ('$eventId::$choiceId') {
-      'mirror-delta-v1::follow-resonance' =>
-        catalogRequirementFollowResonance,
-      'storm-archive-v1::enter-storm-rift' =>
-        catalogRequirementEnterStormRift,
+      'mirror-delta-v1::follow-resonance' => catalogRequirementFollowResonance,
+      'storm-archive-v1::enter-storm-rift' => catalogRequirementEnterStormRift,
       'star-well-v1::align-prism-sextant' =>
         catalogRequirementAlignPrismSextant,
       'spectrum-observatory-v1::trace-second-dawn' =>
         catalogRequirementTraceSecondDawn,
-      'dawn-relay-v1::open-second-dawn' =>
-        catalogRequirementOpenSecondDawn,
+      'dawn-relay-v1::open-second-dawn' => catalogRequirementOpenSecondDawn,
       'second-dawn-threshold-v1::cross-uncharted-verge' =>
         catalogRequirementCrossUnchartedVerge,
       'uncharted-verge-v1::ignite-star-trail' =>

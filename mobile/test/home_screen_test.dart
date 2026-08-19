@@ -1440,15 +1440,11 @@ void main() {
     expect(find.text('Survey the node'), findsOneWidget);
     expect(find.text('Follow the resonance'), findsOneWidget);
     expect(
-      find.text(
-        "Tune the equipped compass to the delta's hidden reflection.",
-      ),
+      find.text("Tune the equipped compass to the delta's hidden reflection."),
       findsOneWidget,
     );
     expect(
-      find.text(
-        'Equip the Resonance Compass to reveal the hidden route.',
-      ),
+      find.text('Equip the Resonance Compass to reveal the hidden route.'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

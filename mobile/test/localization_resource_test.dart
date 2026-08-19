@@ -89,10 +89,7 @@ void main() {
     expect(source, contains("'echo-vault-v1'"));
     expect(source, contains("'first-light-causeway-v1'"));
     expect(source, contains("'mirror-delta-v1::follow-resonance'"));
-    expect(
-      source,
-      contains("'dawn-meridian-v1::cross-first-light-causeway'"),
-    );
+    expect(source, contains("'dawn-meridian-v1::cross-first-light-causeway'"));
   });
 }
 
