@@ -234,15 +234,11 @@ class _PlatformScreenState extends State<PlatformScreen> {
                         );
                       }
                       if (snapshot.hasError) {
-                        return _PlatformError(
-                          onRetry: _reload,
-                        );
+                        return _PlatformError(onRetry: _reload);
                       }
                       final _PlatformViewData? data = snapshot.data;
                       if (data == null) {
-                        return _PlatformError(
-                          onRetry: _reload,
-                        );
+                        return _PlatformError(onRetry: _reload);
                       }
                       return _PlatformBody(
                         data: data,
@@ -367,9 +363,9 @@ class _PlatformScreenState extends State<PlatformScreen> {
       );
     } on Object {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.l10n.platformCommandFailed)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.platformCommandFailed)),
+        );
       }
     } finally {
       if (mounted) {
@@ -768,10 +764,7 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final List<String> rewardLabels = _journeyRecapRewardLabels(
-      context,
-      recap,
-    );
+    final List<String> rewardLabels = _journeyRecapRewardLabels(context, recap);
     final String rewardSummary = rewardLabels.isEmpty
         ? context.l10n.platformNoRewardsSummary
         : context.l10n.platformRewardsSummary(rewardLabels.join('; '));
@@ -797,13 +790,12 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: ExpeditionBadge(
-                  label:
-                      context.l10n.platformJourneyCompletedBadge(
-                        recap.journeyNumber,
-                        snapshot.isCached
-                            ? context.l10n.platformSavedResultSuffix
-                            : '',
-                      ),
+                  label: context.l10n.platformJourneyCompletedBadge(
+                    recap.journeyNumber,
+                    snapshot.isCached
+                        ? context.l10n.platformSavedResultSuffix
+                        : '',
+                  ),
                   icon: Icons.flag_outlined,
                   tone: ExpeditionPanelTone.lumen,
                   allowWrap: true,
@@ -1072,10 +1064,7 @@ class _JourneyArchiveEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final List<String> rewardLabels = _journeyRecapRewardLabels(
-      context,
-      recap,
-    );
+    final List<String> rewardLabels = _journeyRecapRewardLabels(context, recap);
     final String rewardSummary = rewardLabels.isEmpty
         ? context.l10n.platformNoRewardsSummary
         : context.l10n.platformRewardsSummary(rewardLabels.join('; '));
@@ -1283,12 +1272,7 @@ String _journeyFinalDecisionSemantic(
   if (decision == null) {
     return '';
   }
-  return '${context.l10n.platformFinalDecisionSemantics(
-    decision.eventTitle,
-    decision.choiceTitle,
-    decision.outcomeTitle,
-    decision.outcomeSummary,
-  )} ';
+  return '${context.l10n.platformFinalDecisionSemantics(decision.eventTitle, decision.choiceTitle, decision.outcomeTitle, decision.outcomeSummary)} ';
 }
 
 List<String> _journeyRecapRewardLabels(
@@ -1306,10 +1290,7 @@ List<String> _journeyRecapRewardLabels(
         reward.bondGained,
       ),
     for (final HomeJourneyMaterialReward material in recap.materials)
-      context.l10n.platformMaterialReward(
-        material.quantity,
-        material.itemName,
-      ),
+      context.l10n.platformMaterialReward(material.quantity, material.itemName),
   ];
 }
 
@@ -1530,8 +1511,7 @@ class _JourneyDecisionEntry extends StatelessWidget {
                             if (entry.petBondGained > 0)
                               _JourneyRewardChip(
                                 icon: Icons.favorite_border,
-                                label: context
-                                    .l10n
+                                label: context.l10n
                                     .platformNamedCompanionBondReward(
                                       entry.petName,
                                       entry.petBondGained,
@@ -2161,10 +2141,7 @@ class _PetCard extends StatelessWidget {
       pet.petId,
       pet.species,
     );
-    final String petTrait = context.l10n.journeyPetTrait(
-      pet.petId,
-      pet.trait,
-    );
+    final String petTrait = context.l10n.journeyPetTrait(pet.petId, pet.trait);
     final String evolutionStage = context.l10n.companionStageName(
       pet.evolutionStage,
     );
@@ -2373,9 +2350,7 @@ class _SkillCard extends StatelessWidget {
                 Text(skillDescription),
                 const SizedBox(height: 4),
                 Text(
-                  context.l10n.platformSkillRequiredXp(
-                    skill.requiredSeasonXp,
-                  ),
+                  context.l10n.platformSkillRequiredXp(skill.requiredSeasonXp),
                 ),
                 const SizedBox(height: 12),
                 if (unlocked)
@@ -2547,10 +2522,7 @@ class _QuestCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  questName,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text(questName, style: Theme.of(context).textTheme.titleMedium),
               ] else
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3060,11 +3032,10 @@ class _AchievementTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String achievementName = context.l10n
-        .currentPlatformAchievementName(
-          achievement.achievementId,
-          achievement.name,
-        );
+    final String achievementName = context.l10n.currentPlatformAchievementName(
+      achievement.achievementId,
+      achievement.name,
+    );
     final String achievementStatus = unlocked
         ? context.l10n.platformAchievementUnlocked
         : context.l10n.platformAchievementLocked;
@@ -3195,9 +3166,7 @@ class _ExperimentsCard extends StatelessWidget {
             ),
           ),
           ListTile(
-            title: Text(
-              context.l10n.platformActivityCommandRetentionTitle,
-            ),
+            title: Text(context.l10n.platformActivityCommandRetentionTitle),
             subtitle: Text(
               context.l10n.platformRetentionDays(
                 snapshot.remoteConfig.activityRetentionDays,

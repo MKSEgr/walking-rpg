@@ -97,21 +97,24 @@ void main() {
     expect(source, contains("'dawn-meridian-v1::cross-first-light-causeway'"));
   });
 
-  test('current Platform resolver uses stable catalog and command identities', () {
-    final String source = File(
-      'lib/core/localization/current_platform_content_localizations.dart',
-    ).readAsStringSync();
+  test(
+    'current Platform resolver uses stable catalog and command identities',
+    () {
+      final String source = File(
+        'lib/core/localization/current_platform_content_localizations.dart',
+      ).readAsStringSync();
 
-    expect(RegExp(r'fallback\s*==|==\s*fallback').hasMatch(source), isFalse);
-    expect(source, contains("'first-event'"));
-    expect(source, contains("'signal-reader'"));
-    expect(source, contains("'join-squad'"));
-    expect(source, contains("'season-level-3'"));
-    expect(source, contains("'dawn-frame'"));
-    expect(source, contains("'signal-season-1'"));
-    expect(source, contains("'quest-order-v1'"));
-    expect(source, contains("'CLAIM_SEASON_REWARD'"));
-  });
+      expect(RegExp(r'fallback\s*==|==\s*fallback').hasMatch(source), isFalse);
+      expect(source, contains("'first-event'"));
+      expect(source, contains("'signal-reader'"));
+      expect(source, contains("'join-squad'"));
+      expect(source, contains("'season-level-3'"));
+      expect(source, contains("'dawn-frame'"));
+      expect(source, contains("'signal-season-1'"));
+      expect(source, contains("'quest-order-v1'"));
+      expect(source, contains("'CLAIM_SEASON_REWARD'"));
+    },
+  );
 }
 
 Map<String, Object?> _readArb(String path) {

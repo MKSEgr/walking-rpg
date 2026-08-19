@@ -73,10 +73,7 @@ void main() {
       }
       for (final String experimentId in _experimentIds) {
         expect(
-          l10n.currentPlatformExperimentDescription(
-            experimentId,
-            _fallback,
-          ),
+          l10n.currentPlatformExperimentDescription(experimentId, _fallback),
           isNot(_fallback),
           reason: '${locale.languageCode} experiment $experimentId',
         );
@@ -134,10 +131,7 @@ void main() {
       _fallback,
     );
     expect(
-      l10n.currentPlatformExperimentDescription(
-        'future-experiment',
-        _fallback,
-      ),
+      l10n.currentPlatformExperimentDescription('future-experiment', _fallback),
       _fallback,
     );
     expect(
@@ -193,7 +187,9 @@ void main() {
     expect(find.text('Spark · level 1'), findsOneWidget);
     expect(find.text('lumin · Sensitive scout'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('Companion “Spark” bond: 50 of 50. Ready to evolve'),
+      find.bySemanticsLabel(
+        'Companion “Spark” bond: 50 of 50. Ready to evolve',
+      ),
       findsOneWidget,
     );
 

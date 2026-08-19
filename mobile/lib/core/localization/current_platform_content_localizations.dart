@@ -49,10 +49,7 @@ extension CurrentPlatformContentLocalizations on AppLocalizations {
     };
   }
 
-  String currentPlatformAchievementName(
-    String achievementId,
-    String fallback,
-  ) {
+  String currentPlatformAchievementName(String achievementId, String fallback) {
     return switch (achievementId) {
       'onboarding-complete' => platformAchievementOnboardingCompleteName,
       'pet-friend' => platformAchievementPetFriendName,
@@ -104,8 +101,7 @@ extension CurrentPlatformContentLocalizations on AppLocalizations {
       'CREATE_SQUAD' => platformCommandSquadCreated,
       'JOIN_SQUAD' => platformCommandSquadJoined,
       'LEAVE_SQUAD' => platformCommandSquadLeft,
-      'PURCHASE_COSMETIC' || 'BUY_COSMETIC' =>
-        platformCommandCosmeticPurchased,
+      'PURCHASE_COSMETIC' || 'BUY_COSMETIC' => platformCommandCosmeticPurchased,
       'EQUIP_COSMETIC' => platformCommandCosmeticEquipped,
       'CLAIM_SEASON_REWARD' => platformCommandSeasonRewardClaimed,
       _ => fallback,

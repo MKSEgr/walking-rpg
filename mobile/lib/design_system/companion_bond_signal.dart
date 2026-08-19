@@ -77,20 +77,20 @@ class CompanionBondSignal extends StatelessWidget {
         ? '$bond'
         : '$bond/$evolutionBond';
     final String semantics = switch (acceptedStatus) {
-      CompanionBondStatus.growing => context.l10n
-          .platformCompanionBondGrowingSemantics(
-            petName,
-            bond,
-            evolutionBond,
-          ),
-      CompanionBondStatus.ready => context.l10n
-          .platformCompanionBondReadySemantics(
-            petName,
-            bond,
-            evolutionBond,
-          ),
-      CompanionBondStatus.evolved => context.l10n
-          .platformCompanionBondEvolvedSemantics(petName, bond),
+      CompanionBondStatus.growing =>
+        context.l10n.platformCompanionBondGrowingSemantics(
+          petName,
+          bond,
+          evolutionBond,
+        ),
+      CompanionBondStatus.ready =>
+        context.l10n.platformCompanionBondReadySemantics(
+          petName,
+          bond,
+          evolutionBond,
+        ),
+      CompanionBondStatus.evolved =>
+        context.l10n.platformCompanionBondEvolvedSemantics(petName, bond),
     };
 
     return Semantics(
