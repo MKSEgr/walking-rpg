@@ -1741,7 +1741,7 @@ class _ExpeditionTeam extends StatelessWidget {
                 key: const Key('home-team-companion-portrait'),
                 petId: snapshot.petId!,
                 name: petName,
-                species: petSpecies!,
+                species: petSpecies,
                 evolutionStage: snapshot.petEvolutionStage!,
                 active: true,
                 size: 72,
