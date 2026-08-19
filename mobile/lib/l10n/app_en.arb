@@ -320,5 +320,394 @@
   "choiceTrustCompanionTitle": "Trust the companion",
   "choiceTrustCompanionDescription": "The companion will find a safe route.",
   "outcomeSignalAnalyzedTitle": "Frequency found",
-  "outcomeSignalAnalyzedSummary": "The beacon opened a route to the next node."
+  "outcomeSignalAnalyzedSummary": "The beacon opened a route to the next node.",
+
+  "navigationExpeditionLabel": "Expedition",
+  "navigationJournalLabel": "Journal",
+  "navigationFieldTerminal": "Field terminal",
+  "savedActionsAttentionTooltip": "Saved actions need attention",
+  "savedActionsCountTooltip": "Saved actions: {count}",
+  "@savedActionsCountTooltip": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "savedActionsTooltip": "Saved actions",
+  "cachedSnapshotDefaultTitle": "Route available in read-only mode",
+  "cachedSnapshotBadge": "Saved route",
+  "cachedSnapshotBody": "Showing the saved state from {cachedAt}. Changes are temporarily unavailable until the connection is restored.",
+  "@cachedSnapshotBody": {
+    "placeholders": {
+      "cachedAt": {"type": "String"}
+    }
+  },
+  "cachedSnapshotReasonTitle": "Why a saved copy is shown",
+
+  "homeAppName": "Walking RPG",
+  "homeRefreshTooltip": "Refresh",
+  "homeLoadingTitle": "Checking the route",
+  "homeLoadingMessage": "Retrieving steps, ENERGY and the current expedition state.",
+  "homeMissingSnapshotDetails": "The backend returned no state",
+  "homeAdvanceSucceeded": "The expedition advanced by {energy} ENERGY",
+  "@homeAdvanceSucceeded": {
+    "placeholders": {
+      "energy": {"type": "int"}
+    }
+  },
+  "homeEventUnlocked": "Event unlocked: {title}",
+  "@homeEventUnlocked": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "homeAdvanceFailed": "The expedition could not advance: {error}",
+  "@homeAdvanceFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "homeJourneyStarted": "Journey {number} started",
+  "@homeJourneyStarted": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "homeJourneyStartFailed": "A new journey could not start: {error}",
+  "@homeJourneyStartFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "homeMaterialRewardSuffix": ", +{quantity} {name}",
+  "@homeMaterialRewardSuffix": {
+    "placeholders": {
+      "quantity": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "homeEventResolutionReward": "{outcomeTitle}: +{experience} XP, +{bond} bond{material}",
+  "@homeEventResolutionReward": {
+    "placeholders": {
+      "outcomeTitle": {"type": "String"},
+      "experience": {"type": "int"},
+      "bond": {"type": "int"},
+      "material": {"type": "String"}
+    }
+  },
+  "homeEventResolveFailed": "The event could not be resolved: {error}",
+  "@homeEventResolveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "homeEventAcknowledgeFailed": "The event result could not be confirmed: {error}",
+  "@homeEventAcknowledgeFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "homeCraftedItem": "Created: {name}",
+  "@homeCraftedItem": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeCraftFailed": "The item could not be created: {error}",
+  "@homeCraftFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "homeItemUpgraded": "{name}: level {level}, {rarity}",
+  "@homeItemUpgraded": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "int"},
+      "rarity": {"type": "String"}
+    }
+  },
+  "homeUpgradeFailed": "The item could not be upgraded: {error}",
+  "@homeUpgradeFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "homeEquippedItem": "Equipped: {name}",
+  "@homeEquippedItem": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeNavigationItemRemoved": "Navigation instrument removed",
+  "homeEquipmentChangeFailed": "Equipment could not be changed: {error}",
+  "@homeEquipmentChangeFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "homeNeverSynced": "Steps have not been synchronized yet",
+  "homeLastSync": "Last synchronization: {instant}",
+  "@homeLastSync": {
+    "placeholders": {
+      "instant": {"type": "String"}
+    }
+  },
+  "homeAdaptiveGoalExplanation": "Personal goal: median {baseline} steps over {sampleDays} active days +{growthPercent}%",
+  "@homeAdaptiveGoalExplanation": {
+    "placeholders": {
+      "baseline": {"type": "String"},
+      "sampleDays": {"type": "int"},
+      "growthPercent": {"type": "int"}
+    }
+  },
+  "homeDefaultGoalExplanation": "Starting personal goal: {sampleDays} of {minimumSampleDays} active days collected",
+  "@homeDefaultGoalExplanation": {
+    "placeholders": {
+      "sampleDays": {"type": "int"},
+      "minimumSampleDays": {"type": "int"}
+    }
+  },
+  "homeLegacyGoalExplanation": "Personal goal",
+  "homeOfflineChangesUnavailable": "Changes unavailable offline",
+  "homeConfirmResultFirst": "Confirm the result first",
+  "homeStartJourneyAction": "Start journey {number}",
+  "@homeStartJourneyAction": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "homeChooseEventDecision": "Choose an event decision",
+  "homeSpendEnergyAction": "Spend {energy} ENERGY",
+  "@homeSpendEnergyAction": {
+    "placeholders": {
+      "energy": {"type": "int"}
+    }
+  },
+  "homeNeedEnergyAction": "Earn more ENERGY",
+  "homeRefreshState": "Refresh state",
+  "homeCrewTitle": "Expedition crew",
+  "homeCrewSubtitle": "The pilot sets the route; the companion strengthens decisions.",
+  "homeFieldKitTitle": "Field kit",
+  "homeFieldKitSubtitle": "Equipment, finds and crafting for this chapter.",
+  "homeJourneyNumber": "Journey {number}",
+  "@homeJourneyNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "homeCompanionLevel": "{name} · lvl. {level}",
+  "@homeCompanionLevel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "homeJourneyCompleted": "Journey {number} completed",
+  "@homeJourneyCompleted": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "homeWaitingForSteps": "The expedition is waiting for your steps",
+  "homeWalkFirst": "Walk first. Decisions and rewards follow.",
+  "homeEnergyProgress": "{progress} / {requiredEnergy} ENERGY · {nodeName}",
+  "@homeEnergyProgress": {
+    "placeholders": {
+      "progress": {"type": "int"},
+      "requiredEnergy": {"type": "int"},
+      "nodeName": {"type": "String"}
+    }
+  },
+  "homeRouteCompleted": "Route completed. Permanent progress is saved; a new journey can begin.",
+  "homeEnergyToNextNode": "To the next node: {energy} ENERGY",
+  "@homeEnergyToNextNode": {
+    "placeholders": {
+      "energy": {"type": "int"}
+    }
+  },
+  "homeTodayProgress": "Today: {steps} / {goal}",
+  "@homeTodayProgress": {
+    "placeholders": {
+      "steps": {"type": "int"},
+      "goal": {"type": "int"}
+    }
+  },
+  "homePilotLabel": "Pilot",
+  "homePetLabel": "Companion",
+  "homePetBond": "Bond {bond}",
+  "@homePetBond": {
+    "placeholders": {
+      "bond": {"type": "int"}
+    }
+  },
+  "homePetBondStage": "Bond {bond} · {stage}",
+  "@homePetBondStage": {
+    "placeholders": {
+      "bond": {"type": "int"},
+      "stage": {"type": "String"}
+    }
+  },
+  "homeActiveCompanion": "ACTIVE COMPANION",
+  "homeSpeciesBond": "{species} · bond {bond}",
+  "@homeSpeciesBond": {
+    "placeholders": {
+      "species": {"type": "String"},
+      "bond": {"type": "int"}
+    }
+  },
+  "homeAvailableEnergyState": "Available ENERGY: {energy} · version {version}",
+  "@homeAvailableEnergyState": {
+    "placeholders": {
+      "energy": {"type": "int"},
+      "version": {"type": "int"}
+    }
+  },
+  "homeExpeditionState": "Expedition: version {version} · {status}",
+  "@homeExpeditionState": {
+    "placeholders": {
+      "version": {"type": "int"},
+      "status": {"type": "String"}
+    }
+  },
+  "homeContentState": "Content: {version}",
+  "@homeContentState": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+
+  "homeEventCompletedBadge": "EVENT COMPLETED",
+  "homePilotExperienceTotal": "+{gained} XP · {total} total",
+  "@homePilotExperienceTotal": {
+    "placeholders": {
+      "gained": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "homePetBondTotal": "+{gained} bond · {name}: {total}",
+  "@homePetBondTotal": {
+    "placeholders": {
+      "gained": {"type": "int"},
+      "name": {"type": "String"},
+      "total": {"type": "int"}
+    }
+  },
+  "homeMaterialTotal": "+{gained} {name} · {total} total",
+  "@homeMaterialTotal": {
+    "placeholders": {
+      "gained": {"type": "int"},
+      "name": {"type": "String"},
+      "total": {"type": "int"}
+    }
+  },
+  "homeAcknowledgeOffline": "Confirmation unavailable offline",
+  "homeSavingContinuation": "Saving continuation...",
+  "homeFinishExpedition": "Finish expedition",
+  "homeContinueToNode": "Continue to “{name}”",
+  "@homeContinueToNode": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeEventResolvedStatus": "Event resolved",
+  "homeEventOpenStatus": "Event open",
+  "homeChoiceRecorded": "Decision recorded",
+  "homeEventResult": "Event result",
+  "homeChoiceReward": "+{experience} XP · +{bond} bond{material}",
+  "@homeChoiceReward": {
+    "placeholders": {
+      "experience": {"type": "int"},
+      "bond": {"type": "int"},
+      "material": {"type": "String"}
+    }
+  },
+
+  "homeEquipmentTitle": "Equipment",
+  "homeEquipmentSubtitle": "Active navigation instruments.",
+  "homeEmptySlot": "Slot empty",
+  "homeUnequip": "Remove",
+  "homeInventoryTitle": "Inventory",
+  "homeInventorySubtitle": "Materials and unique finds.",
+  "homeItemLevel": "{name} · level {level}{rarity}",
+  "@homeItemLevel": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "int"},
+      "rarity": {"type": "String"}
+    }
+  },
+  "homeEquipped": "Equipped",
+  "homeEquip": "Equip",
+  "homeCraftingTitle": "Workshop",
+  "homeCraftingSubtitle": "Turn finds into route instruments.",
+  "homeIngredientSemantics": "{name}, {available} of {requiredQuantity}, {availability}",
+  "@homeIngredientSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "available": {"type": "int"},
+      "requiredQuantity": {"type": "int"},
+      "availability": {"type": "String"}
+    }
+  },
+  "homeEnoughMaterials": "enough materials",
+  "homeMissingMaterials": "not enough materials",
+  "homeCraftingResult": "Result: {name}",
+  "@homeCraftingResult": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeCraftUnavailableOffline": "Crafting unavailable offline",
+  "homeItemAlreadyCrafted": "Item already created",
+  "homeCraftItem": "Create item",
+  "homeEquipmentCalibrationTitle": "Equipment calibration",
+  "homeEquipmentCalibrationSubtitle": "Permanently strengthen crafted instruments.",
+  "homeLevelTransition": "Level {from} → {to}",
+  "@homeLevelTransition": {
+    "placeholders": {
+      "from": {"type": "int"},
+      "to": {"type": "int"}
+    }
+  },
+  "homeUpgradeUnavailableOffline": "Upgrade unavailable offline",
+  "homeUpgradeCompleted": "Upgrade completed",
+  "homeCraftItemFirst": "Create the item first",
+  "homeUpgradeItem": "Upgrade item",
+  "homeLoadFailureTitle": "State could not be loaded",
+  "homeLoadFailureMessage": "The current route was not accepted. Retry or open the local demo state—it does not change server data.",
+  "homeOpenDemo": "Open demo state",
+  "homeLevel": "Level {level}",
+  "@homeLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+
+  "companionGrowthKnownSemantics": "{name}, stage {current} of {total}",
+  "@companionGrowthKnownSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "companionGrowthLatestSemantics": "{name}, latest known illustration shown",
+  "@companionGrowthLatestSemantics": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "companionGrowthSemantics": "Companion growth: {value}",
+  "@companionGrowthSemantics": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "pilotPortraitSemantics": "Pilot {name}",
+  "@pilotPortraitSemantics": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  }
 }

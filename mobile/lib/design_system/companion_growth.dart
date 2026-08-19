@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 abstract final class CompanionGrowth {
@@ -36,16 +38,19 @@ class CompanionGrowthTrack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int normalizedStage = CompanionGrowth.normalizedStage(currentStage);
-    final String currentName = CompanionGrowth.stageName(currentStage);
+    final String currentName = context.l10n.companionStageName(currentStage);
     final String semanticValue =
         normalizedStage < CompanionGrowth.illustratedStageCount
-        ? '$currentName, этап ${normalizedStage + 1} из '
-              '${CompanionGrowth.illustratedStageCount}'
-        : '$currentName, показана последняя известная иллюстрация';
+        ? context.l10n.companionGrowthKnownSemantics(
+            currentName,
+            normalizedStage + 1,
+            CompanionGrowth.illustratedStageCount,
+          )
+        : context.l10n.companionGrowthLatestSemantics(currentName);
 
     return Semantics(
       container: true,
-      label: 'Рост спутника: $semanticValue',
+      label: context.l10n.companionGrowthSemantics(semanticValue),
       child: ExcludeSemantics(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,7 +143,7 @@ class _CompanionGrowthStage extends StatelessWidget {
         ),
         const SizedBox(height: 7),
         Text(
-          CompanionGrowth.stageName(stage),
+          context.l10n.companionStageName(stage),
           maxLines: 2,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(

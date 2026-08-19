@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
@@ -259,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             actions: <Widget>[
               if (!compactChrome)
                 IconButton(
-                  tooltip: 'Обновить',
+                  tooltip: context.l10n.homeRefreshTooltip,
                   onPressed: _isBusy ? null : _reload,
                   icon: const Icon(Icons.refresh),
                 ),
@@ -277,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 )
               else
                 IconButton(
-                  tooltip: 'Аккаунт',
+                  tooltip: context.l10n.accountTooltip,
                   onPressed: widget.onOpenAccount,
                   icon: const Icon(Icons.account_circle_outlined),
                 ),
@@ -295,12 +296,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ConnectionState.waiting) {
                       return _HomeReadState(
                         activitySyncAction: widget.activitySyncAction,
-                        child: const ExpeditionReadState.loading(
-                          key: Key('home-loading-state'),
-                          title: 'Сверяем маршрут',
-                          message:
-                              'Получаем шаги, ENERGY и актуальное состояние '
-                              'экспедиции.',
+                        child: ExpeditionReadState.loading(
+                          key: const Key('home-loading-state'),
+                          title: context.l10n.homeLoadingTitle,
+                          message: context.l10n.homeLoadingMessage,
                         ),
                       );
                     }
@@ -319,8 +318,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       return _HomeReadState(
                         activitySyncAction: widget.activitySyncAction,
                         child: _HomeError(
-                          error: const FormatException(
-                            'Backend не вернул состояние',
+                          error: FormatException(
+                            context.l10n.homeMissingSnapshotDetails,
                           ),
                           onRetry: _reload,
                           onOpenDemo: _openDemo,
@@ -563,8 +562,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
       final String message = result.unlockedEvent == null
-          ? 'Экспедиция продвинулась на ${result.energySpent} энергии'
-          : 'Открыто событие: ${result.unlockedEvent!.title}';
+          ? context.l10n.homeAdvanceSucceeded(result.energySpent)
+          : context.l10n.homeEventUnlocked(result.unlockedEvent!.title);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -574,7 +573,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Не удалось продвинуть экспедицию: $error')),
+          SnackBar(content: Text(context.l10n.homeAdvanceFailed('$error'))),
         );
       }
     } finally {
@@ -610,7 +609,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Начат поход №${result.journeyNumber}')),
+        SnackBar(
+          content: Text(context.l10n.homeJourneyStarted(result.journeyNumber)),
+        ),
       );
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
@@ -618,7 +619,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Не удалось начать новый поход: $error')),
+          SnackBar(
+            content: Text(context.l10n.homeJourneyStartFailed('$error')),
+          ),
         );
       }
     } finally {
@@ -661,12 +664,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final EventMaterialReward? material = result.material;
       final String materialText = material == null
           ? ''
-          : ', +${material.quantityGained} ${material.name}';
+          : context.l10n.homeMaterialRewardSuffix(
+              material.quantityGained,
+              material.name,
+            );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${result.outcomeTitle}: +${result.pilot.experienceGained} XP, '
-            '+${result.pet.bondGained} связь$materialText',
+            context.l10n.homeEventResolutionReward(
+              result.outcomeTitle,
+              result.pilot.experienceGained,
+              result.pet.bondGained,
+              materialText,
+            ),
           ),
         ),
       );
@@ -676,7 +686,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Не удалось разрешить событие: $error')),
+          SnackBar(
+            content: Text(context.l10n.homeEventResolveFailed('$error')),
+          ),
         );
       }
     } finally {
@@ -718,7 +730,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Не удалось подтвердить результат события: $error'),
+            content: Text(
+              context.l10n.homeEventAcknowledgeFailed('$error'),
+            ),
           ),
         );
       }
@@ -753,7 +767,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Создано: ${result.craftedItem.name}')),
+        SnackBar(
+          content: Text(context.l10n.homeCraftedItem(result.craftedItem.name)),
+        ),
       );
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
@@ -761,7 +777,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Не удалось создать предмет: $error')),
+          SnackBar(content: Text(context.l10n.homeCraftFailed('$error'))),
         );
       }
     } finally {
@@ -798,9 +814,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${result.upgradedItem.name}: уровень '
-            '${result.upgradedItem.upgradeLevel}, '
-            '${result.upgradedItem.rarity}',
+            context.l10n.homeItemUpgraded(
+              result.upgradedItem.name,
+              result.upgradedItem.upgradeLevel,
+              result.upgradedItem.rarity,
+            ),
           ),
         ),
       );
@@ -810,7 +828,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Не удалось улучшить предмет: $error')),
+          SnackBar(content: Text(context.l10n.homeUpgradeFailed('$error'))),
         );
       }
     } finally {
@@ -871,8 +889,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
       final String message = result.action == 'EQUIP'
-          ? 'Экипировано: ${result.equippedItem!.name}'
-          : 'Навигационный прибор снят';
+          ? context.l10n.homeEquippedItem(result.equippedItem!.name)
+          : context.l10n.homeNavigationItemRemoved;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -882,7 +900,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Не удалось изменить снаряжение: $error')),
+          SnackBar(
+            content: Text(context.l10n.homeEquipmentChangeFailed('$error')),
+          ),
         );
       }
     } finally {
@@ -1019,10 +1039,28 @@ class _HomeBody extends StatelessWidget {
       context,
     );
     final String lastSync = snapshot.lastActivitySyncAt == null
-        ? 'Шаги ещё не синхронизированы'
-        : 'Последняя синхронизация: ${snapshot.lastActivitySyncAt}';
-    final String activitySubtitle =
-        '${snapshot.dailyGoalPolicy.explanation}\n$lastSync';
+        ? context.l10n.homeNeverSynced
+        : context.l10n.homeLastSync(snapshot.lastActivitySyncAt!);
+    final num? baseline = snapshot.dailyGoalPolicy.baselineSteps;
+    final String formattedBaseline = baseline == null
+        ? ''
+        : baseline == baseline.roundToDouble()
+        ? baseline.toInt().toString()
+        : baseline.toString();
+    final String goalExplanation =
+        snapshot.dailyGoalPolicy.isAdaptive && baseline != null
+        ? context.l10n.homeAdaptiveGoalExplanation(
+            formattedBaseline,
+            snapshot.dailyGoalPolicy.sampleDays,
+            snapshot.dailyGoalPolicy.growthPercent,
+          )
+        : snapshot.dailyGoalPolicy.isDefault
+        ? context.l10n.homeDefaultGoalExplanation(
+            snapshot.dailyGoalPolicy.sampleDays,
+            snapshot.dailyGoalPolicy.minimumSampleDays,
+          )
+        : context.l10n.homeLegacyGoalExplanation;
+    final String activitySubtitle = '$goalExplanation\n$lastSync';
     final HomeExpeditionEvent? event = snapshot.unlockedEvent;
     final PendingEventResult? pendingEventResult = snapshot.pendingEventResult;
     final bool eventReady = event?.status == 'READY';
@@ -1040,16 +1078,18 @@ class _HomeBody extends StatelessWidget {
     final bool gameplayActionBlocked =
         busy || pendingEventResult != null || readOnly;
     final String actionLabel = readOnly
-        ? 'Изменения недоступны офлайн'
+        ? context.l10n.homeOfflineChangesUnavailable
         : pendingEventResult != null
-        ? 'Сначала подтвердите результат'
+        ? context.l10n.homeConfirmResultFirst
         : completed
-        ? 'Начать поход №${snapshot.expeditionJourneyNumber + 1}'
+        ? context.l10n.homeStartJourneyAction(
+            snapshot.expeditionJourneyNumber + 1,
+          )
         : eventReady
-        ? 'Выберите решение события'
+        ? context.l10n.homeChooseEventDecision
         : spendableEnergy > 0
-        ? 'Потратить $spendableEnergy энергии'
-        : 'Нужно накопить энергию';
+        ? context.l10n.homeSpendEnergyAction(spendableEnergy)
+        : context.l10n.homeNeedEnergyAction;
     final bool actionDisabled =
         readOnly ||
         pendingEventResult != null ||
@@ -1087,7 +1127,7 @@ class _HomeBody extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: busy ? null : onRefresh,
                     icon: const Icon(Icons.sync),
-                    label: const Text('Обновить состояние'),
+                    label: Text(context.l10n.homeRefreshState),
                   ),
                   if (pendingEventResult != null) ...<Widget>[
                     const SizedBox(height: 20),
@@ -1113,9 +1153,9 @@ class _HomeBody extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  const ExpeditionSectionTitle(
-                    title: 'Команда экспедиции',
-                    subtitle: 'Пилот задаёт путь, питомец усиливает решения.',
+                  ExpeditionSectionTitle(
+                    title: context.l10n.homeCrewTitle,
+                    subtitle: context.l10n.homeCrewSubtitle,
                     icon: Icons.group_outlined,
                   ),
                   const SizedBox(height: 12),
@@ -1125,9 +1165,9 @@ class _HomeBody extends StatelessWidget {
                       snapshot.craftingRecipes.isNotEmpty ||
                       snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 24),
-                    const ExpeditionSectionTitle(
-                      title: 'Полевой комплект',
-                      subtitle: 'Снаряжение, находки и мастерская этой главы.',
+                    ExpeditionSectionTitle(
+                      title: context.l10n.homeFieldKitTitle,
+                      subtitle: context.l10n.homeFieldKitSubtitle,
                       icon: Icons.backpack_outlined,
                     ),
                   ],
@@ -1250,7 +1290,7 @@ class _HomeAppTitle extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     return Semantics(
       header: true,
-      label: 'Walking RPG',
+      label: context.l10n.homeAppName,
       child: ExcludeSemantics(
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1268,9 +1308,9 @@ class _HomeAppTitle extends StatelessWidget {
               ),
               const SizedBox(width: 10),
             ],
-            const Flexible(
+            Flexible(
               child: Text(
-                'Walking RPG',
+                context.l10n.homeAppName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1297,7 +1337,7 @@ class _HomeAppActionsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<_HomeAppAction>(
       key: const Key('home-more-actions'),
-      tooltip: 'Ещё действия',
+      tooltip: context.l10n.moreActionsTooltip,
       icon: const Icon(Icons.more_vert),
       onSelected: (_HomeAppAction action) {
         switch (action) {
@@ -1314,18 +1354,18 @@ class _HomeAppActionsMenu extends StatelessWidget {
           key: const Key('home-menu-refresh'),
           value: _HomeAppAction.refresh,
           enabled: refreshEnabled,
-          child: const _HomeMenuLabel(
+          child: _HomeMenuLabel(
             icon: Icons.refresh,
-            label: 'Обновить состояние',
+            label: context.l10n.homeRefreshState,
           ),
         ),
         PopupMenuItem<_HomeAppAction>(
           key: const Key('home-menu-account'),
           value: _HomeAppAction.account,
           enabled: onOpenAccount != null,
-          child: const _HomeMenuLabel(
+          child: _HomeMenuLabel(
             icon: Icons.account_circle_outlined,
-            label: 'Аккаунт',
+            label: context.l10n.accountTooltip,
           ),
         ),
       ],
@@ -1396,14 +1436,19 @@ class _ExpeditionHero extends StatelessWidget {
               ),
               ExpeditionBadge(
                 key: const Key('home-expedition-journey-number'),
-                label: 'Поход №${snapshot.expeditionJourneyNumber}',
+                label: context.l10n.homeJourneyNumber(
+                  snapshot.expeditionJourneyNumber,
+                ),
                 icon: Icons.route_outlined,
                 tone: ExpeditionPanelTone.energy,
               ),
               if (!hasCompanionPortrait)
                 ExpeditionBadge(
                   key: const Key('home-active-companion-badge'),
-                  label: '${snapshot.petName} · ур. ${snapshot.petLevel}',
+                  label: context.l10n.homeCompanionLevel(
+                    snapshot.petName,
+                    snapshot.petLevel,
+                  ),
                   icon: Icons.pets_outlined,
                   tone: ExpeditionPanelTone.resonance,
                 ),
@@ -1416,13 +1461,15 @@ class _ExpeditionHero extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             completed
-                ? 'Поход №${snapshot.expeditionJourneyNumber} завершён'
-                : 'Экспедиция ждёт твоих шагов',
+                ? context.l10n.homeJourneyCompleted(
+                    snapshot.expeditionJourneyNumber,
+                  )
+                : context.l10n.homeWaitingForSteps,
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
           Text(
-            'Сначала прогулка. Решения и награды — после неё.',
+            context.l10n.homeWalkFirst,
             style: Theme.of(
               context,
             ).textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
@@ -1441,8 +1488,11 @@ class _ExpeditionHero extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${snapshot.expeditionProgress} / ${snapshot.requiredEnergy} энергии'
-            ' · ${snapshot.currentNodeName}',
+            context.l10n.homeEnergyProgress(
+              snapshot.expeditionProgress,
+              snapshot.requiredEnergy,
+              snapshot.currentNodeName,
+            ),
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
@@ -1482,9 +1532,10 @@ class _ExpeditionHero extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             completed
-                ? 'Маршрут пройден. Постоянный прогресс сохранён; можно начать новый поход.'
-                : 'До следующего узла: '
-                      '${snapshot.remainingExpeditionEnergy} ENERGY',
+                ? context.l10n.homeRouteCompleted
+                : context.l10n.homeEnergyToNextNode(
+                    snapshot.remainingExpeditionEnergy,
+                  ),
             style: Theme.of(
               context,
             ).textTheme.labelMedium?.copyWith(color: palette.energy),
@@ -1510,14 +1561,17 @@ class _DailyProgressSummary extends StatelessWidget {
     final Widget ring = ExpeditionProgressRing(
       progress: snapshot.dailyProgress,
       value: '${(snapshot.dailyProgress * 100).round()}%',
-      label: 'шаги',
+      label: context.l10n.stepsLabel,
       size: 108,
     );
     final Widget details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Сегодня: ${snapshot.dailySteps} / ${snapshot.dailyGoal}',
+          context.l10n.homeTodayProgress(
+            snapshot.dailySteps,
+            snapshot.dailyGoal,
+          ),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 6),
@@ -1614,7 +1668,7 @@ class _ExpeditionTeam extends StatelessWidget {
         snapshot.petEvolutionStage != null;
     final Widget pilot = _CharacterCard(
       key: const Key('home-pilot-card'),
-      label: 'Пилот',
+      label: context.l10n.homePilotLabel,
       name: snapshot.pilotName,
       level: snapshot.pilotLevel,
       detail:
@@ -1632,13 +1686,15 @@ class _ExpeditionTeam extends StatelessWidget {
     );
     final Widget pet = _CharacterCard(
       key: const Key('home-pet-card'),
-      label: 'Питомец',
+      label: context.l10n.homePetLabel,
       name: snapshot.petName,
       level: snapshot.petLevel,
       detail: snapshot.petEvolutionStage == null
-          ? 'Связь ${snapshot.petBond}'
-          : 'Связь ${snapshot.petBond} · '
-                '${CompanionGrowth.stageName(snapshot.petEvolutionStage!)}',
+          ? context.l10n.homePetBond(snapshot.petBond)
+          : context.l10n.homePetBondStage(
+              snapshot.petBond,
+              context.l10n.companionStageName(snapshot.petEvolutionStage!),
+            ),
       icon: Icons.pets_outlined,
       portrait: hasCompanionPortrait
           ? ExcludeSemantics(
@@ -1703,7 +1759,7 @@ class _ActiveCompanionCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'АКТИВНЫЙ СПУТНИК',
+          context.l10n.homeActiveCompanion,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: palette.resonance,
             fontWeight: FontWeight.w800,
@@ -1716,12 +1772,15 @@ class _ActiveCompanionCard extends StatelessWidget {
           runSpacing: 7,
           children: <Widget>[
             ExpeditionBadge(
-              label: '${snapshot.petName} · ур. ${snapshot.petLevel}',
+              label: context.l10n.homeCompanionLevel(
+                snapshot.petName,
+                snapshot.petLevel,
+              ),
               icon: Icons.pets_outlined,
               tone: ExpeditionPanelTone.resonance,
             ),
             ExpeditionBadge(
-              label: CompanionGrowth.formLabel(evolutionStage),
+              label: context.l10n.companionFormLabel(evolutionStage),
               icon: Icons.auto_awesome_outlined,
               tone: evolutionStage > 0
                   ? ExpeditionPanelTone.resonance
@@ -1731,7 +1790,7 @@ class _ActiveCompanionCard extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '$species · связь ${snapshot.petBond}',
+          context.l10n.homeSpeciesBond(species, snapshot.petBond),
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
@@ -1798,15 +1857,19 @@ class _StateFooter extends StatelessWidget {
       child: Column(
         children: <Widget>[
           Text(
-            'Доступная энергия: ${snapshot.availableEnergy} '
-            '· версия ${snapshot.economyVersion}',
+            context.l10n.homeAvailableEnergyState(
+              snapshot.availableEnergy,
+              snapshot.economyVersion,
+            ),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: 6),
           Text(
-            'Экспедиция: версия ${snapshot.expeditionVersion} '
-            '· ${snapshot.expeditionStatus}',
+            context.l10n.homeExpeditionState(
+              snapshot.expeditionVersion,
+              snapshot.expeditionStatus,
+            ),
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
@@ -1814,7 +1877,7 @@ class _StateFooter extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Контент: ${snapshot.contentVersion}',
+            context.l10n.homeContentState(snapshot.contentVersion),
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
@@ -1853,12 +1916,13 @@ class _PendingEventResultCard extends StatelessWidget {
           ExpeditionEventScene(
             eventId: result.eventId,
             eventTitle: result.eventTitle,
-            fallbackSemanticLabel:
-                'Сцена завершённого события «${result.eventTitle}»',
+            fallbackSemanticLabel: context.l10n.eventCompletedScene(
+              result.eventTitle,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
-            'СОБЫТИЕ ЗАВЕРШЕНО',
+            context.l10n.homeEventCompletedBadge,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: palette.resonance,
               letterSpacing: 0.8,
@@ -1890,8 +1954,10 @@ class _PendingEventResultCard extends StatelessWidget {
             kind: ProgressionGainKind.pilotExperience,
             subjectId: result.pilot.pilotId,
             child: Text(
-              '+${result.pilot.experienceGained} XP · '
-              'всего ${result.pilot.currentExperience}',
+              context.l10n.homePilotExperienceTotal(
+                result.pilot.experienceGained,
+                result.pilot.currentExperience,
+              ),
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ),
@@ -1900,8 +1966,11 @@ class _PendingEventResultCard extends StatelessWidget {
             kind: ProgressionGainKind.petBond,
             subjectId: result.pet.petId,
             child: Text(
-              '+${result.pet.bondGained} связи · '
-              '${result.pet.name}: ${result.pet.bond}',
+              context.l10n.homePetBondTotal(
+                result.pet.bondGained,
+                result.pet.name,
+                result.pet.bond,
+              ),
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ),
@@ -1913,9 +1982,11 @@ class _PendingEventResultCard extends StatelessWidget {
                 size: 44,
                 highlighted: true,
               ),
-              text:
-                  '+${material.quantityGained} ${material.name} · '
-                  'всего ${material.quantityAfter}',
+              text: context.l10n.homeMaterialTotal(
+                material.quantityGained,
+                material.name,
+                material.quantityAfter,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -1926,7 +1997,7 @@ class _PendingEventResultCard extends StatelessWidget {
           if (nextNode != null) ...<Widget>[
             const SizedBox(height: 16),
             Text(
-              'СЛЕДУЮЩИЙ УЗЕЛ',
+              context.l10n.eventNextNodeLabel,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: palette.resonance,
                 letterSpacing: 0.8,
@@ -1956,12 +2027,12 @@ class _PendingEventResultCard extends StatelessWidget {
                 : const Icon(Icons.arrow_forward),
             label: Text(
               readOnly
-                  ? 'Подтверждение недоступно офлайн'
+                  ? context.l10n.homeAcknowledgeOffline
                   : acknowledging
-                  ? 'Сохраняем продолжение...'
+                  ? context.l10n.homeSavingContinuation
                   : nextNode == null
-                  ? 'Завершить экспедицию'
-                  : 'Продолжить к узлу «${nextNode.name}»',
+                  ? context.l10n.homeFinishExpedition
+                  : context.l10n.homeContinueToNode(nextNode.name),
             ),
           ),
         ],
@@ -2014,7 +2085,9 @@ class _EventCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           ExpeditionBadge(
-            label: event.isResolved ? 'Событие разрешено' : 'Событие открыто',
+            label: event.isResolved
+                ? context.l10n.homeEventResolvedStatus
+                : context.l10n.homeEventOpenStatus,
             icon: Icons.auto_awesome_outlined,
             tone: ExpeditionPanelTone.resonance,
           ),
@@ -2022,7 +2095,7 @@ class _EventCard extends StatelessWidget {
           ExpeditionEventScene(
             eventId: event.eventId,
             eventTitle: event.title,
-            fallbackSemanticLabel: 'Сцена события «${event.title}»',
+            fallbackSemanticLabel: context.l10n.eventFallbackScene(event.title),
           ),
           const SizedBox(height: 14),
           Text(event.title, style: Theme.of(context).textTheme.titleMedium),
@@ -2035,18 +2108,18 @@ class _EventCard extends StatelessWidget {
                 eventId: event.eventId,
                 choiceId: event.selectedChoiceId!,
                 child: Text(
-                  event.selectedChoiceTitle ?? 'Выбор зафиксирован',
+                  event.selectedChoiceTitle ?? context.l10n.homeChoiceRecorded,
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               )
             else
               Text(
-                event.selectedChoiceTitle ?? 'Выбор зафиксирован',
+                event.selectedChoiceTitle ?? context.l10n.homeChoiceRecorded,
                 style: Theme.of(context).textTheme.labelLarge,
               ),
             const SizedBox(height: 4),
             Text(
-              event.outcomeTitle ?? 'Результат события',
+              event.outcomeTitle ?? context.l10n.homeEventResult,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
@@ -2059,10 +2132,11 @@ class _EventCard extends StatelessWidget {
                   size: 44,
                   highlighted: true,
                 ),
-                text:
-                    '+${event.materialReward!.quantityGained} '
-                    '${event.materialReward!.itemName} '
-                    '· всего ${event.materialReward!.quantityAfter}',
+                text: context.l10n.homeMaterialTotal(
+                  event.materialReward!.quantityGained,
+                  event.materialReward!.itemName,
+                  event.materialReward!.quantityAfter,
+                ),
               ),
             ],
           ] else ...<Widget>[
@@ -2081,7 +2155,7 @@ class _EventCard extends StatelessWidget {
                   child: _EventChoiceLabel(
                     eventId: event.eventId,
                     choice: choice,
-                    rewardText: _rewardText(choice),
+                    rewardText: _rewardText(context, choice),
                   ),
                 ),
               ),
@@ -2105,13 +2179,19 @@ class _EventCard extends StatelessWidget {
     );
   }
 
-  String _rewardText(HomeEventChoice choice) {
+  String _rewardText(BuildContext context, HomeEventChoice choice) {
     final HomeMaterialRewardPreview? material = choice.materialReward;
     final String materialText = material == null
         ? ''
-        : ' · +${material.quantity} ${material.itemName}';
-    return '+${choice.pilotExperienceReward} XP · '
-        '+${choice.petBondReward} связь$materialText';
+        : context.l10n.homeMaterialRewardSuffix(
+            material.quantity,
+            material.itemName,
+          );
+    return context.l10n.homeChoiceReward(
+      choice.pilotExperienceReward,
+      choice.petBondReward,
+      materialText,
+    );
   }
 }
 
@@ -2170,9 +2250,9 @@ class _EquipmentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const ExpeditionSectionTitle(
-            title: 'Снаряжение',
-            subtitle: 'Активные инструменты навигации.',
+          ExpeditionSectionTitle(
+            title: context.l10n.homeEquipmentTitle,
+            subtitle: context.l10n.homeEquipmentSubtitle,
             icon: Icons.explore_outlined,
           ),
           const SizedBox(height: 12),
@@ -2188,7 +2268,7 @@ class _EquipmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             if (slot.item == null)
-              const Text('Слот свободен')
+              Text(context.l10n.homeEmptySlot)
             else
               _IllustratedItemIdentity(
                 layoutKey: 'equipment-item-layout-${slot.slotId}',
@@ -2208,7 +2288,7 @@ class _EquipmentCard extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.remove_circle_outline),
-                    label: const Text('Снять'),
+                    label: Text(context.l10n.homeUnequip),
                   ),
                 ),
               ),
@@ -2241,9 +2321,9 @@ class _InventoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const ExpeditionSectionTitle(
-            title: 'Инвентарь',
-            subtitle: 'Материалы и уникальные находки.',
+          ExpeditionSectionTitle(
+            title: context.l10n.homeInventoryTitle,
+            subtitle: context.l10n.homeInventorySubtitle,
             icon: Icons.inventory_2_outlined,
           ),
           const SizedBox(height: 12),
@@ -2252,8 +2332,11 @@ class _InventoryCard extends StatelessWidget {
               layoutKey: 'inventory-item-layout-${item.itemId}',
               itemId: item.itemId,
               title: item.isUnique
-                  ? '${item.name} · уровень ${item.version}'
-                        '${item.rarity == null ? '' : ' · ${item.rarity}'}'
+                  ? context.l10n.homeItemLevel(
+                      item.name,
+                      item.version,
+                      item.rarity == null ? '' : ' · ${item.rarity}',
+                    )
                   : '${item.name} × ${item.quantity}',
               description: item.description,
               highlighted: item.isUnique || item.isEquipped,
@@ -2274,7 +2357,9 @@ class _InventoryCard extends StatelessWidget {
                               )
                             : const Icon(Icons.explore_outlined),
                         label: Text(
-                          item.isEquipped ? 'Экипировано' : 'Экипировать',
+                          item.isEquipped
+                              ? context.l10n.homeEquipped
+                              : context.l10n.homeEquip,
                         ),
                       ),
                     )
@@ -2313,9 +2398,9 @@ class _CraftingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const ExpeditionSectionTitle(
-            title: 'Мастерская',
-            subtitle: 'Преобразуй находки в инструменты маршрута.',
+          ExpeditionSectionTitle(
+            title: context.l10n.homeCraftingTitle,
+            subtitle: context.l10n.homeCraftingSubtitle,
             icon: Icons.handyman_outlined,
           ),
           const SizedBox(height: 12),
@@ -2384,10 +2469,14 @@ class _CraftingRecipeView extends StatelessWidget {
             in recipe.ingredients) ...<Widget>[
           Semantics(
             container: true,
-            label:
-                '${ingredient.name}, ${ingredient.availableQuantity} из '
-                '${ingredient.requiredQuantity}, '
-                '${ingredient.isAvailable ? 'материала достаточно' : 'материала не хватает'}',
+            label: context.l10n.homeIngredientSemantics(
+              ingredient.name,
+              ingredient.availableQuantity,
+              ingredient.requiredQuantity,
+              ingredient.isAvailable
+                  ? context.l10n.homeEnoughMaterials
+                  : context.l10n.homeMissingMaterials,
+            ),
             child: ExcludeSemantics(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -2419,7 +2508,7 @@ class _CraftingRecipeView extends StatelessWidget {
         ],
         const SizedBox(height: 6),
         Text(
-          'Результат: ${recipe.result.name}',
+          context.l10n.homeCraftingResult(recipe.result.name),
           style: Theme.of(context).textTheme.labelLarge,
         ),
         const SizedBox(height: 2),
@@ -2443,12 +2532,12 @@ class _CraftingRecipeView extends StatelessWidget {
                 ),
           label: Text(
             readOnly
-                ? 'Создание недоступно офлайн'
+                ? context.l10n.homeCraftUnavailableOffline
                 : recipe.isCrafted
-                ? 'Предмет уже создан'
+                ? context.l10n.homeItemAlreadyCrafted
                 : recipe.canCraft
-                ? 'Создать предмет'
-                : 'Не хватает материалов',
+                ? context.l10n.homeCraftItem
+                : context.l10n.homeMissingMaterials,
           ),
         ),
       ],
@@ -2479,9 +2568,9 @@ class _ItemUpgradeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const ExpeditionSectionTitle(
-            title: 'Калибровка снаряжения',
-            subtitle: 'Постоянно усиливай созданные приборы.',
+          ExpeditionSectionTitle(
+            title: context.l10n.homeEquipmentCalibrationTitle,
+            subtitle: context.l10n.homeEquipmentCalibrationSubtitle,
             icon: Icons.auto_fix_high_outlined,
           ),
           const SizedBox(height: 12),
@@ -2541,8 +2630,10 @@ class _ItemUpgradeView extends StatelessWidget {
                 const Icon(Icons.tune_outlined, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Уровень ${upgrade.requiredLevel} → '
-                  '${upgrade.resultingLevel}',
+                  context.l10n.homeLevelTransition(
+                    upgrade.requiredLevel,
+                    upgrade.resultingLevel,
+                  ),
                 ),
               ],
             ),
@@ -2554,10 +2645,14 @@ class _ItemUpgradeView extends StatelessWidget {
             in upgrade.ingredients) ...<Widget>[
           Semantics(
             container: true,
-            label:
-                '${ingredient.name}, ${ingredient.availableQuantity} из '
-                '${ingredient.requiredQuantity}, '
-                '${ingredient.isAvailable ? 'материала достаточно' : 'материала не хватает'}',
+            label: context.l10n.homeIngredientSemantics(
+              ingredient.name,
+              ingredient.availableQuantity,
+              ingredient.requiredQuantity,
+              ingredient.isAvailable
+                  ? context.l10n.homeEnoughMaterials
+                  : context.l10n.homeMissingMaterials,
+            ),
             child: ExcludeSemantics(
               child: Row(
                 children: <Widget>[
@@ -2590,14 +2685,14 @@ class _ItemUpgradeView extends StatelessWidget {
                 ),
           label: Text(
             readOnly
-                ? 'Улучшение недоступно офлайн'
+                ? context.l10n.homeUpgradeUnavailableOffline
                 : upgrade.isCompleted
-                ? 'Улучшение завершено'
+                ? context.l10n.homeUpgradeCompleted
                 : upgrade.isLocked
-                ? 'Сначала создайте предмет'
+                ? context.l10n.homeCraftItemFirst
                 : upgrade.canApply
-                ? 'Улучшить предмет'
-                : 'Не хватает материалов',
+                ? context.l10n.homeUpgradeItem
+                : context.l10n.homeMissingMaterials,
           ),
         ),
       ],
@@ -2684,16 +2779,14 @@ class _HomeError extends StatelessWidget {
   Widget build(BuildContext context) {
     return ExpeditionReadState.failure(
       key: const Key('home-error-state'),
-      title: 'Не удалось загрузить состояние',
-      message:
-          'Актуальный маршрут не принят. Повтори запрос или открой локальное '
-          'демонстрационное состояние — оно не меняет серверные данные.',
+      title: context.l10n.homeLoadFailureTitle,
+      message: context.l10n.homeLoadFailureMessage,
       details: error.toString(),
       primaryActionKey: const Key('home-error-retry'),
-      primaryActionLabel: 'Повторить',
+      primaryActionLabel: context.l10n.retryButton,
       onPrimaryAction: onRetry,
       secondaryActionKey: const Key('home-error-demo'),
-      secondaryActionLabel: 'Открыть демонстрационное состояние',
+      secondaryActionLabel: context.l10n.homeOpenDemo,
       onSecondaryAction: onOpenDemo,
     );
   }
@@ -2748,7 +2841,7 @@ class _CharacterCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(name, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 5),
-          Text('Уровень $level'),
+          Text(context.l10n.homeLevel(level)),
           const SizedBox(height: 2),
           Text(
             detail,

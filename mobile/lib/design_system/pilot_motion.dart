@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/character_motion_atlas.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
@@ -121,7 +122,7 @@ class PilotMotionPortrait extends StatelessWidget {
 
     return Semantics(
       image: true,
-      label: 'Пилот $name',
+      label: context.l10n.pilotPortraitSemantics(name),
       child: RepaintBoundary(
         child: SizedBox.square(
           dimension: size,

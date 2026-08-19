@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_navigation_glyph.dart';
@@ -102,30 +103,30 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           child: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: _selectDestination,
-            destinations: const <NavigationDestination>[
+            destinations: <NavigationDestination>[
               NavigationDestination(
-                key: Key('navigation-home'),
-                icon: ExpeditionNavigationGlyph(
+                key: const Key('navigation-home'),
+                icon: const ExpeditionNavigationGlyph(
                   destination: ExpeditionNavigationDestination.expedition,
                   selected: false,
                 ),
-                selectedIcon: ExpeditionNavigationGlyph(
+                selectedIcon: const ExpeditionNavigationGlyph(
                   destination: ExpeditionNavigationDestination.expedition,
                   selected: true,
                 ),
-                label: 'Экспедиция',
+                label: context.l10n.navigationExpeditionLabel,
               ),
               NavigationDestination(
-                key: Key('navigation-platform'),
-                icon: ExpeditionNavigationGlyph(
+                key: const Key('navigation-platform'),
+                icon: const ExpeditionNavigationGlyph(
                   destination: ExpeditionNavigationDestination.journal,
                   selected: false,
                 ),
-                selectedIcon: ExpeditionNavigationGlyph(
+                selectedIcon: const ExpeditionNavigationGlyph(
                   destination: ExpeditionNavigationDestination.journal,
                   selected: true,
                 ),
-                label: 'Журнал',
+                label: context.l10n.navigationJournalLabel,
               ),
             ],
           ),
@@ -169,10 +170,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 unselectedLabelTextStyle: theme.textTheme.labelLarge?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
-                leading: const Padding(
-                  padding: EdgeInsets.fromLTRB(14, 16, 14, 24),
+                leading: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 16, 14, 24),
                   child: ExpeditionBadge(
-                    label: 'Полевой терминал',
+                    label: context.l10n.navigationFieldTerminal,
                     icon: Icons.route_outlined,
                     allowWrap: true,
                   ),
@@ -184,7 +185,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                       destination: ExpeditionNavigationDestination.expedition,
                       selected: _selectedIndex == 0,
                     ),
-                    label: const Text('Экспедиция'),
+                    label: Text(context.l10n.navigationExpeditionLabel),
                   ),
                   NavigationRailDestination(
                     icon: ExpeditionNavigationGlyph(
@@ -192,7 +193,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                       destination: ExpeditionNavigationDestination.journal,
                       selected: _selectedIndex == 1,
                     ),
-                    label: const Text('Журнал'),
+                    label: Text(context.l10n.navigationJournalLabel),
                   ),
                 ],
               ),

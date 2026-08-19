@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Russian and English mandatory-flow inventories stay complete', () {
+  test('Russian and English player-copy inventories stay complete', () {
     final Map<String, Object?> english = _readArb('lib/l10n/app_en.arb');
     final Map<String, Object?> russian = _readArb('lib/l10n/app_ru.arb');
     final Set<String> englishKeys = _messageKeys(english);
     final Set<String> russianKeys = _messageKeys(russian);
 
     expect(englishKeys, equals(russianKeys));
-    expect(englishKeys.length, greaterThanOrEqualTo(160));
+    expect(englishKeys.length, greaterThanOrEqualTo(270));
 
     for (final String key in englishKeys) {
       expect(
@@ -45,6 +45,25 @@ void main() {
           reason: 'Russian $key must contain {$placeholder}',
         );
       }
+    }
+  });
+
+  test('expedition shell keeps Russian player copy in ARB resources', () {
+    const List<String> shellFiles = <String>[
+      'lib/app/main_navigation_shell.dart',
+      'lib/core/cache/cached_snapshot_banner.dart',
+      'lib/design_system/companion_motion.dart',
+      'lib/design_system/pilot_motion.dart',
+      'lib/features/home/presentation/home_screen.dart',
+      'lib/features/recovery/presentation/mobile_command_recovery_action.dart',
+    ];
+
+    for (final String path in shellFiles) {
+      expect(
+        RegExp(r'[А-Яа-яЁё]').hasMatch(File(path).readAsStringSync()),
+        isFalse,
+        reason: '$path must use generated localization resources',
+      );
     }
   });
 }

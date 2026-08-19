@@ -980,6 +980,30 @@ immutable receipts без миграции и без изменения экон
 **Статус:** canonical copy реализована без schema migration, изменения
 gameplay identity, экономики, topology или external validation status.
 
+### US-042. Продолжить выбранный язык в основной экспедиции
+
+Как игрок, выбравший русский или английский язык до входа, я хочу сохранить
+его после первого пути, чтобы основной игровой цикл не возвращался внезапно к
+другому языку.
+
+Критерии:
+
+- compact и wide navigation используют generated RU/EN labels;
+- весь client-authored Home chrome — loading/error/offline states, primary
+  action, feedback, route/activity/team/event/equipment/inventory/crafting и
+  upgrade copy — приходит из ARB;
+- числа, server values и diagnostics передаются typed placeholders, а locale
+  не определяется по display text;
+- companion growth/motion и saved-action entry имеют RU/EN semantics при
+  compact viewport и text scale 1.6;
+- known current server content в следующем slice локализуется только по stable
+  ID; unknown и immutable historical literal copy не переписываются;
+- Platform journal и остальные экраны остаются явно `CODE_PENDING` до своих
+  вертикальных срезов.
+
+**Статус:** первый expedition-shell slice реализован. Full current-content
+catalog, Platform journal и оставшиеся экраны продолжают Milestone 26.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
