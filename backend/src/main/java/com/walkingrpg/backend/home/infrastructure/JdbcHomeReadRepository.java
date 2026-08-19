@@ -193,6 +193,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                         "pilot_experience_gained"
                                 ),
                                 resultSet.getLong("pet_bond_gained"),
+                                List.of(),
                                 List.of()
                         ),
                 userId,
@@ -256,12 +257,71 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                         resultSet.getLong("bond_gained")
                 ), userId, expeditionId, currentJourneyNumber,
                 userId, expeditionId);
+        List<MaterialRewardPreviewSnapshot> materials = jdbcTemplate.query("""
+                WITH completed_journey AS (
+                    SELECT DISTINCT
+                           journey_number - 1 AS completed_journey_number
+                    FROM processed_expedition_journey_start
+                    WHERE user_id = ?
+                      AND expedition_id = ?
+                      AND journey_number <= ?
+                ),
+                eligible_resolution AS (
+                    SELECT resolution.journey_number,
+                           resolution.expedition_version,
+                           resolution.receipt_id,
+                           resolution.material_item_id,
+                           resolution.material_item_name,
+                           resolution.material_quantity_gained
+                    FROM completed_journey completed
+                    JOIN processed_event_resolution resolution
+                      ON resolution.user_id = ?
+                     AND resolution.expedition_id = ?
+                     AND resolution.journey_number =
+                             completed.completed_journey_number
+                    WHERE resolution.material_quantity_gained > 0
+                ),
+                ordered_material AS (
+                    SELECT material_item_id,
+                           material_item_name,
+                           SUM(material_quantity_gained) OVER (
+                               PARTITION BY material_item_id,
+                                            material_item_name
+                           ) AS quantity,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY material_item_id,
+                                            material_item_name
+                               ORDER BY journey_number,
+                                        expedition_version,
+                                        receipt_id
+                           ) AS identity_row,
+                           journey_number,
+                           expedition_version,
+                           receipt_id
+                    FROM eligible_resolution
+                )
+                SELECT material_item_id,
+                       material_item_name,
+                       quantity
+                FROM ordered_material
+                WHERE identity_row = 1
+                ORDER BY journey_number,
+                         expedition_version,
+                         receipt_id
+                """, (resultSet, rowNumber) ->
+                        new MaterialRewardPreviewSnapshot(
+                                resultSet.getString("material_item_id"),
+                                resultSet.getString("material_item_name"),
+                                resultSet.getLong("quantity")
+                        ), userId, expeditionId, currentJourneyNumber,
+                userId, expeditionId);
         return new ExpeditionJourneyChronicleTotals(
                 totals.completedJourneyCount(),
                 totals.decisionCount(),
                 totals.pilotExperienceGained(),
                 totals.petBondGained(),
-                petBondRewards
+                petBondRewards,
+                materials
         );
     }
 

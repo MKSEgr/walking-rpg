@@ -585,6 +585,25 @@ Milestone 27 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, экономику, topology или external validation
 gates.
 
+## Milestone 28 — Lifetime material reward breakdown
+
+### CODE_COMPLETE
+
+- [x] Additive ordered `journeyChronicle.materials[]` из persisted material
+      identity/name и фактически выданного quantity всех receipt-proven
+      завершённых походов
+- [x] First-appearance grouping и authoritative current `COMPLETED` merge
+      ровно один раз без inventory, current-content или archive-limit
+      inference
+- [x] Ordered RU/EN material chips и единая accessibility summary с legacy
+      omission как пустой breakdown
+- [x] Backend unit/API/PostgreSQL, Flutter parser/widget и compact large-text
+      coverage проверяют persisted copy, порядок, current merge и invalid data
+
+Milestone 28 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, экономику, topology или external validation
+gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

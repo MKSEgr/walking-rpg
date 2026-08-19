@@ -476,15 +476,16 @@ Authorization: Bearer <access-token>
   `petBondGained`. Additive `petBondRewards[]` группирует только положительную
   сохранённую связь по persisted `petId + petName` в порядке первого
   immutable появления; сумма `bondGained` точно равна совместимому общему
-  `petBondGained`. Для прошлых походов completion proof — immutable receipt
-  старта следующего `journeyNumber`; текущий поход входит в итог только при
-  authoritative `COMPLETED` и объединяется с исторической разбивкой ровно
+  `petBondGained`. Additive ordered `materials[]` группирует положительные
+  reward facts по persisted `itemId + itemName` в порядке первого immutable
+  появления. Для прошлых походов completion proof — immutable receipt старта
+  следующего `journeyNumber`; текущий поход входит в итог только при
+  authoritative `COMPLETED` и объединяется с историческими breakdown ровно
   один раз. Агрегат не ограничен пятью строками архива и суммирует rewards
-  только из persisted event resolutions, не перечитывая current content и не
-  вычисляя delta по текущим progression totals. Materials намеренно не входят
-  в lifetime-агрегат. До первого подтверждённого финиша значение равно `null`;
-  legacy response без поля или без `petBondRewards` остаётся валидным и во
-  втором случае показывает общий итог связи без имён спутников. Пример:
+  только из persisted event resolutions, не перечитывая current content,
+  inventory или текущие progression totals. До первого подтверждённого
+  финиша значение равно `null`; legacy response без поля, `petBondRewards`
+  или `materials` остаётся валидным. Пример:
 
   ```json
   {
@@ -502,6 +503,18 @@ Authorization: Bearer <access-token>
         "petId": "moss-v1",
         "petName": "Мох",
         "bondGained": 53
+      }
+    ],
+    "materials": [
+      {
+        "itemId": "echo-thread",
+        "itemName": "Эхо-нити",
+        "quantity": 37
+      },
+      {
+        "itemId": "ash-seed",
+        "itemName": "Пепельное семя",
+        "quantity": 12
       }
     ]
   }

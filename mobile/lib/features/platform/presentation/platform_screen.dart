@@ -949,6 +949,15 @@ class _JourneyChronicleCard extends StatelessWidget {
                     ),
               )
               .join('; ');
+    final List<String> materialRewards = chronicle.materials
+        .map(
+          (HomeJourneyMaterialReward material) => context.l10n
+              .platformMaterialReward(material.quantity, material.itemName),
+        )
+        .toList(growable: false);
+    final String materialSummary = materialRewards.isEmpty
+        ? ''
+        : '; ${materialRewards.join('; ')}';
     return Semantics(
       key: const Key('platform-journey-chronicle'),
       container: true,
@@ -957,6 +966,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.decisionCount,
         chronicle.pilotExperienceGained,
         bondSummary,
+        materialSummary,
       ),
       child: ExcludeSemantics(
         child: ExpeditionPanel(
@@ -1018,6 +1028,15 @@ class _JourneyChronicleCard extends StatelessWidget {
                       label: context.l10n.platformNamedCompanionBondReward(
                         reward.petName,
                         reward.bondGained,
+                      ),
+                    ),
+                  for (final HomeJourneyMaterialReward material
+                      in chronicle.materials)
+                    _JourneyRewardChip(
+                      icon: Icons.inventory_2_outlined,
+                      label: context.l10n.platformMaterialReward(
+                        material.quantity,
+                        material.itemName,
                       ),
                     ),
                 ],

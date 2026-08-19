@@ -69,6 +69,9 @@
 
 ### Added
 
+- persisted material reward breakdown in the lifetime journey chronicle, with
+  receipt-proven aggregation, first-appearance ordering and RU/EN
+  accessibility;
 - persisted companion bond breakdown in the lifetime journey chronicle, with
   receipt-proven aggregation, exact legacy-total consistency and named RU/EN
   accessibility;

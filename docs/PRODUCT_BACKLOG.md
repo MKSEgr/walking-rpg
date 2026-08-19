@@ -946,7 +946,7 @@ immutable receipts без миграции и без изменения экон
   ровно один раз до старта следующего похода;
 - агрегат охватывает всю доказанную историю независимо от archive limit 5 и
   читает rewards только из persisted resolutions без current-content lookup,
-  progression delta или material aggregation;
+  progression delta или inventory balance;
 - mobile принимает legacy omission, отклоняет нулевой completed count и
   отрицательные totals, показывает wrapping code-native card между decision
   log и archive и озвучивает один полный semantic summary;
@@ -1046,6 +1046,30 @@ immutable `alpha-rc1` не изменены.
 **Статус:** lifetime-разбивка связи реализована без миграции, изменения
 экономики, topology, archive pagination или external validation status.
 
+### US-044. Увидеть материалы всей летописи
+
+Как игрок, я хочу видеть суммарные материалы всех завершённых походов, чтобы
+lifetime-летопись сохраняла фактическую историю наград независимо от текущего
+инвентаря.
+
+Критерии:
+
+- `journeyChronicle` получает additive ordered `materials[]` из положительных
+  persisted reward facts всех receipt-proven завершённых походов;
+- quantity группируется по persisted `itemId + itemName` в порядке первого
+  immutable появления, без current catalog или inventory balance;
+- authoritative current `COMPLETED` объединяется ровно один раз до старта
+  следующего похода; recent archive limit не ограничивает lifetime history;
+- mobile принимает legacy omission и отклоняет не-массив, неположительное
+  quantity и повтор persisted identity;
+- летопись показывает ordered RU/EN material chips и включает их в один полный
+  semantic summary;
+- backend unit/API/PostgreSQL и Flutter parser/widget coverage проверяют
+  persisted copy, порядок, current merge, invalid data и compact large text.
+
+**Статус:** lifetime-разбивка материалов реализована без миграции, изменения
+экономики, inventory projection, topology или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -1076,7 +1100,7 @@ immutable `alpha-rc1` не изменены.
 - persisted разбивка полученной связи по питомцам в итогах текущего и недавних
   походов.
 - lifetime-летопись всех подтверждённых походов с persisted разбивкой связи по
-  спутникам и legacy fallback на общий итог.
+  спутникам, material rewards и legacy fallback.
 - persisted финальное решение и исход в итогах текущего и недавних походов.
 
 После физической device-validation и beta остаются продуктовые расширения:

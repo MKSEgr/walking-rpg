@@ -244,6 +244,18 @@ class HomeServiceTest {
                                         "Искра из записи",
                                         20
                                 )
+                        ),
+                        List.of(
+                                new MaterialRewardPreviewSnapshot(
+                                        "ash-seed",
+                                        "Пепельное семя из записи",
+                                        4
+                                ),
+                                new MaterialRewardPreviewSnapshot(
+                                        "echo-thread",
+                                        "Эхо-нити из записи",
+                                        7
+                                )
                         )
                 )
         );
@@ -331,6 +343,20 @@ class HomeServiceTest {
         assertEquals(28,
                 expedition.journeyChronicle().petBondRewards()
                         .getLast().bondGained());
+        assertEquals(2,
+                expedition.journeyChronicle().materials().size());
+        assertEquals("ash-seed",
+                expedition.journeyChronicle().materials()
+                        .getFirst().itemId());
+        assertEquals(4,
+                expedition.journeyChronicle().materials()
+                        .getFirst().quantity());
+        assertEquals("echo-thread",
+                expedition.journeyChronicle().materials()
+                        .getLast().itemId());
+        assertEquals(13,
+                expedition.journeyChronicle().materials()
+                        .getLast().quantity());
         assertEquals("COMPLETED", expedition.routeTrail().getLast().state());
         assertNotNull(expedition.routeTrail().getLast().decision());
         assertEquals("Следовать за отражением",

@@ -446,7 +446,16 @@ class HomeControllerTest {
                 .andExpect(jsonPath(
                         "$.expedition.journeyChronicle.petBondRewards[0]"
                                 + ".bondGained"
-                ).value(11));
+                ).value(11))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle.materials[0].itemId"
+                ).value("echo-thread"))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle.materials[0].itemName"
+                ).value("Эхо-нити из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle.materials[0].quantity"
+                ).value(2));
     }
 
     @Test
