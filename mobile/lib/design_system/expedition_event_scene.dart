@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 abstract final class ExpeditionEventArtwork {
   static String? assetPathFor(String eventId) {
@@ -17,24 +18,13 @@ abstract final class ExpeditionEventArtwork {
   }
 
   static String? semanticDescriptionFor({
+    required AppLocalizations l10n,
     required String eventId,
     required String eventTitle,
   }) {
-    return switch (eventId) {
-      'signal-source-v1' =>
-        'Сцена события «$eventTitle»: внешний маяк посылает '
-            'повторяющиеся импульсы сквозь туман.',
-      'echo-vault-v1' =>
-        'Сцена события «$eventTitle»: нестабильное ядро архива '
-            'расходится на контур стабилизации и живую нить эха.',
-      'mirror-delta-v1' =>
-        'Сцена события «$eventTitle»: два отражённых сигнала '
-            'расходятся над скрытым резонансным течением.',
-      'resonance-pocket-v1' =>
-        'Сцена события «$eventTitle»: забытые маршруты сходятся '
-            'в удерживаемом компасом пространстве.',
-      _ => null,
-    };
+    return assetPathFor(eventId) == null
+        ? null
+        : l10n.eventSceneDescription(eventId, eventTitle);
   }
 }
 
@@ -61,9 +51,13 @@ class ExpeditionEventScene extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final String? assetPath = ExpeditionEventArtwork.assetPathFor(eventId);
-    final String semanticLabel = assetPath == null
-        ? fallbackSemanticLabel
-        : context.l10n.eventSceneDescription(eventId, eventTitle);
+    final String semanticLabel =
+        ExpeditionEventArtwork.semanticDescriptionFor(
+          l10n: context.l10n,
+          eventId: eventId,
+          eventTitle: eventTitle,
+        ) ??
+        fallbackSemanticLabel;
     final Color accent = switch (eventId) {
       'signal-source-v1' => colors.primary,
       'echo-vault-v1' => palette.energy,

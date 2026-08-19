@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/config/app_environment.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/application/activity_sync_coordinator.dart';
@@ -58,7 +59,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
   MobileCommandRuntime? _commandRuntime;
   MobileCommandRuntime? _ownedCommandRuntime;
   MobileCommandRuntime? _scheduledRuntime;
-  String? _buttonLabel;
+  bool _demoActivitySync = false;
   int _homeGeneration = 0;
   int _platformGeneration = 0;
   bool _isSyncing = false;
@@ -178,17 +179,19 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
   }
 
   Widget? _buildActivitySyncAction() {
-    if (_synchronizer == null || _buttonLabel == null) {
+    if (_synchronizer == null) {
       return null;
     }
     final bool busy = _isSyncing || _isRecovering;
     return _ActivitySyncAction(
       busy: busy,
       label: _isRecovering
-          ? 'Восстановление команд...'
+          ? context.l10n.activityRecoveringCommands
           : _isSyncing
-          ? 'Синхронизация шагов...'
-          : _buttonLabel!,
+          ? context.l10n.activitySyncingSteps
+          : _demoActivitySync
+          ? context.l10n.activitySyncDemoSteps
+          : context.l10n.activitySyncSteps,
       onPressed: _sync,
     );
   }
@@ -201,14 +204,14 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       _closeOwnedCommandRuntime();
       _commandRuntime = null;
       _synchronizer = null;
-      _buttonLabel = null;
+      _demoActivitySync = false;
       return;
     }
     if (injected != null) {
       _closeOwnedCommandRuntime();
       _commandRuntime = widget.commandRuntime;
       _synchronizer = injected;
-      _buttonLabel = 'Синхронизировать шаги';
+      _demoActivitySync = false;
       _scheduleReplay();
       return;
     }
@@ -228,16 +231,14 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     if (coordinator == null) {
       _commandRuntime = runtime;
       _synchronizer = null;
-      _buttonLabel = null;
+      _demoActivitySync = false;
       _scheduleReplay();
       return;
     }
 
     _commandRuntime = runtime;
     _synchronizer = coordinator.synchronize;
-    _buttonLabel = AppEnvironment.enableDemoActivitySync
-        ? 'Синхронизировать тестовые шаги'
-        : 'Синхронизировать шаги';
+    _demoActivitySync = AppEnvironment.enableDemoActivitySync;
     _scheduleReplay();
   }
 
@@ -303,9 +304,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
           identical(_commandRuntime, runtime) &&
           runtime.claimStartupReplayOutcome()) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Не удалось прочитать сохранённые действия.'),
-          ),
+          SnackBar(content: Text(context.l10n.activityStoreReadFailed)),
         );
       }
     } finally {
@@ -320,15 +319,15 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
   String _replayMessage(MobileCommandReplayReport report) {
     final List<String> parts = <String>[];
     if (report.succeeded > 0) {
-      parts.add('восстановлено: ${report.succeeded}');
+      parts.add(context.l10n.activityReplaySucceeded(report.succeeded));
     }
     if (report.retryableFailures > 0) {
-      parts.add('ждут повторной отправки: ${report.pendingAfter}');
+      parts.add(context.l10n.activityReplayPending(report.pendingAfter));
     }
     if (report.failedAfter > 0) {
-      parts.add('требуют проверки: ${report.failedAfter}');
+      parts.add(context.l10n.activityReplayFailed(report.failedAfter));
     }
-    return 'Отложенные команды · ${parts.join(' · ')}';
+    return context.l10n.activityReplaySummary(parts.join(' · '));
   }
 
   void _handleDestinationChanged(int index) {
@@ -364,12 +363,15 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         return;
       }
       final String energyMessage = result.energyGranted > 0
-          ? '+${result.energyGranted} ENERGY'
-          : 'новой энергии нет';
+          ? context.l10n.activityEnergyGranted(result.energyGranted)
+          : context.l10n.activityNoNewEnergy;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Принято ${result.acceptedTotal} шагов · $energyMessage',
+            context.l10n.activitySyncAccepted(
+              result.acceptedTotal,
+              energyMessage,
+            ),
           ),
         ),
       );
@@ -377,10 +379,10 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         _homeGeneration += 1;
         _platformGeneration += 1;
       });
-    } catch (error) {
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Не удалось синхронизировать шаги: $error')),
+          SnackBar(content: Text(context.l10n.activitySyncFailed)),
         );
       }
     } finally {

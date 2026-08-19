@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_decision_dialog.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 class MobileCommandRecoveryScreen extends StatefulWidget {
   const MobileCommandRecoveryScreen({
@@ -58,10 +60,10 @@ class _MobileCommandRecoveryScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Сохранённые действия'),
+        title: Text(context.l10n.recoveryTitle),
         actions: <Widget>[
           IconButton(
-            tooltip: 'Обновить список',
+            tooltip: context.l10n.recoveryRefresh,
             onPressed: _retrying ? null : _reload,
             icon: const Icon(Icons.refresh),
           ),
@@ -145,12 +147,7 @@ class _MobileCommandRecoveryScreenState
     } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Не удалось повторить сохранённые действия. '
-              'Записи не удалены.',
-            ),
-          ),
+          SnackBar(content: Text(context.l10n.recoveryRetryFailed)),
         );
       }
     } finally {
@@ -173,14 +170,11 @@ class _MobileCommandRecoveryScreenState
           builder: (BuildContext context) {
             return ExpeditionDecisionDialog(
               key: const Key('command-recovery-dismiss-dialog'),
-              badgeLabel: 'Локальная диагностика',
-              title: 'Убрать отклонённую запись?',
-              message:
-                  'Команда уже не повторяется и не блокирует очередь. '
-                  'Удалится только локальная диагностическая запись; '
-                  'состояние на сервере не изменится.',
+              badgeLabel: context.l10n.recoveryDismissBadge,
+              title: context.l10n.recoveryDismissTitle,
+              message: context.l10n.recoveryDismissMessage,
               icon: Icons.delete_sweep_outlined,
-              confirmLabel: 'Убрать запись',
+              confirmLabel: context.l10n.recoveryDismissAction,
               confirmButtonKey: const Key('command-recovery-dismiss-confirm'),
               destructive: true,
               onCancel: () => Navigator.of(context).pop(false),
@@ -201,21 +195,13 @@ class _MobileCommandRecoveryScreenState
     } on MobileCommandDismissalException {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Действие снова ожидает отправки и не может быть удалено.',
-            ),
-          ),
+          SnackBar(content: Text(context.l10n.recoveryDismissPending)),
         );
       }
     } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Не удалось убрать запись. Локальные данные сохранены.',
-            ),
-          ),
+          SnackBar(content: Text(context.l10n.recoveryDismissFailed)),
         );
       }
     } finally {
@@ -233,18 +219,19 @@ class _MobileCommandRecoveryScreenState
         report.retryableFailures == 0 &&
         report.permanentFailures == 0) {
       if (report.pendingAfter > 0) {
-        return 'Критичные действия проверены. '
-            'Служебная отправка продолжается.';
+        return context.l10n.recoveryCriticalChecked;
       }
-      return 'Действий для повторной отправки нет.';
+      return context.l10n.recoveryNothingToRetry;
     }
     final List<String> parts = <String>[
-      if (report.succeeded > 0) 'отправлено: ${report.succeeded}',
-      if (report.pendingAfter > 0) 'ожидают сети: ${report.pendingAfter}',
+      if (report.succeeded > 0)
+        context.l10n.recoveryReplaySent(report.succeeded),
+      if (report.pendingAfter > 0)
+        context.l10n.recoveryReplayPending(report.pendingAfter),
       if (report.permanentFailures > 0)
-        'отклонено: ${report.permanentFailures}',
+        context.l10n.recoveryReplayRejected(report.permanentFailures),
     ];
-    return 'Проверка очереди · ${parts.join(' · ')}';
+    return context.l10n.recoveryReplaySummary(parts.join(' · '));
   }
 }
 
@@ -291,15 +278,15 @@ class _RecoveryBody extends StatelessWidget {
                         : const Icon(Icons.sync),
                     label: Text(
                       retrying
-                          ? 'Повторяем сохранённые действия...'
-                          : 'Повторить ожидающие действия',
+                          ? context.l10n.recoveryRetrying
+                          : context.l10n.recoveryRetryAction,
                     ),
                   ),
                 ],
                 const SizedBox(height: 22),
-                const ExpeditionSectionTitle(
-                  title: 'Журнал очереди',
-                  subtitle: 'Только локально сохранённые команды этого пилота',
+                ExpeditionSectionTitle(
+                  title: context.l10n.recoveryJournalTitle,
+                  subtitle: context.l10n.recoveryJournalSubtitle,
                   icon: Icons.receipt_long_outlined,
                 ),
                 const SizedBox(height: 12),
@@ -322,13 +309,7 @@ class _RecoveryBody extends StatelessWidget {
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Ожидающие действия нельзя удалить: ответ мог '
-                          'потеряться уже после выполнения на сервере. Повтор '
-                          'всегда использует исходную команду.',
-                        ),
-                      ),
+                      Expanded(child: Text(context.l10n.recoverySafetyNote)),
                     ],
                   ),
                 ),
@@ -357,16 +338,17 @@ class _RecoverySummary extends StatelessWidget {
       key: const Key('command-recovery-summary'),
       container: true,
       excludeSemantics: true,
-      label:
-          'Контур восстановления. Ожидают отправки: '
-          '${snapshot.pendingCount}. Отклонены: ${snapshot.failedCount}.',
+      label: context.l10n.recoverySummarySemantics(
+        snapshot.pendingCount,
+        snapshot.failedCount,
+      ),
       child: ExpeditionPanel(
         tone: tone,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'КОНТУР ВОССТАНОВЛЕНИЯ',
+              context.l10n.recoveryEyebrow,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: snapshot.pendingCount > 0
                     ? palette.energy
@@ -377,13 +359,12 @@ class _RecoverySummary extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Локальная очередь',
+              context.l10n.recoveryQueueTitle,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 6),
             Text(
-              'Команды сохраняются до отправки и остаются привязаны к '
-              'текущему владельцу сессии.',
+              context.l10n.recoveryQueueDescription,
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
@@ -395,7 +376,7 @@ class _RecoverySummary extends StatelessWidget {
               children: <Widget>[
                 _RecoveryCountBadge(
                   key: const Key('command-recovery-pending-count'),
-                  label: 'Ожидают отправки',
+                  label: context.l10n.recoveryPendingBadge,
                   count: snapshot.pendingCount,
                   icon: Icons.schedule_send_outlined,
                   accent: palette.energy,
@@ -403,7 +384,7 @@ class _RecoverySummary extends StatelessWidget {
                 ),
                 _RecoveryCountBadge(
                   key: const Key('command-recovery-failed-count'),
-                  label: 'Отклонены',
+                  label: context.l10n.recoveryFailedBadge,
                   count: snapshot.failedCount,
                   icon: Icons.error_outline,
                   accent: colors.error,
@@ -454,16 +435,16 @@ class _RecoveryCommandCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      _commandLabel(item),
+                      _commandLabel(context.l10n, item),
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       failed
-                          ? 'Отклонено и больше не отправляется'
+                          ? context.l10n.recoveryFailedStatus
                           : item.attemptCount == 0
-                          ? 'Сохранено перед первой отправкой'
-                          : _pendingStatus(item.failureCategory),
+                          ? context.l10n.recoveryStoredStatus
+                          : _pendingStatus(context.l10n, item.failureCategory),
                       style: failed
                           ? TextStyle(color: colors.error)
                           : TextStyle(color: colors.onSurfaceVariant),
@@ -477,8 +458,10 @@ class _RecoveryCommandCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Попыток: ${item.attemptCount} · '
-            'создано ${_formatTimestamp(item.createdAt)}',
+            context.l10n.recoveryCommandMetadata(
+              item.attemptCount,
+              _formatTimestamp(item.createdAt),
+            ),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           if (failed) ...<Widget>[
@@ -492,7 +475,7 @@ class _RecoveryCommandCard extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.delete_outline),
-              label: const Text('Убрать диагностическую запись'),
+              label: Text(context.l10n.recoveryDismissDiagnostic),
             ),
           ],
         ],
@@ -500,37 +483,43 @@ class _RecoveryCommandCard extends StatelessWidget {
     );
   }
 
-  static String _commandLabel(MobileCommandRecoveryItem item) {
+  static String _commandLabel(
+    AppLocalizations l10n,
+    MobileCommandRecoveryItem item,
+  ) {
     if (item.lane == MobileCommandLane.telemetry) {
-      return 'Служебная телеметрия';
+      return l10n.recoveryTelemetryCommand;
     }
     return switch (item.type) {
-      MobileCommandType.activitySync => 'Синхронизация шагов',
-      MobileCommandType.expeditionAdvance => 'Продвижение экспедиции',
-      MobileCommandType.expeditionJourneyStart => 'Новое путешествие',
-      MobileCommandType.eventResolution => 'Выбор в событии',
+      MobileCommandType.activitySync => l10n.recoveryActivitySyncCommand,
+      MobileCommandType.expeditionAdvance =>
+        l10n.recoveryExpeditionAdvanceCommand,
+      MobileCommandType.expeditionJourneyStart =>
+        l10n.recoveryJourneyStartCommand,
+      MobileCommandType.eventResolution => l10n.recoveryEventResolutionCommand,
       MobileCommandType.eventResultAcknowledgement =>
-        'Подтверждение результата события',
-      MobileCommandType.crafting => 'Создание предмета',
-      MobileCommandType.equipment => 'Изменение снаряжения',
-      MobileCommandType.itemUpgrade => 'Улучшение предмета',
-      MobileCommandType.platformCommand => 'Изменение путевого журнала',
+        l10n.recoveryEventAcknowledgementCommand,
+      MobileCommandType.crafting => l10n.recoveryCraftingCommand,
+      MobileCommandType.equipment => l10n.recoveryEquipmentCommand,
+      MobileCommandType.itemUpgrade => l10n.recoveryItemUpgradeCommand,
+      MobileCommandType.platformCommand => l10n.recoveryPlatformCommand,
     };
   }
 
-  static String _pendingStatus(MobileCommandFailureCategory? failureCategory) {
+  static String _pendingStatus(
+    AppLocalizations l10n,
+    MobileCommandFailureCategory? failureCategory,
+  ) {
     return switch (failureCategory) {
       MobileCommandFailureCategory.rateLimited =>
-        'Сервер попросил повторить позже',
+        l10n.recoveryStatusRateLimited,
       MobileCommandFailureCategory.serverUnavailable =>
-        'Сервер временно недоступен',
+        l10n.recoveryStatusServerUnavailable,
       MobileCommandFailureCategory.connectionOrResponse =>
-        'Ожидает восстановления соединения',
-      MobileCommandFailureCategory.rejected =>
-        'Ожидает безопасной повторной проверки',
-      MobileCommandFailureCategory.invalidCommand =>
-        'Требует проверки сохранённых данных',
-      null => 'Ожидает повторной отправки',
+        l10n.recoveryStatusConnection,
+      MobileCommandFailureCategory.rejected => l10n.recoveryStatusRejected,
+      MobileCommandFailureCategory.invalidCommand => l10n.recoveryStatusInvalid,
+      null => l10n.recoveryStatusPending,
     };
   }
 
@@ -550,9 +539,9 @@ class _LaneChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String label = switch (lane) {
-      MobileCommandLane.activity => 'Шаги',
-      MobileCommandLane.gameplay => 'Игра',
-      MobileCommandLane.telemetry => 'Сервис',
+      MobileCommandLane.activity => context.l10n.recoveryLaneActivity,
+      MobileCommandLane.gameplay => context.l10n.recoveryLaneGameplay,
+      MobileCommandLane.telemetry => context.l10n.recoveryLaneTelemetry,
     };
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
@@ -683,13 +672,15 @@ class _RecoveryLoading extends StatelessWidget {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
-        child: const ExpeditionPanel(
+        child: ExpeditionPanel(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              CircularProgressIndicator(key: Key('command-recovery-loading')),
-              SizedBox(width: 16),
-              Flexible(child: Text('Читаем локальную очередь...')),
+              const CircularProgressIndicator(
+                key: Key('command-recovery-loading'),
+              ),
+              const SizedBox(width: 16),
+              Flexible(child: Text(context.l10n.recoveryLoading)),
             ],
           ),
         ),
@@ -721,15 +712,14 @@ class _RecoveryEmpty extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    'Все действия отправлены',
+                    context.l10n.recoveryEmptyTitle,
                     key: const Key('command-recovery-empty'),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Локальная очередь пуста. Игровое состояние читается с '
-                    'сервера.',
+                  Text(
+                    context.l10n.recoveryEmptyMessage,
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -771,7 +761,7 @@ class _RecoveryStoreError extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Не удалось прочитать сохранённые действия',
+                    context.l10n.recoveryStoreErrorTitle,
                     key: const Key('command-recovery-store-error'),
                     textAlign: TextAlign.center,
                     style: Theme.of(
@@ -779,16 +769,15 @@ class _RecoveryStoreError extends StatelessWidget {
                     ).textTheme.titleLarge?.copyWith(color: colors.error),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Очередь не была очищена или перезаписана. Повтори чтение; '
-                    'если ошибка останется, передай её в поддержку.',
+                  Text(
+                    context.l10n.recoveryStoreErrorMessage,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: retrying ? null : onRetryRead,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Повторить чтение'),
+                    label: Text(context.l10n.recoveryStoreRetry),
                   ),
                 ],
               ),

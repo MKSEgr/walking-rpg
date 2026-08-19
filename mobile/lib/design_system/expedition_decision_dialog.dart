@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
@@ -121,7 +122,7 @@ class ExpeditionDecisionDialog extends StatelessWidget {
                   OutlinedButton(
                     key: const Key('expedition-decision-cancel'),
                     onPressed: onCancel,
-                    child: const Text('Отмена'),
+                    child: Text(context.l10n.commonCancel),
                   ),
                   const SizedBox(height: 8),
                   FilledButton(

@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/features/validation/application/validation_ev
 import 'package:walking_rpg_mobile/features/validation/application/validation_evidence_exporter.dart';
 import 'package:walking_rpg_mobile/features/validation/domain/device_validation_evidence.dart';
 import 'package:walking_rpg_mobile/features/validation/presentation/validation_center_screen.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 import 'support/first_journey_fixture.dart';
 import 'support/platform_fixture.dart';
@@ -153,9 +154,13 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final ValidationEvidenceController controller = _idleValidationController();
     addTearDown(controller.dispose);
+    final SemanticsHandle semantics = tester.ensureSemantics();
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: WalkingRpgTheme.dark(),
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
@@ -201,7 +206,16 @@ void main() {
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byKey(const Key('validation-safety-note')), findsOneWidget);
     expect(find.byKey(const Key('validation-export-button')), findsOneWidget);
-    expect(find.text('Журнал · 5/64'), findsOneWidget);
+    expect(find.text('Journal · 5/64'), findsOneWidget);
+    expect(find.text('Real-device validation'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Validation Center. Internal non-release boundary. '
+        'Journal entries: 5 of 64.',
+      ),
+      findsOneWidget,
+    );
+    semantics.dispose();
   });
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/illustrated_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -33,10 +34,15 @@ class PilotPortrait extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
-    final String cosmeticLabel = hasNavigatorScarf ? ', Шарф навигатора' : '';
+    final String semanticLabel = hasNavigatorScarf
+        ? context.l10n.pilotPortraitWithCosmeticSemantics(
+            name,
+            context.l10n.platformCosmeticPilotScarfName,
+          )
+        : context.l10n.pilotPortraitSemantics(name);
     return Semantics(
       image: true,
-      label: 'Пилот $name$cosmeticLabel',
+      label: semanticLabel,
       child: RepaintBoundary(
         child: ExpeditionIllustratedPortrait(
           assetPath: illustrationAsset,

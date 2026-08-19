@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_decision_dialog.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('critical decision remains complete in compact enlarged text', (
@@ -15,6 +16,9 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: WalkingRpgTheme.dark(),
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
@@ -86,6 +90,7 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('expedition-decision-cancel')), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('compact-decision-confirm')));
     await tester.pumpAndSettle();

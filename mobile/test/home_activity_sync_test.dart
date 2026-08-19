@@ -8,6 +8,7 @@ import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result
 import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 import 'support/platform_fixture.dart';
 
@@ -257,6 +258,9 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: WalkingRpgTheme.dark(),
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
@@ -283,6 +287,7 @@ void main() {
     final Finder syncButton = find.byKey(const Key('activity-sync-button'));
     expect(standalonePanel, findsOneWidget);
     expect(syncButton, findsOneWidget);
+    expect(find.text('Synchronize steps'), findsOneWidget);
     expect(find.byKey(const Key('home-sticky-action-panel')), findsNothing);
     expect(tester.getSize(standalonePanel).width, lessThanOrEqualTo(288));
     expect(tester.takeException(), isNull);
@@ -291,7 +296,7 @@ void main() {
     await tester.pump();
 
     final Text busyLabel = tester.widget<Text>(
-      find.text('Синхронизация шагов...'),
+      find.text('Synchronizing steps...'),
     );
     expect(busyLabel.maxLines, 2);
     expect(busyLabel.overflow, TextOverflow.visible);

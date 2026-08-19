@@ -1009,12 +1009,16 @@ gameplay identity, экономики, topology или external validation statu
 - current onboarding/skill/quest/achievement/cosmetic/season/experiment copy
   разрешается только по stable ID, известные command results — по command type,
   а unknown content и immutable journey history сохраняют literal fallback;
-- account, recovery, validation, activity и остальные boundary-экраны остаются
-  явно `CODE_PENDING` до своих вертикальных срезов.
+- account, locale-specific destructive confirmation, recovery, validation,
+  activity и остальные boundary-экраны используют generated RU/EN copy;
+- stable failure/status categories дают безопасный локализованный feedback,
+  raw exception/backend diagnostics не выводятся игроку, а literal receipts,
+  filenames, timestamps, wire values и server-owned IDs не переписываются.
 
 **Статус:** expedition shell, current identity catalog и current event
-narrative, а также полный Platform journal реализованы. Оставшиеся boundary-
-экраны продолжают Milestone 26.
+narrative, полный Platform journal и оставшиеся client-authored boundary-
+экраны реализованы. Milestone 26 `CODE_COMPLETE`; external validation gates и
+immutable `alpha-rc1` не изменены.
 
 ## P1 — расширение MVP
 

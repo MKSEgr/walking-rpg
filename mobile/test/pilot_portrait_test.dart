@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('renders the accessible Navigator production portrait', (
@@ -38,10 +39,13 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: WalkingRpgTheme.dark(),
         home: const Scaffold(
           body: PilotPortrait(
-            name: 'Навигатор',
+            name: 'Navigator',
             equippedCosmeticIds: <String>{CharacterCosmeticIds.pilotScarf},
           ),
         ),
@@ -59,7 +63,7 @@ void main() {
     expect(portrait.illustrationAsset, PilotPortrait.scarfAssetPath);
     expect((image.image as AssetImage).assetName, PilotPortrait.scarfAssetPath);
     expect(
-      find.bySemanticsLabel('Пилот Навигатор, Шарф навигатора'),
+      find.bySemanticsLabel('Pilot Navigator, Navigator Scarf'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 abstract final class CompanionGrowth {
   static const int illustratedStageCount = 3;
@@ -12,22 +13,11 @@ abstract final class CompanionGrowth {
     return normalizedStage(stage).clamp(0, illustratedStageCount - 1).toInt();
   }
 
-  static String stageName(int stage) {
-    return switch (normalizedStage(stage)) {
-      0 => 'Малыш',
-      1 => 'Юный',
-      2 => 'Взрослый',
-      final int value => 'Форма ${value + 1}',
-    };
-  }
+  static String stageName(AppLocalizations l10n, int stage) =>
+      l10n.companionStageName(stage);
 
-  static String formLabel(int stage) {
-    final int normalized = normalizedStage(stage);
-    final String name = stageName(normalized);
-    return normalized < illustratedStageCount
-        ? '$name · форма ${normalized + 1}'
-        : name;
-  }
+  static String formLabel(AppLocalizations l10n, int stage) =>
+      l10n.companionFormLabel(stage);
 }
 
 class CompanionGrowthTrack extends StatelessWidget {

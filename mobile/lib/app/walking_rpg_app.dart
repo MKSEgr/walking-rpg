@@ -33,7 +33,6 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
   AuthSessionController? _controller;
   ReadSnapshotCache? _cache;
   MobileCommandStore? _commandStore;
-  Object? _configurationError;
 
   @override
   void initState() {
@@ -63,8 +62,8 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
       _commandStore = commandStore;
       _controller = controller;
       unawaited(controller.initialize());
-    } on Object catch (error) {
-      _configurationError = error;
+    } on Object {
+      // Null runtime dependencies select the localized fail-closed screen.
     }
   }
 
@@ -91,7 +90,7 @@ class _WalkingRpgAppState extends State<WalkingRpgApp> {
         } else if (controller == null ||
             cache == null ||
             commandStore == null) {
-          destination = _ConfigurationErrorScreen(error: _configurationError);
+          destination = const _ConfigurationErrorScreen();
         } else {
           destination = AuthGate(
             controller: controller,
@@ -134,9 +133,7 @@ class _LocalePreferenceLoadingScreen extends StatelessWidget {
 }
 
 class _ConfigurationErrorScreen extends StatelessWidget {
-  const _ConfigurationErrorScreen({required this.error});
-
-  final Object? error;
+  const _ConfigurationErrorScreen();
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +144,6 @@ class _ConfigurationErrorScreen extends StatelessWidget {
       message: kReleaseMode
           ? context.l10n.configurationBlockedReleaseMessage
           : context.l10n.configurationBlockedDebugMessage,
-      details: kReleaseMode ? null : error?.toString(),
       icon: Icons.security_outlined,
     );
   }

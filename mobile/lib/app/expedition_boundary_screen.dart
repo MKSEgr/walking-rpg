@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
@@ -163,8 +164,8 @@ class _BoundarySignal extends StatelessWidget {
         : colors.error;
     return Semantics(
       label: loading
-          ? 'Операция запуска выполняется'
-          : 'Запуск безопасно заблокирован',
+          ? context.l10n.boundaryLoadingSemantics
+          : context.l10n.boundaryBlockedSemantics,
       child: SizedBox.square(
         dimension: 76,
         child: Stack(
