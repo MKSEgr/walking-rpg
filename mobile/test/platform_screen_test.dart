@@ -303,6 +303,24 @@ void main() {
             quantity: 12,
           ),
         ],
+        finaleOutcomes: <HomeJourneyFinaleOutcome>[
+          HomeJourneyFinaleOutcome(
+            eventId: 'echo-vault-v1',
+            eventTitle: 'Сердце маяка из летописи',
+            choiceId: 'stabilize-core',
+            choiceTitle: 'Стабилизировать ядро',
+            outcomeTitle: 'Ровный импульс',
+            journeyCount: 4,
+          ),
+          HomeJourneyFinaleOutcome(
+            eventId: 'mirror-delta-v1',
+            eventTitle: 'Зеркальная дельта из летописи',
+            choiceId: 'follow-reflection',
+            choiceTitle: 'Следовать за отражением',
+            outcomeTitle: 'Отражение принято',
+            journeyCount: 3,
+          ),
+        ],
       ),
       recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
         HomeExpeditionCompletionRecap(
@@ -426,12 +444,25 @@ void main() {
     expect(find.text('+140 связи спутников'), findsNothing);
     expect(find.text('+35 Эхо-нити'), findsOneWidget);
     expect(find.text('+12 Пепельное семя'), findsOneWidget);
+    expect(find.text('Финалы маршрутов'), findsOneWidget);
+    expect(
+      find.text('Стабилизировать ядро → Ровный импульс · ×4'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Следовать за отражением → Отражение принято · ×3'),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Летопись походов. Завершено походов: 7. '
         'Принято решений: 28. '
         'Всего наград: +420 XP пилота; Искра: +80 связи; Мох: +60 связи; '
-        '+35 Эхо-нити; +12 Пепельное семя.',
+        '+35 Эхо-нити; +12 Пепельное семя. Финалы маршрутов: '
+        'Сердце маяка из летописи. Решение: Стабилизировать ядро. '
+        'Исход: Ровный импульс. Походов: 4; '
+        'Зеркальная дельта из летописи. Решение: Следовать за отражением. '
+        'Исход: Отражение принято. Походов: 3.',
       ),
       findsOneWidget,
     );
@@ -555,6 +586,16 @@ void main() {
         decisionCount: 987654,
         pilotExperienceGained: 123456789,
         petBondGained: 987654321,
+        finaleOutcomes: <HomeJourneyFinaleOutcome>[
+          HomeJourneyFinaleOutcome(
+            eventId: 'long-archive-event-v1',
+            eventTitle: 'Сохранённое событие с очень длинным названием',
+            choiceId: 'follow-saved-starlight',
+            choiceTitle: 'Следовать по сохранённому звёздному коридору',
+            outcomeTitle: 'Маршрут удержан вопреки нестабильному сигналу',
+            journeyCount: 123456,
+          ),
+        ],
       ),
       recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
         HomeExpeditionCompletionRecap(
@@ -604,6 +645,14 @@ void main() {
     await _bringIntoView(tester, chronicle);
     expect(chronicle, findsOneWidget);
     expect(find.text('+123456789 XP пилота'), findsOneWidget);
+    expect(find.text('Финалы маршрутов'), findsOneWidget);
+    expect(
+      find.text(
+        'Следовать по сохранённому звёздному коридору → '
+        'Маршрут удержан вопреки нестабильному сигналу · ×123456',
+      ),
+      findsOneWidget,
+    );
     _expectNoLayoutException(tester);
 
     final Finder toggle = find.byKey(

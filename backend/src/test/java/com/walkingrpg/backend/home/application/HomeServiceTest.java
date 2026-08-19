@@ -16,6 +16,7 @@ import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyFinaleOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
@@ -256,6 +257,25 @@ class HomeServiceTest {
                                         "Эхо-нити из записи",
                                         7
                                 )
+                        ),
+                        List.of(
+                                new ExpeditionJourneyFinaleOutcomeSnapshot(
+                                        StarterExpeditionContent.SECOND_EVENT_ID,
+                                        "Сердце маяка из записи",
+                                        "stabilize-core",
+                                        "Стабилизировать ядро",
+                                        "Ровный импульс",
+                                        4
+                                ),
+                                new ExpeditionJourneyFinaleOutcomeSnapshot(
+                                        StarterExpeditionContent
+                                                .MIRROR_DELTA_EVENT_ID,
+                                        "Зеркальная дельта из записи",
+                                        "follow-reflection",
+                                        "Следовать за отражением",
+                                        "Отражение принято",
+                                        3
+                                )
                         )
                 )
         );
@@ -357,6 +377,29 @@ class HomeServiceTest {
         assertEquals(13,
                 expedition.journeyChronicle().materials()
                         .getLast().quantity());
+        assertEquals(2,
+                expedition.journeyChronicle().finaleOutcomes().size());
+        assertEquals(StarterExpeditionContent.SECOND_EVENT_ID,
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getFirst().eventId());
+        assertEquals("Стабилизировать ядро",
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getFirst().choiceTitle());
+        assertEquals(4,
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getFirst().journeyCount());
+        assertEquals(StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getLast().eventId());
+        assertEquals("Зеркальная дельта из записи",
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getLast().eventTitle());
+        assertEquals("Отражение принято",
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getLast().outcomeTitle());
+        assertEquals(4,
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getLast().journeyCount());
         assertEquals("COMPLETED", expedition.routeTrail().getLast().state());
         assertNotNull(expedition.routeTrail().getLast().decision());
         assertEquals("Следовать за отражением",

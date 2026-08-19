@@ -13,6 +13,7 @@ import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyFinaleOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
@@ -194,6 +195,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 ),
                                 resultSet.getLong("pet_bond_gained"),
                                 List.of(),
+                                List.of(),
                                 List.of()
                         ),
                 userId,
@@ -313,6 +315,98 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 resultSet.getString("material_item_id"),
                                 resultSet.getString("material_item_name"),
                                 resultSet.getLong("quantity")
+                ), userId, expeditionId, currentJourneyNumber,
+                userId, expeditionId);
+        List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomes =
+                jdbcTemplate.query("""
+                WITH completed_journey AS (
+                    SELECT DISTINCT
+                           journey_number - 1 AS completed_journey_number
+                    FROM processed_expedition_journey_start
+                    WHERE user_id = ?
+                      AND expedition_id = ?
+                      AND journey_number <= ?
+                ),
+                ranked_resolution AS (
+                    SELECT resolution.journey_number,
+                           resolution.expedition_version,
+                           resolution.receipt_id,
+                           resolution.event_id,
+                           resolution.event_title,
+                           resolution.choice_id,
+                           resolution.choice_title,
+                           resolution.outcome_title,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY resolution.journey_number
+                               ORDER BY resolution.expedition_version DESC,
+                                        resolution.receipt_id DESC
+                           ) AS journey_row
+                    FROM completed_journey completed
+                    JOIN processed_event_resolution resolution
+                      ON resolution.user_id = ?
+                     AND resolution.expedition_id = ?
+                     AND resolution.journey_number =
+                             completed.completed_journey_number
+                ),
+                final_resolution AS (
+                    SELECT journey_number,
+                           expedition_version,
+                           receipt_id,
+                           event_id,
+                           event_title,
+                           choice_id,
+                           choice_title,
+                           outcome_title
+                    FROM ranked_resolution
+                    WHERE journey_row = 1
+                ),
+                ordered_finale AS (
+                    SELECT event_id,
+                           event_title,
+                           choice_id,
+                           choice_title,
+                           outcome_title,
+                           COUNT(*) OVER (
+                               PARTITION BY event_id,
+                                            event_title,
+                                            choice_id,
+                                            choice_title,
+                                            outcome_title
+                           ) AS journey_count,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY event_id,
+                                            event_title,
+                                            choice_id,
+                                            choice_title,
+                                            outcome_title
+                               ORDER BY journey_number,
+                                        expedition_version,
+                                        receipt_id
+                           ) AS identity_row,
+                           journey_number,
+                           expedition_version,
+                           receipt_id
+                    FROM final_resolution
+                )
+                SELECT event_id,
+                       event_title,
+                       choice_id,
+                       choice_title,
+                       outcome_title,
+                       journey_count
+                FROM ordered_finale
+                WHERE identity_row = 1
+                ORDER BY journey_number,
+                         expedition_version,
+                         receipt_id
+                """, (resultSet, rowNumber) ->
+                        new ExpeditionJourneyFinaleOutcomeSnapshot(
+                                resultSet.getString("event_id"),
+                                resultSet.getString("event_title"),
+                                resultSet.getString("choice_id"),
+                                resultSet.getString("choice_title"),
+                                resultSet.getString("outcome_title"),
+                                resultSet.getLong("journey_count")
                         ), userId, expeditionId, currentJourneyNumber,
                 userId, expeditionId);
         return new ExpeditionJourneyChronicleTotals(
@@ -321,7 +415,8 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 totals.pilotExperienceGained(),
                 totals.petBondGained(),
                 petBondRewards,
-                materials
+                materials,
+                finaleOutcomes
         );
     }
 

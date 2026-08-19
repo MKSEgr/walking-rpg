@@ -478,14 +478,19 @@ Authorization: Bearer <access-token>
   immutable появления; сумма `bondGained` точно равна совместимому общему
   `petBondGained`. Additive ordered `materials[]` группирует положительные
   reward facts по persisted `itemId + itemName` в порядке первого immutable
-  появления. Для прошлых походов completion proof — immutable receipt старта
-  следующего `journeyNumber`; текущий поход входит в итог только при
+  появления. Additive ordered `finaleOutcomes[]` выбирает последнюю immutable
+  resolution каждого завершённого похода, группирует persisted
+  `eventId + eventTitle + choiceId + choiceTitle + outcomeTitle` и хранит
+  положительный `journeyCount` в порядке первого появления финала. Для прошлых
+  походов completion proof — immutable receipt старта следующего
+  `journeyNumber`; текущий поход входит в итог только при
   authoritative `COMPLETED` и объединяется с историческими breakdown ровно
   один раз. Агрегат не ограничен пятью строками архива и суммирует rewards
   только из persisted event resolutions, не перечитывая current content,
   inventory или текущие progression totals. До первого подтверждённого
-  финиша значение равно `null`; legacy response без поля, `petBondRewards`
-  или `materials` остаётся валидным. Пример:
+  финиша значение равно `null`; legacy response без поля, `petBondRewards`,
+  `materials` или `finaleOutcomes` остаётся валидным. При наличии finale-массива
+  его `journeyCount` в сумме точно равен `completedJourneyCount`. Пример:
 
   ```json
   {
@@ -515,6 +520,24 @@ Authorization: Bearer <access-token>
         "itemId": "ash-seed",
         "itemName": "Пепельное семя",
         "quantity": 12
+      }
+    ],
+    "finaleOutcomes": [
+      {
+        "eventId": "echo-vault-v1",
+        "eventTitle": "Сердце маяка",
+        "choiceId": "stabilize-core",
+        "choiceTitle": "Стабилизировать ядро",
+        "outcomeTitle": "Ровный импульс",
+        "journeyCount": 5
+      },
+      {
+        "eventId": "mirror-delta-v1",
+        "eventTitle": "Зеркальная дельта",
+        "choiceId": "follow-reflection",
+        "choiceTitle": "Следовать за отражением",
+        "outcomeTitle": "Отражение принято",
+        "journeyCount": 3
       }
     ]
   }

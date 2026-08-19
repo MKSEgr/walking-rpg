@@ -204,6 +204,24 @@ void main() {
             'quantity': 12,
           },
         ],
+        'finaleOutcomes': <Map<String, dynamic>>[
+          _journeyFinaleJson(
+            eventId: 'signal-source-v1',
+            eventTitle: 'Первый сигнал из летописи',
+            choiceId: 'analyze-signal',
+            choiceTitle: 'Разобрать сигнал',
+            outcomeTitle: 'Карта отклика',
+            journeyCount: 5,
+          ),
+          _journeyFinaleJson(
+            eventId: 'mirror-delta-v1',
+            eventTitle: 'Зеркальная дельта из летописи',
+            choiceId: 'follow-reflection',
+            choiceTitle: 'Следовать за отражением',
+            outcomeTitle: 'Отражение принято',
+            journeyCount: 3,
+          ),
+        ],
       }
       ..['completionRecap'] = <String, dynamic>{
         'journeyNumber': 2,
@@ -347,6 +365,20 @@ void main() {
     expect(snapshot.journeyChronicle?.materials.first.quantity, 41);
     expect(snapshot.journeyChronicle?.materials.last.itemId, 'ash-seed');
     expect(snapshot.journeyChronicle?.materials.last.quantity, 12);
+    expect(snapshot.journeyChronicle?.finaleOutcomes, hasLength(2));
+    expect(
+      snapshot.journeyChronicle?.finaleOutcomes.first.eventTitle,
+      'Первый сигнал из летописи',
+    );
+    expect(
+      snapshot.journeyChronicle?.finaleOutcomes.first.journeyCount,
+      5,
+    );
+    expect(
+      snapshot.journeyChronicle?.finaleOutcomes.last.choiceTitle,
+      'Следовать за отражением',
+    );
+    expect(snapshot.journeyChronicle?.finaleOutcomes.last.journeyCount, 3);
   });
 
   test('legacy completed response without recap remains readable', () {
@@ -402,6 +434,7 @@ void main() {
     expect(snapshot.journeyChronicle?.petBondGained, 72);
     expect(snapshot.journeyChronicle?.petBondRewards, isEmpty);
     expect(snapshot.journeyChronicle?.materials, isEmpty);
+    expect(snapshot.journeyChronicle?.finaleOutcomes, isEmpty);
   });
 
   test('journey chronicle rejects a mismatched pet bond breakdown', () {
@@ -528,6 +561,73 @@ void main() {
           'itemName': 'Эхо-нити',
           'quantity': 0,
         },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects a non-list finale breakdown', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'finaleOutcomes': <String, dynamic>{},
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects duplicate persisted finale identities', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 4,
+      'decisionCount': 8,
+      'pilotExperienceGained': 160,
+      'petBondGained': 0,
+      'finaleOutcomes': <Map<String, dynamic>>[
+        _journeyFinaleJson(journeyCount: 2),
+        _journeyFinaleJson(journeyCount: 2),
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects non-positive finale counts', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'finaleOutcomes': <Map<String, dynamic>>[
+        _journeyFinaleJson(journeyCount: 0),
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects a mismatched finale count', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 4,
+      'decisionCount': 8,
+      'pilotExperienceGained': 160,
+      'petBondGained': 0,
+      'finaleOutcomes': <Map<String, dynamic>>[
+        _journeyFinaleJson(journeyCount: 3),
       ],
     };
 
@@ -1720,6 +1820,24 @@ Map<String, dynamic> _journeyDecisionJson({
     'petName': petName,
     'petBondGained': petBondGained,
     'materialReward': materialReward,
+  };
+}
+
+Map<String, dynamic> _journeyFinaleJson({
+  String eventId = 'signal-source-v1',
+  String eventTitle = 'Первый сигнал из записи',
+  String choiceId = 'analyze-signal',
+  String choiceTitle = 'Разобрать сигнал',
+  String outcomeTitle = 'Карта отклика',
+  required int journeyCount,
+}) {
+  return <String, dynamic>{
+    'eventId': eventId,
+    'eventTitle': eventTitle,
+    'choiceId': choiceId,
+    'choiceTitle': choiceTitle,
+    'outcomeTitle': outcomeTitle,
+    'journeyCount': journeyCount,
   };
 }
 

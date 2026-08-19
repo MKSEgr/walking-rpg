@@ -433,6 +433,17 @@ persisted `material_item_id + material_item_name`: SQL сохраняет пор
 recent archive не участвуют, поэтому republish или расход предметов не
 переписывает сохранённые decision и reward totals.
 
+На той же receipt-proven границе repository выбирает последнюю immutable
+resolution каждого завершённого journey по descending
+`expedition_version, receipt_id` и строит ordered lifetime
+`finaleOutcomes[]`. Группы используют полный persisted event/choice/outcome
+copy и порядок первого появления, поэтому переименование current content и
+лимит recent archive не переписывают финалы. Service добавляет final decision
+authoritative current `COMPLETED` ровно один раз; после следующего journey-start
+тот же финал уже приходит из historical SQL. Полный breakdown отдаётся только
+когда сумма `journeyCount` совпадает с `completedJourneyCount`; иначе additive
+поле опускается как legacy-compatible защита неполной старой history.
+
 Equipment content `equipment-v2`: slot `NAVIGATION` принимает unique
 `resonance-compass` или `prism-sextant`, но одновременно удерживает только
 один прибор. Home availability является

@@ -183,6 +183,24 @@ void main() {
                   quantity: 19,
                 ),
               ],
+              finaleOutcomes: <HomeJourneyFinaleOutcome>[
+                HomeJourneyFinaleOutcome(
+                  eventId: 'echo-vault-v1',
+                  eventTitle: 'Beacon Heart',
+                  choiceId: 'stabilize-core',
+                  choiceTitle: 'Stabilize the core',
+                  outcomeTitle: 'Steady pulse',
+                  journeyCount: 5,
+                ),
+                HomeJourneyFinaleOutcome(
+                  eventId: 'mirror-delta-v1',
+                  eventTitle: 'Mirror Delta',
+                  choiceId: 'follow-reflection',
+                  choiceTitle: 'Follow the reflection',
+                  outcomeTitle: 'Reflection accepted',
+                  journeyCount: 4,
+                ),
+              ],
             ),
           ),
           recordExperimentExposures: false,
@@ -206,11 +224,23 @@ void main() {
     expect(find.text('+205 companion bond'), findsNothing);
     expect(find.text('+44 Lumen Shard'), findsOneWidget);
     expect(find.text('+19 Ash Seed'), findsOneWidget);
+    expect(find.text('Route finales'), findsOneWidget);
+    expect(
+      find.text('Stabilize the core → Steady pulse · ×5'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Follow the reflection → Reflection accepted · ×4'),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
         'Total rewards: +620 pilot XP; Spark: +120 bond; Moss: +85 bond; '
-        '+44 Lumen Shard; +19 Ash Seed.',
+        '+44 Lumen Shard; +19 Ash Seed. Route finales: Beacon Heart. '
+        'Decision: Stabilize the core. Outcome: Steady pulse. Journeys: 5; '
+        'Mirror Delta. Decision: Follow the reflection. '
+        'Outcome: Reflection accepted. Journeys: 4.',
       ),
       findsOneWidget,
     );

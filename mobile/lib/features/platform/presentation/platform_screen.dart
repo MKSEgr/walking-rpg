@@ -958,6 +958,22 @@ class _JourneyChronicleCard extends StatelessWidget {
     final String materialSummary = materialRewards.isEmpty
         ? ''
         : '; ${materialRewards.join('; ')}';
+    final List<String> finaleLabels = chronicle.finaleOutcomes
+        .map(
+          (HomeJourneyFinaleOutcome outcome) => context.l10n
+              .platformJourneyChronicleFinaleSemantic(
+                outcome.eventTitle,
+                outcome.choiceTitle,
+                outcome.outcomeTitle,
+                outcome.journeyCount,
+              ),
+        )
+        .toList(growable: false);
+    final String finaleSummary = finaleLabels.isEmpty
+        ? ''
+        : context.l10n.platformJourneyChronicleFinalesSemantics(
+            finaleLabels.join('; '),
+          );
     return Semantics(
       key: const Key('platform-journey-chronicle'),
       container: true,
@@ -967,6 +983,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.pilotExperienceGained,
         bondSummary,
         materialSummary,
+        finaleSummary,
       ),
       child: ExcludeSemantics(
         child: ExpeditionPanel(
@@ -1041,6 +1058,31 @@ class _JourneyChronicleCard extends StatelessWidget {
                     ),
                 ],
               ),
+              if (chronicle.finaleOutcomes.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 14),
+                Text(
+                  context.l10n.platformJourneyChronicleFinalesTitle,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: <Widget>[
+                    for (final HomeJourneyFinaleOutcome outcome
+                        in chronicle.finaleOutcomes)
+                      _JourneyRewardChip(
+                        icon: Icons.flag_outlined,
+                        label: context.l10n
+                            .platformJourneyChronicleFinaleChip(
+                              outcome.choiceTitle,
+                              outcome.outcomeTitle,
+                              outcome.journeyCount,
+                            ),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
