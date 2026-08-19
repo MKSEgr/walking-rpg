@@ -197,15 +197,17 @@ void main() {
       ),
       findsOneWidget,
     );
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('account-delete-button')),
-      220,
-      scrollable: find.byType(Scrollable),
-    );
+    final Finder deleteButton = find.byKey(const Key('account-delete-button'));
+    await _bringAccountIntoView(tester, deleteButton);
     expect(find.text('Delete account'), findsWidgets);
-    await tester.tap(find.byKey(const Key('account-delete-button')));
+    expect(deleteButton.hitTestable(), findsOneWidget);
+    await tester.tap(deleteButton);
     await tester.pumpAndSettle();
     expect(find.text('Delete account?'), findsOneWidget);
+    await _bringDecisionActionIntoView(
+      tester,
+      find.byKey(const Key('account-delete-continue')),
+    );
     await tester.tap(find.byKey(const Key('account-delete-continue')));
     await tester.pumpAndSettle();
     expect(find.text('Enter DELETE in uppercase:'), findsOneWidget);

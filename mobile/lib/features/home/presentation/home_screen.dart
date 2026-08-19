@@ -573,10 +573,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
       });
-    } catch (error) {
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.homeAdvanceFailed('$error'))),
+          SnackBar(content: Text(context.l10n.homeAdvanceFailed)),
         );
       }
     } finally {
@@ -619,12 +619,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
       });
-    } catch (error) {
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.homeJourneyStartFailed('$error')),
-          ),
+          SnackBar(content: Text(context.l10n.homeJourneyStartFailed)),
         );
       }
     } finally {
@@ -686,12 +684,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
       });
-    } catch (error) {
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.homeEventResolveFailed('$error')),
-          ),
+          SnackBar(content: Text(context.l10n.homeEventResolveFailed)),
         );
       }
     } finally {
@@ -729,12 +725,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
       });
-    } catch (error) {
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.homeEventAcknowledgeFailed('$error')),
-          ),
+          SnackBar(content: Text(context.l10n.homeEventAcknowledgeFailed)),
         );
       }
     } finally {
@@ -782,10 +776,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
       });
-    } catch (error) {
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.homeCraftFailed('$error'))),
+          SnackBar(content: Text(context.l10n.homeCraftFailed)),
         );
       }
     } finally {
@@ -836,10 +830,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
       });
-    } catch (error) {
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.homeUpgradeFailed('$error'))),
+          SnackBar(content: Text(context.l10n.homeUpgradeFailed)),
         );
       }
     } finally {
@@ -913,12 +907,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _snapshotFuture = _startSnapshotLoad();
       });
-    } catch (error) {
+    } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.homeEquipmentChangeFailed('$error')),
-          ),
+          SnackBar(content: Text(context.l10n.homeEquipmentChangeFailed)),
         );
       }
     } finally {

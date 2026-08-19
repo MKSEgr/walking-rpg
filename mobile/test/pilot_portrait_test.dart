@@ -63,7 +63,7 @@ void main() {
     expect(portrait.illustrationAsset, PilotPortrait.scarfAssetPath);
     expect((image.image as AssetImage).assetName, PilotPortrait.scarfAssetPath);
     expect(
-      find.bySemanticsLabel('Pilot Navigator, Navigator scarf'),
+      find.bySemanticsLabel('Pilot Navigator, Navigator Scarf'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

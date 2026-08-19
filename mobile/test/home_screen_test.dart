@@ -2252,7 +2252,14 @@ void main() {
     expect(find.text('Не удалось загрузить состояние'), findsOneWidget);
     expect(find.byKey(const Key('home-error-state')), findsOneWidget);
     expect(find.byType(ExpeditionReadState), findsOneWidget);
-    expect(find.textContaining('Backend недоступен'), findsOneWidget);
+    expect(
+      find.text(
+        'Актуальный маршрут не принят. Повтори запрос или открой локальное '
+        'демонстрационное состояние — оно не меняет серверные данные.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Backend недоступен'), findsNothing);
     await tester.tap(find.byKey(const Key('home-error-retry')));
     await tester.pumpAndSettle();
 

@@ -587,24 +587,14 @@
       "title": {"type": "String"}
     }
   },
-  "homeAdvanceFailed": "The expedition could not advance: {error}",
-  "@homeAdvanceFailed": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "homeAdvanceFailed": "The expedition could not advance. Refresh the current state and try again.",
   "homeJourneyStarted": "Journey {number} started",
   "@homeJourneyStarted": {
     "placeholders": {
       "number": {"type": "int"}
     }
   },
-  "homeJourneyStartFailed": "A new journey could not start: {error}",
-  "@homeJourneyStartFailed": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "homeJourneyStartFailed": "A new journey could not start. Refresh the current state and try again.",
   "homeMaterialRewardSuffix": ", +{quantity} {name}",
   "@homeMaterialRewardSuffix": {
     "placeholders": {
@@ -621,30 +611,15 @@
       "material": {"type": "String"}
     }
   },
-  "homeEventResolveFailed": "The event could not be resolved: {error}",
-  "@homeEventResolveFailed": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "homeEventAcknowledgeFailed": "The event result could not be confirmed: {error}",
-  "@homeEventAcknowledgeFailed": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "homeEventResolveFailed": "The event could not be resolved. Refresh the current state and try again.",
+  "homeEventAcknowledgeFailed": "The event result could not be confirmed. Refresh the current state and try again.",
   "homeCraftedItem": "Created: {name}",
   "@homeCraftedItem": {
     "placeholders": {
       "name": {"type": "String"}
     }
   },
-  "homeCraftFailed": "The item could not be created: {error}",
-  "@homeCraftFailed": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "homeCraftFailed": "The item could not be created. Refresh the current state and try again.",
   "homeItemUpgraded": "{name}: level {level}, {rarity}",
   "@homeItemUpgraded": {
     "placeholders": {
@@ -653,12 +628,7 @@
       "rarity": {"type": "String"}
     }
   },
-  "homeUpgradeFailed": "The item could not be upgraded: {error}",
-  "@homeUpgradeFailed": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "homeUpgradeFailed": "The item could not be upgraded. Refresh the current state and try again.",
   "homeEquippedItem": "Equipped: {name}",
   "@homeEquippedItem": {
     "placeholders": {
@@ -666,12 +636,7 @@
     }
   },
   "homeNavigationItemRemoved": "Navigation instrument removed",
-  "homeEquipmentChangeFailed": "Equipment could not be changed: {error}",
-  "@homeEquipmentChangeFailed": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "homeEquipmentChangeFailed": "Equipment could not be changed. Refresh the current state and try again.",
 
   "homeNeverSynced": "Steps have not been synchronized yet",
   "homeLastSync": "Last synchronization: {instant}",

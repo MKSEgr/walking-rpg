@@ -119,7 +119,8 @@ void main() {
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byType(ExpeditionReadState), findsOneWidget);
     expect(find.text('СИГНАЛ НЕДОСТУПЕН'), findsOneWidget);
-    expect(find.textContaining('route offline'), findsOneWidget);
+    expect(find.text('Состояние недоступно.'), findsOneWidget);
+    expect(find.textContaining('route offline'), findsNothing);
     expect(find.byKey(const Key('first-journey-retry')), findsOneWidget);
     expect(
       find.byKey(const Key('first-journey-load-recovery')),
@@ -1106,7 +1107,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Локальная очередь сохранённых действий недоступна'),
+      find.byTooltip('Сохранённые действия требуют внимания'),
       findsOneWidget,
     );
     expect(find.textContaining('/private/outbox.json'), findsNothing);
