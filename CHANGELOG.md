@@ -69,6 +69,9 @@
 
 ### Added
 
+- persisted companion bond breakdown in the lifetime journey chronicle, with
+  receipt-proven aggregation, exact legacy-total consistency and named RU/EN
+  accessibility;
 - lifetime journey chronicle in Home and the Flutter journal, aggregating all
   receipt-proven completed routes, decisions, pilot XP and companion bond;
 - expandable full persisted decision histories for recent completed journeys,

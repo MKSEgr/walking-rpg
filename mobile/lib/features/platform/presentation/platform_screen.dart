@@ -938,6 +938,18 @@ class _JourneyChronicleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final String bondSummary = chronicle.petBondRewards.isEmpty
+        ? context.l10n.platformCompanionBondReward(chronicle.petBondGained)
+        : chronicle.petBondRewards
+              .map(
+                (HomeJourneyPetBondReward reward) => context
+                    .l10n
+                    .platformNamedCompanionBondSemantic(
+                      reward.petName,
+                      reward.bondGained,
+                    ),
+              )
+              .join('; ');
     return Semantics(
       key: const Key('platform-journey-chronicle'),
       container: true,
@@ -945,7 +957,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.completedJourneyCount,
         chronicle.decisionCount,
         chronicle.pilotExperienceGained,
-        chronicle.petBondGained,
+        bondSummary,
       ),
       child: ExcludeSemantics(
         child: ExpeditionPanel(
@@ -993,12 +1005,22 @@ class _JourneyChronicleCard extends StatelessWidget {
                       chronicle.pilotExperienceGained,
                     ),
                   ),
-                  _JourneyRewardChip(
-                    icon: Icons.favorite_border,
-                    label: context.l10n.platformCompanionBondReward(
-                      chronicle.petBondGained,
+                  if (chronicle.petBondRewards.isEmpty)
+                    _JourneyRewardChip(
+                      icon: Icons.favorite_border,
+                      label: context.l10n.platformCompanionBondReward(
+                        chronicle.petBondGained,
+                      ),
                     ),
-                  ),
+                  for (final HomeJourneyPetBondReward reward
+                      in chronicle.petBondRewards)
+                    _JourneyRewardChip(
+                      icon: Icons.favorite_border,
+                      label: context.l10n.platformNamedCompanionBondReward(
+                        reward.petName,
+                        reward.bondGained,
+                      ),
+                    ),
                 ],
               ),
             ],

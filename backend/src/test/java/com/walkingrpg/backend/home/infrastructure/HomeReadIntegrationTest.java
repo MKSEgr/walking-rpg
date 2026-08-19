@@ -391,8 +391,14 @@ class HomeReadIntegrationTest {
                        journey_number,
                        100,
                        journey_number,
-                       'spark-v1',
-                       'Искра',
+                       CASE WHEN journey_number = 2
+                            THEN 'moss-v1'
+                            ELSE 'spark-v1'
+                       END,
+                       CASE WHEN journey_number = 2
+                            THEN 'Мох из старого похода'
+                            ELSE 'Искра'
+                       END,
                        1,
                        journey_number,
                        journey_number,
@@ -420,6 +426,26 @@ class HomeReadIntegrationTest {
                 expedition.journeyChronicle().pilotExperienceGained());
         assertEquals(28,
                 expedition.journeyChronicle().petBondGained());
+        assertEquals(2,
+                expedition.journeyChronicle().petBondRewards().size());
+        assertEquals("spark-v1",
+                expedition.journeyChronicle().petBondRewards()
+                        .getFirst().petId());
+        assertEquals("Искра",
+                expedition.journeyChronicle().petBondRewards()
+                        .getFirst().petName());
+        assertEquals(26,
+                expedition.journeyChronicle().petBondRewards()
+                        .getFirst().bondGained());
+        assertEquals("moss-v1",
+                expedition.journeyChronicle().petBondRewards()
+                        .getLast().petId());
+        assertEquals("Мох из старого похода",
+                expedition.journeyChronicle().petBondRewards()
+                        .getLast().petName());
+        assertEquals(2,
+                expedition.journeyChronicle().petBondRewards()
+                        .getLast().bondGained());
         assertEquals(
                 List.of(7L, 6L, 5L, 4L, 3L),
                 expedition.recentJourneyRecaps().stream()

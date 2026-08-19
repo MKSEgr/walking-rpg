@@ -566,6 +566,25 @@ The incremental identity and persistence boundary is fixed by ADR 0040.
 Milestone 26 is code-complete. It does not change any external validation gate
 or the immutable `alpha-rc1` baseline.
 
+## Milestone 27 — Lifetime companion bond breakdown
+
+### CODE_COMPLETE
+
+- [x] Additive ordered `journeyChronicle.petBondRewards[]` из persisted
+      companion identity/name и фактически выданной связи всех receipt-proven
+      завершённых походов
+- [x] First-appearance grouping и authoritative current `COMPLETED` merge
+      ровно один раз с exact sum к совместимому `petBondGained`, без
+      current-content, progression-total или archive-limit inference
+- [x] Именные RU/EN reward chips и единая accessibility summary с legacy
+      fallback на общий итог при отсутствии additive массива
+- [x] Backend unit/API/PostgreSQL, Flutter parser/widget и compact large-text
+      coverage проверяют порядок, сумму, identity, omission и invalid data
+
+Milestone 27 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, экономику, topology или external validation
+gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -600,6 +600,7 @@ class HomeJourneyChronicle {
     required this.decisionCount,
     required this.pilotExperienceGained,
     required this.petBondGained,
+    this.petBondRewards = const <HomeJourneyPetBondReward>[],
   });
 
   factory HomeJourneyChronicle.fromJson(Map<String, dynamic> json) {
@@ -621,11 +622,46 @@ class HomeJourneyChronicle {
         'Летопись походов содержит недопустимое значение',
       );
     }
+    final Object? petBondRewardsJson = json['petBondRewards'];
+    final List<HomeJourneyPetBondReward> petBondRewards;
+    if (petBondRewardsJson == null) {
+      petBondRewards = const <HomeJourneyPetBondReward>[];
+    } else {
+      if (petBondRewardsJson is! List<dynamic>) {
+        throw const FormatException(
+          'journeyChronicle.petBondRewards должен быть JSON-массивом',
+        );
+      }
+      petBondRewards = petBondRewardsJson
+          .map(
+            (Object? value) => HomeJourneyPetBondReward.fromJson(
+              _asMap(value, 'journeyChronicle.petBondRewards[]'),
+            ),
+          )
+          .toList(growable: false);
+      final Set<String> petIdentities = <String>{};
+      int bondTotal = 0;
+      for (final HomeJourneyPetBondReward reward in petBondRewards) {
+        final String identity = '${reward.petId}\u0000${reward.petName}';
+        if (!petIdentities.add(identity)) {
+          throw const FormatException(
+            'journeyChronicle.petBondRewards содержит повтор',
+          );
+        }
+        bondTotal += reward.bondGained;
+      }
+      if (bondTotal != petBondGained) {
+        throw const FormatException(
+          'journeyChronicle.petBondRewards не совпадает с общим итогом',
+        );
+      }
+    }
     return HomeJourneyChronicle(
       completedJourneyCount: completedJourneyCount,
       decisionCount: decisionCount,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
+      petBondRewards: petBondRewards,
     );
   }
 
@@ -633,6 +669,7 @@ class HomeJourneyChronicle {
   final int decisionCount;
   final int pilotExperienceGained;
   final int petBondGained;
+  final List<HomeJourneyPetBondReward> petBondRewards;
 }
 
 class HomeExpeditionCompletionRecap {
