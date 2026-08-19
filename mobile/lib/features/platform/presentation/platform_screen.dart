@@ -942,9 +942,8 @@ class _JourneyChronicleCard extends StatelessWidget {
         ? context.l10n.platformCompanionBondReward(chronicle.petBondGained)
         : chronicle.petBondRewards
               .map(
-                (HomeJourneyPetBondReward reward) => context
-                    .l10n
-                    .platformNamedCompanionBondSemantic(
+                (HomeJourneyPetBondReward reward) =>
+                    context.l10n.platformNamedCompanionBondSemantic(
                       reward.petName,
                       reward.bondGained,
                     ),
