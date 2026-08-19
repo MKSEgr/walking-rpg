@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/validation/application/validation_evidence_controller.dart';
 import 'package:walking_rpg_mobile/features/validation/application/validation_evidence_exporter.dart';
 import 'package:walking_rpg_mobile/features/validation/domain/device_validation_evidence.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 class ValidationCenterScreen extends StatefulWidget {
   const ValidationCenterScreen({
@@ -35,7 +37,7 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
         final DeviceValidationEvidenceSnapshot snapshot =
             widget.controller.snapshot;
         return Scaffold(
-          appBar: AppBar(title: const Text('Validation Center')),
+          appBar: AppBar(title: Text(context.l10n.validationCenterTitle)),
           body: ExpeditionBackdrop(
             child: SafeArea(
               top: false,
@@ -54,11 +56,9 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                             key: const Key('validation-launch-heading'),
                             container: true,
                             header: true,
-                            child: const ExpeditionSectionTitle(
-                              title: 'Паспорт запуска',
-                              subtitle:
-                                  'Точный build, источник данных и режим '
-                                  'сессии',
+                            child: ExpeditionSectionTitle(
+                              title: context.l10n.validationLaunchTitle,
+                              subtitle: context.l10n.validationLaunchSubtitle,
                               icon: Icons.fingerprint,
                             ),
                           ),
@@ -69,11 +69,10 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                             key: const Key('validation-actions-heading'),
                             container: true,
                             header: true,
-                            child: const ExpeditionSectionTitle(
-                              title: 'Сценарий проверки',
+                            child: ExpeditionSectionTitle(
+                              title: context.l10n.validationScenarioTitle,
                               subtitle:
-                                  'Три явных шага оператора без фоновых '
-                                  'действий',
+                                  context.l10n.validationScenarioSubtitle,
                               icon: Icons.route,
                             ),
                           ),
@@ -86,7 +85,7 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                                 activeOwnerId: _activeOwner(),
                               ),
                               successMessage:
-                                  'Aggregated daily total зафиксирован.',
+                                  context.l10n.validationHealthSuccess,
                             ),
                             onSync: widget.controller.canSynchronize
                                 ? () => _run(
@@ -94,8 +93,7 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                                       activeOwnerId: _activeOwner(),
                                     ),
                                     successMessage:
-                                        'Server-authoritative sync '
-                                        'зафиксирован.',
+                                        context.l10n.validationSyncSuccess,
                                   )
                                 : null,
                             onCheckpoint: () => _run(
@@ -104,7 +102,7 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                                     activeOwnerId: _activeOwner(),
                                   ),
                               successMessage:
-                                  'Authoritative checkpoint зафиксирован.',
+                                  context.l10n.validationCheckpointSuccess,
                             ),
                           ),
                           if (snapshot.latestHealth != null ||
@@ -116,11 +114,12 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                               key: const Key('validation-observations-heading'),
                               container: true,
                               header: true,
-                              child: const ExpeditionSectionTitle(
-                                title: 'Принятые наблюдения',
-                                subtitle:
-                                    'Только факты текущего запуска и свежего '
-                                    'ответа сервера',
+                              child: ExpeditionSectionTitle(
+                                title:
+                                    context.l10n.validationObservationsTitle,
+                                subtitle: context
+                                    .l10n
+                                    .validationObservationsSubtitle,
                                 icon: Icons.radar,
                               ),
                             ),
@@ -145,11 +144,12 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                             key: const Key('validation-journal-heading'),
                             container: true,
                             header: true,
-                            child: const ExpeditionSectionTitle(
-                              title: 'Журнал запуска',
-                              subtitle:
-                                  'Последовательность действий без raw '
-                                  'payload и identity',
+                            child: ExpeditionSectionTitle(
+                              title:
+                                  context.l10n.validationJournalSectionTitle,
+                              subtitle: context
+                                  .l10n
+                                  .validationJournalSectionSubtitle,
                               icon: Icons.receipt_long_outlined,
                             ),
                           ),
@@ -160,11 +160,12 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
                             key: const Key('validation-evidence-heading'),
                             container: true,
                             header: true,
-                            child: const ExpeditionSectionTitle(
-                              title: 'Пакет evidence',
-                              subtitle:
-                                  'Проверяемый JSON для ручного '
-                                  'device-протокола',
+                            child: ExpeditionSectionTitle(
+                              title:
+                                  context.l10n.validationEvidenceSectionTitle,
+                              subtitle: context
+                                  .l10n
+                                  .validationEvidenceSectionSubtitle,
                               icon: Icons.verified_user,
                             ),
                           ),
@@ -200,7 +201,7 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
         ).showSnackBar(SnackBar(content: Text(successMessage)));
       }
     } on Object catch (error) {
-      _showError(_validationMessage(error));
+      _showError(_validationMessage(context.l10n, error));
     }
   }
 
@@ -235,10 +236,14 @@ class _ValidationCenterScreenState extends State<ValidationCenterScreen> {
         _lastExport = artifact;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Evidence готово: ${artifact.fileName}')),
+        SnackBar(
+          content: Text(
+            context.l10n.validationEvidenceReady(artifact.fileName),
+          ),
+        ),
       );
     } on Object catch (error) {
-      _showError(_validationMessage(error));
+      _showError(_validationMessage(context.l10n, error));
     } finally {
       if (mounted) {
         setState(() {
@@ -287,9 +292,7 @@ class _ValidationHero extends StatelessWidget {
       key: const Key('validation-center-summary'),
       container: true,
       explicitChildNodes: true,
-      label:
-          'Validation Center. Внутренний non-release контур. '
-          'Записей журнала: $journalCount из 64.',
+      label: context.l10n.validationHeroSemantics(journalCount, 64),
       child: ExpeditionPanel(
         tone: ExpeditionPanelTone.resonance,
         child: Column(
@@ -299,13 +302,13 @@ class _ValidationHero extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: <Widget>[
-                const ExpeditionBadge(
-                  label: 'INTERNAL · NON-RELEASE',
+                ExpeditionBadge(
+                  label: context.l10n.validationInternalBadge,
                   icon: Icons.science_outlined,
                   tone: ExpeditionPanelTone.resonance,
                 ),
                 ExpeditionBadge(
-                  label: 'ЖУРНАЛ $journalCount/64',
+                  label: context.l10n.validationJournalBadge(journalCount, 64),
                   icon: Icons.receipt_long_outlined,
                   tone: ExpeditionPanelTone.lumen,
                 ),
@@ -313,13 +316,12 @@ class _ValidationHero extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              'Проверка реального устройства',
+              context.l10n.validationHeroTitle,
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'Один контролируемый запуск: Health provider, разрешение, '
-              'агрегированный total и свежий authoritative checkpoint.',
+              context.l10n.validationHeroMessage,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 18),
@@ -332,18 +334,15 @@ class _ValidationHero extends StatelessWidget {
                   color: palette.resonance.withValues(alpha: 0.34),
                 ),
               ),
-              child: const Padding(
-                padding: EdgeInsets.all(14),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(Icons.policy_outlined, size: 21),
-                    SizedBox(width: 10),
+                    const Icon(Icons.policy_outlined, size: 21),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        'JSON не является доказательством physical '
-                        'validation без заполненного протокола и review.',
-                      ),
+                      child: Text(context.l10n.validationSafetyNote),
                     ),
                   ],
                 ),
@@ -377,20 +376,17 @@ class _ValidationExportPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const ExpeditionSectionTitle(
-            title: 'Schema-v1 export',
-            subtitle: 'Allowlist, redaction и checksum до передачи файла',
+          ExpeditionSectionTitle(
+            title: context.l10n.validationExportTitle,
+            subtitle: context.l10n.validationExportSubtitle,
             icon: Icons.data_object,
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Файл ограничен 64 KiB и удаляется из temporary directory '
-            'после share.',
-          ),
+          Text(context.l10n.validationExportMessage),
           if (lastExport != null) ...<Widget>[
             const SizedBox(height: 10),
             Text(
-              'Последний export: ${lastExport!.fileName}',
+              context.l10n.validationLastExport(lastExport!.fileName),
               key: const Key('validation-last-export'),
               style: Theme.of(
                 context,
@@ -409,8 +405,8 @@ class _ValidationExportPanel extends StatelessWidget {
                 : const Icon(Icons.ios_share),
             label: Text(
               exporting
-                  ? 'Проверяем и формируем...'
-                  : 'Проверить checksum и передать JSON',
+                  ? context.l10n.validationExporting
+                  : context.l10n.validationExportAction,
             ),
           ),
         ],
@@ -454,12 +450,12 @@ class _LaunchCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _ValidationFact(
-            label: 'Устройство',
+            label: context.l10n.validationDeviceLabel,
             value: '${launch.platform} · ${launch.operatingSystemVersion}',
           ),
           const SizedBox(height: 10),
           _ValidationFact(
-            label: 'Сборка',
+            label: context.l10n.validationBuildLabel,
             value: 'App ${launch.appVersion} (${launch.buildNumber})',
           ),
           const SizedBox(height: 14),
@@ -506,9 +502,9 @@ class _ActionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const ExpeditionSectionTitle(
-            title: 'Явные действия оператора',
-            subtitle: 'Порядок фиксируется в журнале текущего запуска',
+          ExpeditionSectionTitle(
+            title: context.l10n.validationOperatorActionsTitle,
+            subtitle: context.l10n.validationOperatorActionsSubtitle,
             icon: Icons.touch_app_outlined,
           ),
           const SizedBox(height: 16),
@@ -516,28 +512,26 @@ class _ActionCard extends StatelessWidget {
             key: const Key('validation-read-button'),
             onPressed: disabled ? null : onRead,
             icon: const Icon(Icons.health_and_safety_outlined),
-            label: const Text('Проверить provider, permission и шаги'),
+            label: Text(context.l10n.validationReadAction),
           ),
           const SizedBox(height: 8),
           FilledButton.tonalIcon(
             key: const Key('validation-sync-button'),
             onPressed: disabled ? null : onSync,
             icon: const Icon(Icons.sync),
-            label: const Text('Отправить сохранённый total'),
+            label: Text(context.l10n.validationSyncAction),
           ),
           const SizedBox(height: 8),
           FilledButton.tonalIcon(
             key: const Key('validation-checkpoint-button'),
             onPressed: disabled ? null : onCheckpoint,
             icon: const Icon(Icons.fact_check_outlined),
-            label: const Text('Снять authoritative checkpoint'),
+            label: Text(context.l10n.validationCheckpointAction),
           ),
           if (controller.journalFull) ...<Widget>[
             const SizedBox(height: 12),
-            const _ValidationWarning(
-              message:
-                  'Лимит журнала не позволяет записать ещё одно полное '
-                  'действие. Экспортируйте текущий JSON.',
+            _ValidationWarning(
+              message: context.l10n.validationJournalFullWarning,
             ),
           ],
         ],
@@ -554,21 +548,30 @@ class _HealthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _FactsCard(
-      title: 'Health observation',
+      title: context.l10n.validationHealthObservationTitle,
       icon: Icons.health_and_safety_outlined,
       tone: ExpeditionPanelTone.lumen,
       facts: <String>[
-        'Status: ${observation.status.wireName}',
-        'Provider: ${observation.providerState.wireName}',
-        'Permission: ${observation.permissionState.wireName}',
+        context.l10n.validationFactStatus(observation.status.wireName),
+        context.l10n.validationFactProvider(
+          observation.providerState.wireName,
+        ),
+        context.l10n.validationFactPermission(
+          observation.permissionState.wireName,
+        ),
         if (observation.authoritativeTotal != null)
-          'Aggregated total: ${observation.authoritativeTotal}',
+          context.l10n.validationFactAggregatedTotal(
+            observation.authoritativeTotal!,
+          ),
         if (observation.localDate != null)
-          'Local date: ${observation.localDate}',
-        if (observation.timeZone != null) 'Timezone: ${observation.timeZone}',
-        'Duration: ${observation.durationMs} ms',
+          context.l10n.validationFactLocalDate(observation.localDate!),
+        if (observation.timeZone != null)
+          context.l10n.validationFactTimeZone(observation.timeZone!),
+        context.l10n.validationFactDuration(observation.durationMs),
         if (observation.errorCategory != null)
-          'Category: ${observation.errorCategory!.wireName}',
+          context.l10n.validationFactCategory(
+            observation.errorCategory!.wireName,
+          ),
       ],
     );
   }
@@ -582,21 +585,28 @@ class _SyncCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _FactsCard(
-      title: 'Server sync',
+      title: context.l10n.validationServerSyncTitle,
       icon: Icons.sync,
       tone: ExpeditionPanelTone.energy,
       facts: <String>[
-        'Status: ${observation.status.wireName}',
+        context.l10n.validationFactStatus(observation.status.wireName),
         if (observation.acceptedTotal != null)
-          'Accepted: ${observation.acceptedTotal} '
-              '(delta ${observation.acceptedDelta})',
+          context.l10n.validationFactAccepted(
+            observation.acceptedTotal!,
+            observation.acceptedDelta!,
+          ),
         if (observation.energyGranted != null)
-          'ENERGY: +${observation.energyGranted} '
-              '(balance ${observation.energyBalanceAfter})',
-        if (observation.riskStatus != null) 'Risk: ${observation.riskStatus}',
-        'Duration: ${observation.durationMs} ms',
+          context.l10n.validationFactEnergy(
+            observation.energyGranted!,
+            observation.energyBalanceAfter!,
+          ),
+        if (observation.riskStatus != null)
+          context.l10n.validationFactRisk(observation.riskStatus!),
+        context.l10n.validationFactDuration(observation.durationMs),
         if (observation.errorCategory != null)
-          'Category: ${observation.errorCategory!.wireName}',
+          context.l10n.validationFactCategory(
+            observation.errorCategory!.wireName,
+          ),
       ],
     );
   }
@@ -610,17 +620,26 @@ class _CheckpointCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _FactsCard(
-      title: 'Authoritative checkpoint',
+      title: context.l10n.validationAuthoritativeCheckpointTitle,
       icon: Icons.fact_check_outlined,
       tone: ExpeditionPanelTone.resonance,
       facts: <String>[
-        'Daily steps: ${facts.dailySteps} / ${facts.dailyGoal}',
-        'Accepted total: ${facts.totalAcceptedSteps}',
-        'ENERGY balance: ${facts.availableEnergy}',
-        'Node: ${facts.currentNodeId} · ${facts.expeditionStatus}',
-        'First journey: ${facts.firstJourneyStage} '
-            '(${facts.completedMilestones.length}/6)',
-        'Duration: ${facts.durationMs} ms',
+        context.l10n.validationFactDailySteps(
+          facts.dailySteps,
+          facts.dailyGoal,
+        ),
+        context.l10n.validationFactAcceptedTotal(facts.totalAcceptedSteps),
+        context.l10n.validationFactEnergyBalance(facts.availableEnergy),
+        context.l10n.validationFactNode(
+          facts.currentNodeId,
+          facts.expeditionStatus,
+        ),
+        context.l10n.validationFactFirstJourney(
+          facts.firstJourneyStage,
+          facts.completedMilestones.length,
+          6,
+        ),
+        context.l10n.validationFactDuration(facts.durationMs),
       ],
     );
   }
@@ -642,13 +661,13 @@ class _JournalCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            'Журнал · ${entries.length}/64',
+            context.l10n.validationJournalCount(entries.length, 64),
             key: const Key('validation-journal-count'),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 10),
           if (entries.isEmpty)
-            const Text('Действия ещё не выполнялись.')
+            Text(context.l10n.validationJournalEmpty)
           else
             for (
               int index = 0;
@@ -689,7 +708,7 @@ class _FactsCard extends StatelessWidget {
         children: <Widget>[
           ExpeditionSectionTitle(
             title: title,
-            subtitle: 'Зафиксировано в текущем evidence journal',
+            subtitle: context.l10n.validationFactsSubtitle,
             icon: icon,
           ),
           const SizedBox(height: 14),
@@ -846,51 +865,51 @@ class _ValidationWarning extends StatelessWidget {
   }
 }
 
-String _validationMessage(Object error) {
+String _validationMessage(AppLocalizations l10n, Object error) {
   if (error is ValidationOwnerMismatchException) {
-    return 'Сессия владельца изменилась. Validation Center закрыт.';
+    return l10n.validationErrorOwnerChanged;
   }
   if (error is EvidenceLimitException) {
-    return 'Evidence достигло безопасного лимита. Экспортируйте текущий JSON.';
+    return l10n.validationErrorEvidenceLimit;
   }
   if (error is ValidationActionException) {
     return switch (error.category) {
       EvidenceErrorCategory.unsupportedPlatform =>
-        'Health source недоступен на этой платформе.',
+        l10n.validationErrorUnsupportedPlatform,
       EvidenceErrorCategory.providerUpdateRequired =>
-        'Health Connect нужно установить или обновить.',
+        l10n.validationErrorProviderUpdateRequired,
       EvidenceErrorCategory.providerUnavailable =>
-        'Health provider недоступен.',
+        l10n.validationErrorProviderUnavailable,
       EvidenceErrorCategory.permissionDenied =>
-        'Permission request завершился отказом.',
+        l10n.validationErrorPermissionDenied,
       EvidenceErrorCategory.permissionSettingsRequired =>
-        'Разрешение нужно включить в системных настройках.',
+        l10n.validationErrorPermissionSettingsRequired,
       EvidenceErrorCategory.permissionRestricted =>
-        'Разрешение ограничено операционной системой.',
+        l10n.validationErrorPermissionRestricted,
       EvidenceErrorCategory.protectedDataUnavailable =>
-        'Health data недоступны, пока устройство заблокировано.',
+        l10n.validationErrorProtectedDataUnavailable,
       EvidenceErrorCategory.timeZoneUnavailable =>
-        'ОС не вернула корректную IANA timezone.',
+        l10n.validationErrorTimeZoneUnavailable,
       EvidenceErrorCategory.healthReadFailed =>
-        'Не удалось прочитать aggregated daily total.',
+        l10n.validationErrorHealthReadFailed,
       EvidenceErrorCategory.readingRequired =>
-        'Сначала выполните Health read в этом запуске.',
+        l10n.validationErrorReadingRequired,
       EvidenceErrorCategory.networkUnavailable =>
-        'Backend недоступен; checkpoint отмечен как failed.',
+        l10n.validationErrorNetworkUnavailable,
       EvidenceErrorCategory.reauthenticationRequired =>
-        'Сессия требует повторной аутентификации.',
+        l10n.validationErrorReauthenticationRequired,
       EvidenceErrorCategory.cachedSnapshot =>
-        'Cached state не принят как authoritative checkpoint.',
+        l10n.validationErrorCachedSnapshot,
       EvidenceErrorCategory.invalidResponse =>
-        'Backend вернул ответ вне ожидаемого контракта.',
+        l10n.validationErrorInvalidResponse,
       EvidenceErrorCategory.journalLimitReached =>
-        'Journal достиг безопасного лимита.',
+        l10n.validationErrorJournalLimit,
       EvidenceErrorCategory.unexpectedFailure =>
-        'Действие завершилось нормализованной internal failure.',
+        l10n.validationErrorUnexpected,
     };
   }
   if (error is FormatException) {
-    return 'Evidence не прошло schema/redaction/checksum validation.';
+    return l10n.validationErrorInvalidEvidence;
   }
-  return 'Не удалось выполнить validation action.';
+  return l10n.validationErrorGeneric;
 }

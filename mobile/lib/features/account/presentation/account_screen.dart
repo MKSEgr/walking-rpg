@@ -8,6 +8,7 @@ import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_recovery.dart';
 import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/core/localization/app_locale_scope.dart';
+import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_decision_dialog.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
@@ -16,6 +17,7 @@ import 'package:walking_rpg_mobile/features/account/application/account_export_c
 import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart';
 import 'package:walking_rpg_mobile/features/account/domain/account_deletion_receipt.dart';
 import 'package:walking_rpg_mobile/features/home/data/io_home_transport.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 enum _AccountAction { exporting, deleting, loggingOut }
 
@@ -123,8 +125,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Аккаунт и данные',
+        title: Text(
+          context.l10n.accountTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -160,10 +162,10 @@ class _AccountScreenState extends State<AccountScreen> {
                             compact: compact,
                           ),
                           const SizedBox(height: 22),
-                          const ExpeditionSectionTitle(
-                            title: 'Контур доступа',
+                          ExpeditionSectionTitle(
+                            title: context.l10n.accountAccessSectionTitle,
                             subtitle:
-                                'Сессия, локальная очередь и служебная проверка',
+                                context.l10n.accountAccessSectionSubtitle,
                             icon: Icons.hub_outlined,
                           ),
                           const SizedBox(height: 12),
@@ -192,12 +194,14 @@ class _AccountScreenState extends State<AccountScreen> {
                                 color: recoveryAccent,
                               ),
                             ),
-                            title: 'Сохранённые действия',
+                            title: context.l10n.accountSavedActionsTitle,
                             subtitle: _recoveryUnavailable
-                                ? 'Локальная очередь требует внимания'
+                                ? context.l10n.accountQueueAttention
                                 : _recoveryCount == 0
-                                ? 'Все действия отправлены'
-                                : 'Ожидают проверки: $_recoveryCount',
+                                ? context.l10n.accountAllActionsSent
+                                : context.l10n.accountPendingReview(
+                                    _recoveryCount,
+                                  ),
                             onTap: widget.onOpenRecovery == null
                                 ? null
                                 : () {
@@ -215,18 +219,17 @@ class _AccountScreenState extends State<AccountScreen> {
                                 color: palette.resonance,
                               ),
                               title: 'Validation Center',
-                              subtitle:
-                                  'Внутренний журнал physical-device проверки',
+                              subtitle: context.l10n.accountValidationSubtitle,
                               onTap: () {
                                 unawaited(widget.onOpenValidation!());
                               },
                             ),
                           ],
                           const SizedBox(height: 22),
-                          const ExpeditionSectionTitle(
-                            title: 'Личные данные',
+                          ExpeditionSectionTitle(
+                            title: context.l10n.accountPersonalDataTitle,
                             subtitle:
-                                'Экспорт и прозрачное управление аккаунтом',
+                                context.l10n.accountPersonalDataSubtitle,
                             icon: Icons.folder_shared_outlined,
                           ),
                           const SizedBox(height: 12),
@@ -236,22 +239,19 @@ class _AccountScreenState extends State<AccountScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: <Widget>[
-                                const ExpeditionSectionTitle(
-                                  title: 'Экспорт данных',
-                                  subtitle: 'Переносимая копия в формате JSON',
+                                ExpeditionSectionTitle(
+                                  title: context.l10n.accountExportTitle,
+                                  subtitle: context.l10n.accountExportSubtitle,
                                   icon: Icons.ios_share_outlined,
                                 ),
                                 const SizedBox(height: 14),
-                                const Text(
-                                  'Walking RPG сформирует JSON-файл с игровым '
-                                  'прогрессом, активностью, устройствами и '
-                                  'историей операций.',
-                                ),
+                                Text(context.l10n.accountExportDescription),
                                 if (_lastExport != null) ...<Widget>[
                                   const SizedBox(height: 10),
                                   Text(
-                                    'Последний экспорт: '
-                                    '${_lastExport!.fileName}',
+                                    context.l10n.accountLastExport(
+                                      _lastExport!.fileName,
+                                    ),
                                     key: const Key('account-last-export'),
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
@@ -273,8 +273,8 @@ class _AccountScreenState extends State<AccountScreen> {
                                           )
                                         : const Icon(Icons.ios_share),
                                     label: _action == _AccountAction.exporting
-                                        ? 'Готовим файл...'
-                                        : 'Создать и передать JSON',
+                                        ? context.l10n.accountExportPreparing
+                                        : context.l10n.accountExportAction,
                                   ),
                                 ),
                               ],
@@ -304,7 +304,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                         ),
                                       )
                                     : const Icon(Icons.logout),
-                                label: 'Выйти и очистить локальные данные',
+                                label: context.l10n.accountLogoutAction,
                               ),
                             ),
                           ],
@@ -341,11 +341,17 @@ class _AccountScreenState extends State<AccountScreen> {
         _lastExport = artifact;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Экспорт готов: ${artifact.fileName}')),
+        SnackBar(
+          content: Text(context.l10n.accountExportReady(artifact.fileName)),
+        ),
       );
     } on Object catch (error) {
       _showError(
-        _accountErrorMessage(error, operation: 'экспортировать данные'),
+        _accountErrorMessage(
+          context.l10n,
+          error,
+          operation: context.l10n.accountExportOperation,
+        ),
       );
     } finally {
       if (mounted) {
@@ -378,13 +384,18 @@ class _AccountScreenState extends State<AccountScreen> {
       final AccountDeletionReceipt receipt = await widget.apiClient
           .requestDeletion(idempotencyKey: idempotencyKey);
       await widget.controller.logout(
-        completionNotice:
-            'Игровой аккаунт удалён. Квитанция: ${receipt.receiptId}',
+        completionNotice: context.l10n.accountDeletedNotice(receipt.receiptId),
       );
     } on AuthUserCancelledException {
-      _showError('Подтверждение личности отменено. Данные не удалены.');
+      _showError(context.l10n.accountIdentityCancelled);
     } on Object catch (error) {
-      _showError(_accountErrorMessage(error, operation: 'удалить аккаунт'));
+      _showError(
+        _accountErrorMessage(
+          context.l10n,
+          error,
+          operation: context.l10n.accountDeleteOperation,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -407,14 +418,11 @@ class _AccountScreenState extends State<AccountScreen> {
           builder: (BuildContext context) {
             return ExpeditionDecisionDialog(
               key: const Key('account-delete-intent-dialog'),
-              badgeLabel: 'Необратимое действие',
-              title: 'Удалить аккаунт?',
-              message:
-                  'Будут удалены игровой прогресс, история активности, '
-                  'инвентарь, участие в отрядах и серверные настройки. '
-                  'Отменить операцию после подтверждения нельзя.',
+              badgeLabel: context.l10n.accountDeleteIntentBadge,
+              title: context.l10n.accountDeleteIntentTitle,
+              message: context.l10n.accountDeleteIntentMessage,
               icon: Icons.delete_forever_outlined,
-              confirmLabel: 'Продолжить',
+              confirmLabel: context.l10n.accountContinue,
               confirmButtonKey: const Key('account-delete-continue'),
               destructive: true,
               onCancel: () => Navigator.pop(context, false),
@@ -535,8 +543,8 @@ class _PilotDossier extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final bool development = identity.isDevelopment;
     final String sessionDescription = development
-        ? 'Локальная development-сессия'
-        : 'Защищённая OIDC-сессия';
+        ? context.l10n.accountDevelopmentSessionDescription
+        : context.l10n.accountOidcSessionDescription;
     final Widget avatar = PilotPortrait(
       key: const Key('account-pilot-portrait'),
       name: identity.displayName,
@@ -547,7 +555,7 @@ class _PilotDossier extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'ДОСЬЕ ПИЛОТА',
+          context.l10n.accountPilotDossierLabel,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: colors.primary,
             fontWeight: FontWeight.w800,
@@ -572,7 +580,9 @@ class _PilotDossier extends StatelessWidget {
           runSpacing: 8,
           children: <Widget>[
             ExpeditionBadge(
-              label: development ? 'Локальная сессия' : 'OIDC подтверждена',
+              label: development
+                  ? context.l10n.accountLocalSessionBadge
+                  : context.l10n.accountOidcVerifiedBadge,
               icon: development
                   ? Icons.developer_mode_outlined
                   : Icons.verified_user_outlined,
@@ -589,7 +599,10 @@ class _PilotDossier extends StatelessWidget {
     return Semantics(
       container: true,
       excludeSemantics: true,
-      label: 'Досье пилота, ${identity.displayName}, $sessionDescription',
+      label: context.l10n.accountPilotDossierSemantics(
+        identity.displayName,
+        sessionDescription,
+      ),
       child: ExpeditionPanel(
         tone: development
             ? ExpeditionPanelTone.resonance
@@ -753,7 +766,7 @@ class _AccountDangerPanel extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Удаление аккаунта',
+                    context.l10n.accountDeleteSectionTitle,
                     style: Theme.of(
                       context,
                     ).textTheme.titleMedium?.copyWith(color: colors.error),
@@ -764,10 +777,8 @@ class _AccountDangerPanel extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               development
-                  ? 'Постоянное удаление доступно только после входа через '
-                        'OIDC.'
-                  : 'Операция безвозвратно удалит игровые данные. Перед '
-                        'запросом потребуется повторно подтвердить личность.',
+                  ? context.l10n.accountDeleteDevelopmentMessage
+                  : context.l10n.accountDeleteMessage,
             ),
             const SizedBox(height: 18),
             FilledButton(
@@ -785,10 +796,10 @@ class _AccountDangerPanel extends StatelessWidget {
                       )
                     : const Icon(Icons.delete_forever),
                 label: deleting
-                    ? 'Удаляем аккаунт...'
+                    ? context.l10n.accountDeleting
                     : retrying
-                    ? 'Повторить запрос удаления'
-                    : 'Удалить аккаунт',
+                    ? context.l10n.accountDeleteRetry
+                    : context.l10n.accountDeleteAction,
               ),
             ),
           ],
@@ -835,8 +846,6 @@ class _DeletionPhraseDialog extends StatefulWidget {
 class _DeletionPhraseDialogState extends State<_DeletionPhraseDialog> {
   final TextEditingController _controller = TextEditingController();
 
-  bool get _confirmed => _controller.text.trim() == 'УДАЛИТЬ';
-
   @override
   void initState() {
     super.initState();
@@ -852,26 +861,28 @@ class _DeletionPhraseDialogState extends State<_DeletionPhraseDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final String phrase = context.l10n.accountDeletePhrase;
+    final bool confirmed = _controller.text.trim() == phrase;
     return ExpeditionDecisionDialog(
       key: const Key('account-delete-phrase-dialog'),
-      badgeLabel: 'Последняя граница',
-      title: 'Последнее подтверждение',
-      message: 'Введите УДАЛИТЬ заглавными буквами:',
+      badgeLabel: context.l10n.accountDeletePhraseBadge,
+      title: context.l10n.accountDeletePhraseTitle,
+      message: context.l10n.accountDeletePhraseMessage(phrase),
       icon: Icons.lock_outline,
-      confirmLabel: 'Удалить навсегда',
+      confirmLabel: context.l10n.accountDeleteForever,
       confirmButtonKey: const Key('account-delete-confirm'),
       destructive: true,
       onCancel: () => Navigator.pop(context, false),
-      onConfirm: _confirmed ? () => Navigator.pop(context, true) : null,
+      onConfirm: confirmed ? () => Navigator.pop(context, true) : null,
       content: TextField(
         key: const Key('account-delete-phrase'),
         controller: _controller,
         autofocus: true,
         autocorrect: false,
         textCapitalization: TextCapitalization.characters,
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(),
-          hintText: 'УДАЛИТЬ',
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          hintText: phrase,
         ),
       ),
     );
@@ -882,41 +893,44 @@ class _DeletionPhraseDialogState extends State<_DeletionPhraseDialog> {
   }
 }
 
-String _accountErrorMessage(Object error, {required String operation}) {
+String _accountErrorMessage(
+  AppLocalizations l10n,
+  Object error, {
+  required String operation,
+}) {
   if (error is AccountApiException) {
     if (error.statusCode == 401) {
-      return 'Сессия истекла. Войдите снова, чтобы $operation.';
+      return l10n.accountErrorSessionExpired(operation);
     }
     if (error.code == 'FRESH_AUTHENTICATION_REQUIRED') {
-      return 'Identity provider не подтвердил свежий вход. '
-          'Повторите операцию после интерактивной авторизации.';
+      return l10n.accountErrorFreshAuthentication;
     }
     if (error.statusCode == 403) {
-      return 'У аккаунта нет права выполнить операцию.';
+      return l10n.accountErrorForbidden;
     }
     if (error.statusCode == 409) {
-      return 'Backend обнаружил конфликт запроса. Повторите операцию.';
+      return l10n.accountErrorConflict;
     }
     if (error.statusCode == 410 || error.code == 'ACCOUNT_DELETED') {
-      return 'Игровой аккаунт уже удалён. Завершите локальную сессию.';
+      return l10n.accountErrorDeleted;
     }
     if (error.retryable) {
-      return 'Backend временно недоступен. Запрос можно безопасно повторить.';
+      return l10n.accountErrorRetryable;
     }
-    return error.message;
+    return l10n.accountErrorGeneric(operation);
   }
   if (error is HomeNetworkException) {
-    return 'Нет соединения с backend. Запрос можно повторить.';
+    return l10n.accountErrorNetwork;
   }
   if (error is AuthSensitiveActionException ||
       error is AuthReauthenticationRequiredException ||
       error is AuthAccountDeletedException) {
-    return error.toString();
+    return l10n.accountErrorSensitiveAction;
   }
   if (error is FormatException) {
-    return 'Backend вернул некорректный ответ: $error';
+    return l10n.accountErrorInvalidResponse;
   }
-  return 'Не удалось $operation: $error';
+  return l10n.accountErrorGeneric(operation);
 }
 
 String _newIdempotencyKey() {

@@ -1446,5 +1446,354 @@
     "placeholders": {
       "name": {"type": "String"}
     }
-  }
+  },
+  "pilotPortraitWithCosmeticSemantics": "Pilot {name}, {cosmetic}",
+  "@pilotPortraitWithCosmeticSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "cosmetic": {"type": "String"}
+    }
+  },
+  "commonCancel": "Cancel",
+  "boundaryLoadingSemantics": "Launch operation in progress",
+  "boundaryBlockedSemantics": "Launch safely blocked",
+  "validationMetadataBadge": "Internal boundary",
+  "validationMetadataTitle": "Checking validation environment",
+  "validationMetadataMessage": "Checking the app version, build and device before opening Validation Center.",
+  "validationMetadataBlockedBadge": "Boundary blocked",
+  "validationMetadataBlockedTitle": "Validation Center did not start",
+  "validationMetadataBlockedMessage": "Runtime app/build metadata is unavailable or invalid.",
+
+  "accountTitle": "Account and data",
+  "accountAccessSectionTitle": "Access boundary",
+  "accountAccessSectionSubtitle": "Session, local queue and internal validation",
+  "accountSavedActionsTitle": "Saved actions",
+  "accountQueueAttention": "The local queue needs attention",
+  "accountAllActionsSent": "All actions sent",
+  "accountPendingReview": "Pending review: {count}",
+  "@accountPendingReview": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "accountValidationSubtitle": "Internal physical-device validation journal",
+  "accountPersonalDataTitle": "Personal data",
+  "accountPersonalDataSubtitle": "Export and transparent account controls",
+  "accountExportTitle": "Export data",
+  "accountExportSubtitle": "Portable JSON copy",
+  "accountExportDescription": "Walking RPG will create a JSON file with game progress, activity, devices and operation history.",
+  "accountLastExport": "Last export: {fileName}",
+  "@accountLastExport": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "accountExportPreparing": "Preparing file...",
+  "accountExportAction": "Create and share JSON",
+  "accountLogoutAction": "Sign out and clear local data",
+  "accountExportReady": "Export ready: {fileName}",
+  "@accountExportReady": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "accountDeletedNotice": "Game account deleted. Receipt: {receiptId}",
+  "@accountDeletedNotice": {
+    "placeholders": {
+      "receiptId": {"type": "String"}
+    }
+  },
+  "accountIdentityCancelled": "Identity confirmation was cancelled. No data was deleted.",
+  "accountDeleteIntentBadge": "Irreversible action",
+  "accountDeleteIntentTitle": "Delete account?",
+  "accountDeleteIntentMessage": "Game progress, activity history, inventory, squad participation and server settings will be deleted. The operation cannot be undone after confirmation.",
+  "accountContinue": "Continue",
+  "accountDevelopmentSessionDescription": "Local development session",
+  "accountOidcSessionDescription": "Protected OIDC session",
+  "accountPilotDossierLabel": "PILOT DOSSIER",
+  "accountLocalSessionBadge": "Local session",
+  "accountOidcVerifiedBadge": "OIDC verified",
+  "accountPilotDossierSemantics": "Pilot dossier, {name}, {session}",
+  "@accountPilotDossierSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "session": {"type": "String"}
+    }
+  },
+  "accountDeleteSectionTitle": "Delete account",
+  "accountDeleteDevelopmentMessage": "Permanent deletion is available only after signing in through OIDC.",
+  "accountDeleteMessage": "This operation permanently deletes game data. You will need to confirm your identity again before the request.",
+  "accountDeleting": "Deleting account...",
+  "accountDeleteRetry": "Retry deletion request",
+  "accountDeleteAction": "Delete account",
+  "accountDeletePhrase": "DELETE",
+  "accountDeletePhraseBadge": "Final boundary",
+  "accountDeletePhraseTitle": "Final confirmation",
+  "accountDeletePhraseMessage": "Enter {phrase} in uppercase:",
+  "@accountDeletePhraseMessage": {
+    "placeholders": {
+      "phrase": {"type": "String"}
+    }
+  },
+  "accountDeleteForever": "Delete permanently",
+  "accountExportOperation": "export your data",
+  "accountDeleteOperation": "delete your account",
+  "accountErrorSessionExpired": "Your session expired. Sign in again to {operation}.",
+  "@accountErrorSessionExpired": {
+    "placeholders": {
+      "operation": {"type": "String"}
+    }
+  },
+  "accountErrorFreshAuthentication": "The identity provider did not confirm a recent sign-in. Try again after interactive authentication.",
+  "accountErrorForbidden": "This account is not allowed to perform the operation.",
+  "accountErrorConflict": "The backend detected a request conflict. Try again.",
+  "accountErrorDeleted": "The game account has already been deleted. End the local session.",
+  "accountErrorRetryable": "The backend is temporarily unavailable. The request can be retried safely.",
+  "accountErrorNetwork": "The backend cannot be reached. The request can be retried.",
+  "accountErrorSensitiveAction": "Sign in again before performing this sensitive action.",
+  "accountErrorInvalidResponse": "The backend returned an invalid response.",
+  "accountErrorGeneric": "Could not {operation}. Try again.",
+  "@accountErrorGeneric": {
+    "placeholders": {
+      "operation": {"type": "String"}
+    }
+  },
+
+  "recoveryTitle": "Saved actions",
+  "recoveryRefresh": "Refresh list",
+  "recoveryRetryFailed": "Saved actions could not be retried. No records were deleted.",
+  "recoveryDismissBadge": "Local diagnostics",
+  "recoveryDismissTitle": "Remove rejected record?",
+  "recoveryDismissMessage": "The command is no longer retried and does not block the queue. Only the local diagnostic record will be removed; server state will not change.",
+  "recoveryDismissAction": "Remove record",
+  "recoveryDismissPending": "The action is pending again and cannot be removed.",
+  "recoveryDismissFailed": "The record could not be removed. Local data was preserved.",
+  "recoveryCriticalChecked": "Critical actions were checked. Internal delivery continues.",
+  "recoveryNothingToRetry": "There are no actions to retry.",
+  "recoveryReplaySent": "sent: {count}",
+  "@recoveryReplaySent": {"placeholders": {"count": {"type": "int"}}},
+  "recoveryReplayPending": "waiting for network: {count}",
+  "@recoveryReplayPending": {"placeholders": {"count": {"type": "int"}}},
+  "recoveryReplayRejected": "rejected: {count}",
+  "@recoveryReplayRejected": {"placeholders": {"count": {"type": "int"}}},
+  "recoveryReplaySummary": "Queue check · {details}",
+  "@recoveryReplaySummary": {"placeholders": {"details": {"type": "String"}}},
+  "recoveryRetrying": "Retrying saved actions...",
+  "recoveryRetryAction": "Retry pending actions",
+  "recoveryJournalTitle": "Queue journal",
+  "recoveryJournalSubtitle": "Only commands saved locally for this pilot",
+  "recoverySafetyNote": "Pending actions cannot be deleted: the response may have been lost after the server completed the action. A retry always uses the original command.",
+  "recoverySummarySemantics": "Recovery boundary. Pending delivery: {pending}. Rejected: {failed}.",
+  "@recoverySummarySemantics": {
+    "placeholders": {
+      "pending": {"type": "int"},
+      "failed": {"type": "int"}
+    }
+  },
+  "recoveryEyebrow": "RECOVERY BOUNDARY",
+  "recoveryQueueTitle": "Local queue",
+  "recoveryQueueDescription": "Commands remain saved until delivery and stay bound to the current session owner.",
+  "recoveryPendingBadge": "Pending delivery",
+  "recoveryFailedBadge": "Rejected",
+  "recoveryFailedStatus": "Rejected and no longer delivered",
+  "recoveryStoredStatus": "Saved before first delivery",
+  "recoveryCommandMetadata": "Attempts: {attempts} · created {createdAt}",
+  "@recoveryCommandMetadata": {
+    "placeholders": {
+      "attempts": {"type": "int"},
+      "createdAt": {"type": "String"}
+    }
+  },
+  "recoveryDismissDiagnostic": "Remove diagnostic record",
+  "recoveryTelemetryCommand": "Internal telemetry",
+  "recoveryActivitySyncCommand": "Step synchronization",
+  "recoveryExpeditionAdvanceCommand": "Expedition advance",
+  "recoveryJourneyStartCommand": "New journey",
+  "recoveryEventResolutionCommand": "Event choice",
+  "recoveryEventAcknowledgementCommand": "Event result acknowledgement",
+  "recoveryCraftingCommand": "Item crafting",
+  "recoveryEquipmentCommand": "Equipment change",
+  "recoveryItemUpgradeCommand": "Item upgrade",
+  "recoveryPlatformCommand": "Path journal change",
+  "recoveryStatusRateLimited": "The server asked to retry later",
+  "recoveryStatusServerUnavailable": "The server is temporarily unavailable",
+  "recoveryStatusConnection": "Waiting for the connection to recover",
+  "recoveryStatusRejected": "Waiting for a safe recheck",
+  "recoveryStatusInvalid": "Saved data needs review",
+  "recoveryStatusPending": "Waiting for retry",
+  "recoveryLaneActivity": "Steps",
+  "recoveryLaneGameplay": "Game",
+  "recoveryLaneTelemetry": "Service",
+  "recoveryLoading": "Reading local queue...",
+  "recoveryEmptyTitle": "All actions sent",
+  "recoveryEmptyMessage": "The local queue is empty. Game state is read from the server.",
+  "recoveryStoreErrorTitle": "Saved actions could not be read",
+  "recoveryStoreErrorMessage": "The queue was not cleared or overwritten. Try reading it again; if the error persists, contact support.",
+  "recoveryStoreRetry": "Retry reading",
+
+  "activityRecoveringCommands": "Recovering commands...",
+  "activitySyncingSteps": "Synchronizing steps...",
+  "activitySyncSteps": "Synchronize steps",
+  "activitySyncDemoSteps": "Synchronize test steps",
+  "activityStoreReadFailed": "Saved actions could not be read.",
+  "activityReplaySucceeded": "recovered: {count}",
+  "@activityReplaySucceeded": {"placeholders": {"count": {"type": "int"}}},
+  "activityReplayPending": "waiting for retry: {count}",
+  "@activityReplayPending": {"placeholders": {"count": {"type": "int"}}},
+  "activityReplayFailed": "need review: {count}",
+  "@activityReplayFailed": {"placeholders": {"count": {"type": "int"}}},
+  "activityReplaySummary": "Deferred commands · {details}",
+  "@activityReplaySummary": {"placeholders": {"details": {"type": "String"}}},
+  "activityEnergyGranted": "+{energy} ENERGY",
+  "@activityEnergyGranted": {"placeholders": {"energy": {"type": "int"}}},
+  "activityNoNewEnergy": "no new energy",
+  "activitySyncAccepted": "Accepted {total} steps · {energy}",
+  "@activitySyncAccepted": {
+    "placeholders": {
+      "total": {"type": "int"},
+      "energy": {"type": "String"}
+    }
+  },
+  "activitySyncFailed": "Steps could not be synchronized. Try again.",
+
+  "validationCenterTitle": "Validation Center",
+  "validationLaunchTitle": "Launch passport",
+  "validationLaunchSubtitle": "Exact build, data source and session mode",
+  "validationScenarioTitle": "Validation scenario",
+  "validationScenarioSubtitle": "Three explicit operator steps with no background actions",
+  "validationHealthSuccess": "Aggregated daily total recorded.",
+  "validationSyncSuccess": "Server-authoritative sync recorded.",
+  "validationCheckpointSuccess": "Authoritative checkpoint recorded.",
+  "validationObservationsTitle": "Accepted observations",
+  "validationObservationsSubtitle": "Only facts from this launch and a fresh server response",
+  "validationJournalSectionTitle": "Launch journal",
+  "validationJournalSectionSubtitle": "Action sequence without raw payload or identity",
+  "validationEvidenceSectionTitle": "Evidence package",
+  "validationEvidenceSectionSubtitle": "Verifiable JSON for the manual device protocol",
+  "validationEvidenceReady": "Evidence ready: {fileName}",
+  "@validationEvidenceReady": {"placeholders": {"fileName": {"type": "String"}}},
+  "validationHeroSemantics": "Validation Center. Internal non-release boundary. Journal entries: {count} of {limit}.",
+  "@validationHeroSemantics": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "limit": {"type": "int"}
+    }
+  },
+  "validationInternalBadge": "INTERNAL · NON-RELEASE",
+  "validationJournalBadge": "JOURNAL {count}/{limit}",
+  "@validationJournalBadge": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "limit": {"type": "int"}
+    }
+  },
+  "validationHeroTitle": "Real-device validation",
+  "validationHeroMessage": "One controlled launch: Health provider, permission, aggregated total and a fresh authoritative checkpoint.",
+  "validationSafetyNote": "JSON is not proof of physical validation without a completed protocol and review.",
+  "validationExportTitle": "Schema-v1 export",
+  "validationExportSubtitle": "Allowlist, redaction and checksum before sharing",
+  "validationExportMessage": "The file is limited to 64 KiB and removed from the temporary directory after sharing.",
+  "validationLastExport": "Last export: {fileName}",
+  "@validationLastExport": {"placeholders": {"fileName": {"type": "String"}}},
+  "validationExporting": "Validating and preparing...",
+  "validationExportAction": "Validate checksum and share JSON",
+  "validationDeviceLabel": "Device",
+  "validationBuildLabel": "Build",
+  "validationOperatorActionsTitle": "Explicit operator actions",
+  "validationOperatorActionsSubtitle": "The order is recorded in this launch journal",
+  "validationReadAction": "Check provider, permission and steps",
+  "validationSyncAction": "Send saved total",
+  "validationCheckpointAction": "Capture authoritative checkpoint",
+  "validationJournalFullWarning": "The journal limit cannot fit another complete action. Export the current JSON.",
+  "validationHealthObservationTitle": "Health observation",
+  "validationServerSyncTitle": "Server sync",
+  "validationAuthoritativeCheckpointTitle": "Authoritative checkpoint",
+  "validationFactsSubtitle": "Recorded in the current evidence journal",
+  "validationFactStatus": "Status: {value}",
+  "@validationFactStatus": {"placeholders": {"value": {"type": "String"}}},
+  "validationFactProvider": "Provider: {value}",
+  "@validationFactProvider": {"placeholders": {"value": {"type": "String"}}},
+  "validationFactPermission": "Permission: {value}",
+  "@validationFactPermission": {"placeholders": {"value": {"type": "String"}}},
+  "validationFactAggregatedTotal": "Aggregated total: {value}",
+  "@validationFactAggregatedTotal": {"placeholders": {"value": {"type": "int"}}},
+  "validationFactLocalDate": "Local date: {value}",
+  "@validationFactLocalDate": {"placeholders": {"value": {"type": "String"}}},
+  "validationFactTimeZone": "Timezone: {value}",
+  "@validationFactTimeZone": {"placeholders": {"value": {"type": "String"}}},
+  "validationFactDuration": "Duration: {value} ms",
+  "@validationFactDuration": {"placeholders": {"value": {"type": "int"}}},
+  "validationFactCategory": "Category: {value}",
+  "@validationFactCategory": {"placeholders": {"value": {"type": "String"}}},
+  "validationFactAccepted": "Accepted: {total} (delta {delta})",
+  "@validationFactAccepted": {
+    "placeholders": {
+      "total": {"type": "int"},
+      "delta": {"type": "int"}
+    }
+  },
+  "validationFactEnergy": "ENERGY: +{granted} (balance {balance})",
+  "@validationFactEnergy": {
+    "placeholders": {
+      "granted": {"type": "int"},
+      "balance": {"type": "int"}
+    }
+  },
+  "validationFactRisk": "Risk: {value}",
+  "@validationFactRisk": {"placeholders": {"value": {"type": "String"}}},
+  "validationFactDailySteps": "Daily steps: {steps} / {goal}",
+  "@validationFactDailySteps": {
+    "placeholders": {
+      "steps": {"type": "int"},
+      "goal": {"type": "int"}
+    }
+  },
+  "validationFactAcceptedTotal": "Accepted total: {value}",
+  "@validationFactAcceptedTotal": {"placeholders": {"value": {"type": "int"}}},
+  "validationFactEnergyBalance": "ENERGY balance: {value}",
+  "@validationFactEnergyBalance": {"placeholders": {"value": {"type": "int"}}},
+  "validationFactNode": "Node: {node} · {status}",
+  "@validationFactNode": {
+    "placeholders": {
+      "node": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "validationFactFirstJourney": "First journey: {stage} ({completed}/{total})",
+  "@validationFactFirstJourney": {
+    "placeholders": {
+      "stage": {"type": "String"},
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "validationJournalCount": "Journal · {count}/{limit}",
+  "@validationJournalCount": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "limit": {"type": "int"}
+    }
+  },
+  "validationJournalEmpty": "No actions have been performed yet.",
+  "validationErrorOwnerChanged": "The session owner changed. Validation Center was closed.",
+  "validationErrorEvidenceLimit": "Evidence reached the safe limit. Export the current JSON.",
+  "validationErrorUnsupportedPlatform": "The Health source is unavailable on this platform.",
+  "validationErrorProviderUpdateRequired": "Health Connect must be installed or updated.",
+  "validationErrorProviderUnavailable": "The Health provider is unavailable.",
+  "validationErrorPermissionDenied": "The permission request was denied.",
+  "validationErrorPermissionSettingsRequired": "Enable the permission in system settings.",
+  "validationErrorPermissionRestricted": "The permission is restricted by the operating system.",
+  "validationErrorProtectedDataUnavailable": "Health data is unavailable while the device is locked.",
+  "validationErrorTimeZoneUnavailable": "The operating system did not return a valid IANA timezone.",
+  "validationErrorHealthReadFailed": "The aggregated daily total could not be read.",
+  "validationErrorReadingRequired": "Perform the Health read first in this launch.",
+  "validationErrorNetworkUnavailable": "The backend is unavailable; the checkpoint was recorded as failed.",
+  "validationErrorReauthenticationRequired": "The session requires reauthentication.",
+  "validationErrorCachedSnapshot": "Cached state was not accepted as an authoritative checkpoint.",
+  "validationErrorInvalidResponse": "The backend response did not match the expected contract.",
+  "validationErrorJournalLimit": "The journal reached its safe limit.",
+  "validationErrorUnexpected": "The action ended with a normalized internal failure.",
+  "validationErrorInvalidEvidence": "Evidence failed schema, redaction or checksum validation.",
+  "validationErrorGeneric": "The validation action could not be completed.",
+  "authSessionActionFailed": "The secure session action could not be completed. Try again."
 }

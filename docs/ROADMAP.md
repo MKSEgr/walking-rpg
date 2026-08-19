@@ -548,16 +548,23 @@ remain separate and unchanged.
       locale at compact text scale 1.6, while immutable decisions and recaps
       remain persisted literal history
 
-### CODE_PENDING
+### CODE_COMPLETE — remaining boundary surfaces
 
-- [ ] Localize account, recovery, validation, activity and remaining boundary
-      screens without exposing raw diagnostic copy as player text
-- [ ] Add repo-wide RU/EN accessibility/large-text coverage and remove the
-      remaining client-authored Russian literals
+- [x] Account, destructive confirmation, recovery journal, activity sync,
+      Validation Center and shared launch/design-system boundaries use the
+      selected generated RU/EN resources
+- [x] Stable command/error categories map to privacy-safe localized feedback;
+      filenames, receipts, timestamps, wire values and server-owned IDs remain
+      literal while raw runtime/backend diagnostics never become player copy
+- [x] Locale-specific account deletion requires exact `УДАЛИТЬ` / `DELETE`
+      confirmation without changing the idempotent deletion contract
+- [x] Source audit covers all mobile app, presentation and shared boundary
+      surfaces; RU/EN compact text-scale 1.6 and accessibility widgets protect
+      the completed client-authored localization boundary
 
 The incremental identity and persistence boundary is fixed by ADR 0040.
-These slices do not complete Milestone 26 and do not change any
-external validation gate or the immutable `alpha-rc1` baseline.
+Milestone 26 is code-complete. It does not change any external validation gate
+or the immutable `alpha-rc1` baseline.
 
 ## Exit criteria autonomous scope
 

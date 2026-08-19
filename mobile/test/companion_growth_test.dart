@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations_en.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 
 void main() {
   test('names the illustrated growth stages without inventing future data', () {
-    expect(CompanionGrowth.stageName(-1), 'Малыш');
-    expect(CompanionGrowth.formLabel(0), 'Малыш · форма 1');
-    expect(CompanionGrowth.formLabel(1), 'Юный · форма 2');
-    expect(CompanionGrowth.formLabel(2), 'Взрослый · форма 3');
-    expect(CompanionGrowth.formLabel(3), 'Форма 4');
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    expect(CompanionGrowth.stageName(russian, -1), 'Малыш');
+    expect(CompanionGrowth.formLabel(russian, 0), 'Малыш · форма 1');
+    expect(CompanionGrowth.formLabel(russian, 1), 'Юный · форма 2');
+    expect(CompanionGrowth.formLabel(russian, 2), 'Взрослый · форма 3');
+    expect(CompanionGrowth.formLabel(russian, 3), 'Форма 4');
+    expect(CompanionGrowth.formLabel(english, 1), 'Young · form 2');
+    expect(CompanionGrowth.formLabel(english, 3), 'Form 4');
     expect(CompanionGrowth.illustratedStage(8), 2);
   });
 

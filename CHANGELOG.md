@@ -6,6 +6,12 @@
 
 ### Changed
 
+- account, destructive deletion confirmation, saved-action recovery, activity
+  sync, Validation Center and shared launch/design-system boundaries now follow
+  the selected RU/EN locale, including compact large-text accessibility;
+- player surfaces map stable failure/status categories to localized safe copy
+  instead of raw exception/backend diagnostics, while receipts, filenames,
+  timestamps, evidence wire values and server-owned IDs remain literal;
 - the complete Platform journal now follows the selected RU/EN locale across
   loading/error states, journey summaries, progression/catalog actions and
   accessibility signals at compact large text;

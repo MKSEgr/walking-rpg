@@ -17,6 +17,7 @@ import 'package:walking_rpg_mobile/features/account/data/account_api_client.dart
 import 'package:walking_rpg_mobile/features/account/presentation/account_screen.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 import 'support/in_memory_mobile_command_store.dart';
 
@@ -132,6 +133,105 @@ void main() {
     expect(controller.state, AuthLifecycleState.unauthenticated);
     expect(controller.notice, contains('11111111-1111-1111-1111-111111111111'));
     expect(store.session, isNull);
+    semantics.dispose();
+  });
+
+  testWidgets('English account boundary supports compact enlarged text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final OidcConfiguration oidc = _oidc();
+    final AuthSessionController controller = AuthSessionController(
+      configuration: MobileAuthConfiguration(
+        mode: MobileAuthMode.oidc,
+        apiBaseUri: Uri.parse('https://api.example'),
+        refreshSkew: const Duration(seconds: 60),
+        oidc: oidc,
+      ),
+      sessionStore: _MemoryStore(
+        _session(oidc, subject: 'account-english-user', suffix: 'initial'),
+      ),
+      oidcClient: _FakeOidcClient(
+        authorizeResponse: _response(
+          oidc,
+          subject: 'account-english-user',
+          suffix: 'confirmed',
+        ),
+      ),
+      localStateCleaner: _NoopCleaner(),
+    );
+    await controller.initialize();
+    addTearDown(controller.dispose);
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(1.6)),
+          child: child!,
+        ),
+        home: AccountScreen(
+          controller: controller,
+          identity: controller.identity!,
+          apiClient: AccountApiClient(
+            baseUri: Uri.parse('https://api.example'),
+            transport: _AccountTransport(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Account and data'), findsOneWidget);
+    expect(find.text('PILOT DOSSIER'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Pilot dossier, account-english-user, Protected OIDC session',
+      ),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('account-delete-button')),
+      220,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text('Delete account'), findsWidgets);
+    await tester.tap(find.byKey(const Key('account-delete-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete account?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('account-delete-continue')));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter DELETE in uppercase:'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('account-delete-phrase')),
+      'УДАЛИТЬ',
+    );
+    await tester.pump();
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('account-delete-confirm')))
+          .onPressed,
+      isNull,
+    );
+    await tester.enterText(
+      find.byKey(const Key('account-delete-phrase')),
+      'DELETE',
+    );
+    await tester.pump();
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('account-delete-confirm')))
+          .onPressed,
+      isNotNull,
+    );
+    expect(tester.takeException(), isNull);
     semantics.dispose();
   });
 

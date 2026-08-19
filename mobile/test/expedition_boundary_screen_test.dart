@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/expedition_boundary_screen.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('loading boundary is indeterminate and announces launch state', (
@@ -51,12 +52,16 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
 
     const String diagnostic =
         'OIDC issuer, client identifier and redirect configuration could not '
         'be validated for this development launch.';
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: WalkingRpgTheme.light(),
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
@@ -67,9 +72,9 @@ void main() {
           );
         },
         home: const ExpeditionBoundaryScreen.blocked(
-          badgeLabel: 'Контур запуска с длинным названием',
-          title: 'Запуск безопасно остановлен',
-          message: 'Проверьте конфигурацию и повторите запуск приложения.',
+          badgeLabel: 'Launch boundary with a long name',
+          title: 'Launch stopped safely',
+          message: 'Check the configuration and restart the application.',
           details: diagnostic,
           icon: Icons.security_outlined,
           tone: ExpeditionPanelTone.resonance,
@@ -84,12 +89,14 @@ void main() {
     );
 
     final Text badge = tester.widget<Text>(
-      find.text('КОНТУР ЗАПУСКА С ДЛИННЫМ НАЗВАНИЕМ'),
+      find.text('LAUNCH BOUNDARY WITH A LONG NAME'),
     );
     expect(badge.maxLines, isNull);
     expect(badge.overflow, TextOverflow.visible);
     expect(find.text(diagnostic), findsOneWidget);
+    expect(find.bySemanticsLabel('Launch safely blocked'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 }

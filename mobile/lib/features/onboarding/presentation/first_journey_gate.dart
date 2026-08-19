@@ -110,7 +110,6 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
             }
             if (snapshot.hasError || snapshot.data == null) {
               return _FirstJourneyLoadError(
-                error: snapshot.error,
                 onRetry: _reload,
                 onContinueLater: _continueLater,
                 onOpenAccount: widget.onOpenAccount,
@@ -345,10 +344,10 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     });
     try {
       await action();
-    } on Object catch (error) {
+    } on Object {
       if (mounted) {
         setState(() {
-          _errorMessage = _friendlyError(error);
+          _errorMessage = _friendlyError();
         });
       }
     } finally {
@@ -468,12 +467,8 @@ class _FirstJourneyGateState extends State<FirstJourneyGate> {
     });
   }
 
-  String _friendlyError(Object error) {
-    final String text = error.toString().replaceFirst(
-      RegExp(r'^(Exception|StateError):\s*'),
-      '',
-    );
-    return text.isEmpty ? context.l10n.firstJourneyActionFailed : text;
+  String _friendlyError() {
+    return context.l10n.firstJourneyActionFailed;
   }
 }
 
@@ -503,7 +498,6 @@ class _FirstJourneyLoading extends StatelessWidget {
 
 class _FirstJourneyLoadError extends StatelessWidget {
   const _FirstJourneyLoadError({
-    required this.error,
     required this.onRetry,
     required this.onContinueLater,
     this.onOpenAccount,
@@ -512,7 +506,6 @@ class _FirstJourneyLoadError extends StatelessWidget {
     this.recoveryUnavailable = false,
   });
 
-  final Object? error;
   final VoidCallback onRetry;
   final VoidCallback onContinueLater;
   final VoidCallback? onOpenAccount;
@@ -547,7 +540,7 @@ class _FirstJourneyLoadError extends StatelessWidget {
             key: const Key('first-journey-load-error-state'),
             title: context.l10n.firstJourneyLoadFailureTitle,
             message: context.l10n.firstJourneyLoadFailureMessage,
-            details: error?.toString() ?? context.l10n.stateUnavailable,
+            details: context.l10n.stateUnavailable,
             primaryActionKey: const Key('first-journey-retry'),
             primaryActionLabel: context.l10n.retryButton,
             onPrimaryAction: onRetry,

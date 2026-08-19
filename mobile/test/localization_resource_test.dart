@@ -11,7 +11,7 @@ void main() {
     final Set<String> russianKeys = _messageKeys(russian);
 
     expect(englishKeys, equals(russianKeys));
-    expect(englishKeys.length, greaterThanOrEqualTo(680));
+    expect(englishKeys.length, greaterThanOrEqualTo(890));
 
     for (final String key in englishKeys) {
       expect(
@@ -50,19 +50,31 @@ void main() {
 
   test('localized game surfaces keep Russian player copy in ARB resources', () {
     const List<String> shellFiles = <String>[
+      'lib/app/auth_gate.dart',
+      'lib/app/expedition_boundary_screen.dart',
       'lib/app/main_navigation_shell.dart',
+      'lib/app/walking_rpg_app.dart',
       'lib/core/cache/cached_snapshot_banner.dart',
       'lib/core/localization/current_content_localizations.dart',
       'lib/core/localization/current_event_localizations.dart',
       'lib/core/localization/current_platform_content_localizations.dart',
       'lib/design_system/companion_bond_signal.dart',
+      'lib/design_system/companion_growth.dart',
       'lib/design_system/companion_motion.dart',
+      'lib/design_system/expedition_decision_dialog.dart',
+      'lib/design_system/expedition_event_scene.dart',
+      'lib/design_system/pilot_portrait.dart',
       'lib/design_system/pilot_motion.dart',
       'lib/design_system/quest_route_signal.dart',
       'lib/design_system/weekly_route_signal.dart',
+      'lib/features/account/presentation/account_screen.dart',
+      'lib/features/activity/presentation/activity_sync_shell.dart',
       'lib/features/home/presentation/home_screen.dart',
+      'lib/features/onboarding/presentation/first_journey_gate.dart',
       'lib/features/platform/presentation/platform_screen.dart',
       'lib/features/recovery/presentation/mobile_command_recovery_action.dart',
+      'lib/features/recovery/presentation/mobile_command_recovery_screen.dart',
+      'lib/features/validation/presentation/validation_center_screen.dart',
     ];
 
     for (final String path in shellFiles) {
@@ -70,6 +82,33 @@ void main() {
         RegExp(r'[А-Яа-яЁё]').hasMatch(File(path).readAsStringSync()),
         isFalse,
         reason: '$path must use generated localization resources',
+      );
+    }
+  });
+
+  test('player boundary surfaces never render raw exception diagnostics', () {
+    const List<String> boundaryFiles = <String>[
+      'lib/app/auth_gate.dart',
+      'lib/app/walking_rpg_app.dart',
+      'lib/features/account/presentation/account_screen.dart',
+      'lib/features/activity/presentation/activity_sync_shell.dart',
+      'lib/features/home/presentation/home_screen.dart',
+      'lib/features/onboarding/presentation/first_journey_gate.dart',
+      'lib/features/recovery/presentation/mobile_command_recovery_screen.dart',
+      'lib/features/validation/presentation/validation_center_screen.dart',
+    ];
+
+    for (final String path in boundaryFiles) {
+      final String source = File(path).readAsStringSync();
+      expect(
+        RegExp(r'error\??\.toString\(\)').hasMatch(source),
+        isFalse,
+        reason: '$path must map failures to localized safe copy',
+      );
+      expect(
+        source,
+        isNot(contains(r'$error')),
+        reason: '$path must not interpolate raw exceptions into player copy',
       );
     }
   });

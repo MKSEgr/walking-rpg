@@ -1369,6 +1369,14 @@ stable identity. Unknown ID сохраняет literal server value. Squad name 
 archive и их reward names остаются immutable persisted copy и не переводятся
 повторно при смене locale.
 
+Account/recovery/activity/Validation Center и shared mobile boundaries также
+являются client presentation и не расширяют API schema: стабильные
+command/error categories отображаются через generated RU/EN resources. Raw
+backend/runtime message не становится player copy. Возвращённые API filename,
+receipt ID, timestamp, evidence wire value и server-owned ID остаются literal
+facts; смена locale их не переписывает и не влияет на idempotency, persisted
+history или evidence checksum.
+
 ## Admin-публикация platform config и content
 
 `PUT /api/v1/admin/platform/remote-config` и

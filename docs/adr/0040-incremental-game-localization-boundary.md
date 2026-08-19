@@ -5,7 +5,8 @@
 - **Связанные задачи:** [issue #339](https://github.com/MKSEgr/walking-rpg/issues/339),
   [issue #341](https://github.com/MKSEgr/walking-rpg/issues/341),
   [issue #343](https://github.com/MKSEgr/walking-rpg/issues/343),
-  [issue #345](https://github.com/MKSEgr/walking-rpg/issues/345)
+  [issue #345](https://github.com/MKSEgr/walking-rpg/issues/345),
+  [issue #347](https://github.com/MKSEgr/walking-rpg/issues/347)
 
 ## Контекст
 
@@ -45,13 +46,17 @@ Milestone 26 выполняется последовательными верт�
    command type; unknown content сохраняет server literal fallback;
 8. immutable decisions, outcomes, reward names и current/archive recaps внутри
    Platform journal остаются persisted literal history;
-9. account/recovery/validation/activity и остальные игровые поверхности
-   сохраняют `CODE_PENDING`, пока их отдельные срезы не получат tests и
-   документацию.
+9. пятый срез локализует account, locale-specific destructive confirmation,
+   recovery journal, activity sync, Validation Center и оставшиеся shared
+   boundary/design-system surfaces. Stable error/status categories разрешаются
+   в безопасную RU/EN copy, а raw exception/backend diagnostics не выводятся;
+10. filenames, receipts, timestamps, evidence wire values и server-owned IDs
+    остаются literal facts и не используются для определения locale.
 
-Source-level regression запрещает кириллицу в локализованных shell/Platform
-presentation и связанных accessibility signals, а RU/EN widget tests проверяют
-compact/wide layout, text scale 1.6 и semantics.
+Source-level regression запрещает кириллицу во всех app, presentation и shared
+boundary/design-system surfaces и отдельно запрещает raw exception
+interpolation. RU/EN widget tests проверяют compact/wide layout, text scale 1.6
+и semantics.
 
 ## Последствия
 
@@ -66,8 +71,9 @@ compact/wide layout, text scale 1.6 и semantics.
 - английский Platform journal не зависит от server locale для известных
   current catalog identities и командного feedback, но не переписывает
   сохранённую историю маршрута;
-- milestone нельзя отмечать `CODE_COMPLETE`, пока остаются перечисленные
-  player-facing поверхности.
+- Milestone 26 имеет завершённую code boundary; external store, staged rollout
+  и physical-device evidence по-прежнему живут в отдельных gates и не
+  выводятся из локализации.
 
 ## Откат
 
@@ -75,6 +81,7 @@ compact/wide layout, text scale 1.6 и semantics.
 client literals. Второй — удалением current-content resolver и additive
 `pilotId`. Третий — удалением current-event resolver из READY event card и
 unlock feedback. Четвёртый — удалением Platform catalog/command resolver и
-возвратом journal chrome к прежней copy. Legacy-compatible mobile parser не
-требует миграции cache. Stable IDs, receipts, historical copy и `alpha-rc1`
-при этом не меняются.
+возвратом journal chrome к прежней copy. Пятый — возвратом remaining boundary
+calls к прежним client literals при сохранении typed failure mapping.
+Legacy-compatible mobile parser не требует миграции cache. Stable IDs,
+receipts, historical copy и `alpha-rc1` при этом не меняются.

@@ -10,6 +10,7 @@ import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_screen.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 import 'support/in_memory_mobile_command_store.dart';
 
@@ -492,9 +493,13 @@ void main() {
     final MobileCommandRuntime runtime = _runtime(
       store: InMemoryMobileCommandStore(<MobileCommand>[failed]),
     );
+    final SemanticsHandle semantics = tester.ensureSemantics();
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: WalkingRpgTheme.dark(),
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
@@ -516,11 +521,18 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Подтверждение результата события'), findsOneWidget);
+    expect(find.text('Event result acknowledgement'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Recovery boundary. Pending delivery: 0. Rejected: 1.',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const Key('command-recovery-safety-note')),
       findsOneWidget,
     );
+    semantics.dispose();
     await runtime.close();
   });
 }

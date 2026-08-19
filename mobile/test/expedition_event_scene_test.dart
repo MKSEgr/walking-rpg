@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations_en.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 
 void main() {
   test('event artwork is selected only from exact stable IDs', () {
@@ -30,6 +32,7 @@ void main() {
   test('scene semantics use the current server event title', () {
     expect(
       ExpeditionEventArtwork.semanticDescriptionFor(
+        l10n: AppLocalizationsRu(),
         eventId: 'mirror-delta-v1',
         eventTitle: 'Раздвоенный сигнал',
       ),
@@ -38,11 +41,21 @@ void main() {
     );
     expect(
       ExpeditionEventArtwork.semanticDescriptionFor(
+        l10n: AppLocalizationsRu(),
         eventId: 'resonance-pocket-v1',
         eventTitle: 'Карта скрытого течения',
       ),
       'Сцена события «Карта скрытого течения»: забытые маршруты сходятся '
       'в удерживаемом компасом пространстве.',
+    );
+    expect(
+      ExpeditionEventArtwork.semanticDescriptionFor(
+        l10n: AppLocalizationsEn(),
+        eventId: 'signal-source-v1',
+        eventTitle: 'Signal source',
+      ),
+      'Event scene “Signal source”: the outer beacon sends repeating '
+      'pulses through the fog.',
     );
   });
 

@@ -484,13 +484,11 @@ class _ValidationMetadataProgressScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ExpeditionBoundaryScreen.loading(
-      key: Key('validation-metadata-loading-screen'),
-      badgeLabel: 'Внутренний контур',
-      title: 'Проверяем среду валидации',
-      message:
-          'Сверяем версию приложения, сборку и устройство перед '
-          'запуском Validation Center.',
+    return ExpeditionBoundaryScreen.loading(
+      key: const Key('validation-metadata-loading-screen'),
+      badgeLabel: context.l10n.validationMetadataBadge,
+      title: context.l10n.validationMetadataTitle,
+      message: context.l10n.validationMetadataMessage,
       icon: Icons.fact_check_outlined,
       tone: ExpeditionPanelTone.resonance,
     );
@@ -502,11 +500,11 @@ class _ValidationMetadataErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ExpeditionBoundaryScreen.blocked(
-      key: Key('validation-metadata-error-screen'),
-      badgeLabel: 'Контур заблокирован',
-      title: 'Validation Center не запущен',
-      message: 'Runtime app/build metadata недоступны или некорректны.',
+    return ExpeditionBoundaryScreen.blocked(
+      key: const Key('validation-metadata-error-screen'),
+      badgeLabel: context.l10n.validationMetadataBlockedBadge,
+      title: context.l10n.validationMetadataBlockedTitle,
+      message: context.l10n.validationMetadataBlockedMessage,
       icon: Icons.phonelink_erase,
       tone: ExpeditionPanelTone.resonance,
     );
@@ -528,7 +526,9 @@ class _LoginScreen extends StatelessWidget {
     return AuthExpeditionScreen(
       reauthentication: reauthentication,
       busy: busy,
-      message: controller.message,
+      message: controller.message == null
+          ? null
+          : context.l10n.authSessionActionFailed,
       notice: controller.notice,
       onSignIn: controller.signIn,
     );
