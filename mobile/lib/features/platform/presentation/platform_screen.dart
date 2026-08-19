@@ -951,11 +951,8 @@ class _JourneyChronicleCard extends StatelessWidget {
               .join('; ');
     final List<String> materialRewards = chronicle.materials
         .map(
-          (HomeJourneyMaterialReward material) =>
-              context.l10n.platformMaterialReward(
-                material.quantity,
-                material.itemName,
-              ),
+          (HomeJourneyMaterialReward material) => context.l10n
+              .platformMaterialReward(material.quantity, material.itemName),
         )
         .toList(growable: false);
     final String materialSummary = materialRewards.isEmpty
