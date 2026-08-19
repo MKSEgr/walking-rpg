@@ -989,10 +989,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Signal from the Fog Sector'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Current node “Ash Orbit”'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('Current node “Ash Orbit”'), findsOneWidget);
 
       final Finder craftButton = find.byKey(
         const Key('craft-resonance-compass-v1'),
