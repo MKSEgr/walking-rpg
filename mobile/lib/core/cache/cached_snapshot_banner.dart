@@ -4,11 +4,7 @@ import 'package:walking_rpg_mobile/core/localization/app_localizations_extension
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 
 class CachedSnapshotBanner extends StatelessWidget {
-  const CachedSnapshotBanner({
-    super.key,
-    required this.metadata,
-    this.title,
-  });
+  const CachedSnapshotBanner({super.key, required this.metadata, this.title});
 
   final CachedReadMetadata metadata;
   final String? title;

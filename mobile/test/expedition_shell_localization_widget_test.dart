@@ -92,10 +92,7 @@ void main() {
 }
 
 class _LocalizedShell extends StatelessWidget {
-  const _LocalizedShell(
-    this.locale, {
-    this.usePlaceholderDestinations = false,
-  });
+  const _LocalizedShell(this.locale, {this.usePlaceholderDestinations = false});
 
   final Locale locale;
   final bool usePlaceholderDestinations;
