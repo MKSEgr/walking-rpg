@@ -960,8 +960,8 @@ class _JourneyChronicleCard extends StatelessWidget {
         : '; ${materialRewards.join('; ')}';
     final List<String> finaleLabels = chronicle.finaleOutcomes
         .map(
-          (HomeJourneyFinaleOutcome outcome) => context.l10n
-              .platformJourneyChronicleFinaleSemantic(
+          (HomeJourneyFinaleOutcome outcome) =>
+              context.l10n.platformJourneyChronicleFinaleSemantic(
                 outcome.eventTitle,
                 outcome.choiceTitle,
                 outcome.outcomeTitle,
@@ -1073,12 +1073,11 @@ class _JourneyChronicleCard extends StatelessWidget {
                         in chronicle.finaleOutcomes)
                       _JourneyRewardChip(
                         icon: Icons.flag_outlined,
-                        label: context.l10n
-                            .platformJourneyChronicleFinaleChip(
-                              outcome.choiceTitle,
-                              outcome.outcomeTitle,
-                              outcome.journeyCount,
-                            ),
+                        label: context.l10n.platformJourneyChronicleFinaleChip(
+                          outcome.choiceTitle,
+                          outcome.outcomeTitle,
+                          outcome.journeyCount,
+                        ),
                       ),
                   ],
                 ),

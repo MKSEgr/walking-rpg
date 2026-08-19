@@ -370,10 +370,7 @@ void main() {
       snapshot.journeyChronicle?.finaleOutcomes.first.eventTitle,
       'Первый сигнал из летописи',
     );
-    expect(
-      snapshot.journeyChronicle?.finaleOutcomes.first.journeyCount,
-      5,
-    );
+    expect(snapshot.journeyChronicle?.finaleOutcomes.first.journeyCount, 5);
     expect(
       snapshot.journeyChronicle?.finaleOutcomes.last.choiceTitle,
       'Следовать за отражением',

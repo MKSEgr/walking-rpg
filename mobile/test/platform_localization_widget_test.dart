@@ -225,10 +225,7 @@ void main() {
     expect(find.text('+44 Lumen Shard'), findsOneWidget);
     expect(find.text('+19 Ash Seed'), findsOneWidget);
     expect(find.text('Route finales'), findsOneWidget);
-    expect(
-      find.text('Stabilize the core → Steady pulse · ×5'),
-      findsOneWidget,
-    );
+    expect(find.text('Stabilize the core → Steady pulse · ×5'), findsOneWidget);
     expect(
       find.text('Follow the reflection → Reflection accepted · ×4'),
       findsOneWidget,
