@@ -929,7 +929,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.textContaining('Личная цель: медиана 3000 шагов за 3 дня +5%'),
+      find.textContaining(
+        'Личная цель: медиана 3000 шагов за 3 активных '
+        'дней +5%',
+      ),
       findsOneWidget,
     );
 
