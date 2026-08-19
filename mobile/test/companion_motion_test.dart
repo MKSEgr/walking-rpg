@@ -114,7 +114,7 @@ void main() {
           body: CompanionMotionPortrait(
             key: Key('rune-motion'),
             petId: 'rune-v1',
-            name: 'Руна',
+            name: 'Навигатор',
             species: 'эхо',
             evolutionStage: 2,
             play: false,

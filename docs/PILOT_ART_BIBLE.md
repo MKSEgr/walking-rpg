@@ -25,6 +25,11 @@ TASK-011; committed art is not a substitute for that validation.
 - Primary character: calm, capable, attentive and humane rather than militarized
   or anonymous-threat coded.
 
+The stable `rune-v1` companion now also uses «Навигатор» as its canonical base
+name. Pilot portraits, profile and dossier surfaces retain the pilot identity
+name above, while paired crew copy uses the role «Пилот» to avoid
+«Навигатор и Навигатор» without changing either stable ID.
+
 The existing `pilot_navigator.webp` portrait is the identity anchor. Full-body
 motion extends only the unseen lower suit with conservative matching materials;
 it does not redesign the hood, visor, torso or palette.

@@ -209,7 +209,7 @@ class PlatformContentCatalogTest {
                 List.of(
                         "Искра-звездочёт:140",
                         "Мох-оплот:125",
-                        "Руна-провидица:150"
+                        "Навигатор созвездий:150"
                 ),
                 list(adultCatalog, "pets").stream()
                         .map(PlatformContentCatalogTest::map)
@@ -439,6 +439,22 @@ class PlatformContentCatalogTest {
             assertEquals(platformPet.trait(), gameplayPet.trait());
             assertEquals(platformPet.initialBond(), gameplayPet.initialBond());
         }
+    }
+
+    @Test
+    void shouldExposeCanonicalNavigatorCopyBehindStablePetId() {
+        PlatformContentCatalog.PetDefinition platformPet =
+                catalog.requirePet(StarterProgressionContent.RUNE_PET_ID);
+        PetDefinition gameplayPet = new StarterProgressionContent()
+                .requirePet(StarterProgressionContent.RUNE_PET_ID);
+
+        assertEquals("rune-v1", platformPet.petId());
+        assertEquals("Навигатор", platformPet.name());
+        assertEquals("Навигатор потоков", platformPet.evolvedName());
+        assertEquals("Навигатор созвездий", platformPet.adultName());
+        assertEquals("Точный проводник", platformPet.trait());
+        assertEquals("Навигатор", gameplayPet.name());
+        assertEquals("Точный проводник", gameplayPet.trait());
     }
 
     @Test

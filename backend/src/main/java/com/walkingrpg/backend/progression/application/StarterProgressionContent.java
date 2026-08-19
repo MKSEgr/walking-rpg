@@ -44,11 +44,11 @@ public class StarterProgressionContent {
             ),
             new PetDefinition(
                     RUNE_PET_ID,
-                    "Руна",
+                    "Навигатор",
                     "Эхо",
                     1,
                     10,
-                    "Смелый навигатор"
+                    "Точный проводник"
             )
     ));
 

@@ -20,9 +20,9 @@ portrait optimized for the `72-80 px` in-product presentation.
 | `companion_moss_stage0.webp` | `moss-v1` / Мох | stage 0, young |
 | `companion_moss_stage1.webp` | `moss-v1` / Мох | stage 1, adolescent |
 | `companion_moss.webp` | `moss-v1` / Мох | stage 2, adult |
-| `companion_rune_stage0.webp` | `rune-v1` / Руна | stage 0, young |
-| `companion_rune_stage1.webp` | `rune-v1` / Руна | stage 1, adolescent |
-| `companion_rune.webp` | `rune-v1` / Руна | stage 2, adult |
+| `companion_rune_stage0.webp` | `rune-v1` / Навигатор | stage 0, young |
+| `companion_rune_stage1.webp` | `rune-v1` / Навигатор потоков | stage 1, adolescent |
+| `companion_rune.webp` | `rune-v1` / Навигатор созвездий | stage 2, adult |
 | `companion_spark_motion_v1.png` | `spark-v1` / Искра | transparent motion atlas |
 | `companion_spark_motion_v1.json` | `spark-v1` / Искра | game clip manifest |
 | `companion_moss_motion_v1.png` | `moss-v1` / Мох | transparent motion atlas |
@@ -53,8 +53,8 @@ the curved tail/fan stabilize momentum. The three atlases share rendering,
 light logic and cell geometry without sharing silhouettes or locomotion.
 
 Home uses one non-looping idle pass for exact active `spark-v1`, `moss-v1` and
-`rune-v1` identities. The violet companion remains `rune-v1` / «Руна» in the
-current server catalog until its naming migration is reviewed separately. Pet
+`rune-v1` identities. The violet companion uses the current «Навигатор» naming
+while retaining the compatibility ID and `companion_rune_*` asset paths. Pet
 selection, evolution form, bond and active state still come from the accepted
 server snapshot; an atlas never chooses a pet, renames it or predicts
 progression. The existing stage portraits remain the authoritative form

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
 import 'package:walking_rpg_mobile/features/auth/presentation/auth_expedition_screen.dart';
@@ -98,6 +99,41 @@ void main() {
         );
         expect(tester.takeException(), isNull);
       }
+    }
+  });
+
+  testWidgets('rune-v1 resolves to canonical Navigator copy in both locales', (
+    WidgetTester tester,
+  ) async {
+    for (final ({Locale locale, String expected}) localeCase
+        in <({Locale locale, String expected})>[
+          (
+            locale: const Locale('ru'),
+            expected: 'Навигатор · эхо · Точный проводник',
+          ),
+          (
+            locale: const Locale('en'),
+            expected: 'Navigator · echo · Precise guide',
+          ),
+        ]) {
+      await tester.pumpWidget(
+        _LocalizedTestApp(
+          locale: localeCase.locale,
+          child: Builder(
+            builder: (BuildContext context) {
+              final AppLocalizations localizations =
+                  AppLocalizations.of(context)!;
+              return Text(
+                '${localizations.journeyPetName('rune-v1', 'legacy')} · '
+                '${localizations.journeyPetSpecies('rune-v1', 'legacy')} · '
+                '${localizations.journeyPetTrait('rune-v1', 'legacy')}',
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(find.text(localeCase.expected), findsOneWidget);
     }
   });
 }

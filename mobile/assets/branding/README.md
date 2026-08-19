@@ -6,8 +6,8 @@ Android and iOS resources own startup rendering before Flutter is available.
 
 The emblem is universal rather than pet-specific. Its compass, illuminated
 route and distant signal communicate expedition, walking and progression
-without promising a server-owned location or choosing Искра, Мох or Руна for
-the player.
+without promising a server-owned location or choosing Искра, Мох or Навигатор
+for the player.
 
 Generate every native raster from the repository root with:
 

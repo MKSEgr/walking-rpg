@@ -17,6 +17,39 @@ class StarterExpeditionContentTest {
     private final StarterExpeditionContent content = new StarterExpeditionContent();
 
     @Test
+    void shouldExposeCanonicalNavigatorCopyForStableRuneRoutes() {
+        ExpeditionEventChoiceDefinition guidedChoice = content.requireChoice(
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                StarterExpeditionContent.RUNE_UNCHARTED_CHOICE_ID,
+                StarterExpeditionContent.PET_GUIDED_UNCHARTED_CONTENT_VERSION
+        );
+        ExpeditionEventChoiceDefinition adultChoice = content.requireChoice(
+                StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                StarterExpeditionContent.RUNE_ADULT_FRONTIER_CHOICE_ID,
+                StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
+        );
+
+        assertEquals("Расшифровать созвездие с Навигатором",
+                guidedChoice.title());
+        assertEquals("Навигатор", guidedChoice.petRequirement().petName());
+        assertEquals("rune-v1", guidedChoice.petRequirement().petId());
+        assertTrue(guidedChoice.outcomeSummary().startsWith("Навигатор "));
+        assertFalse(guidedChoice.description().contains("Руна"));
+        assertFalse(guidedChoice.petRequirement().lockedReason().contains("Руна"));
+
+        assertEquals("Прочесть врата с Навигатором созвездий",
+                adultChoice.title());
+        assertEquals("Навигатор созвездий",
+                adultChoice.petRequirement().petName());
+        assertEquals("rune-v1", adultChoice.petRequirement().petId());
+        assertEquals(2, adultChoice.petRequirement().minimumEvolutionStage());
+        assertTrue(adultChoice.outcomeSummary()
+                .startsWith("Навигатор созвездий "));
+        assertFalse(adultChoice.description().contains("Руна"));
+        assertFalse(adultChoice.petRequirement().lockedReason().contains("Руна"));
+    }
+
+    @Test
     void shouldGateOptionalRoutesByActiveContentVersion() {
         AtomicInteger activationReads = new AtomicInteger();
         String chapterV2 = content.activeContentVersion(

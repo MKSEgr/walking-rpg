@@ -56,7 +56,7 @@ widgets should not introduce independent accent colors.
 The launcher and native startup boundary use one universal expedition emblem:
 a dark compass, an illuminated route and a distant ENERGY signal. It belongs
 to the whole expedition rather than one starter, so the application never
-selects Искра, Мох or Руна before the player does.
+selects Искра, Мох or Навигатор before the player does.
 
 - launcher art contains no text and keeps its essential silhouette inside the
   Android `66 × 66 dp` adaptive-icon safe zone;
@@ -98,14 +98,15 @@ that remains readable without relying on color:
 
 - Искра is an angular lumen scout with high ears and a signal tail;
 - Мох is a low, rounded terra guardian with a living sprout;
-- Руна is a faceted echo navigator framed by asymmetric signal waves.
+- Навигатор is a faceted echo guide framed by asymmetric signal waves.
 
 New companion production follows the canonical lineup, shared rendering rules
-and naming gap recorded in [COMPANION_ART_BIBLE.md](COMPANION_ART_BIBLE.md).
+recorded in [COMPANION_ART_BIBLE.md](COMPANION_ART_BIBLE.md).
 
 The original four crew portraits are one coherent illustrated atlas: a
-universal helmeted Navigator pilot plus the adult forms of Искра, Мох and Руна.
-Each companion also has identity-preserving young and adolescent portraits.
+universal helmeted Navigator pilot plus the adult forms of Искра, Мох and
+Навигатор. Each companion also has identity-preserving young and adolescent
+portraits.
 All WebP assets stay readable at the `72-80 px` in-product sizes and use the
 same night-ink, lumen, ENERGY and resonance palette as the Flutter theme. The
 pilot portrait is shared by Home and the account dossier; companion portraits
@@ -139,12 +140,12 @@ explicit clips and sixteen look directions behind a versioned manifest; no clip
 is selected from the pet name, species or inferred gameplay state. Home may
 play one idle pass for any of those accepted exact IDs, while pet choice and
 growth surfaces retain the stage-specific portraits. The violet companion
-keeps the current `rune-v1` / «Руна» server presentation until its separate
-naming migration is reviewed. Reduced-motion settings hold the first frame,
-and continuous looping requires a deliberate scene-level opt-in. These
-candidates are material for the physical motion review in TASK-011, not
-evidence that the three-pet visual direction or motion tolerance has already
-been validated.
+keeps the compatibility ID `rune-v1` and `companion_rune_*` asset paths while
+its current server presentation is «Навигатор». Reduced-motion settings hold
+the first frame, and continuous looping requires a deliberate scene-level
+opt-in. These candidates are material for the physical motion review in
+TASK-011, not evidence that the three-pet visual direction or motion tolerance
+has already been validated.
 
 The universal `navigator-v1` pilot now has a separate transparent motion atlas
 under the identity and movement rules in

@@ -72,9 +72,9 @@ Map<String, dynamic> platformSnapshotJson({
         },
         <String, dynamic>{
           'petId': 'rune-v1',
-          'name': 'Руна',
+          'name': 'Навигатор',
           'species': 'эхо',
-          'trait': 'Смелый навигатор',
+          'trait': 'Точный проводник',
           'level': 1,
           'bond': 9,
           'evolutionStage': 0,

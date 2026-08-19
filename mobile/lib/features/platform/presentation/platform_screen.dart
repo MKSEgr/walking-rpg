@@ -1552,7 +1552,7 @@ class _JournalHero extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Навигатор и ${activePet.name}',
+          'Пилот и ${activePet.name}',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 4),
@@ -1646,7 +1646,7 @@ class _JournalHero extends StatelessWidget {
             key: const Key('platform-journal-crew'),
             container: true,
             label:
-                'Экипаж маршрута: пилот Навигатор и ${activePet.name}. '
+                'Экипаж маршрута: пилот и ${activePet.name}. '
                 '${equippedCosmeticNames.isEmpty ? 'Без активной косметики' : 'Экипировано: ${equippedCosmeticNames.join(', ')}'}',
             child: ExcludeSemantics(
               child: LayoutBuilder(

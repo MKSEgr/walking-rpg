@@ -503,14 +503,14 @@ visual-mapping tests реализованы. Баланс нового рубе�
 Критерии:
 
 - inactive `chapter-1-v10` сохраняет topology v9 и добавляет в
-  `uncharted-verge-v1` по одному choice для Искры, Мха и Руны; v1-v9 новые IDs
-  не проецируют и не принимают;
+  `uncharted-verge-v1` по одному choice для Искры, Мха и Навигатора; v1-v9
+  новые IDs не проецируют и не принимают;
 - Home помещает choice активного питомца в `choices`, два остальных — в
   `lockedChoices` с authoritative `type=ACTIVE_PET` и причиной блокировки;
 - прямой API-вызов чужого pet choice отклоняется до progression, inventory и
   expedition mutation, а exact replay успешного выбора не дублирует награды;
 - Искра получает `+48 XP / +46 bond / 3 ion-bloom`, Мох —
-  `+64 XP / +34 bond / 3 ash-seed`, Руна —
+  `+64 XP / +34 bond / 3 ash-seed`, Навигатор —
   `+56 XP / +40 bond / 3 echo-thread`; каждый исход завершает экспедицию;
 - V26 сохраняет active v9 и существующие active-pet/progression rows; v10
   активируется только после drain pre-V26 backend instances.
@@ -529,7 +529,7 @@ parser/widget и visual-mapping tests реализованы. Баланс pet-s
 - inactive `chapter-1-v11` сохраняет 25-node topology и разрешает
   server-authoritative переход `1 → 2`; v1-v10 сохраняют maximum stage `1`;
 - Spark эволюционирует при `140` bond в «Искру-звездочёта», Moss при `125` в
-  «Мох-оплот», Rune при `150` в «Руну-провидицу»;
+  «Мох-оплот», `rune-v1` при `150` в «Навигатора созвездий»;
 - user-state pet projection возвращает следующий `evolutionBond` и additive
   `maximumEvolutionStage`; старый mobile/backend безопасно используют maximum
   `1` во время rolling upgrade, а content rollback не опускает effective
@@ -554,7 +554,7 @@ tests реализованы. Баланс взрослых thresholds треб�
   `constellation-sanctuary` и событие `constellation-sanctuary-v1`; v1-v11
   сохраняют прежнюю topology и не принимают новые choice IDs;
 - `uncharted-verge-v1` получает по одному маршруту для Искры-звездочёта,
-  Мха-оплота и Руны-провидицы; выбор требует exact active pet и
+  Мха-оплота и Навигатора созвездий; выбор требует exact active pet и
   `evolutionStage >= 2`;
 - Home проецирует additive `minimumEvolutionStage`: доступен только маршрут
   текущего взрослого питомца, остальные adult routes остаются в
@@ -956,6 +956,29 @@ immutable receipts без миграции и без изменения экон
 
 **Статус:** lifetime-летопись реализована без миграции, изменения topology,
 экономики или archive pagination.
+
+### US-041. Закрепить Навигатора как третьего спутника
+
+Как игрок, я хочу видеть одного и того же канонического Навигатора во всех
+текущих игровых поверхностях, чтобы имя спутника не расходилось с его
+утверждённым образом и не смешивалось с ролью пилота.
+
+Критерии:
+
+- stable companion ID `rune-v1`, pilot ID `navigator-v1`, внутренние enum,
+  asset paths и исторические receipts/migrations не переименовываются;
+- текущий catalog и progression используют формы «Навигатор», «Навигатор
+  потоков», «Навигатор созвездий» и trait «Точный проводник»;
+- pet-gated choices и требования используют те же формы без legacy «Руна»;
+- обязательный first-journey mapping разрешает `rune-v1` как
+  «Навигатор» / `Navigator` с актуальным trait в RU/EN;
+- paired crew copy называет `navigator-v1` ролью «Пилот», сохраняя имя
+  «Навигатор» в portrait/dossier контексте;
+- backend, Flutter и accessibility tests фиксируют current copy и stable-ID
+  compatibility.
+
+**Статус:** canonical copy реализована без schema migration, изменения
+gameplay identity, экономики, topology или external validation status.
 
 ## P1 — расширение MVP
 

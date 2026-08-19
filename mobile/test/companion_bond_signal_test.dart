@@ -167,7 +167,7 @@ void main() {
         home: const Scaffold(
           body: CompanionBondSignal(
             petId: 'rune-v1',
-            petName: 'Руна',
+            petName: 'Навигатор',
             bond: 7,
             evolutionBond: 55,
             canEvolve: false,
@@ -184,7 +184,10 @@ void main() {
     );
     expect(find.text('7'), findsOneWidget);
     expect(find.text('7/55'), findsNothing);
-    expect(find.bySemanticsLabel('Связь спутника «Руна»: 7'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Связь спутника «Навигатор»: 7'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });

@@ -1386,6 +1386,41 @@ void main() {
     expect(refresh.onPressed, isNotNull);
   });
 
+  testWidgets('journal distinguishes the pilot from Navigator companion', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    final PlatformSnapshot snapshot = platformSnapshot(
+      activePetId: 'rune-v1',
+      ownedCosmetics: const <String>[],
+      activeCosmeticId: null,
+      equippedCosmetics: const <String, String>{},
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: PlatformScreen(
+          loader: () async => snapshot,
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+          sandboxPaymentsSupported: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Пилот и Навигатор'), findsOneWidget);
+    expect(find.text('Навигатор и Навигатор'), findsNothing);
+    expect(
+      find.bySemanticsLabel(
+        'Экипаж маршрута: пилот и Навигатор. Без активной косметики',
+      ),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
   testWidgets('journal renders equipped character cosmetics and previews', (
     WidgetTester tester,
   ) async {
@@ -1422,7 +1457,7 @@ void main() {
     expect(equippedHeroPet.hasSparkHalo, isTrue);
     expect(
       find.bySemanticsLabel(
-        'Экипаж маршрута: пилот Навигатор и Искра. '
+        'Экипаж маршрута: пилот и Искра. '
         'Экипировано: Шарф навигатора, Ореол Искры',
       ),
       findsOneWidget,
@@ -1591,7 +1626,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.bySemanticsLabel(
-          'Экипаж маршрута: пилот Навигатор и Искра. '
+          'Экипаж маршрута: пилот и Искра. '
           'Экипировано: Шарф навигатора, Рамка рассвета',
         ),
         findsOneWidget,
@@ -1668,7 +1703,7 @@ void main() {
     );
     expect(
       find.bySemanticsLabel(
-        'Экипаж маршрута: пилот Навигатор и Искра. '
+        'Экипаж маршрута: пилот и Искра. '
         'Экипировано: Рамка рассвета',
       ),
       findsOneWidget,

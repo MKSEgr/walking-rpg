@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### Changed
+
+- canonical player-facing copy now presents the stable `rune-v1` companion as
+  «Навигатор», «Навигатор потоков» and «Навигатор созвездий» while preserving
+  server IDs, asset paths and historical persistence;
+- paired crew copy calls `navigator-v1` the pilot so the pilot and Navigator
+  companion remain unambiguous, and the post-alpha code-only gameplay track
+  resumes without marking any external validation gate complete;
+
 ### Fixed
 
 - protected workflow setup steps now resolve reviewed exact Node.js, Python
@@ -109,7 +118,7 @@
   первый узел и первое событие в одном flow;
 - восстановление onboarding milestones из authoritative gameplay facts после
   process restart;
-- независимый progression для Искры, Мха и Руны с active-pet home/event
+- независимый progression для Искры, Мха и Навигатора с active-pet home/event
   integration;
 - Flyway V9 с exact-once `first_journey_milestone`, legacy backfill и
   транзакционными triggers на activity/economy/platform/expedition/event;
