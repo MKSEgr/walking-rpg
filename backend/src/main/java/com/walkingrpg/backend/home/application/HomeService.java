@@ -535,8 +535,7 @@ public class HomeService {
                 recentJourneyRecaps(recentJourneyHistory),
                 journeyChronicle(
                         completedJourneyChronicle,
-                        completionRecap,
-                        journeyEvents
+                        completionRecap
                 ),
                 eventSnapshot(
                         definition,
@@ -549,8 +548,7 @@ public class HomeService {
 
     private ExpeditionJourneyChronicleSnapshot journeyChronicle(
             ExpeditionJourneyChronicleTotals completedJourneys,
-            ExpeditionCompletionRecapSnapshot currentJourney,
-            List<ExpeditionJourneyEvent> currentJourneyEvents
+            ExpeditionCompletionRecapSnapshot currentJourney
     ) {
         long completedJourneyCount =
                 completedJourneys.completedJourneyCount();
@@ -629,14 +627,13 @@ public class HomeService {
                     petBondGained,
                     currentJourney.petBondGained()
             );
-            currentJourneyEvents.stream()
-                    .filter(event -> event.pilotExperienceGained() > 0)
-                    .forEach(event -> pilotExperienceRewards.merge(
+            currentJourney.pilotExperienceRewards().forEach(reward ->
+                    pilotExperienceRewards.merge(
                             new PilotIdentity(
-                                    event.pilotId(),
-                                    event.pilotName()
+                                    reward.pilotId(),
+                                    reward.pilotName()
                             ),
-                            (long) event.pilotExperienceGained(),
+                            reward.experienceGained(),
                             Math::addExact
                     ));
             currentJourney.petBondRewards().forEach(reward ->
@@ -867,6 +864,9 @@ public class HomeService {
     ) {
         long pilotExperienceGained = 0;
         long petBondGained = 0;
+        Map<PilotIdentity, Long> pilotExperienceRewards =
+                new LinkedHashMap<>();
+        boolean completePilotExperienceBreakdown = true;
         Map<PetIdentity, Long> petBondRewards = new LinkedHashMap<>();
         Map<MaterialIdentity, Long> materials = new LinkedHashMap<>();
         for (ExpeditionJourneyEvent event : journeyEvents) {
@@ -874,6 +874,24 @@ public class HomeService {
                     pilotExperienceGained,
                     event.pilotExperienceGained()
             );
+            if (event.pilotExperienceGained() > 0) {
+                if (event.pilotId() == null
+                        || event.pilotId().isBlank()
+                        || event.pilotName() == null
+                        || event.pilotName().isBlank()) {
+                    completePilotExperienceBreakdown = false;
+                } else {
+                    PilotIdentity identity = new PilotIdentity(
+                            event.pilotId(),
+                            event.pilotName()
+                    );
+                    pilotExperienceRewards.merge(
+                            identity,
+                            (long) event.pilotExperienceGained(),
+                            Math::addExact
+                    );
+                }
+            }
             petBondGained = Math.addExact(
                     petBondGained,
                     event.petBondGained()
@@ -901,6 +919,26 @@ public class HomeService {
                 );
             }
         }
+        List<ExpeditionJourneyPilotExperienceRewardSnapshot>
+                pilotExperienceTotals = completePilotExperienceBreakdown
+                        ? pilotExperienceRewards.entrySet().stream()
+                                .map(entry ->
+                                        new ExpeditionJourneyPilotExperienceRewardSnapshot(
+                                                entry.getKey().pilotId(),
+                                                entry.getKey().pilotName(),
+                                                entry.getValue()
+                                        ))
+                                .toList()
+                        : List.of();
+        long breakdownPilotExperience = pilotExperienceTotals.stream()
+                .mapToLong(
+                        ExpeditionJourneyPilotExperienceRewardSnapshot
+                                ::experienceGained
+                )
+                .reduce(0, Math::addExact);
+        if (breakdownPilotExperience != pilotExperienceGained) {
+            pilotExperienceTotals = List.of();
+        }
         List<PetBondRewardSnapshot> petBondTotals = petBondRewards.entrySet()
                 .stream()
                 .map(entry -> new PetBondRewardSnapshot(
@@ -924,6 +962,7 @@ public class HomeService {
                 decisions,
                 finalDecision(journeyEvents),
                 pilotExperienceGained,
+                pilotExperienceTotals,
                 petBondGained,
                 petBondTotals,
                 materialTotals

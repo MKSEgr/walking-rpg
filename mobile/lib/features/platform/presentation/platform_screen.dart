@@ -834,11 +834,21 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                   spacing: 7,
                   runSpacing: 7,
                   children: <Widget>[
-                    if (recap.pilotExperienceGained > 0)
+                    if (recap.pilotExperienceRewards.isEmpty &&
+                        recap.pilotExperienceGained > 0)
                       _JourneyRewardChip(
                         icon: Icons.star_outline,
                         label: context.l10n.platformPilotXpReward(
                           recap.pilotExperienceGained,
+                        ),
+                      ),
+                    for (final HomeJourneyPilotExperienceReward reward
+                        in recap.pilotExperienceRewards)
+                      _JourneyRewardChip(
+                        icon: Icons.star_outline,
+                        label: context.l10n.platformNamedPilotXpReward(
+                          reward.pilotName,
+                          reward.experienceGained,
                         ),
                       ),
                     if (recap.petBondRewards.isEmpty && recap.petBondGained > 0)
@@ -1273,11 +1283,21 @@ class _JourneyArchiveEntry extends StatelessWidget {
                     spacing: 7,
                     runSpacing: 7,
                     children: <Widget>[
-                      if (recap.pilotExperienceGained > 0)
+                      if (recap.pilotExperienceRewards.isEmpty &&
+                          recap.pilotExperienceGained > 0)
                         _JourneyRewardChip(
                           icon: Icons.star_outline,
                           label: context.l10n.platformPilotXpReward(
                             recap.pilotExperienceGained,
+                          ),
+                        ),
+                      for (final HomeJourneyPilotExperienceReward reward
+                          in recap.pilotExperienceRewards)
+                        _JourneyRewardChip(
+                          icon: Icons.star_outline,
+                          label: context.l10n.platformNamedPilotXpReward(
+                            reward.pilotName,
+                            reward.experienceGained,
                           ),
                         ),
                       if (recap.petBondRewards.isEmpty &&
@@ -1424,8 +1444,14 @@ List<String> _journeyRecapRewardLabels(
   HomeExpeditionCompletionRecap recap,
 ) {
   return <String>[
-    if (recap.pilotExperienceGained > 0)
+    if (recap.pilotExperienceRewards.isEmpty && recap.pilotExperienceGained > 0)
       context.l10n.platformPilotXpReward(recap.pilotExperienceGained),
+    for (final HomeJourneyPilotExperienceReward reward
+        in recap.pilotExperienceRewards)
+      context.l10n.platformNamedPilotXpSemantic(
+        reward.pilotName,
+        reward.experienceGained,
+      ),
     if (recap.petBondRewards.isEmpty && recap.petBondGained > 0)
       context.l10n.platformCompanionBondReward(recap.petBondGained),
     for (final HomeJourneyPetBondReward reward in recap.petBondRewards)

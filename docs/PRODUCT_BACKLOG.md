@@ -1151,6 +1151,31 @@ lifetime-летопись сохраняла фактическую истори
 **Статус:** lifetime-разбивка XP пилотов реализована без миграции, изменения
 XP economy, progression, topology или external validation status.
 
+### US-048. Увидеть вклад пилотов в итогах каждого похода
+
+Как игрок, я хочу видеть вклад каждого сохранённого пилота в XP конкретного
+завершённого похода, чтобы текущий итог и недавний архив объясняли награду тем
+же persisted copy, что и lifetime-летопись.
+
+Критерии:
+
+- `completionRecap` и каждый элемент `recentJourneyRecaps[]` получают
+  additive ordered `pilotExperienceRewards[]` из положительных immutable
+  reward facts exact `journeyNumber`;
+- XP группируется по persisted `pilotId + pilotName` в порядке первого
+  появления, а сумма точно равна совместимому `pilotExperienceGained`;
+- при неполной historical pilot identity backend опускает весь additive
+  массив, не публикуя частичную историю;
+- mobile принимает legacy omission, отклоняет non-list, неположительный XP,
+  повтор identity и несовпадающую сумму;
+- current и archived recap показывают ordered именные RU/EN chips и включают
+  их в одну полную semantic summary, сохраняя generic XP fallback для legacy;
+- backend unit/API/PostgreSQL и Flutter parser/widget coverage проверяют
+  persisted copy, порядок, omission, invalid data и compact text scale 1.6.
+
+**Статус:** per-journey разбивка XP пилотов реализована без миграции, изменения
+XP economy, progression, topology или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

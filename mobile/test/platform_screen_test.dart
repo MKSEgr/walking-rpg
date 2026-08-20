@@ -198,6 +198,18 @@ void main() {
           resolvedAt: '2026-07-26T06:12:00Z',
         ),
         pilotExperienceGained: 60,
+        pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
+          HomeJourneyPilotExperienceReward(
+            pilotId: 'navigator-v1',
+            pilotName: 'Навигатор',
+            experienceGained: 45,
+          ),
+          HomeJourneyPilotExperienceReward(
+            pilotId: 'archivist-v1',
+            pilotName: 'Архивариус',
+            experienceGained: 15,
+          ),
+        ],
         petBondGained: 23,
         petBondRewards: <HomeJourneyPetBondReward>[
           HomeJourneyPetBondReward(
@@ -248,7 +260,9 @@ void main() {
     );
     expect(find.text('Финал маршрута'), findsOneWidget);
     expect(find.text('Стабилизировать ядро → Ровный импульс'), findsOneWidget);
-    expect(find.text('+60 XP пилота'), findsOneWidget);
+    expect(find.text('Навигатор · +45 XP'), findsOneWidget);
+    expect(find.text('Архивариус · +15 XP'), findsOneWidget);
+    expect(find.text('+60 XP пилота'), findsNothing);
     expect(find.text('Искра · +9 связи'), findsOneWidget);
     expect(find.text('Мох · +14 связи'), findsOneWidget);
     expect(find.text('+23 связи спутников'), findsNothing);
@@ -258,8 +272,9 @@ void main() {
         'Поход 4 завершён. Принято решений: 2. '
         'Финал: Люминовые ворота. Решение: Стабилизировать ядро. '
         'Исход: Ровный импульс. Ворота удержали курс экспедиции. '
-        'Итоговые награды: +60 XP пилота; Искра: +9 связи; '
-        'Мох: +14 связи; +5 Эхо-нити.',
+        'Итоговые награды: Навигатор: +45 XP пилота; '
+        'Архивариус: +15 XP пилота; Искра: +9 связи; Мох: +14 связи; '
+        '+5 Эхо-нити.',
       ),
       findsOneWidget,
     );
@@ -422,6 +437,18 @@ void main() {
             resolvedAt: '2026-07-26T06:02:00Z',
           ),
           pilotExperienceGained: 90,
+          pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
+            HomeJourneyPilotExperienceReward(
+              pilotId: 'navigator-v1',
+              pilotName: 'Навигатор из похода',
+              experienceGained: 60,
+            ),
+            HomeJourneyPilotExperienceReward(
+              pilotId: 'archivist-v1',
+              pilotName: 'Архивариус из похода',
+              experienceGained: 30,
+            ),
+          ],
           petBondGained: 21,
           petBondRewards: <HomeJourneyPetBondReward>[
             HomeJourneyPetBondReward(
@@ -523,7 +550,8 @@ void main() {
         'Поход 3. Принято решений: 3. '
         'Финал: Сердце маяка. Решение: Стабилизировать ядро. '
         'Исход: Ровный импульс. Второй маршрут сохранён. '
-        'Итоговые награды: +90 XP пилота; Навигатор: +21 связи; '
+        'Итоговые награды: Навигатор из похода: +60 XP пилота; '
+        'Архивариус из похода: +30 XP пилота; Навигатор: +21 связи; '
         '+6 Эхо-нити.',
       ),
       findsOneWidget,
@@ -533,6 +561,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Стабилизировать ядро → Ровный импульс'), findsOneWidget);
+    expect(find.text('Навигатор из похода · +60 XP'), findsOneWidget);
+    expect(find.text('Архивариус из похода · +30 XP'), findsOneWidget);
+    expect(find.text('+90 XP пилота'), findsNothing);
     expect(find.text('Навигатор · +21 связи'), findsOneWidget);
     final Finder historyToggle = find.byKey(
       const Key('platform-journey-archive-3-history-toggle'),

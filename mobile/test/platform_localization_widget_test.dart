@@ -154,6 +154,25 @@ void main() {
         child: PlatformScreen(
           loader: () async => platformSnapshot(includeProfileCosmetics: true),
           homeLoader: () async => _homeWithPersistedDecision(
+            completionRecap: const HomeExpeditionCompletionRecap(
+              journeyNumber: 7,
+              decisionCount: 2,
+              pilotExperienceGained: 60,
+              pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
+                HomeJourneyPilotExperienceReward(
+                  pilotId: 'navigator-v1',
+                  pilotName: 'Navigator from journey',
+                  experienceGained: 45,
+                ),
+                HomeJourneyPilotExperienceReward(
+                  pilotId: 'archivist-v1',
+                  pilotName: 'Archivist from journey',
+                  experienceGained: 15,
+                ),
+              ],
+              petBondGained: 0,
+              materials: <HomeJourneyMaterialReward>[],
+            ),
             journeyChronicle: const HomeJourneyChronicle(
               completedJourneyCount: 9,
               decisionCount: 31,
@@ -243,6 +262,22 @@ void main() {
     expect(find.text('PILOT JOURNAL'), findsOneWidget);
     expect(find.text('Season of the First Signal'), findsOneWidget);
     expect(find.text('SPARK · LV. 1'), findsOneWidget);
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-journey-completion-recap')),
+    );
+    expect(find.text('Navigator from journey · +45 XP'), findsOneWidget);
+    expect(find.text('Archivist from journey · +15 XP'), findsOneWidget);
+    expect(find.text('+60 pilot XP'), findsNothing);
+    expect(
+      find.bySemanticsLabel(
+        'Journey 7 completed. Decisions made: 2. '
+        'Total rewards: Navigator from journey: +45 pilot XP; '
+        'Archivist from journey: +15 pilot XP.',
+      ),
+      findsOneWidget,
+    );
 
     await _bringIntoView(
       tester,
@@ -465,6 +500,7 @@ class _LocalizedPlatformApp extends StatelessWidget {
 }
 
 HomeSnapshot _homeWithPersistedDecision({
+  HomeExpeditionCompletionRecap? completionRecap,
   HomeJourneyChronicle? journeyChronicle,
 }) {
   const HomeSnapshot demo = HomeSnapshot.demo;
@@ -485,7 +521,9 @@ HomeSnapshot _homeWithPersistedDecision({
     currentNodeName: demo.currentNodeName,
     expeditionProgress: demo.expeditionProgress,
     requiredEnergy: demo.requiredEnergy,
-    expeditionStatus: demo.expeditionStatus,
+    expeditionStatus: completionRecap == null
+        ? demo.expeditionStatus
+        : 'COMPLETED',
     expeditionVersion: demo.expeditionVersion,
     expeditionJourneyNumber: 7,
     routeTrail: demo.routeTrail,
@@ -500,6 +538,7 @@ HomeSnapshot _homeWithPersistedDecision({
         resolvedAt: '2026-08-19T10:00:00Z',
       ),
     ],
+    completionRecap: completionRecap,
     journeyChronicle: journeyChronicle,
     unlockedEvent: demo.unlockedEvent,
     pilotName: demo.pilotName,

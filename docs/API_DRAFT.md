@@ -426,6 +426,13 @@ Authorization: Bearer <access-token>
       "resolvedAt": "2026-07-26T06:12:00Z"
     },
     "pilotExperienceGained": 40,
+    "pilotExperienceRewards": [
+      {
+        "pilotId": "navigator-v1",
+        "pilotName": "Навигатор",
+        "experienceGained": 40
+      }
+    ],
     "petBondGained": 5,
     "petBondRewards": [
       {
@@ -444,6 +451,12 @@ Authorization: Bearer <access-token>
   }
   ```
 
+  Additive ordered `pilotExperienceRewards[]` группирует положительный
+  фактически выданный XP exact journey по persisted `pilotId + pilotName` в
+  порядке первого появления. Сумма `experienceGained` точно равна
+  совместимому `pilotExperienceGained`. Если historical resolution не
+  содержит полной persisted pilot identity, backend опускает весь массив;
+  legacy response без поля остаётся валидным и показывает общий XP без имени.
   Additive `petBondRewards[]` группирует только положительную сохранённую связь
   по persisted `petId + petName` в порядке первого появления. Сумма
   `bondGained` равна совместимому общему `petBondGained`; legacy response без
@@ -465,10 +478,11 @@ Authorization: Bearer <access-token>
   `expedition_status=COMPLETED` внутри event resolution после расширения главы
   не добавляет незавершённый или текущий поход в архив. Награды агрегируются
   из persisted event resolutions соответствующего похода по тем же правилам,
-  что `completionRecap`, включая ordered `petBondRewards[]` и persisted
-  `finalDecision`. Additive `decisions[]` позволяет раскрыть полную сохранённую
-  историю архивного похода без lookup current content или восстановления
-  topology; legacy response без поля читается как пустой архив;
+  что `completionRecap`, включая ordered `pilotExperienceRewards[]`,
+  `petBondRewards[]` и persisted `finalDecision`. Additive `decisions[]`
+  позволяет раскрыть полную сохранённую историю архивного похода без lookup
+  current content или восстановления topology; legacy response без поля
+  читается как пустой архив;
 
 - `expedition.journeyChronicle` — additive nullable lifetime-итог всех
   подтверждённых завершённых походов этого пользователя и экспедиции:

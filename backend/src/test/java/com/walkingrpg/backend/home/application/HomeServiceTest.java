@@ -253,7 +253,7 @@ class HomeServiceTest {
                                 ),
                                 NOW.minusSeconds(120)
                         ),
-                        journeyEvent(
+                        journeyEventForPilot(
                                 StarterExpeditionContent.SECOND_EVENT_ID,
                                 "Сердце маяка из записи",
                                 "stabilize-core",
@@ -261,6 +261,8 @@ class HomeServiceTest {
                                 "Ровный импульс",
                                 "Сохранён финальный маршрут.",
                                 20,
+                                "archivist-v1",
+                                "Архивариус из записи",
                                 "moss-v1",
                                 "Мох из записи",
                                 15,
@@ -416,6 +418,19 @@ class HomeServiceTest {
                 recap.finalDecision().outcomeSummary());
         assertEquals(NOW, recap.finalDecision().resolvedAt());
         assertEquals(70, recap.pilotExperienceGained());
+        assertEquals(2, recap.pilotExperienceRewards().size());
+        assertEquals("navigator-v1",
+                recap.pilotExperienceRewards().getFirst().pilotId());
+        assertEquals("Навигатор из записи",
+                recap.pilotExperienceRewards().getFirst().pilotName());
+        assertEquals(50,
+                recap.pilotExperienceRewards().getFirst().experienceGained());
+        assertEquals("archivist-v1",
+                recap.pilotExperienceRewards().getLast().pilotId());
+        assertEquals("Архивариус из записи",
+                recap.pilotExperienceRewards().getLast().pilotName());
+        assertEquals(20,
+                recap.pilotExperienceRewards().getLast().experienceGained());
         assertEquals(23, recap.petBondGained());
         assertEquals(2, recap.petBondRewards().size());
         assertEquals("spark-v1",
@@ -445,7 +460,7 @@ class HomeServiceTest {
         assertEquals("archivist-v1",
                 expedition.journeyChronicle().pilotExperienceRewards()
                         .getFirst().pilotId());
-        assertEquals(8,
+        assertEquals(28,
                 expedition.journeyChronicle().pilotExperienceRewards()
                         .getFirst().experienceGained());
         assertEquals("navigator-v1",
@@ -454,7 +469,7 @@ class HomeServiceTest {
         assertEquals("Навигатор из записи",
                 expedition.journeyChronicle().pilotExperienceRewards()
                         .getLast().pilotName());
-        assertEquals(90,
+        assertEquals(70,
                 expedition.journeyChronicle().pilotExperienceRewards()
                         .getLast().experienceGained());
         assertEquals(51,
@@ -542,6 +557,71 @@ class HomeServiceTest {
                 expedition.routeTrail().getLast().decision().choiceTitle());
         assertEquals("Отражение принято",
                 expedition.routeTrail().getLast().decision().outcomeTitle());
+    }
+
+    @Test
+    void shouldOmitJourneyPilotBreakdownWhenPersistedIdentityIsIncomplete() {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        var finalNode = content.requireNode(
+                StarterExpeditionContent.FINAL_NODE_ID
+        );
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        finalNode.requiredEnergy(),
+                        finalNode.requiredEnergy(),
+                        "COMPLETED",
+                        1,
+                        finalNode.currentNodeId(),
+                        finalNode.event().eventId()
+                ),
+                List.of(new ExpeditionJourneyEvent(
+                        StarterExpeditionContent.FIRST_EVENT_ID,
+                        "Сигнал из старой записи",
+                        "analyze-signal",
+                        "Разобрать сигнал",
+                        "Карта отклика",
+                        "Старый маршрут сохранён.",
+                        40,
+                        null,
+                        null,
+                        "spark-v1",
+                        "Искра",
+                        5,
+                        null,
+                        NOW
+                ))
+        );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        var expedition = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        ).expedition();
+
+        assertEquals(40,
+                expedition.completionRecap().pilotExperienceGained());
+        assertTrue(expedition.completionRecap()
+                .pilotExperienceRewards().isEmpty());
+        assertEquals(40,
+                expedition.journeyChronicle().pilotExperienceGained());
+        assertTrue(expedition.journeyChronicle()
+                .pilotExperienceRewards().isEmpty());
     }
 
     @Test
@@ -652,6 +732,19 @@ class HomeServiceTest {
                         .pilotExperienceGained());
         assertEquals(1,
                 expedition.recentJourneyRecaps().getFirst()
+                        .pilotExperienceRewards().size());
+        assertEquals("navigator-v1",
+                expedition.recentJourneyRecaps().getFirst()
+                        .pilotExperienceRewards().getFirst().pilotId());
+        assertEquals("Навигатор из записи",
+                expedition.recentJourneyRecaps().getFirst()
+                        .pilotExperienceRewards().getFirst().pilotName());
+        assertEquals(20,
+                expedition.recentJourneyRecaps().getFirst()
+                        .pilotExperienceRewards().getFirst()
+                        .experienceGained());
+        assertEquals(1,
+                expedition.recentJourneyRecaps().getFirst()
                         .decisions().size());
         assertEquals("Сердце второго похода",
                 expedition.recentJourneyRecaps().getFirst()
@@ -679,6 +772,10 @@ class HomeServiceTest {
                         .petBondRewards().getFirst().bondGained());
         assertEquals(1,
                 expedition.recentJourneyRecaps().getLast().journeyNumber());
+        assertEquals(40,
+                expedition.recentJourneyRecaps().getLast()
+                        .pilotExperienceRewards().getFirst()
+                        .experienceGained());
         assertEquals(5,
                 expedition.recentJourneyRecaps().getLast().petBondGained());
         assertEquals("Мох",
@@ -938,6 +1035,40 @@ class HomeServiceTest {
                 pilotExperienceGained,
                 "navigator-v1",
                 "Навигатор из записи",
+                petId,
+                petName,
+                petBondGained,
+                materialReward,
+                resolvedAt
+        );
+    }
+
+    private ExpeditionJourneyEvent journeyEventForPilot(
+            String eventId,
+            String eventTitle,
+            String choiceId,
+            String choiceTitle,
+            String outcomeTitle,
+            String outcomeSummary,
+            int pilotExperienceGained,
+            String pilotId,
+            String pilotName,
+            String petId,
+            String petName,
+            int petBondGained,
+            MaterialRewardPreviewSnapshot materialReward,
+            Instant resolvedAt
+    ) {
+        return new ExpeditionJourneyEvent(
+                eventId,
+                eventTitle,
+                choiceId,
+                choiceTitle,
+                outcomeTitle,
+                outcomeSummary,
+                pilotExperienceGained,
+                pilotId,
+                pilotName,
                 petId,
                 petName,
                 petBondGained,
