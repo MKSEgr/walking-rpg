@@ -413,7 +413,10 @@ class HomeReadIntegrationTest {
                        END,
                        'Решение из неизменяемой истории.',
                        'navigator-v1',
-                       'Навигатор',
+                       CASE WHEN journey_number = 2
+                            THEN 'Навигатор из старого похода'
+                            ELSE 'Навигатор'
+                       END,
                        1,
                        journey_number,
                        journey_number,
@@ -474,6 +477,24 @@ class HomeReadIntegrationTest {
         assertEquals(7, expedition.journeyChronicle().decisionCount());
         assertEquals(28,
                 expedition.journeyChronicle().pilotExperienceGained());
+        assertEquals(2,
+                expedition.journeyChronicle()
+                        .pilotExperienceRewards().size());
+        assertEquals("navigator-v1",
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getFirst().pilotId());
+        assertEquals("Навигатор",
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getFirst().pilotName());
+        assertEquals(26,
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getFirst().experienceGained());
+        assertEquals("Навигатор из старого похода",
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getLast().pilotName());
+        assertEquals(2,
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getLast().experienceGained());
         assertEquals(28,
                 expedition.journeyChronicle().petBondGained());
         assertEquals(2,

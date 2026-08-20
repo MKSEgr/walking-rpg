@@ -16,6 +16,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionJourneyDecisionOutcomeSnapsh
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyFinaleOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyPilotExperienceRewardSnapshot;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.InventoryRuntimeItem;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
@@ -68,6 +69,8 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        outcome_title,
                        outcome_summary,
                        pilot_experience_gained,
+                       pilot_id,
+                       pilot_name,
                        pet_id,
                        pet_name,
                        pet_bond_gained,
@@ -110,6 +113,8 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        resolution.outcome_title,
                        resolution.outcome_summary,
                        resolution.pilot_experience_gained,
+                       resolution.pilot_id,
+                       resolution.pilot_name,
                        resolution.pet_id,
                        resolution.pet_name,
                        resolution.pet_bond_gained,
@@ -198,6 +203,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 List.of(),
                                 List.of(),
                                 List.of(),
+                                List.of(),
                                 List.of()
                         ),
                 userId,
@@ -206,6 +212,63 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 userId,
                 expeditionId
         );
+        List<ExpeditionJourneyPilotExperienceRewardSnapshot>
+                pilotExperienceRewards = jdbcTemplate.query("""
+                WITH completed_journey AS (
+                    SELECT DISTINCT
+                           journey_number - 1 AS completed_journey_number
+                    FROM processed_expedition_journey_start
+                    WHERE user_id = ?
+                      AND expedition_id = ?
+                      AND journey_number <= ?
+                ),
+                eligible_resolution AS (
+                    SELECT resolution.journey_number,
+                           resolution.expedition_version,
+                           resolution.receipt_id,
+                           resolution.pilot_id,
+                           resolution.pilot_name,
+                           resolution.pilot_experience_gained
+                    FROM completed_journey completed
+                    JOIN processed_event_resolution resolution
+                      ON resolution.user_id = ?
+                     AND resolution.expedition_id = ?
+                     AND resolution.journey_number =
+                             completed.completed_journey_number
+                    WHERE resolution.pilot_experience_gained > 0
+                ),
+                ordered_pilot AS (
+                    SELECT pilot_id,
+                           pilot_name,
+                           SUM(pilot_experience_gained) OVER (
+                               PARTITION BY pilot_id, pilot_name
+                           ) AS experience_gained,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY pilot_id, pilot_name
+                               ORDER BY journey_number,
+                                        expedition_version,
+                                        receipt_id
+                           ) AS identity_row,
+                           journey_number,
+                           expedition_version,
+                           receipt_id
+                    FROM eligible_resolution
+                )
+                SELECT pilot_id,
+                       pilot_name,
+                       experience_gained
+                FROM ordered_pilot
+                WHERE identity_row = 1
+                ORDER BY journey_number,
+                         expedition_version,
+                         receipt_id
+                """, (resultSet, rowNumber) ->
+                        new ExpeditionJourneyPilotExperienceRewardSnapshot(
+                                resultSet.getString("pilot_id"),
+                                resultSet.getString("pilot_name"),
+                                resultSet.getLong("experience_gained")
+                        ), userId, expeditionId, currentJourneyNumber,
+                userId, expeditionId);
         List<PetBondRewardSnapshot> petBondRewards = jdbcTemplate.query("""
                 WITH completed_journey AS (
                     SELECT DISTINCT
@@ -491,6 +554,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 totals.decisionCount(),
                 totals.pilotExperienceGained(),
                 totals.petBondGained(),
+                pilotExperienceRewards,
                 petBondRewards,
                 materials,
                 decisionOutcomes,
@@ -520,6 +584,8 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 resultSet.getString("outcome_title"),
                 resultSet.getString("outcome_summary"),
                 resultSet.getInt("pilot_experience_gained"),
+                resultSet.getString("pilot_id"),
+                resultSet.getString("pilot_name"),
                 resultSet.getString("pet_id"),
                 resultSet.getString("pet_name"),
                 resultSet.getInt("pet_bond_gained"),

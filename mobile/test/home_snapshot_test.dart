@@ -180,6 +180,18 @@ void main() {
         'decisionCount': 19,
         'pilotExperienceGained': 476,
         'petBondGained': 133,
+        'pilotExperienceRewards': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'pilotId': 'navigator-v1',
+            'pilotName': 'Навигатор из летописи',
+            'experienceGained': 410,
+          },
+          <String, dynamic>{
+            'pilotId': 'archivist-v1',
+            'pilotName': 'Архивариус из летописи',
+            'experienceGained': 66,
+          },
+        ],
         'petBondRewards': <Map<String, dynamic>>[
           <String, dynamic>{
             'petId': 'spark-v1',
@@ -367,6 +379,23 @@ void main() {
     expect(snapshot.journeyChronicle?.decisionCount, 19);
     expect(snapshot.journeyChronicle?.pilotExperienceGained, 476);
     expect(snapshot.journeyChronicle?.petBondGained, 133);
+    expect(snapshot.journeyChronicle?.pilotExperienceRewards, hasLength(2));
+    expect(
+      snapshot.journeyChronicle?.pilotExperienceRewards.first.pilotName,
+      'Навигатор из летописи',
+    );
+    expect(
+      snapshot.journeyChronicle?.pilotExperienceRewards.first.experienceGained,
+      410,
+    );
+    expect(
+      snapshot.journeyChronicle?.pilotExperienceRewards.last.pilotId,
+      'archivist-v1',
+    );
+    expect(
+      snapshot.journeyChronicle?.pilotExperienceRewards.last.experienceGained,
+      66,
+    );
     expect(snapshot.journeyChronicle?.petBondRewards, hasLength(2));
     expect(
       snapshot.journeyChronicle?.petBondRewards.first.petName,
@@ -458,6 +487,7 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.journeyChronicle?.petBondGained, 72);
+    expect(snapshot.journeyChronicle?.pilotExperienceRewards, isEmpty);
     expect(snapshot.journeyChronicle?.petBondRewards, isEmpty);
     expect(snapshot.journeyChronicle?.materials, isEmpty);
     expect(snapshot.journeyChronicle?.decisionOutcomes, isEmpty);
@@ -478,6 +508,89 @@ void main() {
           'petId': 'spark-v1',
           'petName': 'Искра',
           'bondGained': 71,
+        },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects a non-list pilot XP breakdown', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'pilotExperienceRewards': <String, dynamic>{},
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects duplicate persisted pilot identities', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 2,
+      'decisionCount': 2,
+      'pilotExperienceGained': 40,
+      'petBondGained': 0,
+      'pilotExperienceRewards': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'pilotId': 'navigator-v1',
+          'pilotName': 'Навигатор',
+          'experienceGained': 20,
+        },
+        <String, dynamic>{
+          'pilotId': 'navigator-v1',
+          'pilotName': 'Навигатор',
+          'experienceGained': 20,
+        },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects non-positive pilot XP entries', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 0,
+      'petBondGained': 0,
+      'pilotExperienceRewards': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'pilotId': 'navigator-v1',
+          'pilotName': 'Навигатор',
+          'experienceGained': 0,
+        },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects a mismatched pilot XP breakdown', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 2,
+      'decisionCount': 2,
+      'pilotExperienceGained': 40,
+      'petBondGained': 0,
+      'pilotExperienceRewards': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'pilotId': 'navigator-v1',
+          'pilotName': 'Навигатор',
+          'experienceGained': 39,
         },
       ],
     };

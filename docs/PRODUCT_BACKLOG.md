@@ -1124,6 +1124,33 @@ lifetime-летопись сохраняла фактическую истори
 **Статус:** lifetime-разбивка решений реализована без миграции, изменения
 контента, topology, экономики или external validation status.
 
+### US-047. Увидеть опыт пилотов всей летописи
+
+Как игрок, я хочу видеть вклад каждого сохранённого пилота в накопленный опыт
+всех завершённых походов, чтобы lifetime-итог объяснял XP независимо от
+текущего progression и переименований контента.
+
+Критерии:
+
+- `journeyChronicle` получает additive ordered `pilotExperienceRewards[]` из
+  положительных persisted reward facts всех receipt-proven завершённых
+  походов;
+- XP группируется по persisted `pilotId + pilotName` в порядке первого
+  immutable появления, а его сумма точно равна совместимому
+  `pilotExperienceGained`;
+- authoritative current `COMPLETED` объединяется ровно один раз до старта
+  следующего похода; recent archive, current pilot/content и progression total
+  не используются для вывода истории;
+- mobile принимает legacy omission, отклоняет не-массив, неположительный XP,
+  повтор persisted identity и несовпадающую сумму;
+- летопись показывает ordered именные RU/EN XP chips и включает их в один
+  полный semantic summary, сохраняя общий fallback для legacy snapshot;
+- backend unit/API/PostgreSQL и Flutter parser/widget coverage проверяют
+  persisted copy, порядок, current merge, invalid data и compact text 1.6.
+
+**Статус:** lifetime-разбивка XP пилотов реализована без миграции, изменения
+XP economy, progression, topology или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -1154,7 +1181,8 @@ lifetime-летопись сохраняла фактическую истори
 - persisted разбивка полученной связи по питомцам в итогах текущего и недавних
   походов.
 - lifetime-летопись всех подтверждённых походов с persisted разбивкой связи по
-  спутникам, material rewards, решений, финалов маршрутов и legacy fallback.
+  спутникам, XP по пилотам, material rewards, решений, финалов маршрутов и
+  legacy fallback.
 - persisted финальное решение и исход в итогах текущего и недавних походов.
 
 После физической device-validation и beta остаются продуктовые расширения:

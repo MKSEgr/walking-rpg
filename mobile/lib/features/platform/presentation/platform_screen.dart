@@ -938,6 +938,17 @@ class _JourneyChronicleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final String experienceSummary = chronicle.pilotExperienceRewards.isEmpty
+        ? context.l10n.platformPilotXpReward(chronicle.pilotExperienceGained)
+        : chronicle.pilotExperienceRewards
+              .map(
+                (HomeJourneyPilotExperienceReward reward) =>
+                    context.l10n.platformNamedPilotXpSemantic(
+                      reward.pilotName,
+                      reward.experienceGained,
+                    ),
+              )
+              .join('; ');
     final String bondSummary = chronicle.petBondRewards.isEmpty
         ? context.l10n.platformCompanionBondReward(chronicle.petBondGained)
         : chronicle.petBondRewards
@@ -996,7 +1007,7 @@ class _JourneyChronicleCard extends StatelessWidget {
       label: context.l10n.platformJourneyChronicleSemantics(
         chronicle.completedJourneyCount,
         chronicle.decisionCount,
-        chronicle.pilotExperienceGained,
+        experienceSummary,
         bondSummary,
         materialSummary,
         decisionSummary,
@@ -1042,12 +1053,22 @@ class _JourneyChronicleCard extends StatelessWidget {
                       chronicle.decisionCount,
                     ),
                   ),
-                  _JourneyRewardChip(
-                    icon: Icons.star_outline,
-                    label: context.l10n.platformPilotXpReward(
-                      chronicle.pilotExperienceGained,
+                  if (chronicle.pilotExperienceRewards.isEmpty)
+                    _JourneyRewardChip(
+                      icon: Icons.star_outline,
+                      label: context.l10n.platformPilotXpReward(
+                        chronicle.pilotExperienceGained,
+                      ),
                     ),
-                  ),
+                  for (final HomeJourneyPilotExperienceReward reward
+                      in chronicle.pilotExperienceRewards)
+                    _JourneyRewardChip(
+                      icon: Icons.star_outline,
+                      label: context.l10n.platformNamedPilotXpReward(
+                        reward.pilotName,
+                        reward.experienceGained,
+                      ),
+                    ),
                   if (chronicle.petBondRewards.isEmpty)
                     _JourneyRewardChip(
                       icon: Icons.favorite_border,

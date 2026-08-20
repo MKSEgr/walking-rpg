@@ -163,6 +163,8 @@ class HomeControllerTest {
                         "Карта отклика",
                         "Сохранён безопасный путь к маяку.",
                         48,
+                        "navigator-v1",
+                        "Навигатор из записи",
                         "spark-v1",
                         "Искра из записи",
                         11,
@@ -293,6 +295,8 @@ class HomeControllerTest {
                         "Ровный импульс",
                         "Сохранён финальный маршрут.",
                         48,
+                        "navigator-v1",
+                        "Навигатор из записи",
                         "spark-v1",
                         "Искра из записи",
                         11,
@@ -434,6 +438,19 @@ class HomeControllerTest {
                                 + ".pilotExperienceGained"
                 ).value(48))
                 .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".pilotExperienceRewards[0].pilotId"
+                ).value("navigator-v1"))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".pilotExperienceRewards[0].pilotName"
+                ).value("Навигатор из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".pilotExperienceRewards[0]"
+                                + ".experienceGained"
+                ).value(48))
+                .andExpect(jsonPath(
                         "$.expedition.journeyChronicle.petBondGained"
                 ).value(11))
                 .andExpect(jsonPath(
@@ -557,6 +574,8 @@ class HomeControllerTest {
                                 "Ровный импульс",
                                 "Второй маршрут сохранён.",
                                 48,
+                                "navigator-v1",
+                                "Навигатор из записи",
                                 "spark-v1",
                                 "Искра из записи",
                                 11,

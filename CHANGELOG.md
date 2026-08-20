@@ -69,6 +69,9 @@
 
 ### Added
 
+- persisted pilot experience breakdown in the lifetime journey chronicle, with
+  receipt-proven aggregation, exact legacy-total consistency and named RU/EN
+  accessibility;
 - persisted decision-outcome breakdown in the lifetime journey chronicle, with
   receipt-proven aggregation, first-appearance ordering, exact decision-total
   validation and complete RU/EN accessibility;

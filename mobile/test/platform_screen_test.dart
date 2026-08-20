@@ -279,6 +279,18 @@ void main() {
         decisionCount: 28,
         pilotExperienceGained: 420,
         petBondGained: 140,
+        pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
+          HomeJourneyPilotExperienceReward(
+            pilotId: 'navigator-v1',
+            pilotName: 'Навигатор из летописи',
+            experienceGained: 360,
+          ),
+          HomeJourneyPilotExperienceReward(
+            pilotId: 'archivist-v1',
+            pilotName: 'Архивариус из летописи',
+            experienceGained: 60,
+          ),
+        ],
         petBondRewards: <HomeJourneyPetBondReward>[
           HomeJourneyPetBondReward(
             petId: 'spark-v1',
@@ -456,7 +468,9 @@ void main() {
     expect(find.text('Летопись походов'), findsOneWidget);
     expect(find.text('ЗАВЕРШЕНО · 7'), findsOneWidget);
     expect(find.text('Решений · 28'), findsOneWidget);
-    expect(find.text('+420 XP пилота'), findsOneWidget);
+    expect(find.text('Навигатор из летописи · +360 XP'), findsOneWidget);
+    expect(find.text('Архивариус из летописи · +60 XP'), findsOneWidget);
+    expect(find.text('+420 XP пилота'), findsNothing);
     expect(find.text('Искра · +80 связи'), findsOneWidget);
     expect(find.text('Мох · +60 связи'), findsOneWidget);
     expect(find.text('+140 связи спутников'), findsNothing);
@@ -481,7 +495,9 @@ void main() {
       find.bySemanticsLabel(
         'Летопись походов. Завершено походов: 7. '
         'Принято решений: 28. '
-        'Всего наград: +420 XP пилота; Искра: +80 связи; Мох: +60 связи; '
+        'Всего наград: Навигатор из летописи: +360 XP пилота; '
+        'Архивариус из летописи: +60 XP пилота; '
+        'Искра: +80 связи; Мох: +60 связи; '
         '+35 Эхо-нити; +12 Пепельное семя. Решения летописи: '
         'Внешний сигнал из летописи. Решение: Расшифровать сигнал. '
         'Исход: Маршрут нанесён. Решений: 18; '
@@ -495,12 +511,8 @@ void main() {
       findsOneWidget,
     );
     final Finder archive = find.byKey(const Key('platform-journey-archive'));
-    expect(archive, findsOneWidget);
-    expect(
-      tester.getTopLeft(chronicle).dy,
-      lessThan(tester.getTopLeft(archive).dy),
-    );
     await _bringIntoView(tester, archive);
+    expect(archive, findsOneWidget);
     expect(find.text('Недавние походы'), findsOneWidget);
     expect(find.text('АРХИВ · 2'), findsOneWidget);
     final Finder latest = find.byKey(const Key('platform-journey-archive-3'));

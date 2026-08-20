@@ -473,7 +473,11 @@ Authorization: Bearer <access-token>
 - `expedition.journeyChronicle` — additive nullable lifetime-итог всех
   подтверждённых завершённых походов этого пользователя и экспедиции:
   `completedJourneyCount`, `decisionCount`, `pilotExperienceGained` и
-  `petBondGained`. Additive `petBondRewards[]` группирует только положительную
+  `petBondGained`. Additive ordered `pilotExperienceRewards[]` группирует
+  положительный фактически выданный XP по persisted `pilotId + pilotName` в
+  порядке первого immutable появления; сумма `experienceGained` точно равна
+  совместимому общему `pilotExperienceGained`. Additive `petBondRewards[]`
+  группирует только положительную
   сохранённую связь по persisted `petId + petName` в порядке первого
   immutable появления; сумма `bondGained` точно равна совместимому общему
   `petBondGained`. Additive ordered `materials[]` группирует положительные
@@ -492,11 +496,13 @@ Authorization: Bearer <access-token>
   один раз. Агрегат не ограничен пятью строками архива и суммирует rewards
   только из persisted event resolutions, не перечитывая current content,
   inventory или текущие progression totals. До первого подтверждённого
-  финиша значение равно `null`; legacy response без поля, `petBondRewards`,
-  `materials`, `decisionOutcomes` или `finaleOutcomes` остаётся валидным. При
+  финиша значение равно `null`; legacy response без поля,
+  `pilotExperienceRewards`, `petBondRewards`, `materials`, `decisionOutcomes`
+  или `finaleOutcomes` остаётся валидным. При наличии pilot-массива его
+  `experienceGained` в сумме точно равен общему `pilotExperienceGained`; при
   наличии decision-массива его `decisionCount` в сумме точно равен общему
-  `decisionCount`; при наличии finale-массива его `journeyCount` в сумме точно
-  равен `completedJourneyCount`. Пример:
+  `decisionCount`; при наличии finale-массива его `journeyCount` в сумме
+  точно равен `completedJourneyCount`. Пример:
 
   ```json
   {
@@ -504,6 +510,18 @@ Authorization: Bearer <access-token>
     "decisionCount": 19,
     "pilotExperienceGained": 476,
     "petBondGained": 133,
+    "pilotExperienceRewards": [
+      {
+        "pilotId": "navigator-v1",
+        "pilotName": "Навигатор",
+        "experienceGained": 410
+      },
+      {
+        "pilotId": "archivist-v1",
+        "pilotName": "Архивариус",
+        "experienceGained": 66
+      }
+    ],
     "petBondRewards": [
       {
         "petId": "spark-v1",
