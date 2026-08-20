@@ -456,20 +456,22 @@ SQL-проекцией суммирует его persisted event resolutions. Т
 immutable resolution: journey 1 использует initial cycle creation с fallback
 на progress creation, journey 2+ — exact journey-start receipt `server_time`.
 Lifetime `totalDurationSeconds` суммируется по полной receipt-proven history,
-а `longestDurationSeconds` вместе с `longestJourneyNumber` выбирает maximum из
-тех же границ с tie-break по меньшему journey number. Та же winner-строка
+`shortestDurationSeconds` выбирает minimum тех же границ, а
+`longestDurationSeconds` вместе с `longestJourneyNumber` выбирает maximum с
+tie-break по меньшему journey number. Та же winner-строка
 передаёт `longestJourneyCompletedAt` только из immutable final resolution;
 service добавляет или сравнивает duration current authoritative `COMPLETED`
 ровно один раз и меняет record identity и completion instant только при строго
 большем current duration.
 После этого merge service выводит `averageDurationSeconds` только как
 целочисленное floor-деление total на `completedJourneyCount`. Longest и average
-публикуются только вместе с total; longest не превышает его, identity
+публикуются только вместе с total; shortest также требует total и не превышает
+average/longest, longest не превышает total, identity
 положителен и входит в completed count, а average точно соответствует
 total/count. Record completion instant публикуется только вместе с longest и
 identity, а mobile переводит его из UTC в timezone устройства исключительно
 для presentation. Если хотя бы одна included boundary отсутствует или start
-позже final, все три duration-поля, record identity и timestamp целиком
+позже final, все четыре duration-поля, record identity и timestamp целиком
 опускаются: recent archive, client clock, cache/Home-response time и частичный
 итог не используются. Та же
 SQL-проекция группирует положительную связь по persisted `pet_id + pet_name`,

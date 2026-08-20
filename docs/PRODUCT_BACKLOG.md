@@ -1379,6 +1379,32 @@ external validation status.
 migration и без изменения rewards/economy, progression, topology, archive
 limit или external validation status.
 
+### US-057. Увидеть самый короткий завершённый поход
+
+Как игрок, я хочу видеть длительность самого короткого завершённого похода,
+чтобы lifetime-летопись показывала нижнюю границу моего опыта по всей
+подтверждённой истории, а не только по пяти недавним итогам.
+
+Критерии:
+
+- `journeyChronicle` получает additive nullable non-negative
+  `shortestDurationSeconds` по всем receipt-proven завершённым походам;
+- historical minimum использует те же exact start/final boundaries, что
+  lifetime total, а authoritative current `COMPLETED` сравнивается ровно один
+  раз;
+- missing или reversed boundary любого included journey опускает shortest
+  вместе с остальными lifetime duration fields без recent/partial fallback;
+- shortest публикуется только вместе с total и не превышает average/longest,
+  когда они присутствуют; mobile fail-closed отклоняет malformed, negative и
+  inconsistent value;
+- RU/EN chip и accessibility используют общий duration formatter, а backend
+  unit/API/PostgreSQL и Flutter parser/widget/localization coverage проверяют
+  full history, current merge и compact text scale 1.6.
+
+**Статус:** authoritative shortest journey duration реализована без migration
+и без изменения rewards/economy, progression, topology, archive limit или
+external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
