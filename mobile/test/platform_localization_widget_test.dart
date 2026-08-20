@@ -488,9 +488,7 @@ void main() {
     );
     expect(find.text(recordCompletedAt), findsOneWidget);
     expect(
-      find.byKey(
-        const Key('platform-journey-chronicle-record-completed-at'),
-      ),
+      find.byKey(const Key('platform-journey-chronicle-record-completed-at')),
       findsOneWidget,
     );
     expect(find.text('Average journey: 2 h 1 min'), findsOneWidget);
@@ -648,9 +646,7 @@ void main() {
     expect(find.text('Longest journey: 1 h 0 min'), findsOneWidget);
     expect(find.textContaining('Longest journey #'), findsNothing);
     expect(
-      find.byKey(
-        const Key('platform-journey-chronicle-record-completed-at'),
-      ),
+      find.byKey(const Key('platform-journey-chronicle-record-completed-at')),
       findsNothing,
     );
   });

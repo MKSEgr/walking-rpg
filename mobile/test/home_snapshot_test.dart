@@ -651,26 +651,29 @@ void main() {
     expect(snapshot.journeyChronicle?.longestJourneyCompletedAt, isNull);
   });
 
-  test('legacy record identity without completion instant remains readable', () {
-    final Map<String, dynamic> response = _readyHomeResponse();
-    final Map<String, dynamic> expedition =
-        response['expedition'] as Map<String, dynamic>;
-    expedition['journeyChronicle'] = <String, dynamic>{
-      'completedJourneyCount': 2,
-      'decisionCount': 0,
-      'totalDurationSeconds': 100,
-      'longestDurationSeconds': 60,
-      'longestJourneyNumber': 1,
-      'averageDurationSeconds': 50,
-      'pilotExperienceGained': 0,
-      'petBondGained': 0,
-    };
+  test(
+    'legacy record identity without completion instant remains readable',
+    () {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 2,
+        'decisionCount': 0,
+        'totalDurationSeconds': 100,
+        'longestDurationSeconds': 60,
+        'longestJourneyNumber': 1,
+        'averageDurationSeconds': 50,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+      };
 
-    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+      final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
-    expect(snapshot.journeyChronicle?.longestJourneyNumber, 1);
-    expect(snapshot.journeyChronicle?.longestJourneyCompletedAt, isNull);
-  });
+      expect(snapshot.journeyChronicle?.longestJourneyNumber, 1);
+      expect(snapshot.journeyChronicle?.longestJourneyCompletedAt, isNull);
+    },
+  );
 
   test('journey chronicle rejects invalid record completion instants', () {
     for (final Object? completedAt in <Object?>[
