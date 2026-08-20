@@ -1030,7 +1030,7 @@ void main() {
       ..['status'] = 'COMPLETED'
       ..['unlockedEvent'] = null
       ..['completionRecap'] = <String, dynamic>{
-        'journeyNumber': 1,
+        'journeyNumber': 2,
         'decisionCount': 1,
         'pilotExperienceGained': 42,
         'petBondGained': 0,
