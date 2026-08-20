@@ -1024,14 +1024,39 @@
       "summary": {"type": "String"}
     }
   },
-  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. Total rewards: +{experience} pilot XP; {bondRewards}{materialRewards}.",
+  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. Total rewards: +{experience} pilot XP; {bondRewards}{materialRewards}.{finaleSummary}",
   "@platformJourneyChronicleSemantics": {
     "placeholders": {
       "journeys": {"type": "int"},
       "decisions": {"type": "int"},
       "experience": {"type": "int"},
       "bondRewards": {"type": "String"},
-      "materialRewards": {"type": "String"}
+      "materialRewards": {"type": "String"},
+      "finaleSummary": {"type": "String"}
+    }
+  },
+  "platformJourneyChronicleFinalesTitle": "Route finales",
+  "platformJourneyChronicleFinaleChip": "{choice} → {outcome} · ×{count}",
+  "@platformJourneyChronicleFinaleChip": {
+    "placeholders": {
+      "choice": {"type": "String"},
+      "outcome": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "platformJourneyChronicleFinaleSemantic": "{event}. Decision: {choice}. Outcome: {outcome}. Journeys: {count}",
+  "@platformJourneyChronicleFinaleSemantic": {
+    "placeholders": {
+      "event": {"type": "String"},
+      "choice": {"type": "String"},
+      "outcome": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "platformJourneyChronicleFinalesSemantics": " Route finales: {finales}.",
+  "@platformJourneyChronicleFinalesSemantics": {
+    "placeholders": {
+      "finales": {"type": "String"}
     }
   },
   "platformJourneyChronicleBadge": "Completed · {count}",

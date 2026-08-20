@@ -40,6 +40,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionFinalDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyFinaleOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
 import com.walkingrpg.backend.home.domain.ExpeditionRouteDecisionSnapshot;
@@ -570,6 +571,19 @@ public class HomeService {
                         reward.quantity(),
                         Math::addExact
                 ));
+        Map<FinaleIdentity, Long> finaleOutcomes = new LinkedHashMap<>();
+        completedJourneys.finaleOutcomes().forEach(outcome ->
+                finaleOutcomes.merge(
+                        new FinaleIdentity(
+                                outcome.eventId(),
+                                outcome.eventTitle(),
+                                outcome.choiceId(),
+                                outcome.choiceTitle(),
+                                outcome.outcomeTitle()
+                        ),
+                        outcome.journeyCount(),
+                        Math::addExact
+                ));
         if (currentJourney != null) {
             completedJourneyCount = Math.addExact(
                     completedJourneyCount,
@@ -605,9 +619,43 @@ public class HomeService {
                             reward.quantity(),
                             Math::addExact
                     ));
+            ExpeditionFinalDecisionSnapshot finalDecision =
+                    currentJourney.finalDecision();
+            if (finalDecision != null) {
+                finaleOutcomes.merge(
+                        new FinaleIdentity(
+                                finalDecision.eventId(),
+                                finalDecision.eventTitle(),
+                                finalDecision.choiceId(),
+                                finalDecision.choiceTitle(),
+                                finalDecision.outcomeTitle()
+                        ),
+                        1L,
+                        Math::addExact
+                );
+            }
         }
         if (completedJourneyCount == 0) {
             return null;
+        }
+        List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomeSnapshots =
+                finaleOutcomes.entrySet().stream()
+                        .map(entry -> new ExpeditionJourneyFinaleOutcomeSnapshot(
+                                entry.getKey().eventId(),
+                                entry.getKey().eventTitle(),
+                                entry.getKey().choiceId(),
+                                entry.getKey().choiceTitle(),
+                                entry.getKey().outcomeTitle(),
+                                entry.getValue()
+                        ))
+                        .toList();
+        long finaleJourneyCount = finaleOutcomeSnapshots.stream()
+                .mapToLong(
+                        ExpeditionJourneyFinaleOutcomeSnapshot::journeyCount
+                )
+                .reduce(0, Math::addExact);
+        if (finaleJourneyCount != completedJourneyCount) {
+            finaleOutcomeSnapshots = List.of();
         }
         return new ExpeditionJourneyChronicleSnapshot(
                 completedJourneyCount,
@@ -627,7 +675,8 @@ public class HomeService {
                                 entry.getKey().itemName(),
                                 entry.getValue()
                         ))
-                        .toList()
+                        .toList(),
+                finaleOutcomeSnapshots
         );
     }
 
@@ -812,6 +861,15 @@ public class HomeService {
     }
 
     private record MaterialIdentity(String itemId, String itemName) {
+    }
+
+    private record FinaleIdentity(
+            String eventId,
+            String eventTitle,
+            String choiceId,
+            String choiceTitle,
+            String outcomeTitle
+    ) {
     }
 
     private ExpeditionEventSnapshot eventSnapshot(

@@ -69,6 +69,9 @@
 
 ### Added
 
+- persisted route-finale breakdown in the lifetime journey chronicle, with
+  receipt-proven last-resolution aggregation, first-appearance ordering,
+  strict legacy-compatible parsing and complete RU/EN accessibility;
 - persisted material reward breakdown in the lifetime journey chronicle, with
   receipt-proven aggregation, first-appearance ordering and RU/EN
   accessibility;

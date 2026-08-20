@@ -1070,6 +1070,33 @@ lifetime-летопись сохраняла фактическую истори
 **Статус:** lifetime-разбивка материалов реализована без миграции, изменения
 экономики, inventory projection, topology или external validation status.
 
+### US-045. Увидеть финалы всей летописи
+
+Как игрок, я хочу видеть, сколько раз был достигнут каждый сохранённый финал,
+чтобы lifetime-летопись отражала историю моих маршрутов за пределами окна
+недавних походов.
+
+Критерии:
+
+- `journeyChronicle` получает additive ordered `finaleOutcomes[]` из последней
+  immutable event resolution каждого receipt-proven завершённого похода;
+- финалы группируются по persisted `eventId + eventTitle + choiceId +
+  choiceTitle + outcomeTitle` в порядке первого immutable появления, без
+  current content lookup;
+- authoritative current `COMPLETED` объединяется ровно один раз до старта
+  следующего похода, а неподтверждённый текущий history row не попадает в
+  lifetime breakdown;
+- при наличии массива положительные `journeyCount` уникальны по persisted
+  identity и в сумме точно равны `completedJourneyCount`; legacy omission
+  остаётся валидным;
+- летопись показывает отдельные ordered RU/EN finale chips и включает полный
+  список в одну semantic summary без усечения;
+- backend unit/API/PostgreSQL и Flutter parser/widget coverage проверяют
+  persisted copy, порядок, current merge, invalid data и compact text 1.6.
+
+**Статус:** lifetime-разбивка финалов реализована без миграции, изменения
+контента, topology, экономики или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
@@ -1100,7 +1127,7 @@ lifetime-летопись сохраняла фактическую истори
 - persisted разбивка полученной связи по питомцам в итогах текущего и недавних
   походов.
 - lifetime-летопись всех подтверждённых походов с persisted разбивкой связи по
-  спутникам, material rewards и legacy fallback.
+  спутникам, material rewards, финалам маршрутов и legacy fallback.
 - persisted финальное решение и исход в итогах текущего и недавних походов.
 
 После физической device-validation и beta остаются продуктовые расширения:

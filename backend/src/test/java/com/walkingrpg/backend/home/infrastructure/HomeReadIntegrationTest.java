@@ -386,11 +386,31 @@ class HomeReadIntegrationTest {
                        'chapter-1-v11',
                        'COMPLETED',
                        journey_number,
-                       'Событие похода ' || journey_number,
+                       CASE WHEN journey_number <= 3
+                            THEN 'Старый финал из записи'
+                            WHEN journey_number <= 7
+                            THEN 'Новый финал из записи'
+                            ELSE 'Неподтверждённый финал'
+                       END,
                        'RESOLVED',
-                       'history-choice',
-                       'Сохранить маршрут',
-                       'Маршрут сохранён',
+                       CASE WHEN journey_number <= 3
+                            THEN 'hold-route'
+                            WHEN journey_number <= 7
+                            THEN 'save-route'
+                            ELSE 'open-dust'
+                       END,
+                       CASE WHEN journey_number <= 3
+                            THEN 'Удержать маршрут'
+                            WHEN journey_number <= 7
+                            THEN 'Сохранить маршрут'
+                            ELSE 'Открыть пыль'
+                       END,
+                       CASE WHEN journey_number <= 3
+                            THEN 'Маршрут удержан'
+                            WHEN journey_number <= 7
+                            THEN 'Маршрут сохранён'
+                            ELSE 'Пыль открыта'
+                       END,
                        'Решение из неизменяемой истории.',
                        'navigator-v1',
                        'Навигатор',
@@ -493,6 +513,30 @@ class HomeReadIntegrationTest {
         assertEquals(2,
                 expedition.journeyChronicle().materials()
                         .getLast().quantity());
+        assertEquals(2,
+                expedition.journeyChronicle().finaleOutcomes().size());
+        assertEquals("Старый финал из записи",
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getFirst().eventTitle());
+        assertEquals("Удержать маршрут",
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getFirst().choiceTitle());
+        assertEquals("Маршрут удержан",
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getFirst().outcomeTitle());
+        assertEquals(3,
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getFirst().journeyCount());
+        assertEquals("Новый финал из записи",
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getLast().eventTitle());
+        assertEquals(4,
+                expedition.journeyChronicle().finaleOutcomes()
+                        .getLast().journeyCount());
+        assertTrue(expedition.journeyChronicle().finaleOutcomes().stream()
+                .noneMatch(outcome -> "Неподтверждённый финал".equals(
+                        outcome.eventTitle()
+                )));
         assertEquals(
                 List.of(7L, 6L, 5L, 4L, 3L),
                 expedition.recentJourneyRecaps().stream()
@@ -512,7 +556,7 @@ class HomeReadIntegrationTest {
         assertEquals(1,
                 expedition.recentJourneyRecaps().getFirst()
                         .decisions().size());
-        assertEquals("Событие похода 7",
+        assertEquals("Новый финал из записи",
                 expedition.recentJourneyRecaps().getFirst()
                         .decisions().getFirst().eventTitle());
         assertEquals("Решение из неизменяемой истории.",
@@ -524,7 +568,7 @@ class HomeReadIntegrationTest {
         assertEquals("Искра",
                 expedition.recentJourneyRecaps().getFirst()
                         .decisions().getFirst().petName());
-        assertEquals("Событие похода 7",
+        assertEquals("Новый финал из записи",
                 expedition.recentJourneyRecaps().getFirst()
                         .finalDecision().eventTitle());
         assertEquals("Сохранить маршрут",

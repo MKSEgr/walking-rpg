@@ -59,3 +59,4 @@ NNNN-short-title.md
 - [0040 — incremental game localization boundary](0040-incremental-game-localization-boundary.md)
 - [0041 — lifetime companion bond chronicle](0041-lifetime-companion-bond-chronicle.md)
 - [0042 — lifetime material reward chronicle](0042-lifetime-material-reward-chronicle.md)
+- [0043 — lifetime route finale chronicle](0043-lifetime-route-finale-chronicle.md)
