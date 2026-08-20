@@ -15,6 +15,7 @@ import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyDecisionOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyFinaleOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
@@ -259,6 +260,24 @@ class HomeServiceTest {
                                 )
                         ),
                         List.of(
+                                new ExpeditionJourneyDecisionOutcomeSnapshot(
+                                        StarterExpeditionContent.FIRST_EVENT_ID,
+                                        "Первый сигнал из записи",
+                                        "analyze-signal",
+                                        "Разобрать сигнал",
+                                        "Карта отклика",
+                                        4
+                                ),
+                                new ExpeditionJourneyDecisionOutcomeSnapshot(
+                                        StarterExpeditionContent.SECOND_EVENT_ID,
+                                        "Сердце маяка из записи",
+                                        "stabilize-core",
+                                        "Стабилизировать ядро",
+                                        "Ровный импульс",
+                                        3
+                                )
+                        ),
+                        List.of(
                                 new ExpeditionJourneyFinaleOutcomeSnapshot(
                                         StarterExpeditionContent.SECOND_EVENT_ID,
                                         "Сердце маяка из записи",
@@ -377,6 +396,32 @@ class HomeServiceTest {
         assertEquals(13,
                 expedition.journeyChronicle().materials()
                         .getLast().quantity());
+        assertEquals(3,
+                expedition.journeyChronicle().decisionOutcomes().size());
+        assertEquals(StarterExpeditionContent.FIRST_EVENT_ID,
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getFirst().eventId());
+        assertEquals("Разобрать сигнал",
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getFirst().choiceTitle());
+        assertEquals(5,
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getFirst().decisionCount());
+        assertEquals(StarterExpeditionContent.SECOND_EVENT_ID,
+                expedition.journeyChronicle().decisionOutcomes()
+                        .get(1).eventId());
+        assertEquals(4,
+                expedition.journeyChronicle().decisionOutcomes()
+                        .get(1).decisionCount());
+        assertEquals(StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getLast().eventId());
+        assertEquals("Отражение принято",
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getLast().outcomeTitle());
+        assertEquals(1,
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getLast().decisionCount());
         assertEquals(2,
                 expedition.journeyChronicle().finaleOutcomes().size());
         assertEquals(StarterExpeditionContent.SECOND_EVENT_ID,

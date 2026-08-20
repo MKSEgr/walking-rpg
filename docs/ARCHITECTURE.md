@@ -433,6 +433,16 @@ persisted `material_item_id + material_item_name`: SQL сохраняет пор
 recent archive не участвуют, поэтому republish или расход предметов не
 переписывает сохранённые decision и reward totals.
 
+Все immutable resolutions на той же receipt-proven границе формируют ordered
+lifetime `decisionOutcomes[]`. SQL группирует полный persisted
+event/choice/outcome identity и сохраняет порядок первого появления; service
+добавляет все решения authoritative current `COMPLETED` ровно один раз. После
+следующего journey-start эти решения уже приходят из historical SQL. Полный
+breakdown отдаётся только когда сумма entry `decisionCount` совпадает с
+lifetime `decisionCount`; иначе additive поле опускается, сохраняя
+legacy-compatible snapshot. Current content, topology и пять recent recaps не
+используются для восстановления истории.
+
 На той же receipt-proven границе repository выбирает последнюю immutable
 resolution каждого завершённого journey по descending
 `expedition_version, receipt_id` и строит ordered lifetime

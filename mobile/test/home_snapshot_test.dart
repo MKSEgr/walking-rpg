@@ -204,6 +204,24 @@ void main() {
             'quantity': 12,
           },
         ],
+        'decisionOutcomes': <Map<String, dynamic>>[
+          _journeyDecisionOutcomeJson(
+            eventId: 'signal-source-v1',
+            eventTitle: 'Первый сигнал из летописи',
+            choiceId: 'analyze-signal',
+            choiceTitle: 'Разобрать сигнал',
+            outcomeTitle: 'Карта отклика',
+            decisionCount: 12,
+          ),
+          _journeyDecisionOutcomeJson(
+            eventId: 'mirror-delta-v1',
+            eventTitle: 'Зеркальная дельта из летописи',
+            choiceId: 'follow-reflection',
+            choiceTitle: 'Следовать за отражением',
+            outcomeTitle: 'Отражение принято',
+            decisionCount: 7,
+          ),
+        ],
         'finaleOutcomes': <Map<String, dynamic>>[
           _journeyFinaleJson(
             eventId: 'signal-source-v1',
@@ -365,6 +383,17 @@ void main() {
     expect(snapshot.journeyChronicle?.materials.first.quantity, 41);
     expect(snapshot.journeyChronicle?.materials.last.itemId, 'ash-seed');
     expect(snapshot.journeyChronicle?.materials.last.quantity, 12);
+    expect(snapshot.journeyChronicle?.decisionOutcomes, hasLength(2));
+    expect(
+      snapshot.journeyChronicle?.decisionOutcomes.first.eventTitle,
+      'Первый сигнал из летописи',
+    );
+    expect(snapshot.journeyChronicle?.decisionOutcomes.first.decisionCount, 12);
+    expect(
+      snapshot.journeyChronicle?.decisionOutcomes.last.choiceTitle,
+      'Следовать за отражением',
+    );
+    expect(snapshot.journeyChronicle?.decisionOutcomes.last.decisionCount, 7);
     expect(snapshot.journeyChronicle?.finaleOutcomes, hasLength(2));
     expect(
       snapshot.journeyChronicle?.finaleOutcomes.first.eventTitle,
@@ -431,6 +460,7 @@ void main() {
     expect(snapshot.journeyChronicle?.petBondGained, 72);
     expect(snapshot.journeyChronicle?.petBondRewards, isEmpty);
     expect(snapshot.journeyChronicle?.materials, isEmpty);
+    expect(snapshot.journeyChronicle?.decisionOutcomes, isEmpty);
     expect(snapshot.journeyChronicle?.finaleOutcomes, isEmpty);
   });
 
@@ -558,6 +588,73 @@ void main() {
           'itemName': 'Эхо-нити',
           'quantity': 0,
         },
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects a non-list decision breakdown', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'decisionOutcomes': <String, dynamic>{},
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects duplicate persisted decision identities', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 2,
+      'decisionCount': 4,
+      'pilotExperienceGained': 80,
+      'petBondGained': 0,
+      'decisionOutcomes': <Map<String, dynamic>>[
+        _journeyDecisionOutcomeJson(decisionCount: 2),
+        _journeyDecisionOutcomeJson(decisionCount: 2),
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects non-positive decision counts', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 1,
+      'decisionCount': 1,
+      'pilotExperienceGained': 20,
+      'petBondGained': 0,
+      'decisionOutcomes': <Map<String, dynamic>>[
+        _journeyDecisionOutcomeJson(decisionCount: 0),
+      ],
+    };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  test('journey chronicle rejects a mismatched decision count', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 4,
+      'decisionCount': 8,
+      'pilotExperienceGained': 160,
+      'petBondGained': 0,
+      'decisionOutcomes': <Map<String, dynamic>>[
+        _journeyDecisionOutcomeJson(decisionCount: 7),
       ],
     };
 
@@ -1835,6 +1932,24 @@ Map<String, dynamic> _journeyFinaleJson({
     'choiceTitle': choiceTitle,
     'outcomeTitle': outcomeTitle,
     'journeyCount': journeyCount,
+  };
+}
+
+Map<String, dynamic> _journeyDecisionOutcomeJson({
+  String eventId = 'signal-source-v1',
+  String eventTitle = 'Первый сигнал из записи',
+  String choiceId = 'analyze-signal',
+  String choiceTitle = 'Разобрать сигнал',
+  String outcomeTitle = 'Карта отклика',
+  required int decisionCount,
+}) {
+  return <String, dynamic>{
+    'eventId': eventId,
+    'eventTitle': eventTitle,
+    'choiceId': choiceId,
+    'choiceTitle': choiceTitle,
+    'outcomeTitle': outcomeTitle,
+    'decisionCount': decisionCount,
   };
 }
 

@@ -514,6 +514,30 @@ class HomeReadIntegrationTest {
                 expedition.journeyChronicle().materials()
                         .getLast().quantity());
         assertEquals(2,
+                expedition.journeyChronicle().decisionOutcomes().size());
+        assertEquals("Старый финал из записи",
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getFirst().eventTitle());
+        assertEquals("Удержать маршрут",
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getFirst().choiceTitle());
+        assertEquals("Маршрут удержан",
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getFirst().outcomeTitle());
+        assertEquals(3,
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getFirst().decisionCount());
+        assertEquals("Новый финал из записи",
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getLast().eventTitle());
+        assertEquals(4,
+                expedition.journeyChronicle().decisionOutcomes()
+                        .getLast().decisionCount());
+        assertTrue(expedition.journeyChronicle().decisionOutcomes().stream()
+                .noneMatch(outcome -> "Неподтверждённый финал".equals(
+                        outcome.eventTitle()
+                )));
+        assertEquals(2,
                 expedition.journeyChronicle().finaleOutcomes().size());
         assertEquals("Старый финал из записи",
                 expedition.journeyChronicle().finaleOutcomes()

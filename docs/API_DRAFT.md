@@ -478,8 +478,12 @@ Authorization: Bearer <access-token>
   immutable появления; сумма `bondGained` точно равна совместимому общему
   `petBondGained`. Additive ordered `materials[]` группирует положительные
   reward facts по persisted `itemId + itemName` в порядке первого immutable
-  появления. Additive ordered `finaleOutcomes[]` выбирает последнюю immutable
-  resolution каждого завершённого похода, группирует persisted
+  появления. Additive ordered `decisionOutcomes[]` группирует все immutable
+  resolutions по persisted `eventId + eventTitle + choiceId + choiceTitle +
+  outcomeTitle`, хранит положительный `decisionCount` и сохраняет порядок
+  первого появления решения. Additive ordered `finaleOutcomes[]` выбирает
+  последнюю immutable resolution каждого завершённого похода, группирует
+  persisted
   `eventId + eventTitle + choiceId + choiceTitle + outcomeTitle` и хранит
   положительный `journeyCount` в порядке первого появления финала. Для прошлых
   походов completion proof — immutable receipt старта следующего
@@ -489,8 +493,10 @@ Authorization: Bearer <access-token>
   только из persisted event resolutions, не перечитывая current content,
   inventory или текущие progression totals. До первого подтверждённого
   финиша значение равно `null`; legacy response без поля, `petBondRewards`,
-  `materials` или `finaleOutcomes` остаётся валидным. При наличии finale-массива
-  его `journeyCount` в сумме точно равен `completedJourneyCount`. Пример:
+  `materials`, `decisionOutcomes` или `finaleOutcomes` остаётся валидным. При
+  наличии decision-массива его `decisionCount` в сумме точно равен общему
+  `decisionCount`; при наличии finale-массива его `journeyCount` в сумме точно
+  равен `completedJourneyCount`. Пример:
 
   ```json
   {
@@ -520,6 +526,24 @@ Authorization: Bearer <access-token>
         "itemId": "ash-seed",
         "itemName": "Пепельное семя",
         "quantity": 12
+      }
+    ],
+    "decisionOutcomes": [
+      {
+        "eventId": "signal-source-v1",
+        "eventTitle": "Внешний сигнал",
+        "choiceId": "analyze-signal",
+        "choiceTitle": "Разобрать сигнал",
+        "outcomeTitle": "Карта отклика",
+        "decisionCount": 12
+      },
+      {
+        "eventId": "mirror-delta-v1",
+        "eventTitle": "Зеркальная дельта",
+        "choiceId": "follow-reflection",
+        "choiceTitle": "Следовать за отражением",
+        "outcomeTitle": "Отражение принято",
+        "decisionCount": 7
       }
     ],
     "finaleOutcomes": [

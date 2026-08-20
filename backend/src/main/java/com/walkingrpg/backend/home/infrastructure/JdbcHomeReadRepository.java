@@ -12,6 +12,7 @@ import java.util.Optional;
 import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.expedition.infrastructure.EventResolutionRepository;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyDecisionOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyFinaleOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
@@ -196,6 +197,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 resultSet.getLong("pet_bond_gained"),
                                 List.of(),
                                 List.of(),
+                                List.of(),
                                 List.of()
                         ),
                 userId,
@@ -317,6 +319,81 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 resultSet.getLong("quantity")
                 ), userId, expeditionId, currentJourneyNumber,
                 userId, expeditionId);
+        List<ExpeditionJourneyDecisionOutcomeSnapshot> decisionOutcomes =
+                jdbcTemplate.query("""
+                WITH completed_journey AS (
+                    SELECT DISTINCT
+                           journey_number - 1 AS completed_journey_number
+                    FROM processed_expedition_journey_start
+                    WHERE user_id = ?
+                      AND expedition_id = ?
+                      AND journey_number <= ?
+                ),
+                eligible_resolution AS (
+                    SELECT resolution.journey_number,
+                           resolution.expedition_version,
+                           resolution.receipt_id,
+                           resolution.event_id,
+                           resolution.event_title,
+                           resolution.choice_id,
+                           resolution.choice_title,
+                           resolution.outcome_title
+                    FROM completed_journey completed
+                    JOIN processed_event_resolution resolution
+                      ON resolution.user_id = ?
+                     AND resolution.expedition_id = ?
+                     AND resolution.journey_number =
+                             completed.completed_journey_number
+                ),
+                ordered_decision AS (
+                    SELECT event_id,
+                           event_title,
+                           choice_id,
+                           choice_title,
+                           outcome_title,
+                           COUNT(*) OVER (
+                               PARTITION BY event_id,
+                                            event_title,
+                                            choice_id,
+                                            choice_title,
+                                            outcome_title
+                           ) AS decision_count,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY event_id,
+                                            event_title,
+                                            choice_id,
+                                            choice_title,
+                                            outcome_title
+                               ORDER BY journey_number,
+                                        expedition_version,
+                                        receipt_id
+                           ) AS identity_row,
+                           journey_number,
+                           expedition_version,
+                           receipt_id
+                    FROM eligible_resolution
+                )
+                SELECT event_id,
+                       event_title,
+                       choice_id,
+                       choice_title,
+                       outcome_title,
+                       decision_count
+                FROM ordered_decision
+                WHERE identity_row = 1
+                ORDER BY journey_number,
+                         expedition_version,
+                         receipt_id
+                """, (resultSet, rowNumber) ->
+                        new ExpeditionJourneyDecisionOutcomeSnapshot(
+                                resultSet.getString("event_id"),
+                                resultSet.getString("event_title"),
+                                resultSet.getString("choice_id"),
+                                resultSet.getString("choice_title"),
+                                resultSet.getString("outcome_title"),
+                                resultSet.getLong("decision_count")
+                        ), userId, expeditionId, currentJourneyNumber,
+                userId, expeditionId);
         List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomes =
                 jdbcTemplate.query("""
                 WITH completed_journey AS (
@@ -416,6 +493,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 totals.petBondGained(),
                 petBondRewards,
                 materials,
+                decisionOutcomes,
                 finaleOutcomes
         );
     }

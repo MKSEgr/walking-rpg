@@ -183,6 +183,24 @@ void main() {
                   quantity: 19,
                 ),
               ],
+              decisionOutcomes: <HomeJourneyDecisionOutcome>[
+                HomeJourneyDecisionOutcome(
+                  eventId: 'signal-source-v1',
+                  eventTitle: 'Outer Signal',
+                  choiceId: 'decode-signal',
+                  choiceTitle: 'Decode the signal',
+                  outcomeTitle: 'Route charted',
+                  decisionCount: 18,
+                ),
+                HomeJourneyDecisionOutcome(
+                  eventId: 'ash-orbit-v1',
+                  eventTitle: 'Ash Orbit',
+                  choiceId: 'hold-ember',
+                  choiceTitle: 'Hold the ember',
+                  outcomeTitle: 'Orbit crossed',
+                  decisionCount: 13,
+                ),
+              ],
               finaleOutcomes: <HomeJourneyFinaleOutcome>[
                 HomeJourneyFinaleOutcome(
                   eventId: 'echo-vault-v1',
@@ -224,6 +242,12 @@ void main() {
     expect(find.text('+205 companion bond'), findsNothing);
     expect(find.text('+44 Lumen Shard'), findsOneWidget);
     expect(find.text('+19 Ash Seed'), findsOneWidget);
+    expect(find.text('Lifetime decisions'), findsOneWidget);
+    expect(
+      find.text('Decode the signal → Route charted · ×18'),
+      findsOneWidget,
+    );
+    expect(find.text('Hold the ember → Orbit crossed · ×13'), findsOneWidget);
     expect(find.text('Route finales'), findsOneWidget);
     expect(find.text('Stabilize the core → Steady pulse · ×5'), findsOneWidget);
     expect(
@@ -234,7 +258,10 @@ void main() {
       find.bySemanticsLabel(
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
         'Total rewards: +620 pilot XP; Spark: +120 bond; Moss: +85 bond; '
-        '+44 Lumen Shard; +19 Ash Seed. Route finales: Beacon Heart. '
+        '+44 Lumen Shard; +19 Ash Seed. Lifetime decisions: Outer Signal. '
+        'Decision: Decode the signal. Outcome: Route charted. Decisions: 18; '
+        'Ash Orbit. Decision: Hold the ember. Outcome: Orbit crossed. '
+        'Decisions: 13. Route finales: Beacon Heart. '
         'Decision: Stabilize the core. Outcome: Steady pulse. Journeys: 5; '
         'Mirror Delta. Decision: Follow the reflection. '
         'Outcome: Reflection accepted. Journeys: 4.',

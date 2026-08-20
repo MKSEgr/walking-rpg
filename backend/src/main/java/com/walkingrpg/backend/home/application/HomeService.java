@@ -40,6 +40,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionEventSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionFinalDecisionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyDecisionOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyFinaleOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
@@ -571,6 +572,19 @@ public class HomeService {
                         reward.quantity(),
                         Math::addExact
                 ));
+        Map<DecisionIdentity, Long> decisionOutcomes = new LinkedHashMap<>();
+        completedJourneys.decisionOutcomes().forEach(outcome ->
+                decisionOutcomes.merge(
+                        new DecisionIdentity(
+                                outcome.eventId(),
+                                outcome.eventTitle(),
+                                outcome.choiceId(),
+                                outcome.choiceTitle(),
+                                outcome.outcomeTitle()
+                        ),
+                        outcome.decisionCount(),
+                        Math::addExact
+                ));
         Map<FinaleIdentity, Long> finaleOutcomes = new LinkedHashMap<>();
         completedJourneys.finaleOutcomes().forEach(outcome ->
                 finaleOutcomes.merge(
@@ -619,6 +633,18 @@ public class HomeService {
                             reward.quantity(),
                             Math::addExact
                     ));
+            currentJourney.decisions().forEach(decision ->
+                    decisionOutcomes.merge(
+                            new DecisionIdentity(
+                                    decision.eventId(),
+                                    decision.eventTitle(),
+                                    decision.choiceId(),
+                                    decision.choiceTitle(),
+                                    decision.outcomeTitle()
+                            ),
+                            1L,
+                            Math::addExact
+                    ));
             ExpeditionFinalDecisionSnapshot finalDecision =
                     currentJourney.finalDecision();
             if (finalDecision != null) {
@@ -637,6 +663,26 @@ public class HomeService {
         }
         if (completedJourneyCount == 0) {
             return null;
+        }
+        List<ExpeditionJourneyDecisionOutcomeSnapshot> decisionSnapshots =
+                decisionOutcomes.entrySet().stream()
+                        .map(entry ->
+                                new ExpeditionJourneyDecisionOutcomeSnapshot(
+                                        entry.getKey().eventId(),
+                                        entry.getKey().eventTitle(),
+                                        entry.getKey().choiceId(),
+                                        entry.getKey().choiceTitle(),
+                                        entry.getKey().outcomeTitle(),
+                                        entry.getValue()
+                                ))
+                        .toList();
+        long breakdownDecisionCount = decisionSnapshots.stream()
+                .mapToLong(
+                        ExpeditionJourneyDecisionOutcomeSnapshot::decisionCount
+                )
+                .reduce(0, Math::addExact);
+        if (breakdownDecisionCount != decisionCount) {
+            decisionSnapshots = List.of();
         }
         List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomeSnapshots =
                 finaleOutcomes.entrySet().stream()
@@ -676,6 +722,7 @@ public class HomeService {
                                 entry.getValue()
                         ))
                         .toList(),
+                decisionSnapshots,
                 finaleOutcomeSnapshots
         );
     }
@@ -861,6 +908,15 @@ public class HomeService {
     }
 
     private record MaterialIdentity(String itemId, String itemName) {
+    }
+
+    private record DecisionIdentity(
+            String eventId,
+            String eventTitle,
+            String choiceId,
+            String choiceTitle,
+            String outcomeTitle
+    ) {
     }
 
     private record FinaleIdentity(

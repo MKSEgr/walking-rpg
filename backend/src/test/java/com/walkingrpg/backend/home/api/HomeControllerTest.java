@@ -458,6 +458,30 @@ class HomeControllerTest {
                 ).value(2))
                 .andExpect(jsonPath(
                         "$.expedition.journeyChronicle"
+                                + ".decisionOutcomes[0].eventId"
+                ).value(StarterExpeditionContent.SECOND_EVENT_ID))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".decisionOutcomes[0].eventTitle"
+                ).value("Сердце маяка из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".decisionOutcomes[0].choiceId"
+                ).value("stabilize-core"))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".decisionOutcomes[0].choiceTitle"
+                ).value("Стабилизировать ядро"))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".decisionOutcomes[0].outcomeTitle"
+                ).value("Ровный импульс"))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
+                                + ".decisionOutcomes[0].decisionCount"
+                ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle"
                                 + ".finaleOutcomes[0].eventId"
                 ).value(StarterExpeditionContent.SECOND_EVENT_ID))
                 .andExpect(jsonPath(
