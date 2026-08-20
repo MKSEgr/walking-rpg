@@ -1478,14 +1478,39 @@ String _journeyCompletionTimeLabel(
   if (decision == null) {
     return '';
   }
-  final DateTime completedAt = DateTime.parse(decision.resolvedAt).toLocal();
+  final ({String date, String time}) local = _journeyLocalDateTime(
+    context,
+    decision.resolvedAt,
+  );
+  return context.l10n.platformJourneyCompletedAt(local.date, local.time);
+}
+
+String _journeyDecisionTimeLabel(
+  BuildContext context,
+  HomeExpeditionDecisionLogEntry decision,
+) {
+  final ({String date, String time}) local = _journeyLocalDateTime(
+    context,
+    decision.resolvedAt,
+  );
+  return context.l10n.platformJourneyDecisionResolvedAt(
+    local.date,
+    local.time,
+  );
+}
+
+({String date, String time}) _journeyLocalDateTime(
+  BuildContext context,
+  String resolvedAt,
+) {
+  final DateTime local = DateTime.parse(resolvedAt).toLocal();
   final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
-  final String date = materialL10n.formatMediumDate(completedAt);
+  final String date = materialL10n.formatMediumDate(local);
   final String time = materialL10n.formatTimeOfDay(
-    TimeOfDay.fromDateTime(completedAt),
+    TimeOfDay.fromDateTime(local),
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
-  return context.l10n.platformJourneyCompletedAt(date, time);
+  return (date: date, time: time);
 }
 
 List<String> _journeyRecapRewardLabels(
@@ -1627,6 +1652,7 @@ class _JourneyDecisionEntry extends StatelessWidget {
       context,
       entry,
     );
+    final String resolvedAt = _journeyDecisionTimeLabel(context, entry);
     return Semantics(
       key: Key('platform-journey-decision-${entry.eventId}'),
       container: true,
@@ -1637,6 +1663,7 @@ class _JourneyDecisionEntry extends StatelessWidget {
         entry.choiceTitle,
         entry.outcomeTitle,
         entry.outcomeSummary,
+        '$resolvedAt.',
         rewardLabels.isEmpty
             ? ''
             : context.l10n.platformRewardsSuffix(rewardLabels.join('; ')),
@@ -1710,6 +1737,16 @@ class _JourneyDecisionEntry extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         entry.outcomeSummary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        resolvedAt,
+                        key: Key(
+                          'platform-journey-decision-${entry.eventId}-time',
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),

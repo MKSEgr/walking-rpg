@@ -1181,7 +1181,7 @@
     }
   },
   "platformFirstDecisionHint": "The first decision appears after a route event.",
-  "platformDecisionEntrySemantics": "Entry {index} of {total}. {event}. Decision: {choice}. Outcome: {outcome}. {summary}{rewards}",
+  "platformDecisionEntrySemantics": "Entry {index} of {total}. {event}. Decision: {choice}. Outcome: {outcome}. {summary} {resolvedAt}{rewards}",
   "@platformDecisionEntrySemantics": {
     "placeholders": {
       "index": {"type": "int"},
@@ -1190,7 +1190,15 @@
       "choice": {"type": "String"},
       "outcome": {"type": "String"},
       "summary": {"type": "String"},
+      "resolvedAt": {"type": "String"},
       "rewards": {"type": "String"}
+    }
+  },
+  "platformJourneyDecisionResolvedAt": "Saved on {date} at {time}",
+  "@platformJourneyDecisionResolvedAt": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "time": {"type": "String"}
     }
   },
   "platformRewardsSuffix": " Rewards: {rewards}.",

@@ -185,6 +185,17 @@ void main() {
                 HomeExpeditionCompletionRecap(
                   journeyNumber: 6,
                   decisionCount: 1,
+                  decisions: <HomeExpeditionDecisionLogEntry>[
+                    HomeExpeditionDecisionLogEntry(
+                      eventId: 'mirror-delta-v1',
+                      eventTitle: 'Persisted archived finale',
+                      choiceId: 'follow-reflection',
+                      choiceTitle: 'Persisted archived choice',
+                      outcomeTitle: 'Persisted archived outcome',
+                      outcomeSummary: 'Persisted archived summary.',
+                      resolvedAt: '2026-08-18T08:30:00Z',
+                    ),
+                  ],
                   finalDecision: archivedFinal,
                   pilotExperienceGained: 0,
                   petBondGained: 0,
@@ -221,6 +232,23 @@ void main() {
         ),
         findsOneWidget,
       );
+      final Finder currentDecision = find.byKey(
+        const Key('platform-journey-decision-legacy-event-v1'),
+      );
+      await _bringIntoView(tester, currentDecision);
+      final String currentDecisionLabel = _formattedDecisionTime(
+        tester,
+        currentDecision,
+        '2026-08-19T10:00:00Z',
+        russian: locale.languageCode == 'ru',
+      );
+      expect(find.text(currentDecisionLabel), findsOneWidget);
+      expect(
+        find.byKey(
+          const Key('platform-journey-decision-legacy-event-v1-time'),
+        ),
+        findsOneWidget,
+      );
 
       final Finder archived = find.byKey(
         const Key('platform-journey-archive-6'),
@@ -235,6 +263,29 @@ void main() {
       expect(find.text(archivedLabel), findsOneWidget);
       expect(
         find.byKey(const Key('platform-journey-archive-6-time')),
+        findsOneWidget,
+      );
+      final Finder historyToggle = find.byKey(
+        const Key('platform-journey-archive-6-history-toggle'),
+      );
+      await _bringIntoView(tester, historyToggle);
+      await tester.tap(historyToggle);
+      await tester.pumpAndSettle();
+      final Finder archivedDecision = find.byKey(
+        const Key('platform-journey-decision-mirror-delta-v1'),
+      );
+      await _bringIntoView(tester, archivedDecision);
+      final String archivedDecisionLabel = _formattedDecisionTime(
+        tester,
+        archivedDecision,
+        archivedFinal.resolvedAt,
+        russian: locale.languageCode == 'ru',
+      );
+      expect(find.text(archivedDecisionLabel), findsOneWidget);
+      expect(
+        find.byKey(
+          const Key('platform-journey-decision-mirror-delta-v1-time'),
+        ),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -560,10 +611,20 @@ void main() {
     expect(find.text('Сигнал прошлого'), findsOneWidget);
     expect(find.text('Сохранённый выбор'), findsOneWidget);
     expect(find.text('Сохранённый исход'), findsOneWidget);
+    final Finder decision = find.byKey(
+      const Key('platform-journey-decision-legacy-event-v1'),
+    );
+    final String resolvedAt = _formattedDecisionTime(
+      tester,
+      decision,
+      '2026-08-19T10:00:00Z',
+      russian: false,
+    );
+    expect(find.text(resolvedAt), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Entry 1 of 1. Сигнал прошлого. Decision: Сохранённый выбор. '
-        'Outcome: Сохранённый исход. Сохранённое описание.',
+        'Outcome: Сохранённый исход. Сохранённое описание. $resolvedAt.',
       ),
       findsOneWidget,
     );
@@ -686,6 +747,23 @@ String _formattedCompletionTime(
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
   return russian ? 'Завершён $date в $time' : 'Finished on $date at $time';
+}
+
+String _formattedDecisionTime(
+  WidgetTester tester,
+  Finder anchor,
+  String resolvedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime decisionAt = DateTime.parse(resolvedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(decisionAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(decisionAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian ? 'Сохранено $date в $time' : 'Saved on $date at $time';
 }
 
 const String _fallback = 'Literal copy from a newer server';

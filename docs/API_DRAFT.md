@@ -384,7 +384,10 @@ Authorization: Bearer <access-token>
   фактически выданные XP пилота, stable identity/name питомца, связь и nullable
   material reward из той же записи; mobile не восстанавливает их из текущего
   content или totals. Новый `journeyNumber` начинает пустой журнал, а legacy
-  response без журнала либо без reward fields остаётся валидным;
+  response без журнала либо без reward fields остаётся валидным. Flutter
+  показывает persisted `resolvedAt` каждой записи как locale-aware RU/EN
+  local-time label и переиспользует его в accessibility summary; client clock,
+  cache metadata и время Home-response не участвуют;
 - `expedition.completionRecap` — additive nullable итог только завершённого
   текущего похода. Он содержит тот же `journeyNumber`, число immutable
   resolutions, суммы фактически выданных XP пилота и связи питомцев, а также
@@ -474,7 +477,9 @@ Authorization: Bearer <access-token>
   выданные XP, pet bond identity и nullable material reward. Массив строится
   только из immutable resolutions exact `journeyNumber`; при наличии его длина
   равна `decisionCount`, а последняя запись совпадает с `finalDecision`.
-  Legacy recap без массива остаётся валидным.
+  Раскрытая archive history показывает время каждой записи по тем же
+  presentation-only правилам, что current `decisionLog`. Legacy recap без
+  массива остаётся валидным.
 
 - `expedition.recentJourneyRecaps[]` — не более пяти итогов предыдущих
   завершённых походов, от нового к старому. Факт завершения определяется

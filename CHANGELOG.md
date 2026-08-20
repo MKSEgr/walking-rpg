@@ -69,6 +69,9 @@
 
 ### Added
 
+- locale-aware saved-decision times in the current journey log and expanded
+  recent archive histories, derived only from immutable resolution time with
+  shared RU/EN visible and accessibility copy;
 - locale-aware completion time in current and recent journey recaps, derived
   only from immutable final resolution time with RU/EN accessibility and
   legacy omission;
