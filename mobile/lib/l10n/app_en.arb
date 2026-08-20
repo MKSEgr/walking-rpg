@@ -1067,13 +1067,14 @@
       "summary": {"type": "String"}
     }
   },
-  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. {duration}{longestDuration}Total rewards: {experienceRewards}; {bondRewards}{materialRewards}.{decisionSummary}{finaleSummary}",
+  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. {duration}{longestDuration}{averageDuration}Total rewards: {experienceRewards}; {bondRewards}{materialRewards}.{decisionSummary}{finaleSummary}",
   "@platformJourneyChronicleSemantics": {
     "placeholders": {
       "journeys": {"type": "int"},
       "decisions": {"type": "int"},
       "duration": {"type": "String"},
       "longestDuration": {"type": "String"},
+      "averageDuration": {"type": "String"},
       "experienceRewards": {"type": "String"},
       "bondRewards": {"type": "String"},
       "materialRewards": {"type": "String"},
@@ -1089,6 +1090,12 @@
   },
   "platformJourneyChronicleLongestDuration": "Longest journey: {duration}",
   "@platformJourneyChronicleLongestDuration": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+  "platformJourneyChronicleAverageDuration": "Average journey: {duration}",
+  "@platformJourneyChronicleAverageDuration": {
     "placeholders": {
       "duration": {"type": "String"}
     }

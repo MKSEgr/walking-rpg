@@ -180,6 +180,7 @@ void main() {
         'decisionCount': 19,
         'totalDurationSeconds': 65_700,
         'longestDurationSeconds': 12_600,
+        'averageDurationSeconds': 8_212,
         'pilotExperienceGained': 476,
         'petBondGained': 133,
         'pilotExperienceRewards': <Map<String, dynamic>>[
@@ -404,6 +405,7 @@ void main() {
     expect(snapshot.journeyChronicle?.decisionCount, 19);
     expect(snapshot.journeyChronicle?.totalDurationSeconds, 65_700);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, 12_600);
+    expect(snapshot.journeyChronicle?.averageDurationSeconds, 8_212);
     expect(snapshot.journeyChronicle?.pilotExperienceGained, 476);
     expect(snapshot.journeyChronicle?.petBondGained, 133);
     expect(snapshot.journeyChronicle?.pilotExperienceRewards, hasLength(2));
@@ -550,6 +552,41 @@ void main() {
     }
   });
 
+  test('journey chronicle rejects invalid average durations', () {
+    for (final Map<String, dynamic> durations in <Map<String, dynamic>>[
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'averageDurationSeconds': 1.5,
+      },
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'averageDurationSeconds': '50',
+      },
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'averageDurationSeconds': -1,
+      },
+      <String, dynamic>{'averageDurationSeconds': 50},
+      <String, dynamic>{
+        'totalDurationSeconds': 101,
+        'averageDurationSeconds': 51,
+      },
+    ]) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 2,
+        'decisionCount': 0,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+        ...durations,
+      };
+
+      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+    }
+  });
+
   test('legacy journey chronicle without pet breakdown remains readable', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> expedition =
@@ -566,6 +603,7 @@ void main() {
     expect(snapshot.journeyChronicle?.petBondGained, 72);
     expect(snapshot.journeyChronicle?.totalDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, isNull);
+    expect(snapshot.journeyChronicle?.averageDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.pilotExperienceRewards, isEmpty);
     expect(snapshot.journeyChronicle?.petBondRewards, isEmpty);
     expect(snapshot.journeyChronicle?.materials, isEmpty);

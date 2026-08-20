@@ -779,6 +779,27 @@ Milestone 37 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
 archive limit или external validation gates.
 
+## Milestone 38 — Authoritative average journey duration
+
+### CODE_COMPLETE
+
+- [x] Additive nullable `journeyChronicle.averageDurationSeconds` выводится из
+      полной receipt-proven completed history без зависимости от пяти recent
+      recaps
+- [x] Service вычисляет floor `totalDurationSeconds / completedJourneyCount`
+      после authoritative current `COMPLETED` merge, учитывая каждый путь
+      ровно один раз
+- [x] Omission lifetime total опускает average без partial/recent fallback;
+      mobile принимает legacy omission и fail-closed валидирует exact
+      floor-result
+- [x] RU/EN average chip и полная accessibility summary переиспользуют один
+      duration formatter; backend unit/API/PostgreSQL и Flutter
+      parser/widget/localization coverage включают rounding и compact text 1.6
+
+Milestone 38 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
+archive limit или external validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

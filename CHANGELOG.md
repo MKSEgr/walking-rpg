@@ -69,6 +69,10 @@
 
 ### Added
 
+- authoritative average completed-journey duration in the lifetime chronicle,
+  derived from the complete receipt-proven total and completed count after the
+  current completed journey merge, with explicit floor rounding, fail-closed
+  omission and shared RU/EN accessibility;
 - authoritative longest completed-journey duration in the lifetime chronicle,
   selected across the complete receipt-proven history and current completed
   journey, with whole-field omission for incomplete boundaries and shared

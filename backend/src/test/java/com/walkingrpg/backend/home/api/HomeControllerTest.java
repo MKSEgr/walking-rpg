@@ -456,6 +456,9 @@ class HomeControllerTest {
                         "$.expedition.journeyChronicle.longestDurationSeconds"
                 ).value(1_680))
                 .andExpect(jsonPath(
+                        "$.expedition.journeyChronicle.averageDurationSeconds"
+                ).value(1_680))
+                .andExpect(jsonPath(
                         "$.expedition.journeyChronicle"
                                 + ".pilotExperienceGained"
                 ).value(48))

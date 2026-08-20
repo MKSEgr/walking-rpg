@@ -505,7 +505,8 @@ Authorization: Bearer <access-token>
   подтверждённых завершённых походов этого пользователя и экспедиции:
   `completedJourneyCount`, `decisionCount`, nullable non-negative
   `totalDurationSeconds`, nullable non-negative `longestDurationSeconds`,
-  `pilotExperienceGained` и `petBondGained`.
+  nullable non-negative `averageDurationSeconds`, `pilotExperienceGained` и
+  `petBondGained`.
   `totalDurationSeconds` суммирует полные целые секунды каждого included
   journey: journey 1 начинается в initial cycle/progress creation, journey 2+
   — в exact journey-start receipt `server_time`, а заканчивается последней
@@ -513,7 +514,10 @@ Authorization: Bearer <access-token>
   граница опускает весь lifetime duration без частичного итога.
   `longestDurationSeconds` выбирает maximum из тех же exact boundaries,
   публикуется только вместе с total и не превышает его; current authoritative
-  `COMPLETED` сравнивается ровно один раз. Additive
+  `COMPLETED` сравнивается ровно один раз. `averageDurationSeconds`
+  вычисляется после того же current merge как целочисленное floor-деление
+  `totalDurationSeconds / completedJourneyCount`, публикуется только вместе с
+  total и не выводится из recent archive или client clock. Additive
   ordered `pilotExperienceRewards[]` группирует
   положительный фактически выданный XP по persisted `pilotId + pilotName` в
   порядке первого immutable появления; сумма `experienceGained` точно равна
@@ -538,9 +542,10 @@ Authorization: Bearer <access-token>
   только из persisted event resolutions, не перечитывая current content,
   inventory или текущие progression totals. До первого подтверждённого
   финиша значение равно `null`; legacy response без `journeyChronicle`,
-  `totalDurationSeconds`, `longestDurationSeconds`, `pilotExperienceRewards`,
-  `petBondRewards`, `materials`, `decisionOutcomes` или `finaleOutcomes`
-  остаётся валидным. При наличии pilot-массива его
+  `totalDurationSeconds`, `longestDurationSeconds`, `averageDurationSeconds`,
+  `pilotExperienceRewards`, `petBondRewards`, `materials`,
+  `decisionOutcomes` или `finaleOutcomes` остаётся валидным. При наличии
+  pilot-массива его
   `experienceGained` в сумме точно равен общему `pilotExperienceGained`; при
   наличии decision-массива его `decisionCount` в сумме точно равен общему
   `decisionCount`; при наличии finale-массива его `journeyCount` в сумме
@@ -552,6 +557,7 @@ Authorization: Bearer <access-token>
     "decisionCount": 19,
     "totalDurationSeconds": 65700,
     "longestDurationSeconds": 12600,
+    "averageDurationSeconds": 8212,
     "pilotExperienceGained": 476,
     "petBondGained": 133,
     "pilotExperienceRewards": [

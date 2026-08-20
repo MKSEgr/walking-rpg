@@ -359,6 +359,7 @@ void main() {
               decisionCount: 31,
               totalDurationSeconds: 65700,
               longestDurationSeconds: 12600,
+              averageDurationSeconds: 7300,
               pilotExperienceGained: 620,
               petBondGained: 205,
               pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
@@ -477,6 +478,11 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle-longest-duration')),
       findsOneWidget,
     );
+    expect(find.text('Average journey: 2 h 1 min'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-average-duration')),
+      findsOneWidget,
+    );
     expect(find.text('Navigator from chronicle · +500 XP'), findsOneWidget);
     expect(find.text('Archivist from chronicle · +120 XP'), findsOneWidget);
     expect(find.text('+620 pilot XP'), findsNothing);
@@ -502,6 +508,7 @@ void main() {
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
         'Time in journeys: 18 h 15 min. '
         'Longest journey: 3 h 30 min. '
+        'Average journey: 2 h 1 min. '
         'Total rewards: Navigator from chronicle: +500 pilot XP; '
         'Archivist from chronicle: +120 pilot XP; '
         'Spark: +120 bond; Moss: +85 bond; '
