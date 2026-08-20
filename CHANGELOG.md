@@ -69,6 +69,9 @@
 
 ### Added
 
+- locale-aware completion time in current and recent journey recaps, derived
+  only from immutable final resolution time with RU/EN accessibility and
+  legacy omission;
 - persisted pilot experience breakdown in current and recent journey recaps,
   with exact-journey aggregation, legacy omission and named RU/EN
   accessibility;

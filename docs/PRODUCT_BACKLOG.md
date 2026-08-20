@@ -1176,6 +1176,31 @@ XP economy, progression, topology или external validation status.
 **Статус:** per-journey разбивка XP пилотов реализована без миграции, изменения
 XP economy, progression, topology или external validation status.
 
+### US-049. Увидеть время завершения похода
+
+Как игрок, я хочу видеть, когда был завершён текущий или недавний поход, чтобы
+связывать сохранённый итог с конкретной прогулкой и не путать маршруты в
+архиве.
+
+Критерии:
+
+- current `completionRecap` и каждый recent archive entry используют только
+  immutable `finalDecision.resolvedAt` как persisted completion moment;
+- client clock, cache time, current content и время HTTP-response не участвуют
+  в выводе результата;
+- UTC instant переводится в локальную timezone только для presentation, а
+  дата и время форматируются по выбранной RU/EN locale;
+- видимый completion label и accessibility summary используют один и тот же
+  текст без скрытого или повторно вычисленного значения;
+- legacy recap без `finalDecision` остаётся валидным и не показывает
+  выдуманный timestamp;
+- RU/EN widget и compact text-scale 1.6 coverage проверяют current, archived и
+  legacy presentation.
+
+**Статус:** locale-aware completion time реализован поверх persisted final
+resolution без backend/API/schema migration и без изменения исторических
+данных.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

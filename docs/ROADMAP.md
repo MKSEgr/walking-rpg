@@ -681,6 +681,24 @@ Milestone 32 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, XP economy, progression, topology или
 external validation gates.
 
+## Milestone 33 — Journey recap completion time
+
+### CODE_COMPLETE
+
+- [x] Current и recent journey recap показывают completion time только из
+      immutable `finalDecision.resolvedAt`, без client clock или current
+      content inference
+- [x] UTC instant переводится в локальную timezone устройства исключительно
+      для presentation и форматируется по выбранной RU/EN locale
+- [x] Видимый label и полная accessibility summary используют один текст, а
+      legacy recap без финала не получает выдуманного timestamp
+- [x] RU/EN widget и compact text-scale 1.6 coverage проверяют current,
+      archived и legacy presentation без layout overflow
+
+Milestone 33 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, backend/API/schema, rewards, topology, archive
+limit или external validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
