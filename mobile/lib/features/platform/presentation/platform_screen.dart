@@ -1895,7 +1895,11 @@ List<String> _journeyDecisionRewardLabels(
 }
 
 class _JourneyRewardChip extends StatelessWidget {
-  const _JourneyRewardChip({super.key, required this.icon, required this.label});
+  const _JourneyRewardChip({
+    super.key,
+    required this.icon,
+    required this.label,
+  });
 
   final IconData icon;
   final String label;
