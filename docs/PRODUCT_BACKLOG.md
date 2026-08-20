@@ -1247,6 +1247,33 @@ resolution без backend/API/schema migration и без изменения ис
 без изменения rewards/economy, progression, topology, archive limit или
 external validation status.
 
+### US-052. Увидеть общее время завершённых походов
+
+Как игрок, я хочу видеть суммарную длительность всех завершённых походов,
+чтобы lifetime-летопись отражала время полного пройденного пути, а не только
+пять недавних итогов.
+
+Критерии:
+
+- `journeyChronicle` получает additive nullable non-negative
+  `totalDurationSeconds` по всем receipt-proven завершённым походам;
+- journey 1 использует initial cycle/progress creation, journey 2+ — exact
+  journey-start receipt `server_time`, а final берётся из последней immutable
+  resolution exact journey;
+- authoritative current `COMPLETED` добавляется ровно один раз, а после старта
+  следующего похода тот же duration приходит только из historical SQL;
+- missing start/final или start позже final любого included journey опускают
+  всё поле без partial total; recent archive, client clock и response/cache
+  time не используются;
+- mobile принимает legacy omission, fail-closed отклоняет malformed/negative
+  value и показывает один RU/EN chip в полной accessibility summary;
+- backend unit/API/PostgreSQL и Flutter parser/widget/localization coverage
+  проверяют full history, current merge, invalid data и compact text scale 1.6.
+
+**Статус:** authoritative lifetime journey duration реализована без migration
+и без изменения rewards/economy, progression, topology, archive limit или
+external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

@@ -978,6 +978,14 @@ class _JourneyChronicleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final String duration = chronicle.totalDurationSeconds == null
+        ? ''
+        : context.l10n.platformJourneyChronicleDuration(
+            _journeyDurationValueLabel(
+              context,
+              chronicle.totalDurationSeconds!,
+            ),
+          );
     final String experienceSummary = chronicle.pilotExperienceRewards.isEmpty
         ? context.l10n.platformPilotXpReward(chronicle.pilotExperienceGained)
         : chronicle.pilotExperienceRewards
@@ -1047,6 +1055,7 @@ class _JourneyChronicleCard extends StatelessWidget {
       label: context.l10n.platformJourneyChronicleSemantics(
         chronicle.completedJourneyCount,
         chronicle.decisionCount,
+        duration.isEmpty ? '' : '$duration. ',
         experienceSummary,
         bondSummary,
         materialSummary,
@@ -1093,6 +1102,12 @@ class _JourneyChronicleCard extends StatelessWidget {
                       chronicle.decisionCount,
                     ),
                   ),
+                  if (duration.isNotEmpty)
+                    _JourneyRewardChip(
+                      key: const Key('platform-journey-chronicle-duration'),
+                      icon: Icons.timer_outlined,
+                      label: duration,
+                    ),
                   if (chronicle.pilotExperienceRewards.isEmpty)
                     _JourneyRewardChip(
                       icon: Icons.star_outline,
@@ -1532,19 +1547,26 @@ String _journeyDurationLabel(BuildContext context, int? durationSeconds) {
   if (durationSeconds == null) {
     return '';
   }
+  return context.l10n.platformJourneyDuration(
+    _journeyDurationValueLabel(context, durationSeconds),
+  );
+}
+
+String _journeyDurationValueLabel(
+  BuildContext context,
+  int durationSeconds,
+) {
   final int totalMinutes = durationSeconds ~/ Duration.secondsPerMinute;
-  final String duration;
   if (durationSeconds < Duration.secondsPerMinute) {
-    duration = context.l10n.platformJourneyDurationUnderMinute;
-  } else if (totalMinutes < Duration.minutesPerHour) {
-    duration = context.l10n.platformJourneyDurationMinutes(totalMinutes);
-  } else {
-    duration = context.l10n.platformJourneyDurationHoursMinutes(
-      totalMinutes ~/ Duration.minutesPerHour,
-      totalMinutes % Duration.minutesPerHour,
-    );
+    return context.l10n.platformJourneyDurationUnderMinute;
   }
-  return context.l10n.platformJourneyDuration(duration);
+  if (totalMinutes < Duration.minutesPerHour) {
+    return context.l10n.platformJourneyDurationMinutes(totalMinutes);
+  }
+  return context.l10n.platformJourneyDurationHoursMinutes(
+    totalMinutes ~/ Duration.minutesPerHour,
+    totalMinutes % Duration.minutesPerHour,
+  );
 }
 
 ({String date, String time}) _journeyLocalDateTime(
@@ -1873,7 +1895,7 @@ List<String> _journeyDecisionRewardLabels(
 }
 
 class _JourneyRewardChip extends StatelessWidget {
-  const _JourneyRewardChip({required this.icon, required this.label});
+  const _JourneyRewardChip({super.key, required this.icon, required this.label});
 
   final IconData icon;
   final String label;

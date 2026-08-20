@@ -600,6 +600,7 @@ class HomeJourneyChronicle {
     required this.decisionCount,
     required this.pilotExperienceGained,
     required this.petBondGained,
+    this.totalDurationSeconds,
     this.pilotExperienceRewards = const <HomeJourneyPilotExperienceReward>[],
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
     this.materials = const <HomeJourneyMaterialReward>[],
@@ -618,8 +619,13 @@ class HomeJourneyChronicle {
       'pilotExperienceGained',
     );
     final int petBondGained = HomeSnapshot._readInt(json, 'petBondGained');
+    final int? totalDurationSeconds = HomeSnapshot._readOptionalInt(
+      json,
+      'totalDurationSeconds',
+    );
     if (completedJourneyCount <= 0 ||
         decisionCount < 0 ||
+        (totalDurationSeconds != null && totalDurationSeconds < 0) ||
         pilotExperienceGained < 0 ||
         petBondGained < 0) {
       throw const FormatException(
@@ -805,6 +811,7 @@ class HomeJourneyChronicle {
     return HomeJourneyChronicle(
       completedJourneyCount: completedJourneyCount,
       decisionCount: decisionCount,
+      totalDurationSeconds: totalDurationSeconds,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
       pilotExperienceRewards: pilotExperienceRewards,
@@ -817,6 +824,7 @@ class HomeJourneyChronicle {
 
   final int completedJourneyCount;
   final int decisionCount;
+  final int? totalDurationSeconds;
   final int pilotExperienceGained;
   final int petBondGained;
   final List<HomeJourneyPilotExperienceReward> pilotExperienceRewards;

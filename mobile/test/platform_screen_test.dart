@@ -320,6 +320,7 @@ void main() {
       journeyChronicle: const HomeJourneyChronicle(
         completedJourneyCount: 7,
         decisionCount: 28,
+        totalDurationSeconds: 65700,
         pilotExperienceGained: 420,
         petBondGained: 140,
         pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
@@ -524,6 +525,11 @@ void main() {
     expect(find.text('Летопись походов'), findsOneWidget);
     expect(find.text('ЗАВЕРШЕНО · 7'), findsOneWidget);
     expect(find.text('Решений · 28'), findsOneWidget);
+    expect(find.text('Время в походах: 18 ч 15 мин'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-duration')),
+      findsOneWidget,
+    );
     expect(find.text('Навигатор из летописи · +360 XP'), findsOneWidget);
     expect(find.text('Архивариус из летописи · +60 XP'), findsOneWidget);
     expect(find.text('+420 XP пилота'), findsNothing);
@@ -551,6 +557,7 @@ void main() {
       find.bySemanticsLabel(
         'Летопись походов. Завершено походов: 7. '
         'Принято решений: 28. '
+        'Время в походах: 18 ч 15 мин. '
         'Всего наград: Навигатор из летописи: +360 XP пилота; '
         'Архивариус из летописи: +60 XP пилота; '
         'Искра: +80 связи; Мох: +60 связи; '
@@ -716,6 +723,7 @@ void main() {
       journeyChronicle: const HomeJourneyChronicle(
         completedJourneyCount: 123456,
         decisionCount: 987654,
+        totalDurationSeconds: 65700,
         pilotExperienceGained: 123456789,
         petBondGained: 987654321,
         decisionOutcomes: <HomeJourneyDecisionOutcome>[
@@ -787,6 +795,11 @@ void main() {
     );
     await _bringIntoView(tester, chronicle);
     expect(chronicle, findsOneWidget);
+    expect(find.text('Время в походах: 18 ч 15 мин'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-duration')),
+      findsOneWidget,
+    );
     expect(find.text('+123456789 XP пилота'), findsOneWidget);
     expect(find.text('Решения летописи'), findsOneWidget);
     expect(

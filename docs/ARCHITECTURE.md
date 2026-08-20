@@ -452,6 +452,15 @@ Home также строит nullable lifetime `journeyChronicle` без отд�
 без зависимости от ограниченного recent archive. Repository считает каждый
 immutable receipt старта journey N+1 доказательством завершения journey N и
 SQL-проекцией суммирует его persisted event resolutions. Та же проекция
+сопоставляет каждому included journey authoritative start и последнюю
+immutable resolution: journey 1 использует initial cycle creation с fallback
+на progress creation, journey 2+ — exact journey-start receipt `server_time`.
+Lifetime `totalDurationSeconds` суммируется по полной receipt-proven history,
+а service добавляет duration current authoritative `COMPLETED` ровно один раз.
+Если хотя бы одна included boundary отсутствует или start позже final, поле
+целиком опускается: recent archive, client clock, cache/Home-response time и
+частичный итог не используются.
+Та же SQL-проекция
 группирует положительную связь по persisted `pet_id + pet_name`, сохраняя
 порядок первого immutable появления. Service добавляет текущий journey ровно
 один раз только при authoritative `COMPLETED` и объединяет его ordered
