@@ -972,11 +972,14 @@ number of completed journeys, while wrapping chips show total accepted
 decisions, total journey time, longest journey record, average journey time,
 pilot XP and companion bond. When the server supplies the additive record
 identity, the longest chip names that journey; legacy omission keeps the
-generic record label. The average chip uses the same duration formatter as
-total and record values and reflects the server-supplied floor-rounded
-aggregate. The card uses only the nullable Home `journeyChronicle`; it does not
-sum, divide or select from the five visible archive entries, current
-progression values or material rewards.
+generic record label. When the server also supplies the additive record
+completion instant, a separate calendar chip formats that same UTC value in
+the device timezone and selected RU/EN locale; it never uses the client clock.
+The average chip uses the same duration formatter as total and record values
+and reflects the server-supplied floor-rounded aggregate. The card uses only
+the nullable Home `journeyChronicle`; it does not sum, divide or select from
+the five visible archive entries, current progression values or material
+rewards.
 
 One container semantic announces every supplied lifetime value and excludes
 the visual children from duplicate screen-reader output. Chips wrap instead of

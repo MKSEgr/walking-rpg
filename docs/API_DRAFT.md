@@ -505,8 +505,9 @@ Authorization: Bearer <access-token>
   подтверждённых завершённых походов этого пользователя и экспедиции:
   `completedJourneyCount`, `decisionCount`, nullable non-negative
   `totalDurationSeconds`, nullable non-negative `longestDurationSeconds`,
-  nullable positive `longestJourneyNumber`, nullable non-negative
-  `averageDurationSeconds`, `pilotExperienceGained` и `petBondGained`.
+  nullable positive `longestJourneyNumber`, nullable ISO-8601 instant
+  `longestJourneyCompletedAt`, nullable non-negative `averageDurationSeconds`,
+  `pilotExperienceGained` и `petBondGained`.
   `totalDurationSeconds` суммирует полные целые секунды каждого included
   journey: journey 1 начинается в initial cycle/progress creation, journey 2+
   — в exact journey-start receipt `server_time`, а заканчивается последней
@@ -516,9 +517,12 @@ Authorization: Bearer <access-token>
   публикуется только вместе с total и не превышает его. Additive
   `longestJourneyNumber` указывает journey этого maximum; tie выбирается по
   меньшему номеру, поле публикуется только вместе с longest и не превышает
-  `completedJourneyCount`. Current authoritative `COMPLETED` сравнивается
-  ровно один раз и заменяет record identity только при строго большей
-  duration. `averageDurationSeconds`
+  `completedJourneyCount`. Additive `longestJourneyCompletedAt` берётся из
+  immutable final resolution exact winning journey и публикуется только
+  вместе с longest duration и identity. Current authoritative `COMPLETED`
+  сравнивается ровно один раз и заменяет record identity и completion instant
+  только при строго большей duration; tie сохраняет historical winner.
+  `averageDurationSeconds`
   вычисляется после того же current merge как целочисленное floor-деление
   `totalDurationSeconds / completedJourneyCount`, публикуется только вместе с
   total и не выводится из recent archive или client clock. Additive
@@ -547,9 +551,9 @@ Authorization: Bearer <access-token>
   inventory или текущие progression totals. До первого подтверждённого
   финиша значение равно `null`; legacy response без `journeyChronicle`,
   `totalDurationSeconds`, `longestDurationSeconds`, `longestJourneyNumber`,
-  `averageDurationSeconds`, `pilotExperienceRewards`, `petBondRewards`,
-  `materials`, `decisionOutcomes` или `finaleOutcomes` остаётся валидным. При
-  наличии
+  `longestJourneyCompletedAt`, `averageDurationSeconds`,
+  `pilotExperienceRewards`, `petBondRewards`, `materials`,
+  `decisionOutcomes` или `finaleOutcomes` остаётся валидным. При наличии
   pilot-массива его
   `experienceGained` в сумме точно равен общему `pilotExperienceGained`; при
   наличии decision-массива его `decisionCount` в сумме точно равен общему
@@ -563,6 +567,7 @@ Authorization: Bearer <access-token>
     "totalDurationSeconds": 65700,
     "longestDurationSeconds": 12600,
     "longestJourneyNumber": 7,
+    "longestJourneyCompletedAt": "2026-07-25T12:00:00Z",
     "averageDurationSeconds": 8212,
     "pilotExperienceGained": 476,
     "petBondGained": 133,

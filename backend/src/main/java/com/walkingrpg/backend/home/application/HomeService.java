@@ -573,6 +573,8 @@ public class HomeService {
                 completedJourneys.longestDurationSeconds();
         Long longestJourneyNumber =
                 completedJourneys.longestJourneyNumber();
+        Instant longestJourneyCompletedAt =
+                completedJourneys.longestJourneyCompletedAt();
         long pilotExperienceGained =
                 completedJourneys.pilotExperienceGained();
         long petBondGained = completedJourneys.petBondGained();
@@ -643,6 +645,7 @@ public class HomeService {
                     || currentJourney.durationSeconds() == null) {
                 longestDurationSeconds = null;
                 longestJourneyNumber = null;
+                longestJourneyCompletedAt = null;
             } else if (completedJourneyCount == 1
                 || currentJourney.durationSeconds()
                     > longestDurationSeconds) {
@@ -652,6 +655,11 @@ public class HomeService {
                         <= completedJourneyCount
                         ? currentJourney.journeyNumber()
                         : null;
+                longestJourneyCompletedAt =
+                        longestJourneyNumber == null
+                                || currentJourney.finalDecision() == null
+                                ? null
+                                : currentJourney.finalDecision().resolvedAt();
             }
             totalDurationSeconds = totalDurationSeconds == null
                     || currentJourney.durationSeconds() == null
@@ -793,6 +801,7 @@ public class HomeService {
                 totalDurationSeconds,
                 longestDurationSeconds,
                 longestJourneyNumber,
+                longestJourneyCompletedAt,
                 averageDurationSeconds,
                 pilotExperienceGained,
                 petBondGained,

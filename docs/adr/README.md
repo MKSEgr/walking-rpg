@@ -70,3 +70,4 @@ NNNN-short-title.md
 - [0051 — authoritative longest journey duration](0051-authoritative-longest-journey-duration.md)
 - [0052 — authoritative average journey duration](0052-authoritative-average-journey-duration.md)
 - [0053 — authoritative longest journey identity](0053-authoritative-longest-journey-identity.md)
+- [0054 — authoritative longest journey completion time](0054-authoritative-longest-journey-completion-time.md)

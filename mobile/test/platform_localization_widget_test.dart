@@ -360,6 +360,7 @@ void main() {
               totalDurationSeconds: 65700,
               longestDurationSeconds: 12600,
               longestJourneyNumber: 3,
+              longestJourneyCompletedAt: '2026-07-25T12:00:00Z',
               averageDurationSeconds: 7300,
               pilotExperienceGained: 620,
               petBondGained: 205,
@@ -468,6 +469,12 @@ void main() {
       tester,
       find.byKey(const Key('platform-journey-chronicle')),
     );
+    final String recordCompletedAt = _formattedChronicleRecordTime(
+      tester,
+      find.byKey(const Key('platform-journey-chronicle')),
+      '2026-07-25T12:00:00Z',
+      russian: false,
+    );
     expect(find.text('Journey chronicle'), findsOneWidget);
     expect(find.text('Time in journeys: 18 h 15 min'), findsOneWidget);
     expect(
@@ -477,6 +484,13 @@ void main() {
     expect(find.text('Longest journey #3: 3 h 30 min'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-longest-duration')),
+      findsOneWidget,
+    );
+    expect(find.text(recordCompletedAt), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key('platform-journey-chronicle-record-completed-at'),
+      ),
       findsOneWidget,
     );
     expect(find.text('Average journey: 2 h 1 min'), findsOneWidget);
@@ -509,6 +523,7 @@ void main() {
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
         'Time in journeys: 18 h 15 min. '
         'Longest journey #3: 3 h 30 min. '
+        '$recordCompletedAt. '
         'Average journey: 2 h 1 min. '
         'Total rewards: Navigator from chronicle: +500 pilot XP; '
         'Archivist from chronicle: +120 pilot XP; '
@@ -632,6 +647,12 @@ void main() {
     );
     expect(find.text('Longest journey: 1 h 0 min'), findsOneWidget);
     expect(find.textContaining('Longest journey #'), findsNothing);
+    expect(
+      find.byKey(
+        const Key('platform-journey-chronicle-record-completed-at'),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('known command feedback ignores Russian backend message in EN', (
@@ -830,6 +851,25 @@ String _formattedCompletionTime(
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
   return russian ? 'Завершён $date в $time' : 'Finished on $date at $time';
+}
+
+String _formattedChronicleRecordTime(
+  WidgetTester tester,
+  Finder anchor,
+  String resolvedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime completedAt = DateTime.parse(resolvedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(completedAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(completedAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian
+      ? 'Рекорд установлен $date в $time'
+      : 'Record set on $date at $time';
 }
 
 String _formattedDecisionTime(

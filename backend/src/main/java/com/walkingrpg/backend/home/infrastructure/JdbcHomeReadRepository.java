@@ -354,7 +354,27 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                    LIMIT 1
                                )
                                ELSE NULL
-                           END AS longest_journey_number
+                           END AS longest_journey_number,
+                           CASE
+                               WHEN COUNT(*) = 0 THEN NULL::TIMESTAMPTZ
+                               WHEN COUNT(*) = COUNT(*) FILTER (
+                                   WHERE started_at IS NOT NULL
+                                     AND resolved_at IS NOT NULL
+                                     AND resolved_at >= started_at
+                               ) THEN (
+                                   SELECT winner.resolved_at
+                                   FROM journey_boundary winner
+                                   ORDER BY FLOOR(EXTRACT(
+                                       EPOCH FROM (
+                                           winner.resolved_at
+                                           - winner.started_at
+                                       )
+                                   )) DESC,
+                                   winner.completed_journey_number
+                                   LIMIT 1
+                               )
+                               ELSE NULL
+                           END AS longest_journey_completed_at
                     FROM journey_boundary
                 )
                 SELECT COUNT(DISTINCT completed.completed_journey_number)
@@ -372,6 +392,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                            SELECT longest_journey_number
                            FROM duration_stats
                        ) AS longest_journey_number,
+                       (
+                           SELECT longest_journey_completed_at
+                           FROM duration_stats
+                       ) AS longest_journey_completed_at,
                        COALESCE(SUM(
                            resolution.pilot_experience_gained
                        ), 0) AS pilot_experience_gained,
@@ -384,8 +408,12 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                  AND resolution.expedition_id = ?
                  AND resolution.journey_number =
                          completed.completed_journey_number
-                """, (resultSet, rowNumber) ->
-                        new ExpeditionJourneyChronicleTotals(
+                """, (resultSet, rowNumber) -> {
+                        Timestamp longestJourneyCompletedAt =
+                                resultSet.getTimestamp(
+                                        "longest_journey_completed_at"
+                                );
+                        return new ExpeditionJourneyChronicleTotals(
                                 resultSet.getLong(
                                         "completed_journey_count"
                                 ),
@@ -402,6 +430,9 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                         "longest_journey_number",
                                         Long.class
                                 ),
+                                longestJourneyCompletedAt == null
+                                        ? null
+                                        : longestJourneyCompletedAt.toInstant(),
                                 resultSet.getLong(
                                         "pilot_experience_gained"
                                 ),
@@ -411,7 +442,8 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 List.of(),
                                 List.of(),
                                 List.of()
-                        ),
+                        );
+                },
                 userId,
                 expeditionId,
                 currentJourneyNumber,
@@ -767,6 +799,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 totals.totalDurationSeconds(),
                 totals.longestDurationSeconds(),
                 totals.longestJourneyNumber(),
+                totals.longestJourneyCompletedAt(),
                 totals.pilotExperienceGained(),
                 totals.petBondGained(),
                 pilotExperienceRewards,

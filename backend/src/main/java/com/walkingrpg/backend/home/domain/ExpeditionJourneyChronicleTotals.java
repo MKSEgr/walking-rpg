@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.home.domain;
 
+import java.time.Instant;
 import java.util.List;
 
 public record ExpeditionJourneyChronicleTotals(
@@ -8,6 +9,7 @@ public record ExpeditionJourneyChronicleTotals(
         Long totalDurationSeconds,
         Long longestDurationSeconds,
         Long longestJourneyNumber,
+        Instant longestJourneyCompletedAt,
         long pilotExperienceGained,
         long petBondGained,
         List<ExpeditionJourneyPilotExperienceRewardSnapshot> pilotExperienceRewards,
@@ -36,6 +38,13 @@ public record ExpeditionJourneyChronicleTotals(
                 || longestJourneyNumber > completedJourneyCount)) {
             throw new IllegalArgumentException(
                     "Номер рекордного похода должен входить в летопись"
+            );
+        }
+        if (longestJourneyCompletedAt != null
+                && (longestDurationSeconds == null
+                || longestJourneyNumber == null)) {
+            throw new IllegalArgumentException(
+                    "Время рекорда требует подтверждённый рекордный поход"
             );
         }
         pilotExperienceRewards = pilotExperienceRewards == null
@@ -72,6 +81,7 @@ public record ExpeditionJourneyChronicleTotals(
                 null,
                 null,
                 null,
+                null,
                 pilotExperienceGained,
                 petBondGained,
                 pilotExperienceRewards,
@@ -88,6 +98,7 @@ public record ExpeditionJourneyChronicleTotals(
                 0,
                 0L,
                 0L,
+                null,
                 null,
                 0,
                 0,

@@ -491,6 +491,9 @@ class HomeReadIntegrationTest {
                 expedition.journeyChronicle().longestDurationSeconds());
         assertEquals(1,
                 expedition.journeyChronicle().longestJourneyNumber());
+        assertEquals(Instant.parse("2026-07-25T09:42:00Z"),
+                expedition.journeyChronicle()
+                        .longestJourneyCompletedAt());
         assertEquals(3_548,
                 expedition.journeyChronicle().averageDurationSeconds());
         assertEquals(28,
@@ -686,6 +689,7 @@ class HomeReadIntegrationTest {
         assertNull(incompleteDuration.totalDurationSeconds());
         assertNull(incompleteDuration.longestDurationSeconds());
         assertNull(incompleteDuration.longestJourneyNumber());
+        assertNull(incompleteDuration.longestJourneyCompletedAt());
         assertNull(incompleteDuration.averageDurationSeconds());
     }
 

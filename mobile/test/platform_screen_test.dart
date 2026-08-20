@@ -323,6 +323,7 @@ void main() {
         totalDurationSeconds: 65700,
         longestDurationSeconds: 12600,
         longestJourneyNumber: 4,
+        longestJourneyCompletedAt: '2026-07-25T12:00:00Z',
         averageDurationSeconds: 9385,
         pilotExperienceGained: 420,
         petBondGained: 140,
@@ -524,6 +525,12 @@ void main() {
       const Key('platform-journey-chronicle'),
     );
     await _bringIntoView(tester, chronicle);
+    final String recordCompletedAt = _formattedChronicleRecordTime(
+      tester,
+      chronicle,
+      '2026-07-25T12:00:00Z',
+      russian: true,
+    );
     expect(chronicle, findsOneWidget);
     expect(find.text('Летопись походов'), findsOneWidget);
     expect(find.text('ЗАВЕРШЕНО · 7'), findsOneWidget);
@@ -536,6 +543,13 @@ void main() {
     expect(find.text('Самый долгий поход №4: 3 ч 30 мин'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-longest-duration')),
+      findsOneWidget,
+    );
+    expect(find.text(recordCompletedAt), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key('platform-journey-chronicle-record-completed-at'),
+      ),
       findsOneWidget,
     );
     expect(find.text('В среднем за поход: 2 ч 36 мин'), findsOneWidget);
@@ -572,6 +586,7 @@ void main() {
         'Принято решений: 28. '
         'Время в походах: 18 ч 15 мин. '
         'Самый долгий поход №4: 3 ч 30 мин. '
+        '$recordCompletedAt. '
         'В среднем за поход: 2 ч 36 мин. '
         'Всего наград: Навигатор из летописи: +360 XP пилота; '
         'Архивариус из летописи: +60 XP пилота; '
@@ -741,6 +756,7 @@ void main() {
         totalDurationSeconds: 65700,
         longestDurationSeconds: 12600,
         longestJourneyNumber: 1,
+        longestJourneyCompletedAt: '2026-07-26T06:02:00Z',
         averageDurationSeconds: 0,
         pilotExperienceGained: 123456789,
         petBondGained: 987654321,
@@ -812,6 +828,12 @@ void main() {
       const Key('platform-journey-chronicle'),
     );
     await _bringIntoView(tester, chronicle);
+    final String recordCompletedAt = _formattedChronicleRecordTime(
+      tester,
+      chronicle,
+      '2026-07-26T06:02:00Z',
+      russian: true,
+    );
     expect(chronicle, findsOneWidget);
     expect(find.text('Время в походах: 18 ч 15 мин'), findsOneWidget);
     expect(
@@ -821,6 +843,13 @@ void main() {
     expect(find.text('Самый долгий поход №1: 3 ч 30 мин'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-longest-duration')),
+      findsOneWidget,
+    );
+    expect(find.text(recordCompletedAt), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key('platform-journey-chronicle-record-completed-at'),
+      ),
       findsOneWidget,
     );
     expect(find.text('В среднем за поход: меньше 1 мин'), findsOneWidget);
@@ -2429,6 +2458,25 @@ String _formattedCompletionTime(
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
   return russian ? 'Завершён $date в $time' : 'Finished on $date at $time';
+}
+
+String _formattedChronicleRecordTime(
+  WidgetTester tester,
+  Finder anchor,
+  String resolvedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime completedAt = DateTime.parse(resolvedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(completedAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(completedAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian
+      ? 'Рекорд установлен $date в $time'
+      : 'Record set on $date at $time';
 }
 
 String _formattedDecisionTime(

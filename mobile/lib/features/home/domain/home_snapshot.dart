@@ -603,6 +603,7 @@ class HomeJourneyChronicle {
     this.totalDurationSeconds,
     this.longestDurationSeconds,
     this.longestJourneyNumber,
+    this.longestJourneyCompletedAt,
     this.averageDurationSeconds,
     this.pilotExperienceRewards = const <HomeJourneyPilotExperienceReward>[],
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
@@ -634,6 +635,14 @@ class HomeJourneyChronicle {
       json,
       'longestJourneyNumber',
     );
+    final String? longestJourneyCompletedAt = HomeSnapshot._readOptionalString(
+      json,
+      'longestJourneyCompletedAt',
+    );
+    final DateTime? parsedLongestJourneyCompletedAt =
+        longestJourneyCompletedAt == null
+        ? null
+        : DateTime.tryParse(longestJourneyCompletedAt);
     final int? averageDurationSeconds = HomeSnapshot._readOptionalInt(
       json,
       'averageDurationSeconds',
@@ -649,6 +658,11 @@ class HomeJourneyChronicle {
             (longestDurationSeconds == null ||
                 longestJourneyNumber <= 0 ||
                 longestJourneyNumber > completedJourneyCount)) ||
+        (longestJourneyCompletedAt != null &&
+            (parsedLongestJourneyCompletedAt == null ||
+                !parsedLongestJourneyCompletedAt.isUtc ||
+                longestDurationSeconds == null ||
+                longestJourneyNumber == null)) ||
         (averageDurationSeconds != null &&
             (totalDurationSeconds == null ||
                 averageDurationSeconds < 0 ||
@@ -842,6 +856,7 @@ class HomeJourneyChronicle {
       totalDurationSeconds: totalDurationSeconds,
       longestDurationSeconds: longestDurationSeconds,
       longestJourneyNumber: longestJourneyNumber,
+      longestJourneyCompletedAt: longestJourneyCompletedAt,
       averageDurationSeconds: averageDurationSeconds,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
@@ -858,6 +873,7 @@ class HomeJourneyChronicle {
   final int? totalDurationSeconds;
   final int? longestDurationSeconds;
   final int? longestJourneyNumber;
+  final String? longestJourneyCompletedAt;
   final int? averageDurationSeconds;
   final int pilotExperienceGained;
   final int petBondGained;

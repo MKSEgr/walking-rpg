@@ -1002,6 +1002,12 @@ class _JourneyChronicleCard extends StatelessWidget {
               chronicle.longestDurationSeconds!,
             ),
           );
+    final String recordCompletedAt = chronicle.longestJourneyCompletedAt == null
+        ? ''
+        : _journeyChronicleRecordTimeLabel(
+            context,
+            chronicle.longestJourneyCompletedAt!,
+          );
     final String averageDuration = chronicle.averageDurationSeconds == null
         ? ''
         : context.l10n.platformJourneyChronicleAverageDuration(
@@ -1081,6 +1087,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.decisionCount,
         duration.isEmpty ? '' : '$duration. ',
         longestDuration.isEmpty ? '' : '$longestDuration. ',
+        recordCompletedAt.isEmpty ? '' : '$recordCompletedAt. ',
         averageDuration.isEmpty ? '' : '$averageDuration. ',
         experienceSummary,
         bondSummary,
@@ -1141,6 +1148,14 @@ class _JourneyChronicleCard extends StatelessWidget {
                       ),
                       icon: Icons.emoji_events_outlined,
                       label: longestDuration,
+                    ),
+                  if (recordCompletedAt.isNotEmpty)
+                    _JourneyRewardChip(
+                      key: const Key(
+                        'platform-journey-chronicle-record-completed-at',
+                      ),
+                      icon: Icons.event_available_outlined,
+                      label: recordCompletedAt,
                     ),
                   if (averageDuration.isNotEmpty)
                     _JourneyRewardChip(
@@ -1572,6 +1587,20 @@ String _journeyCompletionTimeLabel(
     decision.resolvedAt,
   );
   return context.l10n.platformJourneyCompletedAt(local.date, local.time);
+}
+
+String _journeyChronicleRecordTimeLabel(
+  BuildContext context,
+  String resolvedAt,
+) {
+  final ({String date, String time}) local = _journeyLocalDateTime(
+    context,
+    resolvedAt,
+  );
+  return context.l10n.platformJourneyChronicleRecordCompletedAt(
+    local.date,
+    local.time,
+  );
 }
 
 String _journeyDecisionTimeLabel(
