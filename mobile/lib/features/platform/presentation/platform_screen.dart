@@ -942,8 +942,8 @@ class _JourneyChronicleCard extends StatelessWidget {
         ? context.l10n.platformPilotXpReward(chronicle.pilotExperienceGained)
         : chronicle.pilotExperienceRewards
               .map(
-                (HomeJourneyPilotExperienceReward reward) => context.l10n
-                    .platformNamedPilotXpSemantic(
+                (HomeJourneyPilotExperienceReward reward) =>
+                    context.l10n.platformNamedPilotXpSemantic(
                       reward.pilotName,
                       reward.experienceGained,
                     ),

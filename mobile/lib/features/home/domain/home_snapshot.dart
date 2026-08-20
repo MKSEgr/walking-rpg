@@ -1105,9 +1105,7 @@ class HomeJourneyPilotExperienceReward {
     required this.experienceGained,
   });
 
-  factory HomeJourneyPilotExperienceReward.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory HomeJourneyPilotExperienceReward.fromJson(Map<String, dynamic> json) {
     final int experienceGained = HomeSnapshot._readInt(
       json,
       'experienceGained',

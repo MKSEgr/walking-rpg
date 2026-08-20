@@ -173,15 +173,7 @@ jobs:
         run: flutter pub get --enforce-lockfile
 
       - name: Check formatting
-        shell: bash
-        run: |
-          dart format \
-            lib/features/home/domain/home_snapshot.dart \
-            lib/features/platform/presentation/platform_screen.dart
-          git diff -- \
-            lib/features/home/domain/home_snapshot.dart \
-            lib/features/platform/presentation/platform_screen.dart
-          exit 1
+        run: dart format --output=none --set-exit-if-changed lib test
 
       - name: Analyze for diagnostics
         id: mobile-analyze
