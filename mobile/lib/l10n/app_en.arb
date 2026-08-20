@@ -1067,16 +1067,23 @@
       "summary": {"type": "String"}
     }
   },
-  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. Total rewards: {experienceRewards}; {bondRewards}{materialRewards}.{decisionSummary}{finaleSummary}",
+  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. {duration}Total rewards: {experienceRewards}; {bondRewards}{materialRewards}.{decisionSummary}{finaleSummary}",
   "@platformJourneyChronicleSemantics": {
     "placeholders": {
       "journeys": {"type": "int"},
       "decisions": {"type": "int"},
+      "duration": {"type": "String"},
       "experienceRewards": {"type": "String"},
       "bondRewards": {"type": "String"},
       "materialRewards": {"type": "String"},
       "decisionSummary": {"type": "String"},
       "finaleSummary": {"type": "String"}
+    }
+  },
+  "platformJourneyChronicleDuration": "Time in journeys: {duration}",
+  "@platformJourneyChronicleDuration": {
+    "placeholders": {
+      "duration": {"type": "String"}
     }
   },
   "platformJourneyChronicleDecisionsTitle": "Lifetime decisions",

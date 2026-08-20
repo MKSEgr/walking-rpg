@@ -567,6 +567,8 @@ public class HomeService {
         long completedJourneyCount =
                 completedJourneys.completedJourneyCount();
         long decisionCount = completedJourneys.decisionCount();
+        Long totalDurationSeconds =
+                completedJourneys.totalDurationSeconds();
         long pilotExperienceGained =
                 completedJourneys.pilotExperienceGained();
         long petBondGained = completedJourneys.petBondGained();
@@ -633,6 +635,13 @@ public class HomeService {
                     decisionCount,
                     currentJourney.decisionCount()
             );
+            totalDurationSeconds = totalDurationSeconds == null
+                    || currentJourney.durationSeconds() == null
+                    ? null
+                    : Math.addExact(
+                            totalDurationSeconds,
+                            currentJourney.durationSeconds()
+                    );
             pilotExperienceGained = Math.addExact(
                     pilotExperienceGained,
                     currentJourney.pilotExperienceGained()
@@ -760,6 +769,7 @@ public class HomeService {
         return new ExpeditionJourneyChronicleSnapshot(
                 completedJourneyCount,
                 decisionCount,
+                totalDurationSeconds,
                 pilotExperienceGained,
                 petBondGained,
                 pilotExperienceSnapshots,

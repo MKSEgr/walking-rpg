@@ -5,6 +5,7 @@ import java.util.List;
 public record ExpeditionJourneyChronicleTotals(
         long completedJourneyCount,
         long decisionCount,
+        Long totalDurationSeconds,
         long pilotExperienceGained,
         long petBondGained,
         List<ExpeditionJourneyPilotExperienceRewardSnapshot> pilotExperienceRewards,
@@ -14,6 +15,11 @@ public record ExpeditionJourneyChronicleTotals(
         List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomes
 ) {
     public ExpeditionJourneyChronicleTotals {
+        if (totalDurationSeconds != null && totalDurationSeconds < 0) {
+            throw new IllegalArgumentException(
+                    "Суммарная длительность походов не может быть отрицательной"
+            );
+        }
         pilotExperienceRewards = pilotExperienceRewards == null
                 ? List.of()
                 : List.copyOf(pilotExperienceRewards);
@@ -31,10 +37,36 @@ public record ExpeditionJourneyChronicleTotals(
                 : List.copyOf(finaleOutcomes);
     }
 
+    public ExpeditionJourneyChronicleTotals(
+            long completedJourneyCount,
+            long decisionCount,
+            long pilotExperienceGained,
+            long petBondGained,
+            List<ExpeditionJourneyPilotExperienceRewardSnapshot> pilotExperienceRewards,
+            List<PetBondRewardSnapshot> petBondRewards,
+            List<MaterialRewardPreviewSnapshot> materials,
+            List<ExpeditionJourneyDecisionOutcomeSnapshot> decisionOutcomes,
+            List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomes
+    ) {
+        this(
+                completedJourneyCount,
+                decisionCount,
+                null,
+                pilotExperienceGained,
+                petBondGained,
+                pilotExperienceRewards,
+                petBondRewards,
+                materials,
+                decisionOutcomes,
+                finaleOutcomes
+        );
+    }
+
     public static ExpeditionJourneyChronicleTotals empty() {
         return new ExpeditionJourneyChronicleTotals(
                 0,
                 0,
+                0L,
                 0,
                 0,
                 List.of(),

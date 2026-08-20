@@ -69,6 +69,10 @@
 
 ### Added
 
+- authoritative lifetime journey duration in the journey chronicle, summed
+  across the complete receipt-proven history and current completed journey,
+  with whole-field omission for incomplete boundaries and shared RU/EN
+  accessibility;
 - authoritative journey duration in current and recent recaps, computed from
   the persisted exact-journey start and immutable final resolution, with
   legacy omission, fail-closed validation and shared RU/EN accessibility;

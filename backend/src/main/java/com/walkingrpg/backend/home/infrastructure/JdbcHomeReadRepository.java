@@ -266,10 +266,73 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                     WHERE user_id = ?
                       AND expedition_id = ?
                       AND journey_number <= ?
+                ),
+                journey_boundary AS (
+                    SELECT completed.completed_journey_number,
+                           CASE
+                               WHEN completed.completed_journey_number = 1
+                               THEN (
+                                   SELECT COALESCE(
+                                       cycle.created_at,
+                                       progress.created_at
+                                   )
+                                   FROM expedition_progress progress
+                                   LEFT JOIN expedition_journey_cycle cycle
+                                     ON cycle.user_id = progress.user_id
+                                    AND cycle.expedition_id =
+                                            progress.expedition_id
+                                   WHERE progress.user_id = ?
+                                     AND progress.expedition_id = ?
+                               )
+                               ELSE (
+                                   SELECT journey_start.server_time
+                                   FROM processed_expedition_journey_start
+                                        journey_start
+                                   WHERE journey_start.user_id = ?
+                                     AND journey_start.expedition_id = ?
+                                     AND journey_start.journey_number =
+                                             completed.completed_journey_number
+                                   ORDER BY journey_start.expedition_version,
+                                            journey_start.created_at,
+                                            journey_start.idempotency_key
+                                   LIMIT 1
+                               )
+                           END AS started_at,
+                           (
+                               SELECT final_resolution.server_time
+                               FROM processed_event_resolution
+                                    final_resolution
+                               WHERE final_resolution.user_id = ?
+                                 AND final_resolution.expedition_id = ?
+                                 AND final_resolution.journey_number =
+                                         completed.completed_journey_number
+                               ORDER BY final_resolution.expedition_version DESC,
+                                        final_resolution.receipt_id DESC
+                               LIMIT 1
+                           ) AS resolved_at
+                    FROM completed_journey completed
+                ),
+                duration_total AS (
+                    SELECT CASE
+                               WHEN COUNT(*) = 0 THEN 0::BIGINT
+                               WHEN COUNT(*) = COUNT(*) FILTER (
+                                   WHERE started_at IS NOT NULL
+                                     AND resolved_at IS NOT NULL
+                                     AND resolved_at >= started_at
+                               ) THEN SUM(FLOOR(EXTRACT(
+                                   EPOCH FROM (resolved_at - started_at)
+                               )))::BIGINT
+                               ELSE NULL
+                           END AS total_duration_seconds
+                    FROM journey_boundary
                 )
                 SELECT COUNT(DISTINCT completed.completed_journey_number)
                            AS completed_journey_count,
                        COUNT(resolution.event_id) AS decision_count,
+                       (
+                           SELECT total_duration_seconds
+                           FROM duration_total
+                       ) AS total_duration_seconds,
                        COALESCE(SUM(
                            resolution.pilot_experience_gained
                        ), 0) AS pilot_experience_gained,
@@ -288,6 +351,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                         "completed_journey_count"
                                 ),
                                 resultSet.getLong("decision_count"),
+                                resultSet.getObject(
+                                        "total_duration_seconds",
+                                        Long.class
+                                ),
                                 resultSet.getLong(
                                         "pilot_experience_gained"
                                 ),
@@ -301,6 +368,12 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 userId,
                 expeditionId,
                 currentJourneyNumber,
+                userId,
+                expeditionId,
+                userId,
+                expeditionId,
+                userId,
+                expeditionId,
                 userId,
                 expeditionId
         );
@@ -644,6 +717,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
         return new ExpeditionJourneyChronicleTotals(
                 totals.completedJourneyCount(),
                 totals.decisionCount(),
+                totals.totalDurationSeconds(),
                 totals.pilotExperienceGained(),
                 totals.petBondGained(),
                 pilotExperienceRewards,

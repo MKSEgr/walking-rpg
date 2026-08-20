@@ -178,6 +178,7 @@ void main() {
       ..['journeyChronicle'] = <String, dynamic>{
         'completedJourneyCount': 8,
         'decisionCount': 19,
+        'totalDurationSeconds': 65_700,
         'pilotExperienceGained': 476,
         'petBondGained': 133,
         'pilotExperienceRewards': <Map<String, dynamic>>[
@@ -400,6 +401,7 @@ void main() {
     expect(recap?.hasRewards, isTrue);
     expect(snapshot.journeyChronicle?.completedJourneyCount, 8);
     expect(snapshot.journeyChronicle?.decisionCount, 19);
+    expect(snapshot.journeyChronicle?.totalDurationSeconds, 65_700);
     expect(snapshot.journeyChronicle?.pilotExperienceGained, 476);
     expect(snapshot.journeyChronicle?.petBondGained, 133);
     expect(snapshot.journeyChronicle?.pilotExperienceRewards, hasLength(2));
@@ -477,6 +479,7 @@ void main() {
   for (final MapEntry<String, int> invalidValue in <String, int>{
     'completedJourneyCount': 0,
     'decisionCount': -1,
+    'totalDurationSeconds': -1,
     'pilotExperienceGained': -1,
     'petBondGained': -1,
   }.entries) {
@@ -490,6 +493,23 @@ void main() {
         'pilotExperienceGained': 0,
         'petBondGained': 0,
         invalidValue.key: invalidValue.value,
+      };
+
+      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+    });
+  }
+
+  for (final Object invalidDuration in <Object>[1.5, '60']) {
+    test('journey chronicle rejects duration $invalidDuration', () {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 1,
+        'decisionCount': 0,
+        'totalDurationSeconds': invalidDuration,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
       };
 
       expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
@@ -510,6 +530,7 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.journeyChronicle?.petBondGained, 72);
+    expect(snapshot.journeyChronicle?.totalDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.pilotExperienceRewards, isEmpty);
     expect(snapshot.journeyChronicle?.petBondRewards, isEmpty);
     expect(snapshot.journeyChronicle?.materials, isEmpty);

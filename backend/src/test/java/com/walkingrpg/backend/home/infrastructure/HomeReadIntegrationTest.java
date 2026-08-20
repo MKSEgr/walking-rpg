@@ -291,7 +291,11 @@ class HomeReadIntegrationTest {
                 INSERT INTO expedition_journey_cycle (
                     user_id, expedition_id, journey_number,
                     created_at, updated_at
-                ) VALUES (?, ?, 8, now(), now())
+                ) VALUES (
+                    ?, ?, 8,
+                    TIMESTAMPTZ '2026-07-25 09:00:00+00',
+                    TIMESTAMPTZ '2026-07-25 09:00:00+00'
+                )
                 """, "home-user", StarterExpeditionContent.EXPEDITION_ID);
         jdbcTemplate.update("""
                 INSERT INTO pilot_progress (
@@ -477,6 +481,8 @@ class HomeReadIntegrationTest {
         assertEquals(7,
                 expedition.journeyChronicle().completedJourneyCount());
         assertEquals(7, expedition.journeyChronicle().decisionCount());
+        assertEquals(17_640,
+                expedition.journeyChronicle().totalDurationSeconds());
         assertEquals(28,
                 expedition.journeyChronicle().pilotExperienceGained());
         assertEquals(2,
@@ -652,6 +658,22 @@ class HomeReadIntegrationTest {
         assertEquals(7,
                 expedition.recentJourneyRecaps().getFirst()
                         .petBondRewards().getFirst().bondGained());
+
+        jdbcTemplate.update("""
+                UPDATE processed_expedition_journey_start
+                SET server_time = TIMESTAMPTZ '2026-07-25 13:00:00+00'
+                WHERE user_id = ?
+                  AND expedition_id = ?
+                  AND journey_number = 4
+                """, "home-user", StarterExpeditionContent.EXPEDITION_ID);
+
+        var incompleteDuration = homeService.getSnapshot(
+                new HomeQuery("home-user", ACTIVITY_DATE)
+        ).expedition().journeyChronicle();
+
+        assertNotNull(incompleteDuration);
+        assertEquals(7, incompleteDuration.completedJourneyCount());
+        assertNull(incompleteDuration.totalDurationSeconds());
     }
 
     @Test

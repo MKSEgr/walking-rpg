@@ -737,6 +737,27 @@ Milestone 35 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, rewards/economy, progression,
 topology, archive limit или external validation gates.
 
+## Milestone 36 — Authoritative lifetime journey duration
+
+### CODE_COMPLETE
+
+- [x] Additive nullable `journeyChronicle.totalDurationSeconds` суммирует
+      полную receipt-proven completed history без зависимости от пяти recent
+      recaps
+- [x] Journey 1 использует initial cycle/progress creation, journey 2+ — exact
+      journey-start receipt, а final — последнюю immutable resolution exact
+      journey; current authoritative `COMPLETED` объединяется ровно один раз
+- [x] Любая missing или обратная included boundary опускает всё поле без
+      partial total; mobile принимает legacy omission и fail-closed отклоняет
+      malformed/negative value
+- [x] RU/EN lifetime chip и полная accessibility summary переиспользуют один
+      duration formatter; backend unit/API/PostgreSQL и Flutter
+      parser/widget/localization coverage включают compact text 1.6
+
+Milestone 36 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
+archive limit или external validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

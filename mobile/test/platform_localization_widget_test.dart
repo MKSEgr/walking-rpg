@@ -357,6 +357,7 @@ void main() {
             journeyChronicle: const HomeJourneyChronicle(
               completedJourneyCount: 9,
               decisionCount: 31,
+              totalDurationSeconds: 65700,
               pilotExperienceGained: 620,
               petBondGained: 205,
               pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
@@ -465,6 +466,11 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle')),
     );
     expect(find.text('Journey chronicle'), findsOneWidget);
+    expect(find.text('Time in journeys: 18 h 15 min'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-duration')),
+      findsOneWidget,
+    );
     expect(find.text('Navigator from chronicle · +500 XP'), findsOneWidget);
     expect(find.text('Archivist from chronicle · +120 XP'), findsOneWidget);
     expect(find.text('+620 pilot XP'), findsNothing);
@@ -488,6 +494,7 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
+        'Time in journeys: 18 h 15 min. '
         'Total rewards: Navigator from chronicle: +500 pilot XP; '
         'Archivist from chronicle: +120 pilot XP; '
         'Spark: +120 bond; Moss: +85 bond; '

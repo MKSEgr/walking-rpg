@@ -161,6 +161,7 @@ class HomeServiceTest {
         ).expedition().journeyChronicle();
 
         assertNotNull(chronicle);
+        assertNull(chronicle.totalDurationSeconds());
         assertEquals(40, chronicle.pilotExperienceGained());
         assertTrue(chronicle.pilotExperienceRewards().isEmpty());
     }
@@ -297,6 +298,7 @@ class HomeServiceTest {
                 new ExpeditionJourneyChronicleTotals(
                         7,
                         7,
+                        12_600L,
                         28,
                         28,
                         List.of(
@@ -455,6 +457,8 @@ class HomeServiceTest {
         assertEquals(8,
                 expedition.journeyChronicle().completedJourneyCount());
         assertEquals(10, expedition.journeyChronicle().decisionCount());
+        assertEquals(16_500,
+                expedition.journeyChronicle().totalDurationSeconds());
         assertEquals(98,
                 expedition.journeyChronicle().pilotExperienceGained());
         assertEquals(2,

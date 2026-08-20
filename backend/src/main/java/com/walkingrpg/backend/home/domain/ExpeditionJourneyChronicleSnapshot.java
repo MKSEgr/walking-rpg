@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public record ExpeditionJourneyChronicleSnapshot(
         long completedJourneyCount,
         long decisionCount,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        Long totalDurationSeconds,
         long pilotExperienceGained,
         long petBondGained,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -19,6 +21,11 @@ public record ExpeditionJourneyChronicleSnapshot(
         List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomes
 ) {
     public ExpeditionJourneyChronicleSnapshot {
+        if (totalDurationSeconds != null && totalDurationSeconds < 0) {
+            throw new IllegalArgumentException(
+                    "Суммарная длительность походов не может быть отрицательной"
+            );
+        }
         pilotExperienceRewards = pilotExperienceRewards == null
                 ? List.of()
                 : List.copyOf(pilotExperienceRewards);

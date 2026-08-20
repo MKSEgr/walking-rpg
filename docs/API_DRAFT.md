@@ -503,8 +503,14 @@ Authorization: Bearer <access-token>
 
 - `expedition.journeyChronicle` — additive nullable lifetime-итог всех
   подтверждённых завершённых походов этого пользователя и экспедиции:
-  `completedJourneyCount`, `decisionCount`, `pilotExperienceGained` и
-  `petBondGained`. Additive ordered `pilotExperienceRewards[]` группирует
+  `completedJourneyCount`, `decisionCount`, nullable non-negative
+  `totalDurationSeconds`, `pilotExperienceGained` и `petBondGained`.
+  `totalDurationSeconds` суммирует полные целые секунды каждого included
+  journey: journey 1 начинается в initial cycle/progress creation, journey 2+
+  — в exact journey-start receipt `server_time`, а заканчивается последней
+  immutable resolution exact journey. Любая отсутствующая или обратная
+  граница опускает весь lifetime duration без частичного итога. Additive
+  ordered `pilotExperienceRewards[]` группирует
   положительный фактически выданный XP по persisted `pilotId + pilotName` в
   порядке первого immutable появления; сумма `experienceGained` точно равна
   совместимому общему `pilotExperienceGained`. Additive `petBondRewards[]`
@@ -539,6 +545,7 @@ Authorization: Bearer <access-token>
   {
     "completedJourneyCount": 8,
     "decisionCount": 19,
+    "totalDurationSeconds": 65700,
     "pilotExperienceGained": 476,
     "petBondGained": 133,
     "pilotExperienceRewards": [
