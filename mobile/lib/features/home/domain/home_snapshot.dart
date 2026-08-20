@@ -835,6 +835,7 @@ class HomeExpeditionCompletionRecap {
     required this.materials,
     this.finalDecision,
     this.decisions = const <HomeExpeditionDecisionLogEntry>[],
+    this.pilotExperienceRewards = const <HomeJourneyPilotExperienceReward>[],
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
   });
 
@@ -892,6 +893,41 @@ class HomeExpeditionCompletionRecap {
           !_matchesFinalDecision(decisions.last, finalDecision)) {
         throw const FormatException(
           'completionRecap.decisions не совпадает с finalDecision',
+        );
+      }
+    }
+    final Object? pilotExperienceRewardsJson = json['pilotExperienceRewards'];
+    final List<HomeJourneyPilotExperienceReward> pilotExperienceRewards;
+    if (pilotExperienceRewardsJson == null) {
+      pilotExperienceRewards = const <HomeJourneyPilotExperienceReward>[];
+    } else {
+      if (pilotExperienceRewardsJson is! List<dynamic>) {
+        throw const FormatException(
+          'completionRecap.pilotExperienceRewards должен быть JSON-массивом',
+        );
+      }
+      pilotExperienceRewards = pilotExperienceRewardsJson
+          .map(
+            (Object? value) => HomeJourneyPilotExperienceReward.fromJson(
+              _asMap(value, 'completionRecap.pilotExperienceRewards[]'),
+            ),
+          )
+          .toList(growable: false);
+      final Set<String> pilotIdentities = <String>{};
+      int experienceTotal = 0;
+      for (final HomeJourneyPilotExperienceReward reward
+          in pilotExperienceRewards) {
+        final String identity = '${reward.pilotId}\u0000${reward.pilotName}';
+        if (!pilotIdentities.add(identity)) {
+          throw const FormatException(
+            'completionRecap.pilotExperienceRewards содержит повтор',
+          );
+        }
+        experienceTotal += reward.experienceGained;
+      }
+      if (experienceTotal != pilotExperienceGained) {
+        throw const FormatException(
+          'completionRecap.pilotExperienceRewards не совпадает с общим итогом',
         );
       }
     }
@@ -957,6 +993,7 @@ class HomeExpeditionCompletionRecap {
       finalDecision: finalDecision,
       decisions: decisions,
       pilotExperienceGained: pilotExperienceGained,
+      pilotExperienceRewards: pilotExperienceRewards,
       petBondGained: petBondGained,
       petBondRewards: petBondRewards,
       materials: materials,
@@ -968,6 +1005,7 @@ class HomeExpeditionCompletionRecap {
   final HomeJourneyFinalDecision? finalDecision;
   final List<HomeExpeditionDecisionLogEntry> decisions;
   final int pilotExperienceGained;
+  final List<HomeJourneyPilotExperienceReward> pilotExperienceRewards;
   final int petBondGained;
   final List<HomeJourneyPetBondReward> petBondRewards;
   final List<HomeJourneyMaterialReward> materials;

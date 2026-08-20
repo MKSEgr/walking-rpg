@@ -594,6 +594,21 @@ class HomeReadIntegrationTest {
                         .map(recap -> recap.pilotExperienceGained())
                         .toList()
         );
+        assertEquals(
+                List.of(7L, 6L, 5L, 4L, 3L),
+                expedition.recentJourneyRecaps().stream()
+                        .map(recap -> recap.pilotExperienceRewards()
+                                .getFirst().experienceGained())
+                        .toList()
+        );
+        assertTrue(expedition.recentJourneyRecaps().stream()
+                .allMatch(recap -> "navigator-v1".equals(
+                        recap.pilotExperienceRewards().getFirst().pilotId()
+                )));
+        assertTrue(expedition.recentJourneyRecaps().stream()
+                .allMatch(recap -> "Навигатор".equals(
+                        recap.pilotExperienceRewards().getFirst().pilotName()
+                )));
         assertTrue(expedition.recentJourneyRecaps().stream()
                 .allMatch(recap -> recap.materials().isEmpty()));
         assertEquals(1,

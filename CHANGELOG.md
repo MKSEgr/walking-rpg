@@ -69,6 +69,9 @@
 
 ### Added
 
+- persisted pilot experience breakdown in current and recent journey recaps,
+  with exact-journey aggregation, legacy omission and named RU/EN
+  accessibility;
 - persisted pilot experience breakdown in the lifetime journey chronicle, with
   receipt-proven aggregation, exact legacy-total consistency and named RU/EN
   accessibility;

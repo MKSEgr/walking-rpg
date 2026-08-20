@@ -405,6 +405,19 @@ class HomeControllerTest {
                         "$.expedition.completionRecap.pilotExperienceGained"
                 ).value(48))
                 .andExpect(jsonPath(
+                        "$.expedition.completionRecap"
+                                + ".pilotExperienceRewards[0].pilotId"
+                ).value("navigator-v1"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap"
+                                + ".pilotExperienceRewards[0].pilotName"
+                ).value("Навигатор из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.completionRecap"
+                                + ".pilotExperienceRewards[0]"
+                                + ".experienceGained"
+                ).value(48))
+                .andExpect(jsonPath(
                         "$.expedition.completionRecap.petBondGained"
                 ).value(11))
                 .andExpect(jsonPath(
@@ -662,6 +675,19 @@ class HomeControllerTest {
                 .andExpect(jsonPath(
                         "$.expedition.recentJourneyRecaps[0]"
                                 + ".pilotExperienceGained"
+                ).value(48))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".pilotExperienceRewards[0].pilotId"
+                ).value("navigator-v1"))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".pilotExperienceRewards[0].pilotName"
+                ).value("Навигатор из записи"))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0]"
+                                + ".pilotExperienceRewards[0]"
+                                + ".experienceGained"
                 ).value(48))
                 .andExpect(jsonPath(
                         "$.expedition.recentJourneyRecaps[0].petBondGained"

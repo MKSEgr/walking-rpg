@@ -414,6 +414,15 @@ journey recap. Каждая запись переносит полный persist
 остаётся читаемым. UI раскрывает detail только для recent archive: текущий
 завершённый поход уже показывает тот же порядок в `decisionLog`.
 
+Те же exact-journey resolutions формируют additive ordered
+`pilotExperienceRewards[]` в current и recent recap. Service группирует только
+положительный `pilot_experience_gained` по persisted
+`pilot_id + pilot_name` в порядке первого появления и публикует breakdown,
+только если его сумма точно равна совместимому `pilotExperienceGained`.
+Неполная historical identity опускает весь additive массив, а не создаёт
+частичную историю. Mobile сохраняет generic XP fallback для legacy snapshot и
+не выводит identity из current pilot content, progression или lifetime totals.
+
 Home также строит nullable lifetime `journeyChronicle` без отдельной таблицы и
 без зависимости от ограниченного recent archive. Repository считает каждый
 immutable receipt старта journey N+1 доказательством завершения journey N и
