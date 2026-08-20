@@ -758,6 +758,27 @@ Milestone 36 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
 archive limit или external validation gates.
 
+## Milestone 37 — Authoritative longest journey duration
+
+### CODE_COMPLETE
+
+- [x] Additive nullable `journeyChronicle.longestDurationSeconds` выбирает
+      maximum полной receipt-proven completed history без зависимости от пяти
+      recent recaps
+- [x] Exact journey boundaries совпадают с lifetime total, а current
+      authoritative `COMPLETED` сравнивается ровно один раз до следующего
+      journey-start receipt
+- [x] Любая missing или обратная included boundary опускает longest без
+      partial maximum; поле публикуется только вместе с total, не превышает
+      его и fail-closed валидируется mobile
+- [x] RU/EN record chip и полная accessibility summary переиспользуют один
+      duration formatter; backend unit/API/PostgreSQL и Flutter
+      parser/widget/localization coverage включают compact text 1.6
+
+Milestone 37 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
+archive limit или external validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

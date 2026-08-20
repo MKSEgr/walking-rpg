@@ -986,6 +986,14 @@ class _JourneyChronicleCard extends StatelessWidget {
               chronicle.totalDurationSeconds!,
             ),
           );
+    final String longestDuration = chronicle.longestDurationSeconds == null
+        ? ''
+        : context.l10n.platformJourneyChronicleLongestDuration(
+            _journeyDurationValueLabel(
+              context,
+              chronicle.longestDurationSeconds!,
+            ),
+          );
     final String experienceSummary = chronicle.pilotExperienceRewards.isEmpty
         ? context.l10n.platformPilotXpReward(chronicle.pilotExperienceGained)
         : chronicle.pilotExperienceRewards
@@ -1056,6 +1064,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.completedJourneyCount,
         chronicle.decisionCount,
         duration.isEmpty ? '' : '$duration. ',
+        longestDuration.isEmpty ? '' : '$longestDuration. ',
         experienceSummary,
         bondSummary,
         materialSummary,
@@ -1107,6 +1116,14 @@ class _JourneyChronicleCard extends StatelessWidget {
                       key: const Key('platform-journey-chronicle-duration'),
                       icon: Icons.timer_outlined,
                       label: duration,
+                    ),
+                  if (longestDuration.isNotEmpty)
+                    _JourneyRewardChip(
+                      key: const Key(
+                        'platform-journey-chronicle-longest-duration',
+                      ),
+                      icon: Icons.emoji_events_outlined,
+                      label: longestDuration,
                     ),
                   if (chronicle.pilotExperienceRewards.isEmpty)
                     _JourneyRewardChip(

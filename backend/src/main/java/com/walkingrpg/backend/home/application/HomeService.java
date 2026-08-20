@@ -569,6 +569,8 @@ public class HomeService {
         long decisionCount = completedJourneys.decisionCount();
         Long totalDurationSeconds =
                 completedJourneys.totalDurationSeconds();
+        Long longestDurationSeconds =
+                completedJourneys.longestDurationSeconds();
         long pilotExperienceGained =
                 completedJourneys.pilotExperienceGained();
         long petBondGained = completedJourneys.petBondGained();
@@ -635,6 +637,13 @@ public class HomeService {
                     decisionCount,
                     currentJourney.decisionCount()
             );
+            longestDurationSeconds = longestDurationSeconds == null
+                    || currentJourney.durationSeconds() == null
+                    ? null
+                    : Math.max(
+                            longestDurationSeconds,
+                            currentJourney.durationSeconds()
+                    );
             totalDurationSeconds = totalDurationSeconds == null
                     || currentJourney.durationSeconds() == null
                     ? null
@@ -770,6 +779,7 @@ public class HomeService {
                 completedJourneyCount,
                 decisionCount,
                 totalDurationSeconds,
+                longestDurationSeconds,
                 pilotExperienceGained,
                 petBondGained,
                 pilotExperienceSnapshots,
