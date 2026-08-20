@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.home.domain;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,6 +14,8 @@ public record ExpeditionJourneyChronicleSnapshot(
         Long longestDurationSeconds,
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Long longestJourneyNumber,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        Instant longestJourneyCompletedAt,
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Long averageDurationSeconds,
         long pilotExperienceGained,
@@ -46,6 +49,13 @@ public record ExpeditionJourneyChronicleSnapshot(
                 || longestJourneyNumber > completedJourneyCount)) {
             throw new IllegalArgumentException(
                     "Номер рекордного похода должен входить в летопись"
+            );
+        }
+        if (longestJourneyCompletedAt != null
+                && (longestDurationSeconds == null
+                || longestJourneyNumber == null)) {
+            throw new IllegalArgumentException(
+                    "Время рекорда требует подтверждённый рекордный поход"
             );
         }
         if (averageDurationSeconds != null

@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative completion time for the longest-journey record, selected from
+  the same complete receipt-proven winner and presented in device-local RU/EN
+  date/time with legacy omission and fail-closed timestamp validation;
 - authoritative longest-journey identity in the lifetime chronicle, selected
   with the complete receipt-proven duration record and deterministic earliest
   journey tie-break, with legacy fallback and shared RU/EN accessibility;
