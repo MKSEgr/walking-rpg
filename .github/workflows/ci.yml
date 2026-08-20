@@ -175,7 +175,7 @@ jobs:
       - name: Check formatting
         run: |
           dart format lib test
-          git diff -- mobile/test/platform_screen_test.dart
+          git diff -- test/platform_screen_test.dart
           exit 1
 
       - name: Analyze for diagnostics
