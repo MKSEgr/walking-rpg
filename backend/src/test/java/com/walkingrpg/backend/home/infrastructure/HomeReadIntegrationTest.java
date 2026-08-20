@@ -293,8 +293,8 @@ class HomeReadIntegrationTest {
                     created_at, updated_at
                 ) VALUES (
                     ?, ?, 8,
-                    TIMESTAMPTZ '2026-07-25 09:00:00+00',
-                    TIMESTAMPTZ '2026-07-25 09:00:00+00'
+                    TIMESTAMPTZ '2026-07-25 08:00:00+00',
+                    TIMESTAMPTZ '2026-07-25 08:00:00+00'
                 )
                 """, "home-user", StarterExpeditionContent.EXPEDITION_ID);
         jdbcTemplate.update("""
@@ -481,8 +481,10 @@ class HomeReadIntegrationTest {
         assertEquals(7,
                 expedition.journeyChronicle().completedJourneyCount());
         assertEquals(7, expedition.journeyChronicle().decisionCount());
-        assertEquals(17_640,
+        assertEquals(21_240,
                 expedition.journeyChronicle().totalDurationSeconds());
+        assertEquals(6_120,
+                expedition.journeyChronicle().longestDurationSeconds());
         assertEquals(28,
                 expedition.journeyChronicle().pilotExperienceGained());
         assertEquals(2,
@@ -674,6 +676,7 @@ class HomeReadIntegrationTest {
         assertNotNull(incompleteDuration);
         assertEquals(7, incompleteDuration.completedJourneyCount());
         assertNull(incompleteDuration.totalDurationSeconds());
+        assertNull(incompleteDuration.longestDurationSeconds());
     }
 
     @Test

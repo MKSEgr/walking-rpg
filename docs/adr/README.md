@@ -67,3 +67,4 @@ NNNN-short-title.md
 - [0048 — saved decision times in journey logs](0048-saved-decision-times-in-journey-logs.md)
 - [0049 — authoritative journey duration](0049-authoritative-journey-duration.md)
 - [0050 — authoritative lifetime journey duration](0050-authoritative-lifetime-journey-duration.md)
+- [0051 — authoritative longest journey duration](0051-authoritative-longest-journey-duration.md)

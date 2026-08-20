@@ -30,12 +30,31 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HomeServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-07-25T12:00:00Z");
     private static final Instant LAST_SYNC = Instant.parse("2026-07-25T11:55:00Z");
+
+    @Test
+    void shouldRejectLongestJourneyDurationOutsideLifetimeTotal() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ExpeditionJourneyChronicleTotals(
+                        1,
+                        0,
+                        60L,
+                        61L,
+                        0,
+                        0,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of()
+                ));
+    }
 
     @Test
     void shouldCombineRuntimeStateWithStarterContentAndEvent() {
@@ -162,6 +181,7 @@ class HomeServiceTest {
 
         assertNotNull(chronicle);
         assertNull(chronicle.totalDurationSeconds());
+        assertNull(chronicle.longestDurationSeconds());
         assertEquals(40, chronicle.pilotExperienceGained());
         assertTrue(chronicle.pilotExperienceRewards().isEmpty());
     }
@@ -299,6 +319,7 @@ class HomeServiceTest {
                         7,
                         7,
                         12_600L,
+                        3_600L,
                         28,
                         28,
                         List.of(
@@ -459,6 +480,8 @@ class HomeServiceTest {
         assertEquals(10, expedition.journeyChronicle().decisionCount());
         assertEquals(16_500,
                 expedition.journeyChronicle().totalDurationSeconds());
+        assertEquals(3_900,
+                expedition.journeyChronicle().longestDurationSeconds());
         assertEquals(98,
                 expedition.journeyChronicle().pilotExperienceGained());
         assertEquals(2,

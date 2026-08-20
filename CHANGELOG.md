@@ -69,6 +69,10 @@
 
 ### Added
 
+- authoritative longest completed-journey duration in the lifetime chronicle,
+  selected across the complete receipt-proven history and current completed
+  journey, with whole-field omission for incomplete boundaries and shared
+  RU/EN accessibility;
 - authoritative lifetime journey duration in the journey chronicle, summed
   across the complete receipt-proven history and current completed journey,
   with whole-field omission for incomplete boundaries and shared RU/EN

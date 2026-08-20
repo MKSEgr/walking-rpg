@@ -1274,6 +1274,32 @@ external validation status.
 и без изменения rewards/economy, progression, topology, archive limit или
 external validation status.
 
+### US-053. Увидеть рекорд длительности завершённого похода
+
+Как игрок, я хочу видеть длительность самого долгого завершённого похода,
+чтобы lifetime-летопись показывала личный рекорд по всей истории, а не только
+по пяти недавним итогам.
+
+Критерии:
+
+- `journeyChronicle` получает additive nullable non-negative
+  `longestDurationSeconds` по всем receipt-proven завершённым походам;
+- historical maximum использует те же exact start/final boundaries, что и
+  lifetime total, а authoritative current `COMPLETED` сравнивается ровно один
+  раз;
+- после старта следующего похода тот же duration приходит только из history;
+- missing start/final или start позже final любого included journey опускают
+  всё поле без recent/partial maximum;
+- longest публикуется только вместе с `totalDurationSeconds`, не превышает его,
+  а mobile fail-closed отклоняет malformed/negative/inconsistent value;
+- RU/EN chip и accessibility используют один duration formatter, а backend
+  unit/API/PostgreSQL и Flutter parser/widget/localization coverage проверяют
+  full history, current merge и compact text scale 1.6.
+
+**Статус:** authoritative longest journey duration реализована без migration
+и без изменения rewards/economy, progression, topology, archive limit или
+external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

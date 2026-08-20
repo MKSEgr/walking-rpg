@@ -312,7 +312,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                            ) AS resolved_at
                     FROM completed_journey completed
                 ),
-                duration_total AS (
+                duration_stats AS (
                     SELECT CASE
                                WHEN COUNT(*) = 0 THEN 0::BIGINT
                                WHEN COUNT(*) = COUNT(*) FILTER (
@@ -323,7 +323,18 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                    EPOCH FROM (resolved_at - started_at)
                                )))::BIGINT
                                ELSE NULL
-                           END AS total_duration_seconds
+                           END AS total_duration_seconds,
+                           CASE
+                               WHEN COUNT(*) = 0 THEN 0::BIGINT
+                               WHEN COUNT(*) = COUNT(*) FILTER (
+                                   WHERE started_at IS NOT NULL
+                                     AND resolved_at IS NOT NULL
+                                     AND resolved_at >= started_at
+                               ) THEN MAX(FLOOR(EXTRACT(
+                                   EPOCH FROM (resolved_at - started_at)
+                               )))::BIGINT
+                               ELSE NULL
+                           END AS longest_duration_seconds
                     FROM journey_boundary
                 )
                 SELECT COUNT(DISTINCT completed.completed_journey_number)
@@ -331,8 +342,12 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        COUNT(resolution.event_id) AS decision_count,
                        (
                            SELECT total_duration_seconds
-                           FROM duration_total
+                           FROM duration_stats
                        ) AS total_duration_seconds,
+                       (
+                           SELECT longest_duration_seconds
+                           FROM duration_stats
+                       ) AS longest_duration_seconds,
                        COALESCE(SUM(
                            resolution.pilot_experience_gained
                        ), 0) AS pilot_experience_gained,
@@ -353,6 +368,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 resultSet.getLong("decision_count"),
                                 resultSet.getObject(
                                         "total_duration_seconds",
+                                        Long.class
+                                ),
+                                resultSet.getObject(
+                                        "longest_duration_seconds",
                                         Long.class
                                 ),
                                 resultSet.getLong(
@@ -718,6 +737,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 totals.completedJourneyCount(),
                 totals.decisionCount(),
                 totals.totalDurationSeconds(),
+                totals.longestDurationSeconds(),
                 totals.pilotExperienceGained(),
                 totals.petBondGained(),
                 pilotExperienceRewards,

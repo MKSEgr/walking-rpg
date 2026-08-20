@@ -969,16 +969,18 @@ invent totals.
 After at least one confirmed finish, the journal places one lifetime chronicle
 between the current decision log and the recent archive. Its badge reports the
 number of completed journeys, while wrapping chips show total accepted
-decisions, pilot XP and companion bond. The card uses only the nullable Home
-`journeyChronicle`; it does not sum the five visible archive entries, current
-progression values or material rewards.
+decisions, total journey time, longest journey record, pilot XP and companion
+bond. The card uses only the nullable Home `journeyChronicle`; it does not sum
+or select from the five visible archive entries, current progression values or
+material rewards.
 
-One container semantic announces all four totals and excludes the visual
-children from duplicate screen-reader output. Chips wrap instead of shrinking,
-so large values remain bounded at compact width and enlarged text. A legacy
-snapshot or an account without a confirmed completed journey omits the card;
-zero values for decisions or rewards remain literal when the server supplies a
-valid positive completed-journey count.
+One container semantic announces every supplied lifetime value and excludes
+the visual children from duplicate screen-reader output. Chips wrap instead of
+shrinking, so large values remain bounded at compact width and enlarged text.
+A legacy snapshot omits unavailable duration values; an account without a
+confirmed completed journey omits the card. Zero values for decisions, rewards
+or durations remain literal when the server supplies a valid positive
+completed-journey count.
 
 ## Recent journey archive
 
