@@ -211,6 +211,7 @@ void main() {
           outcomeSummary: 'Ворота удержали курс экспедиции.',
           resolvedAt: '2026-07-26T06:12:00Z',
         ),
+        durationSeconds: 3900,
         pilotExperienceGained: 60,
         pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
           HomeJourneyPilotExperienceReward(
@@ -288,9 +289,15 @@ void main() {
       russian: true,
     );
     expect(find.text(completionTime), findsOneWidget);
+    expect(find.text('Длительность: 1 ч 5 мин'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-completion-duration')),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Поход 4 завершён. Принято решений: 2. $completionTime. '
+        'Длительность: 1 ч 5 мин. '
         'Финал: Люминовые ворота. Решение: Стабилизировать ядро. '
         'Исход: Ровный импульс. Ворота удержали курс экспедиции. '
         'Итоговые награды: Навигатор: +45 XP пилота; '
@@ -457,6 +464,7 @@ void main() {
             outcomeSummary: 'Второй маршрут сохранён.',
             resolvedAt: '2026-07-26T06:02:00Z',
           ),
+          durationSeconds: 2520,
           pilotExperienceGained: 90,
           pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
             HomeJourneyPilotExperienceReward(
@@ -573,9 +581,15 @@ void main() {
       russian: true,
     );
     expect(find.text(completionTime), findsOneWidget);
+    expect(find.text('Длительность: 42 мин'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-archive-3-duration')),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Поход 3. Принято решений: 3. $completionTime. '
+        'Длительность: 42 мин. '
         'Финал: Сердце маяка. Решение: Стабилизировать ядро. '
         'Исход: Ровный импульс. Второй маршрут сохранён. '
         'Итоговые награды: Навигатор из похода: +60 XP пилота; '
@@ -661,6 +675,10 @@ void main() {
       findsNothing,
     );
     expect(
+      find.byKey(const Key('platform-journey-archive-2-duration')),
+      findsNothing,
+    );
+    expect(
       find.bySemanticsLabel(
         'Поход 2. Принято решений: 2. '
         'Итоговые награды: +60 XP пилота; +14 связи спутников.',
@@ -736,6 +754,7 @@ void main() {
                 'Спутник запомнил каждый поворот завершённого маршрута.',
             resolvedAt: '2026-07-26T06:02:00Z',
           ),
+          durationSeconds: 3900,
           pilotExperienceGained: 0,
           petBondGained: 0,
           materials: <HomeJourneyMaterialReward>[],
@@ -801,6 +820,11 @@ void main() {
     expect(entry, findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-archive-1-time')),
+      findsOneWidget,
+    );
+    expect(find.text('Длительность: 1 ч 5 мин'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-archive-1-duration')),
       findsOneWidget,
     );
     expect(

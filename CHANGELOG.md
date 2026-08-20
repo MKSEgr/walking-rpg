@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative journey duration in current and recent recaps, computed from
+  the persisted exact-journey start and immutable final resolution, with
+  legacy omission, fail-closed validation and shared RU/EN accessibility;
 - locale-aware saved-decision times in the current journey log and expanded
   recent archive histories, derived only from immutable resolution time with
   shared RU/EN visible and accessibility copy;

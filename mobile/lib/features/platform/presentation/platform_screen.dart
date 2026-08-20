@@ -776,6 +776,10 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
       context,
       recap.finalDecision,
     );
+    final String duration = _journeyDurationLabel(
+      context,
+      recap.durationSeconds,
+    );
     return Semantics(
       key: const Key('platform-journey-completion-recap'),
       container: true,
@@ -783,6 +787,7 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
         recap.journeyNumber,
         recap.decisionCount,
         completionTime.isEmpty ? '' : '$completionTime. ',
+        duration.isEmpty ? '' : '$duration. ',
         finalDecisionSummary,
         rewardSummary,
       ),
@@ -825,6 +830,16 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                 Text(
                   completionTime,
                   key: const Key('platform-journey-completion-time'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (duration.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 6),
+                Text(
+                  duration,
+                  key: const Key('platform-journey-completion-duration'),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),
@@ -1245,6 +1260,10 @@ class _JourneyArchiveEntry extends StatelessWidget {
       context,
       recap.finalDecision,
     );
+    final String duration = _journeyDurationLabel(
+      context,
+      recap.durationSeconds,
+    );
     final Widget summary = Semantics(
       key: Key('platform-journey-archive-${recap.journeyNumber}'),
       container: true,
@@ -1252,6 +1271,7 @@ class _JourneyArchiveEntry extends StatelessWidget {
         recap.journeyNumber,
         recap.decisionCount,
         completionTime.isEmpty ? '' : '$completionTime. ',
+        duration.isEmpty ? '' : '$duration. ',
         finalDecisionSummary,
         rewardSummary,
       ),
@@ -1288,6 +1308,18 @@ class _JourneyArchiveEntry extends StatelessWidget {
                     completionTime,
                     key: Key(
                       'platform-journey-archive-${recap.journeyNumber}-time',
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (duration.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 5),
+                  Text(
+                    duration,
+                    key: Key(
+                      'platform-journey-archive-${recap.journeyNumber}-duration',
                     ),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
@@ -1494,6 +1526,25 @@ String _journeyDecisionTimeLabel(
     decision.resolvedAt,
   );
   return context.l10n.platformJourneyDecisionResolvedAt(local.date, local.time);
+}
+
+String _journeyDurationLabel(BuildContext context, int? durationSeconds) {
+  if (durationSeconds == null) {
+    return '';
+  }
+  final int totalMinutes = durationSeconds ~/ Duration.secondsPerMinute;
+  final String duration;
+  if (durationSeconds < Duration.secondsPerMinute) {
+    duration = context.l10n.platformJourneyDurationUnderMinute;
+  } else if (totalMinutes < Duration.minutesPerHour) {
+    duration = context.l10n.platformJourneyDurationMinutes(totalMinutes);
+  } else {
+    duration = context.l10n.platformJourneyDurationHoursMinutes(
+      totalMinutes ~/ Duration.minutesPerHour,
+      totalMinutes % Duration.minutesPerHour,
+    );
+  }
+  return context.l10n.platformJourneyDuration(duration);
 }
 
 ({String date, String time}) _journeyLocalDateTime(

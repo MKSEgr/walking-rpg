@@ -402,6 +402,9 @@ class HomeControllerTest {
                         "$.expedition.completionRecap.finalDecision.resolvedAt"
                 ).value("2026-07-25T11:58:00Z"))
                 .andExpect(jsonPath(
+                        "$.expedition.completionRecap.durationSeconds"
+                ).value(1_680))
+                .andExpect(jsonPath(
                         "$.expedition.completionRecap.pilotExperienceGained"
                 ).value(48))
                 .andExpect(jsonPath(
@@ -579,6 +582,7 @@ class HomeControllerTest {
                 List.of(),
                 List.of(new ExpeditionJourneyHistory(
                         2,
+                        Instant.parse("2026-07-25T11:30:00Z"),
                         List.of(new ExpeditionJourneyEvent(
                                 StarterExpeditionContent.SECOND_EVENT_ID,
                                 "Сердце маяка из записи",
@@ -644,6 +648,9 @@ class HomeControllerTest {
                 .andExpect(jsonPath(
                         "$.expedition.recentJourneyRecaps[0].decisionCount"
                 ).value(1))
+                .andExpect(jsonPath(
+                        "$.expedition.recentJourneyRecaps[0].durationSeconds"
+                ).value(1_680))
                 .andExpect(jsonPath(
                         "$.expedition.recentJourneyRecaps[0]"
                                 + ".decisions.length()"
@@ -757,6 +764,17 @@ class HomeControllerTest {
                     long journeyNumber
             ) {
                 return journeyEvents;
+            }
+
+            @Override
+            public Optional<Instant> findJourneyStartedAt(
+                    String userId,
+                    String expeditionId,
+                    long journeyNumber
+            ) {
+                return Optional.of(
+                        Instant.parse("2026-07-25T11:30:00Z")
+                );
             }
 
             @Override

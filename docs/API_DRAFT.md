@@ -428,6 +428,7 @@ Authorization: Bearer <access-token>
       "outcomeSummary": "Маршрут к люминовым воротам сохранён.",
       "resolvedAt": "2026-07-26T06:12:00Z"
     },
+    "durationSeconds": 4320,
     "pilotExperienceGained": 40,
     "pilotExperienceRewards": [
       {
@@ -472,6 +473,13 @@ Authorization: Bearer <access-token>
   переводит instant в локальную timezone только для locale-aware RU/EN
   presentation и ничего не выводит при legacy omission. Client clock, cache
   timestamp и время Home-response не подменяют этот факт.
+  Additive nullable `durationSeconds` содержит целые секунды между
+  persisted start exact journey и `finalDecision.resolvedAt`. Journey 1
+  использует initial cycle/progress `created_at`, journey 2+ — immutable
+  `processed_expedition_journey_start.server_time`. Backend опускает поле
+  при missing start/final или start позже final; legacy response без поля
+  остаётся валидным. Client clock, cache/Home-response time и current content
+  не участвуют в расчёте.
   Additive ordered `decisions[]` содержит те же полные persisted записи, что
   current `decisionLog`: event/choice/outcome copy, `resolvedAt` и фактически
   выданные XP, pet bond identity и nullable material reward. Массив строится

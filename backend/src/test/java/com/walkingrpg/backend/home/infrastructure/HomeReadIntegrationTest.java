@@ -336,7 +336,8 @@ class HomeReadIntegrationTest {
                        'IN_PROGRESS',
                        'outer-beacon',
                        'Внешний маяк',
-                       now(),
+                       TIMESTAMPTZ '2026-07-25 08:00:00+00'
+                               + journey_number * INTERVAL '1 hour',
                        now()
                 FROM generate_series(2, 8) AS generated(journey_number)
                 """, "home-user", StarterExpeditionContent.EXPEDITION_ID);
@@ -456,7 +457,8 @@ class HomeReadIntegrationTest {
                        CASE WHEN journey_number IN (1, 2, 8)
                             THEN journey_number
                        END,
-                       now(),
+                       TIMESTAMPTZ '2026-07-25 08:42:00+00'
+                               + journey_number * INTERVAL '1 hour',
                        now(),
                        journey_number
                 FROM generate_series(1, 8) AS generated(journey_number)
@@ -613,6 +615,10 @@ class HomeReadIntegrationTest {
                 .allMatch(recap -> recap.materials().isEmpty()));
         assertEquals(1,
                 expedition.recentJourneyRecaps().getFirst().decisionCount());
+        assertTrue(expedition.recentJourneyRecaps().stream()
+                .allMatch(recap -> Long.valueOf(2_520).equals(
+                        recap.durationSeconds()
+                )));
         assertEquals(1,
                 expedition.recentJourneyRecaps().getFirst()
                         .decisions().size());

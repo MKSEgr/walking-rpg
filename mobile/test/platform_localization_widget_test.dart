@@ -140,7 +140,7 @@ void main() {
     );
   });
 
-  testWidgets('journey completion time follows the RU and EN locale', (
+  testWidgets('journey time and duration follow the RU and EN locale', (
     WidgetTester tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -177,6 +177,7 @@ void main() {
                 journeyNumber: 7,
                 decisionCount: 1,
                 finalDecision: currentFinal,
+                durationSeconds: 3900,
                 pilotExperienceGained: 0,
                 petBondGained: 0,
                 materials: <HomeJourneyMaterialReward>[],
@@ -197,6 +198,7 @@ void main() {
                     ),
                   ],
                   finalDecision: archivedFinal,
+                  durationSeconds: 2520,
                   pilotExperienceGained: 0,
                   petBondGained: 0,
                   materials: <HomeJourneyMaterialReward>[],
@@ -220,6 +222,14 @@ void main() {
         russian: locale.languageCode == 'ru',
       );
       expect(find.text(currentLabel), findsOneWidget);
+      final String currentDuration = locale.languageCode == 'ru'
+          ? 'Длительность: 1 ч 5 мин'
+          : 'Duration: 1 h 5 min';
+      expect(find.text(currentDuration), findsOneWidget);
+      expect(
+        find.byKey(const Key('platform-journey-completion-duration')),
+        findsOneWidget,
+      );
       final String currentSemanticPrefix = locale.languageCode == 'ru'
           ? 'Поход 7 завершён. Принято решений: 1'
           : 'Journey 7 completed. Decisions made: 1';
@@ -227,7 +237,8 @@ void main() {
         find.bySemanticsLabel(
           RegExp(
             '^${RegExp.escape(currentSemanticPrefix)}\\. '
-            '${RegExp.escape(currentLabel)}\\.',
+            '${RegExp.escape(currentLabel)}\\. '
+            '${RegExp.escape(currentDuration)}\\.',
           ),
         ),
         findsOneWidget,
@@ -259,8 +270,29 @@ void main() {
         russian: locale.languageCode == 'ru',
       );
       expect(find.text(archivedLabel), findsOneWidget);
+      final String archivedDuration = locale.languageCode == 'ru'
+          ? 'Длительность: 42 мин'
+          : 'Duration: 42 min';
+      expect(find.text(archivedDuration), findsOneWidget);
       expect(
         find.byKey(const Key('platform-journey-archive-6-time')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('platform-journey-archive-6-duration')),
+        findsOneWidget,
+      );
+      final String archivedSemanticPrefix = locale.languageCode == 'ru'
+          ? 'Поход 6. Принято решений: 1'
+          : 'Journey 6. Decisions made: 1';
+      expect(
+        find.bySemanticsLabel(
+          RegExp(
+            '^${RegExp.escape(archivedSemanticPrefix)}\\. '
+            '${RegExp.escape(archivedLabel)}\\. '
+            '${RegExp.escape(archivedDuration)}\\.',
+          ),
+        ),
         findsOneWidget,
       );
       final Finder historyToggle = find.byKey(

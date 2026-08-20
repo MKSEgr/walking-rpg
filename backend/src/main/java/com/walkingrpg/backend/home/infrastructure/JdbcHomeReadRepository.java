@@ -88,6 +88,54 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
     }
 
     @Override
+    public Optional<Instant> findJourneyStartedAt(
+            String userId,
+            String expeditionId,
+            long journeyNumber
+    ) {
+        if (journeyNumber <= 0) {
+            throw new IllegalArgumentException(
+                    "Номер похода должен быть положительным"
+            );
+        }
+        return jdbcTemplate.query("""
+                SELECT CASE
+                           WHEN ? = 1 THEN COALESCE(
+                               cycle.created_at,
+                               progress.created_at
+                           )
+                           ELSE (
+                               SELECT journey_start.server_time
+                               FROM processed_expedition_journey_start
+                                    journey_start
+                               WHERE journey_start.user_id = progress.user_id
+                                 AND journey_start.expedition_id =
+                                         progress.expedition_id
+                                 AND journey_start.journey_number = ?
+                               ORDER BY journey_start.expedition_version,
+                                        journey_start.created_at,
+                                        journey_start.idempotency_key
+                               LIMIT 1
+                           )
+                       END AS started_at
+                FROM expedition_progress progress
+                LEFT JOIN expedition_journey_cycle cycle
+                  ON cycle.user_id = progress.user_id
+                 AND cycle.expedition_id = progress.expedition_id
+                WHERE progress.user_id = ?
+                  AND progress.expedition_id = ?
+                """, resultSet -> {
+            if (!resultSet.next()) {
+                return Optional.empty();
+            }
+            Timestamp startedAt = resultSet.getTimestamp("started_at");
+            return startedAt == null
+                    ? Optional.empty()
+                    : Optional.of(startedAt.toInstant());
+        }, journeyNumber, journeyNumber, userId, expeditionId);
+    }
+
+    @Override
     public List<ExpeditionJourneyHistory> findRecentCompletedJourneys(
             String userId,
             String expeditionId,
@@ -104,8 +152,42 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                       AND journey_number <= ?
                     ORDER BY completed_journey_number DESC
                     LIMIT ?
+                ),
+                recent_completed_with_start AS (
+                    SELECT completed.completed_journey_number,
+                           CASE
+                               WHEN completed.completed_journey_number = 1
+                               THEN (
+                                   SELECT COALESCE(
+                                       cycle.created_at,
+                                       progress.created_at
+                                   )
+                                   FROM expedition_progress progress
+                                   LEFT JOIN expedition_journey_cycle cycle
+                                     ON cycle.user_id = progress.user_id
+                                    AND cycle.expedition_id =
+                                            progress.expedition_id
+                                   WHERE progress.user_id = ?
+                                     AND progress.expedition_id = ?
+                               )
+                               ELSE (
+                                   SELECT journey_start.server_time
+                                   FROM processed_expedition_journey_start
+                                        journey_start
+                                   WHERE journey_start.user_id = ?
+                                     AND journey_start.expedition_id = ?
+                                     AND journey_start.journey_number =
+                                             completed.completed_journey_number
+                                   ORDER BY journey_start.expedition_version,
+                                            journey_start.created_at,
+                                            journey_start.idempotency_key
+                                   LIMIT 1
+                               )
+                           END AS started_at
+                    FROM recent_completed_journey completed
                 )
                 SELECT resolution.journey_number,
+                       completed.started_at,
                        resolution.event_id,
                        resolution.event_title,
                        resolution.choice_id,
@@ -122,7 +204,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                        resolution.material_item_name,
                        resolution.material_quantity_gained,
                        resolution.server_time
-                FROM recent_completed_journey completed
+                FROM recent_completed_with_start completed
                 JOIN processed_event_resolution resolution
                  ON resolution.user_id = ?
                  AND resolution.expedition_id = ?
@@ -135,16 +217,24 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
             List<ExpeditionJourneyHistory> histories = new ArrayList<>();
             List<ExpeditionJourneyEvent> events = null;
             long journeyNumber = -1;
+            Instant startedAt = null;
             while (resultSet.next()) {
                 long rowJourneyNumber = resultSet.getLong("journey_number");
                 if (rowJourneyNumber != journeyNumber) {
                     if (events != null) {
                         histories.add(new ExpeditionJourneyHistory(
                                 journeyNumber,
+                                startedAt,
                                 events
                         ));
                     }
                     journeyNumber = rowJourneyNumber;
+                    Timestamp rowStartedAt = resultSet.getTimestamp(
+                            "started_at"
+                    );
+                    startedAt = rowStartedAt == null
+                            ? null
+                            : rowStartedAt.toInstant();
                     events = new ArrayList<>();
                 }
                 events.add(journeyEvent(resultSet));
@@ -152,11 +242,13 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
             if (events != null) {
                 histories.add(new ExpeditionJourneyHistory(
                         journeyNumber,
+                        startedAt,
                         events
                 ));
             }
             return List.copyOf(histories);
         }, userId, expeditionId, currentJourneyNumber, limit,
+                userId, expeditionId, userId, expeditionId,
                 userId, expeditionId);
     }
 

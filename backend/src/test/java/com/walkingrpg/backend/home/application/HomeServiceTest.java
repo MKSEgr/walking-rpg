@@ -206,6 +206,7 @@ class HomeServiceTest {
         assertNull(snapshot.expedition().unlockedEvent());
         assertNotNull(snapshot.expedition().completionRecap());
         assertNull(snapshot.expedition().completionRecap().finalDecision());
+        assertNull(snapshot.expedition().completionRecap().durationSeconds());
         assertEquals(1, snapshot.expedition().routeTrail().size());
         assertEquals("COMPLETED",
                 snapshot.expedition().routeTrail().getFirst().state());
@@ -371,7 +372,8 @@ class HomeServiceTest {
                                         3
                                 )
                         )
-                )
+                ),
+                NOW.minusSeconds(3_900)
         );
         DailyGoalPolicyProperties goalProperties = goalProperties();
         HomeService service = new HomeService(
@@ -417,6 +419,7 @@ class HomeServiceTest {
         assertEquals("Искра сохранила отклик дельты.",
                 recap.finalDecision().outcomeSummary());
         assertEquals(NOW, recap.finalDecision().resolvedAt());
+        assertEquals(3_900, recap.durationSeconds());
         assertEquals(70, recap.pilotExperienceGained());
         assertEquals(2, recap.pilotExperienceRewards().size());
         assertEquals("navigator-v1",
@@ -668,6 +671,7 @@ class HomeServiceTest {
                 List.of(
                         new ExpeditionJourneyHistory(
                                 2,
+                                NOW.minusSeconds(1_800),
                                 List.of(journeyEvent(
                                         StarterExpeditionContent.SECOND_EVENT_ID,
                                         "Сердце второго похода",
@@ -689,6 +693,7 @@ class HomeServiceTest {
                         ),
                         new ExpeditionJourneyHistory(
                                 1,
+                                NOW,
                                 List.of(journeyEvent(
                                         StarterExpeditionContent.FIRST_EVENT_ID,
                                         "Сигнал первого похода",
@@ -727,6 +732,9 @@ class HomeServiceTest {
         assertEquals(2, expedition.recentJourneyRecaps().size());
         assertEquals(2,
                 expedition.recentJourneyRecaps().getFirst().journeyNumber());
+        assertEquals(1_800,
+                expedition.recentJourneyRecaps().getFirst()
+                        .durationSeconds());
         assertEquals(20,
                 expedition.recentJourneyRecaps().getFirst()
                         .pilotExperienceGained());
@@ -772,6 +780,8 @@ class HomeServiceTest {
                         .petBondRewards().getFirst().bondGained());
         assertEquals(1,
                 expedition.recentJourneyRecaps().getLast().journeyNumber());
+        assertNull(expedition.recentJourneyRecaps().getLast()
+                .durationSeconds());
         assertEquals(40,
                 expedition.recentJourneyRecaps().getLast()
                         .pilotExperienceRewards().getFirst()
@@ -1120,6 +1130,22 @@ class HomeServiceTest {
             List<ExpeditionJourneyHistory> recentJourneyHistory,
             ExpeditionJourneyChronicleTotals journeyChronicle
     ) {
+        return repository(
+                state,
+                journeyEvents,
+                recentJourneyHistory,
+                journeyChronicle,
+                null
+        );
+    }
+
+    private HomeReadRepository repository(
+            HomeRuntimeState state,
+            List<ExpeditionJourneyEvent> journeyEvents,
+            List<ExpeditionJourneyHistory> recentJourneyHistory,
+            ExpeditionJourneyChronicleTotals journeyChronicle,
+            Instant journeyStartedAt
+    ) {
         return new HomeReadRepository() {
             @Override
             public HomeRuntimeState findState(
@@ -1145,6 +1171,15 @@ class HomeServiceTest {
                     long journeyNumber
             ) {
                 return journeyEvents;
+            }
+
+            @Override
+            public Optional<Instant> findJourneyStartedAt(
+                    String userId,
+                    String expeditionId,
+                    long journeyNumber
+            ) {
+                return Optional.ofNullable(journeyStartedAt);
             }
 
             @Override

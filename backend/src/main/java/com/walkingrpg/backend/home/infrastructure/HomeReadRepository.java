@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.home.infrastructure;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,14 @@ public interface HomeReadRepository {
             String expeditionId,
             long journeyNumber
     );
+
+    default Optional<Instant> findJourneyStartedAt(
+            String userId,
+            String expeditionId,
+            long journeyNumber
+    ) {
+        return Optional.empty();
+    }
 
     List<ExpeditionJourneyHistory> findRecentCompletedJourneys(
             String userId,

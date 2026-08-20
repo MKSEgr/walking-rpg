@@ -956,12 +956,13 @@
       "rewards": {"type": "String"}
     }
   },
-  "platformJourneyCompletedSemantics": "Journey {journey} completed. Decisions made: {decisions}. {completedAt}{finalDecision}{rewards}",
+  "platformJourneyCompletedSemantics": "Journey {journey} completed. Decisions made: {decisions}. {completedAt}{duration}{finalDecision}{rewards}",
   "@platformJourneyCompletedSemantics": {
     "placeholders": {
       "journey": {"type": "int"},
       "decisions": {"type": "int"},
       "completedAt": {"type": "String"},
+      "duration": {"type": "String"},
       "finalDecision": {"type": "String"},
       "rewards": {"type": "String"}
     }
@@ -986,6 +987,26 @@
     "placeholders": {
       "date": {"type": "String"},
       "time": {"type": "String"}
+    }
+  },
+  "platformJourneyDuration": "Duration: {duration}",
+  "@platformJourneyDuration": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+  "platformJourneyDurationUnderMinute": "under 1 min",
+  "platformJourneyDurationMinutes": "{minutes} min",
+  "@platformJourneyDurationMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "platformJourneyDurationHoursMinutes": "{hours} h {minutes} min",
+  "@platformJourneyDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {"type": "int"},
+      "minutes": {"type": "int"}
     }
   },
   "platformNoJourneyRewards": "No rewards were granted in this journey.",
@@ -1128,12 +1149,13 @@
   },
   "platformJourneyArchiveTitle": "Recent journeys",
   "platformJourneyArchiveSubtitle": "Confirmed results from previous routes.",
-  "platformJourneyArchiveEntrySemantics": "Journey {journey}. Decisions made: {decisions}. {completedAt}{finalDecision}{rewards}",
+  "platformJourneyArchiveEntrySemantics": "Journey {journey}. Decisions made: {decisions}. {completedAt}{duration}{finalDecision}{rewards}",
   "@platformJourneyArchiveEntrySemantics": {
     "placeholders": {
       "journey": {"type": "int"},
       "decisions": {"type": "int"},
       "completedAt": {"type": "String"},
+      "duration": {"type": "String"},
       "finalDecision": {"type": "String"},
       "rewards": {"type": "String"}
     }

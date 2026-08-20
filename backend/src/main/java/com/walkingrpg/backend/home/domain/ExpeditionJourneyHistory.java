@@ -1,9 +1,11 @@
 package com.walkingrpg.backend.home.domain;
 
+import java.time.Instant;
 import java.util.List;
 
 public record ExpeditionJourneyHistory(
         long journeyNumber,
+        Instant startedAt,
         List<ExpeditionJourneyEvent> events
 ) {
     public ExpeditionJourneyHistory {
@@ -13,5 +15,12 @@ public record ExpeditionJourneyHistory(
             );
         }
         events = events == null ? List.of() : List.copyOf(events);
+    }
+
+    public ExpeditionJourneyHistory(
+            long journeyNumber,
+            List<ExpeditionJourneyEvent> events
+    ) {
+        this(journeyNumber, null, events);
     }
 }

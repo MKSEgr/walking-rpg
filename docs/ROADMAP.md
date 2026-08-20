@@ -716,6 +716,27 @@ Milestone 34 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, backend/API/schema, persisted history, rewards,
 topology, archive limit или external validation gates.
 
+## Milestone 35 — Authoritative journey duration
+
+### CODE_COMPLETE
+
+- [x] Current и recent journey recap получают additive nullable
+      `durationSeconds` как целые секунды между persisted start exact
+      journey и immutable `finalDecision.resolvedAt`
+- [x] Старт journey 1 берётся из initial cycle/progress creation,
+      а journey 2+ — из immutable journey-start receipt `server_time`, без
+      client clock, cache/Home-response time или current-content inference
+- [x] Backend опускает duration при отсутствующем или более
+      позднем старте; mobile принимает legacy omission и fail-closed
+      отклоняет malformed, negative и duration без final decision
+- [x] RU/EN current/archive labels и полные accessibility summaries
+      переиспользуют одну строку; backend unit/API/PostgreSQL и
+      Flutter parser/widget/localization coverage включают compact text 1.6
+
+Milestone 35 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, schema, rewards/economy, progression,
+topology, archive limit или external validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
