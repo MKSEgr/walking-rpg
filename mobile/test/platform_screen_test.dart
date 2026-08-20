@@ -303,6 +303,24 @@ void main() {
             quantity: 12,
           ),
         ],
+        decisionOutcomes: <HomeJourneyDecisionOutcome>[
+          HomeJourneyDecisionOutcome(
+            eventId: 'signal-source-v1',
+            eventTitle: 'Внешний сигнал из летописи',
+            choiceId: 'decode-signal',
+            choiceTitle: 'Расшифровать сигнал',
+            outcomeTitle: 'Маршрут нанесён',
+            decisionCount: 18,
+          ),
+          HomeJourneyDecisionOutcome(
+            eventId: 'ash-orbit-v1',
+            eventTitle: 'Пепельная орбита из летописи',
+            choiceId: 'hold-ember',
+            choiceTitle: 'Удержать искру',
+            outcomeTitle: 'Орбита пройдена',
+            decisionCount: 10,
+          ),
+        ],
         finaleOutcomes: <HomeJourneyFinaleOutcome>[
           HomeJourneyFinaleOutcome(
             eventId: 'echo-vault-v1',
@@ -444,6 +462,12 @@ void main() {
     expect(find.text('+140 связи спутников'), findsNothing);
     expect(find.text('+35 Эхо-нити'), findsOneWidget);
     expect(find.text('+12 Пепельное семя'), findsOneWidget);
+    expect(find.text('Решения летописи'), findsOneWidget);
+    expect(
+      find.text('Расшифровать сигнал → Маршрут нанесён · ×18'),
+      findsOneWidget,
+    );
+    expect(find.text('Удержать искру → Орбита пройдена · ×10'), findsOneWidget);
     expect(find.text('Финалы маршрутов'), findsOneWidget);
     expect(
       find.text('Стабилизировать ядро → Ровный импульс · ×4'),
@@ -458,7 +482,11 @@ void main() {
         'Летопись походов. Завершено походов: 7. '
         'Принято решений: 28. '
         'Всего наград: +420 XP пилота; Искра: +80 связи; Мох: +60 связи; '
-        '+35 Эхо-нити; +12 Пепельное семя. Финалы маршрутов: '
+        '+35 Эхо-нити; +12 Пепельное семя. Решения летописи: '
+        'Внешний сигнал из летописи. Решение: Расшифровать сигнал. '
+        'Исход: Маршрут нанесён. Решений: 18; '
+        'Пепельная орбита из летописи. Решение: Удержать искру. '
+        'Исход: Орбита пройдена. Решений: 10. Финалы маршрутов: '
         'Сердце маяка из летописи. Решение: Стабилизировать ядро. '
         'Исход: Ровный импульс. Походов: 4; '
         'Зеркальная дельта из летописи. Решение: Следовать за отражением. '
@@ -586,6 +614,16 @@ void main() {
         decisionCount: 987654,
         pilotExperienceGained: 123456789,
         petBondGained: 987654321,
+        decisionOutcomes: <HomeJourneyDecisionOutcome>[
+          HomeJourneyDecisionOutcome(
+            eventId: 'long-archive-event-v1',
+            eventTitle: 'Сохранённое событие с очень длинным названием',
+            choiceId: 'follow-saved-starlight',
+            choiceTitle: 'Следовать по сохранённому звёздному коридору',
+            outcomeTitle: 'Маршрут удержан вопреки нестабильному сигналу',
+            decisionCount: 987654,
+          ),
+        ],
         finaleOutcomes: <HomeJourneyFinaleOutcome>[
           HomeJourneyFinaleOutcome(
             eventId: 'long-archive-event-v1',
@@ -645,6 +683,14 @@ void main() {
     await _bringIntoView(tester, chronicle);
     expect(chronicle, findsOneWidget);
     expect(find.text('+123456789 XP пилота'), findsOneWidget);
+    expect(find.text('Решения летописи'), findsOneWidget);
+    expect(
+      find.text(
+        'Следовать по сохранённому звёздному коридору → '
+        'Маршрут удержан вопреки нестабильному сигналу · ×987654',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Финалы маршрутов'), findsOneWidget);
     expect(
       find.text(

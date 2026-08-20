@@ -12,6 +12,8 @@ public record ExpeditionJourneyChronicleSnapshot(
         List<PetBondRewardSnapshot> petBondRewards,
         List<MaterialRewardPreviewSnapshot> materials,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        List<ExpeditionJourneyDecisionOutcomeSnapshot> decisionOutcomes,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
         List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomes
 ) {
     public ExpeditionJourneyChronicleSnapshot {
@@ -21,6 +23,9 @@ public record ExpeditionJourneyChronicleSnapshot(
         materials = materials == null
                 ? List.of()
                 : List.copyOf(materials);
+        decisionOutcomes = decisionOutcomes == null
+                ? List.of()
+                : List.copyOf(decisionOutcomes);
         finaleOutcomes = finaleOutcomes == null
                 ? List.of()
                 : List.copyOf(finaleOutcomes);

@@ -623,6 +623,25 @@ Milestone 29 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, economy, topology или external
 validation gates.
 
+## Milestone 30 — Lifetime route decision breakdown
+
+### CODE_COMPLETE
+
+- [x] Additive ordered `journeyChronicle.decisionOutcomes[]` из всех immutable
+      resolutions receipt-proven завершённых походов
+- [x] Grouping по persisted event/choice/outcome copy, first-appearance order
+      и authoritative current `COMPLETED` merge всех решений ровно один раз
+      без lookup current content или recent archive inference
+- [x] Exact sum к совместимому `decisionCount` с legacy omission, отдельные
+      RU/EN decision chips и единая полная accessibility summary
+- [x] Backend unit/API/PostgreSQL, Flutter parser/widget и compact text-scale
+      1.6 coverage проверяют persisted copy, порядок, current merge,
+      unconfirmed exclusion и invalid data
+
+Milestone 30 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, schema, economy, topology или external
+validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

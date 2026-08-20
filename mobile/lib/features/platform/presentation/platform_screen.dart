@@ -958,6 +958,22 @@ class _JourneyChronicleCard extends StatelessWidget {
     final String materialSummary = materialRewards.isEmpty
         ? ''
         : '; ${materialRewards.join('; ')}';
+    final List<String> decisionLabels = chronicle.decisionOutcomes
+        .map(
+          (HomeJourneyDecisionOutcome outcome) =>
+              context.l10n.platformJourneyChronicleDecisionSemantic(
+                outcome.eventTitle,
+                outcome.choiceTitle,
+                outcome.outcomeTitle,
+                outcome.decisionCount,
+              ),
+        )
+        .toList(growable: false);
+    final String decisionSummary = decisionLabels.isEmpty
+        ? ''
+        : context.l10n.platformJourneyChronicleDecisionsSemantics(
+            decisionLabels.join('; '),
+          );
     final List<String> finaleLabels = chronicle.finaleOutcomes
         .map(
           (HomeJourneyFinaleOutcome outcome) =>
@@ -983,6 +999,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.pilotExperienceGained,
         bondSummary,
         materialSummary,
+        decisionSummary,
         finaleSummary,
       ),
       child: ExcludeSemantics(
@@ -1058,6 +1075,31 @@ class _JourneyChronicleCard extends StatelessWidget {
                     ),
                 ],
               ),
+              if (chronicle.decisionOutcomes.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 14),
+                Text(
+                  context.l10n.platformJourneyChronicleDecisionsTitle,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: <Widget>[
+                    for (final HomeJourneyDecisionOutcome outcome
+                        in chronicle.decisionOutcomes)
+                      _JourneyRewardChip(
+                        icon: Icons.alt_route,
+                        label: context.l10n
+                            .platformJourneyChronicleDecisionChip(
+                              outcome.choiceTitle,
+                              outcome.outcomeTitle,
+                              outcome.decisionCount,
+                            ),
+                      ),
+                  ],
+                ),
+              ],
               if (chronicle.finaleOutcomes.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 14),
                 Text(

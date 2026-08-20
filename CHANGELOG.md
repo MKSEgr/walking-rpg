@@ -69,6 +69,9 @@
 
 ### Added
 
+- persisted decision-outcome breakdown in the lifetime journey chronicle, with
+  receipt-proven aggregation, first-appearance ordering, exact decision-total
+  validation and complete RU/EN accessibility;
 - persisted route-finale breakdown in the lifetime journey chronicle, with
   receipt-proven last-resolution aggregation, first-appearance ordering,
   strict legacy-compatible parsing and complete RU/EN accessibility;

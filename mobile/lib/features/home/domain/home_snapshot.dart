@@ -602,6 +602,7 @@ class HomeJourneyChronicle {
     required this.petBondGained,
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
     this.materials = const <HomeJourneyMaterialReward>[],
+    this.decisionOutcomes = const <HomeJourneyDecisionOutcome>[],
     this.finaleOutcomes = const <HomeJourneyFinaleOutcome>[],
   });
 
@@ -685,6 +686,46 @@ class HomeJourneyChronicle {
         }
       }
     }
+    final Object? decisionOutcomesJson = json['decisionOutcomes'];
+    final List<HomeJourneyDecisionOutcome> decisionOutcomes;
+    if (decisionOutcomesJson == null) {
+      decisionOutcomes = const <HomeJourneyDecisionOutcome>[];
+    } else {
+      if (decisionOutcomesJson is! List<dynamic>) {
+        throw const FormatException(
+          'journeyChronicle.decisionOutcomes должен быть JSON-массивом',
+        );
+      }
+      decisionOutcomes = decisionOutcomesJson
+          .map(
+            (Object? value) => HomeJourneyDecisionOutcome.fromJson(
+              _asMap(value, 'journeyChronicle.decisionOutcomes[]'),
+            ),
+          )
+          .toList(growable: false);
+      final Set<String> decisionIdentities = <String>{};
+      int breakdownDecisionCount = 0;
+      for (final HomeJourneyDecisionOutcome outcome in decisionOutcomes) {
+        final String identity = <String>[
+          outcome.eventId,
+          outcome.eventTitle,
+          outcome.choiceId,
+          outcome.choiceTitle,
+          outcome.outcomeTitle,
+        ].join('\u0000');
+        if (!decisionIdentities.add(identity)) {
+          throw const FormatException(
+            'journeyChronicle.decisionOutcomes содержит повтор',
+          );
+        }
+        breakdownDecisionCount += outcome.decisionCount;
+      }
+      if (breakdownDecisionCount != decisionCount) {
+        throw const FormatException(
+          'journeyChronicle.decisionOutcomes не совпадает с числом решений',
+        );
+      }
+    }
     final Object? finaleOutcomesJson = json['finaleOutcomes'];
     final List<HomeJourneyFinaleOutcome> finaleOutcomes;
     if (finaleOutcomesJson == null) {
@@ -732,6 +773,7 @@ class HomeJourneyChronicle {
       petBondGained: petBondGained,
       petBondRewards: petBondRewards,
       materials: materials,
+      decisionOutcomes: decisionOutcomes,
       finaleOutcomes: finaleOutcomes,
     );
   }
@@ -742,6 +784,7 @@ class HomeJourneyChronicle {
   final int petBondGained;
   final List<HomeJourneyPetBondReward> petBondRewards;
   final List<HomeJourneyMaterialReward> materials;
+  final List<HomeJourneyDecisionOutcome> decisionOutcomes;
   final List<HomeJourneyFinaleOutcome> finaleOutcomes;
 }
 
@@ -980,6 +1023,41 @@ class HomeJourneyFinaleOutcome {
   final String choiceTitle;
   final String outcomeTitle;
   final int journeyCount;
+}
+
+class HomeJourneyDecisionOutcome {
+  const HomeJourneyDecisionOutcome({
+    required this.eventId,
+    required this.eventTitle,
+    required this.choiceId,
+    required this.choiceTitle,
+    required this.outcomeTitle,
+    required this.decisionCount,
+  });
+
+  factory HomeJourneyDecisionOutcome.fromJson(Map<String, dynamic> json) {
+    final int decisionCount = HomeSnapshot._readInt(json, 'decisionCount');
+    if (decisionCount <= 0) {
+      throw const FormatException(
+        'Количество решений с исходом должно быть положительным',
+      );
+    }
+    return HomeJourneyDecisionOutcome(
+      eventId: HomeSnapshot._readString(json, 'eventId'),
+      eventTitle: HomeSnapshot._readString(json, 'eventTitle'),
+      choiceId: HomeSnapshot._readString(json, 'choiceId'),
+      choiceTitle: HomeSnapshot._readString(json, 'choiceTitle'),
+      outcomeTitle: HomeSnapshot._readString(json, 'outcomeTitle'),
+      decisionCount: decisionCount,
+    );
+  }
+
+  final String eventId;
+  final String eventTitle;
+  final String choiceId;
+  final String choiceTitle;
+  final String outcomeTitle;
+  final int decisionCount;
 }
 
 class HomeJourneyPetBondReward {
