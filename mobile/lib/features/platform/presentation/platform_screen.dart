@@ -1444,8 +1444,7 @@ List<String> _journeyRecapRewardLabels(
   HomeExpeditionCompletionRecap recap,
 ) {
   return <String>[
-    if (recap.pilotExperienceRewards.isEmpty &&
-        recap.pilotExperienceGained > 0)
+    if (recap.pilotExperienceRewards.isEmpty && recap.pilotExperienceGained > 0)
       context.l10n.platformPilotXpReward(recap.pilotExperienceGained),
     for (final HomeJourneyPilotExperienceReward reward
         in recap.pilotExperienceRewards)

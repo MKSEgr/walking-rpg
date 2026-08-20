@@ -1037,8 +1037,9 @@ void main() {
         'materials': <Map<String, dynamic>>[],
       };
 
-    final HomeExpeditionCompletionRecap? recap =
-        HomeSnapshot.fromJson(response).completionRecap;
+    final HomeExpeditionCompletionRecap? recap = HomeSnapshot.fromJson(
+      response,
+    ).completionRecap;
 
     expect(recap?.pilotExperienceGained, 42);
     expect(recap?.pilotExperienceRewards, isEmpty);
