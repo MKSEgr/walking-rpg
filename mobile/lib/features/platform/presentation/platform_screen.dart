@@ -1552,10 +1552,7 @@ String _journeyDurationLabel(BuildContext context, int? durationSeconds) {
   );
 }
 
-String _journeyDurationValueLabel(
-  BuildContext context,
-  int durationSeconds,
-) {
+String _journeyDurationValueLabel(BuildContext context, int durationSeconds) {
   final int totalMinutes = durationSeconds ~/ Duration.secondsPerMinute;
   if (durationSeconds < Duration.secondsPerMinute) {
     return context.l10n.platformJourneyDurationUnderMinute;
