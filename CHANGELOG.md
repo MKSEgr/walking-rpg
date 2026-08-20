@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative longest-journey identity in the lifetime chronicle, selected
+  with the complete receipt-proven duration record and deterministic earliest
+  journey tie-break, with legacy fallback and shared RU/EN accessibility;
 - authoritative average completed-journey duration in the lifetime chronicle,
   derived from the complete receipt-proven total and completed count after the
   current completed journey merge, with explicit floor rounding, fail-closed

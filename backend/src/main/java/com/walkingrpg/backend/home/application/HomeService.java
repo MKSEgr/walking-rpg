@@ -571,6 +571,8 @@ public class HomeService {
                 completedJourneys.totalDurationSeconds();
         Long longestDurationSeconds =
                 completedJourneys.longestDurationSeconds();
+        Long longestJourneyNumber =
+                completedJourneys.longestJourneyNumber();
         long pilotExperienceGained =
                 completedJourneys.pilotExperienceGained();
         long petBondGained = completedJourneys.petBondGained();
@@ -637,13 +639,20 @@ public class HomeService {
                     decisionCount,
                     currentJourney.decisionCount()
             );
-            longestDurationSeconds = longestDurationSeconds == null
-                    || currentJourney.durationSeconds() == null
-                    ? null
-                    : Math.max(
-                            longestDurationSeconds,
-                            currentJourney.durationSeconds()
-                    );
+            if (longestDurationSeconds == null
+                    || currentJourney.durationSeconds() == null) {
+                longestDurationSeconds = null;
+                longestJourneyNumber = null;
+            } else if (completedJourneyCount == 1
+                || currentJourney.durationSeconds()
+                    > longestDurationSeconds) {
+                longestDurationSeconds = currentJourney.durationSeconds();
+                longestJourneyNumber = currentJourney.journeyNumber() > 0
+                        && currentJourney.journeyNumber()
+                        <= completedJourneyCount
+                        ? currentJourney.journeyNumber()
+                        : null;
+            }
             totalDurationSeconds = totalDurationSeconds == null
                     || currentJourney.durationSeconds() == null
                     ? null
@@ -783,6 +792,7 @@ public class HomeService {
                 decisionCount,
                 totalDurationSeconds,
                 longestDurationSeconds,
+                longestJourneyNumber,
                 averageDurationSeconds,
                 pilotExperienceGained,
                 petBondGained,

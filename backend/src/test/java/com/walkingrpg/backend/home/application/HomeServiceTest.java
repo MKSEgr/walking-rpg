@@ -47,6 +47,7 @@ class HomeServiceTest {
                         0,
                         60L,
                         61L,
+                        null,
                         0,
                         0,
                         List.of(),
@@ -65,7 +66,28 @@ class HomeServiceTest {
                         0,
                         60L,
                         40L,
+                        1L,
                         31L,
+                        0,
+                        0,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of()
+                ));
+    }
+
+    @Test
+    void shouldRejectLongestJourneyIdentityOutsideChronicle() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ExpeditionJourneyChronicleSnapshot(
+                        2,
+                        0,
+                        60L,
+                        40L,
+                        3L,
+                        30L,
                         0,
                         0,
                         List.of(),
@@ -341,6 +363,7 @@ class HomeServiceTest {
                         7,
                         12_600L,
                         3_600L,
+                        4L,
                         28,
                         28,
                         List.of(
@@ -503,6 +526,8 @@ class HomeServiceTest {
                 expedition.journeyChronicle().totalDurationSeconds());
         assertEquals(3_900,
                 expedition.journeyChronicle().longestDurationSeconds());
+        assertEquals(1,
+                expedition.journeyChronicle().longestJourneyNumber());
         assertEquals(2_062,
                 expedition.journeyChronicle().averageDurationSeconds());
         assertEquals(98,

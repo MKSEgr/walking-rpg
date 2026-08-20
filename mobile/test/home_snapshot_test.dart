@@ -180,6 +180,7 @@ void main() {
         'decisionCount': 19,
         'totalDurationSeconds': 65_700,
         'longestDurationSeconds': 12_600,
+        'longestJourneyNumber': 7,
         'averageDurationSeconds': 8_212,
         'pilotExperienceGained': 476,
         'petBondGained': 133,
@@ -405,6 +406,7 @@ void main() {
     expect(snapshot.journeyChronicle?.decisionCount, 19);
     expect(snapshot.journeyChronicle?.totalDurationSeconds, 65_700);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, 12_600);
+    expect(snapshot.journeyChronicle?.longestJourneyNumber, 7);
     expect(snapshot.journeyChronicle?.averageDurationSeconds, 8_212);
     expect(snapshot.journeyChronicle?.pilotExperienceGained, 476);
     expect(snapshot.journeyChronicle?.petBondGained, 133);
@@ -587,6 +589,62 @@ void main() {
     }
   });
 
+  test('journey chronicle rejects invalid longest journey identities', () {
+    for (final Map<String, dynamic> identity in <Map<String, dynamic>>[
+      <String, dynamic>{
+        'longestDurationSeconds': 60,
+        'longestJourneyNumber': 1.5,
+      },
+      <String, dynamic>{
+        'longestDurationSeconds': 60,
+        'longestJourneyNumber': '1',
+      },
+      <String, dynamic>{
+        'longestDurationSeconds': 60,
+        'longestJourneyNumber': 0,
+      },
+      <String, dynamic>{
+        'longestDurationSeconds': 60,
+        'longestJourneyNumber': 3,
+      },
+      <String, dynamic>{'longestJourneyNumber': 1},
+    ]) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 2,
+        'decisionCount': 0,
+        'totalDurationSeconds': 100,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+        ...identity,
+      };
+
+      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+    }
+  });
+
+  test('legacy longest duration without journey identity remains readable', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 2,
+      'decisionCount': 0,
+      'totalDurationSeconds': 100,
+      'longestDurationSeconds': 60,
+      'averageDurationSeconds': 50,
+      'pilotExperienceGained': 0,
+      'petBondGained': 0,
+    };
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.journeyChronicle?.longestDurationSeconds, 60);
+    expect(snapshot.journeyChronicle?.longestJourneyNumber, isNull);
+  });
+
   test('legacy journey chronicle without pet breakdown remains readable', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> expedition =
@@ -603,6 +661,7 @@ void main() {
     expect(snapshot.journeyChronicle?.petBondGained, 72);
     expect(snapshot.journeyChronicle?.totalDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, isNull);
+    expect(snapshot.journeyChronicle?.longestJourneyNumber, isNull);
     expect(snapshot.journeyChronicle?.averageDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.pilotExperienceRewards, isEmpty);
     expect(snapshot.journeyChronicle?.petBondRewards, isEmpty);

@@ -69,3 +69,4 @@ NNNN-short-title.md
 - [0050 — authoritative lifetime journey duration](0050-authoritative-lifetime-journey-duration.md)
 - [0051 — authoritative longest journey duration](0051-authoritative-longest-journey-duration.md)
 - [0052 — authoritative average journey duration](0052-authoritative-average-journey-duration.md)
+- [0053 — authoritative longest journey identity](0053-authoritative-longest-journey-identity.md)

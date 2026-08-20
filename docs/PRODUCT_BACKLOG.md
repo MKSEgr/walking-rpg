@@ -1325,6 +1325,32 @@ external validation status.
 и без изменения rewards/economy, progression, topology, archive limit или
 external validation status.
 
+### US-055. Узнать номер самого долгого завершённого похода
+
+Как игрок, я хочу видеть номер похода, установившего рекорд длительности, чтобы
+личный рекорд в lifetime-летописи был связан с конкретным маршрутом, а не
+оставался безымянной величиной.
+
+Критерии:
+
+- `journeyChronicle` получает additive nullable positive
+  `longestJourneyNumber` только вместе с `longestDurationSeconds`;
+- backend выбирает winner по duration DESC, journey number ASC на полной
+  receipt-proven history с теми же exact boundaries;
+- authoritative current `COMPLETED` учитывается ровно один раз и заменяет
+  historical identity только при строго большей duration;
+- incomplete/reversed boundary опускает identity вместе с lifetime duration,
+  без recent archive или client-side inference;
+- mobile принимает legacy omission, fail-closed отклоняет malformed,
+  non-positive, out-of-range identity или number без longest duration;
+- RU/EN chip и accessibility называют journey, используют общий duration
+  formatter, а backend unit/API/PostgreSQL и Flutter parser/widget/localization
+  coverage проверяют tie-break, current merge и compact text scale 1.6.
+
+**Статус:** authoritative longest journey identity реализована без migration
+и без изменения rewards/economy, progression, topology, archive limit или
+external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

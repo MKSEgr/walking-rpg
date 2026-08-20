@@ -462,7 +462,11 @@ class HomeReadIntegrationTest {
                             THEN journey_number
                        END,
                        TIMESTAMPTZ '2026-07-25 08:42:00+00'
-                               + journey_number * INTERVAL '1 hour',
+                               + journey_number * INTERVAL '1 hour'
+                               + CASE WHEN journey_number = 2
+                                      THEN INTERVAL '1 hour'
+                                      ELSE INTERVAL '0 hours'
+                                 END,
                        now(),
                        journey_number
                 FROM generate_series(1, 8) AS generated(journey_number)
@@ -481,11 +485,13 @@ class HomeReadIntegrationTest {
         assertEquals(7,
                 expedition.journeyChronicle().completedJourneyCount());
         assertEquals(7, expedition.journeyChronicle().decisionCount());
-        assertEquals(21_240,
+        assertEquals(24_840,
                 expedition.journeyChronicle().totalDurationSeconds());
         assertEquals(6_120,
                 expedition.journeyChronicle().longestDurationSeconds());
-        assertEquals(3_034,
+        assertEquals(1,
+                expedition.journeyChronicle().longestJourneyNumber());
+        assertEquals(3_548,
                 expedition.journeyChronicle().averageDurationSeconds());
         assertEquals(28,
                 expedition.journeyChronicle().pilotExperienceGained());
@@ -679,6 +685,7 @@ class HomeReadIntegrationTest {
         assertEquals(7, incompleteDuration.completedJourneyCount());
         assertNull(incompleteDuration.totalDurationSeconds());
         assertNull(incompleteDuration.longestDurationSeconds());
+        assertNull(incompleteDuration.longestJourneyNumber());
         assertNull(incompleteDuration.averageDurationSeconds());
     }
 

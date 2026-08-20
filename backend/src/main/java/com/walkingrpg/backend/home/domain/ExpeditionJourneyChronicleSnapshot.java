@@ -12,6 +12,8 @@ public record ExpeditionJourneyChronicleSnapshot(
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Long longestDurationSeconds,
         @JsonInclude(JsonInclude.Include.NON_NULL)
+        Long longestJourneyNumber,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         Long averageDurationSeconds,
         long pilotExperienceGained,
         long petBondGained,
@@ -36,6 +38,14 @@ public record ExpeditionJourneyChronicleSnapshot(
                 || longestDurationSeconds > totalDurationSeconds)) {
             throw new IllegalArgumentException(
                     "Самый долгий поход должен входить в суммарную длительность"
+            );
+        }
+        if (longestJourneyNumber != null
+                && (longestDurationSeconds == null
+                || longestJourneyNumber <= 0
+                || longestJourneyNumber > completedJourneyCount)) {
+            throw new IllegalArgumentException(
+                    "Номер рекордного похода должен входить в летопись"
             );
         }
         if (averageDurationSeconds != null

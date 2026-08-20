@@ -1094,6 +1094,13 @@
       "duration": {"type": "String"}
     }
   },
+  "platformJourneyChronicleLongestJourneyDuration": "Longest journey #{journey}: {duration}",
+  "@platformJourneyChronicleLongestJourneyDuration": {
+    "placeholders": {
+      "journey": {"type": "int"},
+      "duration": {"type": "String"}
+    }
+  },
   "platformJourneyChronicleAverageDuration": "Average journey: {duration}",
   "@platformJourneyChronicleAverageDuration": {
     "placeholders": {
