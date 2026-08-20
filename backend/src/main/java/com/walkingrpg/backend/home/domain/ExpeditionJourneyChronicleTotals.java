@@ -7,6 +7,7 @@ public record ExpeditionJourneyChronicleTotals(
         long decisionCount,
         Long totalDurationSeconds,
         Long longestDurationSeconds,
+        Long longestJourneyNumber,
         long pilotExperienceGained,
         long petBondGained,
         List<ExpeditionJourneyPilotExperienceRewardSnapshot> pilotExperienceRewards,
@@ -27,6 +28,14 @@ public record ExpeditionJourneyChronicleTotals(
                 || longestDurationSeconds > totalDurationSeconds)) {
             throw new IllegalArgumentException(
                     "Самый долгий поход должен входить в суммарную длительность"
+            );
+        }
+        if (longestJourneyNumber != null
+                && (longestDurationSeconds == null
+                || longestJourneyNumber <= 0
+                || longestJourneyNumber > completedJourneyCount)) {
+            throw new IllegalArgumentException(
+                    "Номер рекордного похода должен входить в летопись"
             );
         }
         pilotExperienceRewards = pilotExperienceRewards == null
@@ -62,6 +71,7 @@ public record ExpeditionJourneyChronicleTotals(
                 decisionCount,
                 null,
                 null,
+                null,
                 pilotExperienceGained,
                 petBondGained,
                 pilotExperienceRewards,
@@ -78,6 +88,7 @@ public record ExpeditionJourneyChronicleTotals(
                 0,
                 0L,
                 0L,
+                null,
                 0,
                 0,
                 List.of(),

@@ -602,6 +602,7 @@ class HomeJourneyChronicle {
     required this.petBondGained,
     this.totalDurationSeconds,
     this.longestDurationSeconds,
+    this.longestJourneyNumber,
     this.averageDurationSeconds,
     this.pilotExperienceRewards = const <HomeJourneyPilotExperienceReward>[],
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
@@ -629,6 +630,10 @@ class HomeJourneyChronicle {
       json,
       'longestDurationSeconds',
     );
+    final int? longestJourneyNumber = HomeSnapshot._readOptionalInt(
+      json,
+      'longestJourneyNumber',
+    );
     final int? averageDurationSeconds = HomeSnapshot._readOptionalInt(
       json,
       'averageDurationSeconds',
@@ -640,6 +645,10 @@ class HomeJourneyChronicle {
             (totalDurationSeconds == null ||
                 longestDurationSeconds < 0 ||
                 longestDurationSeconds > totalDurationSeconds)) ||
+        (longestJourneyNumber != null &&
+            (longestDurationSeconds == null ||
+                longestJourneyNumber <= 0 ||
+                longestJourneyNumber > completedJourneyCount)) ||
         (averageDurationSeconds != null &&
             (totalDurationSeconds == null ||
                 averageDurationSeconds < 0 ||
@@ -832,6 +841,7 @@ class HomeJourneyChronicle {
       decisionCount: decisionCount,
       totalDurationSeconds: totalDurationSeconds,
       longestDurationSeconds: longestDurationSeconds,
+      longestJourneyNumber: longestJourneyNumber,
       averageDurationSeconds: averageDurationSeconds,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
@@ -847,6 +857,7 @@ class HomeJourneyChronicle {
   final int decisionCount;
   final int? totalDurationSeconds;
   final int? longestDurationSeconds;
+  final int? longestJourneyNumber;
   final int? averageDurationSeconds;
   final int pilotExperienceGained;
   final int petBondGained;

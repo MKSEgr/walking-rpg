@@ -359,6 +359,7 @@ void main() {
               decisionCount: 31,
               totalDurationSeconds: 65700,
               longestDurationSeconds: 12600,
+              longestJourneyNumber: 3,
               averageDurationSeconds: 7300,
               pilotExperienceGained: 620,
               petBondGained: 205,
@@ -473,7 +474,7 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle-duration')),
       findsOneWidget,
     );
-    expect(find.text('Longest journey: 3 h 30 min'), findsOneWidget);
+    expect(find.text('Longest journey #3: 3 h 30 min'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-longest-duration')),
       findsOneWidget,
@@ -507,7 +508,7 @@ void main() {
       find.bySemanticsLabel(
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
         'Time in journeys: 18 h 15 min. '
-        'Longest journey: 3 h 30 min. '
+        'Longest journey #3: 3 h 30 min. '
         'Average journey: 2 h 1 min. '
         'Total rewards: Navigator from chronicle: +500 pilot XP; '
         'Archivist from chronicle: +120 pilot XP; '
@@ -598,6 +599,39 @@ void main() {
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
+  });
+
+  testWidgets('legacy longest duration keeps the generic English label', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => _homeWithPersistedDecision(
+            journeyChronicle: const HomeJourneyChronicle(
+              completedJourneyCount: 2,
+              decisionCount: 0,
+              totalDurationSeconds: 7200,
+              longestDurationSeconds: 3600,
+              averageDurationSeconds: 3600,
+              pilotExperienceGained: 0,
+              petBondGained: 0,
+            ),
+          ),
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-journey-chronicle')),
+    );
+    expect(find.text('Longest journey: 1 h 0 min'), findsOneWidget);
+    expect(find.textContaining('Longest journey #'), findsNothing);
   });
 
   testWidgets('known command feedback ignores Russian backend message in EN', (

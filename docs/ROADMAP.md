@@ -800,6 +800,26 @@ Milestone 38 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
 archive limit или external validation gates.
 
+## Milestone 39 — Authoritative longest journey identity
+
+### CODE_COMPLETE
+
+- [x] Additive nullable `journeyChronicle.longestJourneyNumber` связывает
+      lifetime duration record с конкретным receipt-proven journey
+- [x] Historical winner выбирается по duration DESC, journey number ASC на
+      полных exact boundaries без зависимости от пяти recent recaps
+- [x] Current authoritative `COMPLETED` учитывается ровно один раз и заменяет
+      record identity только при строго большей duration; incomplete boundary
+      опускает identity вместе с duration fields
+- [x] Mobile принимает legacy omission, fail-closed проверяет supplied
+      identity, а RU/EN chip и accessibility называют journey и выдерживают
+      compact text scale 1.6; backend unit/API/PostgreSQL и Flutter coverage
+      фиксируют tie-break и current merge
+
+Milestone 39 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
+archive limit или external validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

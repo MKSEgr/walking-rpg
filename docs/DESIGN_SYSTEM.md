@@ -970,8 +970,10 @@ After at least one confirmed finish, the journal places one lifetime chronicle
 between the current decision log and the recent archive. Its badge reports the
 number of completed journeys, while wrapping chips show total accepted
 decisions, total journey time, longest journey record, average journey time,
-pilot XP and companion bond. The average chip uses the same duration formatter
-as total and record values and reflects the server-supplied floor-rounded
+pilot XP and companion bond. When the server supplies the additive record
+identity, the longest chip names that journey; legacy omission keeps the
+generic record label. The average chip uses the same duration formatter as
+total and record values and reflects the server-supplied floor-rounded
 aggregate. The card uses only the nullable Home `journeyChronicle`; it does not
 sum, divide or select from the five visible archive entries, current
 progression values or material rewards.

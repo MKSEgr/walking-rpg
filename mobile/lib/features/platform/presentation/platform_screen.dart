@@ -988,7 +988,15 @@ class _JourneyChronicleCard extends StatelessWidget {
           );
     final String longestDuration = chronicle.longestDurationSeconds == null
         ? ''
-        : context.l10n.platformJourneyChronicleLongestDuration(
+        : chronicle.longestJourneyNumber == null
+        ? context.l10n.platformJourneyChronicleLongestDuration(
+            _journeyDurationValueLabel(
+              context,
+              chronicle.longestDurationSeconds!,
+            ),
+          )
+        : context.l10n.platformJourneyChronicleLongestJourneyDuration(
+            chronicle.longestJourneyNumber!,
             _journeyDurationValueLabel(
               context,
               chronicle.longestDurationSeconds!,
