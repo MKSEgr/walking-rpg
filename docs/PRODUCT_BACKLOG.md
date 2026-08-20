@@ -1405,6 +1405,33 @@ limit или external validation status.
 и без изменения rewards/economy, progression, topology, archive limit или
 external validation status.
 
+### US-058. Узнать номер самого короткого завершённого похода
+
+Как игрок, я хочу видеть номер похода с минимальной длительностью, чтобы
+нижняя граница lifetime-летописи была связана с конкретным маршрутом, а не
+оставалась безымянной величиной.
+
+Критерии:
+
+- `journeyChronicle` получает additive nullable positive
+  `shortestJourneyNumber` только вместе с `shortestDurationSeconds`;
+- backend выбирает winner по duration ASC, journey number ASC на полной
+  receipt-proven history с теми же exact boundaries;
+- authoritative current `COMPLETED` учитывается ровно один раз и заменяет
+  historical identity только при строго меньшей duration; tie сохраняет более
+  ранний historical journey;
+- incomplete/reversed boundary опускает identity вместе с lifetime duration
+  без recent archive или client-side inference;
+- mobile принимает legacy omission, fail-closed отклоняет malformed,
+  non-positive, out-of-range identity или number без shortest duration;
+- RU/EN chip и accessibility называют journey, используют общий duration
+  formatter, а backend unit/API/PostgreSQL и Flutter parser/widget/localization
+  coverage проверяют tie-break, current merge и compact text scale 1.6.
+
+**Статус:** authoritative shortest journey identity реализована без migration
+и без изменения rewards/economy, progression, topology, archive limit или
+external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

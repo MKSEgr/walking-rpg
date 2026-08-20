@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative shortest-journey identity in the lifetime chronicle, selected
+  by duration ASC and journey number ASC across the complete receipt-proven
+  history, with legacy fallback and shared RU/EN accessibility;
 - authoritative shortest completed-journey duration in the lifetime chronicle,
   selected across the complete receipt-proven history and current completed
   journey, with range validation, whole-field omission for incomplete

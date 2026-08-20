@@ -861,6 +861,26 @@ Milestone 41 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
 archive limit или external validation gates.
 
+## Milestone 42 — Authoritative shortest journey identity
+
+### CODE_COMPLETE
+
+- [x] Additive nullable `journeyChronicle.shortestJourneyNumber` связывает
+      authoritative minimum duration с конкретным подтверждённым походом
+- [x] Historical winner выбирается по duration ASC, journey number ASC на
+      полной receipt-proven history с теми же exact boundaries
+- [x] Current authoritative `COMPLETED` учитывается ровно один раз и заменяет
+      shortest identity только при строго меньшей duration; tie сохраняет
+      более ранний historical journey
+- [x] Mobile принимает legacy omission, fail-closed проверяет paired positive
+      identity в completed range, а RU/EN journey-aware chip и accessibility
+      выдерживают compact text scale 1.6; backend unit/API/PostgreSQL и Flutter
+      coverage фиксируют tie-break, current merge и invalid data
+
+Milestone 42 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
+archive limit или external validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

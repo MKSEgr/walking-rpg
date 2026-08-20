@@ -972,14 +972,15 @@ number of completed journeys, while wrapping chips show total accepted
 decisions, total journey time, shortest journey time, longest journey record,
 average journey time, pilot XP and companion bond. The shortest chip uses the
 same duration formatter and only renders when the additive authoritative
-minimum is present. When the server supplies the additive record
-identity, the longest chip names that journey; legacy omission keeps the
-generic record label. When the server also supplies the additive record
-completion instant, a separate calendar chip formats that same UTC value in
+minimum is present. When the server supplies the additive shortest identity,
+that chip names the journey; legacy omission keeps its generic label. The
+longest chip follows the same identity/fallback boundary. When the server also
+supplies the additive longest-record completion instant, a separate calendar
+chip formats that same UTC value in
 the device timezone and selected RU/EN locale; it never uses the client clock.
 The average chip uses the same duration formatter as total, shortest and record
-values
-and reflects the server-supplied floor-rounded aggregate. The card uses only
+values and reflects the server-supplied floor-rounded aggregate. The card uses
+only
 the nullable Home `journeyChronicle`; it does not sum, divide or select from
 the five visible archive entries, current progression values or material
 rewards.

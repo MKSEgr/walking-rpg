@@ -322,6 +322,7 @@ void main() {
         decisionCount: 28,
         totalDurationSeconds: 65700,
         shortestDurationSeconds: 1800,
+        shortestJourneyNumber: 2,
         longestDurationSeconds: 12600,
         longestJourneyNumber: 4,
         longestJourneyCompletedAt: '2026-07-25T12:00:00Z',
@@ -541,7 +542,7 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle-duration')),
       findsOneWidget,
     );
-    expect(find.text('Самый короткий поход: 30 мин'), findsOneWidget);
+    expect(find.text('Самый короткий поход №2: 30 мин'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
       findsOneWidget,
@@ -589,7 +590,7 @@ void main() {
         'Летопись походов. Завершено походов: 7. '
         'Принято решений: 28. '
         'Время в походах: 18 ч 15 мин. '
-        'Самый короткий поход: 30 мин. '
+        'Самый короткий поход №2: 30 мин. '
         'Самый долгий поход №4: 3 ч 30 мин. '
         '$recordCompletedAt. '
         'В среднем за поход: 2 ч 36 мин. '
@@ -760,6 +761,7 @@ void main() {
         decisionCount: 987654,
         totalDurationSeconds: 65700,
         shortestDurationSeconds: 0,
+        shortestJourneyNumber: 123455,
         longestDurationSeconds: 12600,
         longestJourneyNumber: 1,
         longestJourneyCompletedAt: '2026-07-26T06:02:00Z',
@@ -846,7 +848,10 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle-duration')),
       findsOneWidget,
     );
-    expect(find.text('Самый короткий поход: меньше 1 мин'), findsOneWidget);
+    expect(
+      find.text('Самый короткий поход №123455: меньше 1 мин'),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
       findsOneWidget,

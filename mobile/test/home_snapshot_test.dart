@@ -180,6 +180,7 @@ void main() {
         'decisionCount': 19,
         'totalDurationSeconds': 65_700,
         'shortestDurationSeconds': 3_600,
+        'shortestJourneyNumber': 2,
         'longestDurationSeconds': 12_600,
         'longestJourneyNumber': 7,
         'longestJourneyCompletedAt': '2026-07-25T12:00:00Z',
@@ -408,6 +409,7 @@ void main() {
     expect(snapshot.journeyChronicle?.decisionCount, 19);
     expect(snapshot.journeyChronicle?.totalDurationSeconds, 65_700);
     expect(snapshot.journeyChronicle?.shortestDurationSeconds, 3_600);
+    expect(snapshot.journeyChronicle?.shortestJourneyNumber, 2);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, 12_600);
     expect(snapshot.journeyChronicle?.longestJourneyNumber, 7);
     expect(
@@ -674,6 +676,65 @@ void main() {
     }
   });
 
+  test('journey chronicle rejects invalid shortest journey identities', () {
+    for (final Map<String, dynamic> identity in <Map<String, dynamic>>[
+      <String, dynamic>{
+        'shortestDurationSeconds': 20,
+        'shortestJourneyNumber': 1.5,
+      },
+      <String, dynamic>{
+        'shortestDurationSeconds': 20,
+        'shortestJourneyNumber': '1',
+      },
+      <String, dynamic>{
+        'shortestDurationSeconds': 20,
+        'shortestJourneyNumber': 0,
+      },
+      <String, dynamic>{
+        'shortestDurationSeconds': 20,
+        'shortestJourneyNumber': 3,
+      },
+      <String, dynamic>{'shortestJourneyNumber': 1},
+    ]) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 2,
+        'decisionCount': 0,
+        'totalDurationSeconds': 100,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+        ...identity,
+      };
+
+      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+    }
+  });
+
+  test(
+    'legacy shortest duration without journey identity remains readable',
+    () {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 2,
+        'decisionCount': 0,
+        'totalDurationSeconds': 100,
+        'shortestDurationSeconds': 40,
+        'averageDurationSeconds': 50,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+      };
+
+      final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+      expect(snapshot.journeyChronicle?.shortestDurationSeconds, 40);
+      expect(snapshot.journeyChronicle?.shortestJourneyNumber, isNull);
+    },
+  );
+
   test('legacy longest duration without journey identity remains readable', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> expedition =
@@ -779,6 +840,7 @@ void main() {
     expect(snapshot.journeyChronicle?.petBondGained, 72);
     expect(snapshot.journeyChronicle?.totalDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.shortestDurationSeconds, isNull);
+    expect(snapshot.journeyChronicle?.shortestJourneyNumber, isNull);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.longestJourneyNumber, isNull);
     expect(snapshot.journeyChronicle?.longestJourneyCompletedAt, isNull);

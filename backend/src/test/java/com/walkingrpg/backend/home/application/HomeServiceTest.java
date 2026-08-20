@@ -47,6 +47,7 @@ class HomeServiceTest {
                         0,
                         60L,
                         60L,
+                        1L,
                         61L,
                         null,
                         null,
@@ -68,6 +69,7 @@ class HomeServiceTest {
                         0,
                         60L,
                         20L,
+                        2L,
                         40L,
                         1L,
                         null,
@@ -90,6 +92,7 @@ class HomeServiceTest {
                         0,
                         60L,
                         31L,
+                        2L,
                         40L,
                         1L,
                         null,
@@ -112,8 +115,32 @@ class HomeServiceTest {
                         0,
                         60L,
                         20L,
+                        2L,
                         40L,
                         3L,
+                        null,
+                        30L,
+                        0,
+                        0,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of()
+                ));
+    }
+
+    @Test
+    void shouldRejectShortestJourneyIdentityOutsideChronicle() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ExpeditionJourneyChronicleSnapshot(
+                        2,
+                        0,
+                        60L,
+                        20L,
+                        3L,
+                        40L,
+                        1L,
                         null,
                         30L,
                         0,
@@ -134,6 +161,7 @@ class HomeServiceTest {
                         0,
                         60L,
                         20L,
+                        2L,
                         40L,
                         null,
                         NOW,
@@ -167,8 +195,29 @@ class HomeServiceTest {
                         finalNode.requiredEnergy(),
                         "COMPLETED",
                         8,
+                        2,
                         finalNode.currentNodeId(),
-                        finalNode.event().eventId()
+                        finalNode.event().eventId(),
+                        false,
+                        0,
+                        0,
+                        0,
+                        "spark-v1",
+                        false,
+                        0,
+                        0,
+                        0,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of()
                 ),
                 List.of(journeyEvent(
                         StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
@@ -190,6 +239,7 @@ class HomeServiceTest {
                         1,
                         60L,
                         60L,
+                        1L,
                         60L,
                         1L,
                         historicalRecordAt,
@@ -242,6 +292,7 @@ class HomeServiceTest {
 
         assertNotNull(chronicle);
         assertEquals(60, chronicle.shortestDurationSeconds());
+        assertEquals(1, chronicle.shortestJourneyNumber());
         assertEquals(1, chronicle.longestJourneyNumber());
         assertEquals(historicalRecordAt,
                 chronicle.longestJourneyCompletedAt());
@@ -266,8 +317,29 @@ class HomeServiceTest {
                         finalNode.requiredEnergy(),
                         "COMPLETED",
                         2,
+                        2,
                         finalNode.currentNodeId(),
-                        finalNode.event().eventId()
+                        finalNode.event().eventId(),
+                        false,
+                        0,
+                        0,
+                        0,
+                        "spark-v1",
+                        false,
+                        0,
+                        0,
+                        0,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of()
                 ),
                 List.of(journeyEvent(
                         StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
@@ -289,6 +361,7 @@ class HomeServiceTest {
                         1,
                         120L,
                         120L,
+                        1L,
                         120L,
                         1L,
                         historicalRecordAt,
@@ -341,6 +414,7 @@ class HomeServiceTest {
 
         assertNotNull(chronicle);
         assertEquals(60, chronicle.shortestDurationSeconds());
+        assertEquals(2, chronicle.shortestJourneyNumber());
         assertEquals(120, chronicle.longestDurationSeconds());
         assertEquals(historicalRecordAt,
                 chronicle.longestJourneyCompletedAt());
@@ -472,6 +546,7 @@ class HomeServiceTest {
         assertNotNull(chronicle);
         assertNull(chronicle.totalDurationSeconds());
         assertNull(chronicle.shortestDurationSeconds());
+        assertNull(chronicle.shortestJourneyNumber());
         assertNull(chronicle.longestDurationSeconds());
         assertNull(chronicle.averageDurationSeconds());
         assertEquals(40, chronicle.pilotExperienceGained());
@@ -612,6 +687,7 @@ class HomeServiceTest {
                         7,
                         12_600L,
                         1_200L,
+                        2L,
                         3_600L,
                         4L,
                         NOW.minusSeconds(7_200),
@@ -777,6 +853,8 @@ class HomeServiceTest {
                 expedition.journeyChronicle().totalDurationSeconds());
         assertEquals(1_200,
                 expedition.journeyChronicle().shortestDurationSeconds());
+        assertEquals(2,
+                expedition.journeyChronicle().shortestJourneyNumber());
         assertEquals(3_900,
                 expedition.journeyChronicle().longestDurationSeconds());
         assertEquals(1,

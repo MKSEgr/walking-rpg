@@ -359,6 +359,7 @@ void main() {
               decisionCount: 31,
               totalDurationSeconds: 65700,
               shortestDurationSeconds: 1800,
+              shortestJourneyNumber: 4,
               longestDurationSeconds: 12600,
               longestJourneyNumber: 3,
               longestJourneyCompletedAt: '2026-07-25T12:00:00Z',
@@ -482,7 +483,7 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle-duration')),
       findsOneWidget,
     );
-    expect(find.text('Shortest journey: 30 min'), findsOneWidget);
+    expect(find.text('Shortest journey #4: 30 min'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
       findsOneWidget,
@@ -526,7 +527,7 @@ void main() {
       find.bySemanticsLabel(
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
         'Time in journeys: 18 h 15 min. '
-        'Shortest journey: 30 min. '
+        'Shortest journey #4: 30 min. '
         'Longest journey #3: 3 h 30 min. '
         '$recordCompletedAt. '
         'Average journey: 2 h 1 min. '
@@ -621,7 +622,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('legacy longest duration keeps the generic English label', (
+  testWidgets('legacy duration records keep generic English labels', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -634,6 +635,7 @@ void main() {
               completedJourneyCount: 2,
               decisionCount: 0,
               totalDurationSeconds: 7200,
+              shortestDurationSeconds: 1800,
               longestDurationSeconds: 3600,
               averageDurationSeconds: 3600,
               pilotExperienceGained: 0,
@@ -650,6 +652,8 @@ void main() {
       tester,
       find.byKey(const Key('platform-journey-chronicle')),
     );
+    expect(find.text('Shortest journey: 30 min'), findsOneWidget);
+    expect(find.textContaining('Shortest journey #'), findsNothing);
     expect(find.text('Longest journey: 1 h 0 min'), findsOneWidget);
     expect(find.textContaining('Longest journey #'), findsNothing);
     expect(
@@ -658,7 +662,7 @@ void main() {
     );
     expect(
       find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
-      findsNothing,
+      findsOneWidget,
     );
   });
 
