@@ -464,7 +464,11 @@ Authorization: Bearer <access-token>
   Additive nullable `finalDecision` — последняя immutable event resolution в
   порядке `expedition_version, receipt_id`; её event/choice/outcome copy и
   `resolvedAt` не перечитываются из current content. Legacy response без поля
-  остаётся валидным и просто не показывает финал.
+  остаётся валидным и просто не показывает финал. Flutter использует тот же
+  persisted `resolvedAt` как completion moment current и recent recap:
+  переводит instant в локальную timezone только для locale-aware RU/EN
+  presentation и ничего не выводит при legacy omission. Client clock, cache
+  timestamp и время Home-response не подменяют этот факт.
   Additive ordered `decisions[]` содержит те же полные persisted записи, что
   current `decisionLog`: event/choice/outcome copy, `resolvedAt` и фактически
   выданные XP, pet bond identity и nullable material reward. Массив строится

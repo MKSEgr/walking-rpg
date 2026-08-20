@@ -63,3 +63,4 @@ NNNN-short-title.md
 - [0044 — lifetime route decision chronicle](0044-lifetime-route-decision-chronicle.md)
 - [0045 — lifetime pilot experience chronicle](0045-lifetime-pilot-experience-chronicle.md)
 - [0046 — pilot XP breakdown in journey recaps](0046-journey-recap-pilot-experience-breakdown.md)
+- [0047 — journey recap completion time](0047-journey-recap-completion-time.md)

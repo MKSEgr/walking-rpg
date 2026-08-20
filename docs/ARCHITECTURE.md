@@ -423,6 +423,14 @@ journey recap. Каждая запись переносит полный persist
 частичную историю. Mobile сохраняет generic XP fallback для legacy snapshot и
 не выводит identity из current pilot content, progression или lifetime totals.
 
+Current и recent recap также показывают момент завершения из уже
+валидированного immutable `finalDecision.resolvedAt`. Mobile переводит exact
+instant в локальную timezone устройства только на presentation boundary и
+форматирует дату/время через выбранную RU/EN locale. Видимый label и semantics
+получают одну строку; client clock, cache metadata и время Home-response не
+участвуют. Legacy recap без `finalDecision` остаётся читаемым и не получает
+выдуманного timestamp.
+
 Home также строит nullable lifetime `journeyChronicle` без отдельной таблицы и
 без зависимости от ограниченного recent archive. Repository считает каждый
 immutable receipt старта journey N+1 доказательством завершения journey N и

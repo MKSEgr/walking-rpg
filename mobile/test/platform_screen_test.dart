@@ -267,9 +267,16 @@ void main() {
     expect(find.text('Мох · +14 связи'), findsOneWidget);
     expect(find.text('+23 связи спутников'), findsNothing);
     expect(find.text('+5 Эхо-нити'), findsOneWidget);
+    final String completionTime = _formattedCompletionTime(
+      tester,
+      recap,
+      '2026-07-26T06:12:00Z',
+      russian: true,
+    );
+    expect(find.text(completionTime), findsOneWidget);
     expect(
       find.bySemanticsLabel(
-        'Поход 4 завершён. Принято решений: 2. '
+        'Поход 4 завершён. Принято решений: 2. $completionTime. '
         'Финал: Люминовые ворота. Решение: Стабилизировать ядро. '
         'Исход: Ровный импульс. Ворота удержали курс экспедиции. '
         'Итоговые награды: Навигатор: +45 XP пилота; '
@@ -545,9 +552,16 @@ void main() {
     final Finder latest = find.byKey(const Key('platform-journey-archive-3'));
     await _bringIntoView(tester, latest);
     expect(find.text('Поход №3'), findsOneWidget);
+    final String completionTime = _formattedCompletionTime(
+      tester,
+      latest,
+      '2026-07-26T06:02:00Z',
+      russian: true,
+    );
+    expect(find.text(completionTime), findsOneWidget);
     expect(
       find.bySemanticsLabel(
-        'Поход 3. Принято решений: 3. '
+        'Поход 3. Принято решений: 3. $completionTime. '
         'Финал: Сердце маяка. Решение: Стабилизировать ядро. '
         'Исход: Ровный импульс. Второй маршрут сохранён. '
         'Итоговые награды: Навигатор из похода: +60 XP пилота; '
@@ -617,6 +631,10 @@ void main() {
     final Finder previous = find.byKey(const Key('platform-journey-archive-2'));
     await _bringIntoView(tester, previous);
     expect(find.text('Поход №2'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-archive-2-time')),
+      findsNothing,
+    );
     expect(
       find.bySemanticsLabel(
         'Поход 2. Принято решений: 2. '
@@ -756,6 +774,10 @@ void main() {
     await _bringIntoView(tester, entry);
 
     expect(entry, findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-archive-1-time')),
+      findsOneWidget,
+    );
     expect(
       find.descendant(of: entry, matching: find.text(decision.outcomeSummary)),
       findsOneWidget,
@@ -2294,6 +2316,23 @@ Future<void> _bringIntoView(WidgetTester tester, Finder target) async {
   );
   await tester.ensureVisible(target);
   await tester.pumpAndSettle();
+}
+
+String _formattedCompletionTime(
+  WidgetTester tester,
+  Finder anchor,
+  String resolvedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime completedAt = DateTime.parse(resolvedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(completedAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(completedAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian ? 'Завершён $date в $time' : 'Finished on $date at $time';
 }
 
 void _expectNoLayoutException(WidgetTester tester) {

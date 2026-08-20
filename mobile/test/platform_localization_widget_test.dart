@@ -140,6 +140,108 @@ void main() {
     );
   });
 
+  testWidgets('journey completion time follows the RU and EN locale', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const HomeJourneyFinalDecision currentFinal = HomeJourneyFinalDecision(
+      eventId: 'echo-vault-v1',
+      eventTitle: 'Persisted current finale',
+      choiceId: 'stabilize-core',
+      choiceTitle: 'Persisted current choice',
+      outcomeTitle: 'Persisted current outcome',
+      outcomeSummary: 'Persisted current summary.',
+      resolvedAt: '2026-08-19T10:00:00Z',
+    );
+    const HomeJourneyFinalDecision archivedFinal = HomeJourneyFinalDecision(
+      eventId: 'mirror-delta-v1',
+      eventTitle: 'Persisted archived finale',
+      choiceId: 'follow-reflection',
+      choiceTitle: 'Persisted archived choice',
+      outcomeTitle: 'Persisted archived outcome',
+      outcomeSummary: 'Persisted archived summary.',
+      resolvedAt: '2026-08-18T08:30:00Z',
+    );
+
+    for (final Locale locale in const <Locale>[Locale('ru'), Locale('en')]) {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: locale,
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              completionRecap: const HomeExpeditionCompletionRecap(
+                journeyNumber: 7,
+                decisionCount: 1,
+                finalDecision: currentFinal,
+                pilotExperienceGained: 0,
+                petBondGained: 0,
+                materials: <HomeJourneyMaterialReward>[],
+              ),
+              recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
+                HomeExpeditionCompletionRecap(
+                  journeyNumber: 6,
+                  decisionCount: 1,
+                  finalDecision: archivedFinal,
+                  pilotExperienceGained: 0,
+                  petBondGained: 0,
+                  materials: <HomeJourneyMaterialReward>[],
+                ),
+              ],
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder current = find.byKey(
+        const Key('platform-journey-completion-recap'),
+      );
+      await _bringIntoView(tester, current);
+      final String currentLabel = _formattedCompletionTime(
+        tester,
+        current,
+        currentFinal.resolvedAt,
+        russian: locale.languageCode == 'ru',
+      );
+      expect(find.text(currentLabel), findsOneWidget);
+      final String currentSemanticPrefix = locale.languageCode == 'ru'
+          ? 'Поход 7 завершён. Принято решений: 1'
+          : 'Journey 7 completed. Decisions made: 1';
+      expect(
+        find.bySemanticsLabel(
+          RegExp(
+            '^${RegExp.escape(currentSemanticPrefix)}\\. '
+            '${RegExp.escape(currentLabel)}\\.',
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      final Finder archived = find.byKey(
+        const Key('platform-journey-archive-6'),
+      );
+      await _bringIntoView(tester, archived);
+      final String archivedLabel = _formattedCompletionTime(
+        tester,
+        archived,
+        archivedFinal.resolvedAt,
+        russian: locale.languageCode == 'ru',
+      );
+      expect(find.text(archivedLabel), findsOneWidget);
+      expect(
+        find.byKey(const Key('platform-journey-archive-6-time')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    }
+  });
+
   testWidgets('English Platform journal stays readable at compact large text', (
     WidgetTester tester,
   ) async {
@@ -502,6 +604,8 @@ class _LocalizedPlatformApp extends StatelessWidget {
 HomeSnapshot _homeWithPersistedDecision({
   HomeExpeditionCompletionRecap? completionRecap,
   HomeJourneyChronicle? journeyChronicle,
+  List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
+      const <HomeExpeditionCompletionRecap>[],
 }) {
   const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
@@ -539,6 +643,7 @@ HomeSnapshot _homeWithPersistedDecision({
       ),
     ],
     completionRecap: completionRecap,
+    recentJourneyRecaps: recentJourneyRecaps,
     journeyChronicle: journeyChronicle,
     unlockedEvent: demo.unlockedEvent,
     pilotName: demo.pilotName,
@@ -564,6 +669,23 @@ Future<void> _bringIntoView(WidgetTester tester, Finder target) async {
   await tester.ensureVisible(target);
   await tester.pumpAndSettle();
   expect(tester.takeException(), isNull);
+}
+
+String _formattedCompletionTime(
+  WidgetTester tester,
+  Finder anchor,
+  String resolvedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime completedAt = DateTime.parse(resolvedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(completedAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(completedAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian ? 'Завершён $date в $time' : 'Finished on $date at $time';
 }
 
 const String _fallback = 'Literal copy from a newer server';

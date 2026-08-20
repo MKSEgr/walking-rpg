@@ -956,11 +956,12 @@
       "rewards": {"type": "String"}
     }
   },
-  "platformJourneyCompletedSemantics": "Journey {journey} completed. Decisions made: {decisions}. {finalDecision}{rewards}",
+  "platformJourneyCompletedSemantics": "Journey {journey} completed. Decisions made: {decisions}. {completedAt}{finalDecision}{rewards}",
   "@platformJourneyCompletedSemantics": {
     "placeholders": {
       "journey": {"type": "int"},
       "decisions": {"type": "int"},
+      "completedAt": {"type": "String"},
       "finalDecision": {"type": "String"},
       "rewards": {"type": "String"}
     }
@@ -978,6 +979,13 @@
   "@platformDecisionsAcceptedCount": {
     "placeholders": {
       "count": {"type": "int"}
+    }
+  },
+  "platformJourneyCompletedAt": "Finished on {date} at {time}",
+  "@platformJourneyCompletedAt": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "time": {"type": "String"}
     }
   },
   "platformNoJourneyRewards": "No rewards were granted in this journey.",
@@ -1120,11 +1128,12 @@
   },
   "platformJourneyArchiveTitle": "Recent journeys",
   "platformJourneyArchiveSubtitle": "Confirmed results from previous routes.",
-  "platformJourneyArchiveEntrySemantics": "Journey {journey}. Decisions made: {decisions}. {finalDecision}{rewards}",
+  "platformJourneyArchiveEntrySemantics": "Journey {journey}. Decisions made: {decisions}. {completedAt}{finalDecision}{rewards}",
   "@platformJourneyArchiveEntrySemantics": {
     "placeholders": {
       "journey": {"type": "int"},
       "decisions": {"type": "int"},
+      "completedAt": {"type": "String"},
       "finalDecision": {"type": "String"},
       "rewards": {"type": "String"}
     }

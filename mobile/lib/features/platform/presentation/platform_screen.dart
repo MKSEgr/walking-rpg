@@ -772,12 +772,17 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
       context,
       recap.finalDecision,
     );
+    final String completionTime = _journeyCompletionTimeLabel(
+      context,
+      recap.finalDecision,
+    );
     return Semantics(
       key: const Key('platform-journey-completion-recap'),
       container: true,
       label: context.l10n.platformJourneyCompletedSemantics(
         recap.journeyNumber,
         recap.decisionCount,
+        completionTime.isEmpty ? '' : '$completionTime. ',
         finalDecisionSummary,
         rewardSummary,
       ),
@@ -815,6 +820,16 @@ class _JourneyCompletionRecapCard extends StatelessWidget {
                   color: colors.onSurfaceVariant,
                 ),
               ),
+              if (completionTime.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 6),
+                Text(
+                  completionTime,
+                  key: const Key('platform-journey-completion-time'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
               if (recap.finalDecision
                   case final HomeJourneyFinalDecision decision) ...<Widget>[
                 const SizedBox(height: 12),
@@ -1226,12 +1241,17 @@ class _JourneyArchiveEntry extends StatelessWidget {
       context,
       recap.finalDecision,
     );
+    final String completionTime = _journeyCompletionTimeLabel(
+      context,
+      recap.finalDecision,
+    );
     final Widget summary = Semantics(
       key: Key('platform-journey-archive-${recap.journeyNumber}'),
       container: true,
       label: context.l10n.platformJourneyArchiveEntrySemantics(
         recap.journeyNumber,
         recap.decisionCount,
+        completionTime.isEmpty ? '' : '$completionTime. ',
         finalDecisionSummary,
         rewardSummary,
       ),
@@ -1262,6 +1282,18 @@ class _JourneyArchiveEntry extends StatelessWidget {
                     color: colors.onSurfaceVariant,
                   ),
                 ),
+                if (completionTime.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 5),
+                  Text(
+                    completionTime,
+                    key: Key(
+                      'platform-journey-archive-${recap.journeyNumber}-time',
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
                 if (recap.finalDecision
                     case final HomeJourneyFinalDecision decision) ...<Widget>[
                   const SizedBox(height: 10),
@@ -1437,6 +1469,23 @@ String _journeyFinalDecisionSemantic(
     return '';
   }
   return '${context.l10n.platformFinalDecisionSemantics(decision.eventTitle, decision.choiceTitle, decision.outcomeTitle, decision.outcomeSummary)} ';
+}
+
+String _journeyCompletionTimeLabel(
+  BuildContext context,
+  HomeJourneyFinalDecision? decision,
+) {
+  if (decision == null) {
+    return '';
+  }
+  final DateTime completedAt = DateTime.parse(decision.resolvedAt).toLocal();
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final String date = materialL10n.formatMediumDate(completedAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(completedAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return context.l10n.platformJourneyCompletedAt(date, time);
 }
 
 List<String> _journeyRecapRewardLabels(
