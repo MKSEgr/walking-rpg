@@ -821,7 +821,7 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle-longest-duration')),
       findsOneWidget,
     );
-    expect(find.text('В среднем за поход: меньше минуты'), findsOneWidget);
+    expect(find.text('В среднем за поход: меньше 1 мин'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-average-duration')),
       findsOneWidget,
