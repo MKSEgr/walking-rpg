@@ -9,6 +9,8 @@ public record ExpeditionCompletionRecapSnapshot(
         int decisionCount,
         List<ExpeditionDecisionSnapshot> decisions,
         ExpeditionFinalDecisionSnapshot finalDecision,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        Long durationSeconds,
         long pilotExperienceGained,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
         List<ExpeditionJourneyPilotExperienceRewardSnapshot> pilotExperienceRewards,
@@ -17,6 +19,11 @@ public record ExpeditionCompletionRecapSnapshot(
         List<MaterialRewardPreviewSnapshot> materials
 ) {
     public ExpeditionCompletionRecapSnapshot {
+        if (durationSeconds != null && durationSeconds < 0) {
+            throw new IllegalArgumentException(
+                    "Длительность похода не может быть отрицательной"
+            );
+        }
         decisions = decisions == null ? List.of() : List.copyOf(decisions);
         pilotExperienceRewards = pilotExperienceRewards == null
                 ? List.of()

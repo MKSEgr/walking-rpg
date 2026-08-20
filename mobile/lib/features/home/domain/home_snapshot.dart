@@ -834,6 +834,7 @@ class HomeExpeditionCompletionRecap {
     required this.petBondGained,
     required this.materials,
     this.finalDecision,
+    this.durationSeconds,
     this.decisions = const <HomeExpeditionDecisionLogEntry>[],
     this.pilotExperienceRewards = const <HomeJourneyPilotExperienceReward>[],
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
@@ -864,6 +865,16 @@ class HomeExpeditionCompletionRecap {
     if (finalDecision != null && decisionCount == 0) {
       throw const FormatException(
         'finalDecision требует хотя бы одного решения',
+      );
+    }
+    final int? durationSeconds = HomeSnapshot._readOptionalInt(
+      json,
+      'durationSeconds',
+    );
+    if (durationSeconds != null &&
+        (durationSeconds < 0 || finalDecision == null)) {
+      throw const FormatException(
+        'completionRecap.durationSeconds требует финальное решение и не может быть отрицательным',
       );
     }
     final Object? decisionsJson = json['decisions'];
@@ -991,6 +1002,7 @@ class HomeExpeditionCompletionRecap {
       journeyNumber: journeyNumber,
       decisionCount: decisionCount,
       finalDecision: finalDecision,
+      durationSeconds: durationSeconds,
       decisions: decisions,
       pilotExperienceGained: pilotExperienceGained,
       pilotExperienceRewards: pilotExperienceRewards,
@@ -1003,6 +1015,7 @@ class HomeExpeditionCompletionRecap {
   final int journeyNumber;
   final int decisionCount;
   final HomeJourneyFinalDecision? finalDecision;
+  final int? durationSeconds;
   final List<HomeExpeditionDecisionLogEntry> decisions;
   final int pilotExperienceGained;
   final List<HomeJourneyPilotExperienceReward> pilotExperienceRewards;

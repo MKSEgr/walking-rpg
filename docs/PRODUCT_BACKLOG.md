@@ -1222,6 +1222,31 @@ resolution без backend/API/schema migration и без изменения ис
 **Статус:** locale-aware decision time реализован поверх persisted resolution
 без backend/API/schema migration и без изменения исторических данных.
 
+### US-051. Увидеть длительность завершённого похода
+
+Как игрок, я хочу видеть, сколько длился текущий или недавний
+завершённый поход, чтобы сопоставлять результат с прогулкой без
+зависимости от часов устройства.
+
+Критерии:
+
+- current `completionRecap` и каждый `recentJourneyRecaps[]` получают
+  additive nullable non-negative `durationSeconds`;
+- backend считает целые секунды только между persisted start
+  exact journey и immutable `finalDecision.resolvedAt`;
+- journey 1 использует initial cycle/progress creation, journey 2+ —
+  immutable journey-start receipt `server_time`;
+- missing start/final или start позже final приводят к omission, а mobile
+  отклоняет malformed/negative value и duration без final decision;
+- RU/EN current/archive UI и accessibility используют один формат,
+  а legacy omission ничего не выдумывает;
+- backend unit/API/PostgreSQL и Flutter parser/widget/localization coverage
+  проверяют authoritative sources, invalid data и compact text scale 1.6.
+
+**Статус:** authoritative journey duration реализована без migration и
+без изменения rewards/economy, progression, topology, archive limit или
+external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

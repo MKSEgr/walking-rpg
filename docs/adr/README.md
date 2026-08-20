@@ -65,3 +65,4 @@ NNNN-short-title.md
 - [0046 — pilot XP breakdown in journey recaps](0046-journey-recap-pilot-experience-breakdown.md)
 - [0047 — journey recap completion time](0047-journey-recap-completion-time.md)
 - [0048 — saved decision times in journey logs](0048-saved-decision-times-in-journey-logs.md)
+- [0049 — authoritative journey duration](0049-authoritative-journey-duration.md)

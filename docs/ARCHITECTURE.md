@@ -431,10 +431,20 @@ instant в локальную timezone устройства только на pr
 участвуют. Legacy recap без `finalDecision` остаётся читаемым и не получает
 выдуманного timestamp.
 
+Additive `durationSeconds` в current и recent recap вычисляется backend-слоем
+только из persisted start exact journey и immutable final resolution. Для
+journey 1 источником служит initial cycle/progress creation; для journey 2+
+— `processed_expedition_journey_start.server_time`. Missing source/final или start
+позже final дают omission, а не приближённый результ. Mobile fail-closed
+отклоняет malformed/negative duration, а RU/EN visible label и semantics
+используют одну отформатированную строку. Schema migration, client clock,
+cache/Home-response time и current content в расчёте не участвуют.
+
 Каждая current `decisionLog` entry и запись раскрытой recent archive history
 показывает собственный уже валидированный immutable `resolvedAt`. Mobile
 переиспользует тот же local-time RU/EN label в видимом UI и полной semantics
-строке. Presentation не выводит duration и не подменяет persisted instant
+строке. Эта запись решения не выводит самостоятельную duration и не
+подменяет persisted instant
 client clock, cache metadata, временем Home-response или current content;
 backend, API shape и storage при этом не меняются.
 

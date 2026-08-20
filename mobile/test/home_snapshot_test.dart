@@ -318,6 +318,7 @@ void main() {
           'outcomeSummary': 'Искра сохранила отклик дельты.',
           'resolvedAt': '2026-07-26T06:12:00Z',
         },
+        'durationSeconds': 4320,
         'pilotExperienceGained': 96,
         'pilotExperienceRewards': <Map<String, dynamic>>[
           <String, dynamic>{
@@ -375,6 +376,7 @@ void main() {
     expect(recap?.finalDecision?.choiceTitle, 'Следовать за отражением');
     expect(recap?.finalDecision?.outcomeTitle, 'Отражение принято');
     expect(recap?.finalDecision?.resolvedAt, '2026-07-26T06:12:00Z');
+    expect(recap?.durationSeconds, 4320);
     expect(recap?.pilotExperienceGained, 96);
     expect(recap?.pilotExperienceRewards, hasLength(2));
     expect(recap?.pilotExperienceRewards.first.pilotId, 'navigator-v1');
@@ -937,6 +939,7 @@ void main() {
             'outcomeSummary': 'Второй маршрут сохранён.',
             'resolvedAt': '2026-07-26T06:02:00Z',
           },
+          'durationSeconds': 2520,
           'pilotExperienceGained': 96,
           'pilotExperienceRewards': <Map<String, dynamic>>[
             <String, dynamic>{
@@ -992,6 +995,7 @@ void main() {
       snapshot.recentJourneyRecaps.first.finalDecision?.outcomeTitle,
       'Ровный импульс',
     );
+    expect(snapshot.recentJourneyRecaps.first.durationSeconds, 2520);
     expect(
       snapshot.recentJourneyRecaps.first.pilotExperienceRewards,
       hasLength(2),
@@ -1019,6 +1023,7 @@ void main() {
     expect(snapshot.recentJourneyRecaps.last.petBondGained, 14);
     expect(snapshot.recentJourneyRecaps.last.petBondRewards, isEmpty);
     expect(snapshot.recentJourneyRecaps.last.finalDecision, isNull);
+    expect(snapshot.recentJourneyRecaps.last.durationSeconds, isNull);
     expect(snapshot.recentJourneyRecaps.last.decisions, isEmpty);
   });
 
@@ -1043,6 +1048,7 @@ void main() {
 
     expect(recap?.pilotExperienceGained, 42);
     expect(recap?.pilotExperienceRewards, isEmpty);
+    expect(recap?.durationSeconds, isNull);
   });
 
   test('recap rejects a non-list pilot XP breakdown', () {
@@ -1169,6 +1175,35 @@ void main() {
         'petBondGained': 9,
         'materials': <Map<String, dynamic>>[],
       };
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
+  for (final Object invalidDuration in <Object>[-1, 1.5, '60']) {
+    test('recap rejects invalid duration $invalidDuration', () {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition
+        ..['status'] = 'COMPLETED'
+        ..['unlockedEvent'] = null
+        ..['completionRecap'] = _journeyRecapWithDuration(invalidDuration);
+
+      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+    });
+  }
+
+  test('recap rejects duration without a final decision', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition
+      ..['status'] = 'COMPLETED'
+      ..['unlockedEvent'] = null
+      ..['completionRecap'] = _journeyRecapWithDuration(
+        60,
+        includeFinalDecision: false,
+      );
 
     expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
@@ -2173,6 +2208,30 @@ void main() {
       throwsFormatException,
     );
   });
+}
+
+Map<String, dynamic> _journeyRecapWithDuration(
+  Object durationSeconds, {
+  bool includeFinalDecision = true,
+}) {
+  return <String, dynamic>{
+    'journeyNumber': 1,
+    'decisionCount': 1,
+    if (includeFinalDecision)
+      'finalDecision': <String, dynamic>{
+        'eventId': 'signal-source-v1',
+        'eventTitle': 'Источник сигнала',
+        'choiceId': 'analyze-signal',
+        'choiceTitle': 'Разобрать сигнал',
+        'outcomeTitle': 'Карта отклика',
+        'outcomeSummary': 'Маршрут сохранён.',
+        'resolvedAt': '2026-07-26T06:12:00Z',
+      },
+    'durationSeconds': durationSeconds,
+    'pilotExperienceGained': 0,
+    'petBondGained': 0,
+    'materials': <Map<String, dynamic>>[],
+  };
 }
 
 Map<String, dynamic> _journeyDecisionJson({

@@ -1,6 +1,7 @@
 package com.walkingrpg.backend.home.application;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -242,6 +243,16 @@ public class HomeService {
                         initialDefinition.expeditionId(),
                         state.expeditionJourneyNumber()
                 );
+        Instant currentJourneyStartedAt =
+                ExpeditionProgressStatus.COMPLETED.name().equals(
+                        state.expeditionStatus()
+                )
+                        ? repository.findJourneyStartedAt(
+                                query.userId(),
+                                initialDefinition.expeditionId(),
+                                state.expeditionJourneyNumber()
+                        ).orElse(null)
+                        : null;
         List<ExpeditionJourneyHistory> recentJourneyHistory =
                 repository.findRecentCompletedJourneys(
                         query.userId(),
@@ -279,6 +290,7 @@ public class HomeService {
                         activeContentVersion,
                         unlockedSkills,
                         journeyEvents,
+                        currentJourneyStartedAt,
                         recentJourneyHistory,
                         completedJourneyChronicle
                 ),
@@ -502,6 +514,7 @@ public class HomeService {
             String activeContentVersion,
             Set<String> unlockedSkills,
             List<ExpeditionJourneyEvent> journeyEvents,
+            Instant currentJourneyStartedAt,
             List<ExpeditionJourneyHistory> recentJourneyHistory,
             ExpeditionJourneyChronicleTotals completedJourneyChronicle
     ) {
@@ -515,7 +528,8 @@ public class HomeService {
         ExpeditionCompletionRecapSnapshot completionRecap = completionRecap(
                 status,
                 state.expeditionJourneyNumber(),
-                journeyEvents
+                journeyEvents,
+                currentJourneyStartedAt
         );
         return new ExpeditionSnapshot(
                 definition.expeditionId(),
@@ -837,14 +851,15 @@ public class HomeService {
     private ExpeditionCompletionRecapSnapshot completionRecap(
             String expeditionStatus,
             long journeyNumber,
-            List<ExpeditionJourneyEvent> journeyEvents
+            List<ExpeditionJourneyEvent> journeyEvents,
+            Instant startedAt
     ) {
         if (!ExpeditionProgressStatus.COMPLETED.name().equals(
                 expeditionStatus
         )) {
             return null;
         }
-        return journeyRecap(journeyNumber, journeyEvents);
+        return journeyRecap(journeyNumber, journeyEvents, startedAt);
     }
 
     private List<ExpeditionCompletionRecapSnapshot> recentJourneyRecaps(
@@ -853,14 +868,16 @@ public class HomeService {
         return histories.stream()
                 .map(history -> journeyRecap(
                         history.journeyNumber(),
-                        history.events()
+                        history.events(),
+                        history.startedAt()
                 ))
                 .toList();
     }
 
     private ExpeditionCompletionRecapSnapshot journeyRecap(
             long journeyNumber,
-            List<ExpeditionJourneyEvent> journeyEvents
+            List<ExpeditionJourneyEvent> journeyEvents,
+            Instant startedAt
     ) {
         long pilotExperienceGained = 0;
         long petBondGained = 0;
@@ -956,17 +973,36 @@ public class HomeService {
                 ))
                 .toList();
         List<ExpeditionDecisionSnapshot> decisions = decisionLog(journeyEvents);
+        ExpeditionFinalDecisionSnapshot finalDecision = finalDecision(
+                journeyEvents
+        );
         return new ExpeditionCompletionRecapSnapshot(
                 journeyNumber,
                 decisions.size(),
                 decisions,
-                finalDecision(journeyEvents),
+                finalDecision,
+                journeyDurationSeconds(startedAt, finalDecision),
                 pilotExperienceGained,
                 pilotExperienceTotals,
                 petBondGained,
                 petBondTotals,
                 materialTotals
         );
+    }
+
+    private Long journeyDurationSeconds(
+            Instant startedAt,
+            ExpeditionFinalDecisionSnapshot finalDecision
+    ) {
+        if (startedAt == null
+                || finalDecision == null
+                || finalDecision.resolvedAt().isBefore(startedAt)) {
+            return null;
+        }
+        return Duration.between(
+                startedAt,
+                finalDecision.resolvedAt()
+        ).getSeconds();
     }
 
     private ExpeditionFinalDecisionSnapshot finalDecision(
