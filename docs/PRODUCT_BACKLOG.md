@@ -1201,6 +1201,27 @@ XP economy, progression, topology или external validation status.
 resolution без backend/API/schema migration и без изменения исторических
 данных.
 
+### US-050. Увидеть время сохранённого решения
+
+Как игрок, я хочу видеть, когда было принято каждое сохранённое решение,
+чтобы сопоставлять последовательность событий текущего и недавнего похода с
+прогулкой.
+
+Критерии:
+
+- каждая запись current `decisionLog` и раскрытого `decisions[]` недавнего
+  похода использует только immutable `decision.resolvedAt`;
+- UTC instant переводится в локальную timezone только для presentation, а
+  дата и время форматируются по выбранной RU/EN locale;
+- видимый label и accessibility summary используют один и тот же текст;
+- client clock, cache/Home-response time, current content и вычисленная
+  длительность не участвуют в выводе;
+- RU/EN widget и compact text-scale 1.6 coverage проверяют текущие и архивные
+  записи без layout overflow.
+
+**Статус:** locale-aware decision time реализован поверх persisted resolution
+без backend/API/schema migration и без изменения исторических данных.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

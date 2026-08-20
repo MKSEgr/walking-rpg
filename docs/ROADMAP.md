@@ -699,6 +699,23 @@ Milestone 33 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, backend/API/schema, rewards, topology, archive
 limit или external validation gates.
 
+## Milestone 34 — Saved decision times in journey logs
+
+### CODE_COMPLETE
+
+- [x] Каждая запись current decision log и раскрытой recent archive history
+      показывает время только из immutable `decision.resolvedAt`
+- [x] Persisted UTC instant переводится в локальную timezone устройства
+      исключительно для presentation и форматируется по RU/EN locale
+- [x] Видимый label и полная accessibility summary используют один текст без
+      client clock, cache/Home-response time или duration inference
+- [x] RU/EN widget и compact text-scale 1.6 coverage проверяют current и
+      expanded archived decision entries без layout overflow
+
+Milestone 34 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, backend/API/schema, persisted history, rewards,
+topology, archive limit или external validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

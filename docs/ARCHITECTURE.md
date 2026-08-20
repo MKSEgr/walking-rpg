@@ -431,6 +431,13 @@ instant в локальную timezone устройства только на pr
 участвуют. Legacy recap без `finalDecision` остаётся читаемым и не получает
 выдуманного timestamp.
 
+Каждая current `decisionLog` entry и запись раскрытой recent archive history
+показывает собственный уже валидированный immutable `resolvedAt`. Mobile
+переиспользует тот же local-time RU/EN label в видимом UI и полной semantics
+строке. Presentation не выводит duration и не подменяет persisted instant
+client clock, cache metadata, временем Home-response или current content;
+backend, API shape и storage при этом не меняются.
+
 Home также строит nullable lifetime `journeyChronicle` без отдельной таблицы и
 без зависимости от ограниченного recent archive. Repository считает каждый
 immutable receipt старта journey N+1 доказательством завершения journey N и

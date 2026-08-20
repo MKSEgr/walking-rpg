@@ -126,7 +126,14 @@ void main() {
     expect(find.text('ПОХОД №4'), findsOneWidget);
 
     await _bringIntoView(tester, first);
+    final String firstResolvedAt = _formattedDecisionTime(
+      tester,
+      first,
+      '2026-07-26T05:58:00Z',
+      russian: true,
+    );
     expect(find.text('Сигнал у границы'), findsOneWidget);
+    expect(find.text(firstResolvedAt), findsOneWidget);
     expect(find.text('+42 XP пилота'), findsOneWidget);
     expect(find.text('Искра · +9 связи'), findsOneWidget);
     expect(find.text('+2 Эхо-нити'), findsOneWidget);
@@ -134,14 +141,21 @@ void main() {
       find.bySemanticsLabel(
         'Запись 1 из 2. Сигнал у границы. '
         'Решение: Пойти за импульсом. Итог: Найден маяк. '
-        'Импульс открыл безопасный путь. '
+        'Импульс открыл безопасный путь. $firstResolvedAt. '
         'Награды: +42 XP пилота; Искра: +9 связи; +2 Эхо-нити.',
       ),
       findsOneWidget,
     );
 
     await _bringIntoView(tester, second);
+    final String secondResolvedAt = _formattedDecisionTime(
+      tester,
+      second,
+      '2026-07-26T06:12:00Z',
+      russian: true,
+    );
     expect(find.text('Люминовые ворота'), findsOneWidget);
+    expect(find.text(secondResolvedAt), findsOneWidget);
     expect(find.text('+18 XP пилота'), findsOneWidget);
     expect(find.text('Мох · +14 связи'), findsOneWidget);
     expect(tester.getTopLeft(first).dy, lessThan(tester.getTopLeft(second).dy));
@@ -149,7 +163,7 @@ void main() {
       find.bySemanticsLabel(
         'Запись 2 из 2. Люминовые ворота. '
         'Решение: Стабилизировать ядро. Итог: Ровный импульс. '
-        'Ворота удержали курс экспедиции. '
+        'Ворота удержали курс экспедиции. $secondResolvedAt. '
         'Награды: +18 XP пилота; Мох: +14 связи.',
       ),
       findsOneWidget,
@@ -601,6 +615,16 @@ void main() {
       find.byKey(const Key('platform-journey-decision-signal-source-v1')),
       findsOneWidget,
     );
+    final Finder firstArchivedDecision = find.byKey(
+      const Key('platform-journey-decision-signal-source-v1'),
+    );
+    final String firstArchivedResolvedAt = _formattedDecisionTime(
+      tester,
+      firstArchivedDecision,
+      '2026-07-26T05:50:00Z',
+      russian: true,
+    );
+    expect(find.text(firstArchivedResolvedAt), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-decision-echo-vault-v1')),
       findsOneWidget,
@@ -609,7 +633,8 @@ void main() {
       find.bySemanticsLabel(
         'Запись 1 из 3. Первый сигнал второго похода. '
         'Решение: Разобрать сигнал. Итог: Карта отклика. '
-        'Первое решение сохранено. Награды: +20 XP пилота; '
+        'Первое решение сохранено. $firstArchivedResolvedAt. '
+        'Награды: +20 XP пилота; '
         'Навигатор: +5 связи; +1 Эхо-нити.',
       ),
       findsOneWidget,
@@ -776,6 +801,12 @@ void main() {
     expect(entry, findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-archive-1-time')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const Key('platform-journey-decision-long-archive-event-v1-time'),
+      ),
       findsOneWidget,
     );
     expect(
@@ -2333,6 +2364,23 @@ String _formattedCompletionTime(
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
   return russian ? 'Завершён $date в $time' : 'Finished on $date at $time';
+}
+
+String _formattedDecisionTime(
+  WidgetTester tester,
+  Finder anchor,
+  String resolvedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime decisionAt = DateTime.parse(resolvedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(decisionAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(decisionAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian ? 'Сохранено $date в $time' : 'Saved on $date at $time';
 }
 
 void _expectNoLayoutException(WidgetTester tester) {
