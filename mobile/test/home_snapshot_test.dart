@@ -519,32 +519,22 @@ void main() {
     });
   }
 
-  for (final Object invalidLongest in <Object>[1.5, '60']) {
-    test('journey chronicle rejects longest $invalidLongest', () {
-      final Map<String, dynamic> response = _readyHomeResponse();
-      final Map<String, dynamic> expedition =
-          response['expedition'] as Map<String, dynamic>;
-      expedition['journeyChronicle'] = <String, dynamic>{
-        'completedJourneyCount': 1,
-        'decisionCount': 0,
+  test('journey chronicle rejects invalid longest durations', () {
+    for (final Map<String, dynamic> durations in <Map<String, dynamic>>[
+      <String, dynamic>{
         'totalDurationSeconds': 100,
-        'longestDurationSeconds': invalidLongest,
-        'pilotExperienceGained': 0,
-        'petBondGained': 0,
-      };
-
-      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
-    });
-  }
-
-  for (final Map<String, dynamic> durations in <Map<String, dynamic>>[
-    <String, dynamic>{'longestDurationSeconds': 60},
-    <String, dynamic>{
-      'totalDurationSeconds': 60,
-      'longestDurationSeconds': 61,
-    },
-  ]) {
-    test('journey chronicle rejects duration set ${durations.length}', () {
+        'longestDurationSeconds': 1.5,
+      },
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'longestDurationSeconds': '60',
+      },
+      <String, dynamic>{'longestDurationSeconds': 60},
+      <String, dynamic>{
+        'totalDurationSeconds': 60,
+        'longestDurationSeconds': 61,
+      },
+    ]) {
       final Map<String, dynamic> response = _readyHomeResponse();
       final Map<String, dynamic> expedition =
           response['expedition'] as Map<String, dynamic>;
@@ -557,8 +547,8 @@ void main() {
       };
 
       expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
-    });
-  }
+    }
+  });
 
   test('legacy journey chronicle without pet breakdown remains readable', () {
     final Map<String, dynamic> response = _readyHomeResponse();
