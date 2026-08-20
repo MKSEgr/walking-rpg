@@ -1300,6 +1300,31 @@ external validation status.
 и без изменения rewards/economy, progression, topology, archive limit или
 external validation status.
 
+### US-054. Увидеть среднюю длительность завершённого похода
+
+Как игрок, я хочу видеть среднюю длительность завершённого похода, чтобы
+понимать обычный масштаб прогулки по всей подтверждённой истории, а не только
+суммарное время или рекорд.
+
+Критерии:
+
+- `journeyChronicle` получает additive nullable non-negative
+  `averageDurationSeconds`;
+- backend вычисляет значение после authoritative current `COMPLETED` merge как
+  floor `totalDurationSeconds / completedJourneyCount`, поэтому один и тот же
+  поход учитывается ровно один раз;
+- полная receipt-proven history и exact boundaries наследуются от lifetime
+  total без recent archive, client clock или current-content inference;
+- omission total приводит к omission average, а mobile fail-closed отклоняет
+  malformed/negative value, average без total и несовпадающий floor-result;
+- RU/EN chip и accessibility используют один duration formatter, а backend
+  unit/API/PostgreSQL и Flutter parser/widget/localization coverage проверяют
+  full history, current merge, rounding и compact text scale 1.6.
+
+**Статус:** authoritative average journey duration реализована без migration
+и без изменения rewards/economy, progression, topology, archive limit или
+external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

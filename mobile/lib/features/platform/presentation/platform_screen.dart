@@ -994,6 +994,14 @@ class _JourneyChronicleCard extends StatelessWidget {
               chronicle.longestDurationSeconds!,
             ),
           );
+    final String averageDuration = chronicle.averageDurationSeconds == null
+        ? ''
+        : context.l10n.platformJourneyChronicleAverageDuration(
+            _journeyDurationValueLabel(
+              context,
+              chronicle.averageDurationSeconds!,
+            ),
+          );
     final String experienceSummary = chronicle.pilotExperienceRewards.isEmpty
         ? context.l10n.platformPilotXpReward(chronicle.pilotExperienceGained)
         : chronicle.pilotExperienceRewards
@@ -1065,6 +1073,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.decisionCount,
         duration.isEmpty ? '' : '$duration. ',
         longestDuration.isEmpty ? '' : '$longestDuration. ',
+        averageDuration.isEmpty ? '' : '$averageDuration. ',
         experienceSummary,
         bondSummary,
         materialSummary,
@@ -1124,6 +1133,14 @@ class _JourneyChronicleCard extends StatelessWidget {
                       ),
                       icon: Icons.emoji_events_outlined,
                       label: longestDuration,
+                    ),
+                  if (averageDuration.isNotEmpty)
+                    _JourneyRewardChip(
+                      key: const Key(
+                        'platform-journey-chronicle-average-duration',
+                      ),
+                      icon: Icons.av_timer_outlined,
+                      label: averageDuration,
                     ),
                   if (chronicle.pilotExperienceRewards.isEmpty)
                     _JourneyRewardChip(

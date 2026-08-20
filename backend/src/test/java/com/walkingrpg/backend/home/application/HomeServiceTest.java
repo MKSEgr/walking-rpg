@@ -14,6 +14,7 @@ import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
 import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyDecisionOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
@@ -46,6 +47,25 @@ class HomeServiceTest {
                         0,
                         60L,
                         61L,
+                        0,
+                        0,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of()
+                ));
+    }
+
+    @Test
+    void shouldRejectAverageJourneyDurationOutsideLifetimeTotal() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ExpeditionJourneyChronicleSnapshot(
+                        2,
+                        0,
+                        60L,
+                        40L,
+                        31L,
                         0,
                         0,
                         List.of(),
@@ -182,6 +202,7 @@ class HomeServiceTest {
         assertNotNull(chronicle);
         assertNull(chronicle.totalDurationSeconds());
         assertNull(chronicle.longestDurationSeconds());
+        assertNull(chronicle.averageDurationSeconds());
         assertEquals(40, chronicle.pilotExperienceGained());
         assertTrue(chronicle.pilotExperienceRewards().isEmpty());
     }
@@ -482,6 +503,8 @@ class HomeServiceTest {
                 expedition.journeyChronicle().totalDurationSeconds());
         assertEquals(3_900,
                 expedition.journeyChronicle().longestDurationSeconds());
+        assertEquals(2_062,
+                expedition.journeyChronicle().averageDurationSeconds());
         assertEquals(98,
                 expedition.journeyChronicle().pilotExperienceGained());
         assertEquals(2,

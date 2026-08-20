@@ -458,11 +458,14 @@ immutable resolution: journey 1 использует initial cycle creation с f
 Lifetime `totalDurationSeconds` суммируется по полной receipt-proven history,
 а `longestDurationSeconds` выбирает maximum из тех же границ; service добавляет
 или сравнивает duration current authoritative `COMPLETED` ровно один раз.
-Longest публикуется только вместе с total и не превышает его. Если хотя бы
-одна included boundary отсутствует или start позже final, оба поля целиком
-опускаются: recent archive, client clock, cache/Home-response time и частичный
-итог не используются. Та же SQL-проекция группирует положительную связь по
-persisted `pet_id + pet_name`, сохраняя
+После этого merge service выводит `averageDurationSeconds` только как
+целочисленное floor-деление total на `completedJourneyCount`. Longest и average
+публикуются только вместе с total; longest не превышает его, а average точно
+соответствует total/count. Если хотя бы одна included boundary отсутствует или
+start позже final, все три duration-поля целиком опускаются: recent archive,
+client clock, cache/Home-response time и частичный итог не используются. Та же
+SQL-проекция группирует положительную связь по persisted `pet_id + pet_name`,
+сохраняя
 порядок первого immutable появления. Service добавляет текущий journey ровно
 один раз только при authoritative `COMPLETED` и объединяет его ordered
 companion breakdown с historical группами; после старта следующего похода тот

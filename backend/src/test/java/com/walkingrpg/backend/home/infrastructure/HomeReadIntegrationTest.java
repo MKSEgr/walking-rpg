@@ -485,6 +485,8 @@ class HomeReadIntegrationTest {
                 expedition.journeyChronicle().totalDurationSeconds());
         assertEquals(6_120,
                 expedition.journeyChronicle().longestDurationSeconds());
+        assertEquals(3_034,
+                expedition.journeyChronicle().averageDurationSeconds());
         assertEquals(28,
                 expedition.journeyChronicle().pilotExperienceGained());
         assertEquals(2,
@@ -677,6 +679,7 @@ class HomeReadIntegrationTest {
         assertEquals(7, incompleteDuration.completedJourneyCount());
         assertNull(incompleteDuration.totalDurationSeconds());
         assertNull(incompleteDuration.longestDurationSeconds());
+        assertNull(incompleteDuration.averageDurationSeconds());
     }
 
     @Test

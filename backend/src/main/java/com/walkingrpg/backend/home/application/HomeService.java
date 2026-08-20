@@ -717,6 +717,9 @@ public class HomeService {
         if (completedJourneyCount == 0) {
             return null;
         }
+        Long averageDurationSeconds = totalDurationSeconds == null
+                ? null
+                : totalDurationSeconds / completedJourneyCount;
         List<ExpeditionJourneyPilotExperienceRewardSnapshot>
                 pilotExperienceSnapshots = pilotExperienceRewards.entrySet()
                         .stream()
@@ -780,6 +783,7 @@ public class HomeService {
                 decisionCount,
                 totalDurationSeconds,
                 longestDurationSeconds,
+                averageDurationSeconds,
                 pilotExperienceGained,
                 petBondGained,
                 pilotExperienceSnapshots,
