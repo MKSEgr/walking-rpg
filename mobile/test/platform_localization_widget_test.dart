@@ -685,9 +685,7 @@ String _formattedCompletionTime(
     TimeOfDay.fromDateTime(completedAt),
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
-  return russian
-      ? 'Завершён $date в $time'
-      : 'Finished on $date at $time';
+  return russian ? 'Завершён $date в $time' : 'Finished on $date at $time';
 }
 
 const String _fallback = 'Literal copy from a newer server';
