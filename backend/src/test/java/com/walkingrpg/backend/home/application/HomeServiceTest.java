@@ -46,6 +46,7 @@ class HomeServiceTest {
                         1,
                         0,
                         60L,
+                        60L,
                         61L,
                         null,
                         null,
@@ -66,10 +67,33 @@ class HomeServiceTest {
                         2,
                         0,
                         60L,
+                        20L,
                         40L,
                         1L,
                         null,
                         31L,
+                        0,
+                        0,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of()
+                ));
+    }
+
+    @Test
+    void shouldRejectShortestJourneyDurationOutsideLifetimeRange() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ExpeditionJourneyChronicleSnapshot(
+                        2,
+                        0,
+                        60L,
+                        31L,
+                        40L,
+                        1L,
+                        null,
+                        30L,
                         0,
                         0,
                         List.of(),
@@ -87,6 +111,7 @@ class HomeServiceTest {
                         2,
                         0,
                         60L,
+                        20L,
                         40L,
                         3L,
                         null,
@@ -108,6 +133,7 @@ class HomeServiceTest {
                         2,
                         0,
                         60L,
+                        20L,
                         40L,
                         null,
                         NOW,
@@ -164,6 +190,7 @@ class HomeServiceTest {
                         1,
                         60L,
                         60L,
+                        60L,
                         1L,
                         historicalRecordAt,
                         0,
@@ -214,7 +241,107 @@ class HomeServiceTest {
         ).expedition().journeyChronicle();
 
         assertNotNull(chronicle);
+        assertEquals(60, chronicle.shortestDurationSeconds());
         assertEquals(1, chronicle.longestJourneyNumber());
+        assertEquals(historicalRecordAt,
+                chronicle.longestJourneyCompletedAt());
+    }
+
+    @Test
+    void shouldReplaceHistoricalShortestDurationWithShorterCurrentJourney() {
+        StarterExpeditionContent content = new StarterExpeditionContent();
+        var finalNode = content.requireNode(
+                StarterExpeditionContent.MIRROR_DELTA_NODE_ID
+        );
+        Instant historicalRecordAt = NOW.minusSeconds(86_400);
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        finalNode.requiredEnergy(),
+                        finalNode.requiredEnergy(),
+                        "COMPLETED",
+                        2,
+                        finalNode.currentNodeId(),
+                        finalNode.event().eventId()
+                ),
+                List.of(journeyEvent(
+                        StarterExpeditionContent.MIRROR_DELTA_EVENT_ID,
+                        "Зеркальная дельта из записи",
+                        "follow-reflection",
+                        "Следовать за отражением",
+                        "Отражение принято",
+                        "Сохранён короткий маршрут.",
+                        0,
+                        "spark-v1",
+                        "Искра из записи",
+                        0,
+                        null,
+                        NOW
+                )),
+                List.of(),
+                new ExpeditionJourneyChronicleTotals(
+                        1,
+                        1,
+                        120L,
+                        120L,
+                        120L,
+                        1L,
+                        historicalRecordAt,
+                        0,
+                        0,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(
+                                new ExpeditionJourneyDecisionOutcomeSnapshot(
+                                        StarterExpeditionContent
+                                                .MIRROR_DELTA_EVENT_ID,
+                                        "Зеркальная дельта из записи",
+                                        "follow-reflection",
+                                        "Следовать за отражением",
+                                        "Отражение принято",
+                                        1
+                                )
+                        ),
+                        List.of(
+                                new ExpeditionJourneyFinaleOutcomeSnapshot(
+                                        StarterExpeditionContent
+                                                .MIRROR_DELTA_EVENT_ID,
+                                        "Зеркальная дельта из записи",
+                                        "follow-reflection",
+                                        "Следовать за отражением",
+                                        "Отражение принято",
+                                        1
+                                )
+                        )
+                ),
+                NOW.minusSeconds(60)
+        );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                content,
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        var chronicle = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        ).expedition().journeyChronicle();
+
+        assertNotNull(chronicle);
+        assertEquals(60, chronicle.shortestDurationSeconds());
+        assertEquals(120, chronicle.longestDurationSeconds());
         assertEquals(historicalRecordAt,
                 chronicle.longestJourneyCompletedAt());
     }
@@ -344,6 +471,7 @@ class HomeServiceTest {
 
         assertNotNull(chronicle);
         assertNull(chronicle.totalDurationSeconds());
+        assertNull(chronicle.shortestDurationSeconds());
         assertNull(chronicle.longestDurationSeconds());
         assertNull(chronicle.averageDurationSeconds());
         assertEquals(40, chronicle.pilotExperienceGained());
@@ -483,6 +611,7 @@ class HomeServiceTest {
                         7,
                         7,
                         12_600L,
+                        1_200L,
                         3_600L,
                         4L,
                         NOW.minusSeconds(7_200),
@@ -646,6 +775,8 @@ class HomeServiceTest {
         assertEquals(10, expedition.journeyChronicle().decisionCount());
         assertEquals(16_500,
                 expedition.journeyChronicle().totalDurationSeconds());
+        assertEquals(1_200,
+                expedition.journeyChronicle().shortestDurationSeconds());
         assertEquals(3_900,
                 expedition.journeyChronicle().longestDurationSeconds());
         assertEquals(1,

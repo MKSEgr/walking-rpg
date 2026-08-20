@@ -601,6 +601,7 @@ class HomeJourneyChronicle {
     required this.pilotExperienceGained,
     required this.petBondGained,
     this.totalDurationSeconds,
+    this.shortestDurationSeconds,
     this.longestDurationSeconds,
     this.longestJourneyNumber,
     this.longestJourneyCompletedAt,
@@ -627,6 +628,10 @@ class HomeJourneyChronicle {
       json,
       'totalDurationSeconds',
     );
+    final int? shortestDurationSeconds = HomeSnapshot._readOptionalInt(
+      json,
+      'shortestDurationSeconds',
+    );
     final int? longestDurationSeconds = HomeSnapshot._readOptionalInt(
       json,
       'longestDurationSeconds',
@@ -650,6 +655,14 @@ class HomeJourneyChronicle {
     if (completedJourneyCount <= 0 ||
         decisionCount < 0 ||
         (totalDurationSeconds != null && totalDurationSeconds < 0) ||
+        (shortestDurationSeconds != null &&
+            (totalDurationSeconds == null ||
+                shortestDurationSeconds < 0 ||
+                shortestDurationSeconds > totalDurationSeconds ||
+                (longestDurationSeconds != null &&
+                    shortestDurationSeconds > longestDurationSeconds) ||
+                (averageDurationSeconds != null &&
+                    shortestDurationSeconds > averageDurationSeconds))) ||
         (longestDurationSeconds != null &&
             (totalDurationSeconds == null ||
                 longestDurationSeconds < 0 ||
@@ -854,6 +867,7 @@ class HomeJourneyChronicle {
       completedJourneyCount: completedJourneyCount,
       decisionCount: decisionCount,
       totalDurationSeconds: totalDurationSeconds,
+      shortestDurationSeconds: shortestDurationSeconds,
       longestDurationSeconds: longestDurationSeconds,
       longestJourneyNumber: longestJourneyNumber,
       longestJourneyCompletedAt: longestJourneyCompletedAt,
@@ -871,6 +885,7 @@ class HomeJourneyChronicle {
   final int completedJourneyCount;
   final int decisionCount;
   final int? totalDurationSeconds;
+  final int? shortestDurationSeconds;
   final int? longestDurationSeconds;
   final int? longestJourneyNumber;
   final String? longestJourneyCompletedAt;

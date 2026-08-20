@@ -358,6 +358,7 @@ void main() {
               completedJourneyCount: 9,
               decisionCount: 31,
               totalDurationSeconds: 65700,
+              shortestDurationSeconds: 1800,
               longestDurationSeconds: 12600,
               longestJourneyNumber: 3,
               longestJourneyCompletedAt: '2026-07-25T12:00:00Z',
@@ -481,6 +482,11 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle-duration')),
       findsOneWidget,
     );
+    expect(find.text('Shortest journey: 30 min'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
+      findsOneWidget,
+    );
     expect(find.text('Longest journey #3: 3 h 30 min'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-longest-duration')),
@@ -520,6 +526,7 @@ void main() {
       find.bySemanticsLabel(
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
         'Time in journeys: 18 h 15 min. '
+        'Shortest journey: 30 min. '
         'Longest journey #3: 3 h 30 min. '
         '$recordCompletedAt. '
         'Average journey: 2 h 1 min. '
@@ -647,6 +654,10 @@ void main() {
     expect(find.textContaining('Longest journey #'), findsNothing);
     expect(
       find.byKey(const Key('platform-journey-chronicle-record-completed-at')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
       findsNothing,
     );
   });

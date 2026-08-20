@@ -330,6 +330,17 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                    WHERE started_at IS NOT NULL
                                      AND resolved_at IS NOT NULL
                                      AND resolved_at >= started_at
+                               ) THEN MIN(FLOOR(EXTRACT(
+                                   EPOCH FROM (resolved_at - started_at)
+                               )))::BIGINT
+                               ELSE NULL
+                           END AS shortest_duration_seconds,
+                           CASE
+                               WHEN COUNT(*) = 0 THEN 0::BIGINT
+                               WHEN COUNT(*) = COUNT(*) FILTER (
+                                   WHERE started_at IS NOT NULL
+                                     AND resolved_at IS NOT NULL
+                                     AND resolved_at >= started_at
                                ) THEN MAX(FLOOR(EXTRACT(
                                    EPOCH FROM (resolved_at - started_at)
                                )))::BIGINT
@@ -385,6 +396,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                            FROM duration_stats
                        ) AS total_duration_seconds,
                        (
+                           SELECT shortest_duration_seconds
+                           FROM duration_stats
+                       ) AS shortest_duration_seconds,
+                       (
                            SELECT longest_duration_seconds
                            FROM duration_stats
                        ) AS longest_duration_seconds,
@@ -420,6 +435,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                 resultSet.getLong("decision_count"),
                                 resultSet.getObject(
                                         "total_duration_seconds",
+                                        Long.class
+                                ),
+                                resultSet.getObject(
+                                        "shortest_duration_seconds",
                                         Long.class
                                 ),
                                 resultSet.getObject(
@@ -797,6 +816,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 totals.completedJourneyCount(),
                 totals.decisionCount(),
                 totals.totalDurationSeconds(),
+                totals.shortestDurationSeconds(),
                 totals.longestDurationSeconds(),
                 totals.longestJourneyNumber(),
                 totals.longestJourneyCompletedAt(),

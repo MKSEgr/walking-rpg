@@ -1002,6 +1002,14 @@ class _JourneyChronicleCard extends StatelessWidget {
               chronicle.longestDurationSeconds!,
             ),
           );
+    final String shortestDuration = chronicle.shortestDurationSeconds == null
+        ? ''
+        : context.l10n.platformJourneyChronicleShortestDuration(
+            _journeyDurationValueLabel(
+              context,
+              chronicle.shortestDurationSeconds!,
+            ),
+          );
     final String recordCompletedAt = chronicle.longestJourneyCompletedAt == null
         ? ''
         : _journeyChronicleRecordTimeLabel(
@@ -1086,6 +1094,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.completedJourneyCount,
         chronicle.decisionCount,
         duration.isEmpty ? '' : '$duration. ',
+        shortestDuration.isEmpty ? '' : '$shortestDuration. ',
         longestDuration.isEmpty ? '' : '$longestDuration. ',
         recordCompletedAt.isEmpty ? '' : '$recordCompletedAt. ',
         averageDuration.isEmpty ? '' : '$averageDuration. ',
@@ -1140,6 +1149,14 @@ class _JourneyChronicleCard extends StatelessWidget {
                       key: const Key('platform-journey-chronicle-duration'),
                       icon: Icons.timer_outlined,
                       label: duration,
+                    ),
+                  if (shortestDuration.isNotEmpty)
+                    _JourneyRewardChip(
+                      key: const Key(
+                        'platform-journey-chronicle-shortest-duration',
+                      ),
+                      icon: Icons.speed_outlined,
+                      label: shortestDuration,
                     ),
                   if (longestDuration.isNotEmpty)
                     _JourneyRewardChip(

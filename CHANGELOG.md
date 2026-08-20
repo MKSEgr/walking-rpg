@@ -69,6 +69,10 @@
 
 ### Added
 
+- authoritative shortest completed-journey duration in the lifetime chronicle,
+  selected across the complete receipt-proven history and current completed
+  journey, with range validation, whole-field omission for incomplete
+  boundaries and shared RU/EN accessibility;
 - authoritative completion time for the longest-journey record, selected from
   the same complete receipt-proven winner and presented in device-local RU/EN
   date/time with legacy omission and fail-closed timestamp validation;

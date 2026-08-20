@@ -179,6 +179,7 @@ void main() {
         'completedJourneyCount': 8,
         'decisionCount': 19,
         'totalDurationSeconds': 65_700,
+        'shortestDurationSeconds': 3_600,
         'longestDurationSeconds': 12_600,
         'longestJourneyNumber': 7,
         'longestJourneyCompletedAt': '2026-07-25T12:00:00Z',
@@ -406,6 +407,7 @@ void main() {
     expect(snapshot.journeyChronicle?.completedJourneyCount, 8);
     expect(snapshot.journeyChronicle?.decisionCount, 19);
     expect(snapshot.journeyChronicle?.totalDurationSeconds, 65_700);
+    expect(snapshot.journeyChronicle?.shortestDurationSeconds, 3_600);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, 12_600);
     expect(snapshot.journeyChronicle?.longestJourneyNumber, 7);
     expect(
@@ -491,6 +493,7 @@ void main() {
     'completedJourneyCount': 0,
     'decisionCount': -1,
     'totalDurationSeconds': -1,
+    'shortestDurationSeconds': -1,
     'longestDurationSeconds': -1,
     'pilotExperienceGained': -1,
     'petBondGained': -1,
@@ -527,6 +530,47 @@ void main() {
       expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
     });
   }
+
+  test('journey chronicle rejects invalid shortest durations', () {
+    for (final Map<String, dynamic> durations in <Map<String, dynamic>>[
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'shortestDurationSeconds': 1.5,
+      },
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'shortestDurationSeconds': '20',
+      },
+      <String, dynamic>{'shortestDurationSeconds': 20},
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'shortestDurationSeconds': 101,
+      },
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'shortestDurationSeconds': 61,
+        'longestDurationSeconds': 60,
+      },
+      <String, dynamic>{
+        'totalDurationSeconds': 100,
+        'shortestDurationSeconds': 51,
+        'averageDurationSeconds': 50,
+      },
+    ]) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 2,
+        'decisionCount': 0,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+        ...durations,
+      };
+
+      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+    }
+  });
 
   test('journey chronicle rejects invalid longest durations', () {
     for (final Map<String, dynamic> durations in <Map<String, dynamic>>[
@@ -734,6 +778,7 @@ void main() {
 
     expect(snapshot.journeyChronicle?.petBondGained, 72);
     expect(snapshot.journeyChronicle?.totalDurationSeconds, isNull);
+    expect(snapshot.journeyChronicle?.shortestDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.longestJourneyNumber, isNull);
     expect(snapshot.journeyChronicle?.longestJourneyCompletedAt, isNull);

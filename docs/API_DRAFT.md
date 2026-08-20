@@ -504,8 +504,9 @@ Authorization: Bearer <access-token>
 - `expedition.journeyChronicle` — additive nullable lifetime-итог всех
   подтверждённых завершённых походов этого пользователя и экспедиции:
   `completedJourneyCount`, `decisionCount`, nullable non-negative
-  `totalDurationSeconds`, nullable non-negative `longestDurationSeconds`,
-  nullable positive `longestJourneyNumber`, nullable ISO-8601 instant
+  `totalDurationSeconds`, nullable non-negative `shortestDurationSeconds`,
+  nullable non-negative `longestDurationSeconds`, nullable positive
+  `longestJourneyNumber`, nullable ISO-8601 instant
   `longestJourneyCompletedAt`, nullable non-negative `averageDurationSeconds`,
   `pilotExperienceGained` и `petBondGained`.
   `totalDurationSeconds` суммирует полные целые секунды каждого included
@@ -513,13 +514,19 @@ Authorization: Bearer <access-token>
   — в exact journey-start receipt `server_time`, а заканчивается последней
   immutable resolution exact journey. Любая отсутствующая или обратная
   граница опускает весь lifetime duration без частичного итога.
+  `shortestDurationSeconds` выбирает minimum из тех же exact boundaries,
+  публикуется только вместе с total и не превышает average/longest, когда они
+  присутствуют. Current authoritative `COMPLETED` сравнивается с historical
+  minimum ровно один раз; после journey-start receipt тот же путь уже входит
+  только через history.
   `longestDurationSeconds` выбирает maximum из тех же exact boundaries,
   публикуется только вместе с total и не превышает его. Additive
   `longestJourneyNumber` указывает journey этого maximum; tie выбирается по
   меньшему номеру, поле публикуется только вместе с longest и не превышает
   `completedJourneyCount`. Additive `longestJourneyCompletedAt` берётся из
   immutable final resolution exact winning journey и публикуется только
-  вместе с longest duration и identity. Current authoritative `COMPLETED`
+  вместе с longest duration и identity. Тот же current authoritative
+  `COMPLETED`
   сравнивается ровно один раз и заменяет record identity и completion instant
   только при строго большей duration; tie сохраняет historical winner.
   `averageDurationSeconds`
@@ -550,8 +557,8 @@ Authorization: Bearer <access-token>
   только из persisted event resolutions, не перечитывая current content,
   inventory или текущие progression totals. До первого подтверждённого
   финиша значение равно `null`; legacy response без `journeyChronicle`,
-  `totalDurationSeconds`, `longestDurationSeconds`, `longestJourneyNumber`,
-  `longestJourneyCompletedAt`, `averageDurationSeconds`,
+  `totalDurationSeconds`, `shortestDurationSeconds`, `longestDurationSeconds`,
+  `longestJourneyNumber`, `longestJourneyCompletedAt`, `averageDurationSeconds`,
   `pilotExperienceRewards`, `petBondRewards`, `materials`,
   `decisionOutcomes` или `finaleOutcomes` остаётся валидным. При наличии
   pilot-массива его
@@ -565,6 +572,7 @@ Authorization: Bearer <access-token>
     "completedJourneyCount": 8,
     "decisionCount": 19,
     "totalDurationSeconds": 65700,
+    "shortestDurationSeconds": 3600,
     "longestDurationSeconds": 12600,
     "longestJourneyNumber": 7,
     "longestJourneyCompletedAt": "2026-07-25T12:00:00Z",
