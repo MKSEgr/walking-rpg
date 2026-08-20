@@ -467,10 +467,7 @@ void main() {
       find.text('Расшифровать сигнал → Маршрут нанесён · ×18'),
       findsOneWidget,
     );
-    expect(
-      find.text('Удержать искру → Орбита пройдена · ×10'),
-      findsOneWidget,
-    );
+    expect(find.text('Удержать искру → Орбита пройдена · ×10'), findsOneWidget);
     expect(find.text('Финалы маршрутов'), findsOneWidget);
     expect(
       find.text('Стабилизировать ядро → Ровный импульс · ×4'),
