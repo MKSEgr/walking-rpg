@@ -474,9 +474,7 @@ void main() {
     );
     expect(find.text('Longest journey: 3 h 30 min'), findsOneWidget);
     expect(
-      find.byKey(
-        const Key('platform-journey-chronicle-longest-duration'),
-      ),
+      find.byKey(const Key('platform-journey-chronicle-longest-duration')),
       findsOneWidget,
     );
     expect(find.text('Navigator from chronicle · +500 XP'), findsOneWidget);

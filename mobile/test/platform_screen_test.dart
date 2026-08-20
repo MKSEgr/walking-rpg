@@ -533,9 +533,7 @@ void main() {
     );
     expect(find.text('Самый долгий поход: 3 ч 30 мин'), findsOneWidget);
     expect(
-      find.byKey(
-        const Key('platform-journey-chronicle-longest-duration'),
-      ),
+      find.byKey(const Key('platform-journey-chronicle-longest-duration')),
       findsOneWidget,
     );
     expect(find.text('Навигатор из летописи · +360 XP'), findsOneWidget);
@@ -812,9 +810,7 @@ void main() {
     );
     expect(find.text('Самый долгий поход: 3 ч 30 мин'), findsOneWidget);
     expect(
-      find.byKey(
-        const Key('platform-journey-chronicle-longest-duration'),
-      ),
+      find.byKey(const Key('platform-journey-chronicle-longest-duration')),
       findsOneWidget,
     );
     expect(find.text('+123456789 XP пилота'), findsOneWidget);
