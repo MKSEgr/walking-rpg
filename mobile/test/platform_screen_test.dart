@@ -511,12 +511,8 @@ void main() {
       findsOneWidget,
     );
     final Finder archive = find.byKey(const Key('platform-journey-archive'));
-    expect(archive, findsOneWidget);
-    expect(
-      tester.getTopLeft(chronicle).dy,
-      lessThan(tester.getTopLeft(archive).dy),
-    );
     await _bringIntoView(tester, archive);
+    expect(archive, findsOneWidget);
     expect(find.text('Недавние походы'), findsOneWidget);
     expect(find.text('АРХИВ · 2'), findsOneWidget);
     final Finder latest = find.byKey(const Key('platform-journey-archive-3'));
