@@ -244,9 +244,7 @@ void main() {
       );
       expect(find.text(currentDecisionLabel), findsOneWidget);
       expect(
-        find.byKey(
-          const Key('platform-journey-decision-legacy-event-v1-time'),
-        ),
+        find.byKey(const Key('platform-journey-decision-legacy-event-v1-time')),
         findsOneWidget,
       );
 
@@ -283,9 +281,7 @@ void main() {
       );
       expect(find.text(archivedDecisionLabel), findsOneWidget);
       expect(
-        find.byKey(
-          const Key('platform-journey-decision-mirror-delta-v1-time'),
-        ),
+        find.byKey(const Key('platform-journey-decision-mirror-delta-v1-time')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

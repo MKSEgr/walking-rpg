@@ -1493,10 +1493,7 @@ String _journeyDecisionTimeLabel(
     context,
     decision.resolvedAt,
   );
-  return context.l10n.platformJourneyDecisionResolvedAt(
-    local.date,
-    local.time,
-  );
+  return context.l10n.platformJourneyDecisionResolvedAt(local.date, local.time);
 }
 
 ({String date, String time}) _journeyLocalDateTime(
