@@ -426,6 +426,15 @@ companion breakdown с historical группами; после старта сл
 Сумма breakdown точно равна совместимому `petBondGained`, а legacy snapshot
 без массива остаётся читаемым как общий неназванный итог. Поэтому расширение
 главы не превращает historical `expedition_status=COMPLETED` в ложный финиш.
+Persisted `pilot_id + pilot_name + pilot_experience_gained` на той же
+receipt-proven границе формируют ordered lifetime `pilotExperienceRewards[]`.
+SQL группирует только положительный XP по persisted identity и сохраняет
+порядок первого immutable появления; service добавляет rewards authoritative
+current `COMPLETED` ровно один раз. После следующего journey-start тот же XP
+уже приходит из historical SQL. Полный breakdown отдаётся только когда сумма
+`experienceGained` совпадает с lifetime `pilotExperienceGained`; иначе поле
+опускается. Current pilot content, progression total и recent archive не
+используются для восстановления истории.
 Та же receipt-proven граница агрегирует ordered lifetime `materials[]` по
 persisted `material_item_id + material_item_name`: SQL сохраняет порядок
 первого immutable появления, а service один раз добавляет материалы current

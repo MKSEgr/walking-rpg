@@ -642,6 +642,26 @@ Milestone 30 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, economy, topology или external
 validation gates.
 
+## Milestone 31 — Lifetime pilot experience breakdown
+
+### CODE_COMPLETE
+
+- [x] Additive ordered `journeyChronicle.pilotExperienceRewards[]` из
+      persisted pilot identity/name и фактически выданного XP всех
+      receipt-proven завершённых походов
+- [x] First-appearance grouping и authoritative current `COMPLETED` merge
+      ровно один раз с exact sum к совместимому `pilotExperienceGained`, без
+      current-content, progression-total или archive-limit inference
+- [x] Именные RU/EN XP chips и единая accessibility summary с legacy fallback
+      на общий итог при отсутствии additive массива
+- [x] Backend unit/API/PostgreSQL, Flutter parser/widget и compact text-scale
+      1.6 coverage проверяют persisted copy, порядок, current merge, omission
+      и invalid data
+
+Milestone 31 продолжает post-alpha code-only gameplay track из ADR 0039 и не
+меняет immutable `alpha-rc1`, schema, XP economy, topology или external
+validation gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

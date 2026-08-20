@@ -19,6 +19,7 @@ import com.walkingrpg.backend.home.domain.ExpeditionJourneyDecisionOutcomeSnapsh
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyEvent;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyFinaleOutcomeSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyHistory;
+import com.walkingrpg.backend.home.domain.ExpeditionJourneyPilotExperienceRewardSnapshot;
 import com.walkingrpg.backend.home.domain.HomeQuery;
 import com.walkingrpg.backend.home.domain.HomeRuntimeState;
 import com.walkingrpg.backend.home.domain.MaterialRewardPreviewSnapshot;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HomeServiceTest {
 
@@ -102,6 +104,65 @@ class HomeServiceTest {
         assertEquals(1, snapshot.expedition().journeyNumber());
         assertEquals("EVENT_READY", snapshot.expedition().status());
         assertNotNull(snapshot.expedition().unlockedEvent());
+    }
+
+    @Test
+    void shouldOmitIncompletePilotExperienceBreakdown() {
+        HomeReadRepository repository = repository(
+                new HomeRuntimeState(
+                        0,
+                        0,
+                        "Europe/Berlin",
+                        null,
+                        0,
+                        0,
+                        30,
+                        30,
+                        "EVENT_READY",
+                        1,
+                        "outer-beacon",
+                        "signal-source-v1"
+                ),
+                List.of(),
+                List.of(),
+                new ExpeditionJourneyChronicleTotals(
+                        1,
+                        1,
+                        40,
+                        0,
+                        List.of(
+                                new ExpeditionJourneyPilotExperienceRewardSnapshot(
+                                        "navigator-v1",
+                                        "Навигатор из записи",
+                                        39
+                                )
+                        ),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of()
+                )
+        );
+        DailyGoalPolicyProperties goalProperties = goalProperties();
+        HomeService service = new HomeService(
+                repository,
+                new StarterHomeContent(),
+                new DailyGoalService(
+                        (userId, fromInclusive, toExclusive) -> List.of(),
+                        new AdaptiveDailyGoalCalculator(goalProperties),
+                        goalProperties
+                ),
+                new StarterExpeditionContent(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+
+        var chronicle = service.getSnapshot(
+                new HomeQuery("user-1", LocalDate.of(2026, 7, 25))
+        ).expedition().journeyChronicle();
+
+        assertNotNull(chronicle);
+        assertEquals(40, chronicle.pilotExperienceGained());
+        assertTrue(chronicle.pilotExperienceRewards().isEmpty());
     }
 
     @Test
@@ -236,6 +297,18 @@ class HomeServiceTest {
                         28,
                         28,
                         List.of(
+                                new ExpeditionJourneyPilotExperienceRewardSnapshot(
+                                        "archivist-v1",
+                                        "Архивариус из записи",
+                                        8
+                                ),
+                                new ExpeditionJourneyPilotExperienceRewardSnapshot(
+                                        "navigator-v1",
+                                        "Навигатор из записи",
+                                        20
+                                )
+                        ),
+                        List.of(
                                 new PetBondRewardSnapshot(
                                         "moss-v1",
                                         "Мох из записи",
@@ -366,6 +439,24 @@ class HomeServiceTest {
         assertEquals(10, expedition.journeyChronicle().decisionCount());
         assertEquals(98,
                 expedition.journeyChronicle().pilotExperienceGained());
+        assertEquals(2,
+                expedition.journeyChronicle()
+                        .pilotExperienceRewards().size());
+        assertEquals("archivist-v1",
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getFirst().pilotId());
+        assertEquals(8,
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getFirst().experienceGained());
+        assertEquals("navigator-v1",
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getLast().pilotId());
+        assertEquals("Навигатор из записи",
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getLast().pilotName());
+        assertEquals(90,
+                expedition.journeyChronicle().pilotExperienceRewards()
+                        .getLast().experienceGained());
         assertEquals(51,
                 expedition.journeyChronicle().petBondGained());
         assertEquals(2,
@@ -845,6 +936,8 @@ class HomeServiceTest {
                 outcomeTitle,
                 outcomeSummary,
                 pilotExperienceGained,
+                "navigator-v1",
+                "Навигатор из записи",
                 petId,
                 petName,
                 petBondGained,

@@ -600,6 +600,7 @@ class HomeJourneyChronicle {
     required this.decisionCount,
     required this.pilotExperienceGained,
     required this.petBondGained,
+    this.pilotExperienceRewards = const <HomeJourneyPilotExperienceReward>[],
     this.petBondRewards = const <HomeJourneyPetBondReward>[],
     this.materials = const <HomeJourneyMaterialReward>[],
     this.decisionOutcomes = const <HomeJourneyDecisionOutcome>[],
@@ -624,6 +625,41 @@ class HomeJourneyChronicle {
       throw const FormatException(
         'Летопись походов содержит недопустимое значение',
       );
+    }
+    final Object? pilotExperienceRewardsJson = json['pilotExperienceRewards'];
+    final List<HomeJourneyPilotExperienceReward> pilotExperienceRewards;
+    if (pilotExperienceRewardsJson == null) {
+      pilotExperienceRewards = const <HomeJourneyPilotExperienceReward>[];
+    } else {
+      if (pilotExperienceRewardsJson is! List<dynamic>) {
+        throw const FormatException(
+          'journeyChronicle.pilotExperienceRewards должен быть JSON-массивом',
+        );
+      }
+      pilotExperienceRewards = pilotExperienceRewardsJson
+          .map(
+            (Object? value) => HomeJourneyPilotExperienceReward.fromJson(
+              _asMap(value, 'journeyChronicle.pilotExperienceRewards[]'),
+            ),
+          )
+          .toList(growable: false);
+      final Set<String> pilotIdentities = <String>{};
+      int experienceTotal = 0;
+      for (final HomeJourneyPilotExperienceReward reward
+          in pilotExperienceRewards) {
+        final String identity = '${reward.pilotId}\u0000${reward.pilotName}';
+        if (!pilotIdentities.add(identity)) {
+          throw const FormatException(
+            'journeyChronicle.pilotExperienceRewards содержит повтор',
+          );
+        }
+        experienceTotal += reward.experienceGained;
+      }
+      if (experienceTotal != pilotExperienceGained) {
+        throw const FormatException(
+          'journeyChronicle.pilotExperienceRewards не совпадает с общим итогом',
+        );
+      }
     }
     final Object? petBondRewardsJson = json['petBondRewards'];
     final List<HomeJourneyPetBondReward> petBondRewards;
@@ -771,6 +807,7 @@ class HomeJourneyChronicle {
       decisionCount: decisionCount,
       pilotExperienceGained: pilotExperienceGained,
       petBondGained: petBondGained,
+      pilotExperienceRewards: pilotExperienceRewards,
       petBondRewards: petBondRewards,
       materials: materials,
       decisionOutcomes: decisionOutcomes,
@@ -782,6 +819,7 @@ class HomeJourneyChronicle {
   final int decisionCount;
   final int pilotExperienceGained;
   final int petBondGained;
+  final List<HomeJourneyPilotExperienceReward> pilotExperienceRewards;
   final List<HomeJourneyPetBondReward> petBondRewards;
   final List<HomeJourneyMaterialReward> materials;
   final List<HomeJourneyDecisionOutcome> decisionOutcomes;
@@ -1058,6 +1096,37 @@ class HomeJourneyDecisionOutcome {
   final String choiceTitle;
   final String outcomeTitle;
   final int decisionCount;
+}
+
+class HomeJourneyPilotExperienceReward {
+  const HomeJourneyPilotExperienceReward({
+    required this.pilotId,
+    required this.pilotName,
+    required this.experienceGained,
+  });
+
+  factory HomeJourneyPilotExperienceReward.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final int experienceGained = HomeSnapshot._readInt(
+      json,
+      'experienceGained',
+    );
+    if (experienceGained <= 0) {
+      throw const FormatException(
+        'Количество опыта пилота должно быть положительным',
+      );
+    }
+    return HomeJourneyPilotExperienceReward(
+      pilotId: HomeSnapshot._readString(json, 'pilotId'),
+      pilotName: HomeSnapshot._readString(json, 'pilotName'),
+      experienceGained: experienceGained,
+    );
+  }
+
+  final String pilotId;
+  final String pilotName;
+  final int experienceGained;
 }
 
 class HomeJourneyPetBondReward {

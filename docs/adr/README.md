@@ -61,3 +61,4 @@ NNNN-short-title.md
 - [0042 — lifetime material reward chronicle](0042-lifetime-material-reward-chronicle.md)
 - [0043 — lifetime route finale chronicle](0043-lifetime-route-finale-chronicle.md)
 - [0044 — lifetime route decision chronicle](0044-lifetime-route-decision-chronicle.md)
+- [0045 — lifetime pilot experience chronicle](0045-lifetime-pilot-experience-chronicle.md)

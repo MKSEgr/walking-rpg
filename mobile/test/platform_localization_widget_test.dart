@@ -159,6 +159,18 @@ void main() {
               decisionCount: 31,
               pilotExperienceGained: 620,
               petBondGained: 205,
+              pilotExperienceRewards: <HomeJourneyPilotExperienceReward>[
+                HomeJourneyPilotExperienceReward(
+                  pilotId: 'navigator-v1',
+                  pilotName: 'Navigator from chronicle',
+                  experienceGained: 500,
+                ),
+                HomeJourneyPilotExperienceReward(
+                  pilotId: 'archivist-v1',
+                  pilotName: 'Archivist from chronicle',
+                  experienceGained: 120,
+                ),
+              ],
               petBondRewards: <HomeJourneyPetBondReward>[
                 HomeJourneyPetBondReward(
                   petId: 'spark-v1',
@@ -237,6 +249,9 @@ void main() {
       find.byKey(const Key('platform-journey-chronicle')),
     );
     expect(find.text('Journey chronicle'), findsOneWidget);
+    expect(find.text('Navigator from chronicle · +500 XP'), findsOneWidget);
+    expect(find.text('Archivist from chronicle · +120 XP'), findsOneWidget);
+    expect(find.text('+620 pilot XP'), findsNothing);
     expect(find.text('Spark · +120 bond'), findsOneWidget);
     expect(find.text('Moss · +85 bond'), findsOneWidget);
     expect(find.text('+205 companion bond'), findsNothing);
@@ -257,7 +272,9 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
-        'Total rewards: +620 pilot XP; Spark: +120 bond; Moss: +85 bond; '
+        'Total rewards: Navigator from chronicle: +500 pilot XP; '
+        'Archivist from chronicle: +120 pilot XP; '
+        'Spark: +120 bond; Moss: +85 bond; '
         '+44 Lumen Shard; +19 Ash Seed. Lifetime decisions: Outer Signal. '
         'Decision: Decode the signal. Outcome: Route charted. Decisions: 18; '
         'Ash Orbit. Decision: Hold the ember. Outcome: Orbit crossed. '

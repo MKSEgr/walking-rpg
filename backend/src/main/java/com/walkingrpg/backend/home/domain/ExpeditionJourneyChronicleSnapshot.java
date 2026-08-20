@@ -9,6 +9,8 @@ public record ExpeditionJourneyChronicleSnapshot(
         long decisionCount,
         long pilotExperienceGained,
         long petBondGained,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        List<ExpeditionJourneyPilotExperienceRewardSnapshot> pilotExperienceRewards,
         List<PetBondRewardSnapshot> petBondRewards,
         List<MaterialRewardPreviewSnapshot> materials,
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -17,6 +19,9 @@ public record ExpeditionJourneyChronicleSnapshot(
         List<ExpeditionJourneyFinaleOutcomeSnapshot> finaleOutcomes
 ) {
     public ExpeditionJourneyChronicleSnapshot {
+        pilotExperienceRewards = pilotExperienceRewards == null
+                ? List.of()
+                : List.copyOf(pilotExperienceRewards);
         petBondRewards = petBondRewards == null
                 ? List.of()
                 : List.copyOf(petBondRewards);
