@@ -172,17 +172,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Show weekly trail canonical format
-        run: |
-          echo 'WEEKLY_TRAIL_FORMAT_BEGIN'
-          dart format --output=show \
-            lib/features/home/domain/weekly_activity_rhythm.dart
-          echo 'WEEKLY_TRAIL_FORMAT_END'
-          echo 'HOME_SCREEN_FORMAT_BEGIN'
-          dart format --output=show \
-            lib/features/home/presentation/home_screen.dart
-          echo 'HOME_SCREEN_FORMAT_END'
-
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test
 

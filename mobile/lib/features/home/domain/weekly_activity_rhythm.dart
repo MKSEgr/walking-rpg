@@ -49,10 +49,7 @@ class WeeklyActivityRhythm {
           throw const FormatException('days должен быть последовательным');
         }
       }
-      final DateTime homeDate = _parseLocalDate(
-        homeLocalDate,
-        'localDate',
-      );
+      final DateTime homeDate = _parseLocalDate(homeLocalDate, 'localDate');
       if (days.last.date != homeDate) {
         throw const FormatException(
           'последний день ритма должен совпадать с localDate',
@@ -62,9 +59,7 @@ class WeeklyActivityRhythm {
           .where((WeeklyActivityDay day) => day.active)
           .length;
       if (countedActiveDays != activeDays) {
-        throw const FormatException(
-          'activeDays должен соответствовать days',
-        );
+        throw const FormatException('activeDays должен соответствовать days');
       }
     }
 
@@ -93,10 +88,7 @@ class WeeklyActivityRhythm {
 }
 
 class WeeklyActivityDay {
-  const WeeklyActivityDay({
-    required this.localDate,
-    required this.active,
-  });
+  const WeeklyActivityDay({required this.localDate, required this.active});
 
   factory WeeklyActivityDay.fromJson(Object? json) {
     if (json is! Map<String, dynamic>) {

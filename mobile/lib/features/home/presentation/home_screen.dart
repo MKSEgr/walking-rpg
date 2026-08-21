@@ -1716,8 +1716,9 @@ class _WeeklyActivityDayTrail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-    final List<String> narrowWeekdays =
-        MaterialLocalizations.of(context).narrowWeekdays;
+    final List<String> narrowWeekdays = MaterialLocalizations.of(
+      context,
+    ).narrowWeekdays;
 
     return Wrap(
       key: const Key('home-weekly-activity-day-trail'),
@@ -1742,9 +1743,7 @@ class _WeeklyActivityDayTrail extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Icon(
-                    day.active
-                        ? Icons.directions_walk
-                        : Icons.bedtime_outlined,
+                    day.active ? Icons.directions_walk : Icons.bedtime_outlined,
                     color: foreground,
                     size: 15,
                   ),
@@ -1754,9 +1753,9 @@ class _WeeklyActivityDayTrail extends StatelessWidget {
                     child: Text(
                       narrowWeekdays[day.date.weekday % 7],
                       maxLines: 1,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: foreground,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(color: foreground),
                     ),
                   ),
                 ],
