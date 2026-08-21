@@ -1534,6 +1534,30 @@ validation status.
 daily goal, rewards/economy, progression, topology или external validation
 status.
 
+### US-063. Узнать, какой день в недельном ритме является сегодняшним
+
+Как игрок, я хочу сразу видеть сегодняшний день и его active/rest status,
+чтобы понимать текущую форму rolling week без расшифровки порядка маркеров и
+без ощущения, что нейтральный отдых является провалом.
+
+Критерии:
+
+- mobile определяет today только совпадением server-owned Home `localDate` с
+  authoritative endpoint `weeklyActivityRhythm.days`, без device clock;
+- RU/EN visible copy показывает ту же локализованную дату и active либо
+  нейтральный rest status;
+- exact today marker получает тонкую primary outline, но сохраняет walking или
+  moon glyph и соответствующий active/rest tone;
+- today status входит в одну weekly semantics summary ровно один раз, а visual
+  child не создаёт duplicate screen-reader announcement;
+- legacy weekly object без `days` не получает today copy или marker highlight;
+- RU/EN active/rest widget и compact text-scale 1.6 coverage проверяют copy,
+  distinction, omission и отсутствие overflow.
+
+**Статус:** authoritative today status реализован как presentation exact Home
+local date без изменения API, migration, Health history, daily goal,
+rewards/economy, progression, topology или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

@@ -470,6 +470,8 @@
   "homeWeeklyRhythmDaysSummary": "Дни: {days}",
   "homeWeeklyRhythmActiveDay": "{date}: активный день",
   "homeWeeklyRhythmRestDay": "{date}: день отдыха",
+  "homeWeeklyRhythmTodayActiveDay": "Сегодня, {date}: активный день",
+  "homeWeeklyRhythmTodayRestDay": "Сегодня, {date}: день отдыха",
   "homePilotLabel": "Пилот",
   "homePetLabel": "Питомец",
   "homePetBond": "Связь {bond}",

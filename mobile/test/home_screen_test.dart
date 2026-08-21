@@ -272,6 +272,11 @@ void main() {
       find.byKey(const Key('home-weekly-activity-rhythm-progress')),
       findsOneWidget,
     );
+    final Text todayStatus = tester.widget<Text>(
+      find.byKey(const Key('home-weekly-activity-today-status')),
+    );
+    expect(todayStatus.data, startsWith('Сегодня, '));
+    expect(todayStatus.data, endsWith(': день отдыха'));
     expect(find.text('Навигатор'), findsOneWidget);
     expect(find.text('Искра'), findsOneWidget);
     expect(
@@ -327,9 +332,61 @@ void main() {
       find.byKey(const Key('home-weekly-activity-day-2026-07-26')),
       findsOneWidget,
     );
+    final Text todayStatus = tester.widget<Text>(
+      find.byKey(const Key('home-weekly-activity-today-status')),
+    );
+    expect(todayStatus.data, startsWith('Today, '));
+    expect(todayStatus.data, endsWith(': active day'));
+    final Semantics weeklySemantics = tester.widget<Semantics>(
+      find.byKey(const Key('home-weekly-activity-rhythm')),
+    );
+    expect(
+      RegExp(
+        r'Today, [^.]+: active day',
+      ).allMatches(weeklySemantics.properties.label!).length,
+      1,
+    );
+    final Container todayMarker = tester.widget<Container>(
+      find.byKey(const Key('home-weekly-activity-day-2026-07-26')),
+    );
+    final Container earlierMarker = tester.widget<Container>(
+      find.byKey(const Key('home-weekly-activity-day-2026-07-20')),
+    );
+    expect((todayMarker.decoration! as BoxDecoration).border, isNotNull);
+    expect((earlierMarker.decoration! as BoxDecoration).border, isNull);
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
+  });
+
+  testWidgets('legacy weekly rhythm omits inferred today status', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          loader: () async => _readyToAdvance(
+            weeklyActivityRhythm: const WeeklyActivityRhythm(
+              activeDays: 3,
+              windowDays: 7,
+              targetActiveDays: 4,
+              targetReached: false,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('home-weekly-activity-today-status')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-day-trail')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('weekly rhythm pluralizes gentle RU and EN guidance', (
@@ -340,6 +397,7 @@ void main() {
     Future<void> pumpRhythm({
       required Locale locale,
       required int activeDays,
+      bool todayActive = false,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -348,7 +406,10 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: HomeScreen(
             loader: () async => _readyToAdvance(
-              weeklyActivityRhythm: _weeklyRhythmWithActiveDays(activeDays),
+              weeklyActivityRhythm: _weeklyRhythmWithActiveDays(
+                activeDays,
+                todayActive: todayActive,
+              ),
             ),
           ),
         ),
@@ -393,6 +454,22 @@ void main() {
       ),
       findsOneWidget,
     );
+    final Text englishRestStatus = tester.widget<Text>(
+      find.byKey(const Key('home-weekly-activity-today-status')),
+    );
+    expect(englishRestStatus.data, startsWith('Today, '));
+    expect(englishRestStatus.data, endsWith(': rest day'));
+
+    await pumpRhythm(
+      locale: const Locale('ru'),
+      activeDays: 4,
+      todayActive: true,
+    );
+    final Text russianActiveStatus = tester.widget<Text>(
+      find.byKey(const Key('home-weekly-activity-today-status')),
+    );
+    expect(russianActiveStatus.data, startsWith('Сегодня, '));
+    expect(russianActiveStatus.data, endsWith(': активный день'));
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
@@ -440,6 +517,10 @@ void main() {
     );
     expect(
       find.byKey(const Key('home-weekly-activity-day-2026-07-26')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-today-status')),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
@@ -2707,7 +2788,10 @@ HomeSnapshot _readyToAdvance({
   );
 }
 
-WeeklyActivityRhythm _weeklyRhythmWithActiveDays(int activeDays) {
+WeeklyActivityRhythm _weeklyRhythmWithActiveDays(
+  int activeDays, {
+  bool todayActive = false,
+}) {
   const List<String> dates = <String>[
     '2026-07-20',
     '2026-07-21',
@@ -2722,14 +2806,12 @@ WeeklyActivityRhythm _weeklyRhythmWithActiveDays(int activeDays) {
     windowDays: dates.length,
     targetActiveDays: 4,
     targetReached: activeDays >= 4,
-    days: List<WeeklyActivityDay>.generate(
-      dates.length,
-      (int index) => WeeklyActivityDay(
-        localDate: dates[index],
-        active: index < activeDays,
-      ),
-      growable: false,
-    ),
+    days: List<WeeklyActivityDay>.generate(dates.length, (int index) {
+      final bool isToday = index == dates.length - 1;
+      final int earlierActiveDays = activeDays - (todayActive ? 1 : 0);
+      final bool isActive = isToday ? todayActive : index < earlierActiveDays;
+      return WeeklyActivityDay(localDate: dates[index], active: isActive);
+    }, growable: false),
   );
 }
 

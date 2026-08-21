@@ -597,13 +597,19 @@ tone mark activity; a moon glyph and neutral surface mark rest without warning,
 failure or broken-chain language. Narrow weekday labels may wrap with the group
 at compact width instead of shrinking the whole Home section.
 
+The marker whose local date matches the accepted Home `localDate` receives a
+thin primary outline and one adjacent RU/EN today-status line. The line names
+the same server-owned formatted date and classifies it as active or neutral
+rest; it never consults the device clock. The outline identifies temporal
+position only and does not upgrade a rest marker into warning or failure.
+
 The component is not a streak, calendar commitment, ENERGY source, achievement
 or Health-history reader. It does not color missing days as failure and does
 not infer activity when the additive server object is absent. Visible RU/EN
 copy and day markers are excluded from duplicate announcements and exposed as
 one complete semantic summary with every localized date classified as active
-or rest. The column remains fluid inside the existing compact daily progress
-reflow at enlarged text.
+or rest and the exact endpoint classified as today once. The column remains
+fluid inside the existing compact daily progress reflow at enlarged text.
 
 ## Entry experience
 

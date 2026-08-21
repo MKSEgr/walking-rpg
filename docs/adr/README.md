@@ -77,3 +77,4 @@ NNNN-short-title.md
 - [0058 — non-punitive weekly activity rhythm](0058-non-punitive-weekly-activity-rhythm.md)
 - [0059 — authoritative weekly activity day trail](0059-authoritative-weekly-activity-day-trail.md)
 - [0060 — gentle weekly rhythm guidance](0060-gentle-weekly-rhythm-guidance.md)
+- [0061 — authoritative today status in weekly rhythm](0061-authoritative-weekly-rhythm-today.md)
