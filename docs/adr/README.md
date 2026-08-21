@@ -80,3 +80,4 @@ NNNN-short-title.md
 - [0061 — authoritative today status in weekly rhythm](0061-authoritative-weekly-rhythm-today.md)
 - [0062 — authoritative weekly rhythm window range](0062-authoritative-weekly-rhythm-window-range.md)
 - [0063 — authoritative daily goal feedback](0063-authoritative-daily-goal-feedback.md)
+- [0064 — weekly active-day qualification](0064-weekly-active-day-qualification.md)

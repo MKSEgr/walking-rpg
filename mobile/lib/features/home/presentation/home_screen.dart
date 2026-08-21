@@ -1603,6 +1603,9 @@ class _DailyProgressSummary extends StatelessWidget {
             weeklyRhythm.remainingActiveDays,
             weeklyRhythm.windowDays,
           );
+    final String? weeklyRhythmQualification = weeklyRhythm == null
+        ? null
+        : context.l10n.homeWeeklyRhythmQualification;
     final MaterialLocalizations materialLocalizations =
         MaterialLocalizations.of(context);
     final String? weeklyDateRange =
@@ -1697,6 +1700,7 @@ class _DailyProgressSummary extends StatelessWidget {
             label: <String>[
               weeklyRhythmTitle,
               weeklyRhythmDetail,
+              if (weeklyRhythmQualification != null) weeklyRhythmQualification,
               if (weeklyDateRange != null) weeklyDateRange,
               if (weeklyDaysSummary != null) weeklyDaysSummary,
             ].join('. '),
@@ -1724,6 +1728,16 @@ class _DailyProgressSummary extends StatelessWidget {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
+                  if (weeklyRhythmQualification != null) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Text(
+                      weeklyRhythmQualification,
+                      key: const Key('home-weekly-activity-qualification'),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   if (weeklyDateRange != null) ...<Widget>[
                     const SizedBox(height: 6),
                     Text(

@@ -69,6 +69,9 @@
 
 ### Added
 
+- RU/EN clarification that any accepted activity qualifies a weekly-rhythm
+  active day while the personal daily goal remains a separate measure, exposed
+  once in the existing accessible summary without client or reward inference;
 - authoritative RU/EN remaining/reached feedback for today's personal step
   goal, derived only from the accepted Home totals with one accessible summary
   and no Health, client clock, ENERGY or reward inference;

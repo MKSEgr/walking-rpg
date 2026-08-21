@@ -598,6 +598,12 @@ still stating that rest days do not reset progress. Singular and plural RU/EN
 forms belong to the same presentation boundary. After the target is reached it
 names success without rendering a zero-day prompt or adding a reward claim.
 
+One quiet RU/EN qualification line states that any accepted activity makes a
+rhythm day active while the personal daily goal remains separate. It belongs
+to every accepted weekly object, including legacy aggregate-only snapshots,
+and never turns daily-goal completion into a rhythm prerequisite. The visible
+line is included exactly once in the existing weekly semantic summary.
+
 When the accepted snapshot supplies the authoritative day trail, seven compact
 markers follow chronological local dates. A walking glyph and primary-container
 tone mark activity; a moon glyph and neutral surface mark rest without warning,

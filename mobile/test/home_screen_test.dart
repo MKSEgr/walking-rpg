@@ -206,6 +206,10 @@ void main() {
       find.bySemanticsLabel('Текущий узел «Внешний маяк»'),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const Key('home-weekly-activity-qualification')),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
@@ -279,6 +283,13 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.text(
+        'Любая принятая активность делает день ритма активным · '
+        'личная цель считается отдельно',
+      ),
+      findsOneWidget,
+    );
+    expect(
       find.byKey(const Key('home-weekly-activity-rhythm-progress')),
       findsOneWidget,
     );
@@ -336,6 +347,10 @@ void main() {
     expect(find.text('Weekly rhythm: 5 active days · goal 4'), findsOneWidget);
     expect(find.text('Personal goal reached'), findsOneWidget);
     expect(find.textContaining('active days remain'), findsNothing);
+    const String englishQualification =
+        'Any accepted activity makes a rhythm day active · '
+        'your personal goal is separate';
+    expect(find.text(englishQualification), findsOneWidget);
     final Text dateRangeText = tester.widget<Text>(
       find.byKey(const Key('home-weekly-activity-date-range')),
     );
@@ -353,6 +368,7 @@ void main() {
         RegExp(
           r'^Weekly rhythm: 5 active days · goal 4\. '
           r'Goal reached · 7-day window · rest days are normal\. '
+          '${RegExp.escape(englishQualification)}\\. '
           '${RegExp.escape(dateRange)}\\. '
           r'Days: .*active day.*rest day.*$',
         ),
@@ -385,6 +401,12 @@ void main() {
     expect(
       RegExp(
         RegExp.escape(dateRange),
+      ).allMatches(weeklySemantics.properties.label!).length,
+      1,
+    );
+    expect(
+      RegExp(
+        RegExp.escape(englishQualification),
       ).allMatches(weeklySemantics.properties.label!).length,
       1,
     );
@@ -477,6 +499,8 @@ void main() {
   testWidgets('legacy weekly rhythm omits inferred today status', (
     WidgetTester tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
     await tester.pumpWidget(
       MaterialApp(
         home: HomeScreen(
@@ -505,7 +529,17 @@ void main() {
       find.byKey(const Key('home-weekly-activity-date-range')),
       findsNothing,
     );
+    const String qualification =
+        'Любая принятая активность делает день ритма активным · '
+        'личная цель считается отдельно';
+    expect(find.text(qualification), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(RegExp.escape(qualification))),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
+
+    semantics.dispose();
   });
 
   testWidgets('weekly rhythm pluralizes gentle RU and EN guidance', (
@@ -644,6 +678,10 @@ void main() {
     );
     expect(
       find.byKey(const Key('home-weekly-activity-date-range')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-qualification')),
       findsOneWidget,
     );
     expect(find.byKey(const Key('home-daily-goal-feedback')), findsOneWidget);
