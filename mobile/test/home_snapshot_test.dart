@@ -18,6 +18,7 @@ void main() {
     expect(snapshot.weeklyActivityRhythm?.windowDays, 7);
     expect(snapshot.weeklyActivityRhythm?.targetActiveDays, 4);
     expect(snapshot.weeklyActivityRhythm?.targetReached, isFalse);
+    expect(snapshot.weeklyActivityRhythm?.remainingActiveDays, 4);
     expect(snapshot.weeklyActivityRhythm?.progress, 0);
     expect(snapshot.weeklyActivityRhythm?.days, hasLength(7));
     expect(snapshot.weeklyActivityRhythm?.days.first.localDate, '2026-07-20');
@@ -58,6 +59,7 @@ void main() {
     expect(snapshot.weeklyActivityRhythm?.windowDays, 7);
     expect(snapshot.weeklyActivityRhythm?.targetActiveDays, 4);
     expect(snapshot.weeklyActivityRhythm?.targetReached, isFalse);
+    expect(snapshot.weeklyActivityRhythm?.remainingActiveDays, 1);
     expect(snapshot.weeklyActivityRhythm?.progress, 0.75);
     expect(snapshot.weeklyActivityRhythm?.days, hasLength(7));
     expect(snapshot.weeklyActivityRhythm?.days.first.localDate, '2026-07-20');

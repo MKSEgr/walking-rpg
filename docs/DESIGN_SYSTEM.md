@@ -585,9 +585,11 @@ footprint in light and dark themes and in the existing compact Home reflow.
 
 The daily route summary may add one quiet weekly measure from the accepted Home
 snapshot. It shows literal active-day count, the four-day target and a bounded
-progress line. The adjacent copy always states the seven-day window and that
-rest days do not reset progress; after the target is reached it names success
-without adding a reward claim.
+progress line. Before the target is reached, the adjacent copy gently names the
+remaining active-day count derived from the accepted count and target, while
+still stating that rest days do not reset progress. Singular and plural RU/EN
+forms belong to the same presentation boundary. After the target is reached it
+names success without rendering a zero-day prompt or adding a reward claim.
 
 When the accepted snapshot supplies the authoritative day trail, seven compact
 markers follow chronological local dates. A walking glyph and primary-container

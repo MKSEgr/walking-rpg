@@ -76,3 +76,4 @@ NNNN-short-title.md
 - [0057 — authoritative shortest journey completion time](0057-authoritative-shortest-journey-completion-time.md)
 - [0058 — non-punitive weekly activity rhythm](0058-non-punitive-weekly-activity-rhythm.md)
 - [0059 — authoritative weekly activity day trail](0059-authoritative-weekly-activity-day-trail.md)
+- [0060 — gentle weekly rhythm guidance](0060-gentle-weekly-rhythm-guidance.md)
