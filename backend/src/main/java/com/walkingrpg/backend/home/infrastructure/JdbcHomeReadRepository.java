@@ -356,6 +356,26 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                ELSE NULL
                            END AS shortest_journey_number,
                            CASE
+                               WHEN COUNT(*) = 0 THEN NULL::TIMESTAMPTZ
+                               WHEN COUNT(*) = COUNT(*) FILTER (
+                                   WHERE started_at IS NOT NULL
+                                     AND resolved_at IS NOT NULL
+                                     AND resolved_at >= started_at
+                               ) THEN (
+                                   SELECT winner.resolved_at
+                                   FROM journey_boundary winner
+                                   ORDER BY FLOOR(EXTRACT(
+                                       EPOCH FROM (
+                                           winner.resolved_at
+                                           - winner.started_at
+                                       )
+                                   )),
+                                   winner.completed_journey_number
+                                   LIMIT 1
+                               )
+                               ELSE NULL
+                           END AS shortest_journey_completed_at,
+                           CASE
                                WHEN COUNT(*) = 0 THEN 0::BIGINT
                                WHEN COUNT(*) = COUNT(*) FILTER (
                                    WHERE started_at IS NOT NULL
@@ -424,6 +444,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                            FROM duration_stats
                        ) AS shortest_journey_number,
                        (
+                           SELECT shortest_journey_completed_at
+                           FROM duration_stats
+                       ) AS shortest_journey_completed_at,
+                       (
                            SELECT longest_duration_seconds
                            FROM duration_stats
                        ) AS longest_duration_seconds,
@@ -448,6 +472,10 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                  AND resolution.journey_number =
                          completed.completed_journey_number
                 """, (resultSet, rowNumber) -> {
+                        Timestamp shortestJourneyCompletedAt =
+                                resultSet.getTimestamp(
+                                        "shortest_journey_completed_at"
+                                );
                         Timestamp longestJourneyCompletedAt =
                                 resultSet.getTimestamp(
                                         "longest_journey_completed_at"
@@ -469,6 +497,9 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                                         "shortest_journey_number",
                                         Long.class
                                 ),
+                                shortestJourneyCompletedAt == null
+                                        ? null
+                                        : shortestJourneyCompletedAt.toInstant(),
                                 resultSet.getObject(
                                         "longest_duration_seconds",
                                         Long.class
@@ -846,6 +877,7 @@ public class JdbcHomeReadRepository implements HomeReadRepository {
                 totals.totalDurationSeconds(),
                 totals.shortestDurationSeconds(),
                 totals.shortestJourneyNumber(),
+                totals.shortestJourneyCompletedAt(),
                 totals.longestDurationSeconds(),
                 totals.longestJourneyNumber(),
                 totals.longestJourneyCompletedAt(),

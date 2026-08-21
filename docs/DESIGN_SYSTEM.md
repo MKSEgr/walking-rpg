@@ -975,9 +975,9 @@ same duration formatter and only renders when the additive authoritative
 minimum is present. When the server supplies the additive shortest identity,
 that chip names the journey; legacy omission keeps its generic label. The
 longest chip follows the same identity/fallback boundary. When the server also
-supplies the additive longest-record completion instant, a separate calendar
-chip formats that same UTC value in
-the device timezone and selected RU/EN locale; it never uses the client clock.
+supplies either additive shortest- or longest-record completion instant, a
+separate calendar chip for that record formats the same UTC value in the
+device timezone and selected RU/EN locale; neither uses the client clock.
 The average chip uses the same duration formatter as total, shortest and record
 values and reflects the server-supplied floor-rounded aggregate. The card uses
 only

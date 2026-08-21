@@ -48,6 +48,7 @@ class HomeServiceTest {
                         60L,
                         60L,
                         1L,
+                        null,
                         61L,
                         null,
                         null,
@@ -70,6 +71,7 @@ class HomeServiceTest {
                         60L,
                         20L,
                         2L,
+                        null,
                         40L,
                         1L,
                         null,
@@ -93,6 +95,7 @@ class HomeServiceTest {
                         60L,
                         31L,
                         2L,
+                        null,
                         40L,
                         1L,
                         null,
@@ -116,6 +119,7 @@ class HomeServiceTest {
                         60L,
                         20L,
                         2L,
+                        null,
                         40L,
                         3L,
                         null,
@@ -139,6 +143,7 @@ class HomeServiceTest {
                         60L,
                         20L,
                         3L,
+                        null,
                         40L,
                         1L,
                         null,
@@ -162,9 +167,34 @@ class HomeServiceTest {
                         60L,
                         20L,
                         2L,
+                        null,
                         40L,
                         null,
                         NOW,
+                        30L,
+                        0,
+                        0,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of()
+                ));
+    }
+
+    @Test
+    void shouldRejectShortestJourneyCompletionWithoutRecordIdentity() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ExpeditionJourneyChronicleSnapshot(
+                        2,
+                        0,
+                        60L,
+                        20L,
+                        null,
+                        NOW,
+                        40L,
+                        1L,
+                        null,
                         30L,
                         0,
                         0,
@@ -240,6 +270,7 @@ class HomeServiceTest {
                         60L,
                         60L,
                         1L,
+                        historicalRecordAt,
                         60L,
                         1L,
                         historicalRecordAt,
@@ -293,6 +324,8 @@ class HomeServiceTest {
         assertNotNull(chronicle);
         assertEquals(60, chronicle.shortestDurationSeconds());
         assertEquals(1, chronicle.shortestJourneyNumber());
+        assertEquals(historicalRecordAt,
+                chronicle.shortestJourneyCompletedAt());
         assertEquals(1, chronicle.longestJourneyNumber());
         assertEquals(historicalRecordAt,
                 chronicle.longestJourneyCompletedAt());
@@ -362,6 +395,7 @@ class HomeServiceTest {
                         120L,
                         120L,
                         1L,
+                        historicalRecordAt,
                         120L,
                         1L,
                         historicalRecordAt,
@@ -415,6 +449,7 @@ class HomeServiceTest {
         assertNotNull(chronicle);
         assertEquals(60, chronicle.shortestDurationSeconds());
         assertEquals(2, chronicle.shortestJourneyNumber());
+        assertEquals(NOW, chronicle.shortestJourneyCompletedAt());
         assertEquals(120, chronicle.longestDurationSeconds());
         assertEquals(historicalRecordAt,
                 chronicle.longestJourneyCompletedAt());
@@ -547,6 +582,7 @@ class HomeServiceTest {
         assertNull(chronicle.totalDurationSeconds());
         assertNull(chronicle.shortestDurationSeconds());
         assertNull(chronicle.shortestJourneyNumber());
+        assertNull(chronicle.shortestJourneyCompletedAt());
         assertNull(chronicle.longestDurationSeconds());
         assertNull(chronicle.averageDurationSeconds());
         assertEquals(40, chronicle.pilotExperienceGained());
@@ -688,6 +724,7 @@ class HomeServiceTest {
                         12_600L,
                         1_200L,
                         2L,
+                        NOW.minusSeconds(10_800),
                         3_600L,
                         4L,
                         NOW.minusSeconds(7_200),
@@ -855,6 +892,9 @@ class HomeServiceTest {
                 expedition.journeyChronicle().shortestDurationSeconds());
         assertEquals(2,
                 expedition.journeyChronicle().shortestJourneyNumber());
+        assertEquals(NOW.minusSeconds(10_800),
+                expedition.journeyChronicle()
+                        .shortestJourneyCompletedAt());
         assertEquals(3_900,
                 expedition.journeyChronicle().longestDurationSeconds());
         assertEquals(1,

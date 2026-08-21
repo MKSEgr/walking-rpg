@@ -323,6 +323,7 @@ void main() {
         totalDurationSeconds: 65700,
         shortestDurationSeconds: 1800,
         shortestJourneyNumber: 2,
+        shortestJourneyCompletedAt: '2026-07-24T10:00:00Z',
         longestDurationSeconds: 12600,
         longestJourneyNumber: 4,
         longestJourneyCompletedAt: '2026-07-25T12:00:00Z',
@@ -533,6 +534,12 @@ void main() {
       '2026-07-25T12:00:00Z',
       russian: true,
     );
+    final String shortestCompletedAt = _formattedChronicleShortestTime(
+      tester,
+      chronicle,
+      '2026-07-24T10:00:00Z',
+      russian: true,
+    );
     expect(chronicle, findsOneWidget);
     expect(find.text('Летопись походов'), findsOneWidget);
     expect(find.text('ЗАВЕРШЕНО · 7'), findsOneWidget);
@@ -545,6 +552,11 @@ void main() {
     expect(find.text('Самый короткий поход №2: 30 мин'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
+      findsOneWidget,
+    );
+    expect(find.text(shortestCompletedAt), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-shortest-completed-at')),
       findsOneWidget,
     );
     expect(find.text('Самый долгий поход №4: 3 ч 30 мин'), findsOneWidget);
@@ -591,6 +603,7 @@ void main() {
         'Принято решений: 28. '
         'Время в походах: 18 ч 15 мин. '
         'Самый короткий поход №2: 30 мин. '
+        '$shortestCompletedAt. '
         'Самый долгий поход №4: 3 ч 30 мин. '
         '$recordCompletedAt. '
         'В среднем за поход: 2 ч 36 мин. '
@@ -762,6 +775,7 @@ void main() {
         totalDurationSeconds: 65700,
         shortestDurationSeconds: 0,
         shortestJourneyNumber: 123455,
+        shortestJourneyCompletedAt: '2026-07-25T05:01:00Z',
         longestDurationSeconds: 12600,
         longestJourneyNumber: 1,
         longestJourneyCompletedAt: '2026-07-26T06:02:00Z',
@@ -842,6 +856,12 @@ void main() {
       '2026-07-26T06:02:00Z',
       russian: true,
     );
+    final String shortestCompletedAt = _formattedChronicleShortestTime(
+      tester,
+      chronicle,
+      '2026-07-25T05:01:00Z',
+      russian: true,
+    );
     expect(chronicle, findsOneWidget);
     expect(find.text('Время в походах: 18 ч 15 мин'), findsOneWidget);
     expect(
@@ -854,6 +874,11 @@ void main() {
     );
     expect(
       find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
+      findsOneWidget,
+    );
+    expect(find.text(shortestCompletedAt), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-shortest-completed-at')),
       findsOneWidget,
     );
     expect(find.text('Самый долгий поход №1: 3 ч 30 мин'), findsOneWidget);
@@ -2491,6 +2516,25 @@ String _formattedChronicleRecordTime(
   return russian
       ? 'Рекорд установлен $date в $time'
       : 'Record set on $date at $time';
+}
+
+String _formattedChronicleShortestTime(
+  WidgetTester tester,
+  Finder anchor,
+  String resolvedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime completedAt = DateTime.parse(resolvedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(completedAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(completedAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian
+      ? 'Самый короткий поход завершён $date в $time'
+      : 'Shortest journey completed on $date at $time';
 }
 
 String _formattedDecisionTime(

@@ -73,3 +73,4 @@ NNNN-short-title.md
 - [0054 — authoritative longest journey completion time](0054-authoritative-longest-journey-completion-time.md)
 - [0055 — authoritative shortest journey duration](0055-authoritative-shortest-journey-duration.md)
 - [0056 — authoritative shortest journey identity](0056-authoritative-shortest-journey-identity.md)
+- [0057 — authoritative shortest journey completion time](0057-authoritative-shortest-journey-completion-time.md)

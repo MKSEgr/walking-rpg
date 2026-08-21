@@ -360,6 +360,7 @@ void main() {
               totalDurationSeconds: 65700,
               shortestDurationSeconds: 1800,
               shortestJourneyNumber: 4,
+              shortestJourneyCompletedAt: '2026-07-24T11:00:00Z',
               longestDurationSeconds: 12600,
               longestJourneyNumber: 3,
               longestJourneyCompletedAt: '2026-07-25T12:00:00Z',
@@ -477,6 +478,12 @@ void main() {
       '2026-07-25T12:00:00Z',
       russian: false,
     );
+    final String shortestCompletedAt = _formattedChronicleShortestTime(
+      tester,
+      find.byKey(const Key('platform-journey-chronicle')),
+      '2026-07-24T11:00:00Z',
+      russian: false,
+    );
     expect(find.text('Journey chronicle'), findsOneWidget);
     expect(find.text('Time in journeys: 18 h 15 min'), findsOneWidget);
     expect(
@@ -486,6 +493,11 @@ void main() {
     expect(find.text('Shortest journey #4: 30 min'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-journey-chronicle-shortest-duration')),
+      findsOneWidget,
+    );
+    expect(find.text(shortestCompletedAt), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-shortest-completed-at')),
       findsOneWidget,
     );
     expect(find.text('Longest journey #3: 3 h 30 min'), findsOneWidget);
@@ -528,6 +540,7 @@ void main() {
         'Journey chronicle. Journeys completed: 9. Decisions made: 31. '
         'Time in journeys: 18 h 15 min. '
         'Shortest journey #4: 30 min. '
+        '$shortestCompletedAt. '
         'Longest journey #3: 3 h 30 min. '
         '$recordCompletedAt. '
         'Average journey: 2 h 1 min. '
@@ -656,6 +669,10 @@ void main() {
     expect(find.textContaining('Shortest journey #'), findsNothing);
     expect(find.text('Longest journey: 1 h 0 min'), findsOneWidget);
     expect(find.textContaining('Longest journey #'), findsNothing);
+    expect(
+      find.byKey(const Key('platform-journey-chronicle-shortest-completed-at')),
+      findsNothing,
+    );
     expect(
       find.byKey(const Key('platform-journey-chronicle-record-completed-at')),
       findsNothing,
@@ -881,6 +898,25 @@ String _formattedChronicleRecordTime(
   return russian
       ? 'Рекорд установлен $date в $time'
       : 'Record set on $date at $time';
+}
+
+String _formattedChronicleShortestTime(
+  WidgetTester tester,
+  Finder anchor,
+  String resolvedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime completedAt = DateTime.parse(resolvedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(completedAt);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(completedAt),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian
+      ? 'Самый короткий поход завершён $date в $time'
+      : 'Shortest journey completed on $date at $time';
 }
 
 String _formattedDecisionTime(

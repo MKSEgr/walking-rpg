@@ -15,6 +15,8 @@ public record ExpeditionJourneyChronicleSnapshot(
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Long shortestJourneyNumber,
         @JsonInclude(JsonInclude.Include.NON_NULL)
+        Instant shortestJourneyCompletedAt,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         Long longestDurationSeconds,
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Long longestJourneyNumber,
@@ -65,6 +67,13 @@ public record ExpeditionJourneyChronicleSnapshot(
                 || shortestJourneyNumber > completedJourneyCount)) {
             throw new IllegalArgumentException(
                     "Номер самого короткого похода должен входить в летопись"
+            );
+        }
+        if (shortestJourneyCompletedAt != null
+                && (shortestDurationSeconds == null
+                || shortestJourneyNumber == null)) {
+            throw new IllegalArgumentException(
+                    "Время самого короткого похода требует подтверждённый поход"
             );
         }
         if (longestJourneyNumber != null

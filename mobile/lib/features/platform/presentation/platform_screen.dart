@@ -1018,6 +1018,13 @@ class _JourneyChronicleCard extends StatelessWidget {
               chronicle.shortestDurationSeconds!,
             ),
           );
+    final String shortestCompletedAt =
+        chronicle.shortestJourneyCompletedAt == null
+        ? ''
+        : _journeyChronicleShortestTimeLabel(
+            context,
+            chronicle.shortestJourneyCompletedAt!,
+          );
     final String recordCompletedAt = chronicle.longestJourneyCompletedAt == null
         ? ''
         : _journeyChronicleRecordTimeLabel(
@@ -1103,6 +1110,7 @@ class _JourneyChronicleCard extends StatelessWidget {
         chronicle.decisionCount,
         duration.isEmpty ? '' : '$duration. ',
         shortestDuration.isEmpty ? '' : '$shortestDuration. ',
+        shortestCompletedAt.isEmpty ? '' : '$shortestCompletedAt. ',
         longestDuration.isEmpty ? '' : '$longestDuration. ',
         recordCompletedAt.isEmpty ? '' : '$recordCompletedAt. ',
         averageDuration.isEmpty ? '' : '$averageDuration. ',
@@ -1165,6 +1173,14 @@ class _JourneyChronicleCard extends StatelessWidget {
                       ),
                       icon: Icons.speed_outlined,
                       label: shortestDuration,
+                    ),
+                  if (shortestCompletedAt.isNotEmpty)
+                    _JourneyRewardChip(
+                      key: const Key(
+                        'platform-journey-chronicle-shortest-completed-at',
+                      ),
+                      icon: Icons.event_outlined,
+                      label: shortestCompletedAt,
                     ),
                   if (longestDuration.isNotEmpty)
                     _JourneyRewardChip(
@@ -1623,6 +1639,20 @@ String _journeyChronicleRecordTimeLabel(
     resolvedAt,
   );
   return context.l10n.platformJourneyChronicleRecordCompletedAt(
+    local.date,
+    local.time,
+  );
+}
+
+String _journeyChronicleShortestTimeLabel(
+  BuildContext context,
+  String resolvedAt,
+) {
+  final ({String date, String time}) local = _journeyLocalDateTime(
+    context,
+    resolvedAt,
+  );
+  return context.l10n.platformJourneyChronicleShortestCompletedAt(
     local.date,
     local.time,
   );

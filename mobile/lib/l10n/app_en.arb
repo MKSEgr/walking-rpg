@@ -1067,13 +1067,14 @@
       "summary": {"type": "String"}
     }
   },
-  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. {duration}{shortestDuration}{longestDuration}{recordCompletedAt}{averageDuration}Total rewards: {experienceRewards}; {bondRewards}{materialRewards}.{decisionSummary}{finaleSummary}",
+  "platformJourneyChronicleSemantics": "Journey chronicle. Journeys completed: {journeys}. Decisions made: {decisions}. {duration}{shortestDuration}{shortestCompletedAt}{longestDuration}{recordCompletedAt}{averageDuration}Total rewards: {experienceRewards}; {bondRewards}{materialRewards}.{decisionSummary}{finaleSummary}",
   "@platformJourneyChronicleSemantics": {
     "placeholders": {
       "journeys": {"type": "int"},
       "decisions": {"type": "int"},
       "duration": {"type": "String"},
       "shortestDuration": {"type": "String"},
+      "shortestCompletedAt": {"type": "String"},
       "longestDuration": {"type": "String"},
       "recordCompletedAt": {"type": "String"},
       "averageDuration": {"type": "String"},
@@ -1101,6 +1102,13 @@
     "placeholders": {
       "journey": {"type": "int"},
       "duration": {"type": "String"}
+    }
+  },
+  "platformJourneyChronicleShortestCompletedAt": "Shortest journey completed on {date} at {time}",
+  "@platformJourneyChronicleShortestCompletedAt": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "time": {"type": "String"}
     }
   },
   "platformJourneyChronicleLongestDuration": "Longest journey: {duration}",

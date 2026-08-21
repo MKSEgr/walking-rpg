@@ -1432,6 +1432,34 @@ external validation status.
 и без изменения rewards/economy, progression, topology, archive limit или
 external validation status.
 
+### US-059. Узнать, когда завершён самый короткий поход
+
+Как игрок, я хочу видеть момент завершения самого короткого похода, чтобы
+понимать, когда была установлена нижняя граница моей lifetime-летописи, без
+поиска по пяти недавним итогам.
+
+Критерии:
+
+- `journeyChronicle` получает additive nullable ISO-8601 instant
+  `shortestJourneyCompletedAt` только вместе с shortest duration и identity;
+- backend выбирает timestamp из immutable final resolution winner по duration
+  ASC, journey number ASC на полной receipt-proven history;
+- authoritative current `COMPLETED` учитывается ровно один раз и заменяет
+  historical timestamp только при строго меньшей duration, а tie сохраняет
+  прежний winner;
+- incomplete/reversed boundary опускает timestamp вместе с lifetime duration
+  и identity без recent archive или client-side inference;
+- mobile принимает legacy omission, fail-closed отклоняет malformed,
+  timezone-less или unpaired instant;
+- RU/EN chip и accessibility переводят UTC instant в timezone устройства
+  только для presentation, а backend unit/API/PostgreSQL и Flutter
+  parser/widget/localization coverage проверяют tie-break, current merge и
+  compact text scale 1.6.
+
+**Статус:** authoritative shortest journey completion time реализовано без
+migration и без изменения rewards/economy, progression, topology, archive
+limit или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

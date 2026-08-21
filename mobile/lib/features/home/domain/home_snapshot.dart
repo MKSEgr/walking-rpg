@@ -603,6 +603,7 @@ class HomeJourneyChronicle {
     this.totalDurationSeconds,
     this.shortestDurationSeconds,
     this.shortestJourneyNumber,
+    this.shortestJourneyCompletedAt,
     this.longestDurationSeconds,
     this.longestJourneyNumber,
     this.longestJourneyCompletedAt,
@@ -637,6 +638,14 @@ class HomeJourneyChronicle {
       json,
       'shortestJourneyNumber',
     );
+    final String? shortestJourneyCompletedAt = HomeSnapshot._readOptionalString(
+      json,
+      'shortestJourneyCompletedAt',
+    );
+    final DateTime? parsedShortestJourneyCompletedAt =
+        shortestJourneyCompletedAt == null
+        ? null
+        : DateTime.tryParse(shortestJourneyCompletedAt);
     final int? longestDurationSeconds = HomeSnapshot._readOptionalInt(
       json,
       'longestDurationSeconds',
@@ -672,6 +681,11 @@ class HomeJourneyChronicle {
             (shortestDurationSeconds == null ||
                 shortestJourneyNumber <= 0 ||
                 shortestJourneyNumber > completedJourneyCount)) ||
+        (shortestJourneyCompletedAt != null &&
+            (parsedShortestJourneyCompletedAt == null ||
+                !parsedShortestJourneyCompletedAt.isUtc ||
+                shortestDurationSeconds == null ||
+                shortestJourneyNumber == null)) ||
         (longestDurationSeconds != null &&
             (totalDurationSeconds == null ||
                 longestDurationSeconds < 0 ||
@@ -878,6 +892,7 @@ class HomeJourneyChronicle {
       totalDurationSeconds: totalDurationSeconds,
       shortestDurationSeconds: shortestDurationSeconds,
       shortestJourneyNumber: shortestJourneyNumber,
+      shortestJourneyCompletedAt: shortestJourneyCompletedAt,
       longestDurationSeconds: longestDurationSeconds,
       longestJourneyNumber: longestJourneyNumber,
       longestJourneyCompletedAt: longestJourneyCompletedAt,
@@ -897,6 +912,7 @@ class HomeJourneyChronicle {
   final int? totalDurationSeconds;
   final int? shortestDurationSeconds;
   final int? shortestJourneyNumber;
+  final String? shortestJourneyCompletedAt;
   final int? longestDurationSeconds;
   final int? longestJourneyNumber;
   final String? longestJourneyCompletedAt;

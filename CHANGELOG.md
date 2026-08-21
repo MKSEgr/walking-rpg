@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative completion time for the shortest-journey record, selected from
+  the same complete receipt-proven winner and presented in device-local RU/EN
+  date/time with legacy omission and fail-closed timestamp validation;
 - authoritative shortest-journey identity in the lifetime chronicle, selected
   by duration ASC and journey number ASC across the complete receipt-proven
   history, with legacy fallback and shared RU/EN accessibility;
