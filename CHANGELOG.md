@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative RU/EN skill-unlock guidance with exact remaining season XP,
+  derived only from accepted Platform state and server-authored requirements
+  while preserving ready and unlocked actions;
 - authoritative RU/EN companion evolution guidance with exact remaining bond,
   derived only from the accepted Platform snapshot and announced once for
   growing companions without changing thresholds, evolution or rewards;

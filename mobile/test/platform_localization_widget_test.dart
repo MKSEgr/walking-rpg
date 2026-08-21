@@ -333,7 +333,8 @@ void main() {
         locale: const Locale('en'),
         textScale: 1.6,
         child: PlatformScreen(
-          loader: () async => platformSnapshot(includeProfileCosmetics: true),
+          loader: () async =>
+              platformSnapshot(seasonXp: 40, includeProfileCosmetics: true),
           homeLoader: () async => _homeWithPersistedDecision(
             completionRecap: const HomeExpeditionCompletionRecap(
               journeyNumber: 7,
@@ -610,6 +611,20 @@ void main() {
     );
     expect(find.text('Steady Step'), findsOneWidget);
     expect(find.text('SKILL UNLOCKED'), findsOneWidget);
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-skill-compact-trail-memory')),
+    );
+    expect(find.text('60 more season XP to unlock'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('60 more season XP to unlock')),
+      findsOneWidget,
+    );
+    final OutlinedButton unavailableSkillButton = tester.widget<OutlinedButton>(
+      find.byKey(const Key('platform-unlock-skill-trail-memory')),
+    );
+    expect(unavailableSkillButton.onPressed, isNull);
 
     await _bringIntoView(
       tester,

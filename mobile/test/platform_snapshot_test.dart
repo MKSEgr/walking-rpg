@@ -25,12 +25,36 @@ void main() {
     expect(snapshot.claimableSeasonLevel, 2);
     expect(snapshot.remoteConfig.sandboxPaymentsEnabled, isTrue);
     expect(snapshot.userState.hasSuccessfulActivitySync, isTrue);
+    final PlatformSkill trailMemory = snapshot.content.skills.singleWhere(
+      (PlatformSkill skill) => skill.skillId == 'trail-memory',
+    );
+    expect(trailMemory.remainingSeasonXp(40), 60);
+    expect(trailMemory.remainingSeasonXp(snapshot.userState.seasonXp), 0);
     expect(snapshot.userState.equippedCosmetics, const <String, String>{
       'PILOT': 'pilot-scarf',
     });
     expect(snapshot.userState.equippedCosmeticIds, const <String>{
       'pilot-scarf',
     });
+  });
+
+  test('rejects a negative server skill XP requirement', () {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> content = Map<String, dynamic>.from(
+      json['content']! as Map<String, dynamic>,
+    );
+    final List<dynamic> skills = List<dynamic>.from(content['skills']! as List);
+    skills[1] = <String, dynamic>{
+      ...Map<String, dynamic>.from(skills[1] as Map),
+      'requiredSeasonXp': -1,
+    };
+    content['skills'] = skills;
+    json['content'] = content;
+
+    expect(
+      () => PlatformSnapshot.fromJson(json),
+      throwsA(isA<FormatException>()),
+    );
   });
 
   test('maps the additive adult evolution contract', () {

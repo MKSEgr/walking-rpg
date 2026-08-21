@@ -694,6 +694,7 @@
   "platformEvolveCompanion": "Эволюционировать",
   "platformNeedMoreBond": "Нужно больше связи",
   "platformSkillRequiredXp": "Нужно {experience} сезонного XP",
+  "platformSkillRemainingXp": "До открытия: ещё {experience} сезонного XP",
   "platformSkillUnlocked": "Навык открыт",
   "platformUnlockSkill": "Открыть навык",
   "platformSkillUnavailable": "Навык пока недоступен",

@@ -1529,6 +1529,12 @@
       "experience": {"type": "int"}
     }
   },
+  "platformSkillRemainingXp": "{experience} more season XP to unlock",
+  "@platformSkillRemainingXp": {
+    "placeholders": {
+      "experience": {"type": "int"}
+    }
+  },
   "platformSkillUnlocked": "Skill unlocked",
   "platformUnlockSkill": "Unlock skill",
   "platformSkillUnavailable": "Skill not yet available",

@@ -486,11 +486,17 @@ class PlatformSkill {
   });
 
   factory PlatformSkill.fromJson(Map<String, dynamic> json) {
+    final int requiredSeasonXp = _readInt(json, 'requiredSeasonXp');
+    if (requiredSeasonXp < 0) {
+      throw const FormatException(
+        'requiredSeasonXp навыка должен быть неотрицательным',
+      );
+    }
     return PlatformSkill(
       skillId: _readString(json, 'skillId'),
       name: _readString(json, 'name'),
       description: _readString(json, 'description'),
-      requiredSeasonXp: _readInt(json, 'requiredSeasonXp'),
+      requiredSeasonXp: requiredSeasonXp,
     );
   }
 
@@ -498,6 +504,11 @@ class PlatformSkill {
   final String name;
   final String description;
   final int requiredSeasonXp;
+
+  int remainingSeasonXp(int seasonXp) {
+    final int remaining = requiredSeasonXp - seasonXp;
+    return remaining < 0 ? 0 : remaining;
+  }
 }
 
 class PlatformAchievement {
