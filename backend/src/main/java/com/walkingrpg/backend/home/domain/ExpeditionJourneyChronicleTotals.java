@@ -8,6 +8,7 @@ public record ExpeditionJourneyChronicleTotals(
         long decisionCount,
         Long totalDurationSeconds,
         Long shortestDurationSeconds,
+        Long shortestJourneyNumber,
         Long longestDurationSeconds,
         Long longestJourneyNumber,
         Instant longestJourneyCompletedAt,
@@ -41,6 +42,14 @@ public record ExpeditionJourneyChronicleTotals(
                 && shortestDurationSeconds > longestDurationSeconds)) {
             throw new IllegalArgumentException(
                     "Самый короткий поход должен входить в диапазон длительностей"
+            );
+        }
+        if (shortestJourneyNumber != null
+                && (shortestDurationSeconds == null
+                || shortestJourneyNumber <= 0
+                || shortestJourneyNumber > completedJourneyCount)) {
+            throw new IllegalArgumentException(
+                    "Номер самого короткого похода должен входить в летопись"
             );
         }
         if (longestJourneyNumber != null
@@ -94,6 +103,7 @@ public record ExpeditionJourneyChronicleTotals(
                 null,
                 null,
                 null,
+                null,
                 pilotExperienceGained,
                 petBondGained,
                 pilotExperienceRewards,
@@ -110,6 +120,7 @@ public record ExpeditionJourneyChronicleTotals(
                 0,
                 0L,
                 0L,
+                null,
                 0L,
                 null,
                 null,

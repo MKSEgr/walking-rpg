@@ -1004,7 +1004,15 @@ class _JourneyChronicleCard extends StatelessWidget {
           );
     final String shortestDuration = chronicle.shortestDurationSeconds == null
         ? ''
-        : context.l10n.platformJourneyChronicleShortestDuration(
+        : chronicle.shortestJourneyNumber == null
+        ? context.l10n.platformJourneyChronicleShortestDuration(
+            _journeyDurationValueLabel(
+              context,
+              chronicle.shortestDurationSeconds!,
+            ),
+          )
+        : context.l10n.platformJourneyChronicleShortestJourneyDuration(
+            chronicle.shortestJourneyNumber!,
             _journeyDurationValueLabel(
               context,
               chronicle.shortestDurationSeconds!,

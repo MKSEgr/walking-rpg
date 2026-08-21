@@ -602,6 +602,7 @@ class HomeJourneyChronicle {
     required this.petBondGained,
     this.totalDurationSeconds,
     this.shortestDurationSeconds,
+    this.shortestJourneyNumber,
     this.longestDurationSeconds,
     this.longestJourneyNumber,
     this.longestJourneyCompletedAt,
@@ -631,6 +632,10 @@ class HomeJourneyChronicle {
     final int? shortestDurationSeconds = HomeSnapshot._readOptionalInt(
       json,
       'shortestDurationSeconds',
+    );
+    final int? shortestJourneyNumber = HomeSnapshot._readOptionalInt(
+      json,
+      'shortestJourneyNumber',
     );
     final int? longestDurationSeconds = HomeSnapshot._readOptionalInt(
       json,
@@ -663,6 +668,10 @@ class HomeJourneyChronicle {
                     shortestDurationSeconds > longestDurationSeconds) ||
                 (averageDurationSeconds != null &&
                     shortestDurationSeconds > averageDurationSeconds))) ||
+        (shortestJourneyNumber != null &&
+            (shortestDurationSeconds == null ||
+                shortestJourneyNumber <= 0 ||
+                shortestJourneyNumber > completedJourneyCount)) ||
         (longestDurationSeconds != null &&
             (totalDurationSeconds == null ||
                 longestDurationSeconds < 0 ||
@@ -868,6 +877,7 @@ class HomeJourneyChronicle {
       decisionCount: decisionCount,
       totalDurationSeconds: totalDurationSeconds,
       shortestDurationSeconds: shortestDurationSeconds,
+      shortestJourneyNumber: shortestJourneyNumber,
       longestDurationSeconds: longestDurationSeconds,
       longestJourneyNumber: longestJourneyNumber,
       longestJourneyCompletedAt: longestJourneyCompletedAt,
@@ -886,6 +896,7 @@ class HomeJourneyChronicle {
   final int decisionCount;
   final int? totalDurationSeconds;
   final int? shortestDurationSeconds;
+  final int? shortestJourneyNumber;
   final int? longestDurationSeconds;
   final int? longestJourneyNumber;
   final String? longestJourneyCompletedAt;

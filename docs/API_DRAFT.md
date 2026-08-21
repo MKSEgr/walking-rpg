@@ -505,8 +505,9 @@ Authorization: Bearer <access-token>
   подтверждённых завершённых походов этого пользователя и экспедиции:
   `completedJourneyCount`, `decisionCount`, nullable non-negative
   `totalDurationSeconds`, nullable non-negative `shortestDurationSeconds`,
-  nullable non-negative `longestDurationSeconds`, nullable positive
-  `longestJourneyNumber`, nullable ISO-8601 instant
+  nullable positive `shortestJourneyNumber`, nullable non-negative
+  `longestDurationSeconds`, nullable positive `longestJourneyNumber`,
+  nullable ISO-8601 instant
   `longestJourneyCompletedAt`, nullable non-negative `averageDurationSeconds`,
   `pilotExperienceGained` и `petBondGained`.
   `totalDurationSeconds` суммирует полные целые секунды каждого included
@@ -514,11 +515,15 @@ Authorization: Bearer <access-token>
   — в exact journey-start receipt `server_time`, а заканчивается последней
   immutable resolution exact journey. Любая отсутствующая или обратная
   граница опускает весь lifetime duration без частичного итога.
-  `shortestDurationSeconds` выбирает minimum из тех же exact boundaries,
-  публикуется только вместе с total и не превышает average/longest, когда они
-  присутствуют. Current authoritative `COMPLETED` сравнивается с historical
-  minimum ровно один раз; после journey-start receipt тот же путь уже входит
-  только через history.
+  `shortestDurationSeconds` выбирает minimum из тех же exact boundaries.
+  Additive `shortestJourneyNumber` указывает journey этого minimum; tie
+  выбирается по меньшему номеру, поле публикуется только вместе с shortest и
+  не превышает `completedJourneyCount`. Current authoritative `COMPLETED`
+  сравнивается с historical minimum ровно один раз и заменяет duration и
+  identity только при строго меньшей duration; tie сохраняет historical
+  winner. После journey-start receipt тот же путь уже входит только через
+  history. Shortest публикуется только вместе с total и не превышает
+  average/longest, когда они присутствуют.
   `longestDurationSeconds` выбирает maximum из тех же exact boundaries,
   публикуется только вместе с total и не превышает его. Additive
   `longestJourneyNumber` указывает journey этого maximum; tie выбирается по
@@ -557,8 +562,9 @@ Authorization: Bearer <access-token>
   только из persisted event resolutions, не перечитывая current content,
   inventory или текущие progression totals. До первого подтверждённого
   финиша значение равно `null`; legacy response без `journeyChronicle`,
-  `totalDurationSeconds`, `shortestDurationSeconds`, `longestDurationSeconds`,
-  `longestJourneyNumber`, `longestJourneyCompletedAt`, `averageDurationSeconds`,
+  `totalDurationSeconds`, `shortestDurationSeconds`, `shortestJourneyNumber`,
+  `longestDurationSeconds`, `longestJourneyNumber`,
+  `longestJourneyCompletedAt`, `averageDurationSeconds`,
   `pilotExperienceRewards`, `petBondRewards`, `materials`,
   `decisionOutcomes` или `finaleOutcomes` остаётся валидным. При наличии
   pilot-массива его
@@ -573,6 +579,7 @@ Authorization: Bearer <access-token>
     "decisionCount": 19,
     "totalDurationSeconds": 65700,
     "shortestDurationSeconds": 3600,
+    "shortestJourneyNumber": 3,
     "longestDurationSeconds": 12600,
     "longestJourneyNumber": 7,
     "longestJourneyCompletedAt": "2026-07-25T12:00:00Z",

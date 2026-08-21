@@ -489,6 +489,8 @@ class HomeReadIntegrationTest {
                 expedition.journeyChronicle().totalDurationSeconds());
         assertEquals(2_520,
                 expedition.journeyChronicle().shortestDurationSeconds());
+        assertEquals(3,
+                expedition.journeyChronicle().shortestJourneyNumber());
         assertEquals(6_120,
                 expedition.journeyChronicle().longestDurationSeconds());
         assertEquals(1,
@@ -690,6 +692,7 @@ class HomeReadIntegrationTest {
         assertEquals(7, incompleteDuration.completedJourneyCount());
         assertNull(incompleteDuration.totalDurationSeconds());
         assertNull(incompleteDuration.shortestDurationSeconds());
+        assertNull(incompleteDuration.shortestJourneyNumber());
         assertNull(incompleteDuration.longestDurationSeconds());
         assertNull(incompleteDuration.longestJourneyNumber());
         assertNull(incompleteDuration.longestJourneyCompletedAt());

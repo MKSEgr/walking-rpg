@@ -1096,6 +1096,13 @@
       "duration": {"type": "String"}
     }
   },
+  "platformJourneyChronicleShortestJourneyDuration": "Shortest journey #{journey}: {duration}",
+  "@platformJourneyChronicleShortestJourneyDuration": {
+    "placeholders": {
+      "journey": {"type": "int"},
+      "duration": {"type": "String"}
+    }
+  },
   "platformJourneyChronicleLongestDuration": "Longest journey: {duration}",
   "@platformJourneyChronicleLongestDuration": {
     "placeholders": {
