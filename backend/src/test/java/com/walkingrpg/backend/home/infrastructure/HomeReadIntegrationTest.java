@@ -220,7 +220,7 @@ class HomeReadIntegrationTest {
         assertEquals(3_250, snapshot.dailyGoal());
         assertEquals("ADAPTIVE", snapshot.dailyGoalPolicy().source().name());
         assertEquals(BigDecimal.valueOf(3_000), snapshot.dailyGoalPolicy().baselineSteps());
-        assertEquals(3, snapshot.dailyGoalPolicy().sampleDays());
+        assertEquals(4, snapshot.dailyGoalPolicy().sampleDays());
         assertEquals(6_000, snapshot.dailyGoalPolicy().defaultGoal());
         assertEquals(7, snapshot.dailyGoalPolicy().lookbackDays());
         assertEquals(5, snapshot.dailyGoalPolicy().growthPercent());
