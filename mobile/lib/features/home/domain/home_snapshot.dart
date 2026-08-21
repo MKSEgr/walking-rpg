@@ -1,6 +1,7 @@
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/features/event/domain/event_resolution_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
+import 'package:walking_rpg_mobile/features/home/domain/weekly_activity_rhythm.dart';
 
 class HomeSnapshot {
   const HomeSnapshot({
@@ -41,6 +42,7 @@ class HomeSnapshot {
     this.pilotNextLevelExperience = 0,
     this.petBond = 0,
     this.dailyGoalPolicy = const DailyGoalPolicy.legacy(),
+    this.weeklyActivityRhythm,
     this.inventory = const <HomeInventoryItem>[],
     this.equipment = const <HomeEquipmentSlot>[],
     this.craftingRecipes = const <HomeCraftingRecipe>[],
@@ -61,6 +63,13 @@ class HomeSnapshot {
             _asMap(dailyGoalPolicyJson, 'dailyGoalPolicy'),
           );
     dailyGoalPolicy.validateGoal(dailyGoal);
+    final Object? weeklyActivityRhythmJson = json['weeklyActivityRhythm'];
+    final WeeklyActivityRhythm? weeklyActivityRhythm =
+        weeklyActivityRhythmJson == null
+        ? null
+        : WeeklyActivityRhythm.fromJson(
+            _asMap(weeklyActivityRhythmJson, 'weeklyActivityRhythm'),
+          );
     final Map<String, dynamic> pilot = _readMap(json, 'pilot');
     final Map<String, dynamic> pet = _readMap(json, 'pet');
     final int? petEvolutionStage = _readOptionalInt(pet, 'evolutionStage');
@@ -122,6 +131,7 @@ class HomeSnapshot {
       dailySteps: _readInt(json, 'dailySteps'),
       dailyGoal: dailyGoal,
       dailyGoalPolicy: dailyGoalPolicy,
+      weeklyActivityRhythm: weeklyActivityRhythm,
       availableEnergy: _readInt(json, 'availableEnergy'),
       activityStateVersion: _readInt(json, 'activityStateVersion'),
       economyVersion: _readInt(json, 'economyVersion'),
@@ -174,6 +184,7 @@ class HomeSnapshot {
   final int dailySteps;
   final int dailyGoal;
   final DailyGoalPolicy dailyGoalPolicy;
+  final WeeklyActivityRhythm? weeklyActivityRhythm;
   final int availableEnergy;
   final int activityStateVersion;
   final int economyVersion;
@@ -260,6 +271,12 @@ class HomeSnapshot {
       roundingStep: 250,
       minimumGoal: 2000,
       maximumGoal: 12000,
+    ),
+    weeklyActivityRhythm: WeeklyActivityRhythm(
+      activeDays: 0,
+      windowDays: 7,
+      targetActiveDays: 4,
+      targetReached: false,
     ),
     availableEnergy: 0,
     activityStateVersion: 0,

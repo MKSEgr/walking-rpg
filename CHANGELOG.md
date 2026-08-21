@@ -69,6 +69,9 @@
 
 ### Added
 
+- server-authoritative non-punitive weekly activity rhythm over the current and
+  six previous local dates, with a soft 4/7 target, legacy-compatible RU/EN
+  presentation and no streak reset, ENERGY or reward side effects;
 - authoritative completion time for the shortest-journey record, selected from
   the same complete receipt-proven winner and presented in device-local RU/EN
   date/time with legacy omission and fail-closed timestamp validation;

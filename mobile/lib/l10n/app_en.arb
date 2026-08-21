@@ -725,6 +725,25 @@
       "goal": {"type": "int"}
     }
   },
+  "homeWeeklyRhythmProgress": "Weekly rhythm: {activeDays} active days · goal {targetActiveDays}",
+  "@homeWeeklyRhythmProgress": {
+    "placeholders": {
+      "activeDays": {"type": "int"},
+      "targetActiveDays": {"type": "int"}
+    }
+  },
+  "homeWeeklyRhythmWindow": "{windowDays}-day window · rest days do not reset progress",
+  "@homeWeeklyRhythmWindow": {
+    "placeholders": {
+      "windowDays": {"type": "int"}
+    }
+  },
+  "homeWeeklyRhythmReached": "Goal reached · {windowDays}-day window · rest days are normal",
+  "@homeWeeklyRhythmReached": {
+    "placeholders": {
+      "windowDays": {"type": "int"}
+    }
+  },
   "homePilotLabel": "Pilot",
   "homePetLabel": "Companion",
   "homePetBond": "Bond {bond}",

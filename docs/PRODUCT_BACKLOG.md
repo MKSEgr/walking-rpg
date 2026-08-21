@@ -1460,6 +1460,29 @@ external validation status.
 migration и без изменения rewards/economy, progression, topology, archive
 limit или external validation status.
 
+### US-060. Видеть мягкий недельный ритм активности
+
+Как игрок, я хочу видеть несколько активных дней из семи, чтобы поддерживать
+регулярность без наказания за отдых и без разрушительного streak reset.
+
+Критерии:
+
+- Home получает additive `weeklyActivityRhythm` с фактическим active-day count,
+  окном 7 дней, целью 4 дня и derived `targetReached`;
+- backend считает target local date и шесть предыдущих дат только по persisted
+  `activity_sync_state.accepted_total > 0`, не используя client Health history;
+- отсутствие activity не создаёт отдельный reset, penalty, награду или ENERGY;
+- mobile принимает legacy omission и fail-closed отклоняет невозможные
+  диапазоны или inconsistent `targetReached`;
+- RU/EN presentation явно нормализует дни отдыха, использует одну semantics-
+  строку и выдерживает compact text scale 1.6;
+- backend unit/API/PostgreSQL и Flutter parser/widget/localization coverage
+  подтверждают inclusive current date, нижнюю границу окна и совместимость.
+
+**Статус:** non-punitive weekly activity rhythm реализован без migration и без
+изменения daily goal, rewards/economy, progression, topology или external
+validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

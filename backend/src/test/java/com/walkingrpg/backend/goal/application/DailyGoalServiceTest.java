@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.walkingrpg.backend.goal.domain.DailyGoal;
+import com.walkingrpg.backend.goal.domain.WeeklyActivityRhythm;
 import com.walkingrpg.backend.goal.infrastructure.DailyGoalHistoryRepository;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +32,34 @@ class DailyGoalServiceTest {
         assertEquals(targetDate.minusDays(7), repository.fromInclusive);
         assertEquals(targetDate, repository.toExclusive);
         assertEquals(3_250, goal.steps());
+    }
+
+    @Test
+    void shouldCountTheTargetDateAndSixPreviousActiveDays() {
+        LocalDate targetDate = LocalDate.of(2026, 7, 26);
+        CapturingRepository repository = new CapturingRepository(
+                List.of(2_000L, 3_000L, 4_000L, 5_000L)
+        );
+        DailyGoalPolicyProperties properties =
+                AdaptiveDailyGoalCalculatorTest.properties();
+        DailyGoalService service = new DailyGoalService(
+                repository,
+                new AdaptiveDailyGoalCalculator(properties),
+                properties
+        );
+
+        WeeklyActivityRhythm rhythm = service.calculateWeeklyRhythm(
+                " user-1 ",
+                targetDate
+        );
+
+        assertEquals("user-1", repository.userId);
+        assertEquals(targetDate.minusDays(6), repository.fromInclusive);
+        assertEquals(targetDate.plusDays(1), repository.toExclusive);
+        assertEquals(4, rhythm.activeDays());
+        assertEquals(7, rhythm.windowDays());
+        assertEquals(4, rhythm.targetActiveDays());
+        assertEquals(true, rhythm.targetReached());
     }
 
     private static final class CapturingRepository

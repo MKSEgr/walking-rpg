@@ -60,6 +60,7 @@ import com.walkingrpg.backend.home.domain.PetBondRewardSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
 import com.walkingrpg.backend.home.domain.PendingEventResultSnapshot;
 import com.walkingrpg.backend.home.domain.PilotSnapshot;
+import com.walkingrpg.backend.home.domain.WeeklyActivityRhythmSnapshot;
 import com.walkingrpg.backend.home.infrastructure.HomeReadRepository;
 import com.walkingrpg.backend.inventory.application.StarterInventoryContent;
 import com.walkingrpg.backend.inventory.domain.InventoryItemDefinition;
@@ -227,6 +228,13 @@ public class HomeService {
                 query.userId(),
                 query.localDate()
         );
+        WeeklyActivityRhythmSnapshot weeklyActivityRhythm =
+                WeeklyActivityRhythmSnapshot.from(
+                        dailyGoalService.calculateWeeklyRhythm(
+                                query.userId(),
+                                query.localDate()
+                        )
+                );
         HomeRuntimeState state = repository.findState(
                 query.userId(),
                 query.localDate(),
@@ -273,6 +281,7 @@ public class HomeService {
                 state.dailySteps(),
                 dailyGoal.steps(),
                 DailyGoalPolicySnapshot.from(dailyGoal),
+                weeklyActivityRhythm,
                 state.availableEnergy(),
                 state.activityStateVersion(),
                 state.economyVersion(),

@@ -5,11 +5,15 @@ import java.util.List;
 import java.util.Objects;
 
 import com.walkingrpg.backend.goal.domain.DailyGoal;
+import com.walkingrpg.backend.goal.domain.WeeklyActivityRhythm;
 import com.walkingrpg.backend.goal.infrastructure.DailyGoalHistoryRepository;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DailyGoalService {
+
+    private static final int WEEKLY_RHYTHM_WINDOW_DAYS = 7;
+    private static final int WEEKLY_RHYTHM_TARGET_ACTIVE_DAYS = 4;
 
     private final DailyGoalHistoryRepository repository;
     private final AdaptiveDailyGoalCalculator calculator;
@@ -35,6 +39,24 @@ public class DailyGoalService {
                 targetDate
         );
         return calculator.calculate(acceptedTotals);
+    }
+
+    public WeeklyActivityRhythm calculateWeeklyRhythm(
+            String userId,
+            LocalDate localDate
+    ) {
+        String normalizedUserId = requireText(userId, "userId");
+        LocalDate targetDate = Objects.requireNonNull(localDate, "localDate");
+        List<Long> acceptedTotals = repository.findAcceptedTotals(
+                normalizedUserId,
+                targetDate.minusDays(WEEKLY_RHYTHM_WINDOW_DAYS - 1L),
+                targetDate.plusDays(1)
+        );
+        return new WeeklyActivityRhythm(
+                acceptedTotals.size(),
+                WEEKLY_RHYTHM_WINDOW_DAYS,
+                WEEKLY_RHYTHM_TARGET_ACTIVE_DAYS
+        );
     }
 
     private String requireText(String value, String field) {

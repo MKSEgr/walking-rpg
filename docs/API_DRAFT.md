@@ -151,6 +151,12 @@ Authorization: Bearer <access-token>
     "minimumGoal": 2000,
     "maximumGoal": 12000
   },
+  "weeklyActivityRhythm": {
+    "activeDays": 3,
+    "windowDays": 7,
+    "targetActiveDays": 4,
+    "targetReached": false
+  },
   "availableEnergy": 25,
   "activityStateVersion": 1,
   "economyVersion": 3,
@@ -351,6 +357,13 @@ Authorization: Bearer <access-token>
 - при менее чем трёх валидных днях возвращается стартовая цель `6000`;
 - текущий день не участвует в собственной цели;
 - `dailyGoalPolicy` объясняет baseline и параметры политики; при чётном числе дней `baselineSteps` может содержать `.5`;
+- `weeklyActivityRhythm` считает persisted positive accepted totals на семи
+  локальных датах, заканчивая запрошенным `localDate`; `activeDays` находится
+  в диапазоне `0..windowDays`, цель v1 равна `4/7`, а `targetReached` строго
+  эквивалентен `activeDays >= targetActiveDays`;
+- объект не является streak: отсутствие activity в отдельный день не создаёт
+  reset/penalty и не выдаёт ENERGY или rewards. Legacy response без объекта
+  остаётся валидным и не вычисляется mobile из Health/client clock;
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
 - `pilot.pilotId` — additive stable identity текущего пилота. Mobile разрешает
   известный ID через выбранный RU/EN catalog; legacy snapshot без поля,

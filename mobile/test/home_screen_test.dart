@@ -23,6 +23,7 @@ import 'package:walking_rpg_mobile/features/expedition/domain/expedition_journey
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/daily_goal_policy.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
+import 'package:walking_rpg_mobile/features/home/domain/weekly_activity_rhythm.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
@@ -256,6 +257,18 @@ void main() {
     await tester.tap(find.byKey(const Key('home-command-recovery')));
     expect(recoveryOpened, isTrue);
     expect(find.text('Сегодня: 0 / 6000'), findsOneWidget);
+    expect(
+      find.text('Ритм недели: активных дней — 0 · цель 4'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Окно в днях: 7 · дни отдыха не сбрасывают прогресс'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-rhythm-progress')),
+      findsOneWidget,
+    );
     expect(find.text('Навигатор'), findsOneWidget);
     expect(find.text('Искра'), findsOneWidget);
     expect(
@@ -274,6 +287,37 @@ void main() {
     expect(find.text('XP 20 / 100'), findsOneWidget);
     expect(find.text('Связь 10 · Малыш'), findsOneWidget);
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
+  });
+
+  testWidgets('weekly rhythm exposes one complete English semantic summary', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: HomeScreen(loader: () async => _readyToAdvance()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Weekly rhythm: 5 active days · goal 4'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Weekly rhythm: 5 active days · goal 4. '
+        'Goal reached · 7-day window · rest days are normal',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    semantics.dispose();
   });
 
   testWidgets(
@@ -2492,6 +2536,12 @@ HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
     dailySteps: 6842,
     dailyGoal: 3250,
     dailyGoalPolicy: _adaptiveGoalPolicy,
+    weeklyActivityRhythm: const WeeklyActivityRhythm(
+      activeDays: 5,
+      windowDays: 7,
+      targetActiveDays: 4,
+      targetReached: true,
+    ),
     availableEnergy: 68,
     activityStateVersion: 1,
     economyVersion: 1,
