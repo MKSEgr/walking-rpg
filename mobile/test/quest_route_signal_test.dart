@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   test('selects quest marks only from exact server metrics', () {
@@ -86,6 +87,7 @@ void main() {
                     metric: 'RESOLVED_EVENTS',
                     progress: 2,
                     target: 3,
+                    remaining: 1,
                     ready: false,
                     claimed: false,
                   ),
@@ -96,6 +98,7 @@ void main() {
                     metric: 'FUTURE_METRIC',
                     progress: 12,
                     target: 10,
+                    remaining: 0,
                     ready: true,
                     claimed: true,
                   ),
@@ -133,8 +136,16 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Прогресс задания «Исследователь»: 2 из 3'),
+      find.bySemanticsLabel(
+        'Прогресс задания «Исследователь»: 2 из 3. '
+        'До выполнения: ещё 1 событие',
+      ),
       findsOneWidget,
+    );
+    expect(find.text('До выполнения: ещё 1 событие'), findsOneWidget);
+    expect(
+      find.byKey(const Key('quest-route-remaining-future-quest')),
+      findsNothing,
     );
     expect(
       find.bySemanticsLabel('Прогресс задания «Новый маршрут»: 12 из 10'),
@@ -145,6 +156,73 @@ void main() {
     await pump(WalkingRpgTheme.light());
     expect(known, findsOneWidget);
     expect(fallback, findsOneWidget);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
+  testWidgets('English step remaining omits completed quest guidance', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 260));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: WalkingRpgTheme.light(),
+        home: const Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: <Widget>[
+                QuestRouteProgress(
+                  questId: 'walk-3000',
+                  questName: 'First Route',
+                  metric: 'TOTAL_ACCEPTED_STEPS',
+                  progress: 2500,
+                  target: 3000,
+                  remaining: 500,
+                  ready: false,
+                  claimed: false,
+                ),
+                SizedBox(height: 16),
+                QuestRouteProgress(
+                  questId: 'resolve-3',
+                  questName: 'Explorer',
+                  metric: 'RESOLVED_EVENTS',
+                  progress: 3,
+                  target: 3,
+                  remaining: 0,
+                  ready: true,
+                  claimed: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('500 more steps to complete'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Quest “First Route” progress: 2500 of 3000. '
+        '500 more steps to complete',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Quest “Explorer” progress: 3 of 3'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('quest-route-remaining-resolve-3')),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });

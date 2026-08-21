@@ -85,3 +85,4 @@ NNNN-short-title.md
 - [0066 — authoritative pilot level guidance](0066-authoritative-pilot-level-guidance.md)
 - [0067 — authoritative companion evolution guidance](0067-authoritative-companion-evolution-guidance.md)
 - [0068 — authoritative skill unlock guidance](0068-authoritative-skill-unlock-guidance.md)
+- [0069 — authoritative quest remaining guidance](0069-authoritative-quest-remaining-guidance.md)

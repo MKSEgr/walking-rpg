@@ -1715,6 +1715,29 @@ reward или external validation status.
 существующими accepted Platform fields без переноса server-owned skill rules
 на клиент.
 
+### US-071. Видеть, сколько осталось до выполнения задания
+
+Как игрок, я хочу видеть точный остаток шагов или событий до незавершённого
+задания, чтобы понимать близость выполнения без самостоятельного вычитания.
+
+Критерии:
+
+- remaining вычисляется только как non-negative разность accepted `target` и
+  `progress` задания;
+- незавершённые `TOTAL_ACCEPTED_STEPS` и `RESOLVED_EVENTS` получают короткую
+  точную RU/EN строку с корректной формой единицы;
+- ready и claimed задания не получают fake remaining и сохраняют прежние
+  badges, rewards и claim action;
+- `SQUAD_MEMBERSHIP` и неизвестная метрика сохраняют literal progress без
+  client-inferred единицы или правила выполнения;
+- exact remaining входит в существующую semantics summary ровно один раз;
+- domain, RU/EN, ready/fallback и compact text-scale 1.6 coverage фиксируют
+  presentation contract без изменения backend/API, targets или rewards.
+
+**Статус:** quest remaining guidance реализована как mobile presentation над
+существующими accepted Platform fields без переноса server-owned quest rules
+на клиент.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

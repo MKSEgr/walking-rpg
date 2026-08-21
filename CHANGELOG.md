@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative RU/EN quest guidance with exact remaining steps or events,
+  derived only from accepted Platform progress and targets while preserving
+  ready, claimed and unknown-metric behavior;
 - authoritative RU/EN skill-unlock guidance with exact remaining season XP,
   derived only from accepted Platform state and server-authored requirements
   while preserving ready and unlocked actions;

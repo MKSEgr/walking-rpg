@@ -688,6 +688,8 @@
   "platformCompanionBondEvolvedSemantics": "Связь спутника «{name}»: {bond}",
   "platformBondLabel": "Связь",
   "platformQuestProgressSemantics": "Прогресс задания «{name}»: {progress} из {target}",
+  "platformQuestStepsRemaining": "{remaining, plural, =1{До выполнения: ещё 1 шаг} few{До выполнения: ещё {remaining} шага} many{До выполнения: ещё {remaining} шагов} other{До выполнения: ещё {remaining} шага}}",
+  "platformQuestEventsRemaining": "{remaining, plural, =1{До выполнения: ещё 1 событие} few{До выполнения: ещё {remaining} события} many{До выполнения: ещё {remaining} событий} other{До выполнения: ещё {remaining} события}}",
   "platformWeeklyRouteSemantics": "Недельный маршрут «{season}»: {progress} из {target} ENERGY",
   "platformSelectCompanion": "Взять в отряд",
   "platformActiveCompanion": "Активный спутник",
