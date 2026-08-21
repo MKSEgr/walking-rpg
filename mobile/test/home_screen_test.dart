@@ -278,12 +278,13 @@ void main() {
     final Text russianDateRange = tester.widget<Text>(
       find.byKey(const Key('home-weekly-activity-date-range')),
     );
-    expect(russianDateRange.data, startsWith('Учитываются даты: '));
+    final MaterialLocalizations russianMaterialLocalizations =
+        MaterialLocalizations.of(tester.element(find.byType(HomeScreen)));
     expect(
-      RegExp(
-        r'^Учитываются даты: .*20.*2026.*–.*26.*2026$',
-      ).hasMatch(russianDateRange.data!),
-      isTrue,
+      russianDateRange.data,
+      'Учитываются даты: '
+      '${russianMaterialLocalizations.formatShortDate(DateTime(2026, 7, 20))}–'
+      '${russianMaterialLocalizations.formatShortDate(DateTime(2026, 7, 26))}',
     );
     final Text todayStatus = tester.widget<Text>(
       find.byKey(const Key('home-weekly-activity-today-status')),
@@ -331,10 +332,13 @@ void main() {
       find.byKey(const Key('home-weekly-activity-date-range')),
     );
     final String dateRange = dateRangeText.data!;
-    expect(dateRange, startsWith('Dates counted: '));
+    final MaterialLocalizations englishMaterialLocalizations =
+        MaterialLocalizations.of(tester.element(find.byType(HomeScreen)));
     expect(
-      RegExp(r'^Dates counted: .*20.*2026.*–.*26.*2026$').hasMatch(dateRange),
-      isTrue,
+      dateRange,
+      'Dates counted: '
+      '${englishMaterialLocalizations.formatShortDate(DateTime(2026, 7, 20))}–'
+      '${englishMaterialLocalizations.formatShortDate(DateTime(2026, 7, 26))}',
     );
     expect(
       find.bySemanticsLabel(
