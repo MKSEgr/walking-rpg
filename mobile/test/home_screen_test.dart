@@ -246,7 +246,6 @@ void main() {
     WidgetTester tester,
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     bool recoveryOpened = false;
     await tester.pumpWidget(
       MaterialApp(
@@ -350,6 +349,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('weekly rhythm exposes one complete English semantic summary', (
