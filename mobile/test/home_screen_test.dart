@@ -2811,9 +2811,8 @@ WeeklyActivityRhythm _weeklyRhythmWithActiveDays(
       (int index) {
         final bool isToday = index == dates.length - 1;
         final int earlierActiveDays = activeDays - (todayActive ? 1 : 0);
-        final bool isActive = isToday
-            ? todayActive
-            : index < earlierActiveDays;
+        final bool isActive =
+            isToday ? todayActive : index < earlierActiveDays;
         return WeeklyActivityDay(
           localDate: dates[index],
           active: isActive,
