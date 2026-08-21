@@ -1330,9 +1330,13 @@ void main() {
       await _bringIntoView(tester, target);
       expect(target, findsOneWidget);
       _expectNoLayoutException(tester);
+      if (key == const Key('platform-pet-compact-moss-v1')) {
+        expect(
+          find.text('До следующей эволюции: ещё 33 связи'),
+          findsOneWidget,
+        );
+      }
     }
-
-    expect(find.text('До следующей эволюции: ещё 33 связи'), findsOneWidget);
 
     final Finder journalScrollable = find.descendant(
       of: find.byKey(const Key('platform-screen-list')),
