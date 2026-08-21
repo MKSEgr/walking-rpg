@@ -100,6 +100,7 @@ class QuestRouteProgress extends StatelessWidget {
     required this.metric,
     required this.progress,
     required this.target,
+    required this.remaining,
     required this.ready,
     required this.claimed,
   });
@@ -109,6 +110,7 @@ class QuestRouteProgress extends StatelessWidget {
   final String metric;
   final int progress;
   final int target;
+  final int remaining;
   final bool ready;
   final bool claimed;
 
@@ -131,15 +133,25 @@ class QuestRouteProgress extends StatelessWidget {
     final double normalized = target <= 0
         ? 0
         : (progress / target).clamp(0.0, 1.0).toDouble();
+    final String? remainingGuidance = ready || claimed || remaining <= 0
+        ? null
+        : switch (metric) {
+            'TOTAL_ACCEPTED_STEPS' => context.l10n
+                .platformQuestStepsRemaining(remaining),
+            'RESOLVED_EVENTS' => context.l10n.platformQuestEventsRemaining(
+              remaining,
+            ),
+            _ => null,
+          };
+    final String progressSemantics = context.l10n
+        .platformQuestProgressSemantics(questName, progress, target);
 
     return Semantics(
       key: Key('quest-route-progress-$questId'),
       container: true,
-      label: context.l10n.platformQuestProgressSemantics(
-        questName,
-        progress,
-        target,
-      ),
+      label: remainingGuidance == null
+          ? progressSemantics
+          : '$progressSemantics. $remainingGuidance',
       child: ExcludeSemantics(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,6 +162,14 @@ class QuestRouteProgress extends StatelessWidget {
                 context,
               ).textTheme.labelLarge?.copyWith(color: activeAccent),
             ),
+            if (remainingGuidance != null) ...<Widget>[
+              const SizedBox(height: 2),
+              Text(
+                remainingGuidance,
+                key: Key('quest-route-remaining-$questId'),
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+            ],
             const SizedBox(height: 5),
             SizedBox(
               key: Key('quest-route-trail-$questId'),

@@ -638,6 +638,18 @@ void main() {
 
     await _bringIntoView(
       tester,
+      find.byKey(const Key('platform-quest-compact-resolve-3')),
+    );
+    expect(find.text('1 more event to complete'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Quest “Explorer” progress: 2 of 3. 1 more event to complete',
+      ),
+      findsOneWidget,
+    );
+
+    await _bringIntoView(
+      tester,
       find.byKey(const Key('platform-cosmetic-compact-pilot-scarf')),
     );
     expect(find.text('Navigator Scarf'), findsOneWidget);

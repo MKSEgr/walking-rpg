@@ -2911,6 +2911,7 @@ class _QuestCard extends StatelessWidget {
       metric: quest.metric,
       progress: quest.progress,
       target: quest.target,
+      remaining: quest.remainingProgress,
       ready: quest.ready,
       claimed: quest.claimed,
     );

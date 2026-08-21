@@ -1097,6 +1097,24 @@ server-authoritative Platform progression из ADR 0009 через ADR 0068 бе
 изменения Platform API, backend catalog, persistence, skill thresholds,
 unlock commands/rewards, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 55 — Authoritative quest remaining guidance
+
+### CODE_COMPLETE
+
+- [x] Mobile выводит exact non-negative remaining только из accepted quest
+      progress и server-authored target
+- [x] RU/EN guidance используется для incomplete step/event metrics; ready и
+      claimed состояния сохраняют прежние badges, rewards и actions
+- [x] Squad и unknown metrics сохраняют literal progress без client-inferred
+      units или completion rules
+- [x] Exact remaining входит в одну semantics summary; domain, RU/EN,
+      ready/fallback и compact text-scale 1.6 coverage фиксируют boundary
+
+Milestone 55 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative Platform progression из ADR 0009 через ADR 0069 без
+изменения Platform API, backend catalog, persistence, quest targets,
+aggregation, rewards/claim commands, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

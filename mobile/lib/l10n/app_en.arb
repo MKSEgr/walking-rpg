@@ -1511,6 +1511,18 @@
       "target": {"type": "int"}
     }
   },
+  "platformQuestStepsRemaining": "{remaining, plural, =1{1 more step to complete} other{{remaining} more steps to complete}}",
+  "@platformQuestStepsRemaining": {
+    "placeholders": {
+      "remaining": {"type": "int"}
+    }
+  },
+  "platformQuestEventsRemaining": "{remaining, plural, =1{1 more event to complete} other{{remaining} more events to complete}}",
+  "@platformQuestEventsRemaining": {
+    "placeholders": {
+      "remaining": {"type": "int"}
+    }
+  },
   "platformWeeklyRouteSemantics": "Weekly route “{season}”: {progress} of {target} ENERGY",
   "@platformWeeklyRouteSemantics": {
     "placeholders": {

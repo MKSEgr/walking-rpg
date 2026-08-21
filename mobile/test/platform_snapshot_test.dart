@@ -25,6 +25,14 @@ void main() {
     expect(snapshot.claimableSeasonLevel, 2);
     expect(snapshot.remoteConfig.sandboxPaymentsEnabled, isTrue);
     expect(snapshot.userState.hasSuccessfulActivitySync, isTrue);
+    final PlatformQuest completedQuest = snapshot.userState.quests.singleWhere(
+      (PlatformQuest quest) => quest.questId == 'walk-3000',
+    );
+    final PlatformQuest activeQuest = snapshot.userState.quests.singleWhere(
+      (PlatformQuest quest) => quest.questId == 'resolve-3',
+    );
+    expect(completedQuest.remainingProgress, 0);
+    expect(activeQuest.remainingProgress, 1);
     final PlatformSkill trailMemory = snapshot.content.skills.singleWhere(
       (PlatformSkill skill) => skill.skillId == 'trail-memory',
     );

@@ -383,6 +383,11 @@ class PlatformQuest {
     }
     return (progress / target).clamp(0.0, 1.0).toDouble();
   }
+
+  int get remainingProgress {
+    final int remaining = target - progress;
+    return remaining < 0 ? 0 : remaining;
+  }
 }
 
 class PlatformSquad {

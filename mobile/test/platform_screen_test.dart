@@ -1232,9 +1232,13 @@ void main() {
     await _bringIntoView(tester, eventQuest);
     expect(eventQuest, findsOneWidget);
     expect(
-      find.bySemanticsLabel('Прогресс задания «Исследователь»: 2 из 3'),
+      find.bySemanticsLabel(
+        'Прогресс задания «Исследователь»: 2 из 3. '
+        'До выполнения: ещё 1 событие',
+      ),
       findsOneWidget,
     );
+    expect(find.text('До выполнения: ещё 1 событие'), findsOneWidget);
 
     final Finder unlockedAchievement = find.byKey(
       const Key('platform-achievement-onboarding-complete'),

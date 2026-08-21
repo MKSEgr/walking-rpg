@@ -278,8 +278,12 @@ availability and command identity remain server-owned.
 
 Objective painting is decorative and excluded from semantics. The route trace
 exposes one complete label with the current server quest name and literal
-progress. Compact cards place the mark above the name and keep the existing
-full-width claim action; wide cards keep the mark beside the server copy.
+progress. An incomplete accepted step or event metric adds exact non-negative
+RU/EN remaining guidance to that same label and as one visible line. Ready and
+claimed quests omit remaining guidance; squad and unknown metrics retain the
+literal progress fallback rather than receiving a client-inferred unit.
+Compact cards place the mark above the name and keep the existing full-width
+claim action; wide cards keep the mark beside the server copy.
 
 ## Weekly route beacon
 
