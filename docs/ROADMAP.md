@@ -938,6 +938,24 @@ Milestone 45 продолжает non-punitive rhythm из ADR 0058 и post-alph
 gameplay track из ADR 0039 без изменения schema, daily goal, rewards/economy,
 progression, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 46 — Gentle weekly rhythm guidance
+
+### CODE_COMPLETE
+
+- [x] До достижения цели Home показывает остаток
+      `max(targetActiveDays - activeDays, 0)` только из уже принятого
+      server-authoritative weekly snapshot
+- [x] RU/EN copy корректно различает singular/plural формы и сохраняет явную
+      нормальность дней отдыха без streak, дедлайна или reward claim
+- [x] После достижения цели остаётся reached/rest-normal copy без нулевой
+      remaining-подсказки; legacy Home без weekly object не меняется
+- [x] Видимый detail входит в одну полную accessibility summary, а RU/EN
+      widget и compact text-scale 1.6 coverage фиксируют guidance и reflow
+
+Milestone 46 завершает presentation feedback мягкого ритма из ADR 0060 без
+изменения Home API, schema, Health history, daily goal, rewards/economy,
+progression, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -1592,7 +1592,10 @@ class _DailyProgressSummary extends StatelessWidget {
         ? null
         : weeklyRhythm.targetReached
         ? context.l10n.homeWeeklyRhythmReached(weeklyRhythm.windowDays)
-        : context.l10n.homeWeeklyRhythmWindow(weeklyRhythm.windowDays);
+        : context.l10n.homeWeeklyRhythmRemaining(
+            weeklyRhythm.remainingActiveDays,
+            weeklyRhythm.windowDays,
+          );
     final MaterialLocalizations materialLocalizations =
         MaterialLocalizations.of(context);
     final String? weeklyDaysSummary =

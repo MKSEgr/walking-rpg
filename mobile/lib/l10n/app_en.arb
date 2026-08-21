@@ -738,6 +738,13 @@
       "windowDays": {"type": "int"}
     }
   },
+  "homeWeeklyRhythmRemaining": "{remainingDays, plural, =1{One active day remains toward the gentle goal in this {windowDays}-day window · rest days do not reset progress} other{{remainingDays} active days remain toward the gentle goal in this {windowDays}-day window · rest days do not reset progress}}",
+  "@homeWeeklyRhythmRemaining": {
+    "placeholders": {
+      "remainingDays": {"type": "int"},
+      "windowDays": {"type": "int"}
+    }
+  },
   "homeWeeklyRhythmReached": "Goal reached · {windowDays}-day window · rest days are normal",
   "@homeWeeklyRhythmReached": {
     "placeholders": {

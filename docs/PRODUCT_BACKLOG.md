@@ -1510,6 +1510,30 @@ Health history.
 без изменения daily goal, rewards/economy, progression, topology или external
 validation status.
 
+### US-062. Понимать, сколько активных дней осталось до мягкой цели
+
+Как игрок, я хочу видеть спокойную подсказку об оставшемся числе активных дней,
+чтобы понимать ближайший ориентир ритма 4/7 без streak pressure и ощущения,
+что день отдыха является провалом.
+
+Критерии:
+
+- mobile выводит `max(targetActiveDays - activeDays, 0)` только из уже
+  валидированного server-authoritative `weeklyActivityRhythm`;
+- при остатке 1 и 2–4 RU/EN copy использует корректную singular/plural форму и
+  явно сохраняет правило, что отдых не сбрасывает прогресс;
+- после достижения цели UI оставляет success/rest-normal copy и не показывает
+  нулевую remaining-подсказку или reward claim;
+- legacy Home без weekly object остаётся без weekly presentation, а client не
+  читает Health history и не использует clock для восстановления данных;
+- visible guidance входит в общую semantics summary; RU/EN widget и compact
+  text-scale 1.6 coverage проверяют copy, отсутствие дублей и reflow.
+
+**Статус:** gentle weekly rhythm guidance реализована как mobile presentation
+над существующим authoritative контрактом без изменения API, migration,
+daily goal, rewards/economy, progression, topology или external validation
+status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

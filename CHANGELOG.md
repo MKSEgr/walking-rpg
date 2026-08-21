@@ -69,6 +69,9 @@
 
 ### Added
 
+- gentle RU/EN remaining-day guidance for the non-punitive weekly rhythm,
+  derived from the accepted 4/7 Home snapshot with accessible plural forms and
+  no streak, reset, ENERGY or reward side effects;
 - authoritative seven-day active/rest trail for the non-punitive weekly
   rhythm, reconstructed from persisted local dates with legacy-compatible
   RU/EN markers and no streak, ENERGY or reward side effects;

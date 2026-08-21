@@ -262,7 +262,10 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('Окно в днях: 7 · дни отдыха не сбрасывают прогресс'),
+      find.text(
+        'До мягкой цели в окне из 7 дней осталось 4 активных дня · '
+        'отдых не сбрасывает прогресс',
+      ),
       findsOneWidget,
     );
     expect(
@@ -305,6 +308,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Weekly rhythm: 5 active days · goal 4'), findsOneWidget);
+    expect(find.textContaining('active days remain'), findsNothing);
     expect(
       find.bySemanticsLabel(
         RegExp(
@@ -321,6 +325,72 @@ void main() {
     );
     expect(
       find.byKey(const Key('home-weekly-activity-day-2026-07-26')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    semantics.dispose();
+  });
+
+  testWidgets('weekly rhythm pluralizes gentle RU and EN guidance', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    Future<void> pumpRhythm({
+      required Locale locale,
+      required int activeDays,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeScreen(
+            loader: () async => _readyToAdvance(
+              weeklyActivityRhythm: _weeklyRhythmWithActiveDays(activeDays),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await pumpRhythm(locale: const Locale('ru'), activeDays: 3);
+    const String russianSingular =
+        'До мягкой цели в окне из 7 дней остался 1 активный день · '
+        'отдых не сбрасывает прогресс';
+    expect(find.text(russianSingular), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(RegExp.escape(russianSingular))),
+      findsOneWidget,
+    );
+
+    await pumpRhythm(locale: const Locale('ru'), activeDays: 1);
+    expect(
+      find.text(
+        'До мягкой цели в окне из 7 дней осталось 3 активных дня · '
+        'отдых не сбрасывает прогресс',
+      ),
+      findsOneWidget,
+    );
+
+    await pumpRhythm(locale: const Locale('en'), activeDays: 3);
+    const String englishSingular =
+        'One active day remains toward the gentle goal in this 7-day window · '
+        'rest days do not reset progress';
+    expect(find.text(englishSingular), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp(RegExp.escape(englishSingular))),
+      findsOneWidget,
+    );
+
+    await pumpRhythm(locale: const Locale('en'), activeDays: 1);
+    expect(
+      find.text(
+        '3 active days remain toward the gentle goal in this 7-day window · '
+        'rest days do not reset progress',
+      ),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
@@ -347,7 +417,11 @@ void main() {
             child: child!,
           );
         },
-        home: HomeScreen(loader: () async => _readyToAdvance()),
+        home: HomeScreen(
+          loader: () async => _readyToAdvance(
+            weeklyActivityRhythm: _weeklyRhythmWithActiveDays(1),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -2580,28 +2654,33 @@ HomeSnapshot _futureNode() {
   );
 }
 
-HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
+HomeSnapshot _readyToAdvance({
+  CachedReadMetadata? cacheMetadata,
+  WeeklyActivityRhythm? weeklyActivityRhythm,
+}) {
   return HomeSnapshot(
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
     dailySteps: 6842,
     dailyGoal: 3250,
     dailyGoalPolicy: _adaptiveGoalPolicy,
-    weeklyActivityRhythm: const WeeklyActivityRhythm(
-      activeDays: 5,
-      windowDays: 7,
-      targetActiveDays: 4,
-      targetReached: true,
-      days: <WeeklyActivityDay>[
-        WeeklyActivityDay(localDate: '2026-07-20', active: true),
-        WeeklyActivityDay(localDate: '2026-07-21', active: true),
-        WeeklyActivityDay(localDate: '2026-07-22', active: false),
-        WeeklyActivityDay(localDate: '2026-07-23', active: true),
-        WeeklyActivityDay(localDate: '2026-07-24', active: false),
-        WeeklyActivityDay(localDate: '2026-07-25', active: true),
-        WeeklyActivityDay(localDate: '2026-07-26', active: true),
-      ],
-    ),
+    weeklyActivityRhythm:
+        weeklyActivityRhythm ??
+        const WeeklyActivityRhythm(
+          activeDays: 5,
+          windowDays: 7,
+          targetActiveDays: 4,
+          targetReached: true,
+          days: <WeeklyActivityDay>[
+            WeeklyActivityDay(localDate: '2026-07-20', active: true),
+            WeeklyActivityDay(localDate: '2026-07-21', active: true),
+            WeeklyActivityDay(localDate: '2026-07-22', active: false),
+            WeeklyActivityDay(localDate: '2026-07-23', active: true),
+            WeeklyActivityDay(localDate: '2026-07-24', active: false),
+            WeeklyActivityDay(localDate: '2026-07-25', active: true),
+            WeeklyActivityDay(localDate: '2026-07-26', active: true),
+          ],
+        ),
     availableEnergy: 68,
     activityStateVersion: 1,
     economyVersion: 1,
@@ -2625,6 +2704,32 @@ HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
     petLevel: 1,
     petBond: 10,
     cacheMetadata: cacheMetadata,
+  );
+}
+
+WeeklyActivityRhythm _weeklyRhythmWithActiveDays(int activeDays) {
+  const List<String> dates = <String>[
+    '2026-07-20',
+    '2026-07-21',
+    '2026-07-22',
+    '2026-07-23',
+    '2026-07-24',
+    '2026-07-25',
+    '2026-07-26',
+  ];
+  return WeeklyActivityRhythm(
+    activeDays: activeDays,
+    windowDays: dates.length,
+    targetActiveDays: 4,
+    targetReached: activeDays >= 4,
+    days: List<WeeklyActivityDay>.generate(
+      dates.length,
+      (int index) => WeeklyActivityDay(
+        localDate: dates[index],
+        active: index < activeDays,
+      ),
+      growable: false,
+    ),
   );
 }
 
