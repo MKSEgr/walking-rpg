@@ -320,6 +320,14 @@ class PlatformPet {
       evolutionStage < maximumEvolutionStage && bond >= evolutionBond;
 
   bool get isFullyEvolved => evolutionStage >= maximumEvolutionStage;
+
+  int get remainingEvolutionBond {
+    if (isFullyEvolved || canEvolve) {
+      return 0;
+    }
+    final int remaining = evolutionBond - bond;
+    return remaining < 0 ? 0 : remaining;
+  }
 }
 
 class PlatformQuest {

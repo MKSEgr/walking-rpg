@@ -1061,6 +1061,24 @@ server-authoritative progression из ADR 0009 через ADR 0066 без изм
 Home API, backend, persistence, progression thresholds/rewards, immutable
 `alpha-rc1` или внешних gates.
 
+## Milestone 53 — Authoritative companion evolution guidance
+
+### CODE_COMPLETE
+
+- [x] Mobile выводит exact non-negative remaining bond только из accepted
+      Platform pet state и server-authored evolution target
+- [x] RU/EN guidance меняется только для growing state; ready и fully evolved
+      сохраняют существующие состояния без fake next target
+- [x] Companion bond semantics объявляет exact remaining один раз, а
+      повторяющая visual line исключена из accessibility tree
+- [x] Domain, RU/EN, semantics и compact text-scale 1.6 coverage фиксируют
+      authoritative presentation boundary
+
+Milestone 53 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative pet progression из ADR 0009 через ADR 0067 без изменения
+Platform API, backend, persistence, evolution thresholds/commands/rewards,
+immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

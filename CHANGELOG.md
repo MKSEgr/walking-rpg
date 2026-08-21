@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative RU/EN companion evolution guidance with exact remaining bond,
+  derived only from the accepted Platform snapshot and announced once for
+  growing companions without changing thresholds, evolution or rewards;
 - authoritative RU/EN pilot-level guidance with exact current, target and
   remaining XP plus a bounded visual indicator, derived only from the accepted
   Home snapshot and exposed once to assistive technologies;

@@ -37,6 +37,7 @@ void main() {
       petName: 'Тень',
       bond: 60,
       evolutionBond: 45,
+      remainingBond: 0,
       canEvolve: false,
       fullyEvolved: false,
     );
@@ -45,6 +46,7 @@ void main() {
       petName: 'Тень',
       bond: 12,
       evolutionBond: 45,
+      remainingBond: 0,
       canEvolve: true,
       fullyEvolved: false,
     );
@@ -53,6 +55,7 @@ void main() {
       petName: 'Тень',
       bond: 0,
       evolutionBond: 45,
+      remainingBond: 0,
       canEvolve: false,
       fullyEvolved: true,
     );
@@ -91,6 +94,7 @@ void main() {
                     petName: 'Искра',
                     bond: 50,
                     evolutionBond: 50,
+                    remainingBond: 0,
                     canEvolve: true,
                     fullyEvolved: false,
                   ),
@@ -100,6 +104,7 @@ void main() {
                     petName: 'Тень',
                     bond: 12,
                     evolutionBond: 45,
+                    remainingBond: 33,
                     canEvolve: false,
                     fullyEvolved: false,
                   ),
@@ -132,7 +137,10 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Связь спутника «Тень»: 12 из 45'),
+      find.bySemanticsLabel(
+        'Связь спутника «Тень»: 12 из 45. '
+        'До следующей эволюции: ещё 33 связи',
+      ),
       findsOneWidget,
     );
     for (final Finder field in <Finder>[
@@ -170,6 +178,7 @@ void main() {
             petName: 'Навигатор',
             bond: 7,
             evolutionBond: 55,
+            remainingBond: 0,
             canEvolve: false,
             fullyEvolved: true,
           ),

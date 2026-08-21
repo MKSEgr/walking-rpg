@@ -164,9 +164,13 @@ constellation instead of inheriting art from its name or species. The field
 uses only the literal accepted bond, evolution target, current server form and
 existing `canEvolve` result. Its four trace samples are decorative rather than
 invented thresholds, and an evolved companion keeps the literal bond without
-showing a fake next target. The composition becomes vertical on narrow layouts,
-remains a static presentation of the accepted snapshot and does not affect pet
-selection, evolution availability, command execution or navigation lifecycle.
+showing a fake next target. A growing companion also receives the exact
+non-negative remaining bond from the owning accepted model; that value joins
+the field's single RU/EN semantic summary, while the repeated visual guidance
+is excluded from semantics. Ready and evolved states keep their existing copy.
+The composition becomes vertical on narrow layouts, remains a static
+presentation of the accepted snapshot and does not affect pet selection,
+evolution availability, command execution or navigation lifecycle.
 
 ## Character cosmetics
 

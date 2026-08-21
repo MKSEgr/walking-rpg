@@ -35,15 +35,18 @@ class CompanionBondSignal extends StatelessWidget {
     required this.petName,
     required this.bond,
     required this.evolutionBond,
+    required this.remainingBond,
     required this.canEvolve,
     required this.fullyEvolved,
   }) : assert(bond >= 0),
-       assert(evolutionBond > 0);
+       assert(evolutionBond > 0),
+       assert(remainingBond >= 0);
 
   final String petId;
   final String petName;
   final int bond;
   final int evolutionBond;
+  final int remainingBond;
   final bool canEvolve;
   final bool fullyEvolved;
 
@@ -82,6 +85,7 @@ class CompanionBondSignal extends StatelessWidget {
           petName,
           bond,
           evolutionBond,
+          remainingBond,
         ),
       CompanionBondStatus.ready =>
         context.l10n.platformCompanionBondReadySemantics(
