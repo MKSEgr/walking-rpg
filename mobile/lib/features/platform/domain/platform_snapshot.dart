@@ -65,6 +65,17 @@ class PlatformSnapshot {
 
   bool get isCached => cacheMetadata != null;
 
+  int get unlockedCatalogAchievementCount {
+    final Set<String> catalogIds = content.achievements
+        .map((PlatformAchievement achievement) => achievement.achievementId)
+        .toSet();
+    return userState.achievements.intersection(catalogIds).length;
+  }
+
+  int get remainingCatalogAchievementCount {
+    return content.achievements.length - unlockedCatalogAchievementCount;
+  }
+
   int get weeklyRouteRemaining {
     final int remaining =
         userState.weeklyRouteRequiredEnergy - userState.weeklyRouteProgress;

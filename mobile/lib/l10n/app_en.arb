@@ -1621,6 +1621,20 @@
       "total": {"type": "int"}
     }
   },
+  "platformAchievementsRemaining": "{remaining, plural, =1{1 achievement left to unlock} other{{remaining} achievements left to unlock}}",
+  "@platformAchievementsRemaining": {
+    "placeholders": {
+      "remaining": {"type": "int"}
+    }
+  },
+  "platformAchievementsCollectionComplete": "All achievements unlocked",
+  "platformAchievementsSemantics": "{progress}. {guidance}",
+  "@platformAchievementsSemantics": {
+    "placeholders": {
+      "progress": {"type": "String"},
+      "guidance": {"type": "String"}
+    }
+  },
   "platformAchievementUnlocked": "Unlocked",
   "platformAchievementLocked": "Locked",
   "platformAchievementSemantics": "Achievement “{name}”: {status}",
