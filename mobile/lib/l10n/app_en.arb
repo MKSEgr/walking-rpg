@@ -732,6 +732,7 @@
     }
   },
   "homeDailyGoalReached": "Personal goal reached",
+  "homeDailyGoalStability": "Steps accepted today do not raise today's goal · they can inform later personal goals",
   "homeWeeklyRhythmProgress": "Weekly rhythm: {activeDays} active days · goal {targetActiveDays}",
   "@homeWeeklyRhythmProgress": {
     "placeholders": {
