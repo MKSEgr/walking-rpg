@@ -136,8 +136,9 @@ class QuestRouteProgress extends StatelessWidget {
     final String? remainingGuidance = ready || claimed || remaining <= 0
         ? null
         : switch (metric) {
-            'TOTAL_ACCEPTED_STEPS' => context.l10n
-                .platformQuestStepsRemaining(remaining),
+            'TOTAL_ACCEPTED_STEPS' => context.l10n.platformQuestStepsRemaining(
+              remaining,
+            ),
             'RESOLVED_EVENTS' => context.l10n.platformQuestEventsRemaining(
               remaining,
             ),
