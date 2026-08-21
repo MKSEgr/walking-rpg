@@ -73,6 +73,17 @@ class HomeSnapshot {
             homeLocalDate: localDate,
           );
     final Map<String, dynamic> pilot = _readMap(json, 'pilot');
+    final int pilotLevel = _readInt(pilot, 'level');
+    final int pilotCurrentExperience = _readInt(pilot, 'currentExperience');
+    final int pilotNextLevelExperience = _readInt(pilot, 'nextLevelExperience');
+    if (pilotLevel <= 0 ||
+        pilotCurrentExperience < 0 ||
+        pilotNextLevelExperience <= pilotCurrentExperience) {
+      throw const FormatException(
+        'pilot progression должен содержать положительный уровень и '
+        'следующий порог выше неотрицательного текущего XP',
+      );
+    }
     final Map<String, dynamic> pet = _readMap(json, 'pet');
     final int? petEvolutionStage = _readOptionalInt(pet, 'evolutionStage');
     if (petEvolutionStage != null && petEvolutionStage < 0) {
@@ -159,9 +170,9 @@ class HomeSnapshot {
           : HomeExpeditionEvent.fromJson(_asMap(eventJson, 'unlockedEvent')),
       pilotId: _readOptionalString(pilot, 'pilotId'),
       pilotName: _readString(pilot, 'name'),
-      pilotLevel: _readInt(pilot, 'level'),
-      pilotCurrentExperience: _readInt(pilot, 'currentExperience'),
-      pilotNextLevelExperience: _readInt(pilot, 'nextLevelExperience'),
+      pilotLevel: pilotLevel,
+      pilotCurrentExperience: pilotCurrentExperience,
+      pilotNextLevelExperience: pilotNextLevelExperience,
       petId: _readOptionalString(pet, 'petId'),
       petName: _readString(pet, 'name'),
       petSpecies: _readOptionalString(pet, 'species'),
@@ -227,6 +238,27 @@ class HomeSnapshot {
   final CachedReadMetadata? cacheMetadata;
 
   bool get isCached => cacheMetadata != null;
+
+  bool get hasPilotExperienceProgress =>
+      pilotLevel > 0 &&
+      pilotCurrentExperience >= 0 &&
+      pilotNextLevelExperience > pilotCurrentExperience;
+
+  int get remainingPilotExperience {
+    if (!hasPilotExperienceProgress) {
+      return 0;
+    }
+    return pilotNextLevelExperience - pilotCurrentExperience;
+  }
+
+  double get pilotExperienceProgress {
+    if (!hasPilotExperienceProgress) {
+      return 0;
+    }
+    return (pilotCurrentExperience / pilotNextLevelExperience)
+        .clamp(0.0, 1.0)
+        .toDouble();
+  }
 
   int get remainingExpeditionEnergy {
     final int remaining = requiredEnergy - expeditionProgress;

@@ -798,6 +798,14 @@
     }
   },
   "homePilotLabel": "Pilot",
+  "homePilotExperienceProgress": "XP {current} / {target} · {remaining} XP to next level",
+  "@homePilotExperienceProgress": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "target": {"type": "int"},
+      "remaining": {"type": "int"}
+    }
+  },
   "homePetLabel": "Companion",
   "homePetBond": "Bond {bond}",
   "@homePetBond": {

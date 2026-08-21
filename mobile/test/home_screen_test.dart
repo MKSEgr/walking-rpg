@@ -245,6 +245,7 @@ void main() {
   testWidgets('home screen renders loaded backend snapshot', (
     WidgetTester tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     bool recoveryOpened = false;
     await tester.pumpWidget(
       MaterialApp(
@@ -325,14 +326,30 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
+      find.byKey(const Key('home-pilot-card')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    const String russianPilotProgress =
+        'XP 20 / 100 · до следующего уровня 80 XP';
+    expect(find.text(russianPilotProgress), findsOneWidget);
+    expect(find.bySemanticsLabel(russianPilotProgress), findsOneWidget);
+    final LinearProgressIndicator russianProgress = tester
+        .widget<LinearProgressIndicator>(
+          find.byKey(const Key('home-pilot-experience-progress')),
+        );
+    expect(russianProgress.value, 0.2);
+    expect(find.text('Связь 10 · Малыш'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
       find.text('Доступная энергия: 0 · версия 0'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-
-    expect(find.text('XP 20 / 100'), findsOneWidget);
-    expect(find.text('Связь 10 · Малыш'), findsOneWidget);
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('weekly rhythm exposes one complete English semantic summary', (
@@ -353,6 +370,13 @@ void main() {
     expect(find.text('Weekly rhythm: 5 active days · goal 4'), findsOneWidget);
     expect(find.text('Personal goal reached'), findsOneWidget);
     expect(find.textContaining('active days remain'), findsNothing);
+    const String englishPilotProgress = 'XP 20 / 100 · 80 XP to next level';
+    expect(find.text(englishPilotProgress), findsOneWidget);
+    final LinearProgressIndicator englishProgress = tester
+        .widget<LinearProgressIndicator>(
+          find.byKey(const Key('home-pilot-experience-progress')),
+        );
+    expect(englishProgress.value, 0.2);
     const String englishQualification =
         'Any accepted activity makes a rhythm day active · '
         'your personal goal is separate';
@@ -424,6 +448,14 @@ void main() {
     );
     expect((todayMarker.decoration! as BoxDecoration).border, isNotNull);
     expect((earlierMarker.decoration! as BoxDecoration).border, isNull);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('home-pilot-card')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel(englishPilotProgress), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
@@ -711,6 +743,10 @@ void main() {
     );
     expect(find.byKey(const Key('home-daily-goal-stability')), findsOneWidget);
     expect(find.byKey(const Key('home-daily-goal-feedback')), findsOneWidget);
+    expect(
+      find.byKey(const Key('home-pilot-experience-progress')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -2390,11 +2426,14 @@ void main() {
       );
 
       await tester.scrollUntilVisible(
-        find.text('XP 90 / 100'),
+        find.text('XP 90 / 100 · до следующего уровня 10 XP'),
         200,
         scrollable: find.byType(Scrollable),
       );
-      expect(find.text('XP 90 / 100'), findsOneWidget);
+      expect(
+        find.text('XP 90 / 100 · до следующего уровня 10 XP'),
+        findsOneWidget,
+      );
       expect(find.text('Связь 23'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('Люминовый осколок × 2'),

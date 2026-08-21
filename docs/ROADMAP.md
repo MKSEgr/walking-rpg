@@ -1043,6 +1043,24 @@ code-only track из ADR 0039 без изменения API, goal formula/config
 Health history, ENERGY/rewards, progression, immutable `alpha-rc1` или внешних
 gates.
 
+## Milestone 52 — Authoritative pilot level guidance
+
+### CODE_COMPLETE
+
+- [x] Mobile fail-closed валидирует accepted pilot level/current/next XP и
+      выводит exact remaining с bounded `0...1` progress
+- [x] RU/EN карточка объединяет current, target и remaining в одну нейтральную
+      строку без client-owned threshold, level-up или reward promise
+- [x] Visual progress исключён из semantics; exact state объявляется один раз,
+      а legacy/internal invalid direct snapshot сохраняет literal fallback
+- [x] Domain, RU/EN, semantics и compact text-scale 1.6 coverage фиксируют
+      authoritative presentation boundary
+
+Milestone 52 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative progression из ADR 0009 через ADR 0066 без изменения
+Home API, backend, persistence, progression thresholds/rewards, immutable
+`alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

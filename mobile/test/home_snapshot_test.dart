@@ -37,6 +37,9 @@ void main() {
     expect(snapshot.pilotId, 'navigator-v1');
     expect(snapshot.pilotCurrentExperience, 20);
     expect(snapshot.pilotNextLevelExperience, 100);
+    expect(snapshot.hasPilotExperienceProgress, isTrue);
+    expect(snapshot.remainingPilotExperience, 80);
+    expect(snapshot.pilotExperienceProgress, 0.2);
     expect(snapshot.petId, 'spark-v1');
     expect(snapshot.petSpecies, 'Люмин');
     expect(snapshot.petBond, 10);
@@ -120,6 +123,10 @@ void main() {
     expect(snapshot.unlockedEvent?.choices.first.choiceId, 'analyze-signal');
     expect(snapshot.pilotId, 'navigator-v1');
     expect(snapshot.pilotCurrentExperience, 20);
+    expect(snapshot.pilotNextLevelExperience, 100);
+    expect(snapshot.hasPilotExperienceProgress, isTrue);
+    expect(snapshot.remainingPilotExperience, 80);
+    expect(snapshot.pilotExperienceProgress, 0.2);
     expect(snapshot.petId, 'spark-v1');
     expect(snapshot.petSpecies, 'Люмин');
     expect(snapshot.petBond, 10);
@@ -173,6 +180,64 @@ void main() {
         reason: 'invalid pilotId $invalid must fail closed',
       );
     }
+  });
+
+  test('impossible pilot progression fails closed', () {
+    final List<Map<String, int>> invalidStates = <Map<String, int>>[
+      <String, int>{'level': 0, 'currentExperience': 20, 'next': 100},
+      <String, int>{'level': 1, 'currentExperience': -1, 'next': 100},
+      <String, int>{'level': 1, 'currentExperience': 20, 'next': 0},
+      <String, int>{'level': 1, 'currentExperience': 100, 'next': 100},
+      <String, int>{'level': 1, 'currentExperience': 120, 'next': 100},
+    ];
+
+    for (final Map<String, int> invalidState in invalidStates) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> pilot =
+          response['pilot'] as Map<String, dynamic>;
+      pilot
+        ..['level'] = invalidState['level']
+        ..['currentExperience'] = invalidState['currentExperience']
+        ..['nextLevelExperience'] = invalidState['next'];
+
+      expect(
+        () => HomeSnapshot.fromJson(response),
+        throwsFormatException,
+        reason: 'invalid pilot progression $invalidState must fail closed',
+      );
+    }
+  });
+
+  test('legacy direct snapshot omits derived pilot progress', () {
+    const HomeSnapshot snapshot = HomeSnapshot(
+      localDate: '2026-07-26',
+      timeZone: 'UTC',
+      dailySteps: 0,
+      dailyGoal: 6000,
+      availableEnergy: 0,
+      activityStateVersion: 0,
+      economyVersion: 0,
+      lastActivitySyncAt: null,
+      serverTime: '2026-07-26T06:00:00Z',
+      contentVersion: 'legacy',
+      expeditionId: 'starter-expedition-v1',
+      expeditionName: 'Legacy',
+      currentNodeId: 'outer-beacon',
+      currentNodeName: 'Outer Beacon',
+      expeditionProgress: 0,
+      requiredEnergy: 30,
+      expeditionStatus: 'IN_PROGRESS',
+      expeditionVersion: 0,
+      unlockedEvent: null,
+      pilotName: 'Navigator',
+      pilotLevel: 1,
+      petName: 'Spark',
+      petLevel: 1,
+    );
+
+    expect(snapshot.hasPilotExperienceProgress, isFalse);
+    expect(snapshot.remainingPilotExperience, 0);
+    expect(snapshot.pilotExperienceProgress, 0);
   });
 
   test('legacy response without route trail remains readable', () {
