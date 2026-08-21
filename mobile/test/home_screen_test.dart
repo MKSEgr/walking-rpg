@@ -307,14 +307,68 @@ void main() {
     expect(find.text('Weekly rhythm: 5 active days · goal 4'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
-        'Weekly rhythm: 5 active days · goal 4. '
-        'Goal reached · 7-day window · rest days are normal',
+        RegExp(
+          r'^Weekly rhythm: 5 active days · goal 4\. '
+          r'Goal reached · 7-day window · rest days are normal\. '
+          r'Days: .*active day.*rest day.*$',
+        ),
       ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-day-trail')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-day-2026-07-26')),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
+  });
+
+  testWidgets('weekly day trail reflows on compact enlarged text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(loader: () async => _readyToAdvance()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('home-daily-progress-compact')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-day-trail')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-day-2026-07-20')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-day-2026-07-26')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
@@ -2538,6 +2592,15 @@ HomeSnapshot _readyToAdvance({CachedReadMetadata? cacheMetadata}) {
       windowDays: 7,
       targetActiveDays: 4,
       targetReached: true,
+      days: <WeeklyActivityDay>[
+        WeeklyActivityDay(localDate: '2026-07-20', active: true),
+        WeeklyActivityDay(localDate: '2026-07-21', active: true),
+        WeeklyActivityDay(localDate: '2026-07-22', active: false),
+        WeeklyActivityDay(localDate: '2026-07-23', active: true),
+        WeeklyActivityDay(localDate: '2026-07-24', active: false),
+        WeeklyActivityDay(localDate: '2026-07-25', active: true),
+        WeeklyActivityDay(localDate: '2026-07-26', active: true),
+      ],
     ),
     availableEnergy: 68,
     activityStateVersion: 1,

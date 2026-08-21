@@ -1593,6 +1593,23 @@ class _DailyProgressSummary extends StatelessWidget {
         : weeklyRhythm.targetReached
         ? context.l10n.homeWeeklyRhythmReached(weeklyRhythm.windowDays)
         : context.l10n.homeWeeklyRhythmWindow(weeklyRhythm.windowDays);
+    final MaterialLocalizations materialLocalizations =
+        MaterialLocalizations.of(context);
+    final String? weeklyDaysSummary =
+        weeklyRhythm == null || weeklyRhythm.days.isEmpty
+        ? null
+        : context.l10n.homeWeeklyRhythmDaysSummary(
+            weeklyRhythm.days
+                .map((WeeklyActivityDay day) {
+                  final String date = materialLocalizations.formatShortDate(
+                    day.date,
+                  );
+                  return day.active
+                      ? context.l10n.homeWeeklyRhythmActiveDay(date)
+                      : context.l10n.homeWeeklyRhythmRestDay(date);
+                })
+                .join('; '),
+          );
     final Widget ring = ExpeditionProgressRing(
       progress: snapshot.dailyProgress,
       value: '${(snapshot.dailyProgress * 100).round()}%',
@@ -1623,7 +1640,11 @@ class _DailyProgressSummary extends StatelessWidget {
           Semantics(
             key: const Key('home-weekly-activity-rhythm'),
             container: true,
-            label: '$weeklyRhythmTitle. $weeklyRhythmDetail',
+            label: <String>[
+              weeklyRhythmTitle,
+              weeklyRhythmDetail,
+              if (weeklyDaysSummary != null) weeklyDaysSummary,
+            ].join('. '),
             child: ExcludeSemantics(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1648,6 +1669,10 @@ class _DailyProgressSummary extends StatelessWidget {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
+                  if (weeklyRhythm.days.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 8),
+                    _WeeklyActivityDayTrail(days: weeklyRhythm.days),
+                  ],
                 ],
               ),
             ),
@@ -1679,6 +1704,62 @@ class _DailyProgressSummary extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _WeeklyActivityDayTrail extends StatelessWidget {
+  const _WeeklyActivityDayTrail({required this.days});
+
+  final List<WeeklyActivityDay> days;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final List<String> narrowWeekdays =
+        MaterialLocalizations.of(context).narrowWeekdays;
+
+    return Wrap(
+      key: const Key('home-weekly-activity-day-trail'),
+      spacing: 4,
+      runSpacing: 4,
+      children: days.map((WeeklyActivityDay day) {
+        final Color foreground = day.active
+            ? colors.onPrimaryContainer
+            : colors.onSurfaceVariant;
+        return Container(
+          key: Key('home-weekly-activity-day-${day.localDate}'),
+          width: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+          decoration: BoxDecoration(
+            color: day.active
+                ? colors.primaryContainer
+                : colors.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                day.active ? Icons.directions_walk : Icons.bedtime_outlined,
+                color: foreground,
+                size: 15,
+              ),
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  narrowWeekdays[day.date.weekday % 7],
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: foreground,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(growable: false),
     );
   }
 }

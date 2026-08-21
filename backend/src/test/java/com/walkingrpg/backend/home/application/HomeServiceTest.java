@@ -13,6 +13,7 @@ import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
 import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
+import com.walkingrpg.backend.goal.infrastructure.DailyGoalHistoryRepository;
 import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionJourneyChronicleTotals;
@@ -478,8 +479,14 @@ class HomeServiceTest {
                 repository,
                 new StarterHomeContent(),
                 new DailyGoalService(
-                        (userId, fromInclusive, toExclusive) ->
+                        goalHistory(
                                 List.of(2_000L, 3_000L, 4_000L),
+                                List.of(
+                                        LocalDate.of(2026, 7, 20),
+                                        LocalDate.of(2026, 7, 22),
+                                        LocalDate.of(2026, 7, 24)
+                                )
+                        ),
                         new AdaptiveDailyGoalCalculator(goalProperties),
                         goalProperties
                 ),
@@ -501,6 +508,15 @@ class HomeServiceTest {
         assertEquals(7, snapshot.weeklyActivityRhythm().windowDays());
         assertEquals(4, snapshot.weeklyActivityRhythm().targetActiveDays());
         assertEquals(false, snapshot.weeklyActivityRhythm().targetReached());
+        assertEquals(7, snapshot.weeklyActivityRhythm().days().size());
+        assertEquals(LocalDate.of(2026, 7, 19),
+                snapshot.weeklyActivityRhythm().days().getFirst().localDate());
+        assertEquals(false,
+                snapshot.weeklyActivityRhythm().days().getFirst().active());
+        assertEquals(true,
+                snapshot.weeklyActivityRhythm().days().get(1).active());
+        assertEquals(LocalDate.of(2026, 7, 25),
+                snapshot.weeklyActivityRhythm().days().getLast().localDate());
         assertEquals(38, snapshot.availableEnergy());
         assertEquals(3, snapshot.activityStateVersion());
         assertEquals(2, snapshot.economyVersion());
@@ -1555,6 +1571,31 @@ class HomeServiceTest {
 
     private HomeReadRepository repository(HomeRuntimeState state) {
         return repository(state, List.of());
+    }
+
+    private DailyGoalHistoryRepository goalHistory(
+            List<Long> totals,
+            List<LocalDate> dates
+    ) {
+        return new DailyGoalHistoryRepository() {
+            @Override
+            public List<Long> findAcceptedTotals(
+                    String userId,
+                    LocalDate fromInclusive,
+                    LocalDate toExclusive
+            ) {
+                return totals;
+            }
+
+            @Override
+            public List<LocalDate> findAcceptedDates(
+                    String userId,
+                    LocalDate fromInclusive,
+                    LocalDate toExclusive
+            ) {
+                return dates;
+            }
+        };
     }
 
     private HomeReadRepository repository(

@@ -229,6 +229,21 @@ class HomeReadIntegrationTest {
         assertEquals(7, snapshot.weeklyActivityRhythm().windowDays());
         assertEquals(4, snapshot.weeklyActivityRhythm().targetActiveDays());
         assertEquals(true, snapshot.weeklyActivityRhythm().targetReached());
+        assertEquals(7, snapshot.weeklyActivityRhythm().days().size());
+        assertEquals(ACTIVITY_DATE.minusDays(6), snapshot
+                .weeklyActivityRhythm().days().getFirst().localDate());
+        assertEquals(false, snapshot.weeklyActivityRhythm()
+                .days().getFirst().active());
+        assertEquals(true, snapshot.weeklyActivityRhythm()
+                .days().get(3).active());
+        assertEquals(true, snapshot.weeklyActivityRhythm()
+                .days().get(4).active());
+        assertEquals(true, snapshot.weeklyActivityRhythm()
+                .days().get(5).active());
+        assertEquals(true, snapshot.weeklyActivityRhythm()
+                .days().getLast().active());
+        assertEquals(ACTIVITY_DATE, snapshot.weeklyActivityRhythm()
+                .days().getLast().localDate());
     }
 
     @Test

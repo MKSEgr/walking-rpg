@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative seven-day active/rest trail for the non-punitive weekly
+  rhythm, reconstructed from persisted local dates with legacy-compatible
+  RU/EN markers and no streak, ENERGY or reward side effects;
 - server-authoritative non-punitive weekly activity rhythm over the current and
   six previous local dates, with a soft 4/7 target, legacy-compatible RU/EN
   presentation and no streak reset, ENERGY or reward side effects;

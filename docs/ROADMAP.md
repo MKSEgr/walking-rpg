@@ -920,6 +920,24 @@ Milestone 44 продолжает post-alpha code-only gameplay track из ADR 0
 реализует раздел «Прогресс без наказания» product canon без изменения
 immutable `alpha-rc1` или внешних gates.
 
+## Milestone 45 — Authoritative weekly activity day trail
+
+### CODE_COMPLETE
+
+- [x] Additive `weeklyActivityRhythm.days` проецирует все семь локальных дат
+      от target `localDate - 6` до target date в хронологическом порядке
+- [x] Active marker выводится только из persisted positive accepted total;
+      явный rest marker нейтрален и не создаёт streak reset, penalty или reward
+- [x] Mobile принимает legacy weekly object без trail и fail-closed проверяет
+      supplied length, даты, continuity, endpoint и соответствие `activeDays`
+- [x] RU/EN markers объединены в одну accessibility summary и выдерживают
+      compact text scale 1.6; backend unit/API/PostgreSQL и Flutter
+      parser/widget/localization coverage фиксируют authoritative ряд
+
+Milestone 45 продолжает non-punitive rhythm из ADR 0058 и post-alpha code-only
+gameplay track из ADR 0039 без изменения schema, daily goal, rewards/economy,
+progression, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

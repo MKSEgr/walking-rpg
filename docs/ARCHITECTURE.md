@@ -542,10 +542,14 @@ Home также проецирует additive `weeklyActivityRhythm` из
 читает target local date и шесть предыдущих дат в том же repeatable-read
 snapshot; каждая уникальная строка с `accepted_total > 0` даёт один active day.
 Backend сохраняет фактический count до семи, фиксированную мягкую цель v1 4/7
-и derived `targetReached`. Mobile не перечитывает Health history и не выводит
-ритм из client clock. Окно естественно сдвигается по локальным датам, поэтому
-пропуск не выполняет reset, не мутирует progression и не затрагивает
-ENERGY/rewards.
+и derived `targetReached`, а также строит полный хронологический `days` trail
+от `localDate - 6` до target date. Явные inactive entries не сохраняются
+отдельно: это безопасная проекция отсутствия positive accepted total внутри
+того же snapshot. Mobile принимает legacy object без trail, но supplied dates
+fail-closed проверяет на размер, непрерывность, конечную дату и согласованность
+с count; Health history и client clock не используются. Окно естественно
+сдвигается по локальным датам, поэтому пропуск не выполняет reset, не мутирует
+progression и не затрагивает ENERGY/rewards.
 
 ## 7. Схема данных
 
