@@ -67,6 +67,8 @@
 - три питомца с реальным active selection, независимым progression и
   двумя эволюциями до взрослой формы, а также собственными исходами события
   на неизведанном рубеже;
+- Platform показывает точный остаток server-authored bond до следующей
+  эволюции спутника в RU/EN, не перенося пороги или evolution rules на mobile;
 - material inventory с append-only credit/debit ledger, server-authoritative
   crafting, persistent unique item и equipment slot `NAVIGATION`;
 - последовательное улучшение призматического секстанта до уровня 3/EPIC на

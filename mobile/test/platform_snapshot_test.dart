@@ -14,6 +14,11 @@ void main() {
     expect(snapshot.activePet.canEvolve, isTrue);
     expect(snapshot.activePet.maximumEvolutionStage, 1);
     expect(snapshot.activePet.isFullyEvolved, isFalse);
+    expect(snapshot.activePet.remainingEvolutionBond, 0);
+    final PlatformPet moss = snapshot.userState.pets.singleWhere(
+      (PlatformPet pet) => pet.petId == 'moss-v1',
+    );
+    expect(moss.remainingEvolutionBond, 33);
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.weeklyRouteProgressValue, 0.4);
     expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
@@ -52,6 +57,7 @@ void main() {
     expect(pet.maximumEvolutionStage, 2);
     expect(pet.canEvolve, isTrue);
     expect(pet.isFullyEvolved, isFalse);
+    expect(pet.remainingEvolutionBond, 0);
   });
 
   test('rejects an evolution stage above the server maximum', () {
@@ -96,6 +102,7 @@ void main() {
     expect(pet.maximumEvolutionStage, 2);
     expect(pet.canEvolve, isFalse);
     expect(pet.isFullyEvolved, isTrue);
+    expect(pet.remainingEvolutionBond, 0);
   });
 
   test('maps independent server-owned cosmetic slots', () {

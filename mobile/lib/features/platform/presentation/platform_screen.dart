@@ -2608,6 +2608,12 @@ class _PetCard extends StatelessWidget {
     final String evolutionStage = context.l10n.companionStageName(
       pet.evolutionStage,
     );
+    final bool showsRemainingBond = !pet.isFullyEvolved && !pet.canEvolve;
+    final String evolutionGuidance = pet.isFullyEvolved
+        ? '$evolutionStage — ${context.l10n.platformPetFullyEvolved}'
+        : pet.canEvolve
+        ? context.l10n.platformPetReadyToEvolve
+        : context.l10n.platformPetBondRemaining(pet.remainingEvolutionBond);
     final Widget portrait = CompanionPortrait(
       key: Key('platform-pet-portrait-${pet.petId}'),
       petId: pet.petId,
@@ -2695,22 +2701,19 @@ class _PetCard extends StatelessWidget {
             petName: petName,
             bond: pet.bond,
             evolutionBond: pet.evolutionBond,
+            remainingBond: pet.remainingEvolutionBond,
             canEvolve: pet.canEvolve,
             fullyEvolved: pet.isFullyEvolved,
           ),
           const SizedBox(height: 8),
-          Text(
-            pet.isFullyEvolved
-                ? '$evolutionStage — ${context.l10n.platformPetFullyEvolved}'
-                : pet.canEvolve
-                ? context.l10n.platformPetReadyToEvolve
-                : pet.evolutionStage > 0
-                ? '$evolutionStage — '
-                      '${context.l10n.platformPetBondToEvolve}'
-                : context.l10n.platformPetBondFromEvents,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          ExcludeSemantics(
+            excluding: showsRemainingBond,
+            child: Text(
+              evolutionGuidance,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
           ),
           const SizedBox(height: 14),
           Wrap(

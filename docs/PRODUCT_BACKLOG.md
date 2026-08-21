@@ -1671,6 +1671,28 @@ ENERGY/rewards, progression или external validation status.
 существующими accepted Home XP fields без изменения progression, economy,
 reward или external validation status.
 
+### US-069. Видеть, сколько связи осталось до эволюции спутника
+
+Как игрок, я хочу видеть точный остаток связи до следующей эволюции спутника,
+чтобы понимать близость новой формы без самостоятельного вычитания.
+
+Критерии:
+
+- mobile выводит non-negative remaining только из принятых Platform полей
+  `bond` и server-authored `evolutionBond`;
+- растущий спутник получает точную RU/EN строку, а ready-to-evolve и fully
+  evolved состояния сохраняют прежние guidance и не получают fake target;
+- exact remaining входит в семантику `CompanionBondSignal` ровно один раз,
+  а повторяющая его visual line исключена из assistive announcement;
+- domain, RU/EN, semantics, ready/final и compact text-scale 1.6 coverage
+  фиксируют presentation contract;
+- backend/API/schema, thresholds, evolution command, rewards, economy и
+  external validation status не меняются.
+
+**Статус:** companion evolution guidance реализована как mobile presentation
+над существующим accepted Platform pet snapshot без переноса server-owned
+порогов или evolution rules на клиент.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

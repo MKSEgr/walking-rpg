@@ -1472,12 +1472,19 @@
   "platformPetReadyToEvolve": "Bond is ready for evolution.",
   "platformPetBondToEvolve": "strengthen the bond for the next evolution.",
   "platformPetBondFromEvents": "Event decisions strengthen your companion bond.",
-  "platformCompanionBondGrowingSemantics": "Companion “{name}” bond: {bond} of {target}",
+  "platformPetBondRemaining": "Next evolution: {remaining} more bond",
+  "@platformPetBondRemaining": {
+    "placeholders": {
+      "remaining": {"type": "int"}
+    }
+  },
+  "platformCompanionBondGrowingSemantics": "Companion “{name}” bond: {bond} of {target}. {remaining} more bond to next evolution",
   "@platformCompanionBondGrowingSemantics": {
     "placeholders": {
       "name": {"type": "String"},
       "bond": {"type": "int"},
-      "target": {"type": "int"}
+      "target": {"type": "int"},
+      "remaining": {"type": "int"}
     }
   },
   "platformCompanionBondReadySemantics": "Companion “{name}” bond: {bond} of {target}. Ready to evolve",

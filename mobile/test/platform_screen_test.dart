@@ -1316,6 +1316,7 @@ void main() {
       Key('weekly-route-signal-weekly-route-1-firstSignal'),
       Key('season-reward-seal-signal-season-1-2-firstSignal'),
       Key('platform-pet-compact-spark-v1'),
+      Key('platform-pet-compact-moss-v1'),
       Key('platform-skill-compact-steady-step'),
       Key('platform-quest-compact-walk-3000'),
       Key('quest-route-signal-walk-3000-steps'),
@@ -1329,6 +1330,12 @@ void main() {
       await _bringIntoView(tester, target);
       expect(target, findsOneWidget);
       _expectNoLayoutException(tester);
+      if (key == const Key('platform-pet-compact-moss-v1')) {
+        expect(
+          find.text('До следующей эволюции: ещё 33 связи'),
+          findsOneWidget,
+        );
+      }
     }
 
     final Finder journalScrollable = find.descendant(
@@ -1856,9 +1863,13 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel('Связь спутника «Мох»: 12 из 45'),
+      find.bySemanticsLabel(
+        'Связь спутника «Мох»: 12 из 45. '
+        'До следующей эволюции: ещё 33 связи',
+      ),
       findsOneWidget,
     );
+    expect(find.text('До следующей эволюции: ещё 33 связи'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(
       find.bySemanticsLabel('Рост спутника: Малыш, этап 1 из 3'),

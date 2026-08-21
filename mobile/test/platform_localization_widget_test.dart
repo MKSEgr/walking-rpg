@@ -593,6 +593,19 @@ void main() {
 
     await _bringIntoView(
       tester,
+      find.byKey(const Key('platform-pet-compact-moss-v1')),
+    );
+    expect(find.text('Next evolution: 33 more bond'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Companion “Moss” bond: 12 of 45. '
+        '33 more bond to next evolution',
+      ),
+      findsOneWidget,
+    );
+
+    await _bringIntoView(
+      tester,
       find.byKey(const Key('platform-skill-compact-steady-step')),
     );
     expect(find.text('Steady Step'), findsOneWidget);
