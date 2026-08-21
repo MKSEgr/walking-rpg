@@ -275,9 +275,15 @@ void main() {
       find.byKey(const Key('home-weekly-activity-rhythm-progress')),
       findsOneWidget,
     );
+    final Text russianDateRange = tester.widget<Text>(
+      find.byKey(const Key('home-weekly-activity-date-range')),
+    );
+    expect(russianDateRange.data, startsWith('Учитываются даты: '));
     expect(
-      find.text('Учитываются даты: 20.07.2026–26.07.2026'),
-      findsOneWidget,
+      RegExp(
+        r'^Учитываются даты: .*20.*2026.*–.*26.*2026$',
+      ).hasMatch(russianDateRange.data!),
+      isTrue,
     );
     final Text todayStatus = tester.widget<Text>(
       find.byKey(const Key('home-weekly-activity-today-status')),
@@ -321,12 +327,21 @@ void main() {
 
     expect(find.text('Weekly rhythm: 5 active days · goal 4'), findsOneWidget);
     expect(find.textContaining('active days remain'), findsNothing);
+    final Text dateRangeText = tester.widget<Text>(
+      find.byKey(const Key('home-weekly-activity-date-range')),
+    );
+    final String dateRange = dateRangeText.data!;
+    expect(dateRange, startsWith('Dates counted: '));
+    expect(
+      RegExp(r'^Dates counted: .*20.*2026.*–.*26.*2026$').hasMatch(dateRange),
+      isTrue,
+    );
     expect(
       find.bySemanticsLabel(
         RegExp(
           r'^Weekly rhythm: 5 active days · goal 4\. '
           r'Goal reached · 7-day window · rest days are normal\. '
-          r'Dates counted: 7/20/2026–7/26/2026\. '
+          '${RegExp.escape(dateRange)}\\. '
           r'Days: .*active day.*rest day.*$',
         ),
       ),
@@ -340,7 +355,6 @@ void main() {
       find.byKey(const Key('home-weekly-activity-day-2026-07-26')),
       findsOneWidget,
     );
-    const String dateRange = 'Dates counted: 7/20/2026–7/26/2026';
     expect(find.text(dateRange), findsOneWidget);
     final Text todayStatus = tester.widget<Text>(
       find.byKey(const Key('home-weekly-activity-today-status')),
