@@ -187,6 +187,11 @@ class HomeReadIntegrationTest {
                 "goal-outside-window"
         ));
         activitySyncService.synchronize(command(
+                ACTIVITY_DATE.minusDays(7),
+                3_000,
+                "rhythm-before-window"
+        ));
+        activitySyncService.synchronize(command(
                 ACTIVITY_DATE.minusDays(3),
                 2_000,
                 "goal-history-1"
@@ -215,11 +220,15 @@ class HomeReadIntegrationTest {
         assertEquals(3_250, snapshot.dailyGoal());
         assertEquals("ADAPTIVE", snapshot.dailyGoalPolicy().source().name());
         assertEquals(BigDecimal.valueOf(3_000), snapshot.dailyGoalPolicy().baselineSteps());
-        assertEquals(3, snapshot.dailyGoalPolicy().sampleDays());
+        assertEquals(4, snapshot.dailyGoalPolicy().sampleDays());
         assertEquals(6_000, snapshot.dailyGoalPolicy().defaultGoal());
         assertEquals(7, snapshot.dailyGoalPolicy().lookbackDays());
         assertEquals(5, snapshot.dailyGoalPolicy().growthPercent());
         assertEquals(250, snapshot.dailyGoalPolicy().roundingStep());
+        assertEquals(4, snapshot.weeklyActivityRhythm().activeDays());
+        assertEquals(7, snapshot.weeklyActivityRhythm().windowDays());
+        assertEquals(4, snapshot.weeklyActivityRhythm().targetActiveDays());
+        assertEquals(true, snapshot.weeklyActivityRhythm().targetReached());
     }
 
     @Test

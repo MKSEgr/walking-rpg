@@ -13,6 +13,11 @@ void main() {
       snapshot.dailyGoalPolicy.explanation,
       'Стартовая личная цель: собрано 0 из 3 активных дней',
     );
+    expect(snapshot.weeklyActivityRhythm?.activeDays, 0);
+    expect(snapshot.weeklyActivityRhythm?.windowDays, 7);
+    expect(snapshot.weeklyActivityRhythm?.targetActiveDays, 4);
+    expect(snapshot.weeklyActivityRhythm?.targetReached, isFalse);
+    expect(snapshot.weeklyActivityRhythm?.progress, 0);
     expect(snapshot.expeditionProgressValue, 0);
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent, isNull);
@@ -39,6 +44,11 @@ void main() {
     expect(snapshot.dailyGoalPolicy.source, 'ADAPTIVE');
     expect(snapshot.dailyGoalPolicy.baselineSteps, 3000);
     expect(snapshot.dailyGoalPolicy.sampleDays, 3);
+    expect(snapshot.weeklyActivityRhythm?.activeDays, 3);
+    expect(snapshot.weeklyActivityRhythm?.windowDays, 7);
+    expect(snapshot.weeklyActivityRhythm?.targetActiveDays, 4);
+    expect(snapshot.weeklyActivityRhythm?.targetReached, isFalse);
+    expect(snapshot.weeklyActivityRhythm?.progress, 0.75);
     expect(snapshot.availableEnergy, 38);
     expect(snapshot.activityStateVersion, 1);
     expect(snapshot.economyVersion, 2);
@@ -2198,6 +2208,40 @@ void main() {
     expect(snapshot.dailyGoalPolicy.explanation, 'Личная цель');
   });
 
+  test('response without weekly rhythm remains backward compatible', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response.remove('weeklyActivityRhythm');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.weeklyActivityRhythm, isNull);
+  });
+
+  test('weekly rhythm rejects impossible or inconsistent values', () {
+    final List<void Function(Map<String, dynamic>)> corruptions =
+        <void Function(Map<String, dynamic>)>[
+          (Map<String, dynamic> rhythm) => rhythm['activeDays'] = -1,
+          (Map<String, dynamic> rhythm) => rhythm['activeDays'] = 8,
+          (Map<String, dynamic> rhythm) => rhythm['windowDays'] = 0,
+          (Map<String, dynamic> rhythm) => rhythm['targetActiveDays'] = 8,
+          (Map<String, dynamic> rhythm) => rhythm['targetReached'] = true,
+          (Map<String, dynamic> rhythm) => rhythm['activeDays'] = 3.0,
+        ];
+
+    for (final void Function(Map<String, dynamic>) corrupt in corruptions) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> rhythm =
+          response['weeklyActivityRhythm'] as Map<String, dynamic>;
+      corrupt(rhythm);
+
+      expect(
+        () => HomeSnapshot.fromJson(response),
+        throwsFormatException,
+        reason: 'invalid weekly rhythm must fail closed: $rhythm',
+      );
+    }
+  });
+
   test('resolved event maps selected outcome and persistent rewards', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> pilot =
@@ -2727,6 +2771,12 @@ Map<String, dynamic> _readyHomeResponse() {
       'roundingStep': 250,
       'minimumGoal': 2000,
       'maximumGoal': 12000,
+    },
+    'weeklyActivityRhythm': <String, dynamic>{
+      'activeDays': 3,
+      'windowDays': 7,
+      'targetActiveDays': 4,
+      'targetReached': false,
     },
     'availableEnergy': 38,
     'activityStateVersion': 1,

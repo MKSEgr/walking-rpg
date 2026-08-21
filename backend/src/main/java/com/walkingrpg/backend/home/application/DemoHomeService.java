@@ -16,6 +16,7 @@ import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionRouteNodeSnapshot;
+import com.walkingrpg.backend.home.domain.WeeklyActivityRhythmSnapshot;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -49,6 +50,7 @@ public class DemoHomeService {
                 0,
                 dailyGoal.steps(),
                 DailyGoalPolicySnapshot.from(dailyGoal),
+                new WeeklyActivityRhythmSnapshot(0, 7, 4, false),
                 0,
                 0,
                 0,

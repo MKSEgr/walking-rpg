@@ -537,6 +537,16 @@ requirement может дополнительно задавать минима�
 экспедицию сразу, а оба решения нового узла завершают её после собственных
 server-owned наград.
 
+Home также проецирует additive `weeklyActivityRhythm` из
+`activity_sync_state` без отдельного persisted streak. `DailyGoalService`
+читает target local date и шесть предыдущих дат в том же repeatable-read
+snapshot; каждая уникальная строка с `accepted_total > 0` даёт один active day.
+Backend сохраняет фактический count до семи, фиксированную мягкую цель v1 4/7
+и derived `targetReached`. Mobile не перечитывает Health history и не выводит
+ритм из client clock. Окно естественно сдвигается по локальным датам, поэтому
+пропуск не выполняет reset, не мутирует progression и не затрагивает
+ENERGY/rewards.
+
 ## 7. Схема данных
 
 Основные таблицы:

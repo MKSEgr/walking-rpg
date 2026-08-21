@@ -37,6 +37,7 @@ import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance
 import 'package:walking_rpg_mobile/features/expedition/domain/expedition_journey_result.dart';
 import 'package:walking_rpg_mobile/features/home/data/home_api_client.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
+import 'package:walking_rpg_mobile/features/home/domain/weekly_activity_rhythm.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/data/item_upgrade_api_client.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/features/recovery/presentation/mobile_command_recovery_action.dart';
@@ -1580,6 +1581,18 @@ class _DailyProgressSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final WeeklyActivityRhythm? weeklyRhythm = snapshot.weeklyActivityRhythm;
+    final String? weeklyRhythmTitle = weeklyRhythm == null
+        ? null
+        : context.l10n.homeWeeklyRhythmProgress(
+            weeklyRhythm.activeDays,
+            weeklyRhythm.targetActiveDays,
+          );
+    final String? weeklyRhythmDetail = weeklyRhythm == null
+        ? null
+        : weeklyRhythm.targetReached
+        ? context.l10n.homeWeeklyRhythmReached(weeklyRhythm.windowDays)
+        : context.l10n.homeWeeklyRhythmWindow(weeklyRhythm.windowDays);
     final Widget ring = ExpeditionProgressRing(
       progress: snapshot.dailyProgress,
       value: '${(snapshot.dailyProgress * 100).round()}%',
@@ -1603,6 +1616,43 @@ class _DailyProgressSummary extends StatelessWidget {
             context,
           ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
         ),
+        if (weeklyRhythm != null &&
+            weeklyRhythmTitle != null &&
+            weeklyRhythmDetail != null) ...<Widget>[
+          const SizedBox(height: 14),
+          Semantics(
+            key: const Key('home-weekly-activity-rhythm'),
+            container: true,
+            label: '$weeklyRhythmTitle. $weeklyRhythmDetail',
+            child: ExcludeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    weeklyRhythmTitle,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(
+                      key: const Key('home-weekly-activity-rhythm-progress'),
+                      value: weeklyRhythm.progress,
+                      minHeight: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    weeklyRhythmDetail,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
 

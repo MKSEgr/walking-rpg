@@ -581,6 +581,21 @@ The static painter owns one complete semantic summary and excludes its internal
 percentage copy from duplicate announcements. It keeps the same fixed square
 footprint in light and dark themes and in the existing compact Home reflow.
 
+## Weekly activity rhythm
+
+The daily route summary may add one quiet weekly measure from the accepted Home
+snapshot. It shows literal active-day count, the four-day target and a bounded
+progress line. The adjacent copy always states the seven-day window and that
+rest days do not reset progress; after the target is reached it names success
+without adding a reward claim.
+
+The component is not a streak, calendar commitment, ENERGY source, achievement
+or Health-history reader. It does not color missing days as failure and does
+not infer activity when the additive server object is absent. Visible RU/EN
+copy is excluded from duplicate announcements and exposed as one complete
+semantic summary. The column remains fluid inside the existing compact daily
+progress reflow at enlarged text.
+
 ## Entry experience
 
 The authentication entry uses the same quiet frontier backdrop and first-

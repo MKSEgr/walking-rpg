@@ -497,6 +497,10 @@ class HomeServiceTest {
         assertEquals(BigDecimal.valueOf(3_000), snapshot.dailyGoalPolicy().baselineSteps());
         assertEquals(3, snapshot.dailyGoalPolicy().sampleDays());
         assertEquals(6_000, snapshot.dailyGoalPolicy().defaultGoal());
+        assertEquals(3, snapshot.weeklyActivityRhythm().activeDays());
+        assertEquals(7, snapshot.weeklyActivityRhythm().windowDays());
+        assertEquals(4, snapshot.weeklyActivityRhythm().targetActiveDays());
+        assertEquals(false, snapshot.weeklyActivityRhythm().targetReached());
         assertEquals(38, snapshot.availableEnergy());
         assertEquals(3, snapshot.activityStateVersion());
         assertEquals(2, snapshot.economyVersion());

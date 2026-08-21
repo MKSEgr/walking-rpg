@@ -44,6 +44,10 @@ class DemoHomeServiceTest {
         assertEquals(6_000, snapshot.dailyGoal());
         assertEquals("DEFAULT", snapshot.dailyGoalPolicy().source().name());
         assertEquals(0, snapshot.dailyGoalPolicy().sampleDays());
+        assertEquals(0, snapshot.weeklyActivityRhythm().activeDays());
+        assertEquals(7, snapshot.weeklyActivityRhythm().windowDays());
+        assertEquals(4, snapshot.weeklyActivityRhythm().targetActiveDays());
+        assertEquals(false, snapshot.weeklyActivityRhythm().targetReached());
         assertEquals(0, snapshot.availableEnergy());
         assertEquals(0, snapshot.activityStateVersion());
         assertEquals(0, snapshot.economyVersion());

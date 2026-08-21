@@ -13,6 +13,7 @@ import com.walkingrpg.backend.home.domain.ItemUpgradeSnapshot;
 import com.walkingrpg.backend.home.domain.PetSnapshot;
 import com.walkingrpg.backend.home.domain.PendingEventResultSnapshot;
 import com.walkingrpg.backend.home.domain.PilotSnapshot;
+import com.walkingrpg.backend.home.domain.WeeklyActivityRhythmSnapshot;
 
 public record HomeSnapshotResponse(
         LocalDate localDate,
@@ -20,6 +21,7 @@ public record HomeSnapshotResponse(
         long dailySteps,
         long dailyGoal,
         DailyGoalPolicySnapshot dailyGoalPolicy,
+        WeeklyActivityRhythmSnapshot weeklyActivityRhythm,
         long availableEnergy,
         long activityStateVersion,
         long economyVersion,
@@ -52,6 +54,7 @@ public record HomeSnapshotResponse(
             long dailySteps,
             long dailyGoal,
             DailyGoalPolicySnapshot dailyGoalPolicy,
+            WeeklyActivityRhythmSnapshot weeklyActivityRhythm,
             long availableEnergy,
             long activityStateVersion,
             long economyVersion,
@@ -68,6 +71,7 @@ public record HomeSnapshotResponse(
                 dailySteps,
                 dailyGoal,
                 dailyGoalPolicy,
+                weeklyActivityRhythm,
                 availableEnergy,
                 activityStateVersion,
                 economyVersion,

@@ -901,6 +901,25 @@ Milestone 43 продолжает post-alpha code-only gameplay track из ADR 0
 меняет immutable `alpha-rc1`, schema, rewards/economy, progression, topology,
 archive limit или external validation gates.
 
+## Milestone 44 — Non-punitive weekly activity rhythm
+
+### CODE_COMPLETE
+
+- [x] Additive `weeklyActivityRhythm` считает positive accepted activity на
+      target local date и шести предыдущих датах без client/Health inference
+- [x] Мягкая цель v1 равна четырём дням из семи; derived `targetReached`
+      проверяется fail-closed, а пропуск дня не создаёт streak reset или penalty
+- [x] Ритм не выдаёт ENERGY/rewards и не меняет daily goal, progression,
+      topology, persistence schema или external validation status
+- [x] Mobile принимает legacy omission, показывает RU/EN visible copy и одну
+      accessibility summary, а compact text scale 1.6 остаётся без overflow;
+      backend unit/API/PostgreSQL и Flutter parser/widget/localization coverage
+      фиксируют authoritative window и invalid data
+
+Milestone 44 продолжает post-alpha code-only gameplay track из ADR 0039 и
+реализует раздел «Прогресс без наказания» product canon без изменения
+immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
