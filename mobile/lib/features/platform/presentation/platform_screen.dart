@@ -2436,6 +2436,13 @@ class _WeeklyRouteCard extends StatelessWidget {
       snapshot.content.season.seasonId,
       snapshot.content.season.name,
     );
+    final String? seasonRewardGuidance =
+        nextRewardLevel != null && remainingSeasonXp != null
+        ? context.l10n.platformSeasonRewardRemainingXp(
+            nextRewardLevel,
+            remainingSeasonXp,
+          )
+        : null;
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     return ExpeditionPanel(
@@ -2488,16 +2495,16 @@ class _WeeklyRouteCard extends StatelessWidget {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
-                  if (nextRewardLevel != null &&
-                      remainingSeasonXp != null) ...<Widget>[
+                  if (seasonRewardGuidance != null) ...<Widget>[
                     const SizedBox(height: 4),
-                    Text(
-                      context.l10n.platformSeasonRewardRemainingXp(
-                        nextRewardLevel,
-                        remainingSeasonXp,
-                      ),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
+                    Semantics(
+                      label: seasonRewardGuidance,
+                      excludeSemantics: true,
+                      child: Text(
+                        seasonRewardGuidance,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],

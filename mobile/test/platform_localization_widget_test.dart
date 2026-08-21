@@ -578,9 +578,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('80 more season XP until level 3 reward'), findsOneWidget);
+    expect(find.text('60 more season XP until level 1 reward'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('80 more season XP until level 3 reward'),
+      find.bySemanticsLabel('60 more season XP until level 1 reward'),
       findsOneWidget,
     );
 
