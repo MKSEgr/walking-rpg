@@ -25,6 +25,8 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class PlatformContentCatalog {
 
+    private static final int SEASON_LEVELS = 10;
+    private static final int SEASON_XP_PER_LEVEL = 100;
     private static final Set<String> COSMETIC_SLOTS =
             Set.of("PILOT", "PET", "PROFILE");
     /*
@@ -315,6 +317,23 @@ public class PlatformContentCatalog {
         return experiments;
     }
 
+    int seasonLevels() {
+        return SEASON_LEVELS;
+    }
+
+    int requiredSeasonXpForRewardLevel(int level) {
+        return Math.multiplyExact(level, SEASON_XP_PER_LEVEL);
+    }
+
+    int seasonLevelForXp(int seasonXp) {
+        if (seasonXp < 0) {
+            throw new IllegalArgumentException(
+                    "seasonXp не может быть отрицательным"
+            );
+        }
+        return seasonXp / SEASON_XP_PER_LEVEL + 1;
+    }
+
     public String variantFor(String userId, ExperimentDefinition experiment) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(
@@ -358,7 +377,8 @@ public class PlatformContentCatalog {
         catalog.put("season", Map.of(
                 "seasonId", normalizedSeasonId,
                 "name", "Сезон первого сигнала",
-                "levels", 10
+                "levels", SEASON_LEVELS,
+                "xpPerLevel", SEASON_XP_PER_LEVEL
         ));
         catalog.put("weeklyRoute", Map.of(
                 "routeId", "weekly-route-1",

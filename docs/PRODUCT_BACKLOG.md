@@ -1738,6 +1738,29 @@ reward или external validation status.
 существующими accepted Platform fields без переноса server-owned quest rules
 на клиент.
 
+### US-072. Видеть, сколько сезонного XP осталось до следующей награды
+
+Как игрок, я хочу видеть следующий уровень сезонной награды и точный остаток
+XP до него, чтобы понимать ближайшую цель без знания шага сезонной шкалы.
+
+Критерии:
+
+- Platform catalog публикует положительный `season.xpPerLevel`, а backend
+  использует то же значение для reward eligibility, season level и связанного
+  достижения;
+- mobile fail-closed валидирует новый порог и вычисляет next level/remaining
+  только из accepted `seasonXp`, `levels` и `xpPerLevel`;
+- RU/EN guidance показывается до следующего reward level, но не обещает его
+  содержимое и не меняет существующую claim action;
+- final level не получает fake next reward, а legacy cached snapshot без
+  `xpPerLevel` сохраняет прежний claim fallback без inferred guidance;
+- backend catalog/service, mobile domain, RU/EN, semantics, final/legacy и
+  compact text-scale 1.6 coverage фиксируют authoritative boundary без
+  persistence migration или изменения reward payload.
+
+**Статус:** season reward guidance реализована над additive server-authored
+catalog field; persisted state, reward contents и command protocol не меняются.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

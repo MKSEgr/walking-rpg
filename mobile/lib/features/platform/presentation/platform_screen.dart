@@ -2422,6 +2422,8 @@ class _WeeklyRouteCard extends StatelessWidget {
         ? 0
         : _minimum(remaining, availableEnergy!);
     final int claimableLevel = snapshot.claimableSeasonLevel;
+    final int? nextRewardLevel = snapshot.nextSeasonRewardLevel;
+    final int? remainingSeasonXp = snapshot.remainingSeasonXpToNextReward;
     final Set<String> achievements = snapshot.userState.achievements;
     int? rewardLevel;
     for (int level = 1; level <= claimableLevel; level += 1) {
@@ -2486,6 +2488,19 @@ class _WeeklyRouteCard extends StatelessWidget {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
+                  if (nextRewardLevel != null &&
+                      remainingSeasonXp != null) ...<Widget>[
+                    const SizedBox(height: 4),
+                    Text(
+                      context.l10n.platformSeasonRewardRemainingXp(
+                        nextRewardLevel,
+                        remainingSeasonXp,
+                      ),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   Text(energyCopy),
                   const SizedBox(height: 4),

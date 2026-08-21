@@ -835,10 +835,14 @@ public class PlatformService {
 
     private Mutation claimSeasonReward(PlatformUserState state, Map<String, Object> payload) {
         int level = payloadInt(payload, "level");
-        if (level <= 0 || level > 10) {
-            throw new PlatformValidationException("Уровень сезона должен быть от 1 до 10", "level");
+        if (level <= 0 || level > content.seasonLevels()) {
+            throw new PlatformValidationException(
+                    "Уровень сезона должен быть от 1 до "
+                            + content.seasonLevels(),
+                    "level"
+            );
         }
-        int requiredXp = level * 100;
+        int requiredXp = content.requiredSeasonXpForRewardLevel(level);
         if (state.seasonXp() < requiredXp) {
             throw new PlatformStateConflictException(
                     "Недостаточно сезонного опыта",
@@ -973,7 +977,8 @@ public class PlatformService {
         if (state.ownedCosmetics().size() > 1) {
             achievements.add("first-cosmetic");
         }
-        if (state.seasonXp() >= 300) {
+        if (state.seasonXp()
+                >= content.requiredSeasonXpForRewardLevel(3)) {
             achievements.add("season-level-3");
         }
         if (achievements.equals(state.achievements())) {
@@ -1124,7 +1129,10 @@ public class PlatformService {
         userState.put("claimedQuests", state.claimedQuests());
         userState.put("achievements", state.achievements());
         userState.put("seasonXp", state.seasonXp());
-        userState.put("seasonLevel", state.seasonXp() / 100 + 1);
+        userState.put(
+                "seasonLevel",
+                content.seasonLevelForXp(state.seasonXp())
+        );
         userState.put("weeklyRouteProgress", state.weeklyRouteProgress());
         userState.put("weeklyRouteRequiredEnergy", weeklyRouteEnergy);
         userState.put("squad", squadView(userId, state));

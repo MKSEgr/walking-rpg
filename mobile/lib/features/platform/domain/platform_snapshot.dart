@@ -98,10 +98,29 @@ class PlatformSnapshot {
   }
 
   int get claimableSeasonLevel {
-    final int earnedLevel = userState.seasonXp ~/ 100;
+    final int earnedLevel =
+        userState.seasonXp ~/ (content.season.xpPerLevel ?? 100);
     return earnedLevel < content.season.levels
         ? earnedLevel
         : content.season.levels;
+  }
+
+  int? get nextSeasonRewardLevel {
+    final int? xpPerLevel = content.season.xpPerLevel;
+    if (xpPerLevel == null) {
+      return null;
+    }
+    final int nextLevel = userState.seasonXp ~/ xpPerLevel + 1;
+    return nextLevel <= content.season.levels ? nextLevel : null;
+  }
+
+  int? get remainingSeasonXpToNextReward {
+    final int? xpPerLevel = content.season.xpPerLevel;
+    final int? nextLevel = nextSeasonRewardLevel;
+    if (xpPerLevel == null || nextLevel == null) {
+      return null;
+    }
+    return nextLevel * xpPerLevel - userState.seasonXp;
   }
 }
 
@@ -611,23 +630,32 @@ class PlatformSeason {
     required this.seasonId,
     required this.name,
     required this.levels,
+    this.xpPerLevel,
   });
 
   factory PlatformSeason.fromJson(Map<String, dynamic> json) {
     final int levels = _readInt(json, 'levels');
+    final int? xpPerLevel = json.containsKey('xpPerLevel')
+        ? _readInt(json, 'xpPerLevel')
+        : null;
     if (levels <= 0) {
       throw const FormatException('levels должен быть положительным');
+    }
+    if (xpPerLevel != null && xpPerLevel <= 0) {
+      throw const FormatException('xpPerLevel должен быть положительным');
     }
     return PlatformSeason(
       seasonId: _readString(json, 'seasonId'),
       name: _readString(json, 'name'),
       levels: levels,
+      xpPerLevel: xpPerLevel,
     );
   }
 
   final String seasonId;
   final String name;
   final int levels;
+  final int? xpPerLevel;
 }
 
 class PlatformWeeklyRoute {
