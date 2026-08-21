@@ -709,10 +709,7 @@ void main() {
       find.byKey(const Key('home-weekly-activity-qualification')),
       findsOneWidget,
     );
-    expect(
-      find.byKey(const Key('home-daily-goal-stability')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('home-daily-goal-stability')), findsOneWidget);
     expect(find.byKey(const Key('home-daily-goal-feedback')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
