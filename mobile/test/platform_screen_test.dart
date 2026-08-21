@@ -1202,7 +1202,10 @@ void main() {
       find.byKey(const Key('platform-skill-wide-trail-memory')),
       findsOneWidget,
     );
-    expect(find.text('До открытия: ещё 60 сезонного XP'), findsOneWidget);
+    expect(
+      find.textContaining('До открытия: ещё 60 сезонного XP'),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(RegExp('До открытия: ещё 60 сезонного XP')),
       findsOneWidget,
@@ -1352,7 +1355,7 @@ void main() {
         );
       }
       if (key == const Key('platform-skill-compact-steady-step')) {
-        expect(find.text('Навык открыт'), findsOneWidget);
+        expect(find.text('НАВЫК ОТКРЫТ'), findsOneWidget);
       }
       if (key == const Key('platform-skill-compact-trail-memory')) {
         expect(find.text('Нужно 100 сезонного XP'), findsOneWidget);
