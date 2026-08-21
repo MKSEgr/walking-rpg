@@ -181,6 +181,7 @@ void main() {
         'totalDurationSeconds': 65_700,
         'shortestDurationSeconds': 3_600,
         'shortestJourneyNumber': 2,
+        'shortestJourneyCompletedAt': '2026-07-24T10:00:00Z',
         'longestDurationSeconds': 12_600,
         'longestJourneyNumber': 7,
         'longestJourneyCompletedAt': '2026-07-25T12:00:00Z',
@@ -410,6 +411,10 @@ void main() {
     expect(snapshot.journeyChronicle?.totalDurationSeconds, 65_700);
     expect(snapshot.journeyChronicle?.shortestDurationSeconds, 3_600);
     expect(snapshot.journeyChronicle?.shortestJourneyNumber, 2);
+    expect(
+      snapshot.journeyChronicle?.shortestJourneyCompletedAt,
+      '2026-07-24T10:00:00Z',
+    );
     expect(snapshot.journeyChronicle?.longestDurationSeconds, 12_600);
     expect(snapshot.journeyChronicle?.longestJourneyNumber, 7);
     expect(
@@ -757,6 +762,30 @@ void main() {
   });
 
   test(
+    'legacy shortest identity without completion instant remains readable',
+    () {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 2,
+        'decisionCount': 0,
+        'totalDurationSeconds': 100,
+        'shortestDurationSeconds': 40,
+        'shortestJourneyNumber': 1,
+        'averageDurationSeconds': 50,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+      };
+
+      final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+      expect(snapshot.journeyChronicle?.shortestJourneyNumber, 1);
+      expect(snapshot.journeyChronicle?.shortestJourneyCompletedAt, isNull);
+    },
+  );
+
+  test(
     'legacy record identity without completion instant remains readable',
     () {
       final Map<String, dynamic> response = _readyHomeResponse();
@@ -824,6 +853,50 @@ void main() {
     );
   });
 
+  test('journey chronicle rejects invalid shortest completion instants', () {
+    for (final Object? completedAt in <Object?>[
+      1_721_908_800,
+      'not-an-instant',
+      '2026-07-25T12:00:00',
+    ]) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> expedition =
+          response['expedition'] as Map<String, dynamic>;
+      expedition['journeyChronicle'] = <String, dynamic>{
+        'completedJourneyCount': 2,
+        'decisionCount': 0,
+        'totalDurationSeconds': 100,
+        'shortestDurationSeconds': 40,
+        'shortestJourneyNumber': 1,
+        'shortestJourneyCompletedAt': completedAt,
+        'averageDurationSeconds': 50,
+        'pilotExperienceGained': 0,
+        'petBondGained': 0,
+      };
+
+      expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+    }
+
+    final Map<String, dynamic> unpairedResponse = _readyHomeResponse();
+    final Map<String, dynamic> unpairedExpedition =
+        unpairedResponse['expedition'] as Map<String, dynamic>;
+    unpairedExpedition['journeyChronicle'] = <String, dynamic>{
+      'completedJourneyCount': 2,
+      'decisionCount': 0,
+      'totalDurationSeconds': 100,
+      'shortestDurationSeconds': 40,
+      'shortestJourneyCompletedAt': '2026-07-25T12:00:00Z',
+      'averageDurationSeconds': 50,
+      'pilotExperienceGained': 0,
+      'petBondGained': 0,
+    };
+
+    expect(
+      () => HomeSnapshot.fromJson(unpairedResponse),
+      throwsFormatException,
+    );
+  });
+
   test('legacy journey chronicle without pet breakdown remains readable', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> expedition =
@@ -841,6 +914,7 @@ void main() {
     expect(snapshot.journeyChronicle?.totalDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.shortestDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.shortestJourneyNumber, isNull);
+    expect(snapshot.journeyChronicle?.shortestJourneyCompletedAt, isNull);
     expect(snapshot.journeyChronicle?.longestDurationSeconds, isNull);
     expect(snapshot.journeyChronicle?.longestJourneyNumber, isNull);
     expect(snapshot.journeyChronicle?.longestJourneyCompletedAt, isNull);
