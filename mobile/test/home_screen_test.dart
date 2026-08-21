@@ -304,10 +304,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Weekly rhythm: 5 active days · goal 4'),
-      findsOneWidget,
-    );
+    expect(find.text('Weekly rhythm: 5 active days · goal 4'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Weekly rhythm: 5 active days · goal 4. '
