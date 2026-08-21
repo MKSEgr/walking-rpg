@@ -725,6 +725,13 @@
       "goal": {"type": "int"}
     }
   },
+  "homeDailyGoalRemaining": "{remainingSteps, plural, =1{1 step remains to your personal goal} other{{remainingSteps} steps remain to your personal goal}}",
+  "@homeDailyGoalRemaining": {
+    "placeholders": {
+      "remainingSteps": {"type": "int"}
+    }
+  },
+  "homeDailyGoalReached": "Personal goal reached",
   "homeWeeklyRhythmProgress": "Weekly rhythm: {activeDays} active days · goal {targetActiveDays}",
   "@homeWeeklyRhythmProgress": {
     "placeholders": {

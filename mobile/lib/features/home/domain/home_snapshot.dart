@@ -249,6 +249,13 @@ class HomeSnapshot {
     return (dailySteps / dailyGoal).clamp(0.0, 1.0).toDouble();
   }
 
+  int get remainingDailySteps {
+    final int remaining = dailyGoal - dailySteps;
+    return remaining < 0 ? 0 : remaining;
+  }
+
+  bool get dailyGoalReached => dailyGoal > 0 && dailySteps >= dailyGoal;
+
   double get expeditionProgressValue {
     if (requiredEnergy <= 0) {
       return 0;

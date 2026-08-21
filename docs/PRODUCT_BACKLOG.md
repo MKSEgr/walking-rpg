@@ -1581,6 +1581,29 @@ presentation над accepted trail без изменения Home API, migration
 history, daily goal, rewards/economy, progression, topology или external
 validation status.
 
+### US-065. Понимать остаток до личной дневной цели
+
+Как игрок, я хочу видеть, сколько принятых шагов осталось до моей личной цели
+сегодня, чтобы понимать ближайший ориентир без расчёта в уме и без ложного
+обещания награды.
+
+Критерии:
+
+- mobile выводит `max(dailyGoal - dailySteps, 0)` только из уже принятого Home
+  snapshot, без Health history, client clock или optimistic sync state;
+- до цели RU/EN copy корректно склоняет remaining steps, а при равенстве или
+  превышении показывает спокойное reached-состояние без surplus/reward claim;
+- exact accepted total и feedback входят в одну daily-goal semantics summary,
+  а visual children не создают duplicate screen-reader announcement;
+- daily goal policy, weekly rhythm, Home API, backend, persistence и migration
+  не меняются;
+- domain и RU/EN widget coverage проверяют below/exact/above goal, semantics и
+  compact 320 px / text scale 1.6 без overflow.
+
+**Статус:** authoritative daily-goal feedback реализован как mobile
+presentation над accepted `dailySteps`/`dailyGoal` без изменения расчёта цели,
+ENERGY/rewards, progression или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

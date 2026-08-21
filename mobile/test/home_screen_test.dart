@@ -260,6 +260,13 @@ void main() {
     await tester.tap(find.byKey(const Key('home-command-recovery')));
     expect(recoveryOpened, isTrue);
     expect(find.text('Сегодня: 0 / 6000'), findsOneWidget);
+    expect(find.text('До личной цели осталось 6000 шагов'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Сегодня: 0 / 6000. До личной цели осталось 6000 шагов',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.text('Ритм недели: активных дней — 0 · цель 4'),
       findsOneWidget,
@@ -327,6 +334,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Weekly rhythm: 5 active days · goal 4'), findsOneWidget);
+    expect(find.text('Personal goal reached'), findsOneWidget);
     expect(find.textContaining('active days remain'), findsNothing);
     final Text dateRangeText = tester.widget<Text>(
       find.byKey(const Key('home-weekly-activity-date-range')),
@@ -388,6 +396,79 @@ void main() {
     );
     expect((todayMarker.decoration! as BoxDecoration).border, isNotNull);
     expect((earlierMarker.decoration! as BoxDecoration).border, isNull);
+    expect(tester.takeException(), isNull);
+
+    semantics.dispose();
+  });
+
+  testWidgets('daily goal feedback localizes remaining and reached states', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    Future<void> pumpGoal({
+      required Locale locale,
+      required int dailySteps,
+      int dailyGoal = 6000,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeScreen(
+            loader: () async =>
+                _readyToAdvance(dailySteps: dailySteps, dailyGoal: dailyGoal),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await pumpGoal(locale: const Locale('ru'), dailySteps: 5999);
+    const String russianRemaining = 'До личной цели остался 1 шаг';
+    expect(find.text(russianRemaining), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Сегодня: 5999 / 6000. $russianRemaining'),
+      findsOneWidget,
+    );
+
+    await pumpGoal(locale: const Locale('ru'), dailySteps: 5998);
+    expect(find.text('До личной цели осталось 2 шага'), findsOneWidget);
+
+    await pumpGoal(locale: const Locale('ru'), dailySteps: 5995);
+    expect(find.text('До личной цели осталось 5 шагов'), findsOneWidget);
+
+    await pumpGoal(locale: const Locale('en'), dailySteps: 5999);
+    expect(find.text('1 step remains to your personal goal'), findsOneWidget);
+
+    await pumpGoal(locale: const Locale('en'), dailySteps: 5997);
+    const String englishRemaining = '3 steps remain to your personal goal';
+    expect(find.text(englishRemaining), findsOneWidget);
+    final Semantics dailySummary = tester.widget<Semantics>(
+      find.byKey(const Key('home-daily-goal-summary')),
+    );
+    expect(
+      dailySummary.properties.label,
+      'Today: 5997 / 6000. $englishRemaining',
+    );
+    expect(
+      RegExp(
+        RegExp.escape(englishRemaining),
+      ).allMatches(dailySummary.properties.label!).length,
+      1,
+    );
+
+    await pumpGoal(locale: const Locale('en'), dailySteps: 6000);
+    expect(find.text('Personal goal reached'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Today: 6000 / 6000. Personal goal reached'),
+      findsOneWidget,
+    );
+
+    await pumpGoal(locale: const Locale('ru'), dailySteps: 6842);
+    expect(find.text('Личная цель достигнута'), findsOneWidget);
+    expect(find.textContaining('До личной цели'), findsNothing);
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
@@ -565,6 +646,7 @@ void main() {
       find.byKey(const Key('home-weekly-activity-date-range')),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('home-daily-goal-feedback')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -2780,12 +2862,14 @@ HomeSnapshot _futureNode() {
 HomeSnapshot _readyToAdvance({
   CachedReadMetadata? cacheMetadata,
   WeeklyActivityRhythm? weeklyActivityRhythm,
+  int dailySteps = 6842,
+  int dailyGoal = 3250,
 }) {
   return HomeSnapshot(
     localDate: '2026-07-26',
     timeZone: 'Europe/Berlin',
-    dailySteps: 6842,
-    dailyGoal: 3250,
+    dailySteps: dailySteps,
+    dailyGoal: dailyGoal,
     dailyGoalPolicy: _adaptiveGoalPolicy,
     weeklyActivityRhythm:
         weeklyActivityRhythm ??

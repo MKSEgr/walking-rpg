@@ -9,6 +9,8 @@ void main() {
     expect(snapshot.dailySteps, 0);
     expect(snapshot.availableEnergy, 0);
     expect(snapshot.dailyProgress, 0);
+    expect(snapshot.remainingDailySteps, 6000);
+    expect(snapshot.dailyGoalReached, isFalse);
     expect(snapshot.dailyGoalPolicy.source, 'DEFAULT');
     expect(
       snapshot.dailyGoalPolicy.explanation,
@@ -55,6 +57,8 @@ void main() {
     expect(snapshot.dailyGoalPolicy.source, 'ADAPTIVE');
     expect(snapshot.dailyGoalPolicy.baselineSteps, 3000);
     expect(snapshot.dailyGoalPolicy.sampleDays, 3);
+    expect(snapshot.remainingDailySteps, 0);
+    expect(snapshot.dailyGoalReached, isTrue);
     expect(snapshot.weeklyActivityRhythm?.activeDays, 3);
     expect(snapshot.weeklyActivityRhythm?.windowDays, 7);
     expect(snapshot.weeklyActivityRhythm?.targetActiveDays, 4);
@@ -120,6 +124,17 @@ void main() {
     expect(snapshot.petSpecies, 'Люмин');
     expect(snapshot.petBond, 10);
     expect(snapshot.petEvolutionStage, 0);
+  });
+
+  test('daily goal feedback reaches zero exactly at the accepted goal', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['dailySteps'] = response['dailyGoal'];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.remainingDailySteps, 0);
+    expect(snapshot.dailyGoalReached, isTrue);
+    expect(snapshot.dailyProgress, 1);
   });
 
   test('response without journey number defaults to the first journey', () {
