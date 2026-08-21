@@ -1079,6 +1079,24 @@ server-authoritative pet progression из ADR 0009 через ADR 0067 без и
 Platform API, backend, persistence, evolution thresholds/commands/rewards,
 immutable `alpha-rc1` или внешних gates.
 
+## Milestone 54 — Authoritative skill unlock guidance
+
+### CODE_COMPLETE
+
+- [x] Mobile fail-closed валидирует non-negative server-authored skill XP
+      requirement и выводит exact remaining только из accepted season XP
+- [x] RU/EN remaining используется только для locked unavailable state;
+      ready-to-unlock и unlocked copy/actions сохраняются
+- [x] Exact visible guidance доступна assistive technologies один раз без
+      client-owned threshold, progress indicator или reward promise
+- [x] Domain, RU/EN, reached/unlocked и compact text-scale 1.6 coverage
+      фиксируют authoritative presentation boundary
+
+Milestone 54 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative Platform progression из ADR 0009 через ADR 0068 без
+изменения Platform API, backend catalog, persistence, skill thresholds,
+unlock commands/rewards, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

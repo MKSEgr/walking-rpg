@@ -253,7 +253,11 @@ server-authored. Locked and unlocked treatments pair contrast with explicit
 text, while the decorative mark is excluded from semantics so screen readers
 hear one server name and one literal state. At compact width with enlarged
 text, achievement tiles become a single vertical list and skill actions retain
-their existing full-width command boundary.
+their existing full-width command boundary. A locked skill below its accepted
+requirement replaces the total-threshold helper with exact non-negative RU/EN
+season XP remaining. That visible line supplies accessibility once; ready and
+unlocked skills keep their existing requirement copy and actions. Mobile does
+not define a threshold, predict a reward or execute an unlock from this value.
 
 ## Quest route signals
 

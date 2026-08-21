@@ -2777,13 +2777,17 @@ class _SkillCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool available = seasonXp >= skill.requiredSeasonXp;
+    final int remainingSeasonXp = skill.remainingSeasonXp(seasonXp);
+    final bool available = remainingSeasonXp == 0;
     final String skillName = context.l10n.currentPlatformSkillName(
       skill.skillId,
       skill.name,
     );
     final String skillDescription = context.l10n
         .currentPlatformSkillDescription(skill.skillId, skill.description);
+    final String experienceGuidance = !unlocked && !available
+        ? context.l10n.platformSkillRemainingXp(remainingSeasonXp)
+        : context.l10n.platformSkillRequiredXp(skill.requiredSeasonXp);
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (_usesCompactPlatformSection(context, constraints)) {
@@ -2815,9 +2819,7 @@ class _SkillCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(skillDescription),
                 const SizedBox(height: 4),
-                Text(
-                  context.l10n.platformSkillRequiredXp(skill.requiredSeasonXp),
-                ),
+                Text(experienceGuidance),
                 const SizedBox(height: 12),
                 if (unlocked)
                   Align(
@@ -2862,10 +2864,7 @@ class _SkillCard extends StatelessWidget {
               size: 52,
             ),
             title: Text(skillName),
-            subtitle: Text(
-              '$skillDescription\n'
-              '${context.l10n.platformSkillRequiredXp(skill.requiredSeasonXp)}',
-            ),
+            subtitle: Text('$skillDescription\n$experienceGuidance'),
             isThreeLine: true,
             trailing: unlocked
                 ? Icon(

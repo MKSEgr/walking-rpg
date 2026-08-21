@@ -84,3 +84,4 @@ NNNN-short-title.md
 - [0065 — daily-goal stability clarification](0065-daily-goal-stability-clarification.md)
 - [0066 — authoritative pilot level guidance](0066-authoritative-pilot-level-guidance.md)
 - [0067 — authoritative companion evolution guidance](0067-authoritative-companion-evolution-guidance.md)
+- [0068 — authoritative skill unlock guidance](0068-authoritative-skill-unlock-guidance.md)

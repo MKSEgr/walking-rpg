@@ -1693,6 +1693,28 @@ reward или external validation status.
 над существующим accepted Platform pet snapshot без переноса server-owned
 порогов или evolution rules на клиент.
 
+### US-070. Видеть, сколько сезонного XP осталось до открытия навыка
+
+Как игрок, я хочу видеть точный остаток сезонного XP до закрытого навыка,
+чтобы понимать близость открытия без самостоятельного вычитания.
+
+Критерии:
+
+- mobile fail-closed отклоняет отрицательный server-authored
+  `requiredSeasonXp` до rendering/cache handoff;
+- remaining вычисляется только из accepted `seasonXp` и skill requirement и
+  ограничивается снизу нулём;
+- закрытый unavailable навык получает точную RU/EN строку, а ready-to-unlock и
+  unlocked состояния сохраняют прежние requirement copy и действия;
+- exact visible guidance входит в accessibility tree один раз без отдельного
+  client-owned progress или reward promise;
+- domain, RU/EN, reached/unlocked и compact text-scale 1.6 coverage фиксируют
+  presentation contract без изменения backend/API, порогов или unlock command.
+
+**Статус:** skill XP guidance реализована как mobile presentation над
+существующими accepted Platform fields без переноса server-owned skill rules
+на клиент.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

@@ -1169,6 +1169,7 @@ void main() {
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
     final PlatformSnapshot initial = platformSnapshot(
+      seasonXp: 40,
       achievements: const <String>['onboarding-complete'],
     );
 
@@ -1197,6 +1198,19 @@ void main() {
     await _bringIntoView(tester, lockedSkill);
     expect(lockedSkill, findsOneWidget);
     expect(find.byType(ProgressionSigil), findsWidgets);
+    expect(
+      find.byKey(const Key('platform-skill-wide-trail-memory')),
+      findsOneWidget,
+    );
+    expect(find.text('До открытия: ещё 60 сезонного XP'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('До открытия: ещё 60 сезонного XP')),
+      findsOneWidget,
+    );
+    final IconButton unavailableSkillButton = tester.widget<IconButton>(
+      find.byKey(const Key('platform-unlock-skill-trail-memory')),
+    );
+    expect(unavailableSkillButton.onPressed, isNull);
 
     final Finder stepsQuest = find.byKey(
       const Key('quest-route-signal-walk-3000-steps'),
@@ -1318,6 +1332,7 @@ void main() {
       Key('platform-pet-compact-spark-v1'),
       Key('platform-pet-compact-moss-v1'),
       Key('platform-skill-compact-steady-step'),
+      Key('platform-skill-compact-trail-memory'),
       Key('platform-quest-compact-walk-3000'),
       Key('quest-route-signal-walk-3000-steps'),
       Key('platform-squad-empty-compact'),
@@ -1335,6 +1350,16 @@ void main() {
           find.text('До следующей эволюции: ещё 33 связи'),
           findsOneWidget,
         );
+      }
+      if (key == const Key('platform-skill-compact-steady-step')) {
+        expect(find.text('Навык открыт'), findsOneWidget);
+      }
+      if (key == const Key('platform-skill-compact-trail-memory')) {
+        expect(find.text('Нужно 100 сезонного XP'), findsOneWidget);
+        final OutlinedButton readySkillButton = tester.widget<OutlinedButton>(
+          find.byKey(const Key('platform-unlock-skill-trail-memory')),
+        );
+        expect(readySkillButton.onPressed, isNotNull);
       }
     }
 

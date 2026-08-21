@@ -69,6 +69,8 @@
   на неизведанном рубеже;
 - Platform показывает точный остаток server-authored bond до следующей
   эволюции спутника в RU/EN, не перенося пороги или evolution rules на mobile;
+- закрытый навык показывает точный остаток сезонного XP до server-authored
+  порога в RU/EN, сохраняя прежние ready/unlocked состояния и команды;
 - material inventory с append-only credit/debit ledger, server-authoritative
   crafting, persistent unique item и equipment slot `NAVIGATION`;
 - последовательное улучшение призматического секстанта до уровня 3/EPIC на
