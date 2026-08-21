@@ -190,6 +190,10 @@ class PlatformServiceTest {
                 map(snapshot.content().get("season")).get("seasonId")
         );
         assertEquals(
+                100,
+                map(snapshot.content().get("season")).get("xpPerLevel")
+        );
+        assertEquals(
                 snapshot.remoteConfig().get("weeklyRouteEnergy"),
                 map(snapshot.content().get("weeklyRoute")).get("requiredEnergy")
         );
@@ -1443,6 +1447,11 @@ class PlatformServiceTest {
 
         assertTrue(collection(reward.snapshot().userState(), "achievements")
                 .contains("season-reward-1"));
+        assertEquals(2, number(reward.snapshot().userState(), "seasonLevel"));
+        assertEquals(
+                100,
+                map(reward.snapshot().content().get("season")).get("xpPerLevel")
+        );
     }
 
     @Test

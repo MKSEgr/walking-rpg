@@ -22,7 +22,10 @@ void main() {
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.weeklyRouteProgressValue, 0.4);
     expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
+    expect(snapshot.content.season.xpPerLevel, 100);
     expect(snapshot.claimableSeasonLevel, 2);
+    expect(snapshot.nextSeasonRewardLevel, 3);
+    expect(snapshot.remainingSeasonXpToNextReward, 80);
     expect(snapshot.remoteConfig.sandboxPaymentsEnabled, isTrue);
     expect(snapshot.userState.hasSuccessfulActivitySync, isTrue);
     final PlatformQuest completedQuest = snapshot.userState.quests.singleWhere(
@@ -256,6 +259,48 @@ void main() {
     final PlatformSnapshot snapshot = platformSnapshot(seasonXp: 5000);
 
     expect(snapshot.claimableSeasonLevel, 10);
+    expect(snapshot.nextSeasonRewardLevel, isNull);
+    expect(snapshot.remainingSeasonXpToNextReward, isNull);
+  });
+
+  test('starts the next season reward threshold after an exact boundary', () {
+    final PlatformSnapshot snapshot = platformSnapshot(seasonXp: 100);
+
+    expect(snapshot.claimableSeasonLevel, 1);
+    expect(snapshot.nextSeasonRewardLevel, 2);
+    expect(snapshot.remainingSeasonXpToNextReward, 100);
+  });
+
+  test('uses the server-authored season reward cadence', () {
+    final PlatformSnapshot snapshot = platformSnapshot(
+      seasonXp: 225,
+      seasonXpPerLevel: 75,
+    );
+
+    expect(snapshot.claimableSeasonLevel, 3);
+    expect(snapshot.nextSeasonRewardLevel, 4);
+    expect(snapshot.remainingSeasonXpToNextReward, 75);
+  });
+
+  test('keeps legacy season claims without inferring reward guidance', () {
+    final PlatformSnapshot snapshot = platformSnapshot(
+      seasonXp: 220,
+      seasonXpPerLevel: null,
+    );
+
+    expect(snapshot.content.season.xpPerLevel, isNull);
+    expect(snapshot.claimableSeasonLevel, 2);
+    expect(snapshot.nextSeasonRewardLevel, isNull);
+    expect(snapshot.remainingSeasonXpToNextReward, isNull);
+  });
+
+  test('rejects a non-positive season XP threshold', () {
+    final Map<String, dynamic> json = platformSnapshotJson(seasonXpPerLevel: 0);
+
+    expect(
+      () => PlatformSnapshot.fromJson(json),
+      throwsA(isA<FormatException>()),
+    );
   });
 
   test('rejects content version mismatch', () {

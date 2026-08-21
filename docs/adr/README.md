@@ -86,3 +86,4 @@ NNNN-short-title.md
 - [0067 — authoritative companion evolution guidance](0067-authoritative-companion-evolution-guidance.md)
 - [0068 — authoritative skill unlock guidance](0068-authoritative-skill-unlock-guidance.md)
 - [0069 — authoritative quest remaining guidance](0069-authoritative-quest-remaining-guidance.md)
+- [0070 — authoritative season reward guidance](0070-authoritative-season-reward-guidance.md)

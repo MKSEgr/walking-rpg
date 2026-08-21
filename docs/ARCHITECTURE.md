@@ -261,6 +261,12 @@ catalog, user-state threshold и remote config не расходятся при 
 или admin publication; runtime values участвуют в `catalogDigest`. Уже
 сохранённый command response остаётся immutable и replay-ится с исходной
 проекцией.
+Сезонная cadence также имеет один catalog-owned источник:
+`content.season.xpPerLevel` определяет backend reward eligibility,
+`userState.seasonLevel` и связанное level-3 achievement, а mobile использует
+accepted value только для next-reward guidance. Отсутствие additive поля у
+legacy cache сохраняет старый claim fallback, но запрещает client-inferred
+guidance; persisted state и migration не меняются.
 Production Home, live platform snapshot и bootstrap начинают read-only
 `REPEATABLE_READ` с общего PostgreSQL `statement_timestamp()`. Этот первый SQL
 фиксирует transaction snapshot, а его результат становится `serverTime` всего

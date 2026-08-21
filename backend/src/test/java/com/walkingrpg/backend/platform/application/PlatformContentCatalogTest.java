@@ -36,6 +36,10 @@ class PlatformContentCatalogTest {
         assertEquals(6, catalog.onboardingSteps().size());
         assertEquals(8, list(publicCatalog, "achievements").size());
         assertEquals(6, list(publicCatalog, "materials").size());
+        assertEquals(10, map(publicCatalog.get("season")).get("levels"));
+        assertEquals(100, map(publicCatalog.get("season")).get("xpPerLevel"));
+        assertEquals(300, catalog.requiredSeasonXpForRewardLevel(3));
+        assertEquals(3, catalog.seasonLevelForXp(220));
         assertEquals(64, String.valueOf(publicCatalog.get("catalogDigest")).length());
     }
 

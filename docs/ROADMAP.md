@@ -1115,6 +1115,25 @@ server-authoritative Platform progression из ADR 0009 через ADR 0069 бе
 изменения Platform API, backend catalog, persistence, quest targets,
 aggregation, rewards/claim commands, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 56 — Authoritative season reward guidance
+
+### CODE_COMPLETE
+
+- [x] Platform catalog публикует positive `season.xpPerLevel`, а backend
+      reward validation, season level и milestone achievement используют один
+      authoritative cadence
+- [x] Mobile fail-closed принимает новый порог и выводит exact next reward
+      level/remaining только из accepted season XP и catalog limits
+- [x] RU/EN guidance не обещает reward contents; final level и legacy cached
+      snapshot без поля не получают fake next target
+- [x] Catalog/service, domain, RU/EN, semantics, legacy/final и compact
+      text-scale 1.6 coverage фиксируют additive contract
+
+Milestone 56 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative Platform progression из ADR 0009 через ADR 0070 без
+изменения persistence, reward payload/command, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -675,6 +675,7 @@
   "platformWeeklyRouteCompleted": "Маршрут завершён",
   "platformSpendEnergy": "Потратить {energy} ENERGY",
   "platformSeasonRewardLevel": "Награда уровня {level}",
+  "platformSeasonRewardRemainingXp": "До награды уровня {level}: ещё {experience} сезонного XP",
 
   "platformPetLevelSemantics": "{name} · уровень {level}",
   "platformInSquadBadge": "В отряде",

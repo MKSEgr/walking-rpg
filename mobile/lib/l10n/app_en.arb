@@ -1459,6 +1459,13 @@
       "level": {"type": "int"}
     }
   },
+  "platformSeasonRewardRemainingXp": "{experience} more season XP until level {level} reward",
+  "@platformSeasonRewardRemainingXp": {
+    "placeholders": {
+      "level": {"type": "int"},
+      "experience": {"type": "int"}
+    }
+  },
 
   "platformPetLevelSemantics": "{name} · level {level}",
   "@platformPetLevelSemantics": {

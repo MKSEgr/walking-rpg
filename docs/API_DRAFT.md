@@ -1563,6 +1563,15 @@ projection: `content.season.seasonId` равен `remoteConfig.seasonId`, а
 effective config snapshot, поэтому clean install и последующая admin-публикация
 не могут выдать противоречащие друг другу значения.
 
+Current catalog также возвращает additive positive integer
+`content.season.xpPerLevel`. Backend использует его вместе с
+`content.season.levels` для `CLAIM_SEASON_REWARD`, projection
+`userState.seasonLevel` и достижения третьего уровня сезона; поле входит в
+`catalogDigest`. Mobile обязан fail-closed отклонить присутствующее
+non-positive/non-integer значение. Старый cached response без поля остаётся
+читаемым: existing claimable-level fallback сохраняется, но next-reward
+guidance не вычисляется. Persistence schema и command payload не меняются.
+
 Mobile рассматривает display copy current Platform catalog как mutable
 presentation: шесть известных onboarding step IDs, четыре skill IDs, пять
 quest IDs, восемь achievement IDs, четыре cosmetic IDs, текущий season ID и

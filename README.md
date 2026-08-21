@@ -74,6 +74,9 @@
 - незавершённые шаговые и событийные задания показывают точный остаток до
   server-authored target в RU/EN; ready, claimed и неизвестные метрики
   сохраняют прежние состояния и действия;
+- сезонный блок показывает точный остаток XP до следующего уровня награды из
+  server-authored `xpPerLevel`; старый cached snapshot без поля сохраняет
+  получение доступных наград, но не получает придуманную подсказку;
 - material inventory с append-only credit/debit ledger, server-authoritative
   crafting, persistent unique item и equipment slot `NAVIGATION`;
 - последовательное улучшение призматического секстанта до уровня 3/EPIC на

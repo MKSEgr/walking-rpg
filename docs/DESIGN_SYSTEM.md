@@ -326,6 +326,14 @@ The seal owns no command, callback, idempotency, cached-state or authoritative-
 reload behavior. Its fixed square stays inside the existing wrapping claim
 control at compact width and in both themes.
 
+The adjacent season summary may show one short RU/EN line with the next reward
+level and exact remaining season XP. Mobile derives it only from accepted
+`seasonXp`, server-authored `levels` and positive `xpPerLevel`; reaching or
+passing the final threshold removes the line. A legacy cached catalog without
+`xpPerLevel` retains its existing claimable reward behavior but receives no
+inferred guidance. The line does not describe reward contents or alter the
+seal, claim command or server-owned eligibility.
+
 ## Squad formation signal
 
 The journal turns accepted squad membership into a quiet resonance formation

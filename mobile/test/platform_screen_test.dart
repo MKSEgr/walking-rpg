@@ -1156,12 +1156,47 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      find.text('До награды уровня 3: ещё 80 сезонного XP'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('До награды уровня 3: ещё 80 сезонного XP'),
+      findsOneWidget,
+    );
     expect(find.byType(SeasonRewardSeal), findsOneWidget);
     expect(
       find.byKey(const Key('season-reward-seal-signal-season-1-2-firstSignal')),
       findsOneWidget,
     );
     semantics.dispose();
+  });
+
+  testWidgets('legacy season snapshot omits inferred reward guidance', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PlatformScreen(
+          loader: () async => platformSnapshot(seasonXpPerLevel: null),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('platform-advance-weekly')),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+
+    expect(find.textContaining('До награды уровня'), findsNothing);
+    expect(
+      find.byKey(const Key('season-reward-seal-signal-season-1-2-firstSignal')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('keeps server progression copy beside exact visual identities', (
@@ -1355,6 +1390,12 @@ void main() {
       if (key == const Key('platform-pet-compact-moss-v1')) {
         expect(
           find.text('До следующей эволюции: ещё 33 связи'),
+          findsOneWidget,
+        );
+      }
+      if (key == const Key('platform-weekly-route-compact')) {
+        expect(
+          find.text('До награды уровня 3: ещё 80 сезонного XP'),
           findsOneWidget,
         );
       }

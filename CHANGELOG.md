@@ -69,6 +69,9 @@
 
 ### Added
 
+- server-authored season reward cadence and exact RU/EN XP remaining to the
+  next reward level, with legacy cached snapshots retaining claim behavior
+  without inferred guidance;
 - authoritative RU/EN quest guidance with exact remaining steps or events,
   derived only from accepted Platform progress and targets while preserving
   ready, claimed and unknown-metric behavior;
