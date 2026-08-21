@@ -1008,6 +1008,23 @@ Milestone 49 продолжает post-alpha code-only gameplay track из ADR 0
 personal-goal boundary из ADR 0063 без изменения daily-goal calculation,
 ENERGY/rewards, progression, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 50 — Weekly active-day qualification
+
+### CODE_COMPLETE
+
+- [x] RU/EN weekly copy явно отделяет любую accepted activity, которая делает
+      день активным, от достижения personal daily goal
+- [x] Clarification входит в существующую weekly semantics summary ровно один
+      раз и не создаёт duplicate visual announcement
+- [x] Legacy aggregate-only weekly object получает правило без inferred trail,
+      dates или today status; Home без weekly object не меняется
+- [x] RU/EN, semantics, legacy/absence и compact text-scale 1.6 widget coverage
+      фиксируют no-client-inference и no-reward boundary
+
+Milestone 50 продолжает non-punitive rhythm из ADR 0064 и post-alpha code-only
+track из ADR 0039 без изменения API, persisted qualification rule, daily goal,
+ENERGY/rewards, progression, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -758,6 +758,7 @@
       "windowDays": {"type": "int"}
     }
   },
+  "homeWeeklyRhythmQualification": "Any accepted activity makes a rhythm day active · your personal goal is separate",
   "homeWeeklyRhythmDaysSummary": "Days: {days}",
   "@homeWeeklyRhythmDaysSummary": {
     "placeholders": {

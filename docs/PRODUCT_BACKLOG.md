@@ -1604,6 +1604,28 @@ validation status.
 presentation над accepted `dailySteps`/`dailyGoal` без изменения расчёта цели,
 ENERGY/rewards, progression или external validation status.
 
+### US-066. Понимать, что делает день ритма активным
+
+Как игрок, я хочу явно знать, когда день засчитывается в мягкий недельный ритм,
+чтобы не считать достижение 100% личной цели обязательным условием active day.
+
+Критерии:
+
+- weekly presentation объясняет, что любая accepted activity делает день
+  активным, а personal daily goal остаётся отдельной мерой;
+- RU/EN clarification не меняет persisted positive-activity rule, не читает
+  Health history и не выводит historical step totals;
+- visible line входит в существующую weekly semantics summary ровно один раз,
+  а visual child исключён из duplicate announcement;
+- legacy aggregate-only weekly object получает правило без inferred dates,
+  today status или day trail, а Home без weekly object остаётся без copy;
+- RU/EN, semantics, legacy/absence и compact 320 px / text scale 1.6 widget
+  coverage фиксируют presentation contract.
+
+**Статус:** weekly active-day qualification реализована как mobile copy над
+существующим authoritative contract без изменения API, daily goal,
+ENERGY/rewards, progression или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

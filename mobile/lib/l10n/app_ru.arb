@@ -469,6 +469,7 @@
   "homeWeeklyRhythmWindow": "Окно в днях: {windowDays} · дни отдыха не сбрасывают прогресс",
   "homeWeeklyRhythmRemaining": "{remainingDays, plural, one{До мягкой цели в окне из {windowDays} дней остался {remainingDays} активный день · отдых не сбрасывает прогресс} few{До мягкой цели в окне из {windowDays} дней осталось {remainingDays} активных дня · отдых не сбрасывает прогресс} many{До мягкой цели в окне из {windowDays} дней осталось {remainingDays} активных дней · отдых не сбрасывает прогресс} other{До мягкой цели в окне из {windowDays} дней осталось {remainingDays} активного дня · отдых не сбрасывает прогресс}}",
   "homeWeeklyRhythmReached": "Цель достигнута · окно в днях: {windowDays} · дни отдыха — норма",
+  "homeWeeklyRhythmQualification": "Любая принятая активность делает день ритма активным · личная цель считается отдельно",
   "homeWeeklyRhythmDaysSummary": "Дни: {days}",
   "homeWeeklyRhythmActiveDay": "{date}: активный день",
   "homeWeeklyRhythmRestDay": "{date}: день отдыха",
