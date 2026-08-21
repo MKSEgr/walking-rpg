@@ -1723,43 +1723,47 @@ class _WeeklyActivityDayTrail extends StatelessWidget {
       key: const Key('home-weekly-activity-day-trail'),
       spacing: 4,
       runSpacing: 4,
-      children: days.map((WeeklyActivityDay day) {
-        final Color foreground = day.active
-            ? colors.onPrimaryContainer
-            : colors.onSurfaceVariant;
-        return Container(
-          key: Key('home-weekly-activity-day-${day.localDate}'),
-          width: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-          decoration: BoxDecoration(
-            color: day.active
-                ? colors.primaryContainer
-                : colors.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(
-                day.active ? Icons.directions_walk : Icons.bedtime_outlined,
-                color: foreground,
-                size: 15,
+      children: days
+          .map((WeeklyActivityDay day) {
+            final Color foreground = day.active
+                ? colors.onPrimaryContainer
+                : colors.onSurfaceVariant;
+            return Container(
+              key: Key('home-weekly-activity-day-${day.localDate}'),
+              width: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+              decoration: BoxDecoration(
+                color: day.active
+                    ? colors.primaryContainer
+                    : colors.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  narrowWeekdays[day.date.weekday % 7],
-                  maxLines: 1,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    day.active
+                        ? Icons.directions_walk
+                        : Icons.bedtime_outlined,
                     color: foreground,
+                    size: 15,
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      narrowWeekdays[day.date.weekday % 7],
+                      maxLines: 1,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: foreground,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      }).toList(growable: false),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }

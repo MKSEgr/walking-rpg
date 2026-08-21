@@ -39,9 +39,7 @@ class WeeklyActivityRhythm {
       if (daysJson is! List<dynamic>) {
         throw const FormatException('days должен быть массивом');
       }
-      days = daysJson
-          .map(WeeklyActivityDay.fromJson)
-          .toList(growable: false);
+      days = daysJson.map(WeeklyActivityDay.fromJson).toList(growable: false);
       if (days.length != windowDays) {
         throw const FormatException('days должен полностью покрывать окно');
       }
