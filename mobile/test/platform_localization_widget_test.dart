@@ -665,9 +665,7 @@ void main() {
       find.byKey(const Key('platform-achievement-onboarding-complete')),
     );
     expect(
-      find.bySemanticsLabel(
-        '0 of 2 unlocked. 2 achievements left to unlock',
-      ),
+      find.bySemanticsLabel('0 of 2 unlocked. 2 achievements left to unlock'),
       findsOneWidget,
     );
     expect(find.text('Path Open'), findsOneWidget);
