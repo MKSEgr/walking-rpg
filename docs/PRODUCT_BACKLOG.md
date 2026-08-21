@@ -1558,6 +1558,29 @@ status.
 local date без изменения API, migration, Health history, daily goal,
 rewards/economy, progression, topology или external validation status.
 
+### US-064. Видеть точные границы учитываемой недели
+
+Как игрок, я хочу видеть первую и последнюю даты текущего rolling window,
+чтобы понимать, какие дни входят в мягкий ритм 4/7, без расшифровки weekday
+markers и без ощущения приближающегося streak reset.
+
+Критерии:
+
+- mobile выводит range только из first/last dates уже валидированного полного
+  `weeklyActivityRhythm.days`, без device clock или нового window calculation;
+- RU/EN copy локализует обе server-owned даты и называет их учитываемыми, не
+  создавая deadline, future prediction, penalty или reward claim;
+- legacy weekly object без `days` не получает inferred range;
+- visible range входит в одну weekly semantics summary ровно один раз, а
+  visual child не создаёт duplicate screen-reader announcement;
+- RU/EN widget, legacy omission и compact 320 px / text scale 1.6 coverage
+  проверяют copy, accessibility и отсутствие overflow.
+
+**Статус:** authoritative weekly window range реализован как mobile
+presentation над accepted trail без изменения Home API, migration, Health
+history, daily goal, rewards/economy, progression, topology или external
+validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

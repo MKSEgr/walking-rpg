@@ -769,6 +769,13 @@
       "date": {"type": "String"}
     }
   },
+  "homeWeeklyRhythmDateRange": "Dates counted: {startDate}–{endDate}",
+  "@homeWeeklyRhythmDateRange": {
+    "placeholders": {
+      "startDate": {"type": "String"},
+      "endDate": {"type": "String"}
+    }
+  },
   "homeWeeklyRhythmTodayActiveDay": "Today, {date}: active day",
   "@homeWeeklyRhythmTodayActiveDay": {
     "placeholders": {

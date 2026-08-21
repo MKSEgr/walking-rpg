@@ -243,6 +243,9 @@ void main() {
     bool recoveryOpened = false;
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: HomeScreen(
           loader: () async => HomeSnapshot.demo,
           recoveryCount: 1,
@@ -271,6 +274,17 @@ void main() {
     expect(
       find.byKey(const Key('home-weekly-activity-rhythm-progress')),
       findsOneWidget,
+    );
+    final Text russianDateRange = tester.widget<Text>(
+      find.byKey(const Key('home-weekly-activity-date-range')),
+    );
+    final MaterialLocalizations russianMaterialLocalizations =
+        MaterialLocalizations.of(tester.element(find.byType(HomeScreen)));
+    expect(
+      russianDateRange.data,
+      'Учитываются даты: '
+      '${russianMaterialLocalizations.formatShortDate(DateTime(2026, 7, 20))}–'
+      '${russianMaterialLocalizations.formatShortDate(DateTime(2026, 7, 26))}',
     );
     final Text todayStatus = tester.widget<Text>(
       find.byKey(const Key('home-weekly-activity-today-status')),
@@ -314,11 +328,24 @@ void main() {
 
     expect(find.text('Weekly rhythm: 5 active days · goal 4'), findsOneWidget);
     expect(find.textContaining('active days remain'), findsNothing);
+    final Text dateRangeText = tester.widget<Text>(
+      find.byKey(const Key('home-weekly-activity-date-range')),
+    );
+    final String dateRange = dateRangeText.data!;
+    final MaterialLocalizations englishMaterialLocalizations =
+        MaterialLocalizations.of(tester.element(find.byType(HomeScreen)));
+    expect(
+      dateRange,
+      'Dates counted: '
+      '${englishMaterialLocalizations.formatShortDate(DateTime(2026, 7, 20))}–'
+      '${englishMaterialLocalizations.formatShortDate(DateTime(2026, 7, 26))}',
+    );
     expect(
       find.bySemanticsLabel(
         RegExp(
           r'^Weekly rhythm: 5 active days · goal 4\. '
           r'Goal reached · 7-day window · rest days are normal\. '
+          '${RegExp.escape(dateRange)}\\. '
           r'Days: .*active day.*rest day.*$',
         ),
       ),
@@ -332,6 +359,7 @@ void main() {
       find.byKey(const Key('home-weekly-activity-day-2026-07-26')),
       findsOneWidget,
     );
+    expect(find.text(dateRange), findsOneWidget);
     final Text todayStatus = tester.widget<Text>(
       find.byKey(const Key('home-weekly-activity-today-status')),
     );
@@ -343,6 +371,12 @@ void main() {
     expect(
       RegExp(
         r'Today, [^.]+: active day',
+      ).allMatches(weeklySemantics.properties.label!).length,
+      1,
+    );
+    expect(
+      RegExp(
+        RegExp.escape(dateRange),
       ).allMatches(weeklySemantics.properties.label!).length,
       1,
     );
@@ -384,6 +418,10 @@ void main() {
     );
     expect(
       find.byKey(const Key('home-weekly-activity-day-trail')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-date-range')),
       findsNothing,
     );
     expect(tester.takeException(), isNull);
@@ -521,6 +559,10 @@ void main() {
     );
     expect(
       find.byKey(const Key('home-weekly-activity-today-status')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-weekly-activity-date-range')),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

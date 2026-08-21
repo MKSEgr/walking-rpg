@@ -974,6 +974,23 @@ Milestone 47 продолжает non-punitive rhythm из ADR 0061 без из�
 API, schema, Health history, daily goal, rewards/economy, progression,
 immutable `alpha-rc1` или внешних gates.
 
+## Milestone 48 — Authoritative weekly rhythm window range
+
+### CODE_COMPLETE
+
+- [x] Mobile показывает localized first/last dates только из уже
+      валидированного complete `weeklyActivityRhythm.days`, без device clock
+- [x] RU/EN line объясняет exact counted window и не превращает lower boundary
+      в дедлайн, streak reset или future-state prediction
+- [x] Legacy weekly object без trail не получает inferred range; Home API,
+      backend и persistence schema не меняются
+- [x] Range входит в единую weekly semantics summary ровно один раз, а RU/EN,
+      legacy и compact text-scale 1.6 widget coverage фиксируют presentation
+
+Milestone 48 продолжает non-punitive rhythm из ADR 0062 без изменения daily
+goal, rewards/economy, progression, topology, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

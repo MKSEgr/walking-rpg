@@ -470,6 +470,7 @@
   "homeWeeklyRhythmDaysSummary": "Дни: {days}",
   "homeWeeklyRhythmActiveDay": "{date}: активный день",
   "homeWeeklyRhythmRestDay": "{date}: день отдыха",
+  "homeWeeklyRhythmDateRange": "Учитываются даты: {startDate}–{endDate}",
   "homeWeeklyRhythmTodayActiveDay": "Сегодня, {date}: активный день",
   "homeWeeklyRhythmTodayRestDay": "Сегодня, {date}: день отдыха",
   "homePilotLabel": "Пилот",

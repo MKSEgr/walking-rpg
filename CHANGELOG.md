@@ -69,6 +69,9 @@
 
 ### Added
 
+- localized authoritative start/end dates for the seven-day activity window,
+  derived only from the accepted Home trail with one accessible summary and no
+  client clock, streak, ENERGY or reward side effects;
 - authoritative RU/EN today status and a distinct non-warning marker inside
   the seven-day activity trail, derived from the accepted Home local date with
   no client clock, streak, ENERGY or reward side effects;
