@@ -3245,11 +3245,15 @@ class _CharacterCard extends StatelessWidget {
             const SizedBox(height: 6),
           ] else
             const SizedBox(height: 2),
-          Text(
-            detail,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          Semantics(
+            label: detail,
+            excludeSemantics: true,
+            child: Text(
+              detail,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
           ),
         ],
       ),

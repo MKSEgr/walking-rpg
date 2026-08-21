@@ -2412,11 +2412,14 @@ void main() {
       );
 
       await tester.scrollUntilVisible(
-        find.text('XP 90 / 100'),
+        find.text('XP 90 / 100 · до следующего уровня 10 XP'),
         200,
         scrollable: find.byType(Scrollable),
       );
-      expect(find.text('XP 90 / 100'), findsOneWidget);
+      expect(
+        find.text('XP 90 / 100 · до следующего уровня 10 XP'),
+        findsOneWidget,
+      );
       expect(find.text('Связь 23'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('Люминовый осколок × 2'),
