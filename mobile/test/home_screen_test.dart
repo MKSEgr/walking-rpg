@@ -327,10 +327,11 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
-      find.text('Доступная энергия: 0 · версия 0'),
+      find.byKey(const Key('home-pilot-card')),
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
 
     const String russianPilotProgress =
         'XP 20 / 100 · до следующего уровня 80 XP';
@@ -342,6 +343,12 @@ void main() {
         );
     expect(russianProgress.value, 0.2);
     expect(find.text('Связь 10 · Малыш'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Доступная энергия: 0 · версия 0'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Доступная энергия: 0 · версия 0'), findsOneWidget);
   });
 
@@ -365,7 +372,6 @@ void main() {
     expect(find.textContaining('active days remain'), findsNothing);
     const String englishPilotProgress = 'XP 20 / 100 · 80 XP to next level';
     expect(find.text(englishPilotProgress), findsOneWidget);
-    expect(find.bySemanticsLabel(englishPilotProgress), findsOneWidget);
     final LinearProgressIndicator englishProgress = tester
         .widget<LinearProgressIndicator>(
           find.byKey(const Key('home-pilot-experience-progress')),
@@ -442,6 +448,14 @@ void main() {
     );
     expect((todayMarker.decoration! as BoxDecoration).border, isNotNull);
     expect((earlierMarker.decoration! as BoxDecoration).border, isNull);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('home-pilot-card')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel(englishPilotProgress), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     semantics.dispose();

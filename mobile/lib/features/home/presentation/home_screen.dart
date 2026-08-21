@@ -3246,6 +3246,7 @@ class _CharacterCard extends StatelessWidget {
           ] else
             const SizedBox(height: 2),
           Semantics(
+            container: true,
             label: detail,
             excludeSemantics: true,
             child: Text(
