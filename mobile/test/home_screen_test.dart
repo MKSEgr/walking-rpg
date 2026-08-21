@@ -341,9 +341,9 @@ void main() {
       find.byKey(const Key('home-weekly-activity-rhythm')),
     );
     expect(
-      RegExp(r'Today, [^.]+: active day')
-          .allMatches(weeklySemantics.properties.label!)
-          .length,
+      RegExp(
+        r'Today, [^.]+: active day',
+      ).allMatches(weeklySemantics.properties.label!).length,
       1,
     );
     final Container todayMarker = tester.widget<Container>(
@@ -2806,20 +2806,12 @@ WeeklyActivityRhythm _weeklyRhythmWithActiveDays(
     windowDays: dates.length,
     targetActiveDays: 4,
     targetReached: activeDays >= 4,
-    days: List<WeeklyActivityDay>.generate(
-      dates.length,
-      (int index) {
-        final bool isToday = index == dates.length - 1;
-        final int earlierActiveDays = activeDays - (todayActive ? 1 : 0);
-        final bool isActive =
-            isToday ? todayActive : index < earlierActiveDays;
-        return WeeklyActivityDay(
-          localDate: dates[index],
-          active: isActive,
-        );
-      },
-      growable: false,
-    ),
+    days: List<WeeklyActivityDay>.generate(dates.length, (int index) {
+      final bool isToday = index == dates.length - 1;
+      final int earlierActiveDays = activeDays - (todayActive ? 1 : 0);
+      final bool isActive = isToday ? todayActive : index < earlierActiveDays;
+      return WeeklyActivityDay(localDate: dates[index], active: isActive);
+    }, growable: false),
   );
 }
 
