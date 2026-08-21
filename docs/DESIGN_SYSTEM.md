@@ -603,13 +603,19 @@ the same server-owned formatted date and classifies it as active or neutral
 rest; it never consults the device clock. The outline identifies temporal
 position only and does not upgrade a rest marker into warning or failure.
 
+One quiet RU/EN range line names the formatted first and last dates of the
+accepted trail. It explains the exact counted window without consulting the
+device clock, predicting tomorrow or turning the lower boundary into a
+deadline. Legacy weekly objects without a complete trail receive no range.
+
 The component is not a streak, calendar commitment, ENERGY source, achievement
 or Health-history reader. It does not color missing days as failure and does
 not infer activity when the additive server object is absent. Visible RU/EN
 copy and day markers are excluded from duplicate announcements and exposed as
 one complete semantic summary with every localized date classified as active
-or rest and the exact endpoint classified as today once. The column remains
-fluid inside the existing compact daily progress reflow at enlarged text.
+or rest, the counted range named once and the exact endpoint classified as
+today once. The column remains fluid inside the existing compact daily
+progress reflow at enlarged text.
 
 ## Entry experience
 

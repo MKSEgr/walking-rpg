@@ -1598,6 +1598,13 @@ class _DailyProgressSummary extends StatelessWidget {
           );
     final MaterialLocalizations materialLocalizations =
         MaterialLocalizations.of(context);
+    final String? weeklyDateRange =
+        weeklyRhythm == null || weeklyRhythm.days.isEmpty
+        ? null
+        : context.l10n.homeWeeklyRhythmDateRange(
+            materialLocalizations.formatShortDate(weeklyRhythm.days.first.date),
+            materialLocalizations.formatShortDate(weeklyRhythm.days.last.date),
+          );
     final WeeklyActivityDay? weeklyToday = _findWeeklyToday(
       weeklyRhythm,
       snapshot.localDate,
@@ -1662,6 +1669,7 @@ class _DailyProgressSummary extends StatelessWidget {
             label: <String>[
               weeklyRhythmTitle,
               weeklyRhythmDetail,
+              if (weeklyDateRange != null) weeklyDateRange,
               if (weeklyDaysSummary != null) weeklyDaysSummary,
             ].join('. '),
             child: ExcludeSemantics(
@@ -1688,6 +1696,16 @@ class _DailyProgressSummary extends StatelessWidget {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
+                  if (weeklyDateRange != null) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Text(
+                      weeklyDateRange,
+                      key: const Key('home-weekly-activity-date-range'),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   if (weeklyTodayStatus != null) ...<Widget>[
                     const SizedBox(height: 6),
                     Text(

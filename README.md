@@ -40,8 +40,8 @@
 - Apple HealthKit и Google Health Connect как foreground-источники шагов;
 - server-owned персональная дневная цель по истории accepted activity;
 - server-authoritative мягкий недельный ритм 4/7 с лентой active/rest dates,
-  явным today-status и спокойной подсказкой об оставшихся активных днях, без
-  streak reset и наград;
+  локализованными границами учитываемого окна, явным today-status и спокойной
+  подсказкой об оставшихся активных днях, без streak reset и наград;
 - development-only источник шагов для воспроизводимых локальных проверок;
 - internal-only Validation Center с bounded per-launch journal и redacted
   schema-v1 JSON evidence, недоступный в release build;
