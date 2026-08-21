@@ -16,6 +16,7 @@ import com.walkingrpg.backend.home.api.HomeSnapshotResponse;
 import com.walkingrpg.backend.home.domain.DailyGoalPolicySnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionSnapshot;
 import com.walkingrpg.backend.home.domain.ExpeditionRouteNodeSnapshot;
+import com.walkingrpg.backend.home.domain.WeeklyActivityDaySnapshot;
 import com.walkingrpg.backend.home.domain.WeeklyActivityRhythmSnapshot;
 import org.springframework.stereotype.Service;
 
@@ -43,14 +44,25 @@ public class DemoHomeService {
         Instant serverTime = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
         ExpeditionDefinition definition = expeditionContent.definition();
         DailyGoal dailyGoal = dailyGoalCalculator.calculate(List.of());
+        LocalDate localDate = LocalDate.ofInstant(serverTime, ZoneOffset.UTC);
+        List<WeeklyActivityDaySnapshot> weeklyDays = localDate.minusDays(6)
+                .datesUntil(localDate.plusDays(1))
+                .map(date -> new WeeklyActivityDaySnapshot(date, false))
+                .toList();
 
         return new HomeSnapshotResponse(
-                LocalDate.ofInstant(serverTime, ZoneOffset.UTC),
+                localDate,
                 "UTC",
                 0,
                 dailyGoal.steps(),
                 DailyGoalPolicySnapshot.from(dailyGoal),
-                new WeeklyActivityRhythmSnapshot(0, 7, 4, false),
+                new WeeklyActivityRhythmSnapshot(
+                        0,
+                        7,
+                        4,
+                        false,
+                        weeklyDays
+                ),
                 0,
                 0,
                 0,

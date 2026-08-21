@@ -55,6 +55,7 @@ class HomeSnapshot {
     Map<String, dynamic> json, {
     CachedReadMetadata? cacheMetadata,
   }) {
+    final String localDate = _readString(json, 'localDate');
     final int dailyGoal = _readInt(json, 'dailyGoal');
     final Object? dailyGoalPolicyJson = json['dailyGoalPolicy'];
     final DailyGoalPolicy dailyGoalPolicy = dailyGoalPolicyJson == null
@@ -69,6 +70,7 @@ class HomeSnapshot {
         ? null
         : WeeklyActivityRhythm.fromJson(
             _asMap(weeklyActivityRhythmJson, 'weeklyActivityRhythm'),
+            homeLocalDate: localDate,
           );
     final Map<String, dynamic> pilot = _readMap(json, 'pilot');
     final Map<String, dynamic> pet = _readMap(json, 'pet');
@@ -126,7 +128,7 @@ class HomeSnapshot {
     final Object? pendingEventResultJson = json['pendingEventResult'];
 
     return HomeSnapshot(
-      localDate: _readString(json, 'localDate'),
+      localDate: localDate,
       timeZone: _readNullableString(json, 'timeZone'),
       dailySteps: _readInt(json, 'dailySteps'),
       dailyGoal: dailyGoal,
@@ -277,6 +279,15 @@ class HomeSnapshot {
       windowDays: 7,
       targetActiveDays: 4,
       targetReached: false,
+      days: <WeeklyActivityDay>[
+        WeeklyActivityDay(localDate: '2026-07-20', active: false),
+        WeeklyActivityDay(localDate: '2026-07-21', active: false),
+        WeeklyActivityDay(localDate: '2026-07-22', active: false),
+        WeeklyActivityDay(localDate: '2026-07-23', active: false),
+        WeeklyActivityDay(localDate: '2026-07-24', active: false),
+        WeeklyActivityDay(localDate: '2026-07-25', active: false),
+        WeeklyActivityDay(localDate: '2026-07-26', active: false),
+      ],
     ),
     availableEnergy: 0,
     activityStateVersion: 0,

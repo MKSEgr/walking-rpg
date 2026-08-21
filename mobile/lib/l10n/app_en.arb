@@ -744,6 +744,24 @@
       "windowDays": {"type": "int"}
     }
   },
+  "homeWeeklyRhythmDaysSummary": "Days: {days}",
+  "@homeWeeklyRhythmDaysSummary": {
+    "placeholders": {
+      "days": {"type": "String"}
+    }
+  },
+  "homeWeeklyRhythmActiveDay": "{date}: active day",
+  "@homeWeeklyRhythmActiveDay": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "homeWeeklyRhythmRestDay": "{date}: rest day",
+  "@homeWeeklyRhythmRestDay": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
   "homePilotLabel": "Pilot",
   "homePetLabel": "Companion",
   "homePetBond": "Bond {bond}",

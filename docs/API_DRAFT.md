@@ -155,7 +155,16 @@ Authorization: Bearer <access-token>
     "activeDays": 3,
     "windowDays": 7,
     "targetActiveDays": 4,
-    "targetReached": false
+    "targetReached": false,
+    "days": [
+      {"localDate": "2026-07-20", "active": false},
+      {"localDate": "2026-07-21", "active": true},
+      {"localDate": "2026-07-22", "active": false},
+      {"localDate": "2026-07-23", "active": true},
+      {"localDate": "2026-07-24", "active": false},
+      {"localDate": "2026-07-25", "active": true},
+      {"localDate": "2026-07-26", "active": false}
+    ]
   },
   "availableEnergy": 25,
   "activityStateVersion": 1,
@@ -361,9 +370,13 @@ Authorization: Bearer <access-token>
   локальных датах, заканчивая запрошенным `localDate`; `activeDays` находится
   в диапазоне `0..windowDays`, цель v1 равна `4/7`, а `targetReached` строго
   эквивалентен `activeDays >= targetActiveDays`;
+- `weeklyActivityRhythm.days` содержит все семь дат в хронологическом порядке:
+  `localDate - 6` ... `localDate`; `active` истинно только для persisted
+  `accepted_total > 0`, число active entries равно `activeDays`;
 - объект не является streak: отсутствие activity в отдельный день не создаёт
   reset/penalty и не выдаёт ENERGY или rewards. Legacy response без объекта
-  остаётся валидным и не вычисляется mobile из Health/client clock;
+  или legacy weekly object без `days` остаётся валидным и не вычисляется
+  mobile из Health/client clock;
 - ENERGY, expedition, progression и inventory глобальны для пользователя;
 - `pilot.pilotId` — additive stable identity текущего пилота. Mobile разрешает
   известный ID через выбранный RU/EN catalog; legacy snapshot без поля,

@@ -12,6 +12,7 @@ import com.walkingrpg.backend.expedition.domain.ProcessedEventResolution;
 import com.walkingrpg.backend.goal.application.AdaptiveDailyGoalCalculator;
 import com.walkingrpg.backend.goal.application.DailyGoalPolicyProperties;
 import com.walkingrpg.backend.goal.application.DailyGoalService;
+import com.walkingrpg.backend.goal.infrastructure.DailyGoalHistoryRepository;
 import com.walkingrpg.backend.home.application.HomeQueryFactory;
 import com.walkingrpg.backend.home.application.HomeService;
 import com.walkingrpg.backend.home.application.StarterHomeContent;
@@ -68,8 +69,14 @@ class HomeControllerTest {
                 repository,
                 new StarterHomeContent(),
                 new DailyGoalService(
-                        (userId, fromInclusive, toExclusive) ->
+                        goalHistory(
                                 List.of(2_000L, 3_000L, 4_000L),
+                                List.of(
+                                        LocalDate.of(2026, 7, 20),
+                                        LocalDate.of(2026, 7, 22),
+                                        LocalDate.of(2026, 7, 24)
+                                )
+                        ),
                         new AdaptiveDailyGoalCalculator(goalProperties),
                         goalProperties
                 ),
@@ -109,6 +116,18 @@ class HomeControllerTest {
                         .value(4))
                 .andExpect(jsonPath("$.weeklyActivityRhythm.targetReached")
                         .value(false))
+                .andExpect(jsonPath("$.weeklyActivityRhythm.days.length()")
+                        .value(7))
+                .andExpect(jsonPath(
+                        "$.weeklyActivityRhythm.days[0].localDate"
+                ).value("2026-07-19"))
+                .andExpect(jsonPath("$.weeklyActivityRhythm.days[0].active")
+                        .value(false))
+                .andExpect(jsonPath("$.weeklyActivityRhythm.days[1].active")
+                        .value(true))
+                .andExpect(jsonPath(
+                        "$.weeklyActivityRhythm.days[6].localDate"
+                ).value("2026-07-25"))
                 .andExpect(jsonPath("$.availableEnergy").value(38))
                 .andExpect(jsonPath("$.activityStateVersion").value(1))
                 .andExpect(jsonPath("$.economyVersion").value(2))
@@ -759,6 +778,31 @@ class HomeControllerTest {
 
     private HomeReadRepository repository(HomeRuntimeState state) {
         return repository(state, List.of());
+    }
+
+    private DailyGoalHistoryRepository goalHistory(
+            List<Long> totals,
+            List<LocalDate> dates
+    ) {
+        return new DailyGoalHistoryRepository() {
+            @Override
+            public List<Long> findAcceptedTotals(
+                    String userId,
+                    LocalDate fromInclusive,
+                    LocalDate toExclusive
+            ) {
+                return totals;
+            }
+
+            @Override
+            public List<LocalDate> findAcceptedDates(
+                    String userId,
+                    LocalDate fromInclusive,
+                    LocalDate toExclusive
+            ) {
+                return dates;
+            }
+        };
     }
 
     private HomeReadRepository repository(

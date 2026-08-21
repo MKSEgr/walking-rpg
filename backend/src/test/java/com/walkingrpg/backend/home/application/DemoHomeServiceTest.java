@@ -48,6 +48,13 @@ class DemoHomeServiceTest {
         assertEquals(7, snapshot.weeklyActivityRhythm().windowDays());
         assertEquals(4, snapshot.weeklyActivityRhythm().targetActiveDays());
         assertEquals(false, snapshot.weeklyActivityRhythm().targetReached());
+        assertEquals(7, snapshot.weeklyActivityRhythm().days().size());
+        assertEquals("2026-07-19", snapshot.weeklyActivityRhythm()
+                .days().getFirst().localDate().toString());
+        assertEquals("2026-07-25", snapshot.weeklyActivityRhythm()
+                .days().getLast().localDate().toString());
+        assertEquals(true, snapshot.weeklyActivityRhythm().days().stream()
+                .noneMatch(day -> day.active()));
         assertEquals(0, snapshot.availableEnergy());
         assertEquals(0, snapshot.activityStateVersion());
         assertEquals(0, snapshot.economyVersion());

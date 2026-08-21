@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
+import 'package:walking_rpg_mobile/features/home/domain/weekly_activity_rhythm.dart';
 
 void main() {
   test('demo snapshot starts with starter progression', () {
@@ -18,6 +19,15 @@ void main() {
     expect(snapshot.weeklyActivityRhythm?.targetActiveDays, 4);
     expect(snapshot.weeklyActivityRhythm?.targetReached, isFalse);
     expect(snapshot.weeklyActivityRhythm?.progress, 0);
+    expect(snapshot.weeklyActivityRhythm?.days, hasLength(7));
+    expect(snapshot.weeklyActivityRhythm?.days.first.localDate, '2026-07-20');
+    expect(snapshot.weeklyActivityRhythm?.days.last.localDate, '2026-07-26');
+    expect(
+      snapshot.weeklyActivityRhythm?.days.every(
+        (WeeklyActivityDay day) => !day.active,
+      ),
+      isTrue,
+    );
     expect(snapshot.expeditionProgressValue, 0);
     expect(snapshot.spendableEnergy, 0);
     expect(snapshot.unlockedEvent, isNull);
@@ -49,6 +59,11 @@ void main() {
     expect(snapshot.weeklyActivityRhythm?.targetActiveDays, 4);
     expect(snapshot.weeklyActivityRhythm?.targetReached, isFalse);
     expect(snapshot.weeklyActivityRhythm?.progress, 0.75);
+    expect(snapshot.weeklyActivityRhythm?.days, hasLength(7));
+    expect(snapshot.weeklyActivityRhythm?.days.first.localDate, '2026-07-20');
+    expect(snapshot.weeklyActivityRhythm?.days.first.active, isFalse);
+    expect(snapshot.weeklyActivityRhythm?.days[1].active, isTrue);
+    expect(snapshot.weeklyActivityRhythm?.days.last.localDate, '2026-07-26');
     expect(snapshot.availableEnergy, 38);
     expect(snapshot.activityStateVersion, 1);
     expect(snapshot.economyVersion, 2);
@@ -2217,6 +2232,18 @@ void main() {
     expect(snapshot.weeklyActivityRhythm, isNull);
   });
 
+  test('weekly rhythm without day trail remains backward compatible', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> rhythm =
+        response['weeklyActivityRhythm'] as Map<String, dynamic>;
+    rhythm.remove('days');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.weeklyActivityRhythm?.activeDays, 3);
+    expect(snapshot.weeklyActivityRhythm?.days, isEmpty);
+  });
+
   test('weekly rhythm rejects impossible or inconsistent values', () {
     final List<void Function(Map<String, dynamic>)> corruptions =
         <void Function(Map<String, dynamic>)>[
@@ -2240,6 +2267,46 @@ void main() {
         reason: 'invalid weekly rhythm must fail closed: $rhythm',
       );
     }
+  });
+
+  test('weekly day trail rejects malformed or inconsistent values', () {
+    final List<void Function(List<dynamic>)> corruptions =
+        <void Function(List<dynamic>)>[
+          (List<dynamic> days) => days.removeLast(),
+          (List<dynamic> days) =>
+              (days[2] as Map<String, dynamic>)['localDate'] = '2026-07-24',
+          (List<dynamic> days) =>
+              (days.last as Map<String, dynamic>)['localDate'] = '2026-07-27',
+          (List<dynamic> days) =>
+              (days.first as Map<String, dynamic>)['active'] = true,
+          (List<dynamic> days) =>
+              (days.first as Map<String, dynamic>)['active'] = 1,
+          (List<dynamic> days) =>
+              (days.first as Map<String, dynamic>)['localDate'] = '20.07.2026',
+        ];
+
+    for (final void Function(List<dynamic>) corrupt in corruptions) {
+      final Map<String, dynamic> response = _readyHomeResponse();
+      final Map<String, dynamic> rhythm =
+          response['weeklyActivityRhythm'] as Map<String, dynamic>;
+      final List<dynamic> days = rhythm['days'] as List<dynamic>;
+      corrupt(days);
+
+      expect(
+        () => HomeSnapshot.fromJson(response),
+        throwsFormatException,
+        reason: 'invalid weekly day trail must fail closed: $days',
+      );
+    }
+  });
+
+  test('weekly day trail rejects explicit null', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> rhythm =
+        response['weeklyActivityRhythm'] as Map<String, dynamic>;
+    rhythm['days'] = null;
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('resolved event maps selected outcome and persistent rewards', () {
@@ -2777,6 +2844,15 @@ Map<String, dynamic> _readyHomeResponse() {
       'windowDays': 7,
       'targetActiveDays': 4,
       'targetReached': false,
+      'days': <Map<String, dynamic>>[
+        <String, dynamic>{'localDate': '2026-07-20', 'active': false},
+        <String, dynamic>{'localDate': '2026-07-21', 'active': true},
+        <String, dynamic>{'localDate': '2026-07-22', 'active': false},
+        <String, dynamic>{'localDate': '2026-07-23', 'active': true},
+        <String, dynamic>{'localDate': '2026-07-24', 'active': false},
+        <String, dynamic>{'localDate': '2026-07-25', 'active': true},
+        <String, dynamic>{'localDate': '2026-07-26', 'active': false},
+      ],
     },
     'availableEnergy': 38,
     'activityStateVersion': 1,

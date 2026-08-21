@@ -589,12 +589,19 @@ progress line. The adjacent copy always states the seven-day window and that
 rest days do not reset progress; after the target is reached it names success
 without adding a reward claim.
 
+When the accepted snapshot supplies the authoritative day trail, seven compact
+markers follow chronological local dates. A walking glyph and primary-container
+tone mark activity; a moon glyph and neutral surface mark rest without warning,
+failure or broken-chain language. Narrow weekday labels may wrap with the group
+at compact width instead of shrinking the whole Home section.
+
 The component is not a streak, calendar commitment, ENERGY source, achievement
 or Health-history reader. It does not color missing days as failure and does
 not infer activity when the additive server object is absent. Visible RU/EN
-copy is excluded from duplicate announcements and exposed as one complete
-semantic summary. The column remains fluid inside the existing compact daily
-progress reflow at enlarged text.
+copy and day markers are excluded from duplicate announcements and exposed as
+one complete semantic summary with every localized date classified as active
+or rest. The column remains fluid inside the existing compact daily progress
+reflow at enlarged text.
 
 ## Entry experience
 

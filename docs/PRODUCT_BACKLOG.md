@@ -1483,6 +1483,33 @@ limit или external validation status.
 изменения daily goal, rewards/economy, progression, topology или external
 validation status.
 
+### US-061. Видеть форму своей недели без наказания за отдых
+
+Как игрок, я хочу видеть активные и спокойные дни внутри мягкого ритма 4/7,
+чтобы понимать форму недели без streak reset, чувства провала и просмотра
+Health history.
+
+Критерии:
+
+- Home расширяет `weeklyActivityRhythm` полным `days` trail из семи элементов
+  `{localDate, active}` от target `localDate - 6` до target date;
+- backend отмечает active только по persisted
+  `activity_sync_state.accepted_total > 0`, строит rest dates как
+  authoritative read projection и не публикует step totals;
+- порядок хронологический, даты непрерывны, последняя совпадает с Home
+  `localDate`, а количество active entries равно `activeDays`;
+- mobile принимает legacy weekly object без `days`, но fail-closed отклоняет
+  malformed types, неверную длину, gap/duplicate/end date или inconsistent
+  count;
+- RU/EN presentation использует walking marker для activity и нейтральный rest
+  marker, одну полную semantics-строку и compact reflow при text scale 1.6;
+- backend unit/API/PostgreSQL и Flutter parser/widget/localization coverage
+  подтверждают inclusive endpoint, lower boundary и no-punishment semantics.
+
+**Статус:** authoritative weekly activity day trail реализован без migration и
+без изменения daily goal, rewards/economy, progression, topology или external
+validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

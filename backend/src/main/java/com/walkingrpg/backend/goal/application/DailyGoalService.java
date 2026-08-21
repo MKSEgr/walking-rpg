@@ -3,8 +3,10 @@ package com.walkingrpg.backend.goal.application;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import com.walkingrpg.backend.goal.domain.DailyGoal;
+import com.walkingrpg.backend.goal.domain.WeeklyActivityDay;
 import com.walkingrpg.backend.goal.domain.WeeklyActivityRhythm;
 import com.walkingrpg.backend.goal.infrastructure.DailyGoalHistoryRepository;
 import org.springframework.stereotype.Service;
@@ -47,15 +49,32 @@ public class DailyGoalService {
     ) {
         String normalizedUserId = requireText(userId, "userId");
         LocalDate targetDate = Objects.requireNonNull(localDate, "localDate");
-        List<Long> acceptedTotals = repository.findAcceptedTotals(
+        LocalDate fromInclusive = targetDate.minusDays(
+                WEEKLY_RHYTHM_WINDOW_DAYS - 1L
+        );
+        List<LocalDate> acceptedDateList = repository.findAcceptedDates(
                 normalizedUserId,
-                targetDate.minusDays(WEEKLY_RHYTHM_WINDOW_DAYS - 1L),
+                fromInclusive,
                 targetDate.plusDays(1)
         );
+        Set<LocalDate> acceptedDates = Set.copyOf(acceptedDateList);
+        if (acceptedDates.size() != acceptedDateList.size()) {
+            throw new IllegalStateException(
+                    "История активности содержит повторяющиеся даты"
+            );
+        }
+        List<WeeklyActivityDay> days = fromInclusive
+                .datesUntil(targetDate.plusDays(1))
+                .map(date -> new WeeklyActivityDay(
+                        date,
+                        acceptedDates.contains(date)
+                ))
+                .toList();
         return new WeeklyActivityRhythm(
-                acceptedTotals.size(),
+                acceptedDates.size(),
                 WEEKLY_RHYTHM_WINDOW_DAYS,
-                WEEKLY_RHYTHM_TARGET_ACTIVE_DAYS
+                WEEKLY_RHYTHM_TARGET_ACTIVE_DAYS,
+                days
         );
     }
 
