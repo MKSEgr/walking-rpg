@@ -565,6 +565,13 @@ instead of a generic Material activity ring. The center repeats the existing
 literal percentage, while the adjacent copy remains the source for exact daily
 steps, personal goal and policy explanation.
 
+That adjacent copy also names either the non-negative number of accepted steps
+remaining to the personal goal or a calm reached state at and above the goal.
+The exact total and this feedback form one RU/EN semantic summary, while their
+visual children are excluded from duplicate announcements. The copy does not
+predict a reward, convert surplus steps into ENERGY or consult Health/client
+state beyond the accepted Home snapshot.
+
 The first-journey activity reward repeats that orbit only after a successful
 sync response. Its trace combines the response's literal `acceptedTotal` with
 the personal `dailyGoal` from the already accepted Home snapshot, and the

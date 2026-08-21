@@ -463,6 +463,8 @@
   "homeRouteCompleted": "Маршрут пройден. Постоянный прогресс сохранён; можно начать новый поход.",
   "homeEnergyToNextNode": "До следующего узла: {energy} ENERGY",
   "homeTodayProgress": "Сегодня: {steps} / {goal}",
+  "homeDailyGoalRemaining": "{remainingSteps, plural, one{До личной цели остался {remainingSteps} шаг} few{До личной цели осталось {remainingSteps} шага} many{До личной цели осталось {remainingSteps} шагов} other{До личной цели осталось {remainingSteps} шага}}",
+  "homeDailyGoalReached": "Личная цель достигнута",
   "homeWeeklyRhythmProgress": "Ритм недели: активных дней — {activeDays} · цель {targetActiveDays}",
   "homeWeeklyRhythmWindow": "Окно в днях: {windowDays} · дни отдыха не сбрасывают прогресс",
   "homeWeeklyRhythmRemaining": "{remainingDays, plural, one{До мягкой цели в окне из {windowDays} дней остался {remainingDays} активный день · отдых не сбрасывает прогресс} few{До мягкой цели в окне из {windowDays} дней осталось {remainingDays} активных дня · отдых не сбрасывает прогресс} many{До мягкой цели в окне из {windowDays} дней осталось {remainingDays} активных дней · отдых не сбрасывает прогресс} other{До мягкой цели в окне из {windowDays} дней осталось {remainingDays} активного дня · отдых не сбрасывает прогресс}}",

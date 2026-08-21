@@ -991,6 +991,23 @@ Milestone 48 продолжает non-punitive rhythm из ADR 0062 без из�
 goal, rewards/economy, progression, topology, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 49 — Authoritative daily goal feedback
+
+### CODE_COMPLETE
+
+- [x] Mobile показывает non-negative remaining steps только из accepted Home
+      `dailySteps` и `dailyGoal`, без Health history или client clock
+- [x] RU/EN copy корректно различает step plural forms до цели и спокойное
+      reached-состояние при равенстве или превышении без reward claim
+- [x] Exact daily total и feedback объединены в одну semantics summary без
+      duplicate visual announcement
+- [x] Domain и widget coverage фиксируют below/exact/above goal и compact
+      text-scale 1.6 без изменения Home API, backend или persistence
+
+Milestone 49 продолжает post-alpha code-only gameplay track из ADR 0039 и
+personal-goal boundary из ADR 0063 без изменения daily-goal calculation,
+ENERGY/rewards, progression, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

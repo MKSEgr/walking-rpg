@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative RU/EN remaining/reached feedback for today's personal step
+  goal, derived only from the accepted Home totals with one accessible summary
+  and no Health, client clock, ENERGY or reward inference;
 - localized authoritative start/end dates for the seven-day activity window,
   derived only from the accepted Home trail with one accessible summary and no
   client clock, streak, ENERGY or reward side effects;

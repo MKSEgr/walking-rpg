@@ -1581,6 +1581,13 @@ class _DailyProgressSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final String dailyProgressTitle = context.l10n.homeTodayProgress(
+      snapshot.dailySteps,
+      snapshot.dailyGoal,
+    );
+    final String dailyGoalFeedback = snapshot.dailyGoalReached
+        ? context.l10n.homeDailyGoalReached
+        : context.l10n.homeDailyGoalRemaining(snapshot.remainingDailySteps);
     final WeeklyActivityRhythm? weeklyRhythm = snapshot.weeklyActivityRhythm;
     final String? weeklyRhythmTitle = weeklyRhythm == null
         ? null
@@ -1645,12 +1652,33 @@ class _DailyProgressSummary extends StatelessWidget {
     final Widget details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          context.l10n.homeTodayProgress(
-            snapshot.dailySteps,
-            snapshot.dailyGoal,
+        Semantics(
+          key: const Key('home-daily-goal-summary'),
+          container: true,
+          label: '$dailyProgressTitle. $dailyGoalFeedback',
+          child: ExcludeSemantics(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  dailyProgressTitle,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  dailyGoalFeedback,
+                  key: const Key('home-daily-goal-feedback'),
+                  style: snapshot.dailyGoalReached
+                      ? Theme.of(
+                          context,
+                        ).textTheme.labelMedium?.copyWith(color: colors.primary)
+                      : Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                ),
+              ],
+            ),
           ),
-          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 6),
         Text(

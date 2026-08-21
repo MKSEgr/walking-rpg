@@ -38,7 +38,8 @@
   атмосферный экран экспедиции и плавающая игровая навигация;
 - PostgreSQL + Flyway;
 - Apple HealthKit и Google Health Connect как foreground-источники шагов;
-- server-owned персональная дневная цель по истории accepted activity;
+- server-owned персональная дневная цель по истории accepted activity с
+  RU/EN remaining/reached feedback только из принятого Home snapshot;
 - server-authoritative мягкий недельный ритм 4/7 с лентой active/rest dates,
   локализованными границами учитываемого окна, явным today-status и спокойной
   подсказкой об оставшихся активных днях, без streak reset и наград;
