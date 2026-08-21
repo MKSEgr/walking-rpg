@@ -769,6 +769,18 @@
       "date": {"type": "String"}
     }
   },
+  "homeWeeklyRhythmTodayActiveDay": "Today, {date}: active day",
+  "@homeWeeklyRhythmTodayActiveDay": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "homeWeeklyRhythmTodayRestDay": "Today, {date}: rest day",
+  "@homeWeeklyRhythmTodayRestDay": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
   "homePilotLabel": "Pilot",
   "homePetLabel": "Companion",
   "homePetBond": "Bond {bond}",

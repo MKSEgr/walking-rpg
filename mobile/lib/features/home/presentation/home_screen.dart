@@ -1598,6 +1598,19 @@ class _DailyProgressSummary extends StatelessWidget {
           );
     final MaterialLocalizations materialLocalizations =
         MaterialLocalizations.of(context);
+    final WeeklyActivityDay? weeklyToday = _findWeeklyToday(
+      weeklyRhythm,
+      snapshot.localDate,
+    );
+    final String? weeklyTodayStatus = weeklyToday == null
+        ? null
+        : weeklyToday.active
+        ? context.l10n.homeWeeklyRhythmTodayActiveDay(
+            materialLocalizations.formatShortDate(weeklyToday.date),
+          )
+        : context.l10n.homeWeeklyRhythmTodayRestDay(
+            materialLocalizations.formatShortDate(weeklyToday.date),
+          );
     final String? weeklyDaysSummary =
         weeklyRhythm == null || weeklyRhythm.days.isEmpty
         ? null
@@ -1607,6 +1620,9 @@ class _DailyProgressSummary extends StatelessWidget {
                   final String date = materialLocalizations.formatShortDate(
                     day.date,
                   );
+                  if (day.localDate == snapshot.localDate) {
+                    return weeklyTodayStatus!;
+                  }
                   return day.active
                       ? context.l10n.homeWeeklyRhythmActiveDay(date)
                       : context.l10n.homeWeeklyRhythmRestDay(date);
@@ -1672,9 +1688,22 @@ class _DailyProgressSummary extends StatelessWidget {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
+                  if (weeklyTodayStatus != null) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Text(
+                      weeklyTodayStatus,
+                      key: const Key('home-weekly-activity-today-status'),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelMedium?.copyWith(color: colors.primary),
+                    ),
+                  ],
                   if (weeklyRhythm.days.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 8),
-                    _WeeklyActivityDayTrail(days: weeklyRhythm.days),
+                    _WeeklyActivityDayTrail(
+                      days: weeklyRhythm.days,
+                      todayLocalDate: snapshot.localDate,
+                    ),
                   ],
                 ],
               ),
@@ -1712,9 +1741,13 @@ class _DailyProgressSummary extends StatelessWidget {
 }
 
 class _WeeklyActivityDayTrail extends StatelessWidget {
-  const _WeeklyActivityDayTrail({required this.days});
+  const _WeeklyActivityDayTrail({
+    required this.days,
+    required this.todayLocalDate,
+  });
 
   final List<WeeklyActivityDay> days;
+  final String todayLocalDate;
 
   @override
   Widget build(BuildContext context) {
@@ -1729,6 +1762,7 @@ class _WeeklyActivityDayTrail extends StatelessWidget {
       runSpacing: 4,
       children: days
           .map((WeeklyActivityDay day) {
+            final bool isToday = day.localDate == todayLocalDate;
             final Color foreground = day.active
                 ? colors.onPrimaryContainer
                 : colors.onSurfaceVariant;
@@ -1741,6 +1775,9 @@ class _WeeklyActivityDayTrail extends StatelessWidget {
                     ? colors.primaryContainer
                     : colors.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(10),
+                border: isToday
+                    ? Border.all(color: colors.primary, width: 1.5)
+                    : null,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1768,6 +1805,21 @@ class _WeeklyActivityDayTrail extends StatelessWidget {
           .toList(growable: false),
     );
   }
+}
+
+WeeklyActivityDay? _findWeeklyToday(
+  WeeklyActivityRhythm? rhythm,
+  String homeLocalDate,
+) {
+  if (rhythm == null) {
+    return null;
+  }
+  for (final WeeklyActivityDay day in rhythm.days) {
+    if (day.localDate == homeLocalDate) {
+      return day;
+    }
+  }
+  return null;
 }
 
 class _RouteEnergySummary extends StatelessWidget {

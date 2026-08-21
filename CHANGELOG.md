@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative RU/EN today status and a distinct non-warning marker inside
+  the seven-day activity trail, derived from the accepted Home local date with
+  no client clock, streak, ENERGY or reward side effects;
 - gentle RU/EN remaining-day guidance for the non-punitive weekly rhythm,
   derived from the accepted 4/7 Home snapshot with accessible plural forms and
   no streak, reset, ENERGY or reward side effects;

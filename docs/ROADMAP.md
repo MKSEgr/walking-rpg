@@ -956,6 +956,24 @@ Milestone 46 завершает presentation feedback мягкого ритма 
 изменения Home API, schema, Health history, daily goal, rewards/economy,
 progression, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 47 — Authoritative today status in weekly rhythm
+
+### CODE_COMPLETE
+
+- [x] Mobile связывает today только с exact Home `localDate`, уже проверенной
+      как endpoint authoritative seven-day trail, без device clock inference
+- [x] RU/EN visible copy называет server-owned formatted date и active/rest
+      status; rest остаётся нейтральным и не создаёт deadline или failure
+- [x] Exact today marker получает тонкую non-warning primary outline, сохраняя
+      исходный walking/rest glyph и tone
+- [x] Today status входит в полную weekly semantics summary ровно один раз;
+      legacy object без trail его не получает, а active/rest RU/EN и compact
+      text-scale 1.6 widget coverage фиксируют presentation contract
+
+Milestone 47 продолжает non-punitive rhythm из ADR 0061 без изменения Home
+API, schema, Health history, daily goal, rewards/economy, progression,
+immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
