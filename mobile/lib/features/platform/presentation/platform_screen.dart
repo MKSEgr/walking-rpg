@@ -2498,6 +2498,7 @@ class _WeeklyRouteCard extends StatelessWidget {
                   if (seasonRewardGuidance != null) ...<Widget>[
                     const SizedBox(height: 4),
                     Semantics(
+                      container: true,
                       label: seasonRewardGuidance,
                       excludeSemantics: true,
                       child: Text(
