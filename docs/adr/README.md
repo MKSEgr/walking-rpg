@@ -81,3 +81,4 @@ NNNN-short-title.md
 - [0062 — authoritative weekly rhythm window range](0062-authoritative-weekly-rhythm-window-range.md)
 - [0063 — authoritative daily goal feedback](0063-authoritative-daily-goal-feedback.md)
 - [0064 — weekly active-day qualification](0064-weekly-active-day-qualification.md)
+- [0065 — daily-goal stability clarification](0065-daily-goal-stability-clarification.md)

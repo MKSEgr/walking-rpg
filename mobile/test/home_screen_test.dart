@@ -210,6 +210,7 @@ void main() {
       find.byKey(const Key('home-weekly-activity-qualification')),
       findsNothing,
     );
+    expect(find.byKey(const Key('home-daily-goal-stability')), findsNothing);
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
@@ -265,9 +266,14 @@ void main() {
     expect(recoveryOpened, isTrue);
     expect(find.text('Сегодня: 0 / 6000'), findsOneWidget);
     expect(find.text('До личной цели осталось 6000 шагов'), findsOneWidget);
+    const String russianGoalStability =
+        'Принятые сегодня шаги не повышают сегодняшнюю цель · '
+        'они могут учитываться в следующих личных целях';
+    expect(find.text(russianGoalStability), findsOneWidget);
     expect(
       find.bySemanticsLabel(
-        'Сегодня: 0 / 6000. До личной цели осталось 6000 шагов',
+        'Сегодня: 0 / 6000. До личной цели осталось 6000 шагов. '
+        '$russianGoalStability',
       ),
       findsOneWidget,
     );
@@ -427,6 +433,12 @@ void main() {
     WidgetTester tester,
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
+    const String russianGoalStability =
+        'Принятые сегодня шаги не повышают сегодняшнюю цель · '
+        'они могут учитываться в следующих личных целях';
+    const String englishGoalStability =
+        "Steps accepted today do not raise today's goal · "
+        'they can inform later personal goals';
 
     Future<void> pumpGoal({
       required Locale locale,
@@ -450,8 +462,11 @@ void main() {
     await pumpGoal(locale: const Locale('ru'), dailySteps: 5999);
     const String russianRemaining = 'До личной цели остался 1 шаг';
     expect(find.text(russianRemaining), findsOneWidget);
+    expect(find.text(russianGoalStability), findsOneWidget);
     expect(
-      find.bySemanticsLabel('Сегодня: 5999 / 6000. $russianRemaining'),
+      find.bySemanticsLabel(
+        'Сегодня: 5999 / 6000. $russianRemaining. $russianGoalStability',
+      ),
       findsOneWidget,
     );
 
@@ -472,7 +487,7 @@ void main() {
     );
     expect(
       dailySummary.properties.label,
-      'Today: 5997 / 6000. $englishRemaining',
+      'Today: 5997 / 6000. $englishRemaining. $englishGoalStability',
     );
     expect(
       RegExp(
@@ -480,11 +495,21 @@ void main() {
       ).allMatches(dailySummary.properties.label!).length,
       1,
     );
+    expect(
+      RegExp(
+        RegExp.escape(englishGoalStability),
+      ).allMatches(dailySummary.properties.label!).length,
+      1,
+    );
+    expect(find.text(englishGoalStability), findsOneWidget);
 
     await pumpGoal(locale: const Locale('en'), dailySteps: 6000);
     expect(find.text('Personal goal reached'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('Today: 6000 / 6000. Personal goal reached'),
+      find.bySemanticsLabel(
+        'Today: 6000 / 6000. Personal goal reached. '
+        '$englishGoalStability',
+      ),
       findsOneWidget,
     );
 
@@ -682,6 +707,10 @@ void main() {
     );
     expect(
       find.byKey(const Key('home-weekly-activity-qualification')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('home-daily-goal-stability')),
       findsOneWidget,
     );
     expect(find.byKey(const Key('home-daily-goal-feedback')), findsOneWidget);

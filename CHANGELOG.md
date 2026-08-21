@@ -69,6 +69,9 @@
 
 ### Added
 
+- RU/EN clarification that accepted steps from the current local date do not
+  raise that date's personal goal and may inform later goals, exposed once in
+  the daily-goal semantics for non-legacy policy snapshots;
 - RU/EN clarification that any accepted activity qualifies a weekly-rhythm
   active day while the personal daily goal remains a separate measure, exposed
   once in the existing accessible summary without client or reward inference;

@@ -1025,6 +1025,24 @@ Milestone 50 продолжает non-punitive rhythm из ADR 0064 и post-alph
 track из ADR 0039 без изменения API, persisted qualification rule, daily goal,
 ENERGY/rewards, progression, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 51 — Daily-goal stability clarification
+
+### CODE_COMPLETE
+
+- [x] RU/EN copy для explicit DEFAULT/ADAPTIVE policy объясняет, что accepted
+      steps текущей server-owned даты не повышают цель этой даты и могут
+      учитываться в будущих целях
+- [x] Clarification входит в существующую daily-goal semantics summary ровно
+      один раз и не создаёт duplicate visual announcement
+- [x] Legacy snapshot без policy metadata не получает inferred stability rule
+- [x] Adaptive/default, RU/EN, semantics, legacy omission и compact text-scale
+      1.6 widget coverage фиксируют no-client-calculation boundary
+
+Milestone 51 продолжает adaptive-goal transparency из ADR 0065 и post-alpha
+code-only track из ADR 0039 без изменения API, goal formula/configuration,
+Health history, ENERGY/rewards, progression, immutable `alpha-rc1` или внешних
+gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -572,6 +572,12 @@ visual children are excluded from duplicate announcements. The copy does not
 predict a reward, convert surplus steps into ENERGY or consult Health/client
 state beyond the accepted Home snapshot.
 
+For an explicit non-legacy goal policy, the same summary adds one quiet RU/EN
+stability line: steps accepted on the current server-owned local date do not
+raise that date's goal and can inform later personal goals. The visible line
+is announced exactly once through the existing semantic container. A legacy
+snapshot without policy metadata receives no inferred stability statement.
+
 The first-journey activity reward repeats that orbit only after a successful
 sync response. Its trace combines the response's literal `acceptedTotal` with
 the personal `dailyGoal` from the already accepted Home snapshot, and the

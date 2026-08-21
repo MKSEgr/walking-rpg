@@ -1588,6 +1588,9 @@ class _DailyProgressSummary extends StatelessWidget {
     final String dailyGoalFeedback = snapshot.dailyGoalReached
         ? context.l10n.homeDailyGoalReached
         : context.l10n.homeDailyGoalRemaining(snapshot.remainingDailySteps);
+    final String? dailyGoalStability = snapshot.dailyGoalPolicy.isLegacy
+        ? null
+        : context.l10n.homeDailyGoalStability;
     final WeeklyActivityRhythm? weeklyRhythm = snapshot.weeklyActivityRhythm;
     final String? weeklyRhythmTitle = weeklyRhythm == null
         ? null
@@ -1658,7 +1661,11 @@ class _DailyProgressSummary extends StatelessWidget {
         Semantics(
           key: const Key('home-daily-goal-summary'),
           container: true,
-          label: '$dailyProgressTitle. $dailyGoalFeedback',
+          label: <String>[
+            dailyProgressTitle,
+            dailyGoalFeedback,
+            if (dailyGoalStability != null) dailyGoalStability,
+          ].join('. '),
           child: ExcludeSemantics(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1679,6 +1686,16 @@ class _DailyProgressSummary extends StatelessWidget {
                           color: colors.onSurfaceVariant,
                         ),
                 ),
+                if (dailyGoalStability != null) ...<Widget>[
+                  const SizedBox(height: 6),
+                  Text(
+                    dailyGoalStability,
+                    key: const Key('home-daily-goal-stability'),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

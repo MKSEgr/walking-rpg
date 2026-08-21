@@ -1626,6 +1626,28 @@ ENERGY/rewards, progression или external validation status.
 существующим authoritative contract без изменения API, daily goal,
 ENERGY/rewards, progression или external validation status.
 
+### US-067. Понимать, что сегодняшняя цель не растёт вместе с шагами
+
+Как игрок, я хочу знать, что принятые сегодня шаги не повышают сегодняшнюю
+личную цель, чтобы адаптивная система оставалась предсказуемой во время ходьбы.
+
+Критерии:
+
+- для explicit DEFAULT/ADAPTIVE policy Home объясняет, что accepted steps на
+  текущей server-owned local date не повышают цель этой даты и могут
+  учитываться в будущих личных целях;
+- copy использует существующую backend-границу history `toExclusive =
+  targetDate` и не вычисляет policy, дату или следующее значение на клиенте;
+- visible RU/EN line входит в daily-goal semantics summary ровно один раз, а
+  visual child исключён из duplicate announcement;
+- legacy snapshot без `dailyGoalPolicy` не получает inferred stability rule;
+- adaptive/default, RU/EN, semantics, legacy omission и compact 320 px / text
+  scale 1.6 widget coverage фиксируют presentation contract.
+
+**Статус:** daily-goal stability реализована как mobile presentation над
+существующим accepted policy contract без изменения API, формулы цели,
+ENERGY/rewards, progression или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
