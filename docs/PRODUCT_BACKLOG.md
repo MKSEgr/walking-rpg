@@ -1648,6 +1648,29 @@ ENERGY/rewards, progression или external validation status.
 существующим accepted policy contract без изменения API, формулы цели,
 ENERGY/rewards, progression или external validation status.
 
+### US-068. Видеть, сколько XP осталось пилоту до следующего уровня
+
+Как игрок, я хочу видеть точный остаток XP до следующего уровня пилота, чтобы
+понимать близость развития без самостоятельного вычитания двух чисел.
+
+Критерии:
+
+- mobile принимает только progression snapshot с положительными level/target,
+  неотрицательным current XP и target выше current; невозможные API-значения
+  отклоняются до отображения;
+- Home выводит одну RU/EN строку с current, target и exact remaining XP и
+  bounded progress indicator только из accepted pilot state;
+- индикатор исключён из semantics, а точная строка объявляется один раз без
+  generic percentage duplicate;
+- legacy/internal direct snapshot без валидного порога сохраняет прежний
+  literal `current / target` fallback без индикатора и inferred remaining;
+- domain, RU/EN, semantics и compact 320 px / text scale 1.6 coverage фиксируют
+  presentation contract без изменения backend/API, порогов, level-up и наград.
+
+**Статус:** pilot-level guidance реализована как mobile presentation над
+существующими accepted Home XP fields без изменения progression, economy,
+reward или external validation status.
+
 ## P1 — расширение MVP
 
 Технически реализованы:

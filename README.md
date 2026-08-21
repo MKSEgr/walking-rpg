@@ -49,6 +49,9 @@
 - internal-only Validation Center с bounded per-launch journal и redacted
   schema-v1 JSON evidence, недоступный в release build;
 - server-authoritative ENERGY economy;
+- Home показывает принятые из backend значения: текущий XP пилота, порог
+  следующего уровня и точный остаток в RU/EN; визуальный индикатор не меняет
+  пороги, награды или progression на клиенте;
 - production `GET /api/v1/home`;
 - content-driven первая глава с 18 основными и staged optional узлами вплоть
   до `constellation-sanctuary` за Неизведанным рубежом, equipment-, active-pet-

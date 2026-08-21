@@ -69,6 +69,9 @@
 
 ### Added
 
+- authoritative RU/EN pilot-level guidance with exact current, target and
+  remaining XP plus a bounded visual indicator, derived only from the accepted
+  Home snapshot and exposed once to assistive technologies;
 - RU/EN clarification that accepted steps from the current local date do not
   raise that date's personal goal and may inform later goals, exposed once in
   the daily-goal semantics for non-legacy policy snapshots;

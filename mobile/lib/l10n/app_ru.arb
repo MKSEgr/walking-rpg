@@ -478,6 +478,7 @@
   "homeWeeklyRhythmTodayActiveDay": "Сегодня, {date}: активный день",
   "homeWeeklyRhythmTodayRestDay": "Сегодня, {date}: день отдыха",
   "homePilotLabel": "Пилот",
+  "homePilotExperienceProgress": "XP {current} / {target} · до следующего уровня {remaining} XP",
   "homePetLabel": "Питомец",
   "homePetBond": "Связь {bond}",
   "homePetBondStage": "Связь {bond} · {stage}",

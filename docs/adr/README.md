@@ -82,3 +82,4 @@ NNNN-short-title.md
 - [0063 — authoritative daily goal feedback](0063-authoritative-daily-goal-feedback.md)
 - [0064 — weekly active-day qualification](0064-weekly-active-day-qualification.md)
 - [0065 — daily-goal stability clarification](0065-daily-goal-stability-clarification.md)
+- [0066 — authoritative pilot level guidance](0066-authoritative-pilot-level-guidance.md)

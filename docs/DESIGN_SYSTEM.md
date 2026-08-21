@@ -594,6 +594,25 @@ The static painter owns one complete semantic summary and excludes its internal
 percentage copy from duplicate announcements. It keeps the same fixed square
 footprint in light and dark themes and in the existing compact Home reflow.
 
+## Pilot level guidance
+
+The Home pilot card presents one compact RU/EN state line with literal current
+XP, the accepted next-level threshold and the exact remaining XP. A thin
+bounded progress indicator sits beside that state but is excluded from
+semantics, so assistive technologies receive the exact text once rather than a
+second generic percentage announcement.
+
+The presentation derives only subtraction and the `0...1` display ratio after
+the accepted snapshot proves a positive level and threshold, non-negative
+current XP and a threshold above the current value. Parsed impossible states
+fail closed. Legacy/internal direct snapshots without a valid threshold retain
+the previous literal `current / target` fallback and omit the indicator.
+
+The line is a neutral status, not an action, countdown or reward promise. It
+does not invent a level-up threshold, predict the next reward or mutate pilot
+progression. The card continues to reflow vertically at compact width and
+enlarged text rather than truncating the state.
+
 ## Weekly activity rhythm
 
 The daily route summary may add one quiet weekly measure from the accepted Home

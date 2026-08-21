@@ -1965,14 +1965,24 @@ class _ExpeditionTeam extends StatelessWidget {
         snapshot.petId != null &&
         petSpecies != null &&
         snapshot.petEvolutionStage != null;
+    final bool hasPilotExperienceProgress = snapshot.hasPilotExperienceProgress;
     final Widget pilot = _CharacterCard(
       key: const Key('home-pilot-card'),
       label: context.l10n.homePilotLabel,
       name: pilotName,
       level: snapshot.pilotLevel,
-      detail:
-          'XP ${snapshot.pilotCurrentExperience} / '
-          '${snapshot.pilotNextLevelExperience}',
+      detail: hasPilotExperienceProgress
+          ? context.l10n.homePilotExperienceProgress(
+              snapshot.pilotCurrentExperience,
+              snapshot.pilotNextLevelExperience,
+              snapshot.remainingPilotExperience,
+            )
+          : 'XP ${snapshot.pilotCurrentExperience} / '
+                '${snapshot.pilotNextLevelExperience}',
+      progress: hasPilotExperienceProgress
+          ? snapshot.pilotExperienceProgress
+          : null,
+      progressKey: const Key('home-pilot-experience-progress'),
       icon: Icons.person_outline,
       portrait: ExcludeSemantics(
         child: PilotMotionPortrait(
@@ -3175,6 +3185,8 @@ class _CharacterCard extends StatelessWidget {
     required this.detail,
     required this.icon,
     this.portrait,
+    this.progress,
+    this.progressKey,
   });
 
   final String label;
@@ -3183,6 +3195,8 @@ class _CharacterCard extends StatelessWidget {
   final String detail;
   final IconData icon;
   final Widget? portrait;
+  final double? progress;
+  final Key? progressKey;
 
   @override
   Widget build(BuildContext context) {
@@ -3216,7 +3230,21 @@ class _CharacterCard extends StatelessWidget {
           Text(name, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 5),
           Text(context.l10n.homeLevel(level)),
-          const SizedBox(height: 2),
+          if (progress != null) ...<Widget>[
+            const SizedBox(height: 8),
+            ExcludeSemantics(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  key: progressKey,
+                  value: progress,
+                  minHeight: 6,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ] else
+            const SizedBox(height: 2),
           Text(
             detail,
             style: Theme.of(
