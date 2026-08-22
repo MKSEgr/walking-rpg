@@ -20,6 +20,18 @@ void main() {
     );
     expect(moss.remainingEvolutionBond, 33);
     expect(snapshot.weeklyRouteRemaining, 60);
+    expect(snapshot.unlockedCatalogAchievementCount, 0);
+    expect(snapshot.remainingCatalogAchievementCount, 2);
+
+    final PlatformSnapshot completeCollection = platformSnapshot(
+      achievements: const <String>[
+        'onboarding-complete',
+        'season-level-3',
+        'season-reward-1',
+      ],
+    );
+    expect(completeCollection.unlockedCatalogAchievementCount, 2);
+    expect(completeCollection.remainingCatalogAchievementCount, 0);
     expect(snapshot.weeklyRouteProgressValue, 0.4);
     expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
     expect(snapshot.content.season.xpPerLevel, 100);

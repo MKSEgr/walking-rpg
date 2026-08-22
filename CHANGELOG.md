@@ -69,6 +69,9 @@
 
 ### Added
 
+- exact RU/EN achievement collection guidance derived from accepted catalog
+  identities and unlocked state, without counting dynamic season reward
+  receipt IDs or promising a completion reward;
 - server-authored season reward cadence and exact RU/EN XP remaining to the
   next reward level, with legacy cached snapshots retaining claim behavior
   without inferred guidance;

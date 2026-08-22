@@ -1134,6 +1134,24 @@ server-authoritative Platform progression из ADR 0009 через ADR 0070 бе
 изменения persistence, reward payload/command, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 57 — Authoritative achievement collection guidance
+
+### CODE_COMPLETE
+
+- [x] Mobile считает открытыми только stable IDs из accepted achievement
+      catalog, присутствующие в accepted user achievement set
+- [x] Dynamic season-reward receipt IDs и будущие non-catalog IDs не искажают
+      catalog collection count и не отклоняются как malformed state
+- [x] RU/EN guidance показывает exact remaining или спокойное complete state
+      без unlock-rule, срока или reward promise
+- [x] Aggregate progress и guidance объявляются одной semantics summary;
+      domain, RU/EN и compact text-scale 1.6 coverage фиксируют boundary
+
+Milestone 57 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative Platform projection из ADR 0009 через ADR 0071 без
+изменения Platform API, backend catalog, achievement rules/rewards,
+immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -259,6 +259,11 @@ season XP remaining. That visible line supplies accessibility once; ready and
 unlocked skills keep their existing requirement copy and actions. Mobile does
 not define a threshold, predict a reward or execute an unlock from this value.
 
+The achievement section summary counts only exact IDs shared by the accepted
+catalog and unlocked set. Dynamic season-reward receipt IDs stay outside the
+catalog count. Exact RU/EN remaining guidance and aggregate progress form one
+semantics node, while each achievement tile keeps its own state node.
+
 ## Quest route signals
 
 Journal quests use a code-native objective mark and a five-node route trace

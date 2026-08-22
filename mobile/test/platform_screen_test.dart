@@ -30,6 +30,41 @@ import 'package:walking_rpg_mobile/features/platform/presentation/platform_scree
 import 'support/platform_fixture.dart';
 
 void main() {
+  testWidgets(
+    'achievement summary ignores non-catalog receipts and completes',
+    (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlatformScreen(
+            loader: () async => platformSnapshot(
+              achievements: const <String>[
+                'onboarding-complete',
+                'season-level-3',
+                'season-reward-1',
+              ],
+            ),
+            homeLoader: () async => HomeSnapshot.demo,
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder summary = find.byKey(
+        const Key('platform-achievements-summary'),
+      );
+      await _bringIntoView(tester, summary);
+      expect(
+        find.bySemanticsLabel('2 из 2 открыто. Все достижения открыты'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('3 из 2'), findsNothing);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
   testWidgets('journal loading waits for an accepted platform snapshot', (
     WidgetTester tester,
   ) async {
@@ -1279,6 +1314,10 @@ void main() {
       const Key('platform-achievement-onboarding-complete'),
     );
     await _bringIntoView(tester, unlockedAchievement);
+    expect(
+      find.bySemanticsLabel('1 из 2 открыто. Осталось открыть 1 достижение'),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel('Достижение «Путь открыт»: открыто'),
       findsOneWidget,

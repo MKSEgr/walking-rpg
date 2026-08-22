@@ -3459,18 +3459,34 @@ class _AchievementsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Set<String> unlocked = snapshot.userState.achievements;
+    final int unlockedCount = snapshot.unlockedCatalogAchievementCount;
+    final int remainingCount = snapshot.remainingCatalogAchievementCount;
+    final String progress = context.l10n.platformAchievementsProgress(
+      unlockedCount,
+      snapshot.content.achievements.length,
+    );
+    final String guidance = remainingCount == 0
+        ? context.l10n.platformAchievementsCollectionComplete
+        : context.l10n.platformAchievementsRemaining(remainingCount);
     return ExpeditionPanel(
       tone: ExpeditionPanelTone.resonance,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          ExpeditionSectionTitle(
-            title: context.l10n.platformAchievementsTitle,
-            subtitle: context.l10n.platformAchievementsProgress(
-              unlocked.length,
-              snapshot.content.achievements.length,
+          Semantics(
+            key: const Key('platform-achievements-summary'),
+            container: true,
+            label: context.l10n.platformAchievementsSemantics(
+              progress,
+              guidance,
             ),
-            icon: Icons.emoji_events_outlined,
+            child: ExcludeSemantics(
+              child: ExpeditionSectionTitle(
+                title: context.l10n.platformAchievementsTitle,
+                subtitle: '$progress · $guidance',
+                icon: Icons.emoji_events_outlined,
+              ),
+            ),
           ),
           const SizedBox(height: 14),
           LayoutBuilder(

@@ -1761,6 +1761,28 @@ XP до него, чтобы понимать ближайшую цель без
 **Статус:** season reward guidance реализована над additive server-authored
 catalog field; persisted state, reward contents и command protocol не меняются.
 
+### US-073. Видеть, сколько достижений осталось открыть
+
+Как игрок, я хочу видеть точный остаток достижений до полного каталога, чтобы
+понимать общий прогресс без самостоятельного вычитания.
+
+Критерии:
+
+- unlocked count — пересечение stable IDs accepted achievement catalog и
+  accepted user achievement set;
+- dynamic season-reward receipts и будущие non-catalog IDs не увеличивают
+  catalog progress и не делают совместимый snapshot невалидным;
+- неполный каталог получает точную RU/EN remaining-строку, полный — спокойное
+  complete state без обещания награды;
+- aggregate progress и guidance входят в одну semantics summary, а отдельные
+  achievement tiles сохраняют собственные locked/unlocked semantics;
+- domain, RU/EN и compact text-scale 1.6 coverage фиксируют presentation
+  boundary без изменения backend/API или unlock rules.
+
+**Статус:** achievement collection guidance реализована как mobile projection
+двух accepted Platform полей; отдельные условия достижений не выводятся и не
+дублируются на клиенте.
+
 ## P1 — расширение MVP
 
 Технически реализованы:
