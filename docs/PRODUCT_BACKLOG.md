@@ -1822,6 +1822,24 @@ catalog field; persisted state, reward contents и command protocol не мен�
 **Статус:** pilot skill collection guidance реализована как mobile projection
 двух accepted Platform полей без изменения backend/API или unlock command.
 
+### US-078. Видеть число доступных наград за задания
+
+Как игрок, я хочу видеть, сколько выполненных заданий ещё имеют неполученную
+награду, чтобы не искать готовые действия среди всех карточек.
+
+Критерии:
+
+- claimable count включает только accepted quests с `ready == true` и
+  `claimed == false`;
+- incomplete и claimed quests не входят в count;
+- положительный count получает короткую RU/EN singular/plural строку, zero не
+  создаёт шум или fake reward promise;
+- visible guidance объявляется одной semantics node;
+- progress, targets, reward contents/order и claim command не меняются.
+
+**Статус:** claimable quest reward count реализован как mobile projection
+accepted per-quest state без изменения backend/API или reward economy.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

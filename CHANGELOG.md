@@ -78,6 +78,9 @@
 
 ### Added
 
+- exact RU/EN count of completed quest rewards ready to claim, derived only
+  from accepted ready/unclaimed quest projections without changing rewards;
+
 - authoritative RU/EN pilot skill collection progress derived only from
   accepted catalog and unlocked IDs, preserving thresholds and unlock actions;
 

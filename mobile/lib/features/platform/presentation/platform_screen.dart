@@ -700,6 +700,23 @@ class _PlatformBody extends StatelessWidget {
             ),
             icon: Icons.assignment_outlined,
           ),
+          if (snapshot.claimableQuestRewardCount > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('platform-claimable-quest-rewards'),
+              container: true,
+              label: context.l10n.platformQuestRewardsAvailable(
+                snapshot.claimableQuestRewardCount,
+              ),
+              excludeSemantics: true,
+              child: Text(
+                context.l10n.platformQuestRewardsAvailable(
+                  snapshot.claimableQuestRewardCount,
+                ),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+          ],
           for (final PlatformQuest quest
               in snapshot.userState.quests) ...<Widget>[
             _QuestCard(

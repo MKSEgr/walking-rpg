@@ -586,6 +586,7 @@
   "platformSkillsCollectionSemantics": "{progress}. {guidance}",
   "platformQuestsTitle": "Задания",
   "platformQuestSummary": "{steps} шагов · {events} событий",
+  "platformQuestRewardsAvailable": "{count, plural, =1{Доступна 1 награда за задание} one{Доступна {count} награда за задания} few{Доступны {count} награды за задания} many{Доступно {count} наград за задания} other{Доступно {count} награды за задания}}",
   "platformCosmeticsTitle": "Косметика",
   "platformSandboxPurchasesAvailable": "Покупки работают через sandbox-провайдер.",
   "platformPurchasesUnavailable": "Покупки сейчас недоступны.",

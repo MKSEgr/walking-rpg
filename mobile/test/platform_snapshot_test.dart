@@ -46,6 +46,29 @@ void main() {
     expect(completeCosmetics.remainingCatalogCosmeticCount, 0);
     expect(snapshot.completedCatalogOnboardingStepCount, 1);
     expect(snapshot.remainingCatalogOnboardingStepCount, 5);
+    expect(snapshot.claimableQuestRewardCount, 1);
+
+    final Map<String, dynamic> multipleClaimableJson = platformSnapshotJson();
+    final Map<String, dynamic> multipleClaimableState =
+        multipleClaimableJson['userState']! as Map<String, dynamic>;
+    final List<dynamic> multipleClaimableQuests =
+        multipleClaimableState['quests']! as List<dynamic>;
+    (multipleClaimableQuests[1] as Map<String, dynamic>)['ready'] = true;
+    final PlatformSnapshot multipleClaimable = PlatformSnapshot.fromJson(
+      multipleClaimableJson,
+    );
+    expect(multipleClaimable.claimableQuestRewardCount, 2);
+
+    final Map<String, dynamic> zeroClaimableJson = platformSnapshotJson();
+    final Map<String, dynamic> zeroClaimableState =
+        zeroClaimableJson['userState']! as Map<String, dynamic>;
+    final List<dynamic> zeroClaimableQuests =
+        zeroClaimableState['quests']! as List<dynamic>;
+    (zeroClaimableQuests[0] as Map<String, dynamic>)['claimed'] = true;
+    final PlatformSnapshot zeroClaimable = PlatformSnapshot.fromJson(
+      zeroClaimableJson,
+    );
+    expect(zeroClaimable.claimableQuestRewardCount, 0);
 
     final PlatformSnapshot completeCollection = platformSnapshot(
       achievements: const <String>[

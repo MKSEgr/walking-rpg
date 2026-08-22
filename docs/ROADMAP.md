@@ -1218,6 +1218,21 @@ server-authoritative Platform progression из ADR 0009 через ADR 0075 бе
 изменения Platform API, backend, persistence, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 62 — Authoritative claimable quest reward count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает claimable только accepted quests с ready и без claimed
+- [x] Positive count получает RU/EN singular/plural guidance, zero не создаёт
+      отдельного сообщения
+- [x] Visible aggregate объявляется одной semantics node
+- [x] Domain, RU/EN и compact large-text coverage фиксируют boundary без
+      изменения progress, targets, rewards/order или claim command
+
+Milestone 62 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative quest projection из ADR 0009 через ADR 0076 без изменения
+Platform API, backend, persistence, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
