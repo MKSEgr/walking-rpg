@@ -7,11 +7,26 @@ import 'package:walking_rpg_mobile/features/platform/domain/platform_command_res
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/presentation/platform_screen.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations_en.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 
 import 'support/platform_fixture.dart';
 
 void main() {
+  test('craftable recipe count covers Russian and English plurals', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.homeCraftingRecipesReady(2),
+      '2 recipes ready to craft',
+    );
+    expect(
+      russian.homeCraftingRecipesReady(21),
+      '21 рецепт готов к созданию',
+    );
+  });
+
   test('Russian quest remaining guidance covers the one plural category', () {
     final AppLocalizationsRu russian = AppLocalizationsRu();
 

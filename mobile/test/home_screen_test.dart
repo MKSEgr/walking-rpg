@@ -27,21 +27,8 @@ import 'package:walking_rpg_mobile/features/home/domain/weekly_activity_rhythm.d
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
-import 'package:walking_rpg_mobile/l10n/generated/app_localizations_en.dart';
-import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 
 void main() {
-  test('craftable recipe count covers Russian and English plurals', () {
-    final AppLocalizationsEn english = AppLocalizationsEn();
-    final AppLocalizationsRu russian = AppLocalizationsRu();
-
-    expect(english.homeCraftingRecipesReady(2), '2 recipes ready to craft');
-    expect(
-      russian.homeCraftingRecipesReady(21),
-      '21 рецепт готов к созданию',
-    );
-  });
-
   testWidgets('home loading waits for an accepted route snapshot', (
     WidgetTester tester,
   ) async {
