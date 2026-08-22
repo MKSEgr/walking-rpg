@@ -33,7 +33,10 @@ void main() {
   test('Russian craftable recipe count covers the one plural category', () {
     final AppLocalizationsRu russian = AppLocalizationsRu();
 
-    expect(russian.homeCraftingRecipesReady(21), '21 рецепт готов к созданию');
+    expect(
+      russian.homeCraftingRecipesReady(21),
+      '21 рецепт готов к созданию',
+    );
   });
 
   testWidgets('home loading waits for an accepted route snapshot', (
@@ -792,7 +795,10 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('1 рецепт готов к созданию'), findsOneWidget);
+      expect(
+        find.text('1 рецепт готов к созданию'),
+        findsOneWidget,
+      );
       expect(
         find.bySemanticsLabel('1 рецепт готов к созданию'),
         findsOneWidget,
@@ -894,7 +900,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const Key('home-craftable-recipes')), findsOneWidget);
-    expect(find.text('1 рецепт готов к созданию'), findsOneWidget);
+    expect(
+      find.text('1 рецепт готов к созданию'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
