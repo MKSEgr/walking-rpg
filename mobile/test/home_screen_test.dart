@@ -785,10 +785,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(
-        find.text('1 рецепт готов к созданию'),
-        findsOneWidget,
-      );
+      expect(find.text('1 рецепт готов к созданию'), findsOneWidget);
       expect(
         find.bySemanticsLabel('1 рецепт готов к созданию'),
         findsOneWidget,
@@ -857,10 +854,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const Key('home-craftable-recipes')), findsOneWidget);
-    expect(
-      find.text('1 рецепт готов к созданию'),
-      findsOneWidget,
-    );
+    expect(find.text('1 рецепт готов к созданию'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

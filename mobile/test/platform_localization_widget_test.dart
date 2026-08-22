@@ -17,14 +17,8 @@ void main() {
     final AppLocalizationsEn english = AppLocalizationsEn();
     final AppLocalizationsRu russian = AppLocalizationsRu();
 
-    expect(
-      english.homeCraftingRecipesReady(2),
-      '2 recipes ready to craft',
-    );
-    expect(
-      russian.homeCraftingRecipesReady(21),
-      '21 рецепт готов к созданию',
-    );
+    expect(english.homeCraftingRecipesReady(2), '2 recipes ready to craft');
+    expect(russian.homeCraftingRecipesReady(21), '21 рецепт готов к созданию');
   });
 
   test('Russian quest remaining guidance covers the one plural category', () {
