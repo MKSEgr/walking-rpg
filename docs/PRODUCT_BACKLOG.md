@@ -1785,6 +1785,24 @@ catalog field; persisted state, reward contents и command protocol не мен�
 
 ## P1 — расширение MVP
 
+### US-076. Видеть прогресс коллекции косметики
+
+Как игрок, я хочу видеть точный остаток косметики до полного accepted каталога,
+чтобы понимать общий прогресс коллекции без ручного подсчёта.
+
+Критерии:
+
+- owned count — пересечение accepted `content.cosmetics` и
+  `userState.ownedCosmetics`;
+- retired и будущие non-catalog owned IDs не увеличивают progress;
+- неполная коллекция получает exact RU/EN remaining, полная — спокойное
+  complete state без обещания награды;
+- progress и guidance объявляются одной semantics summary;
+- purchase/equip actions, slots, prices и ownership rules не меняются.
+
+**Статус:** cosmetic collection guidance реализована как mobile projection
+двух accepted Platform полей без изменения backend/API или commerce commands.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

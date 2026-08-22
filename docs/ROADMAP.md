@@ -1187,6 +1187,21 @@ authoritative season cadence из ADR 0070 через ADR 0073 без измен
 API, backend, persistence, reward payload/order, claim command, immutable
 `alpha-rc1` или внешних gates.
 
+## Milestone 60 — Authoritative cosmetic collection guidance
+
+### CODE_COMPLETE
+
+- [x] Mobile считает owned только как пересечение accepted cosmetic catalog и
+      accepted owned IDs
+- [x] RU/EN guidance показывает exact remaining или спокойный complete state
+- [x] Aggregate progress объявляется одной semantics summary
+- [x] Domain, RU/EN и compact large-text coverage фиксируют boundary без
+      изменения prices, purchase/equip commands или ownership rules
+
+Milestone 60 продолжает post-alpha code-only gameplay track из ADR 0039 без
+изменения Platform API, backend, persistence, commerce, immutable `alpha-rc1`
+или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

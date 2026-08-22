@@ -1626,6 +1626,25 @@
   "platformCosmeticEquipped": "Equipped",
   "platformEquipCosmetic": "Equip",
   "platformBuyCosmetic": "Buy",
+  "platformCosmeticsCollectionProgress": "{owned} of {total} collected",
+  "@platformCosmeticsCollectionProgress": {
+    "placeholders": {
+      "owned": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "platformCosmeticsCollectionRemaining": "{remaining, plural, =1{1 cosmetic left to collect} other{{remaining} cosmetics left to collect}}",
+  "@platformCosmeticsCollectionRemaining": {
+    "placeholders": {"remaining": {"type": "int"}}
+  },
+  "platformCosmeticsCollectionComplete": "All cosmetics collected",
+  "platformCosmeticsCollectionSemantics": "{progress}. {guidance}",
+  "@platformCosmeticsCollectionSemantics": {
+    "placeholders": {
+      "progress": {"type": "String"},
+      "guidance": {"type": "String"}
+    }
+  },
   "platformAchievementsTitle": "Achievements",
   "platformAchievementsProgress": "{unlocked} of {total} unlocked",
   "@platformAchievementsProgress": {

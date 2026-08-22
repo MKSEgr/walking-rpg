@@ -76,6 +76,17 @@ class PlatformSnapshot {
     return content.achievements.length - unlockedCatalogAchievementCount;
   }
 
+  int get ownedCatalogCosmeticCount {
+    final Set<String> catalogIds = content.cosmetics
+        .map((PlatformCosmetic cosmetic) => cosmetic.cosmeticId)
+        .toSet();
+    return userState.ownedCosmetics.intersection(catalogIds).length;
+  }
+
+  int get remainingCatalogCosmeticCount {
+    return content.cosmetics.length - ownedCatalogCosmeticCount;
+  }
+
   int get completedCatalogOnboardingStepCount {
     return content.onboardingSteps
         .where(userState.completedOnboardingSteps.contains)

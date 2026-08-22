@@ -705,6 +705,39 @@ class _PlatformBody extends StatelessWidget {
                 : context.l10n.platformPurchasesUnavailable,
             icon: Icons.auto_awesome_outlined,
           ),
+          const SizedBox(height: 8),
+          Builder(
+            builder: (BuildContext context) {
+              final int owned = snapshot.ownedCatalogCosmeticCount;
+              final int remaining = snapshot.remainingCatalogCosmeticCount;
+              final String progress = context.l10n
+                  .platformCosmeticsCollectionProgress(
+                    owned,
+                    snapshot.content.cosmetics.length,
+                  );
+              final String guidance = remaining == 0
+                  ? context.l10n.platformCosmeticsCollectionComplete
+                  : context.l10n.platformCosmeticsCollectionRemaining(
+                      remaining,
+                    );
+              return Semantics(
+                key: const Key('platform-cosmetics-collection-summary'),
+                container: true,
+                explicitChildNodes: true,
+                label: context.l10n.platformCosmeticsCollectionSemantics(
+                  progress,
+                  guidance,
+                ),
+                excludeSemantics: true,
+                child: Text(
+                  '$progress · $guidance',
+                  key: const Key('platform-cosmetics-collection-guidance'),
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
           for (final PlatformCosmetic cosmetic
               in snapshot.content.cosmetics) ...<Widget>[
             _CosmeticCard(

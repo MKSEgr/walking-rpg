@@ -688,6 +688,21 @@ void main() {
 
     await _bringIntoView(
       tester,
+      find.byKey(const Key('platform-cosmetics-collection-summary')),
+    );
+    final Semantics collectionSummary = tester.widget<Semantics>(
+      find.byKey(const Key('platform-cosmetics-collection-summary')),
+    );
+    expect(
+      collectionSummary.properties.label,
+      '1 of 4 collected. 3 cosmetics left to collect',
+    );
+    expect(
+      find.text('1 of 4 collected · 3 cosmetics left to collect'),
+      findsOneWidget,
+    );
+    await _bringIntoView(
+      tester,
       find.byKey(const Key('platform-cosmetic-compact-pilot-scarf')),
     );
     expect(find.text('Navigator Scarf'), findsOneWidget);
