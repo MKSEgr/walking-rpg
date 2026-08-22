@@ -2448,9 +2448,7 @@ class _WeeklyRouteCard extends StatelessWidget {
           : unclaimedRewardLevels.first;
     } else {
       for (int level = 1; level <= snapshot.claimableSeasonLevel; level += 1) {
-        if (!snapshot.userState.achievements.contains(
-          'season-reward-$level',
-        )) {
+        if (!snapshot.userState.achievements.contains('season-reward-$level')) {
           rewardLevel = level;
           break;
         }

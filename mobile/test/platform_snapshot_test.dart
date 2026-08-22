@@ -290,10 +290,17 @@ void main() {
     expect(snapshot.claimableSeasonLevel, 10);
     expect(snapshot.nextSeasonRewardLevel, isNull);
     expect(snapshot.remainingSeasonXpToNextReward, isNull);
-    expect(
-      snapshot.unclaimedSeasonRewardLevels,
-      <int>[2, 3, 4, 5, 6, 7, 8, 9, 10],
-    );
+    expect(snapshot.unclaimedSeasonRewardLevels, <int>[
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+    ]);
   });
 
   test('counts only earned unclaimed season reward receipts', () {

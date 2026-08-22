@@ -33,10 +33,7 @@ void main() {
     final Finder guidance = find.text('2 season rewards available');
     await _bringIntoView(tester, guidance);
     expect(guidance, findsOneWidget);
-    expect(
-      find.bySemanticsLabel('2 season rewards available'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('2 season rewards available'), findsOneWidget);
     semantics.dispose();
   });
 
