@@ -1010,6 +1010,25 @@
   "platformPetsSubtitle": "Choose a companion and strengthen your bond.",
   "platformSkillsTitle": "Pilot skills",
   "platformSkillsSubtitle": "Skills unlock through season XP.",
+  "platformSkillsCollectionProgress": "Skills unlocked: {unlocked} of {total}",
+  "@platformSkillsCollectionProgress": {
+    "placeholders": {
+      "unlocked": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "platformSkillsCollectionRemaining": "{remaining, plural, =1{1 skill left to unlock} other{{remaining} skills left to unlock}}",
+  "@platformSkillsCollectionRemaining": {
+    "placeholders": {"remaining": {"type": "int"}}
+  },
+  "platformSkillsCollectionComplete": "All pilot skills unlocked",
+  "platformSkillsCollectionSemantics": "{progress}. {guidance}",
+  "@platformSkillsCollectionSemantics": {
+    "placeholders": {
+      "progress": {"type": "String"},
+      "guidance": {"type": "String"}
+    }
+  },
   "platformQuestsTitle": "Quests",
   "platformQuestSummary": "{steps} steps · {events} events",
   "@platformQuestSummary": {

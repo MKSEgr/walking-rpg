@@ -18,6 +18,7 @@ Map<String, dynamic> platformSnapshotJson({
   int weeklyRouteRequiredEnergy = 100,
   Map<String, dynamic>? squad,
   List<String> ownedCosmetics = const <String>['pilot-scarf'],
+  List<String> unlockedSkills = const <String>['steady-step'],
   String? activeCosmeticId = 'pilot-scarf',
   Map<String, String> equippedCosmetics = const <String, String>{
     'PILOT': 'pilot-scarf',
@@ -85,7 +86,7 @@ Map<String, dynamic> platformSnapshotJson({
       ],
       'completedOnboardingSteps': completedOnboardingSteps,
       'onboardingComplete': onboardingComplete,
-      'unlockedSkills': <String>['steady-step'],
+      'unlockedSkills': unlockedSkills,
       'quests': <Map<String, dynamic>>[
         <String, dynamic>{
           'questId': 'walk-3000',
@@ -239,6 +240,7 @@ PlatformSnapshot platformSnapshot({
   int weeklyRouteProgress = 40,
   Map<String, dynamic>? squad,
   List<String> ownedCosmetics = const <String>['pilot-scarf'],
+  List<String> unlockedSkills = const <String>['steady-step'],
   String? activeCosmeticId = 'pilot-scarf',
   Map<String, String> equippedCosmetics = const <String, String>{
     'PILOT': 'pilot-scarf',
@@ -267,6 +269,7 @@ PlatformSnapshot platformSnapshot({
       weeklyRouteProgress: weeklyRouteProgress,
       squad: squad,
       ownedCosmetics: ownedCosmetics,
+      unlockedSkills: unlockedSkills,
       activeCosmeticId: activeCosmeticId,
       equippedCosmetics: equippedCosmetics,
       achievements: achievements,

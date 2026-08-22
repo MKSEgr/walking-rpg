@@ -1202,6 +1202,22 @@ Milestone 60 продолжает post-alpha code-only gameplay track из ADR 0
 изменения Platform API, backend, persistence, commerce, immutable `alpha-rc1`
 или внешних gates.
 
+## Milestone 61 — Authoritative pilot skill collection guidance
+
+### CODE_COMPLETE
+
+- [x] Mobile считает unlocked только как пересечение accepted skill catalog и
+      accepted unlocked IDs
+- [x] RU/EN guidance показывает exact remaining или спокойный complete state
+- [x] Aggregate progress объявляется одной semantics summary
+- [x] Domain, RU/EN и compact large-text coverage фиксируют boundary без
+      изменения thresholds, availability, unlock command или rewards
+
+Milestone 61 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative Platform progression из ADR 0009 через ADR 0075 без
+изменения Platform API, backend, persistence, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
