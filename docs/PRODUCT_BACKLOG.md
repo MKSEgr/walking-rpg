@@ -1876,6 +1876,25 @@ accepted catalog thresholds и user state без изменения backend/API.
 **Статус:** evolvable companion count реализован как mobile projection
 accepted pet state без изменения backend/API или progression rules.
 
+### US-081. Видеть число косметических предметов, доступных для экипировки
+
+Как игрок, я хочу видеть, сколько принадлежащих мне образов сейчас можно
+надеть, чтобы не искать доступные действия среди всех карточек косметики.
+
+Критерии:
+
+- count включает только accepted catalog cosmetics, которые присутствуют в
+  accepted `ownedCosmetics` и отсутствуют в accepted equipped cosmetic IDs;
+- equipped, unowned и retired/non-catalog cosmetics не входят в count;
+- положительный count получает короткую RU/EN singular/plural строку, zero не
+  создаёт шум или fake availability promise;
+- visible guidance объявляется одной semantics node;
+- prices, purchase availability, ownership, slots и equip command не меняются.
+
+**Статус:** equippable cosmetic count реализован как mobile projection
+accepted catalog, ownership и equipped state без изменения backend/API или
+commerce rules.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

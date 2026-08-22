@@ -1676,6 +1676,10 @@
       "guidance": {"type": "String"}
     }
   },
+  "platformCosmeticsAvailableToEquip": "{count, plural, =1{1 cosmetic ready to equip} other{{count} cosmetics ready to equip}}",
+  "@platformCosmeticsAvailableToEquip": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "platformAchievementsTitle": "Achievements",
   "platformAchievementsProgress": "{unlocked} of {total} unlocked",
   "@platformAchievementsProgress": {

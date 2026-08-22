@@ -112,6 +112,16 @@ class PlatformSnapshot {
     return content.cosmetics.length - ownedCatalogCosmeticCount;
   }
 
+  int get equippableCatalogCosmeticCount {
+    return content.cosmetics
+        .where(
+          (PlatformCosmetic cosmetic) =>
+              userState.ownedCosmetics.contains(cosmetic.cosmeticId) &&
+              !userState.equippedCosmeticIds.contains(cosmetic.cosmeticId),
+        )
+        .length;
+  }
+
   int get completedCatalogOnboardingStepCount {
     return content.onboardingSteps
         .where(userState.completedOnboardingSteps.contains)

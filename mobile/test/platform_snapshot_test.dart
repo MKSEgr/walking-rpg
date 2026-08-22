@@ -74,6 +74,25 @@ void main() {
     expect(multipleUnlockable.unlockableCatalogSkillCount, 2);
     expect(snapshot.ownedCatalogCosmeticCount, 1);
     expect(snapshot.remainingCatalogCosmeticCount, 1);
+    expect(snapshot.equippableCatalogCosmeticCount, 0);
+    final PlatformSnapshot equippableCosmetics = platformSnapshot(
+      ownedCosmetics: const <String>[
+        'pilot-scarf',
+        'spark-halo',
+        'retired-cosmetic',
+      ],
+    );
+    expect(equippableCosmetics.equippableCatalogCosmeticCount, 1);
+    final PlatformSnapshot multipleEquippableCosmetics = platformSnapshot(
+      ownedCosmetics: const <String>[
+        'pilot-scarf',
+        'trail-banner',
+        'dawn-frame',
+        'retired-cosmetic',
+      ],
+      includeProfileCosmetics: true,
+    );
+    expect(multipleEquippableCosmetics.equippableCatalogCosmeticCount, 2);
     final PlatformSnapshot completeCosmetics = platformSnapshot(
       ownedCosmetics: const <String>[
         'pilot-scarf',

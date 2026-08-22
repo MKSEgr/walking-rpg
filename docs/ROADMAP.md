@@ -1266,6 +1266,23 @@ server-authoritative companion progression из ADR 0009 через ADR 0078 б�
 изменения Platform API, backend, persistence, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 65 — Authoritative equippable cosmetic count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает ready только accepted catalog cosmetics, которые есть в
+      accepted owned set и отсутствуют в accepted equipped IDs
+- [x] Equipped, unowned и retired/non-catalog cosmetics не входят в count
+- [x] Positive count получает RU/EN singular/plural guidance и одну semantics
+      node, zero не создаёт отдельного сообщения
+- [x] Domain, RU/EN и compact large-text coverage фиксируют boundary без
+      изменения prices, purchase availability, slots или equip command
+
+Milestone 65 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative cosmetic slots из ADR 0032 через ADR 0079 без изменения
+Platform API, backend, persistence, commerce, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

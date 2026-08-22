@@ -744,6 +744,7 @@
   "platformCosmeticsCollectionRemaining": "{remaining, plural, =1{До полной коллекции: 1 образ} few{До полной коллекции: {remaining} образа} many{До полной коллекции: {remaining} образов} other{До полной коллекции: {remaining} образа}}",
   "platformCosmeticsCollectionComplete": "Вся косметика собрана",
   "platformCosmeticsCollectionSemantics": "{progress}. {guidance}",
+  "platformCosmeticsAvailableToEquip": "{count, plural, one{Можно надеть {count} образ} few{Можно надеть {count} образа} many{Можно надеть {count} образов} other{Можно надеть {count} образа}}",
   "platformAchievementsTitle": "Достижения",
   "platformAchievementsProgress": "{unlocked} из {total} открыто",
   "platformAchievementsRemaining": "{remaining, plural, =1{Осталось открыть 1 достижение} few{Осталось открыть {remaining} достижения} many{Осталось открыть {remaining} достижений} other{Осталось открыть {remaining} достижения}}",

@@ -95,3 +95,4 @@ NNNN-short-title.md
 - [0076 — authoritative claimable quest reward count](0076-authoritative-claimable-quest-reward-count.md)
 - [0077 — authoritative unlockable pilot skill count](0077-authoritative-unlockable-pilot-skill-count.md)
 - [0078 — authoritative evolvable companion count](0078-authoritative-evolvable-companion-count.md)
+- [0079 — authoritative equippable cosmetic count](0079-authoritative-equippable-cosmetic-count.md)

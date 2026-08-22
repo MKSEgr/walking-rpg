@@ -819,6 +819,23 @@ class _PlatformBody extends StatelessWidget {
               );
             },
           ),
+          if (snapshot.equippableCatalogCosmeticCount > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('platform-equippable-cosmetics'),
+              container: true,
+              label: context.l10n.platformCosmeticsAvailableToEquip(
+                snapshot.equippableCatalogCosmeticCount,
+              ),
+              excludeSemantics: true,
+              child: Text(
+                context.l10n.platformCosmeticsAvailableToEquip(
+                  snapshot.equippableCatalogCosmeticCount,
+                ),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           for (final PlatformCosmetic cosmetic
               in snapshot.content.cosmetics) ...<Widget>[
