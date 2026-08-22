@@ -1437,7 +1437,7 @@ void main() {
       _expectNoLayoutException(tester);
       if (key == const Key('platform-cosmetics-collection-summary')) {
         expect(
-          find.text('1 из 3 в коллекции · До полной коллекции: 2 образа'),
+          find.text('1 из 2 в коллекции · До полной коллекции: 1 образ'),
           findsOneWidget,
         );
       }
