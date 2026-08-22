@@ -1895,6 +1895,25 @@ accepted pet state без изменения backend/API или progression rule
 accepted catalog, ownership и equipped state без изменения backend/API или
 commerce rules.
 
+### US-082. Видеть число рецептов, готовых к созданию
+
+Как игрок, я хочу видеть, сколько рецептов мастерской уже готовы к созданию,
+чтобы не искать доступные действия среди всех рецептов.
+
+Критерии:
+
+- count включает только accepted crafting recipes с server-authored
+  `status == READY`;
+- `MISSING_MATERIALS` и `CRAFTED` не входят в count;
+- mobile не пересчитывает availability по количеству материалов;
+- положительный count получает короткую RU/EN singular/plural строку, zero не
+  создаёт шум или fake availability promise;
+- visible guidance объявляется одной semantics node;
+- recipes, material costs, rewards и craft command не меняются.
+
+**Статус:** craftable recipe count реализован как mobile projection accepted
+server-authored recipe status без изменения backend/API или crafting economy.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

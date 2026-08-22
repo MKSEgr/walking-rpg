@@ -1283,6 +1283,24 @@ server-authoritative cosmetic slots из ADR 0032 через ADR 0079 без и�
 Platform API, backend, persistence, commerce, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 66 — Authoritative craftable recipe count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает ready только accepted crafting recipes с server-authored
+      `status == READY`
+- [x] `MISSING_MATERIALS` и `CRAFTED` не входят в count; client material
+      quantities не используются для повторного вывода availability
+- [x] Positive count получает RU/EN singular/plural guidance и одну semantics
+      node, zero не создаёт отдельного сообщения
+- [x] Domain, RU/EN и compact large-text coverage фиксируют boundary без
+      изменения recipes, material costs, rewards или craft command
+
+Milestone 66 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative crafting из ADR 0029 через ADR 0080 без изменения Home
+API, backend, persistence, crafting economy, immutable `alpha-rc1` или внешних
+gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -920,6 +920,10 @@
   "homeEquip": "Equip",
   "homeCraftingTitle": "Workshop",
   "homeCraftingSubtitle": "Turn finds into route instruments.",
+  "homeCraftingRecipesReady": "{count, plural, =1{1 recipe ready to craft} other{{count} recipes ready to craft}}",
+  "@homeCraftingRecipesReady": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "homeIngredientSemantics": "{name}, {available} of {requiredQuantity}, {availability}",
   "@homeIngredientSemantics": {
     "placeholders": {

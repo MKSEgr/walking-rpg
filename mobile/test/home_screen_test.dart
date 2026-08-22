@@ -27,8 +27,15 @@ import 'package:walking_rpg_mobile/features/home/domain/weekly_activity_rhythm.d
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 import 'package:walking_rpg_mobile/features/item_upgrade/domain/item_upgrade_result.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 
 void main() {
+  test('Russian craftable recipe count covers the one plural category', () {
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(russian.homeCraftingRecipesReady(21), '21 рецепт готов к созданию');
+  });
+
   testWidgets('home loading waits for an accepted route snapshot', (
     WidgetTester tester,
   ) async {
@@ -785,6 +792,11 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(find.text('1 рецепт готов к созданию'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('1 рецепт готов к созданию'),
+        findsOneWidget,
+      );
       expect(
         find.bySemanticsLabel(
           'Люминовый осколок, 2 из 2, материала достаточно',
@@ -796,6 +808,39 @@ void main() {
       semantics.dispose();
     },
   );
+
+  testWidgets('multiple craftable recipes use English plural guidance', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: HomeScreen(
+          loader: () async => _craftingReady(
+            craftingRecipes: const <HomeCraftingRecipe>[
+              _readyRecipe,
+              _secondReadyRecipe,
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 recipes ready to craft'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('2 recipes ready to craft'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
 
   testWidgets('illustrated field kit reflows on compact enlarged text', (
     WidgetTester tester,
@@ -848,6 +893,8 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('home-craftable-recipes')), findsOneWidget);
+    expect(find.text('1 рецепт готов к созданию'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -1602,6 +1649,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(craftedStatus, findsOneWidget);
+    expect(find.byKey(const Key('home-craftable-recipes')), findsNothing);
     expect(
       find.byKey(
         const Key(
@@ -3129,6 +3177,7 @@ ExpeditionJourneyResult _journeyResult() {
 HomeSnapshot _craftingReady({
   CachedReadMetadata? cacheMetadata,
   List<HomeInventoryItem>? inventory,
+  List<HomeCraftingRecipe>? craftingRecipes,
   List<HomeItemUpgrade> itemUpgrades = const <HomeItemUpgrade>[],
 }) {
   return HomeSnapshot(
@@ -3177,7 +3226,8 @@ HomeSnapshot _craftingReady({
             version: 1,
           ),
         ],
-    craftingRecipes: const <HomeCraftingRecipe>[_readyRecipe],
+    craftingRecipes:
+        craftingRecipes ?? const <HomeCraftingRecipe>[_readyRecipe],
     itemUpgrades: itemUpgrades,
     cacheMetadata: cacheMetadata,
   );
@@ -4056,6 +4106,28 @@ const HomeCraftingRecipe _readyRecipe = HomeCraftingRecipe(
     itemId: 'resonance-compass',
     name: 'Резонансный компас',
     description: 'Уникальный прибор.',
+    kind: 'UNIQUE',
+  ),
+);
+
+const HomeCraftingRecipe _secondReadyRecipe = HomeCraftingRecipe(
+  recipeId: 'prism-sextant-v1',
+  recipeVersion: '1',
+  name: 'Призматический секстант',
+  description: 'Собрать прибор для чтения спектра.',
+  status: 'READY',
+  ingredients: <HomeCraftingIngredient>[
+    HomeCraftingIngredient(
+      itemId: 'lumen-shard',
+      name: 'Люминовый осколок',
+      requiredQuantity: 1,
+      availableQuantity: 1,
+    ),
+  ],
+  result: HomeCraftingResultPreview(
+    itemId: 'prism-sextant',
+    name: 'Призматический секстант',
+    description: 'Уникальный навигационный прибор.',
     kind: 'UNIQUE',
   ),
 );

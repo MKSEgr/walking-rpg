@@ -1204,6 +1204,7 @@ class _HomeBody extends StatelessWidget {
                     const SizedBox(height: 12),
                     _CraftingCard(
                       recipes: snapshot.craftingRecipes,
+                      craftableRecipeCount: snapshot.craftableRecipeCount,
                       recipeViewportKey: recipeViewportKey,
                       readOnly: readOnly,
                       busy: gameplayActionBlocked,
@@ -2730,6 +2731,7 @@ class _InventoryCard extends StatelessWidget {
 class _CraftingCard extends StatelessWidget {
   const _CraftingCard({
     required this.recipes,
+    required this.craftableRecipeCount,
     required this.recipeViewportKey,
     required this.readOnly,
     required this.busy,
@@ -2738,6 +2740,7 @@ class _CraftingCard extends StatelessWidget {
   });
 
   final List<HomeCraftingRecipe> recipes;
+  final int craftableRecipeCount;
   final GlobalKey<State<StatefulWidget>> recipeViewportKey;
   final bool readOnly;
   final bool busy;
@@ -2757,6 +2760,21 @@ class _CraftingCard extends StatelessWidget {
             subtitle: context.l10n.homeCraftingSubtitle,
             icon: Icons.handyman_outlined,
           ),
+          if (craftableRecipeCount > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('home-craftable-recipes'),
+              container: true,
+              label: context.l10n.homeCraftingRecipesReady(
+                craftableRecipeCount,
+              ),
+              excludeSemantics: true,
+              child: Text(
+                context.l10n.homeCraftingRecipesReady(craftableRecipeCount),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           for (int index = 0; index < recipes.length; index++) ...<Widget>[
             KeyedSubtree(

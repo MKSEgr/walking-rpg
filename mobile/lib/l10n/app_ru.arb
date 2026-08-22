@@ -514,6 +514,7 @@
   "homeEquip": "Экипировать",
   "homeCraftingTitle": "Мастерская",
   "homeCraftingSubtitle": "Преобразуй находки в инструменты маршрута.",
+  "homeCraftingRecipesReady": "{count, plural, one{{count} рецепт готов к созданию} few{{count} рецепта готовы к созданию} many{{count} рецептов готовы к созданию} other{{count} рецепта готовы к созданию}}",
   "homeIngredientSemantics": "{name}, {available} из {requiredQuantity}, {availability}",
   "homeEnoughMaterials": "материала достаточно",
   "homeMissingMaterials": "материала не хватает",
