@@ -87,3 +87,5 @@ NNNN-short-title.md
 - [0068 — authoritative skill unlock guidance](0068-authoritative-skill-unlock-guidance.md)
 - [0069 — authoritative quest remaining guidance](0069-authoritative-quest-remaining-guidance.md)
 - [0070 — authoritative season reward guidance](0070-authoritative-season-reward-guidance.md)
+- [0071 — authoritative achievement collection guidance](0071-authoritative-achievement-collection-guidance.md)
+- [0072 — authoritative first-journey remaining guidance](0072-authoritative-first-journey-remaining-guidance.md)

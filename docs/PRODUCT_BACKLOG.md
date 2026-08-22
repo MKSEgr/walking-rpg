@@ -1785,6 +1785,26 @@ catalog field; persisted state, reward contents и command protocol не мен�
 
 ## P1 — расширение MVP
 
+### US-074. Видеть, сколько этапов первого пути осталось
+
+Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать
+общий прогресс без самостоятельного вычитания.
+
+Критерии:
+
+- completed count — пересечение accepted `content.onboardingSteps` и
+  `userState.completedOnboardingSteps`;
+- retired и будущие non-catalog completed IDs не увеличивают прогресс;
+- неполный путь получает точную RU/EN remaining-строку, полный — спокойное
+  complete state без обещания награды;
+- progress и guidance объявляются одной route semantics summary, а строки
+  этапов сохраняют собственные complete/incomplete semantics;
+- domain, RU/EN и compact large-text coverage фиксируют boundary без изменения
+  backend/API, порядка, completion rules или resume command.
+
+**Статус:** first-journey remaining guidance реализована как mobile projection
+двух accepted Platform полей без переноса onboarding rules на клиент.
+
 Технически реализованы:
 
 - первая глава из 18 основных узлов и staged optional topology вплоть до

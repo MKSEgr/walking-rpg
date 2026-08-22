@@ -563,6 +563,13 @@ void main() {
       tester,
       find.byKey(const Key('platform-onboarding-step-welcome')),
     );
+    expect(find.text('5 stages left to complete'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'First journey: 1 of 6 stages completed. 5 stages left to complete',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel('Meet the Navigator: completed'),
       findsOneWidget,

@@ -76,6 +76,16 @@ class PlatformSnapshot {
     return content.achievements.length - unlockedCatalogAchievementCount;
   }
 
+  int get completedCatalogOnboardingStepCount {
+    return content.onboardingSteps
+        .where(userState.completedOnboardingSteps.contains)
+        .length;
+  }
+
+  int get remainingCatalogOnboardingStepCount {
+    return content.onboardingSteps.length - completedCatalogOnboardingStepCount;
+  }
+
   int get weeklyRouteRemaining {
     final int remaining =
         userState.weeklyRouteRequiredEnergy - userState.weeklyRouteProgress;

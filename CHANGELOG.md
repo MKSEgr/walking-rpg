@@ -6,6 +6,10 @@
 
 ### Changed
 
+- first-journey guidance now shows the exact RU/EN number of accepted catalog
+  stages remaining, while retired completion IDs and onboarding rules remain
+  outside the mobile projection;
+
 - account, destructive deletion confirmation, saved-action recovery, activity
   sync, Validation Center and shared launch/design-system boundaries now follow
   the selected RU/EN locale, including compact large-text accessibility;

@@ -220,6 +220,13 @@ its existing bounded `FirstJourneyProgress.steps` sequence. Journal completion
 comes only from `completedOnboardingSteps`; the guided header repeats the same
 effective completion facts that already choose its current screen.
 
+The journal adds exact RU/EN remaining guidance derived from the intersection
+of accepted catalog step IDs and accepted completed IDs. Retired or future
+non-catalog completion IDs do not increase progress. The visible guidance is
+excluded from semantics and appended to the route signal's existing summary,
+so assistive technologies hear progress and remaining exactly once. Complete
+state promises no reward and does not alter resume or completion rules.
+
 The six current exact step IDs select welcome, Health permission, first sync,
 pet selection, first expedition and first decision marks. An unknown future ID
 receives a neutral constellation even when its display copy resembles a known

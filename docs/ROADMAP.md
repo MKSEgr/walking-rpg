@@ -1152,6 +1152,23 @@ server-authoritative Platform projection из ADR 0009 через ADR 0071 бе�
 изменения Platform API, backend catalog, achievement rules/rewards,
 immutable `alpha-rc1` или внешних gates.
 
+## Milestone 58 — Authoritative first-journey remaining guidance
+
+### CODE_COMPLETE
+
+- [x] Mobile считает завершёнными только accepted onboarding catalog IDs,
+      присутствующие в accepted completed set
+- [x] Retired и будущие non-catalog IDs не искажают progress
+- [x] RU/EN guidance показывает exact remaining или спокойное complete state
+      без срока, unlock-rule или reward promise
+- [x] Progress и guidance объявляются одной route semantics summary; domain,
+      RU/EN и compact text-scale 1.6 coverage фиксируют boundary
+
+Milestone 58 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative Platform projection из ADR 0009 через ADR 0072 без
+изменения Platform API, backend, onboarding order/rules, resume command,
+immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
