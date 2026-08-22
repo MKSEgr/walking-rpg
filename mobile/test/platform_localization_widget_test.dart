@@ -25,6 +25,54 @@ void main() {
     );
   });
 
+  test('Russian skill collection covers the one plural category', () {
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      russian.platformSkillsCollectionRemaining(21),
+      'До полной коллекции: 21 навык',
+    );
+  });
+
+  testWidgets('complete skill collection uses calm English guidance', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(
+            unlockedSkills: const <String>[
+              'steady-step',
+              'trail-memory',
+              'retired-skill',
+            ],
+          ),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder summary = find.byKey(
+      const Key('platform-skills-collection-summary'),
+    );
+    await _bringIntoView(tester, summary);
+    expect(
+      find.text('Skills unlocked: 2 of 2 · All pilot skills unlocked'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Skills unlocked: 2 of 2. All pilot skills unlocked',
+      ),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
   testWidgets('claimable season rewards use English plural guidance', (
     WidgetTester tester,
   ) async {
@@ -654,6 +702,22 @@ void main() {
         'Companion “Moss” bond: 12 of 45. '
         '33 more bond to next evolution',
       ),
+      findsOneWidget,
+    );
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-skills-collection-summary')),
+    );
+    final Semantics skillCollectionSummary = tester.widget<Semantics>(
+      find.byKey(const Key('platform-skills-collection-summary')),
+    );
+    expect(
+      skillCollectionSummary.properties.label,
+      'Skills unlocked: 1 of 2. 1 skill left to unlock',
+    );
+    expect(
+      find.text('Skills unlocked: 1 of 2 · 1 skill left to unlock'),
       findsOneWidget,
     );
 

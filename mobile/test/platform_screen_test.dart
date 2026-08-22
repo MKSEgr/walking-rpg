@@ -1420,6 +1420,7 @@ void main() {
       Key('season-reward-seal-signal-season-1-2-firstSignal'),
       Key('platform-pet-compact-spark-v1'),
       Key('platform-pet-compact-moss-v1'),
+      Key('platform-skills-collection-summary'),
       Key('platform-skill-compact-steady-step'),
       Key('platform-skill-compact-trail-memory'),
       Key('platform-quest-compact-walk-3000'),
@@ -1438,6 +1439,14 @@ void main() {
       if (key == const Key('platform-cosmetics-collection-summary')) {
         expect(
           find.text('1 из 2 в коллекции · До полной коллекции: 1 образ'),
+          findsOneWidget,
+        );
+      }
+      if (key == const Key('platform-skills-collection-summary')) {
+        expect(
+          find.text(
+            'Открыто навыков: 1 из 2 · До полной коллекции: 1 навык',
+          ),
           findsOneWidget,
         );
       }

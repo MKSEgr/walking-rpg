@@ -78,6 +78,9 @@
 
 ### Added
 
+- authoritative RU/EN pilot skill collection progress derived only from
+  accepted catalog and unlocked IDs, preserving thresholds and unlock actions;
+
 - authoritative RU/EN cosmetic collection progress derived only from accepted
   catalog and ownership IDs, preserving purchase and equipment behavior;
 

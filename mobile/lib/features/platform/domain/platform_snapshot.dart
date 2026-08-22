@@ -76,6 +76,17 @@ class PlatformSnapshot {
     return content.achievements.length - unlockedCatalogAchievementCount;
   }
 
+  int get unlockedCatalogSkillCount {
+    final Set<String> catalogIds = content.skills
+        .map((PlatformSkill skill) => skill.skillId)
+        .toSet();
+    return userState.unlockedSkills.intersection(catalogIds).length;
+  }
+
+  int get remainingCatalogSkillCount {
+    return content.skills.length - unlockedCatalogSkillCount;
+  }
+
   int get ownedCatalogCosmeticCount {
     final Set<String> catalogIds = content.cosmetics
         .map((PlatformCosmetic cosmetic) => cosmetic.cosmeticId)

@@ -1803,6 +1803,25 @@ catalog field; persisted state, reward contents и command protocol не мен�
 **Статус:** cosmetic collection guidance реализована как mobile projection
 двух accepted Platform полей без изменения backend/API или commerce commands.
 
+### US-077. Видеть прогресс коллекции навыков пилота
+
+Как игрок, я хочу видеть точный остаток навыков до полного accepted каталога,
+чтобы понимать общий прогресс развития пилота без ручного подсчёта карточек.
+
+Критерии:
+
+- unlocked count — пересечение accepted `content.skills` и
+  `userState.unlockedSkills`;
+- retired и будущие non-catalog unlocked IDs не увеличивают progress;
+- неполная коллекция получает exact RU/EN remaining, полная — спокойное
+  complete state без обещания награды;
+- progress и guidance объявляются одной semantics summary;
+- per-skill thresholds, availability, unlock actions и server rules не
+  меняются.
+
+**Статус:** pilot skill collection guidance реализована как mobile projection
+двух accepted Platform полей без изменения backend/API или unlock command.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

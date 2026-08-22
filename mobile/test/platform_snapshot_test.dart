@@ -22,6 +22,17 @@ void main() {
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.unlockedCatalogAchievementCount, 0);
     expect(snapshot.remainingCatalogAchievementCount, 2);
+    expect(snapshot.unlockedCatalogSkillCount, 1);
+    expect(snapshot.remainingCatalogSkillCount, 1);
+    final PlatformSnapshot completeSkills = platformSnapshot(
+      unlockedSkills: const <String>[
+        'steady-step',
+        'trail-memory',
+        'retired-skill',
+      ],
+    );
+    expect(completeSkills.unlockedCatalogSkillCount, 2);
+    expect(completeSkills.remainingCatalogSkillCount, 0);
     expect(snapshot.ownedCatalogCosmeticCount, 1);
     expect(snapshot.remainingCatalogCosmeticCount, 1);
     final PlatformSnapshot completeCosmetics = platformSnapshot(
