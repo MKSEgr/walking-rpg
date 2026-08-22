@@ -24,6 +24,7 @@ void main() {
     expect(snapshot.remainingCatalogAchievementCount, 2);
     expect(snapshot.unlockedCatalogSkillCount, 1);
     expect(snapshot.remainingCatalogSkillCount, 1);
+    expect(snapshot.unlockableCatalogSkillCount, 1);
     final PlatformSnapshot completeSkills = platformSnapshot(
       unlockedSkills: const <String>[
         'steady-step',
@@ -33,6 +34,22 @@ void main() {
     );
     expect(completeSkills.unlockedCatalogSkillCount, 2);
     expect(completeSkills.remainingCatalogSkillCount, 0);
+    expect(completeSkills.unlockableCatalogSkillCount, 0);
+    final Map<String, dynamic> multipleUnlockableJson = platformSnapshotJson();
+    final Map<String, dynamic> multipleUnlockableContent =
+        multipleUnlockableJson['content']! as Map<String, dynamic>;
+    final List<dynamic> multipleUnlockableSkills =
+        multipleUnlockableContent['skills']! as List<dynamic>;
+    multipleUnlockableSkills.add(<String, dynamic>{
+      'skillId': 'echo-navigation',
+      'name': 'Эхо-навигация',
+      'description': 'Усиливает чтение маршрута.',
+      'requiredSeasonXp': 200,
+    });
+    final PlatformSnapshot multipleUnlockable = PlatformSnapshot.fromJson(
+      multipleUnlockableJson,
+    );
+    expect(multipleUnlockable.unlockableCatalogSkillCount, 2);
     expect(snapshot.ownedCatalogCosmeticCount, 1);
     expect(snapshot.remainingCatalogCosmeticCount, 1);
     final PlatformSnapshot completeCosmetics = platformSnapshot(

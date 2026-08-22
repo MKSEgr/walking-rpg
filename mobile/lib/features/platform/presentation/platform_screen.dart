@@ -675,6 +675,23 @@ class _PlatformBody extends StatelessWidget {
               );
             },
           ),
+          if (snapshot.unlockableCatalogSkillCount > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('platform-unlockable-skills'),
+              container: true,
+              label: context.l10n.platformSkillsAvailableToUnlock(
+                snapshot.unlockableCatalogSkillCount,
+              ),
+              excludeSemantics: true,
+              child: Text(
+                context.l10n.platformSkillsAvailableToUnlock(
+                  snapshot.unlockableCatalogSkillCount,
+                ),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           for (final PlatformSkill skill
               in snapshot.content.skills) ...<Widget>[

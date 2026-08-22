@@ -1233,6 +1233,22 @@ Milestone 62 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative quest projection из ADR 0009 через ADR 0076 без изменения
 Platform API, backend, persistence, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 63 — Authoritative unlockable pilot skill count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает unlockable только accepted catalog skills, которых нет в
+      accepted unlocked set и чей server-authored XP threshold уже достигнут
+- [x] Positive count получает RU/EN singular/plural guidance, zero не создаёт
+      отдельного сообщения
+- [x] Visible aggregate объявляется одной semantics node
+- [x] Domain, RU/EN и compact large-text coverage фиксируют boundary без
+      изменения thresholds, availability rules, unlock command или rewards
+
+Milestone 63 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative skill projection из ADR 0009 через ADR 0077 без изменения
+Platform API, backend, persistence, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

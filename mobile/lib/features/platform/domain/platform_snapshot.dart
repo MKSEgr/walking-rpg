@@ -87,6 +87,16 @@ class PlatformSnapshot {
     return content.skills.length - unlockedCatalogSkillCount;
   }
 
+  int get unlockableCatalogSkillCount {
+    return content.skills
+        .where(
+          (PlatformSkill skill) =>
+              !userState.unlockedSkills.contains(skill.skillId) &&
+              skill.requiredSeasonXp <= userState.seasonXp,
+        )
+        .length;
+  }
+
   int get ownedCatalogCosmeticCount {
     final Set<String> catalogIds = content.cosmetics
         .map((PlatformCosmetic cosmetic) => cosmetic.cosmeticId)

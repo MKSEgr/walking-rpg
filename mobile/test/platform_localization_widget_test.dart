@@ -43,6 +43,71 @@ void main() {
     );
   });
 
+  test('Russian unlockable skill count covers the one plural category', () {
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      russian.platformSkillsAvailableToUnlock(21),
+      'Можно открыть 21 навык',
+    );
+  });
+
+  testWidgets('multiple unlockable skills use English plural guidance', (
+    WidgetTester tester,
+  ) async {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> content =
+        json['content']! as Map<String, dynamic>;
+    final List<dynamic> skills = content['skills']! as List<dynamic>;
+    skills.add(<String, dynamic>{
+      'skillId': 'echo-navigation',
+      'name': 'Echo Navigation',
+      'description': 'Strengthens route reading.',
+      'requiredSeasonXp': 200,
+    });
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => PlatformSnapshot.fromJson(json),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder guidance = find.byKey(const Key('platform-unlockable-skills'));
+    await _bringIntoView(tester, guidance);
+    expect(find.text('2 skills ready to unlock'), findsOneWidget);
+    expect(find.bySemanticsLabel('2 skills ready to unlock'), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('zero unlockable skills omit aggregate guidance', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(seasonXp: 40),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-skills-collection-summary')),
+    );
+    expect(find.byKey(const Key('platform-unlockable-skills')), findsNothing);
+  });
+
   testWidgets('multiple claimable quests use English plural guidance', (
     WidgetTester tester,
   ) async {

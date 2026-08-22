@@ -1029,6 +1029,10 @@
       "guidance": {"type": "String"}
     }
   },
+  "platformSkillsAvailableToUnlock": "{count, plural, =1{1 skill ready to unlock} other{{count} skills ready to unlock}}",
+  "@platformSkillsAvailableToUnlock": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "platformQuestsTitle": "Quests",
   "platformQuestSummary": "{steps} steps · {events} events",
   "@platformQuestSummary": {

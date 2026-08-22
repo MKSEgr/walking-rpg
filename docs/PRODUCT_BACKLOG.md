@@ -1840,6 +1840,25 @@ catalog field; persisted state, reward contents и command protocol не мен�
 **Статус:** claimable quest reward count реализован как mobile projection
 accepted per-quest state без изменения backend/API или reward economy.
 
+### US-079. Видеть число навыков, доступных для открытия
+
+Как игрок, я хочу видеть, сколько навыков уже достигли своего порога сезонного
+XP, чтобы не искать доступные действия среди всех карточек.
+
+Критерии:
+
+- unlockable count включает только accepted catalog skills, которых нет в
+  accepted `unlockedSkills` и чей `requiredSeasonXp` не выше accepted
+  `seasonXp`;
+- unlocked, threshold-not-reached и non-catalog identities не входят в count;
+- положительный count получает короткую RU/EN singular/plural строку, zero не
+  создаёт шум или fake unlock promise;
+- visible guidance объявляется одной semantics node;
+- thresholds, availability rules, unlock command и rewards не меняются.
+
+**Статус:** unlockable pilot skill count реализован как mobile projection
+accepted catalog thresholds и user state без изменения backend/API.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать
