@@ -23,6 +23,7 @@ Map<String, dynamic> platformSnapshotJson({
     'PILOT': 'pilot-scarf',
   },
   List<String> achievements = const <String>['season-reward-1'],
+  List<String> unlockedSkills = const <String>['steady-step'],
   int resolvedEventCount = 2,
   int totalAcceptedSteps = 6842,
   bool? hasSuccessfulActivitySync,
@@ -85,7 +86,7 @@ Map<String, dynamic> platformSnapshotJson({
       ],
       'completedOnboardingSteps': completedOnboardingSteps,
       'onboardingComplete': onboardingComplete,
-      'unlockedSkills': <String>['steady-step'],
+      'unlockedSkills': unlockedSkills,
       'quests': <Map<String, dynamic>>[
         <String, dynamic>{
           'questId': 'walk-3000',

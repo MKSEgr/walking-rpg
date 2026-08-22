@@ -645,6 +645,37 @@ class _PlatformBody extends StatelessWidget {
             subtitle: context.l10n.platformSkillsSubtitle,
             icon: Icons.hub_outlined,
           ),
+          const SizedBox(height: 8),
+          Builder(
+            builder: (BuildContext context) {
+              final int unlocked = snapshot.unlockedCatalogSkillCount;
+              final int remaining = snapshot.remainingCatalogSkillCount;
+              final String progress = context.l10n
+                  .platformSkillsCollectionProgress(
+                    unlocked,
+                    snapshot.content.skills.length,
+                  );
+              final String guidance = remaining == 0
+                  ? context.l10n.platformSkillsCollectionComplete
+                  : context.l10n.platformSkillsCollectionRemaining(remaining);
+              return Semantics(
+                key: const Key('platform-skills-collection-summary'),
+                container: true,
+                explicitChildNodes: true,
+                label: context.l10n.platformSkillsCollectionSemantics(
+                  progress,
+                  guidance,
+                ),
+                excludeSemantics: true,
+                child: Text(
+                  '$progress · $guidance',
+                  key: const Key('platform-skills-collection-guidance'),
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
           for (final PlatformSkill skill
               in snapshot.content.skills) ...<Widget>[
             _SkillCard(

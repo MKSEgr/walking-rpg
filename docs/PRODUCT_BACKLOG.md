@@ -1785,6 +1785,24 @@ catalog field; persisted state, reward contents и command protocol не мен�
 
 ## P1 — расширение MVP
 
+### US-077. Видеть прогресс коллекции навыков
+
+Как игрок, я хочу видеть общий прогресс навыков пилота, чтобы понимать остаток
+до полного accepted каталога без ручного подсчёта карточек.
+
+Критерии:
+
+- unlocked count — пересечение accepted `content.skills` и
+  `userState.unlockedSkills`;
+- retired и будущие non-catalog unlocked IDs не увеличивают progress;
+- неполная коллекция получает exact RU/EN remaining, полная — спокойное
+  complete state без обещания награды;
+- progress и guidance объявляются одной semantics summary;
+- thresholds, availability и unlock command/rewards не меняются.
+
+**Статус:** skill collection guidance реализована как mobile projection двух
+accepted Platform полей без изменения backend/API или unlock rules.
+
 ### US-076. Видеть прогресс коллекции косметики
 
 Как игрок, я хочу видеть точный остаток косметики до полного accepted каталога,
