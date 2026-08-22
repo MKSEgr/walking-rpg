@@ -79,9 +79,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final Finder guidance = find.byKey(
-      const Key('platform-unlockable-skills'),
-    );
+    final Finder guidance = find.byKey(const Key('platform-unlockable-skills'));
     await _bringIntoView(tester, guidance);
     expect(find.text('2 skills ready to unlock'), findsOneWidget);
     expect(find.bySemanticsLabel('2 skills ready to unlock'), findsOneWidget);
