@@ -1201,6 +1201,11 @@ void main() {
       find.bySemanticsLabel('До награды уровня 3: ещё 80 сезонного XP'),
       findsOneWidget,
     );
+    expect(find.text('Доступна 1 сезонная награда'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Доступна 1 сезонная награда'),
+      findsOneWidget,
+    );
     expect(find.byType(SeasonRewardSeal), findsOneWidget);
     expect(
       find.byKey(const Key('season-reward-seal-signal-season-1-2-firstSignal')),
@@ -1230,6 +1235,7 @@ void main() {
     );
 
     expect(find.textContaining('До награды уровня'), findsNothing);
+    expect(find.textContaining('сезонная награда'), findsNothing);
     expect(
       find.byKey(const Key('season-reward-seal-signal-season-1-2-firstSignal')),
       findsOneWidget,

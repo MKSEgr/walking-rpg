@@ -126,6 +126,18 @@ class PlatformSnapshot {
         : content.season.levels;
   }
 
+  List<int>? get unclaimedSeasonRewardLevels {
+    if (content.season.xpPerLevel == null) {
+      return null;
+    }
+    return List<int>.unmodifiable(<int>[
+      for (int level = 1; level <= claimableSeasonLevel; level += 1)
+        if (!userState.achievements.contains('season-reward-$level')) level,
+    ]);
+  }
+
+  int? get unclaimedSeasonRewardCount => unclaimedSeasonRewardLevels?.length;
+
   int? get nextSeasonRewardLevel {
     final int? xpPerLevel = content.season.xpPerLevel;
     if (xpPerLevel == null) {

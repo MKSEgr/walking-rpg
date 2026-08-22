@@ -6,6 +6,9 @@
 
 ### Changed
 
+- season guidance now shows the exact RU/EN count of earned unclaimed reward
+  levels from accepted cadence and receipts without changing claim behavior;
+
 - first-journey guidance now shows the exact RU/EN number of accepted catalog
   stages remaining, while retired completion IDs and onboarding rules remain
   outside the mobile projection;

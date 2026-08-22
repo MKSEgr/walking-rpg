@@ -2437,15 +2437,21 @@ class _WeeklyRouteCard extends StatelessWidget {
     final int spendable = availableEnergy == null
         ? 0
         : _minimum(remaining, availableEnergy!);
-    final int claimableLevel = snapshot.claimableSeasonLevel;
+    final List<int>? unclaimedRewardLevels =
+        snapshot.unclaimedSeasonRewardLevels;
     final int? nextRewardLevel = snapshot.nextSeasonRewardLevel;
     final int? remainingSeasonXp = snapshot.remainingSeasonXpToNextReward;
-    final Set<String> achievements = snapshot.userState.achievements;
     int? rewardLevel;
-    for (int level = 1; level <= claimableLevel; level += 1) {
-      if (!achievements.contains('season-reward-$level')) {
-        rewardLevel = level;
-        break;
+    if (unclaimedRewardLevels != null) {
+      rewardLevel = unclaimedRewardLevels.isEmpty
+          ? null
+          : unclaimedRewardLevels.first;
+    } else {
+      for (int level = 1; level <= snapshot.claimableSeasonLevel; level += 1) {
+        if (!snapshot.userState.achievements.contains('season-reward-$level')) {
+          rewardLevel = level;
+          break;
+        }
       }
     }
     final String seasonName = context.l10n.currentPlatformSeasonName(
@@ -2459,6 +2465,10 @@ class _WeeklyRouteCard extends StatelessWidget {
             remainingSeasonXp,
           )
         : null;
+    final int unclaimedRewardCount = unclaimedRewardLevels?.length ?? 0;
+    final String? claimableRewardsGuidance = unclaimedRewardCount == 0
+        ? null
+        : context.l10n.platformSeasonRewardsAvailable(unclaimedRewardCount);
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     return ExpeditionPanel(
@@ -2519,6 +2529,20 @@ class _WeeklyRouteCard extends StatelessWidget {
                       excludeSemantics: true,
                       child: Text(
                         seasonRewardGuidance,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (claimableRewardsGuidance != null) ...<Widget>[
+                    const SizedBox(height: 4),
+                    Semantics(
+                      container: true,
+                      label: claimableRewardsGuidance,
+                      excludeSemantics: true,
+                      child: Text(
+                        claimableRewardsGuidance,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),

@@ -1169,6 +1169,24 @@ server-authoritative Platform projection из ADR 0009 через ADR 0072 бе�
 изменения Platform API, backend, onboarding order/rules, resume command,
 immutable `alpha-rc1` или внешних gates.
 
+## Milestone 59 — Authoritative claimable season reward count
+
+### CODE_COMPLETE
+
+- [x] Mobile получает earned boundary только из accepted season XP, positive
+      catalog `xpPerLevel` и final level
+- [x] Accepted `season-reward-N` receipts исключают полученные уровни, а
+      unrelated achievement IDs не искажают count
+- [x] Положительный count получает RU/EN singular/plural guidance; zero и
+      legacy cadence-absent states не получают fake guidance
+- [x] Existing first-unclaimed claim action сохраняется; domain, semantics,
+      RU/EN и compact text-scale 1.6 coverage фиксируют boundary
+
+Milestone 59 продолжает post-alpha code-only gameplay track из ADR 0039 и
+authoritative season cadence из ADR 0070 через ADR 0073 без изменения Platform
+API, backend, persistence, reward payload/order, claim command, immutable
+`alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
