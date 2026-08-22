@@ -1444,9 +1444,7 @@ void main() {
       }
       if (key == const Key('platform-skills-collection-summary')) {
         expect(
-          find.text(
-            'Открыто навыков: 1 из 2 · До полной коллекции: 1 навык',
-          ),
+          find.text('Открыто навыков: 1 из 2 · До полной коллекции: 1 навык'),
           findsOneWidget,
         );
       }
