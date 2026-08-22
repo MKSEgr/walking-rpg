@@ -7,10 +7,24 @@ import 'package:walking_rpg_mobile/features/platform/domain/platform_command_res
 import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/presentation/platform_screen.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
+import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 
 import 'support/platform_fixture.dart';
 
 void main() {
+  test('Russian quest remaining guidance covers the one plural category', () {
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      russian.platformQuestStepsRemaining(21),
+      'До выполнения: ещё 21 шаг',
+    );
+    expect(
+      russian.platformQuestEventsRemaining(101),
+      'До выполнения: ещё 101 событие',
+    );
+  });
+
   testWidgets('claimable season rewards use English plural guidance', (
     WidgetTester tester,
   ) async {
