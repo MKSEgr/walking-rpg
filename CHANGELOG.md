@@ -76,6 +76,9 @@
 
 ### Added
 
+- authoritative RU/EN cosmetic collection progress derived only from accepted
+  catalog and ownership IDs, preserving purchase and equipment behavior;
+
 - exact RU/EN achievement collection guidance derived from accepted catalog
   identities and unlocked state, without counting dynamic season reward
   receipt IDs or promising a completion reward;

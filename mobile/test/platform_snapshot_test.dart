@@ -22,6 +22,18 @@ void main() {
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.unlockedCatalogAchievementCount, 0);
     expect(snapshot.remainingCatalogAchievementCount, 2);
+    expect(snapshot.ownedCatalogCosmeticCount, 1);
+    expect(snapshot.remainingCatalogCosmeticCount, 2);
+    final PlatformSnapshot completeCosmetics = platformSnapshot(
+      ownedCosmetics: const <String>[
+        'pilot-scarf',
+        'spark-halo',
+        'profile-constellation',
+        'retired-cosmetic',
+      ],
+    );
+    expect(completeCosmetics.ownedCatalogCosmeticCount, 3);
+    expect(completeCosmetics.remainingCatalogCosmeticCount, 0);
     expect(snapshot.completedCatalogOnboardingStepCount, 1);
     expect(snapshot.remainingCatalogOnboardingStepCount, 5);
 

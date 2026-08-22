@@ -89,3 +89,5 @@ NNNN-short-title.md
 - [0070 — authoritative season reward guidance](0070-authoritative-season-reward-guidance.md)
 - [0071 — authoritative achievement collection guidance](0071-authoritative-achievement-collection-guidance.md)
 - [0072 — authoritative first-journey remaining guidance](0072-authoritative-first-journey-remaining-guidance.md)
+- [0073 — authoritative claimable season reward count](0073-authoritative-claimable-season-reward-count.md)
+- [0074 — authoritative cosmetic collection guidance](0074-authoritative-cosmetic-collection-guidance.md)

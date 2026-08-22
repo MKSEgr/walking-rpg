@@ -1426,6 +1426,7 @@ void main() {
       Key('quest-route-signal-walk-3000-steps'),
       Key('platform-squad-empty-compact'),
       Key('squad-formation-signal-open-0'),
+      Key('platform-cosmetics-collection-summary'),
       Key('platform-cosmetic-compact-pilot-scarf'),
       Key('platform-achievement-onboarding-complete'),
       Key('platform-journal-footer'),
@@ -1434,6 +1435,12 @@ void main() {
       await _bringIntoView(tester, target);
       expect(target, findsOneWidget);
       _expectNoLayoutException(tester);
+      if (key == const Key('platform-cosmetics-collection-summary')) {
+        expect(
+          find.text('1 из 3 в коллекции · До полной коллекции: 2 образа'),
+          findsOneWidget,
+        );
+      }
       if (key == const Key('platform-pet-compact-moss-v1')) {
         expect(
           find.text('До следующей эволюции: ещё 33 связи'),

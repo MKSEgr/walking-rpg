@@ -690,6 +690,14 @@ void main() {
       tester,
       find.byKey(const Key('platform-cosmetic-compact-pilot-scarf')),
     );
+    expect(
+      find.bySemanticsLabel('1 of 3 collected. 2 cosmetics left to collect'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('1 of 3 collected · 2 cosmetics left to collect'),
+      findsOneWidget,
+    );
     expect(find.text('Navigator Scarf'), findsOneWidget);
     expect(find.text('Equipped'), findsOneWidget);
 
