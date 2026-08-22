@@ -61,6 +61,81 @@ void main() {
     );
   });
 
+  test('Russian equippable cosmetic count covers the one plural category', () {
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      russian.platformCosmeticsAvailableToEquip(21),
+      'Можно надеть 21 образ',
+    );
+  });
+
+  testWidgets(
+    'multiple equippable cosmetics use accessible compact English guidance',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(
+              ownedCosmetics: const <String>[
+                'pilot-scarf',
+                'trail-banner',
+                'dawn-frame',
+              ],
+              includeProfileCosmetics: true,
+            ),
+            homeLoader: () async => HomeSnapshot.demo,
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder guidance = find.byKey(
+        const Key('platform-equippable-cosmetics'),
+      );
+      await _bringIntoView(tester, guidance);
+      expect(find.text('2 cosmetics ready to equip'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('2 cosmetics ready to equip'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('zero equippable cosmetics omit aggregate guidance', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-cosmetics-collection-summary')),
+    );
+    expect(
+      find.byKey(const Key('platform-equippable-cosmetics')),
+      findsNothing,
+    );
+  });
+
   testWidgets('multiple evolvable companions use English plural guidance', (
     WidgetTester tester,
   ) async {
