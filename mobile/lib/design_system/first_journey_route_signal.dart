@@ -58,23 +58,28 @@ class FirstJourneyRouteSignal extends StatelessWidget {
     required this.steps,
     required this.completedSteps,
     this.height = 112,
+    this.semanticGuidance,
   });
 
   final List<String> steps;
   final Set<String> completedSteps;
   final double height;
+  final String? semanticGuidance;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final int completedCount = steps.where(completedSteps.contains).length;
-    final String semanticLabel = steps.isEmpty
+    final String progressLabel = steps.isEmpty
         ? context.l10n.firstJourneyRouteEmptySemantics
         : context.l10n.firstJourneyRouteProgressSemantics(
             completedCount,
             steps.length,
           );
+    final String semanticLabel = semanticGuidance == null
+        ? progressLabel
+        : '$progressLabel. $semanticGuidance';
 
     return Semantics(
       key: Key(

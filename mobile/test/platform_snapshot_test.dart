@@ -22,6 +22,8 @@ void main() {
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.unlockedCatalogAchievementCount, 0);
     expect(snapshot.remainingCatalogAchievementCount, 2);
+    expect(snapshot.completedCatalogOnboardingStepCount, 1);
+    expect(snapshot.remainingCatalogOnboardingStepCount, 5);
 
     final PlatformSnapshot completeCollection = platformSnapshot(
       achievements: const <String>[
@@ -32,6 +34,19 @@ void main() {
     );
     expect(completeCollection.unlockedCatalogAchievementCount, 2);
     expect(completeCollection.remainingCatalogAchievementCount, 0);
+    final PlatformSnapshot completedJourney = platformSnapshot(
+      completedOnboardingSteps: const <String>[
+        'welcome',
+        'health-permission',
+        'first-sync',
+        'pet-selection',
+        'first-expedition',
+        'first-event',
+        'retired-step',
+      ],
+    );
+    expect(completedJourney.completedCatalogOnboardingStepCount, 6);
+    expect(completedJourney.remainingCatalogOnboardingStepCount, 0);
     expect(snapshot.weeklyRouteProgressValue, 0.4);
     expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
     expect(snapshot.content.season.xpPerLevel, 100);

@@ -661,6 +661,8 @@
   "platformPathBeginning": "Начало пути",
   "platformPathOpenDescription": "Все основные системы экспедиции доступны.",
   "platformPathBeginningDescription": "Завершите маршрут знакомства с навигатором.",
+  "platformOnboardingStagesRemaining": "{remaining, plural, =1{Осталось пройти 1 этап} few{Осталось пройти {remaining} этапа} many{Осталось пройти {remaining} этапов} other{Осталось пройти {remaining} этапа}}",
+  "platformOnboardingJourneyComplete": "Первый путь завершён",
   "platformOnboardingStepSemantics": "{step}: {status}",
   "platformCompletedStatus": "завершено",
   "platformIncompleteStatus": "не завершено",

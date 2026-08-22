@@ -2263,7 +2263,11 @@ class _OnboardingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<String> steps = snapshot.content.onboardingSteps;
     final Set<String> completed = snapshot.userState.completedOnboardingSteps;
-    final int completedCount = steps.where(completed.contains).length;
+    final int completedCount = snapshot.completedCatalogOnboardingStepCount;
+    final int remainingCount = snapshot.remainingCatalogOnboardingStepCount;
+    final String guidance = remainingCount == 0
+        ? context.l10n.platformOnboardingJourneyComplete
+        : context.l10n.platformOnboardingStagesRemaining(remainingCount);
     final ColorScheme colors = Theme.of(context).colorScheme;
     final Widget icon = DecoratedBox(
       decoration: BoxDecoration(
@@ -2283,6 +2287,14 @@ class _OnboardingCard extends StatelessWidget {
               ? context.l10n.platformPathOpen
               : context.l10n.platformPathBeginning,
           style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 3),
+        ExcludeSemantics(
+          child: Text(
+            guidance,
+            key: const Key('platform-onboarding-guidance'),
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
         ),
         const SizedBox(height: 3),
         Text(
@@ -2333,7 +2345,11 @@ class _OnboardingCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          FirstJourneyRouteSignal(steps: steps, completedSteps: completed),
+          FirstJourneyRouteSignal(
+            steps: steps,
+            completedSteps: completed,
+            semanticGuidance: guidance,
+          ),
           const SizedBox(height: 14),
           for (final String step in steps)
             Padding(

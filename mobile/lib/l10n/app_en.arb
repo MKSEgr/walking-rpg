@@ -1408,6 +1408,13 @@
   "platformPathBeginning": "Path beginning",
   "platformPathOpenDescription": "All core expedition systems are available.",
   "platformPathBeginningDescription": "Complete the introductory route with the Navigator.",
+  "platformOnboardingStagesRemaining": "{remaining, plural, =1{1 stage left to complete} other{{remaining} stages left to complete}}",
+  "@platformOnboardingStagesRemaining": {
+    "placeholders": {
+      "remaining": {"type": "int"}
+    }
+  },
+  "platformOnboardingJourneyComplete": "First journey complete",
   "platformOnboardingStepSemantics": "{step}: {status}",
   "@platformOnboardingStepSemantics": {
     "placeholders": {

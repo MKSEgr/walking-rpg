@@ -1163,7 +1163,9 @@ void main() {
     expect(find.byType(FirstJourneyRouteSignal), findsOneWidget);
     expect(firstJourney, findsOneWidget);
     expect(
-      find.bySemanticsLabel('Первый путь: завершено 1 из 6 этапов'),
+      find.bySemanticsLabel(
+        'Первый путь: завершено 1 из 6 этапов. Осталось пройти 5 этапов',
+      ),
       findsOneWidget,
     );
     expect(
@@ -1559,8 +1561,11 @@ void main() {
     expect(firstJourney, findsOneWidget);
     expect(find.text('1/6'), findsOneWidget);
     expect(find.text('2/6'), findsNothing);
+    expect(find.text('Осталось пройти 5 этапов'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('Первый путь: завершено 1 из 6 этапов'),
+      find.bySemanticsLabel(
+        'Первый путь: завершено 1 из 6 этапов. Осталось пройти 5 этапов',
+      ),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

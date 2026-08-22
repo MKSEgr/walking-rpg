@@ -79,6 +79,8 @@
   получение доступных наград, но не получает придуманную подсказку;
 - каталог достижений показывает точный остаток до полного набора в RU/EN и
   считает только exact catalog IDs, не смешивая их с сезонными reward receipts;
+- первый путь показывает точный остаток этапов accepted onboarding catalog в
+  RU/EN, не считая retired completion IDs и не меняя правила прохождения;
 - material inventory с append-only credit/debit ledger, server-authoritative
   crafting, persistent unique item и equipment slot `NAVIGATION`;
 - последовательное улучшение призматического секстанта до уровня 3/EPIC на
