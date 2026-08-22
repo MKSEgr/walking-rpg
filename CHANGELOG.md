@@ -48,6 +48,8 @@
 
 ### Fixed
 
+- Russian quest remaining guidance now uses the ICU `one` plural category,
+  so counts such as 21 steps and 101 events keep grammatically correct forms;
 - protected workflow setup steps now resolve reviewed exact Node.js, Python
   and Temurin patch/build versions; a structural CI gate rejects ranges,
   missing inputs, duplicate/aliased YAML and occurrence drift;
