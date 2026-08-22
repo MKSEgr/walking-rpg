@@ -78,6 +78,9 @@
 
 ### Added
 
+- exact RU/EN count of accepted companions ready to evolve, preserving bond
+  thresholds, evolution stages and command behavior;
+
 - exact RU/EN count of accepted pilot skills ready to unlock from current
   season XP, without changing thresholds or unlock behavior;
 

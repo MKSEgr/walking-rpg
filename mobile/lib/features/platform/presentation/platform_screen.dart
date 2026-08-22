@@ -625,6 +625,23 @@ class _PlatformBody extends StatelessWidget {
             subtitle: context.l10n.platformPetsSubtitle,
             icon: Icons.pets_outlined,
           ),
+          if (snapshot.evolvableCompanionCount > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('platform-evolvable-companions'),
+              container: true,
+              label: context.l10n.platformCompanionsReadyToEvolve(
+                snapshot.evolvableCompanionCount,
+              ),
+              excludeSemantics: true,
+              child: Text(
+                context.l10n.platformCompanionsReadyToEvolve(
+                  snapshot.evolvableCompanionCount,
+                ),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+          ],
           for (final PlatformPet pet in snapshot.userState.pets) ...<Widget>[
             _PetCard(
               pet: pet,

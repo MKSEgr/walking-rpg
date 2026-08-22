@@ -1249,6 +1249,23 @@ Milestone 63 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative skill projection из ADR 0009 через ADR 0077 без изменения
 Platform API, backend, persistence, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 64 — Authoritative evolvable companion count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает ready только accepted pets, для которых существующая
+      domain-проекция `canEvolve` истинна
+- [x] Growing и fully evolved pets не входят в count
+- [x] Positive count получает RU/EN singular/plural guidance и одну semantics
+      node, zero не создаёт отдельного сообщения
+- [x] Domain, RU/EN и compact large-text coverage фиксируют boundary без
+      изменения bond thresholds, stages, evolution command или rewards
+
+Milestone 64 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative companion progression из ADR 0009 через ADR 0078 без
+изменения Platform API, backend, persistence, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

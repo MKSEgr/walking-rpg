@@ -65,6 +65,10 @@ class PlatformSnapshot {
 
   bool get isCached => cacheMetadata != null;
 
+  int get evolvableCompanionCount {
+    return userState.pets.where((PlatformPet pet) => pet.canEvolve).length;
+  }
+
   int get unlockedCatalogAchievementCount {
     final Set<String> catalogIds = content.achievements
         .map((PlatformAchievement achievement) => achievement.achievementId)

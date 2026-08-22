@@ -52,6 +52,80 @@ void main() {
     );
   });
 
+  test('Russian evolvable companion count covers the one plural category', () {
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      russian.platformCompanionsReadyToEvolve(21),
+      'К эволюции готов 21 питомец',
+    );
+  });
+
+  testWidgets('multiple evolvable companions use English plural guidance', (
+    WidgetTester tester,
+  ) async {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState =
+        json['userState']! as Map<String, dynamic>;
+    final List<dynamic> pets = userState['pets']! as List<dynamic>;
+    (pets[1] as Map<String, dynamic>)['bond'] = 45;
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => PlatformSnapshot.fromJson(json),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder guidance = find.byKey(
+      const Key('platform-evolvable-companions'),
+    );
+    await _bringIntoView(tester, guidance);
+    expect(find.text('2 companions ready to evolve'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('2 companions ready to evolve'),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('zero evolvable companions omit aggregate guidance', (
+    WidgetTester tester,
+  ) async {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState =
+        json['userState']! as Map<String, dynamic>;
+    final List<dynamic> pets = userState['pets']! as List<dynamic>;
+    (pets[0] as Map<String, dynamic>)['evolutionStage'] = 1;
+
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => PlatformSnapshot.fromJson(json),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-pet-growth-spark-v1')),
+    );
+    expect(
+      find.byKey(const Key('platform-evolvable-companions')),
+      findsNothing,
+    );
+  });
+
   testWidgets('multiple unlockable skills use English plural guidance', (
     WidgetTester tester,
   ) async {
