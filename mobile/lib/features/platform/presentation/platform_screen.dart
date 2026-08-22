@@ -723,6 +723,7 @@ class _PlatformBody extends StatelessWidget {
               return Semantics(
                 key: const Key('platform-cosmetics-collection-summary'),
                 container: true,
+                explicitChildNodes: true,
                 label: context.l10n.platformCosmeticsCollectionSemantics(
                   progress,
                   guidance,
