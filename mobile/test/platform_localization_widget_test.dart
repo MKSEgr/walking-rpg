@@ -39,7 +39,7 @@ void main() {
 
     expect(
       russian.platformQuestRewardsAvailable(21),
-      'Доступна 21 награда за задания',
+      'Доступна 21 награда за задание',
     );
   });
 
@@ -97,7 +97,7 @@ void main() {
 
     await _bringIntoView(
       tester,
-      find.byKey(const Key('platform-quest-compact-walk-3000')),
+      find.byKey(const Key('platform-claim-quest-walk-3000')),
     );
     expect(
       find.byKey(const Key('platform-claimable-quest-rewards')),
