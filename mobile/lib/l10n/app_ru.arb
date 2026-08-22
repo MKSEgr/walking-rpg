@@ -678,6 +678,7 @@
   "platformSpendEnergy": "Потратить {energy} ENERGY",
   "platformSeasonRewardLevel": "Награда уровня {level}",
   "platformSeasonRewardRemainingXp": "До награды уровня {level}: ещё {experience} сезонного XP",
+  "platformSeasonRewardsAvailable": "{count, plural, =1{Доступна 1 сезонная награда} one{Доступна {count} сезонная награда} few{Доступны {count} сезонные награды} many{Доступно {count} сезонных наград} other{Доступно {count} сезонной награды}}",
 
   "platformPetLevelSemantics": "{name} · уровень {level}",
   "platformInSquadBadge": "В отряде",

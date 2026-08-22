@@ -11,6 +11,35 @@ import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 import 'support/platform_fixture.dart';
 
 void main() {
+  testWidgets('claimable season rewards use English plural guidance', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(
+            seasonXp: 320,
+            achievements: const <String>['season-reward-1'],
+          ),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder guidance = find.text('2 season rewards available');
+    await _bringIntoView(tester, guidance);
+    expect(guidance, findsOneWidget);
+    expect(
+      find.bySemanticsLabel('2 season rewards available'),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
   testWidgets('current Platform catalog resolves every reviewed stable ID', (
     WidgetTester tester,
   ) async {

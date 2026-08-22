@@ -1473,6 +1473,12 @@
       "experience": {"type": "int"}
     }
   },
+  "platformSeasonRewardsAvailable": "{count, plural, =1{1 season reward available} other{{count} season rewards available}}",
+  "@platformSeasonRewardsAvailable": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
 
   "platformPetLevelSemantics": "{name} · level {level}",
   "@platformPetLevelSemantics": {

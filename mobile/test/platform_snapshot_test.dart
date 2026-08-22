@@ -51,6 +51,8 @@ void main() {
     expect(snapshot.onboardingProgressValue, closeTo(1 / 6, 0.0001));
     expect(snapshot.content.season.xpPerLevel, 100);
     expect(snapshot.claimableSeasonLevel, 2);
+    expect(snapshot.unclaimedSeasonRewardLevels, <int>[2]);
+    expect(snapshot.unclaimedSeasonRewardCount, 1);
     expect(snapshot.nextSeasonRewardLevel, 3);
     expect(snapshot.remainingSeasonXpToNextReward, 80);
     expect(snapshot.remoteConfig.sandboxPaymentsEnabled, isTrue);
@@ -288,6 +290,25 @@ void main() {
     expect(snapshot.claimableSeasonLevel, 10);
     expect(snapshot.nextSeasonRewardLevel, isNull);
     expect(snapshot.remainingSeasonXpToNextReward, isNull);
+    expect(
+      snapshot.unclaimedSeasonRewardLevels,
+      <int>[2, 3, 4, 5, 6, 7, 8, 9, 10],
+    );
+  });
+
+  test('counts only earned unclaimed season reward receipts', () {
+    final PlatformSnapshot snapshot = platformSnapshot(
+      seasonXp: 425,
+      achievements: const <String>[
+        'season-reward-1',
+        'season-reward-3',
+        'season-level-3',
+        'season-reward-future',
+      ],
+    );
+
+    expect(snapshot.unclaimedSeasonRewardLevels, <int>[2, 4]);
+    expect(snapshot.unclaimedSeasonRewardCount, 2);
   });
 
   test('starts the next season reward threshold after an exact boundary', () {
@@ -319,6 +340,8 @@ void main() {
     expect(snapshot.claimableSeasonLevel, 2);
     expect(snapshot.nextSeasonRewardLevel, isNull);
     expect(snapshot.remainingSeasonXpToNextReward, isNull);
+    expect(snapshot.unclaimedSeasonRewardLevels, isNull);
+    expect(snapshot.unclaimedSeasonRewardCount, isNull);
   });
 
   test('rejects a non-positive season XP threshold', () {

@@ -346,6 +346,13 @@ passing the final threshold removes the line. A legacy cached catalog without
 inferred guidance. The line does not describe reward contents or alter the
 seal, claim command or server-owned eligibility.
 
+When one or more earned levels have no accepted `season-reward-N` receipt, the
+same summary adds one neutral RU/EN count. The count is bounded by the accepted
+season cadence and final catalog level; non-season achievement IDs do not
+participate. Zero and legacy cadence-absent states stay silent. The visible
+line owns one explicit semantics container and does not change the existing
+first-unclaimed claim button, reward contents or order.
+
 ## Squad formation signal
 
 The journal turns accepted squad membership into a quiet resonance formation

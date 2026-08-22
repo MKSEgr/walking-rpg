@@ -1805,6 +1805,27 @@ catalog field; persisted state, reward contents и command protocol не мен�
 **Статус:** first-journey remaining guidance реализована как mobile projection
 двух accepted Platform полей без переноса onboarding rules на клиент.
 
+### US-075. Видеть число доступных сезонных наград
+
+Как игрок, я хочу видеть, сколько уже заработанных сезонных наград ещё не
+получено, чтобы понимать доступный результат без ручного подсчёта уровней.
+
+Критерии:
+
+- earned boundary выводится только из accepted season XP, positive catalog
+  `xpPerLevel` и final season level;
+- accepted `season-reward-N` receipts исключают уже полученные уровни, а
+  unrelated/future achievement IDs не влияют на count;
+- положительный count получает короткую RU/EN singular/plural строку, нулевой
+  и legacy cadence-absent state не создают шум или fake guidance;
+- существующая кнопка по-прежнему получает первый доступный уровень и не
+  меняет claim order, payload или reward contents;
+- visible guidance объявляется одной semantics node; domain, RU/EN и compact
+  large-text coverage фиксируют boundary.
+
+**Статус:** claimable season reward count реализован как mobile projection
+accepted cadence и receipt IDs без изменения backend/API или claim command.
+
 Технически реализованы:
 
 - первая глава из 18 основных узлов и staged optional topology вплоть до
