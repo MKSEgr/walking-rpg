@@ -578,6 +578,7 @@
   "platformEnergyControl": "ENERGY расходуется на экспедицию и недельный маршрут.",
   "platformPetsTitle": "Питомцы",
   "platformPetsSubtitle": "Выберите спутника и развивайте связь.",
+  "platformCompanionsReadyToEvolve": "{count, plural, one{К эволюции готов {count} питомец} few{К эволюции готовы {count} питомца} many{К эволюции готовы {count} питомцев} other{К эволюции готовы {count} питомца}}",
   "platformSkillsTitle": "Навыки пилота",
   "platformSkillsSubtitle": "Навыки открываются за сезонный опыт.",
   "platformSkillsCollectionProgress": "Открыто навыков: {unlocked} из {total}",

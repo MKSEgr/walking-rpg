@@ -1859,6 +1859,23 @@ XP, чтобы не искать доступные действия среди 
 **Статус:** unlockable pilot skill count реализован как mobile projection
 accepted catalog thresholds и user state без изменения backend/API.
 
+### US-080. Видеть число питомцев, готовых к эволюции
+
+Как игрок, я хочу видеть, сколько питомцев уже готовы к эволюции, чтобы не
+искать доступные действия среди всех карточек спутников.
+
+Критерии:
+
+- ready count включает только accepted pets с существующим `canEvolve == true`;
+- growing и fully evolved pets не входят в count;
+- положительный count получает короткую RU/EN singular/plural строку, zero не
+  создаёт шум или fake evolution promise;
+- visible guidance объявляется одной semantics node;
+- bond thresholds, maximum stage, evolution command и rewards не меняются.
+
+**Статус:** evolvable companion count реализован как mobile projection
+accepted pet state без изменения backend/API или progression rules.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

@@ -12,6 +12,7 @@ void main() {
     expect(snapshot.userState.pets, hasLength(3));
     expect(snapshot.activePet.petId, 'spark-v1');
     expect(snapshot.activePet.canEvolve, isTrue);
+    expect(snapshot.evolvableCompanionCount, 1);
     expect(snapshot.activePet.maximumEvolutionStage, 1);
     expect(snapshot.activePet.isFullyEvolved, isFalse);
     expect(snapshot.activePet.remainingEvolutionBond, 0);
@@ -19,6 +20,27 @@ void main() {
       (PlatformPet pet) => pet.petId == 'moss-v1',
     );
     expect(moss.remainingEvolutionBond, 33);
+    final Map<String, dynamic> multipleEvolvableJson = platformSnapshotJson();
+    final Map<String, dynamic> multipleEvolvableState =
+        multipleEvolvableJson['userState']! as Map<String, dynamic>;
+    final List<dynamic> multipleEvolvablePets =
+        multipleEvolvableState['pets']! as List<dynamic>;
+    (multipleEvolvablePets[1] as Map<String, dynamic>)['bond'] = 45;
+    final PlatformSnapshot multipleEvolvable = PlatformSnapshot.fromJson(
+      multipleEvolvableJson,
+    );
+    expect(multipleEvolvable.evolvableCompanionCount, 2);
+
+    final Map<String, dynamic> zeroEvolvableJson = platformSnapshotJson();
+    final Map<String, dynamic> zeroEvolvableState =
+        zeroEvolvableJson['userState']! as Map<String, dynamic>;
+    final List<dynamic> zeroEvolvablePets =
+        zeroEvolvableState['pets']! as List<dynamic>;
+    (zeroEvolvablePets[0] as Map<String, dynamic>)['evolutionStage'] = 1;
+    final PlatformSnapshot zeroEvolvable = PlatformSnapshot.fromJson(
+      zeroEvolvableJson,
+    );
+    expect(zeroEvolvable.evolvableCompanionCount, 0);
     expect(snapshot.weeklyRouteRemaining, 60);
     expect(snapshot.unlockedCatalogAchievementCount, 0);
     expect(snapshot.remainingCatalogAchievementCount, 2);

@@ -1008,6 +1008,10 @@
   "platformEnergyControl": "ENERGY powers expeditions and the weekly route.",
   "platformPetsTitle": "Companions",
   "platformPetsSubtitle": "Choose a companion and strengthen your bond.",
+  "platformCompanionsReadyToEvolve": "{count, plural, =1{1 companion ready to evolve} other{{count} companions ready to evolve}}",
+  "@platformCompanionsReadyToEvolve": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "platformSkillsTitle": "Pilot skills",
   "platformSkillsSubtitle": "Skills unlock through season XP.",
   "platformSkillsCollectionProgress": "Skills unlocked: {unlocked} of {total}",

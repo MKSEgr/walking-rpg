@@ -1418,6 +1418,7 @@ void main() {
       Key('platform-weekly-route-compact'),
       Key('weekly-route-signal-weekly-route-1-firstSignal'),
       Key('season-reward-seal-signal-season-1-2-firstSignal'),
+      Key('platform-evolvable-companions'),
       Key('platform-pet-compact-spark-v1'),
       Key('platform-pet-compact-moss-v1'),
       Key('platform-skills-collection-summary'),
@@ -1443,6 +1444,9 @@ void main() {
           find.text('1 из 2 в коллекции · До полной коллекции: 1 образ'),
           findsOneWidget,
         );
+      }
+      if (key == const Key('platform-evolvable-companions')) {
+        expect(find.text('К эволюции готов 1 питомец'), findsOneWidget);
       }
       if (key == const Key('platform-skills-collection-summary')) {
         expect(
