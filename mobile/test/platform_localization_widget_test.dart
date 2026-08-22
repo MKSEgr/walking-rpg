@@ -690,9 +690,12 @@ void main() {
       tester,
       find.byKey(const Key('platform-cosmetics-collection-summary')),
     );
+    final Semantics collectionSummary = tester.widget<Semantics>(
+      find.byKey(const Key('platform-cosmetics-collection-summary')),
+    );
     expect(
-      find.bySemanticsLabel('1 of 2 collected. 1 cosmetic left to collect'),
-      findsOneWidget,
+      collectionSummary.properties.label,
+      '1 of 2 collected. 1 cosmetic left to collect',
     );
     expect(
       find.text('1 of 2 collected · 1 cosmetic left to collect'),
