@@ -108,6 +108,12 @@ class PlatformSnapshot {
     return content.onboardingSteps.length - completedCatalogOnboardingStepCount;
   }
 
+  int get claimableQuestRewardCount {
+    return userState.quests
+        .where((PlatformQuest quest) => quest.ready && !quest.claimed)
+        .length;
+  }
+
   int get weeklyRouteRemaining {
     final int remaining =
         userState.weeklyRouteRequiredEnergy - userState.weeklyRouteProgress;

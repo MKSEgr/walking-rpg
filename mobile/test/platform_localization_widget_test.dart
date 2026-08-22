@@ -34,6 +34,77 @@ void main() {
     );
   });
 
+  test('Russian quest reward count covers the one plural category', () {
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      russian.platformQuestRewardsAvailable(21),
+      'Доступна 21 награда за задание',
+    );
+  });
+
+  testWidgets('multiple claimable quests use English plural guidance', (
+    WidgetTester tester,
+  ) async {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState =
+        json['userState']! as Map<String, dynamic>;
+    final List<dynamic> quests = userState['quests']! as List<dynamic>;
+    (quests[1] as Map<String, dynamic>)['ready'] = true;
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => PlatformSnapshot.fromJson(json),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder guidance = find.byKey(
+      const Key('platform-claimable-quest-rewards'),
+    );
+    await _bringIntoView(tester, guidance);
+    expect(find.text('2 quest rewards available'), findsOneWidget);
+    expect(find.bySemanticsLabel('2 quest rewards available'), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('zero claimable quests omit aggregate guidance', (
+    WidgetTester tester,
+  ) async {
+    final Map<String, dynamic> json = platformSnapshotJson();
+    final Map<String, dynamic> userState =
+        json['userState']! as Map<String, dynamic>;
+    final List<dynamic> quests = userState['quests']! as List<dynamic>;
+    (quests[0] as Map<String, dynamic>)['claimed'] = true;
+
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => PlatformSnapshot.fromJson(json),
+          homeLoader: () async => HomeSnapshot.demo,
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-claim-quest-walk-3000')),
+    );
+    expect(
+      find.byKey(const Key('platform-claimable-quest-rewards')),
+      findsNothing,
+    );
+  });
+
   testWidgets('complete skill collection uses calm English guidance', (
     WidgetTester tester,
   ) async {
@@ -741,6 +812,13 @@ void main() {
       find.byKey(const Key('platform-unlock-skill-trail-memory')),
     );
     expect(unavailableSkillButton.onPressed, isNull);
+
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-claimable-quest-rewards')),
+    );
+    expect(find.text('1 quest reward available'), findsOneWidget);
+    expect(find.bySemanticsLabel('1 quest reward available'), findsOneWidget);
 
     await _bringIntoView(
       tester,

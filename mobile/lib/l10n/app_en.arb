@@ -1037,6 +1037,10 @@
       "events": {"type": "int"}
     }
   },
+  "platformQuestRewardsAvailable": "{count, plural, =1{1 quest reward available} other{{count} quest rewards available}}",
+  "@platformQuestRewardsAvailable": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "platformCosmeticsTitle": "Cosmetics",
   "platformSandboxPurchasesAvailable": "Purchases use the sandbox provider.",
   "platformPurchasesUnavailable": "Purchases are currently unavailable.",
