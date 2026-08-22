@@ -93,3 +93,4 @@ NNNN-short-title.md
 - [0074 — authoritative cosmetic collection guidance](0074-authoritative-cosmetic-collection-guidance.md)
 - [0075 — authoritative pilot skill collection guidance](0075-authoritative-pilot-skill-collection-guidance.md)
 - [0076 — authoritative claimable quest reward count](0076-authoritative-claimable-quest-reward-count.md)
+- [0077 — authoritative unlockable pilot skill count](0077-authoritative-unlockable-pilot-skill-count.md)

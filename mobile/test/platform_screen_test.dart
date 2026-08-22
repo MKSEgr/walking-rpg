@@ -1421,6 +1421,7 @@ void main() {
       Key('platform-pet-compact-spark-v1'),
       Key('platform-pet-compact-moss-v1'),
       Key('platform-skills-collection-summary'),
+      Key('platform-unlockable-skills'),
       Key('platform-skill-compact-steady-step'),
       Key('platform-skill-compact-trail-memory'),
       Key('platform-claimable-quest-rewards'),
@@ -1448,6 +1449,9 @@ void main() {
           find.text('Открыто навыков: 1 из 2 · До полной коллекции: 1 навык'),
           findsOneWidget,
         );
+      }
+      if (key == const Key('platform-unlockable-skills')) {
+        expect(find.text('Можно открыть 1 навык'), findsOneWidget);
       }
       if (key == const Key('platform-claimable-quest-rewards')) {
         expect(find.text('Доступна 1 награда за задание'), findsOneWidget);

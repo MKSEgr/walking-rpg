@@ -584,6 +584,7 @@
   "platformSkillsCollectionRemaining": "{remaining, plural, =1{До полной коллекции: 1 навык} one{До полной коллекции: {remaining} навык} few{До полной коллекции: {remaining} навыка} many{До полной коллекции: {remaining} навыков} other{До полной коллекции: {remaining} навыка}}",
   "platformSkillsCollectionComplete": "Все навыки пилота открыты",
   "platformSkillsCollectionSemantics": "{progress}. {guidance}",
+  "platformSkillsAvailableToUnlock": "{count, plural, one{Можно открыть {count} навык} few{Можно открыть {count} навыка} many{Можно открыть {count} навыков} other{Можно открыть {count} навыка}}",
   "platformQuestsTitle": "Задания",
   "platformQuestSummary": "{steps} шагов · {events} событий",
   "platformQuestRewardsAvailable": "{count, plural, one{Доступна {count} награда за задание} few{Доступны {count} награды за задания} many{Доступно {count} наград за задания} other{Доступно {count} награды за задания}}",

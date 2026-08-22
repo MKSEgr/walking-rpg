@@ -78,6 +78,9 @@
 
 ### Added
 
+- exact RU/EN count of accepted pilot skills ready to unlock from current
+  season XP, without changing thresholds or unlock behavior;
+
 - exact RU/EN count of completed quest rewards ready to claim, derived only
   from accepted ready/unclaimed quest projections without changing rewards;
 
