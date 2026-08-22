@@ -727,12 +727,11 @@ class _PlatformBody extends StatelessWidget {
                   progress,
                   guidance,
                 ),
-                child: ExcludeSemantics(
-                  child: Text(
-                    '$progress · $guidance',
-                    key: const Key('platform-cosmetics-collection-guidance'),
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
+                excludeSemantics: true,
+                child: Text(
+                  '$progress · $guidance',
+                  key: const Key('platform-cosmetics-collection-guidance'),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               );
             },
