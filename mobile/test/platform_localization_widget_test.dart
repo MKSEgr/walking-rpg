@@ -70,10 +70,7 @@ void main() {
     );
     await _bringIntoView(tester, guidance);
     expect(find.text('2 quest rewards available'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('2 quest rewards available'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('2 quest rewards available'), findsOneWidget);
     semantics.dispose();
   });
 
@@ -821,10 +818,7 @@ void main() {
       find.byKey(const Key('platform-claimable-quest-rewards')),
     );
     expect(find.text('1 quest reward available'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('1 quest reward available'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('1 quest reward available'), findsOneWidget);
 
     await _bringIntoView(
       tester,
