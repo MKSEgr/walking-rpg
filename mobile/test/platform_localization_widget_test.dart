@@ -695,10 +695,10 @@ void main() {
     );
     expect(
       collectionSummary.properties.label,
-      '1 of 2 collected. 1 cosmetic left to collect',
+      '1 of 4 collected. 3 cosmetics left to collect',
     );
     expect(
-      find.text('1 of 2 collected · 1 cosmetic left to collect'),
+      find.text('1 of 4 collected · 3 cosmetics left to collect'),
       findsOneWidget,
     );
     await _bringIntoView(
