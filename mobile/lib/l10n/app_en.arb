@@ -901,6 +901,10 @@
   "homeUnequip": "Remove",
   "homeInventoryTitle": "Inventory",
   "homeInventorySubtitle": "Materials and unique finds.",
+  "homeInventoryItemsReadyToEquip": "{count, plural, =1{1 item ready to equip} other{{count} items ready to equip}}",
+  "@homeInventoryItemsReadyToEquip": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "homeItemLevel": "{name} · level {level}{rarity}",
   "@homeItemLevel": {
     "placeholders": {

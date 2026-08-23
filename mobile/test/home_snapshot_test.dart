@@ -2790,6 +2790,53 @@ void main() {
     expect(gated.requirement?.minimumUpgradeLevel, 2);
   });
 
+  test('equippable inventory count trusts accepted equipment identities', () {
+    Map<String, dynamic> item({
+      required String itemId,
+      String? itemInstanceId,
+      String? equippableSlotId,
+      String? equippedSlotId,
+    }) {
+      return <String, dynamic>{
+        'itemId': itemId,
+        'name': itemId,
+        'description': 'Accepted inventory item.',
+        'quantity': 1,
+        'version': 1,
+        'kind': itemInstanceId == null ? 'MATERIAL' : 'UNIQUE',
+        'itemInstanceId': itemInstanceId,
+        'equippableSlotId': equippableSlotId,
+        'equippedSlotId': equippedSlotId,
+      };
+    }
+
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['inventory'] = <Map<String, dynamic>>[
+      item(itemId: 'material'),
+      item(itemId: 'slot-only', equippableSlotId: 'NAVIGATION'),
+      item(
+        itemId: 'equipped',
+        itemInstanceId: '11111111-1111-1111-1111-111111111111',
+        equippableSlotId: 'NAVIGATION',
+        equippedSlotId: 'NAVIGATION',
+      ),
+      item(
+        itemId: 'ready-a',
+        itemInstanceId: '22222222-2222-2222-2222-222222222222',
+        equippableSlotId: 'NAVIGATION',
+      ),
+      item(
+        itemId: 'ready-b',
+        itemInstanceId: '33333333-3333-3333-3333-333333333333',
+        equippableSlotId: 'UTILITY',
+      ),
+    ];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.equippableInventoryItemCount, 2);
+  });
+
   test('legacy choice requirement defaults to upgrade level one', () {
     final HomeChoiceRequirement requirement =
         HomeChoiceRequirement.fromJson(<String, dynamic>{

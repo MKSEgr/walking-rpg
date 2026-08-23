@@ -508,6 +508,7 @@
   "homeUnequip": "Снять",
   "homeInventoryTitle": "Инвентарь",
   "homeInventorySubtitle": "Материалы и уникальные находки.",
+  "homeInventoryItemsReadyToEquip": "{count, plural, one{Можно экипировать {count} предмет} few{Можно экипировать {count} предмета} many{Можно экипировать {count} предметов} other{Можно экипировать {count} предмета}}",
   "homeItemLevel": "{name} · уровень {level}{rarity}",
   "homeItemQuantity": "{name} × {quantity}",
   "homeEquipped": "Экипировано",

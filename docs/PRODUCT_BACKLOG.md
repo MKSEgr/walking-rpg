@@ -1935,6 +1935,26 @@ server-authored recipe status без изменения backend/API или craft
 **Статус:** ready item upgrade count реализован как mobile projection accepted
 server-authored upgrade status без изменения backend/API или upgrade economy.
 
+### US-084. Видеть число предметов инвентаря, доступных для экипировки
+
+Как игрок, я хочу видеть, сколько предметов инвентаря сейчас можно
+экипировать, чтобы не искать доступные действия среди материалов и находок.
+
+Критерии:
+
+- count включает только accepted inventory items, для которых существующая
+  projection `isEquippable` истинна, а `isEquipped` ложна;
+- materials/non-equippable и уже equipped items не входят в count;
+- mobile не пересчитывает availability по состоянию equipment slot, kind,
+  rarity, level или собственным ownership rules;
+- положительный count получает короткую RU/EN singular/plural строку, zero не
+  создаёт шум или fake availability promise;
+- visible guidance объявляется одной semantics node;
+- equipment slots, route requirements и equip command не меняются.
+
+**Статус:** equippable inventory item count реализован как mobile projection
+accepted item identities без изменения backend/API или equipment command.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

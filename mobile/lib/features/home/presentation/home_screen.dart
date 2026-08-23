@@ -1194,6 +1194,8 @@ class _HomeBody extends StatelessWidget {
                     const SizedBox(height: 12),
                     _InventoryCard(
                       items: snapshot.inventory,
+                      equippableItemCount:
+                          snapshot.equippableInventoryItemCount,
                       readOnly: readOnly,
                       busy: gameplayActionBlocked,
                       changing: isChangingEquipment,
@@ -2653,6 +2655,7 @@ class _EquipmentCard extends StatelessWidget {
 class _InventoryCard extends StatelessWidget {
   const _InventoryCard({
     required this.items,
+    required this.equippableItemCount,
     required this.readOnly,
     required this.busy,
     required this.changing,
@@ -2660,6 +2663,7 @@ class _InventoryCard extends StatelessWidget {
   });
 
   final List<HomeInventoryItem> items;
+  final int equippableItemCount;
   final bool readOnly;
   final bool busy;
   final bool changing;
@@ -2676,6 +2680,23 @@ class _InventoryCard extends StatelessWidget {
             subtitle: context.l10n.homeInventorySubtitle,
             icon: Icons.inventory_2_outlined,
           ),
+          if (equippableItemCount > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('home-equippable-inventory-items'),
+              container: true,
+              label: context.l10n.homeInventoryItemsReadyToEquip(
+                equippableItemCount,
+              ),
+              excludeSemantics: true,
+              child: Text(
+                context.l10n.homeInventoryItemsReadyToEquip(
+                  equippableItemCount,
+                ),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           for (final HomeInventoryItem item in items) ...<Widget>[
             _IllustratedItemIdentity(

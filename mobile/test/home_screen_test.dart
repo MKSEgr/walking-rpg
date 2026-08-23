@@ -1781,6 +1781,7 @@ void main() {
   testWidgets('equipment unlocks and unequip locks resonance route', (
     WidgetTester tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     int loads = 0;
     int keys = 0;
     final List<String> actions = <String>[];
@@ -1826,6 +1827,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(impressions, isEmpty);
     expect(
+      find.byKey(const Key('home-equippable-inventory-items')),
+      findsOneWidget,
+    );
+    expect(find.text('Можно экипировать 1 предмет'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Можно экипировать 1 предмет'),
+      findsOneWidget,
+    );
+    expect(
       find.byKey(
         const Key('equipment-mount-signal-NAVIGATION-navigation-empty-EMPTY'),
       ),
@@ -1859,6 +1869,10 @@ void main() {
     expect(itemInstanceIds, <String?>['33333333-3333-3333-3333-333333333333']);
     expect(idempotencyKeys, <String>['equipment-key-1']);
     expect(loads, 2);
+    expect(
+      find.byKey(const Key('home-equippable-inventory-items')),
+      findsNothing,
+    );
     expect(
       find.byKey(
         const Key(
@@ -1907,6 +1921,50 @@ void main() {
       'compass-impression-chapter-1-v2-'
           'route-mirror-delta-v1-follow-resonance-ROUTE_AVAILABLE',
     ]);
+    expect(
+      find.byKey(const Key('home-equippable-inventory-items')),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('equippable inventory guidance reflows on compact large text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(
+          loader: () async => _resonanceEventReady(equipped: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('inventory-equip-resonance-compass')),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('home-equippable-inventory-items')),
+      findsOneWidget,
+    );
+    expect(find.text('Можно экипировать 1 предмет'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('current READY event localizes on compact enlarged text', (
