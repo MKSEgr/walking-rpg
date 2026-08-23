@@ -103,3 +103,4 @@ NNNN-short-title.md
 - [0084 — authoritative equipped slot progress](0084-authoritative-equipped-slot-progress.md)
 - [0085 — authoritative discovered route node count](0085-authoritative-discovered-route-node-count.md)
 - [0086 — authoritative current-journey decision count](0086-authoritative-current-journey-decision-count.md)
+- [0087 — latest accepted current-journey decision](0087-latest-accepted-current-journey-decision.md)

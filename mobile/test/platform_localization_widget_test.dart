@@ -681,7 +681,13 @@ void main() {
         '2026-08-19T10:00:00Z',
         russian: locale.languageCode == 'ru',
       );
-      expect(find.text(currentDecisionLabel), findsOneWidget);
+      expect(
+        find.descendant(
+          of: currentDecision,
+          matching: find.text(currentDecisionLabel),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const Key('platform-journey-decision-legacy-event-v1-time')),
         findsOneWidget,
@@ -1262,7 +1268,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Route decisions'), findsOneWidget);
-    expect(find.text('Сигнал прошлого'), findsOneWidget);
+    final Finder latest = find.byKey(
+      const Key('platform-current-journey-latest-decision'),
+    );
+    expect(latest, findsOneWidget);
     expect(find.text('Сохранённый выбор'), findsOneWidget);
     expect(find.text('Сохранённый исход'), findsOneWidget);
     final Finder decision = find.byKey(
@@ -1274,7 +1283,28 @@ void main() {
       '2026-08-19T10:00:00Z',
       russian: false,
     );
-    expect(find.text(resolvedAt), findsOneWidget);
+    expect(
+      find.descendant(of: decision, matching: find.text(resolvedAt)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: latest, matching: find.text('Latest saved decision')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: latest,
+        matching: find.text('Сигнал прошлого → Сохранённый исход'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Latest saved decision in the current journey. Сигнал прошлого. '
+        'Outcome: Сохранённый исход. $resolvedAt.',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Entry 1 of 1. Сигнал прошлого. Decision: Сохранённый выбор. '
@@ -1285,7 +1315,7 @@ void main() {
   });
 
   testWidgets(
-    'current journey decision count reflows in English at compact large text',
+    'latest current journey decision reflows in English at compact large text',
     (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1312,6 +1342,37 @@ void main() {
       );
       expect(find.text('Decisions made: 1'), findsOneWidget);
       expect(find.bySemanticsLabel('Decisions made: 1'), findsNothing);
+      final Finder latest = find.byKey(
+        const Key('platform-current-journey-latest-decision'),
+      );
+      await _bringIntoView(tester, latest);
+      final String resolvedAt = _formattedDecisionTime(
+        tester,
+        latest,
+        '2026-08-19T10:00:00Z',
+        russian: false,
+      );
+      expect(
+        find.descendant(
+          of: latest,
+          matching: find.text('Latest saved decision'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: latest,
+          matching: find.text('Сигнал прошлого → Сохранённый исход'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Latest saved decision in the current journey. Сигнал прошлого. '
+          'Outcome: Сохранённый исход. $resolvedAt.',
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
 
       semantics.dispose();

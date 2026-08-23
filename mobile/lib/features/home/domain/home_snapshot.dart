@@ -243,6 +243,9 @@ class HomeSnapshot {
 
   int get acceptedJourneyDecisionCount => decisionLog.length;
 
+  HomeExpeditionDecisionLogEntry? get lastAcceptedJourneyDecision =>
+      decisionLog.isEmpty ? null : decisionLog.last;
+
   int get craftableRecipeCount {
     return craftingRecipes
         .where((HomeCraftingRecipe recipe) => recipe.canCraft)

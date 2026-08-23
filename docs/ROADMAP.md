@@ -1408,6 +1408,22 @@ server-authoritative current-journey state из ADR 0038 через ADR 0086 б�
 изменения Home API, backend, persistence, event ordering, immutable
 `alpha-rc1` или внешних gates.
 
+## Milestone 73 — Latest accepted current-journey decision
+
+### CODE_COMPLETE
+
+- [x] Mobile выбирает только последний элемент accepted `decisionLog`
+- [x] Server list ordering сохраняется без сортировки по `resolvedAt`, join с
+      `routeTrail` или вывода event completion
+- [x] Непустой журнал показывает literal event/outcome и accepted save time в
+      RU/EN; legacy/empty state не создаёт fake latest summary
+- [x] Domain, RU/EN semantics и compact large-text coverage фиксируют boundary
+      без изменения Home API, backend, persistence или event resolution
+
+Milestone 73 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0087 без
+изменения rewards, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

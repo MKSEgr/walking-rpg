@@ -78,6 +78,9 @@
 
 ### Added
 
+- latest accepted current-journey decision summary in RU/EN, preserving the
+  server list order and literal event/outcome history without client sorting;
+
 - visible RU/EN accepted-decision count for the current-journey journal,
   preserving entry ordering and its existing accessibility total;
 

@@ -160,6 +160,37 @@ void main() {
     );
     expect(find.text('Принято решений: 2'), findsOneWidget);
     expect(find.bySemanticsLabel('Принято решений: 2'), findsNothing);
+    final Finder latest = find.byKey(
+      const Key('platform-current-journey-latest-decision'),
+    );
+    expect(latest, findsOneWidget);
+    final String latestResolvedAt = _formattedDecisionTime(
+      tester,
+      latest,
+      '2026-07-26T06:12:00Z',
+      russian: true,
+    );
+    expect(
+      find.descendant(
+        of: latest,
+        matching: find.text('Последнее сохранённое решение'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: latest,
+        matching: find.text('Люминовые ворота → Ровный импульс'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Последнее сохранённое решение текущего похода. '
+        'Люминовые ворота. Итог: Ровный импульс. $latestResolvedAt.',
+      ),
+      findsOneWidget,
+    );
     final Finder journey = find.byKey(
       const Key('platform-journey-decision-journey'),
     );
@@ -196,7 +227,10 @@ void main() {
       russian: true,
     );
     expect(find.text('Люминовые ворота'), findsOneWidget);
-    expect(find.text(secondResolvedAt), findsOneWidget);
+    expect(
+      find.descendant(of: second, matching: find.text(secondResolvedAt)),
+      findsOneWidget,
+    );
     expect(find.text('+18 XP пилота'), findsOneWidget);
     expect(find.text('Мох · +14 связи'), findsOneWidget);
     expect(tester.getTopLeft(first).dy, lessThan(tester.getTopLeft(second).dy));
@@ -1016,6 +1050,10 @@ void main() {
     expect(find.text('Решения маршрута'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-current-journey-decision-count')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('platform-current-journey-latest-decision')),
       findsNothing,
     );
     expect(
