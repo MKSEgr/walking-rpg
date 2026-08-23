@@ -78,6 +78,9 @@
 
 ### Added
 
+- authoritative positive available-choice count for the current-journey READY
+  event in RU/EN, excluding server-locked choices without rechecking rules;
+
 - authoritative RU/EN current-journey READY event summary from the accepted
   event and stable identity, sharing one semantic announcement with its title;
 

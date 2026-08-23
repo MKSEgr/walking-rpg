@@ -1068,6 +1068,13 @@ One semantics node announces title and summary together; absent, resolved and
 unknown-status events create no placeholder, and neighboring journey facts
 never substitute for the event.
 
+When that READY event contains at least one server-available choice, the same
+compact block adds the localized positive count below its summary. Locked
+choices retain their server-owned state and do not increase the count; mobile
+does not re-evaluate requirements. The existing event semantics node announces
+title, summary and count once, while legacy/empty and locked-only lists add no
+count or journal action.
+
 Each entry uses a numbered code-native signal, a decision arrow and separate
 outcome typography. Compact reward chips repeat the literal pilot XP, named
 companion bond and optional material quantity saved with that decision; they

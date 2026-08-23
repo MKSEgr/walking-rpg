@@ -2221,6 +2221,26 @@ projection accepted `unlockedEvent`.
 **Статус:** current READY event summary реализован как stable-ID-aware mobile
 projection accepted `unlockedEvent` рядом с его authoritative title.
 
+### US-099. Видеть число доступных вариантов текущего события
+
+Как игрок, я хочу видеть число доступных вариантов READY-события в журнале,
+чтобы заранее понимать объём ожидающего решения.
+
+Критерии:
+
+- count читается только из `unlockedEvent` со status exact `READY`;
+- учитываются только choices с accepted server-owned `availability=AVAILABLE`,
+  locked choices не увеличивают count и requirements не проверяются повторно;
+- positive count виден в RU/EN, а legacy/empty, locked-only, absent,
+  `RESOLVED` и unknown status не создают count;
+- phase, current node, ENERGY progress, route trail, decision log, topology и
+  catalog rules не используются для восстановления choices;
+- title, summary и count объявляются одной semantics node; journal не получает
+  actions, а compact large-text coverage не меняет API/backend/commands.
+
+**Статус:** positive current READY event choice count реализован как mobile
+projection accepted choice availability без client-owned eligibility rules.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

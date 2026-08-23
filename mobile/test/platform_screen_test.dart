@@ -159,6 +159,23 @@ void main() {
         title: 'Server signal title',
         summary: 'Server signal summary',
         status: 'READY',
+        choices: <HomeEventChoice>[
+          HomeEventChoice(
+            choiceId: 'available-a',
+            title: 'Available A',
+            description: 'Accepted available choice.',
+            pilotExperienceReward: 0,
+            petBondReward: 0,
+          ),
+          HomeEventChoice(
+            choiceId: 'locked',
+            title: 'Locked',
+            description: 'Accepted locked choice.',
+            pilotExperienceReward: 0,
+            petBondReward: 0,
+            availability: 'LOCKED',
+          ),
+        ],
       ),
     );
 
@@ -195,10 +212,12 @@ void main() {
     expect(find.bySemanticsLabel('Прогресс ENERGY: 0 из 30'), findsOneWidget);
     expect(find.text('Текущее событие: Источник сигнала'), findsOneWidget);
     expect(find.text('О событии: Маяк отвечает импульсом.'), findsOneWidget);
+    expect(find.text('Доступен 1 вариант'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Текущее событие: Источник сигнала. '
-        'О событии: Маяк отвечает импульсом.',
+        'О событии: Маяк отвечает импульсом.\n'
+        'Доступен 1 вариант',
       ),
       findsOneWidget,
     );
