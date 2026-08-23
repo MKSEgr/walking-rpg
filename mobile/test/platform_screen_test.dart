@@ -92,6 +92,12 @@ void main() {
     expect(find.byKey(const Key('platform-journal-hero')), findsOneWidget);
     expect(find.byKey(const Key('platform-journey-archive')), findsNothing);
     expect(
+      find.byKey(const Key('platform-current-journey-phase')),
+      findsOneWidget,
+    );
+    expect(find.text('Journey in progress'), findsOneWidget);
+    expect(find.bySemanticsLabel('Journey in progress'), findsOneWidget);
+    expect(
       find.byKey(const Key('platform-current-journey-started-at')),
       findsNothing,
     );
@@ -136,6 +142,7 @@ void main() {
         ),
       ],
       journeyNumber: 4,
+      expeditionStatus: 'EVENT_READY',
       journeyStartedAt: '2026-07-26T05:30:00Z',
     );
 
@@ -161,6 +168,8 @@ void main() {
     );
 
     expect(log, findsOneWidget);
+    expect(find.text('Доступно решение'), findsOneWidget);
+    expect(find.bySemanticsLabel('Доступно решение'), findsOneWidget);
     final Finder journeyStartedAt = find.byKey(
       const Key('platform-current-journey-started-at'),
     );
@@ -382,6 +391,8 @@ void main() {
     await _bringIntoView(tester, recap);
 
     expect(recap, findsOneWidget);
+    expect(find.text('Поход завершён'), findsOneWidget);
+    expect(find.bySemanticsLabel('Поход завершён'), findsOneWidget);
     expect(find.text('Итог похода'), findsOneWidget);
     expect(find.text('ПОХОД №4 ЗАВЕРШЁН'), findsOneWidget);
     expect(

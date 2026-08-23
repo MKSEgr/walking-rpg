@@ -108,3 +108,4 @@ NNNN-short-title.md
 - [0089 — latest accepted current-journey outcome summary](0089-latest-accepted-current-journey-outcome-summary.md)
 - [0090 — latest accepted current-journey rewards](0090-latest-accepted-current-journey-rewards.md)
 - [0091 — authoritative current-journey start time](0091-authoritative-current-journey-start-time.md)
+- [0092 — authoritative current-journey phase](0092-authoritative-current-journey-phase.md)

@@ -78,6 +78,9 @@
 
 ### Added
 
+- authoritative RU/EN current-journey phase from the accepted Home status,
+  without client inference from energy, events, routes or decisions;
+
 - authoritative nullable current-journey start time in Home and the RU/EN
   journal, preserving legacy omission without client duration inference;
 

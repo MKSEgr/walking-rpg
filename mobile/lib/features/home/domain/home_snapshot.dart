@@ -110,6 +110,15 @@ class HomeSnapshot {
       );
     }
     final String expeditionStatus = _readString(expedition, 'status');
+    if (!const <String>{
+      'IN_PROGRESS',
+      'EVENT_READY',
+      'COMPLETED',
+    }.contains(expeditionStatus)) {
+      throw const FormatException(
+        'expedition.status должен быть IN_PROGRESS, EVENT_READY или COMPLETED',
+      );
+    }
     final Object? completionRecapJson = expedition['completionRecap'];
     final HomeExpeditionCompletionRecap? completionRecap =
         completionRecapJson == null

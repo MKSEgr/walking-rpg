@@ -302,6 +302,15 @@ void main() {
     expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
+  test('current journey rejects an unknown authoritative status', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['status'] = 'WAITING_FOR_CLIENT';
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
+  });
+
   test('last accepted journey decision preserves server list ordering', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     final Map<String, dynamic> expedition =

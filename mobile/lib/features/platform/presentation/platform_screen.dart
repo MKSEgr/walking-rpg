@@ -1809,6 +1809,15 @@ String _journeyStartedTimeLabel(BuildContext context, String startedAt) {
   return context.l10n.platformJourneyStartedAt(local.date, local.time);
 }
 
+String _journeyPhaseLabel(BuildContext context, String status) {
+  return switch (status) {
+    'IN_PROGRESS' => context.l10n.platformJourneyPhaseInProgress,
+    'EVENT_READY' => context.l10n.platformJourneyPhaseDecisionAvailable,
+    'COMPLETED' => context.l10n.platformJourneyPhaseCompleted,
+    _ => throw StateError('Unsupported expedition status: $status'),
+  };
+}
+
 String _journeyDurationLabel(BuildContext context, int? durationSeconds) {
   if (durationSeconds == null) {
     return '';
@@ -1887,6 +1896,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
       final String value => _journeyStartedTimeLabel(context, value),
       null => null,
     };
+    final String phase = _journeyPhaseLabel(context, snapshot.expeditionStatus);
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -1936,6 +1946,21 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             context.l10n.platformDecisionLogSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Semantics(
+            key: const Key('platform-current-journey-phase'),
+            container: true,
+            label: phase,
+            child: ExcludeSemantics(
+              child: Text(
+                phase,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
           if (startedAt != null) ...<Widget>[
