@@ -1184,6 +1184,7 @@ class _HomeBody extends StatelessWidget {
                     const SizedBox(height: 12),
                     _EquipmentCard(
                       slots: snapshot.equipment,
+                      equippedSlotCount: snapshot.equippedEquipmentSlotCount,
                       readOnly: readOnly,
                       busy: gameplayActionBlocked,
                       changing: isChangingEquipment,
@@ -2586,6 +2587,7 @@ class _EventChoiceLabel extends StatelessWidget {
 class _EquipmentCard extends StatelessWidget {
   const _EquipmentCard({
     required this.slots,
+    required this.equippedSlotCount,
     required this.readOnly,
     required this.busy,
     required this.changing,
@@ -2593,6 +2595,7 @@ class _EquipmentCard extends StatelessWidget {
   });
 
   final List<HomeEquipmentSlot> slots;
+  final int equippedSlotCount;
   final bool readOnly;
   final bool busy;
   final bool changing;
@@ -2609,6 +2612,23 @@ class _EquipmentCard extends StatelessWidget {
             title: context.l10n.homeEquipmentTitle,
             subtitle: context.l10n.homeEquipmentSubtitle,
             icon: Icons.explore_outlined,
+          ),
+          const SizedBox(height: 8),
+          Semantics(
+            key: const Key('home-equipped-slot-progress'),
+            container: true,
+            label: context.l10n.homeEquipmentSlotsEquipped(
+              equippedSlotCount,
+              slots.length,
+            ),
+            excludeSemantics: true,
+            child: Text(
+              context.l10n.homeEquipmentSlotsEquipped(
+                equippedSlotCount,
+                slots.length,
+              ),
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
           ),
           const SizedBox(height: 12),
           for (final HomeEquipmentSlot slot in slots) ...<Widget>[

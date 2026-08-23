@@ -2837,6 +2837,41 @@ void main() {
     expect(snapshot.equippableInventoryItemCount, 2);
   });
 
+  test('equipped slot progress trusts accepted equipment status', () {
+    Map<String, dynamic> slot({
+      required String slotId,
+      required bool equipped,
+    }) {
+      return <String, dynamic>{
+        'slotId': slotId,
+        'name': slotId,
+        'description': 'Accepted equipment slot.',
+        'status': equipped ? 'EQUIPPED' : 'EMPTY',
+        'version': 1,
+        'item': equipped
+            ? <String, dynamic>{
+                'itemInstanceId': '$slotId-instance',
+                'itemId': '$slotId-item',
+                'name': '$slotId item',
+                'description': 'Accepted equipped item.',
+              }
+            : null,
+      };
+    }
+
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['equipment'] = <Map<String, dynamic>>[
+      slot(slotId: 'NAVIGATION', equipped: true),
+      slot(slotId: 'UTILITY', equipped: false),
+      slot(slotId: 'RESONANCE', equipped: true),
+    ];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.equippedEquipmentSlotCount, 2);
+    expect(snapshot.equipment, hasLength(3));
+  });
+
   test('available event choice count trusts accepted availability', () {
     const HomeExpeditionEvent event = HomeExpeditionEvent(
       eventId: 'accepted-event',

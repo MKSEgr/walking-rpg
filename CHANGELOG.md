@@ -78,6 +78,9 @@
 
 ### Added
 
+- exact RU/EN equipped-slot progress from accepted equipment status, including
+  an explicit zero-equipped state without client compatibility inference;
+
 - exact RU/EN count of accepted choices available in the current unresolved
   expedition event, without re-deriving route requirements on mobile;
 

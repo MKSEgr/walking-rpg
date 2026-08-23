@@ -1976,6 +1976,26 @@ accepted item identities без изменения backend/API или equipment 
 **Статус:** available expedition choice count реализован как mobile projection
 accepted choice availability без изменения backend/API или event rules.
 
+### US-086. Видеть заполнение комплекта снаряжения
+
+Как игрок, я хочу видеть, сколько принятых слотов снаряжения уже заполнено,
+чтобы понимать состояние комплекта без просмотра каждого слота.
+
+Критерии:
+
+- equipped count включает только accepted equipment slots с существующим
+  `status == EQUIPPED`;
+- total равен длине accepted equipment list;
+- mobile не пересчитывает occupancy по inventory, item kind, compatibility,
+  route requirements или собственным ownership rules;
+- RU/EN guidance показывает exact `equipped / total`, включая zero equipped;
+- visible guidance объявляется одной semantics node;
+- equipment slot catalog, compatibility, route requirements и equipment
+  command не меняются.
+
+**Статус:** equipped slot progress реализован как mobile projection accepted
+equipment status без изменения backend/API или equipment rules.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

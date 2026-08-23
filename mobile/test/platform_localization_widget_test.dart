@@ -13,6 +13,17 @@ import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 import 'support/platform_fixture.dart';
 
 void main() {
+  test('equipped slot progress covers Russian and English plurals', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(english.homeEquipmentSlotsEquipped(1, 2), '1 of 2 slots equipped');
+    expect(
+      russian.homeEquipmentSlotsEquipped(13, 21),
+      'Экипировано: 13 из 21 слота',
+    );
+  });
+
   test('available event choice count covers Russian and English plurals', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
     final AppLocalizationsRu russian = AppLocalizationsRu();
