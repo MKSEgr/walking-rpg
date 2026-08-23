@@ -1524,9 +1524,28 @@ class _ExpeditionHero extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (snapshot.routeTrail.isNotEmpty) ...<Widget>[
-            Text(
-              context.l10n.expeditionRouteTrailTitle,
-              style: Theme.of(context).textTheme.titleSmall,
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(
+                  context.l10n.expeditionRouteTrailTitle,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                ExcludeSemantics(
+                  child: Text(
+                    key: const Key('home-discovered-route-node-count'),
+                    context.l10n.homeDiscoveredRouteNodes(
+                      snapshot.discoveredRouteNodeCount,
+                    ),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             ExpeditionRouteTrail(

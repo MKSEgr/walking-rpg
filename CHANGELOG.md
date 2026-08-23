@@ -78,6 +78,9 @@
 
 ### Added
 
+- visible RU/EN discovered-node count for the accepted current-journey route
+  trail, without publishing future topology or duplicating its semantic summary;
+
 - exact RU/EN equipped-slot progress from accepted equipment status, including
   an explicit zero-equipped state without client compatibility inference;
 

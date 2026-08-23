@@ -81,6 +81,12 @@
   "expeditionReadLoadingSemantics": "Retrieving the current state",
   "expeditionReadFailureSemantics": "Connection lost",
   "expeditionRouteTrailTitle": "Trail of this journey",
+  "homeDiscoveredRouteNodes": "Discovered nodes: {count}",
+  "@homeDiscoveredRouteNodes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "expeditionRouteTrailSemantics": "Journey route: {count} discovered nodes. Last point: {terminalNode}.",
   "@expeditionRouteTrailSemantics": {
     "placeholders": {

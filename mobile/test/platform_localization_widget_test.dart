@@ -13,6 +13,14 @@ import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 import 'support/platform_fixture.dart';
 
 void main() {
+  test('discovered route node count covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(english.homeDiscoveredRouteNodes(2), 'Discovered nodes: 2');
+    expect(russian.homeDiscoveredRouteNodes(21), 'Открыто узлов: 21');
+  });
+
   test('equipped slot progress covers Russian and English plurals', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
     final AppLocalizationsRu russian = AppLocalizationsRu();

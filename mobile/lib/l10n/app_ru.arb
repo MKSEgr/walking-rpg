@@ -69,6 +69,12 @@
   "expeditionReadLoadingSemantics": "Получение актуального состояния",
   "expeditionReadFailureSemantics": "Связь потеряна",
   "expeditionRouteTrailTitle": "След этого похода",
+  "homeDiscoveredRouteNodes": "Открыто узлов: {count}",
+  "@homeDiscoveredRouteNodes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "expeditionRouteTrailSemantics": "Маршрут похода: открыто узлов — {count}. Последняя точка: {terminalNode}.",
   "expeditionRouteTrailDecisionsSemantics": "Принятые решения: {decisions}.",
 

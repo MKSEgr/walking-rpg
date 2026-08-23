@@ -92,6 +92,12 @@ void main() {
     expect(find.byType(ExpeditionRouteTrail), findsOneWidget);
     expect(find.text('След этого похода'), findsOneWidget);
     expect(
+      find.byKey(const Key('home-discovered-route-node-count')),
+      findsOneWidget,
+    );
+    expect(find.text('Открыто узлов: 1'), findsOneWidget);
+    expect(find.bySemanticsLabel('Открыто узлов: 1'), findsNothing);
+    expect(
       find.byKey(const Key('expedition-route-node-outer-beacon-current')),
       findsOneWidget,
     );
@@ -168,6 +174,7 @@ void main() {
       find.byKey(const Key('expedition-route-decision-outer-beacon')),
       findsOneWidget,
     );
+    expect(find.text('Открыто узлов: 2'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Маршрут похода: открыто узлов — 2. '
@@ -177,6 +184,40 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    semantics.dispose();
+  });
+
+  testWidgets('route node count reflows in English on compact large text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(loader: () async => _routeWithDecision()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Trail of this journey'), findsOneWidget);
+    expect(find.text('Discovered nodes: 2'), findsOneWidget);
+    expect(find.bySemanticsLabel('Discovered nodes: 2'), findsNothing);
+    expect(tester.takeException(), isNull);
 
     semantics.dispose();
   });
@@ -200,6 +241,10 @@ void main() {
     );
     expect(
       find.byKey(const Key('expedition-node-mark-future-node-v2-outerBeacon')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('home-discovered-route-node-count')),
       findsNothing,
     );
     expect(

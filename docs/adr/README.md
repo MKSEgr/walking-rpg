@@ -97,3 +97,8 @@ NNNN-short-title.md
 - [0078 — authoritative evolvable companion count](0078-authoritative-evolvable-companion-count.md)
 - [0079 — authoritative equippable cosmetic count](0079-authoritative-equippable-cosmetic-count.md)
 - [0080 — authoritative craftable recipe count](0080-authoritative-craftable-recipe-count.md)
+- [0081 — authoritative ready item upgrade count](0081-authoritative-ready-item-upgrade-count.md)
+- [0082 — authoritative equippable inventory item count](0082-authoritative-equippable-inventory-item-count.md)
+- [0083 — authoritative available expedition choice count](0083-authoritative-available-expedition-choice-count.md)
+- [0084 — authoritative equipped slot progress](0084-authoritative-equipped-slot-progress.md)
+- [0085 — authoritative discovered route node count](0085-authoritative-discovered-route-node-count.md)
