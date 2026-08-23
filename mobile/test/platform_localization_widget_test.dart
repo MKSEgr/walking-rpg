@@ -1277,10 +1277,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('ENERGY progress: 0 of 30'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
     );
@@ -1401,10 +1398,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('ENERGY progress: 0 of 30'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
       final Finder latest = find.byKey(
         const Key('platform-current-journey-latest-decision'),
       );
@@ -1525,17 +1519,16 @@ void main() {
       const Key('platform-current-journey-energy-progress'),
     );
     expect(find.text('ENERGY progress: 37 of 30'), findsOneWidget);
+    expect(find.bySemanticsLabel('ENERGY progress: 37 of 30'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('ENERGY progress: 37 of 30'),
-      findsOneWidget,
-    );
-    expect(
-      tester.widget<LinearProgressIndicator>(
-        find.descendant(
-          of: progress,
-          matching: find.byType(LinearProgressIndicator),
-        ),
-      ).value,
+      tester
+          .widget<LinearProgressIndicator>(
+            find.descendant(
+              of: progress,
+              matching: find.byType(LinearProgressIndicator),
+            ),
+          )
+          .value,
       1,
     );
   });
