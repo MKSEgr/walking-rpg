@@ -2464,6 +2464,23 @@ class _EventCard extends StatelessWidget {
             ],
           ] else ...<Widget>[
             const SizedBox(height: 12),
+            if (event.availableChoiceCount > 0) ...<Widget>[
+              Semantics(
+                key: const Key('home-available-event-choices'),
+                container: true,
+                label: context.l10n.homeEventChoicesAvailable(
+                  event.availableChoiceCount,
+                ),
+                excludeSemantics: true,
+                child: Text(
+                  context.l10n.homeEventChoicesAvailable(
+                    event.availableChoiceCount,
+                  ),
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             for (final HomeEventChoice choice in event.choices) ...<Widget>[
               SizedBox(
                 key: choice.choiceId == 'follow-resonance'

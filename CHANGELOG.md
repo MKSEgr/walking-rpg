@@ -78,6 +78,9 @@
 
 ### Added
 
+- exact RU/EN count of accepted choices available in the current unresolved
+  expedition event, without re-deriving route requirements on mobile;
+
 - exact RU/EN count of accepted inventory items ready to equip, preserving
   equipment-slot state, route requirements and equipment-command behavior;
 
