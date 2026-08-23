@@ -1827,6 +1827,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(impressions, isEmpty);
     expect(
+      find.byKey(const Key('home-equipped-slot-progress')),
+      findsOneWidget,
+    );
+    expect(find.text('Экипировано: 0 из 1 слота'), findsOneWidget);
+    expect(find.bySemanticsLabel('Экипировано: 0 из 1 слота'), findsOneWidget);
+    expect(
       find.byKey(const Key('home-available-event-choices')),
       findsOneWidget,
     );
@@ -1875,6 +1881,7 @@ void main() {
     expect(itemInstanceIds, <String?>['33333333-3333-3333-3333-333333333333']);
     expect(idempotencyKeys, <String>['equipment-key-1']);
     expect(loads, 2);
+    expect(find.text('Экипировано: 1 из 1 слота'), findsOneWidget);
     expect(find.text('Доступно 2 варианта'), findsOneWidget);
     expect(
       find.byKey(const Key('home-equippable-inventory-items')),
@@ -1919,6 +1926,7 @@ void main() {
     ]);
     expect(idempotencyKeys, <String>['equipment-key-1', 'equipment-key-2']);
     expect(loads, 3);
+    expect(find.text('Экипировано: 0 из 1 слота'), findsOneWidget);
     expect(find.text('Доступен 1 вариант'), findsOneWidget);
     await _scrollAboveStickyAction(tester, routeChoice);
     expect(tester.widget<FilledButton>(routeChoice).onPressed, isNull);
@@ -2082,6 +2090,11 @@ void main() {
 
     final Finder mount = find.byType(EquipmentMountSignal);
     expect(mount, findsOneWidget);
+    expect(
+      find.byKey(const Key('home-equipped-slot-progress')),
+      findsOneWidget,
+    );
+    expect(find.text('Экипировано: 1 из 1 слота'), findsOneWidget);
     expect(tester.getSize(mount).height, 112);
     expect(tester.getSize(mount).width, lessThanOrEqualTo(248));
     expect(unequip, findsOneWidget);

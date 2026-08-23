@@ -1357,6 +1357,24 @@ server-authoritative event availability из ADR 0030 через ADR 0083 без
 изменения Home API, backend, persistence, rewards, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 70 — Authoritative equipped slot progress
+
+### CODE_COMPLETE
+
+- [x] Mobile считает equipped только accepted equipment slots с существующим
+      `status == EQUIPPED`, а total — длиной accepted equipment list
+- [x] Inventory, item kind, compatibility, route requirements и client
+      ownership rules не используются для повторного вывода occupancy
+- [x] RU/EN guidance показывает exact `equipped / total`, включая zero, и
+      объявляется одной semantics node
+- [x] Domain, RU/EN, equip/unequip и compact large-text coverage фиксируют
+      boundary без изменения slot catalog, compatibility или equip command
+
+Milestone 70 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative equipment из ADR 0030 через ADR 0084 без изменения Home
+API, backend, persistence, route requirements, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

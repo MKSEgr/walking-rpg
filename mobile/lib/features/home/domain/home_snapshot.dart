@@ -259,6 +259,10 @@ class HomeSnapshot {
         .length;
   }
 
+  int get equippedEquipmentSlotCount {
+    return equipment.where((HomeEquipmentSlot slot) => slot.isEquipped).length;
+  }
+
   bool get hasPilotExperienceProgress =>
       pilotLevel > 0 &&
       pilotCurrentExperience >= 0 &&

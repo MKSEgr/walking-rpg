@@ -505,6 +505,7 @@
 
   "homeEquipmentTitle": "Снаряжение",
   "homeEquipmentSubtitle": "Активные инструменты навигации.",
+  "homeEquipmentSlotsEquipped": "{total, plural, one{Экипировано: {equipped} из {total} слота} few{Экипировано: {equipped} из {total} слотов} many{Экипировано: {equipped} из {total} слотов} other{Экипировано: {equipped} из {total} слота}}",
   "homeEmptySlot": "Слот свободен",
   "homeUnequip": "Снять",
   "homeInventoryTitle": "Инвентарь",

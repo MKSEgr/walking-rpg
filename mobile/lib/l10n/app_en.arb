@@ -901,6 +901,13 @@
 
   "homeEquipmentTitle": "Equipment",
   "homeEquipmentSubtitle": "Active navigation instruments.",
+  "homeEquipmentSlotsEquipped": "{total, plural, =1{{equipped} of 1 slot equipped} other{{equipped} of {total} slots equipped}}",
+  "@homeEquipmentSlotsEquipped": {
+    "placeholders": {
+      "equipped": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "homeEmptySlot": "Slot empty",
   "homeUnequip": "Remove",
   "homeInventoryTitle": "Inventory",
