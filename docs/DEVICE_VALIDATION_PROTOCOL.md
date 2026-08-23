@@ -65,6 +65,40 @@ production diagnostics.
 Поэтому JSON необходимо экспортировать до logout, смены аккаунта или
 завершения приложения.
 
+## Inventory preflight для #149
+
+До физического прогона используется нормативный template
+`docs/evidence/health-device-inventory-template.json` со schema
+`walking-rpg-health-device-inventory-v1`. Committed `recordStatus=TEMPLATE`
+подтверждает только готовность contract и намеренно не является inventory
+evidence.
+
+Заполненную обезличенную копию проверяют командой:
+
+```bash
+python3 scripts/ci/verify_health_device_inventory.py \
+  <approved-inventory-file.json> \
+  --require-recorded
+```
+
+`--require-recorded` требует:
+
+- exact immutable `alpha-rc2` tuple из release dossier;
+- четыре обязательные строки без дублей и перестановки;
+- `AVAILABLE` с model/OS, role category и явной доступностью clean install,
+  upgrade, timezone/midnight и battery measurement;
+- `BLOCKED` с coarse blocker category/reason вместо ложного pass;
+- две различные Android data-provider categories, если обе Android-строки
+  доступны; отсутствующая строка остаётся `BLOCKED`;
+- только allowlisted поля без URL, email, path, UUID/device-ID/SHA-like
+  значений в свободном evidence text.
+
+`OWNER_INPUT_REQUIRED` разрешён только в template и отклоняется для
+`RECORDED`. Validator не доказывает наличие устройства или выполнение
+сценария: он отделяет структурно готовый inventory от внешнего owner input.
+Заполненный файл версионируется только в approved evidence location после
+redaction review; публичный issue/PR не используется как raw evidence storage.
+
 ## Минимальная матрица
 
 - iPhone без Apple Watch;
