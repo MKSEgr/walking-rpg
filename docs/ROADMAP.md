@@ -1475,6 +1475,22 @@ Milestone 76 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0090 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 77 — Authoritative current-journey start time
+
+### CODE_COMPLETE
+
+- [x] Home публикует additive nullable `expedition.startedAt` из persisted
+      journey-start source exact текущего `journeyNumber`
+- [x] Backend не выводит start из decisions, content или request/response time
+- [x] RU/EN journal форматирует server timestamp как locale-aware date/time без
+      client elapsed-duration calculation
+- [x] API/domain/legacy/malformed и compact large-text coverage фиксируют
+      boundary без изменения persistence, rewards или event resolution
+
+Milestone 77 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative journey history из ADR 0038 через ADR 0091 без изменения
+immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

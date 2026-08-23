@@ -290,6 +290,7 @@ Authorization: Bearer <access-token>
     "status": "IN_PROGRESS",
     "version": 4,
     "journeyNumber": 2,
+    "startedAt": "2026-07-26T05:30:00Z",
     "routeTrail": [
       {
         "nodeId": "outer-beacon",
@@ -393,6 +394,11 @@ Authorization: Bearer <access-token>
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;
+- `expedition.startedAt` — additive nullable ISO-8601 timestamp persisted
+  старта exact текущего `journeyNumber`. Backend читает его из durable
+  journey-start source и не выводит из первого decision, content или response
+  time. Mobile форматирует date/time только для отображения, не рассчитывает
+  elapsed duration и не подставляет значение при legacy omission;
 - `expedition.routeTrail[]` — упорядоченный server-owned след только текущего
   похода. Он содержит уже обработанные event nodes со state `VISITED` и одну
   последнюю точку `CURRENT` либо `COMPLETED`, не раскрывает будущие развилки и

@@ -845,6 +845,7 @@ class HomeServiceTest {
         var recap = expedition.completionRecap();
 
         assertNotNull(recap);
+        assertEquals(NOW.minusSeconds(3_900), expedition.startedAt());
         assertEquals(1, recap.journeyNumber());
         assertEquals(3, recap.decisionCount());
         assertEquals(3, recap.decisions().size());

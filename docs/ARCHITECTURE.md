@@ -412,6 +412,11 @@ immutable event resolutions exact текущего `journeyNumber`. Additive nul
 меняет literal state на `COMPLETED`, сохраняя фактическую annotation, а новый
 поход начинает один неаннотированный `CURRENT` node без schema migration.
 
+Additive nullable `expedition.startedAt` читается из того же durable
+journey-start source, который используется для completion duration, но exact
+текущего `journeyNumber`. Service не выводит start из первого resolution,
+content или response clock; legacy absence остаётся неизвестным значением.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает

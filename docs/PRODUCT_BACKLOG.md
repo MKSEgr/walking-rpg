@@ -2110,6 +2110,24 @@ literal mobile projection `decisionLog.last.outcomeSummary`.
 **Статус:** latest accepted current-journey rewards реализованы как literal
 mobile projection reward fields из `decisionLog.last`.
 
+### US-093. Видеть время начала текущего похода
+
+Как игрок, я хочу видеть, когда начался текущий поход, чтобы понимать его
+временной контекст без привязки к первому сохранённому решению.
+
+Критерии:
+
+- Home возвращает additive nullable `expedition.startedAt` из persisted
+  journey-start source exact текущего `journeyNumber`;
+- backend не выводит start из первого decision, content или response time;
+- RU/EN journal показывает locale-aware дату и время без расчёта elapsed
+  duration на клиенте;
+- malformed timestamp отклоняется, legacy response без поля остаётся читаемым;
+- persistence, rewards, event resolution и внешние gates не меняются.
+
+**Статус:** authoritative current-journey start time реализован как nullable
+Home projection `expedition.startedAt`.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

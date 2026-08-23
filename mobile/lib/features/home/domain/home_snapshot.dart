@@ -33,6 +33,7 @@ class HomeSnapshot {
     this.petSpecies,
     this.petEvolutionStage,
     this.expeditionJourneyNumber = 1,
+    this.journeyStartedAt,
     this.routeTrail = const <HomeExpeditionRouteNode>[],
     this.decisionLog = const <HomeExpeditionDecisionLogEntry>[],
     this.completionRecap,
@@ -98,6 +99,16 @@ class HomeSnapshot {
     if (expeditionJourneyNumber <= 0) {
       throw const FormatException('journeyNumber должен быть положительным');
     }
+    final String? journeyStartedAt = _readNullableString(
+      expedition,
+      'startedAt',
+    );
+    if (journeyStartedAt != null &&
+        DateTime.tryParse(journeyStartedAt) == null) {
+      throw const FormatException(
+        'expedition.startedAt должен быть ISO-8601 датой',
+      );
+    }
     final String expeditionStatus = _readString(expedition, 'status');
     final Object? completionRecapJson = expedition['completionRecap'];
     final HomeExpeditionCompletionRecap? completionRecap =
@@ -160,6 +171,7 @@ class HomeSnapshot {
       expeditionStatus: expeditionStatus,
       expeditionVersion: _readInt(expedition, 'version'),
       expeditionJourneyNumber: expeditionJourneyNumber,
+      journeyStartedAt: journeyStartedAt,
       routeTrail: _readRouteTrail(expedition['routeTrail']),
       decisionLog: _readDecisionLog(expedition['decisionLog']),
       completionRecap: completionRecap,
@@ -213,6 +225,7 @@ class HomeSnapshot {
   final String expeditionStatus;
   final int expeditionVersion;
   final int expeditionJourneyNumber;
+  final String? journeyStartedAt;
   final List<HomeExpeditionRouteNode> routeTrail;
   final List<HomeExpeditionDecisionLogEntry> decisionLog;
   final HomeExpeditionCompletionRecap? completionRecap;

@@ -1,5 +1,6 @@
 package com.walkingrpg.backend.home.domain;
 
+import java.time.Instant;
 import java.util.List;
 
 public record ExpeditionSnapshot(
@@ -12,6 +13,7 @@ public record ExpeditionSnapshot(
         String status,
         long version,
         long journeyNumber,
+        Instant startedAt,
         List<ExpeditionRouteNodeSnapshot> routeTrail,
         List<ExpeditionDecisionSnapshot> decisionLog,
         ExpeditionCompletionRecapSnapshot completionRecap,
@@ -52,6 +54,7 @@ public record ExpeditionSnapshot(
                 status,
                 version,
                 journeyNumber,
+                null,
                 routeTrail,
                 List.of(),
                 null,
@@ -83,6 +86,7 @@ public record ExpeditionSnapshot(
                 status,
                 version,
                 journeyNumber,
+                null,
                 List.of(),
                 List.of(),
                 null,
@@ -113,6 +117,7 @@ public record ExpeditionSnapshot(
                 status,
                 version,
                 1,
+                null,
                 List.of(),
                 List.of(),
                 null,

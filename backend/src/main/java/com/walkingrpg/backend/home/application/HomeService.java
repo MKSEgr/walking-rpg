@@ -251,16 +251,11 @@ public class HomeService {
                         initialDefinition.expeditionId(),
                         state.expeditionJourneyNumber()
                 );
-        Instant currentJourneyStartedAt =
-                ExpeditionProgressStatus.COMPLETED.name().equals(
-                        state.expeditionStatus()
-                )
-                        ? repository.findJourneyStartedAt(
-                                query.userId(),
-                                initialDefinition.expeditionId(),
-                                state.expeditionJourneyNumber()
-                        ).orElse(null)
-                        : null;
+        Instant currentJourneyStartedAt = repository.findJourneyStartedAt(
+                query.userId(),
+                initialDefinition.expeditionId(),
+                state.expeditionJourneyNumber()
+        ).orElse(null);
         List<ExpeditionJourneyHistory> recentJourneyHistory =
                 repository.findRecentCompletedJourneys(
                         query.userId(),
@@ -552,6 +547,7 @@ public class HomeService {
                 status,
                 state.expeditionVersion(),
                 state.expeditionJourneyNumber(),
+                currentJourneyStartedAt,
                 routeTrail(definition, status, journeyEvents),
                 decisionLog(journeyEvents),
                 completionRecap,

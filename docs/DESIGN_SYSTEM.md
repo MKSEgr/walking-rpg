@@ -1040,6 +1040,11 @@ identity, persisted event/choice/outcome copy and resolution time. The card
 shows only entries from the current `journeyNumber`; a new journey therefore
 returns to an explicit empty state instead of mixing earlier routes.
 
+When additive `expedition.startedAt` is present, the card places one compact
+locale-aware start label below its explanation. The timestamp is server-owned;
+the client does not infer it from the first decision or turn it into a live
+elapsed timer. Legacy omission leaves the existing spacing and empty state.
+
 Each entry uses a numbered code-native signal, a decision arrow and separate
 outcome typography. Compact reward chips repeat the literal pilot XP, named
 companion bond and optional material quantity saved with that decision; they
