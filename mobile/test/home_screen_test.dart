@@ -1831,7 +1831,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Доступен 1 вариант'), findsOneWidget);
-    expect(find.bySemanticsLabel('Доступен 1 вариант'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Доступен 1 вариант'),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const Key('home-equippable-inventory-items')),
       findsOneWidget,

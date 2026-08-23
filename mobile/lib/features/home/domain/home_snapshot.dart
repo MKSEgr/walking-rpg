@@ -1481,9 +1481,7 @@ class HomeExpeditionEvent {
     if (isResolved) {
       return 0;
     }
-    return choices
-        .where((HomeEventChoice choice) => choice.isAvailable)
-        .length;
+    return choices.where((HomeEventChoice choice) => choice.isAvailable).length;
   }
 
   static List<HomeEventChoice> _readChoices(Object? raw, String field) {
