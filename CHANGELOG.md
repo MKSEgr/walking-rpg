@@ -78,6 +78,10 @@
 
 ### Added
 
+- versioned internal-alpha protocol fixes the approved 12-participant cohort,
+  exact candidate/start gates, first-ten-minutes script, thresholds, stop
+  authority, consent/evidence rules and expand/fix/stop decision templates;
+
 - machine-verifiable F1 Health device inventory contract separates the
   structural template from a recorded matrix, requires every physical
   iOS/Android/provider slot to be AVAILABLE or explicitly BLOCKED, rejects
