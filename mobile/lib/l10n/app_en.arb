@@ -1395,6 +1395,12 @@
   "platformDecisionLogTitle": "Route decisions",
   "platformDecisionLogSubtitle": "Only server-accepted decisions from the current journey.",
   "platformLatestDecisionTitle": "Latest saved decision",
+  "platformLatestDecisionChoice": "Chosen: {choice}",
+  "@platformLatestDecisionChoice": {
+    "placeholders": {
+      "choice": {"type": "String"}
+    }
+  },
   "platformLatestDecisionOutcome": "{event} → {outcome}",
   "@platformLatestDecisionOutcome": {
     "placeholders": {
@@ -1402,10 +1408,11 @@
       "outcome": {"type": "String"}
     }
   },
-  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Outcome: {outcome}. {resolvedAt}.",
+  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Choice: {choice}. Outcome: {outcome}. {resolvedAt}.",
   "@platformLatestDecisionSemantics": {
     "placeholders": {
       "event": {"type": "String"},
+      "choice": {"type": "String"},
       "outcome": {"type": "String"},
       "resolvedAt": {"type": "String"}
     }

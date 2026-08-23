@@ -1294,13 +1294,20 @@ void main() {
     expect(
       find.descendant(
         of: latest,
+        matching: find.text('Chosen: Сохранённый выбор'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: latest,
         matching: find.text('Сигнал прошлого → Сохранённый исход'),
       ),
       findsOneWidget,
     );
     expect(
       find.bySemanticsLabel(
-        'Latest saved decision in the current journey. Сигнал прошлого. '
+        'Latest saved decision in the current journey. Сигнал прошлого. Choice: Сохранённый выбор. '
         'Outcome: Сохранённый исход. $resolvedAt.',
       ),
       findsOneWidget,
@@ -1362,13 +1369,20 @@ void main() {
       expect(
         find.descendant(
           of: latest,
+          matching: find.text('Chosen: Сохранённый выбор'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: latest,
           matching: find.text('Сигнал прошлого → Сохранённый исход'),
         ),
         findsOneWidget,
       );
       expect(
         find.bySemanticsLabel(
-          'Latest saved decision in the current journey. Сигнал прошлого. '
+          'Latest saved decision in the current journey. Сигнал прошлого. Choice: Сохранённый выбор. '
           'Outcome: Сохранённый исход. $resolvedAt.',
         ),
         findsOneWidget,

@@ -291,6 +291,7 @@ void main() {
       ...(decisionLog.single as Map<String, dynamic>),
       'eventId': 'last-accepted-v1',
       'eventTitle': 'Последняя принятая запись',
+      'choiceTitle': 'Буквальный принятый выбор',
       'outcomeTitle': 'Порядок сохранён',
       'resolvedAt': '2026-07-25T05:58:00Z',
     });
@@ -299,6 +300,10 @@ void main() {
 
     expect(snapshot.acceptedJourneyDecisionCount, 2);
     expect(snapshot.lastAcceptedJourneyDecision?.eventId, 'last-accepted-v1');
+    expect(
+      snapshot.lastAcceptedJourneyDecision?.choiceTitle,
+      'Буквальный принятый выбор',
+    );
     expect(
       snapshot.lastAcceptedJourneyDecision?.resolvedAt,
       '2026-07-25T05:58:00Z',

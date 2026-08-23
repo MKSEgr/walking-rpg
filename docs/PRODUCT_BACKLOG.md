@@ -2052,6 +2052,25 @@ projection `decisionLog` без изменения backend/API или event rule
 **Статус:** latest accepted current-journey decision реализован как mobile
 projection последнего элемента `decisionLog` без изменения server ordering.
 
+### US-090. Видеть последний сохранённый выбор текущего похода
+
+Как игрок, я хочу видеть, какой именно выбор был принят в последнем решении
+текущего похода, чтобы восстановить контекст без поиска записи в полном журнале.
+
+Критерии:
+
+- latest summary использует literal `choiceTitle` только последнего элемента
+  accepted `decisionLog`;
+- mobile не соединяет запись с `routeTrail` или текущим event state, не
+  выводит доступность, правильность или последствия выбора;
+- RU/EN summary показывает accepted choice рядом с event/outcome/save time;
+- summary сохраняет одну semantics node и compact large-text layout;
+- legacy/empty state, Home API, backend, persistence, rewards и event
+  resolution не меняются.
+
+**Статус:** latest accepted current-journey choice реализован как literal
+mobile projection `decisionLog.last.choiceTitle` без client inference.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

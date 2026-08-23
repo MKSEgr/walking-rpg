@@ -180,14 +180,22 @@ void main() {
     expect(
       find.descendant(
         of: latest,
+        matching: find.text('Выбрано: Стабилизировать ядро'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: latest,
         matching: find.text('Люминовые ворота → Ровный импульс'),
       ),
       findsOneWidget,
     );
     expect(
       find.bySemanticsLabel(
-        'Последнее сохранённое решение текущего похода. '
-        'Люминовые ворота. Итог: Ровный импульс. $latestResolvedAt.',
+        'Последнее сохранённое решение текущего похода. Люминовые ворота. '
+        'Выбор: Стабилизировать ядро. Итог: Ровный импульс. '
+        '$latestResolvedAt.',
       ),
       findsOneWidget,
     );
