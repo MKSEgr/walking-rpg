@@ -3049,11 +3049,11 @@ class _ItemUpgradeView extends StatelessWidget {
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 const Icon(Icons.tune_outlined, size: 20),
-                const SizedBox(width: 8),
                 Text(
                   context.l10n.homeLevelTransition(
                     upgrade.requiredLevel,

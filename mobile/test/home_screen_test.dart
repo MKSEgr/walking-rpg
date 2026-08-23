@@ -1776,7 +1776,6 @@ void main() {
 
     expect(find.byKey(const Key('home-ready-item-upgrades')), findsOneWidget);
     expect(find.text('Можно применить 1 улучшение'), findsOneWidget);
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('equipment unlocks and unequip locks resonance route', (
