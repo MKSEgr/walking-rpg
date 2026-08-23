@@ -1575,6 +1575,23 @@ Milestone 82 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0096 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 83 — Authoritative current-journey READY choice count
+
+### CODE_COMPLETE
+
+- [x] Journal показывает positive available-choice count только accepted
+      `unlockedEvent` со status exact `READY`
+- [x] Count использует server-owned choice `availability`, исключает locked
+      choices и не проверяет requirements повторно
+- [x] Legacy/empty, locked-only, absent, `RESOLVED` и unknown status не создают
+      count; соседние journey facts и catalog rules не восстанавливают choices
+- [x] RU/EN plurals, одна event semantics node и compact large-text coverage
+      фиксируют boundary без journal actions, API/backend или command changes
+
+Milestone 83 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0097 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

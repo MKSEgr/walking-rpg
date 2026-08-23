@@ -438,7 +438,10 @@ status exact `READY`. Stable `eventId` разрешает known mutable title и
 через current-event catalog, а unknown ID оставляет оба server fallback;
 absent, `RESOLVED` и unknown status fail-closed не создают event block. Phase,
 current node, ENERGY progress, route trail, choices и decision log не выбирают
-event. Title и summary принадлежат одной accessibility semantics node.
+event. Positive available-choice count фильтрует только accepted server-owned
+`availability`, не выполняет requirements повторно и не создаёт journal
+actions. Title, summary и count принадлежат одной accessibility semantics node;
+legacy/empty и locked-only choice state не создают count.
 
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,

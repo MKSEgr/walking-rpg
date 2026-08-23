@@ -1925,6 +1925,11 @@ class _JourneyDecisionLogCard extends StatelessWidget {
         ),
       null => null,
     };
+    final String? readyEventChoiceCountLabel = switch (readyEvent) {
+      final HomeExpeditionEvent event when event.availableChoiceCount > 0 =>
+        context.l10n.homeEventChoicesAvailable(event.availableChoiceCount),
+      _ => null,
+    };
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -2038,7 +2043,12 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             Semantics(
               key: const Key('platform-current-journey-ready-event'),
               container: true,
-              label: '$readyEventLabel. $readyEventSummaryLabel',
+              label: switch (readyEventChoiceCountLabel) {
+                final String choiceCountLabel =>
+                  '$readyEventLabel. $readyEventSummaryLabel\n'
+                      '$choiceCountLabel',
+                null => '$readyEventLabel. $readyEventSummaryLabel',
+              },
               child: ExcludeSemantics(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2057,6 +2067,19 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                         color: colors.onSurfaceVariant,
                       ),
                     ),
+                    if (readyEventChoiceCountLabel != null) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(
+                        key: const Key(
+                          'platform-current-journey-ready-event-choice-count',
+                        ),
+                        readyEventChoiceCountLabel,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

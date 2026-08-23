@@ -407,8 +407,10 @@ Authorization: Bearer <access-token>
 - `expedition.unlockedEvent` со status exact `READY` — authoritative current
   event для journal. Known mutable title и summary локализуются только по
   stable `eventId`, unknown ID сохраняет literal server fallback обоих полей;
-  absent, `RESOLVED` и unknown status не показываются, а phase, node, progress,
-  route trail, choices и decision log не подменяют accepted event;
+  positive available-choice count использует только accepted choice
+  `availability` и не пересчитывает requirements. Legacy/empty, absent,
+  `RESOLVED` и unknown status не показываются, а phase, node, progress, route
+  trail, decision log и catalog rules не подменяют accepted event или choices;
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;

@@ -1280,6 +1280,11 @@ void main() {
               eventId: 'echo-vault-v1',
               title: 'Literal server vault',
               summary: 'Literal server vault summary',
+              choices: <HomeEventChoice>[
+                _eventChoice('available-a'),
+                _eventChoice('locked', availability: 'LOCKED'),
+                _eventChoice('available-b'),
+              ],
             ),
           ),
           recordExperimentExposures: false,
@@ -1310,10 +1315,11 @@ void main() {
       find.bySemanticsLabel(
         'Current event: Echo Vault. About event: Beyond the gate lies an '
         'archive of routes. Its core is unstable, and the companion hears a '
-        'call from the depths.',
+        'call from the depths.\n2 choices available',
       ),
       findsOneWidget,
     );
+    expect(find.text('2 choices available'), findsOneWidget);
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
     );
@@ -1416,6 +1422,11 @@ void main() {
                 eventId: 'echo-vault-v1',
                 title: 'Literal server vault',
                 summary: 'Literal server vault summary',
+                choices: <HomeEventChoice>[
+                  _eventChoice('available-a'),
+                  _eventChoice('locked', availability: 'LOCKED'),
+                  _eventChoice('available-b'),
+                ],
               ),
             ),
             recordExperimentExposures: false,
@@ -1453,10 +1464,11 @@ void main() {
         find.bySemanticsLabel(
           'Current event: Echo Vault. About event: Beyond the gate lies an '
           'archive of routes. Its core is unstable, and the companion hears a '
-          'call from the depths.',
+          'call from the depths.\n2 choices available',
         ),
         findsOneWidget,
       );
+      expect(find.text('2 choices available'), findsOneWidget);
       final Finder latest = find.byKey(
         const Key('platform-current-journey-latest-decision'),
       );
@@ -1623,6 +1635,36 @@ void main() {
     );
   });
 
+  testWidgets('ready event omits empty and locked-only choice counts', (
+    WidgetTester tester,
+  ) async {
+    for (final List<HomeEventChoice> choices in <List<HomeEventChoice>>[
+      const <HomeEventChoice>[],
+      <HomeEventChoice>[_eventChoice('locked', availability: 'LOCKED')],
+    ]) {
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              unlockedEvent: _readyEvent(choices: choices),
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(
+          const Key('platform-current-journey-ready-event-choice-count'),
+        ),
+        findsNothing,
+      );
+    }
+  });
+
   testWidgets('non-ready current event is omitted fail-closed', (
     WidgetTester tester,
   ) async {
@@ -1633,7 +1675,10 @@ void main() {
           child: PlatformScreen(
             loader: () async => platformSnapshot(),
             homeLoader: () async => _homeWithPersistedDecision(
-              unlockedEvent: _readyEvent(status: status),
+              unlockedEvent: _readyEvent(
+                status: status,
+                choices: <HomeEventChoice>[_eventChoice('available')],
+              ),
             ),
             recordExperimentExposures: false,
           ),
@@ -1762,12 +1807,28 @@ HomeExpeditionEvent _readyEvent({
   String title = 'Literal server event',
   String summary = 'Literal server summary',
   String status = 'READY',
+  List<HomeEventChoice> choices = const <HomeEventChoice>[],
 }) {
   return HomeExpeditionEvent(
     eventId: eventId,
     title: title,
     summary: summary,
     status: status,
+    choices: choices,
+  );
+}
+
+HomeEventChoice _eventChoice(
+  String choiceId, {
+  String availability = 'AVAILABLE',
+}) {
+  return HomeEventChoice(
+    choiceId: choiceId,
+    title: 'Literal choice $choiceId',
+    description: 'Literal choice description $choiceId',
+    pilotExperienceReward: 0,
+    petBondReward: 0,
+    availability: availability,
   );
 }
 
