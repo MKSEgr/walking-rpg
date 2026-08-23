@@ -1831,10 +1831,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Доступен 1 вариант'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('Доступен 1 вариант'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Доступен 1 вариант'), findsOneWidget);
     expect(
       find.byKey(const Key('home-equippable-inventory-items')),
       findsOneWidget,
@@ -2105,10 +2102,7 @@ void main() {
     await _scrollAboveStickyAction(tester, choice);
 
     expect(tester.widget<FilledButton>(choice).onPressed, isNull);
-    expect(
-      find.byKey(const Key('home-available-event-choices')),
-      findsNothing,
-    );
+    expect(find.byKey(const Key('home-available-event-choices')), findsNothing);
     expect(
       find.byKey(const Key('home-choice-locked-root-constellation-gate')),
       findsOneWidget,
