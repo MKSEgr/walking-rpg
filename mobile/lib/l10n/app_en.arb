@@ -1410,6 +1410,12 @@
       "requiredEnergy": {"type": "int"}
     }
   },
+  "platformJourneyReadyEvent": "Current event: {event}",
+  "@platformJourneyReadyEvent": {
+    "placeholders": {
+      "event": {"type": "String"}
+    }
+  },
   "platformJourneyStartedAt": "Started on {date} at {time}",
   "@platformJourneyStartedAt": {
     "placeholders": {

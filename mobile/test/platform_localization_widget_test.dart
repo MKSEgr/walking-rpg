@@ -1260,8 +1260,13 @@ void main() {
         locale: const Locale('en'),
         child: PlatformScreen(
           loader: () async => platformSnapshot(),
-          homeLoader: () async =>
-              _homeWithPersistedDecision(withDecisionRewards: true),
+          homeLoader: () async => _homeWithPersistedDecision(
+            withDecisionRewards: true,
+            unlockedEvent: _readyEvent(
+              eventId: 'echo-vault-v1',
+              title: 'Literal server vault',
+            ),
+          ),
           recordExperimentExposures: false,
         ),
       ),
@@ -1278,6 +1283,8 @@ void main() {
     );
     expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
     expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
+    expect(find.text('Current event: Echo Vault'), findsOneWidget);
+    expect(find.bySemanticsLabel('Current event: Echo Vault'), findsOneWidget);
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
     );
@@ -1374,8 +1381,13 @@ void main() {
           textScale: 1.6,
           child: PlatformScreen(
             loader: () async => platformSnapshot(),
-            homeLoader: () async =>
-                _homeWithPersistedDecision(withDecisionRewards: true),
+            homeLoader: () async => _homeWithPersistedDecision(
+              withDecisionRewards: true,
+              unlockedEvent: _readyEvent(
+                eventId: 'echo-vault-v1',
+                title: 'Literal server vault',
+              ),
+            ),
             recordExperimentExposures: false,
           ),
         ),
@@ -1399,6 +1411,11 @@ void main() {
       );
       expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
       expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
+      expect(find.text('Current event: Echo Vault'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Current event: Echo Vault'),
+        findsOneWidget,
+      );
       final Finder latest = find.byKey(
         const Key('platform-current-journey-latest-decision'),
       );
@@ -1532,6 +1549,58 @@ void main() {
       1,
     );
   });
+
+  testWidgets('future ready event preserves literal server title', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => _homeWithPersistedDecision(
+            unlockedEvent: _readyEvent(
+              eventId: 'future-event-v1',
+              title: 'Literal future event',
+            ),
+          ),
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Current event: Literal future event'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Current event: Literal future event'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('non-ready current event is omitted fail-closed', (
+    WidgetTester tester,
+  ) async {
+    for (final String status in <String>['RESOLVED', 'FUTURE']) {
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              unlockedEvent: _readyEvent(status: status),
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('platform-current-journey-ready-event')),
+        findsNothing,
+      );
+    }
+  });
 }
 
 class _LocalizedPlatformApp extends StatelessWidget {
@@ -1575,6 +1644,7 @@ HomeSnapshot _homeWithPersistedDecision({
   String? currentNodeName,
   int? expeditionProgress,
   int? requiredEnergy,
+  HomeExpeditionEvent? unlockedEvent,
 }) {
   const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
@@ -1626,7 +1696,7 @@ HomeSnapshot _homeWithPersistedDecision({
     completionRecap: completionRecap,
     recentJourneyRecaps: recentJourneyRecaps,
     journeyChronicle: journeyChronicle,
-    unlockedEvent: demo.unlockedEvent,
+    unlockedEvent: unlockedEvent ?? demo.unlockedEvent,
     pilotName: demo.pilotName,
     pilotLevel: demo.pilotLevel,
     pilotCurrentExperience: demo.pilotCurrentExperience,
@@ -1638,6 +1708,19 @@ HomeSnapshot _homeWithPersistedDecision({
     petBond: demo.petBond,
     petEvolutionStage: demo.petEvolutionStage,
     dailyGoalPolicy: demo.dailyGoalPolicy,
+  );
+}
+
+HomeExpeditionEvent _readyEvent({
+  String eventId = 'signal-source-v1',
+  String title = 'Literal server event',
+  String status = 'READY',
+}) {
+  return HomeExpeditionEvent(
+    eventId: eventId,
+    title: title,
+    summary: 'Literal server summary',
+    status: status,
   );
 }
 

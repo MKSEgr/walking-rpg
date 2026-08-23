@@ -1541,6 +1541,23 @@ Milestone 80 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0094 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 81 — Authoritative current-journey READY event
+
+### CODE_COMPLETE
+
+- [x] Journal показывает только accepted `unlockedEvent` со status exact
+      `READY`
+- [x] Known mutable event title локализуется по stable `eventId`, unknown
+      future ID сохраняет literal server fallback
+- [x] Absent, `RESOLVED` и unknown status fail-closed не создают event label;
+      соседние journey facts не подменяют event
+- [x] RU/EN semantics, known/future/non-ready и compact large-text coverage
+      фиксируют boundary без изменения Home API, backend или commands
+
+Milestone 81 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0095 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
