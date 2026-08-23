@@ -1334,7 +1334,8 @@ void main() {
     expect(
       find.bySemanticsLabel(
         'Entry 1 of 1. Сигнал прошлого. Decision: Сохранённый выбор. '
-        'Outcome: Сохранённый исход. Сохранённое описание. $resolvedAt.',
+        'Outcome: Сохранённый исход. Сохранённое описание. $resolvedAt. '
+        'Rewards: +27 pilot XP; Navigator: +8 bond; +3 Signal glass.',
       ),
       findsOneWidget,
     );
