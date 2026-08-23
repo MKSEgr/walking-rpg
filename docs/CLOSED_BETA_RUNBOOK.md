@@ -1,5 +1,9 @@
 # Closed beta runbook
 
+Closed beta начинается только после подписанного `EXPAND` по
+[internal-alpha protocol](INTERNAL_ALPHA_PROTOCOL.md) и не может использовать
+неподписанный template, `FIX_AND_RERUN` или `STOP` как go-gate.
+
 ## До набора участников
 
 - release candidate прошёл standard CI и Release quality;

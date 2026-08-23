@@ -213,8 +213,10 @@ Exit gate:
 
 Реализация:
 
-- определить cohort, сценарии, consent, support channel, stop conditions и
-  evidence policy ([#157](https://github.com/MKSEgr/walking-rpg/issues/157));
+- проводить alpha по [versioned internal-alpha protocol](INTERNAL_ALPHA_PROTOCOL.md):
+  cohort, consent, first-ten-minutes script, support, thresholds, stop authority
+  и evidence policy остаются фиксированными для candidate
+  ([#157](https://github.com/MKSEgr/walking-rpg/issues/157));
 - проверить developer accounts, application IDs и public URLs ([#152](https://github.com/MKSEgr/walking-rpg/issues/152));
 - создать protected signed internal candidates ([#158](https://github.com/MKSEgr/walking-rpg/issues/158));
 - проверить install, first launch, upgrade и rollback на internal tracks ([#160](https://github.com/MKSEgr/walking-rpg/issues/160));
