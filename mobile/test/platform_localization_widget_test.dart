@@ -880,6 +880,10 @@ void main() {
     expect(find.text('PILOT JOURNAL'), findsOneWidget);
     expect(find.text('Season of the First Signal'), findsOneWidget);
     expect(find.text('SPARK · LV. 1'), findsOneWidget);
+    await _bringIntoView(
+      tester,
+      find.byKey(const Key('platform-journey-decision-log')),
+    );
     expect(
       find.byKey(const Key('platform-current-journey-decision-count')),
       findsOneWidget,

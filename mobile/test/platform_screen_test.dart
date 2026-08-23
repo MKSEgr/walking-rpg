@@ -309,7 +309,10 @@ void main() {
     expect(recap, findsOneWidget);
     expect(find.text('Итог похода'), findsOneWidget);
     expect(find.text('ПОХОД №4 ЗАВЕРШЁН'), findsOneWidget);
-    expect(find.text('Принято решений: 2'), findsOneWidget);
+    expect(
+      find.descendant(of: recap, matching: find.text('Принято решений: 2')),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const Key('platform-journey-completion-final')),
       findsOneWidget,
