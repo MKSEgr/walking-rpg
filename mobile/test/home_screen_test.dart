@@ -1676,6 +1676,7 @@ void main() {
   testWidgets('home attunes item and reloads authoritative epic rarity', (
     WidgetTester tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     int loads = 0;
     String? sentUpgradeId;
     String? sentKey;
@@ -1701,6 +1702,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-ready-item-upgrades')), findsOneWidget);
+    expect(find.text('Можно применить 1 улучшение'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Можно применить 1 улучшение'),
+      findsOneWidget,
+    );
 
     final Finder upgradeButton = find.byKey(
       const Key('item-upgrade-prism-sextant-second-dawn-attunement-v1'),
@@ -1731,6 +1739,44 @@ void main() {
       find.text('Призматический секстант · уровень 3 · EPIC'),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('home-ready-item-upgrades')), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('ready item upgrade guidance reflows on compact enlarged text', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.6)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(loader: () async => _upgradeReady()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(
+        const Key('item-upgrade-prism-sextant-second-dawn-attunement-v1'),
+      ),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-ready-item-upgrades')), findsOneWidget);
+    expect(find.text('Можно применить 1 улучшение'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('equipment unlocks and unequip locks resonance route', (

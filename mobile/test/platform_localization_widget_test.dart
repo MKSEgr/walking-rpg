@@ -21,6 +21,14 @@ void main() {
     expect(russian.homeCraftingRecipesReady(21), '21 рецепт готов к созданию');
   });
 
+  test('ready item upgrade count covers Russian and English plurals', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(english.homeItemUpgradesReady(2), '2 upgrades ready to apply');
+    expect(russian.homeItemUpgradesReady(21), 'Можно применить 21 улучшение');
+  });
+
   test('Russian quest remaining guidance covers the one plural category', () {
     final AppLocalizationsRu russian = AppLocalizationsRu();
 

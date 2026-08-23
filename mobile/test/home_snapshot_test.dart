@@ -2659,6 +2659,45 @@ void main() {
     expect(snapshot.itemUpgrades.single.ingredients, hasLength(3));
   });
 
+  test('ready item upgrade count trusts only accepted READY statuses', () {
+    Map<String, dynamic> upgrade(String upgradeId, String status) {
+      return <String, dynamic>{
+        'upgradeId': upgradeId,
+        'upgradeVersion': '1',
+        'name': upgradeId,
+        'description': 'Accepted upgrade.',
+        'status': status,
+        'targetItemId': 'prism-sextant',
+        'targetItemName': 'Призматический секстант',
+        'requiredLevel': 1,
+        'resultingLevel': 2,
+        'initialRarity': 'UNCOMMON',
+        'resultingRarity': 'RARE',
+        'ingredients': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'itemId': 'echo-thread',
+            'name': 'Нить эха',
+            'requiredQuantity': 1,
+            'availableQuantity': status == 'MISSING_MATERIALS' ? 0 : 1,
+          },
+        ],
+      };
+    }
+
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['itemUpgrades'] = <Map<String, dynamic>>[
+      upgrade('ready-a', 'READY'),
+      upgrade('locked', 'LOCKED'),
+      upgrade('missing', 'MISSING_MATERIALS'),
+      upgrade('completed', 'COMPLETED'),
+      upgrade('ready-b', 'READY'),
+    ];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.readyItemUpgradeCount, 2);
+  });
+
   test('unknown item upgrade status is rejected', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     response['itemUpgrades'] = <Map<String, dynamic>>[

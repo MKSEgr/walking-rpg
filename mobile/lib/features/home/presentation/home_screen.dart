@@ -1216,6 +1216,7 @@ class _HomeBody extends StatelessWidget {
                     const SizedBox(height: 12),
                     _ItemUpgradeCard(
                       upgrades: snapshot.itemUpgrades,
+                      readyItemUpgradeCount: snapshot.readyItemUpgradeCount,
                       readOnly: readOnly,
                       busy: gameplayActionBlocked,
                       upgrading: isUpgrading,
@@ -2940,6 +2941,7 @@ class _CraftingRecipeView extends StatelessWidget {
 class _ItemUpgradeCard extends StatelessWidget {
   const _ItemUpgradeCard({
     required this.upgrades,
+    required this.readyItemUpgradeCount,
     required this.readOnly,
     required this.busy,
     required this.upgrading,
@@ -2947,6 +2949,7 @@ class _ItemUpgradeCard extends StatelessWidget {
   });
 
   final List<HomeItemUpgrade> upgrades;
+  final int readyItemUpgradeCount;
   final bool readOnly;
   final bool busy;
   final bool upgrading;
@@ -2965,6 +2968,21 @@ class _ItemUpgradeCard extends StatelessWidget {
             subtitle: context.l10n.homeEquipmentCalibrationSubtitle,
             icon: Icons.auto_fix_high_outlined,
           ),
+          if (readyItemUpgradeCount > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('home-ready-item-upgrades'),
+              container: true,
+              label: context.l10n.homeItemUpgradesReady(
+                readyItemUpgradeCount,
+              ),
+              excludeSemantics: true,
+              child: Text(
+                context.l10n.homeItemUpgradesReady(readyItemUpgradeCount),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           for (int index = 0; index < upgrades.length; index++) ...<Widget>[
             _ItemUpgradeView(
