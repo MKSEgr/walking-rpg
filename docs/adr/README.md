@@ -112,3 +112,4 @@ NNNN-short-title.md
 - [0093 — authoritative current-journey position](0093-authoritative-current-journey-position.md)
 - [0094 — authoritative current-journey ENERGY progress](0094-authoritative-current-journey-energy-progress.md)
 - [0095 — authoritative current-journey READY event](0095-authoritative-current-journey-ready-event.md)
+- [0096 — authoritative current-journey READY event summary](0096-authoritative-current-journey-ready-event-summary.md)

@@ -21,6 +21,20 @@ void main() {
     expect(russian.homeDiscoveredRouteNodes(21), 'Открыто узлов: 21');
   });
 
+  test('ready event summary covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyReadyEventSummary('Signal summary'),
+      'About event: Signal summary',
+    );
+    expect(
+      russian.platformJourneyReadyEventSummary('Описание сигнала'),
+      'О событии: Описание сигнала',
+    );
+  });
+
   test('equipped slot progress covers Russian and English plurals', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
     final AppLocalizationsRu russian = AppLocalizationsRu();
@@ -1265,6 +1279,7 @@ void main() {
             unlockedEvent: _readyEvent(
               eventId: 'echo-vault-v1',
               title: 'Literal server vault',
+              summary: 'Literal server vault summary',
             ),
           ),
           recordExperimentExposures: false,
@@ -1284,7 +1299,21 @@ void main() {
     expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
     expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
     expect(find.text('Current event: Echo Vault'), findsOneWidget);
-    expect(find.bySemanticsLabel('Current event: Echo Vault'), findsOneWidget);
+    expect(
+      find.text(
+        'About event: Beyond the gate lies an archive of routes. Its core is '
+        'unstable, and the companion hears a call from the depths.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'Current event: Echo Vault. About event: Beyond the gate lies an '
+        'archive of routes. Its core is unstable, and the companion hears a '
+        'call from the depths.',
+      ),
+      findsOneWidget,
+    );
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
     );
@@ -1386,6 +1415,7 @@ void main() {
               unlockedEvent: _readyEvent(
                 eventId: 'echo-vault-v1',
                 title: 'Literal server vault',
+                summary: 'Literal server vault summary',
               ),
             ),
             recordExperimentExposures: false,
@@ -1413,7 +1443,18 @@ void main() {
       expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
       expect(find.text('Current event: Echo Vault'), findsOneWidget);
       expect(
-        find.bySemanticsLabel('Current event: Echo Vault'),
+        find.text(
+          'About event: Beyond the gate lies an archive of routes. Its core '
+          'is unstable, and the companion hears a call from the depths.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Current event: Echo Vault. About event: Beyond the gate lies an '
+          'archive of routes. Its core is unstable, and the companion hears a '
+          'call from the depths.',
+        ),
         findsOneWidget,
       );
       final Finder latest = find.byKey(
@@ -1550,7 +1591,7 @@ void main() {
     );
   });
 
-  testWidgets('future ready event preserves literal server title', (
+  testWidgets('future ready event preserves literal server title and summary', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -1562,6 +1603,7 @@ void main() {
             unlockedEvent: _readyEvent(
               eventId: 'future-event-v1',
               title: 'Literal future event',
+              summary: 'Literal future summary',
             ),
           ),
           recordExperimentExposures: false,
@@ -1571,8 +1613,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Current event: Literal future event'), findsOneWidget);
+    expect(find.text('About event: Literal future summary'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('Current event: Literal future event'),
+      find.bySemanticsLabel(
+        'Current event: Literal future event. About event: Literal future '
+        'summary',
+      ),
       findsOneWidget,
     );
   });
@@ -1714,12 +1760,13 @@ HomeSnapshot _homeWithPersistedDecision({
 HomeExpeditionEvent _readyEvent({
   String eventId = 'signal-source-v1',
   String title = 'Literal server event',
+  String summary = 'Literal server summary',
   String status = 'READY',
 }) {
   return HomeExpeditionEvent(
     eventId: eventId,
     title: title,
-    summary: 'Literal server summary',
+    summary: summary,
     status: status,
   );
 }

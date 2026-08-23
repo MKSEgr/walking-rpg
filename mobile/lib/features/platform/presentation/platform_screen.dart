@@ -1918,6 +1918,13 @@ class _JourneyDecisionLogCard extends StatelessWidget {
       ),
       null => null,
     };
+    final String? readyEventSummaryLabel = switch (readyEvent) {
+      final HomeExpeditionEvent event =>
+        context.l10n.platformJourneyReadyEventSummary(
+          context.l10n.currentEventSummary(event.eventId, event.summary),
+        ),
+      null => null,
+    };
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -2025,19 +2032,32 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               ),
             ),
           ),
-          if (readyEventLabel != null) ...<Widget>[
+          if (readyEventLabel != null &&
+              readyEventSummaryLabel != null) ...<Widget>[
             const SizedBox(height: 8),
             Semantics(
               key: const Key('platform-current-journey-ready-event'),
               container: true,
-              label: readyEventLabel,
+              label: '$readyEventLabel. $readyEventSummaryLabel',
               child: ExcludeSemantics(
-                child: Text(
-                  readyEventLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Text(
+                      readyEventLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      readyEventSummaryLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
