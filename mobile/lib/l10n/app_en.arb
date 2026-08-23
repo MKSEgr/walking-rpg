@@ -1394,6 +1394,22 @@
   "platformSavedEntrySuffix": " · saved entry",
   "platformDecisionLogTitle": "Route decisions",
   "platformDecisionLogSubtitle": "Only server-accepted decisions from the current journey.",
+  "platformLatestDecisionTitle": "Latest saved decision",
+  "platformLatestDecisionOutcome": "{event} → {outcome}",
+  "@platformLatestDecisionOutcome": {
+    "placeholders": {
+      "event": {"type": "String"},
+      "outcome": {"type": "String"}
+    }
+  },
+  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Outcome: {outcome}. {resolvedAt}.",
+  "@platformLatestDecisionSemantics": {
+    "placeholders": {
+      "event": {"type": "String"},
+      "outcome": {"type": "String"},
+      "resolvedAt": {"type": "String"}
+    }
+  },
   "platformNoDecisions": "Journey {journey}: no decisions yet",
   "@platformNoDecisions": {
     "placeholders": {

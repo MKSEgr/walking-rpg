@@ -1873,6 +1873,8 @@ class _JourneyDecisionLogCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     final List<HomeExpeditionDecisionLogEntry> decisions = snapshot.decisionLog;
+    final HomeExpeditionDecisionLogEntry? lastDecision =
+        snapshot.lastAcceptedJourneyDecision;
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -1924,6 +1926,10 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               color: colors.onSurfaceVariant,
             ),
           ),
+          if (lastDecision != null) ...<Widget>[
+            const SizedBox(height: 12),
+            _LatestJourneyDecisionSummary(entry: lastDecision),
+          ],
           const SizedBox(height: 16),
           if (decisions.isEmpty)
             Semantics(
@@ -1973,6 +1979,67 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               if (index < decisions.length - 1) const SizedBox(height: 10),
             ],
         ],
+      ),
+    );
+  }
+}
+
+class _LatestJourneyDecisionSummary extends StatelessWidget {
+  const _LatestJourneyDecisionSummary({required this.entry});
+
+  final HomeExpeditionDecisionLogEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final String resolvedAt = _journeyDecisionTimeLabel(context, entry);
+    return Semantics(
+      key: const Key('platform-current-journey-latest-decision'),
+      container: true,
+      label: context.l10n.platformLatestDecisionSemantics(
+        entry.eventTitle,
+        entry.outcomeTitle,
+        resolvedAt,
+      ),
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.secondaryContainer.withValues(alpha: 0.32),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  context.l10n.platformLatestDecisionTitle,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colors.secondary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  context.l10n.platformLatestDecisionOutcome(
+                    entry.eventTitle,
+                    entry.outcomeTitle,
+                  ),
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  resolvedAt,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

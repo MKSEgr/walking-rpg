@@ -2033,6 +2033,25 @@ accepted current-journey trail без изменения backend/API или rout
 **Статус:** accepted current-journey decision count реализован как mobile
 projection `decisionLog` без изменения backend/API или event rules.
 
+### US-089. Видеть последнее сохранённое решение текущего похода
+
+Как игрок, я хочу сразу видеть последнее уже сохранённое решение текущего
+похода, чтобы вспомнить последний принятый исход без прокрутки всего журнала.
+
+Критерии:
+
+- latest summary использует только последний элемент accepted `decisionLog`;
+- mobile сохраняет server list ordering, не сортирует записи по `resolvedAt` и
+  не соединяет журнал с `routeTrail` или event state;
+- непустой журнал показывает literal event/outcome и accepted save time в
+  RU/EN, legacy/empty state сохраняет прежнюю подсказку;
+- summary объявляется одной semantics node и остаётся читаемым на compact
+  large-text layout;
+- Home API, backend, persistence, rewards и event resolution не меняются.
+
+**Статус:** latest accepted current-journey decision реализован как mobile
+projection последнего элемента `decisionLog` без изменения server ordering.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

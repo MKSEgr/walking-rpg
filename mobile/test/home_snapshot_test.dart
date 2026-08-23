@@ -95,6 +95,7 @@ void main() {
     expect(snapshot.routeTrail.last.decision, isNull);
     expect(snapshot.decisionLog, hasLength(1));
     expect(snapshot.acceptedJourneyDecisionCount, 1);
+    expect(snapshot.lastAcceptedJourneyDecision?.eventId, 'outer-beacon-v1');
     expect(snapshot.decisionLog.single.eventId, 'outer-beacon-v1');
     expect(snapshot.decisionLog.single.eventTitle, 'Сигнал у границы');
     expect(snapshot.decisionLog.single.choiceId, 'follow-pulse');
@@ -277,6 +278,31 @@ void main() {
 
     expect(snapshot.decisionLog, isEmpty);
     expect(snapshot.acceptedJourneyDecisionCount, 0);
+    expect(snapshot.lastAcceptedJourneyDecision, isNull);
+  });
+
+  test('last accepted journey decision preserves server list ordering', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    final List<dynamic> decisionLog =
+        expedition['decisionLog'] as List<dynamic>;
+    decisionLog.add(<String, dynamic>{
+      ...(decisionLog.single as Map<String, dynamic>),
+      'eventId': 'last-accepted-v1',
+      'eventTitle': 'Последняя принятая запись',
+      'outcomeTitle': 'Порядок сохранён',
+      'resolvedAt': '2026-07-25T05:58:00Z',
+    });
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.acceptedJourneyDecisionCount, 2);
+    expect(snapshot.lastAcceptedJourneyDecision?.eventId, 'last-accepted-v1');
+    expect(
+      snapshot.lastAcceptedJourneyDecision?.resolvedAt,
+      '2026-07-25T05:58:00Z',
+    );
   });
 
   test('completed response maps the authoritative journey recap', () {
