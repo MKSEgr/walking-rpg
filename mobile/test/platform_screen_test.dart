@@ -154,6 +154,12 @@ void main() {
     );
 
     expect(log, findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-current-journey-decision-count')),
+      findsOneWidget,
+    );
+    expect(find.text('Принято решений: 2'), findsOneWidget);
+    expect(find.bySemanticsLabel('Принято решений: 2'), findsNothing);
     final Finder journey = find.byKey(
       const Key('platform-journey-decision-journey'),
     );
@@ -303,7 +309,10 @@ void main() {
     expect(recap, findsOneWidget);
     expect(find.text('Итог похода'), findsOneWidget);
     expect(find.text('ПОХОД №4 ЗАВЕРШЁН'), findsOneWidget);
-    expect(find.text('Принято решений: 2'), findsOneWidget);
+    expect(
+      find.descendant(of: recap, matching: find.text('Принято решений: 2')),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const Key('platform-journey-completion-final')),
       findsOneWidget,
@@ -1005,6 +1014,10 @@ void main() {
     await _bringIntoView(tester, card);
 
     expect(find.text('Решения маршрута'), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-current-journey-decision-count')),
+      findsNothing,
+    );
     expect(
       find.byKey(const Key('platform-journey-completion-recap')),
       findsNothing,

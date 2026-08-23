@@ -2014,6 +2014,25 @@ equipment status без изменения backend/API или equipment rules.
 **Статус:** discovered route node count реализован как mobile projection
 accepted current-journey trail без изменения backend/API или route rules.
 
+### US-088. Видеть число решений текущего похода
+
+Как игрок, я хочу сразу видеть число уже принятых решений текущего похода,
+чтобы оценить историю маршрута без ручного подсчёта записей журнала.
+
+Критерии:
+
+- accepted count равен длине текущего `decisionLog`;
+- mobile не соединяет журнал с `routeTrail`, не выводит event completion и не
+  пересчитывает rewards или route state;
+- непустой журнал получает существующую RU/EN count-строку, legacy/empty
+  журнал сохраняет подсказку без отдельного zero-count сообщения;
+- видимая строка исключена из semantics, потому что каждая запись уже
+  объявляет свой index и total;
+- Home API, backend, persistence, event resolution и ordering не меняются.
+
+**Статус:** accepted current-journey decision count реализован как mobile
+projection `decisionLog` без изменения backend/API или event rules.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

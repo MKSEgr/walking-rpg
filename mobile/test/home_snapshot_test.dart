@@ -94,6 +94,7 @@ void main() {
     expect(snapshot.routeTrail.last.isCurrent, isTrue);
     expect(snapshot.routeTrail.last.decision, isNull);
     expect(snapshot.decisionLog, hasLength(1));
+    expect(snapshot.acceptedJourneyDecisionCount, 1);
     expect(snapshot.decisionLog.single.eventId, 'outer-beacon-v1');
     expect(snapshot.decisionLog.single.eventTitle, 'Сигнал у границы');
     expect(snapshot.decisionLog.single.choiceId, 'follow-pulse');
@@ -275,6 +276,7 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.decisionLog, isEmpty);
+    expect(snapshot.acceptedJourneyDecisionCount, 0);
   });
 
   test('completed response maps the authoritative journey recap', () {

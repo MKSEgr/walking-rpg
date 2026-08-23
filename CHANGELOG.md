@@ -78,6 +78,9 @@
 
 ### Added
 
+- visible RU/EN accepted-decision count for the current-journey journal,
+  preserving entry ordering and its existing accessibility total;
+
 - visible RU/EN discovered-node count for the accepted current-journey route
   trail, without publishing future topology or duplicating its semantic summary;
 
