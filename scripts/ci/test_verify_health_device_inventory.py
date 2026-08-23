@@ -15,7 +15,8 @@ assert SPEC and SPEC.loader
 VALIDATOR = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(VALIDATOR)
 
-TEMPLATE_PATH = Path(__file__).with_name("health-device-inventory-template.json")
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+TEMPLATE_PATH = REPOSITORY_ROOT / "docs/evidence/health-device-inventory-template.json"
 
 
 def template() -> dict:
