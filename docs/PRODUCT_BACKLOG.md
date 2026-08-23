@@ -2202,6 +2202,25 @@ projection accepted progress/target с bounded visual indicator.
 **Статус:** current READY event title реализован как stable-ID-aware mobile
 projection accepted `unlockedEvent`.
 
+### US-098. Читать описание текущего события похода
+
+Как игрок, я хочу видеть принятое сервером описание текущего события в
+журнале, чтобы понимать контекст ожидающего решения.
+
+Критерии:
+
+- journal читает summary только из `unlockedEvent` со status exact `READY`;
+- known mutable summary локализуется по stable `eventId`, unknown future ID
+  сохраняет literal server fallback;
+- absent, `RESOLVED` и unknown status fail-closed не создают event block;
+- phase, current node, ENERGY progress, route trail, choices и decision log не
+  используются для выбора или восстановления summary;
+- RU/EN title и summary объявляются одной semantics node, compact large-text
+  coverage не меняет Home API, backend, persistence или commands.
+
+**Статус:** current READY event summary реализован как stable-ID-aware mobile
+projection accepted `unlockedEvent` рядом с его authoritative title.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

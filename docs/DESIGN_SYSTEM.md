@@ -1062,10 +1062,11 @@ excludes the decorative indicator, while status, actions and rewards remain
 separate server-owned facts.
 
 When an accepted unlocked event has status `READY`, one compact current-event
-label follows ENERGY progress. Known mutable title copy resolves only by stable
-event ID, while an unknown ID keeps the literal server title. One semantics
-node owns the same label; absent, resolved and unknown-status events create no
-placeholder, and neighboring journey facts never substitute for the event.
+block follows ENERGY progress. Known mutable title and summary copy resolve
+only by stable event ID, while an unknown ID keeps both literal server fields.
+One semantics node announces title and summary together; absent, resolved and
+unknown-status events create no placeholder, and neighboring journey facts
+never substitute for the event.
 
 Each entry uses a numbered code-native signal, a decision arrow and separate
 outcome typography. Compact reward chips repeat the literal pilot XP, named

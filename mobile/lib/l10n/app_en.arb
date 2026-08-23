@@ -1416,6 +1416,12 @@
       "event": {"type": "String"}
     }
   },
+  "platformJourneyReadyEventSummary": "About event: {summary}",
+  "@platformJourneyReadyEventSummary": {
+    "placeholders": {
+      "summary": {"type": "String"}
+    }
+  },
   "platformJourneyStartedAt": "Started on {date} at {time}",
   "@platformJourneyStartedAt": {
     "placeholders": {
