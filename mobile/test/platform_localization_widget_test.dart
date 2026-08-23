@@ -1308,7 +1308,7 @@ void main() {
     expect(
       find.descendant(
         of: latest,
-        matching: find.text('Result: Сохранённое описание'),
+        matching: find.text('Result: Сохранённое описание.'),
       ),
       findsOneWidget,
     );
@@ -1391,7 +1391,7 @@ void main() {
       expect(
         find.descendant(
           of: latest,
-          matching: find.text('Result: Сохранённое описание'),
+          matching: find.text('Result: Сохранённое описание.'),
         ),
         findsOneWidget,
       );

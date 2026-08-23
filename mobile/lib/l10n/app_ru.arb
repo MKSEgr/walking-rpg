@@ -665,7 +665,7 @@
   "platformLatestDecisionChoice": "Выбрано: {choice}",
   "platformLatestDecisionOutcome": "{event} → {outcome}",
   "platformLatestDecisionSummary": "Результат: {summary}",
-  "platformLatestDecisionSemantics": "Последнее сохранённое решение текущего похода. {event}. Выбор: {choice}. Итог: {outcome}. Результат: {summary}. {resolvedAt}.",
+  "platformLatestDecisionSemantics": "Последнее сохранённое решение текущего похода. {event}. Выбор: {choice}. Итог: {outcome}. Результат: {summary} {resolvedAt}.",
   "platformNoDecisions": "Поход {journey}: решений пока нет",
   "platformFirstDecisionHint": "Первое решение появится после события маршрута.",
   "platformDecisionEntrySemantics": "Запись {index} из {total}. {event}. Решение: {choice}. Итог: {outcome}. {summary} {resolvedAt}{rewards}",

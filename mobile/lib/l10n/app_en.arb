@@ -1414,7 +1414,7 @@
       "summary": {"type": "String"}
     }
   },
-  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Choice: {choice}. Outcome: {outcome}. Result: {summary}. {resolvedAt}.",
+  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Choice: {choice}. Outcome: {outcome}. Result: {summary} {resolvedAt}.",
   "@platformLatestDecisionSemantics": {
     "placeholders": {
       "event": {"type": "String"},
