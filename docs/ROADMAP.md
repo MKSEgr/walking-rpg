@@ -1375,6 +1375,22 @@ server-authoritative equipment из ADR 0030 через ADR 0084 без изме
 API, backend, persistence, route requirements, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 71 — Authoritative discovered route node count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает открытыми ровно accepted элементы текущего `routeTrail`
+- [x] Future topology, total узлов, проценты и route requirements не выводятся
+- [x] Непустой trail получает видимую RU/EN строку, а существующая route
+      semantics остаётся единственным accessibility summary
+- [x] Domain, legacy-empty, RU/EN и compact large-text coverage фиксируют
+      boundary без изменения Home API, backend или route state
+
+Milestone 71 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0085 без
+изменения Home API, backend, persistence, future topology, immutable
+`alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

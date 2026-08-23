@@ -1996,6 +1996,24 @@ accepted choice availability без изменения backend/API или event 
 **Статус:** equipped slot progress реализован как mobile projection accepted
 equipment status без изменения backend/API или equipment rules.
 
+### US-087. Видеть число открытых узлов текущего похода
+
+Как игрок, я хочу сразу видеть число уже открытых узлов текущего похода,
+чтобы оценить длину принятого следа без ручного подсчёта точек.
+
+Критерии:
+
+- discovered count равен длине accepted `routeTrail` текущего похода;
+- mobile не выводит future topology, total узлов, процент или следующий узел;
+- непустой trail получает короткую RU/EN строку, legacy/empty trail не
+  создаёт отдельную секцию или fake progress;
+- видимая строка исключена из semantics, потому что существующий route summary
+  уже объявляет то же число вместе с последней точкой;
+- Home API, backend, persistence, route ordering и node states не меняются.
+
+**Статус:** discovered route node count реализован как mobile projection
+accepted current-journey trail без изменения backend/API или route rules.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

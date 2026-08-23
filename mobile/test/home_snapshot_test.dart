@@ -81,6 +81,7 @@ void main() {
     expect(snapshot.expeditionVersion, 1);
     expect(snapshot.expeditionJourneyNumber, 2);
     expect(snapshot.routeTrail, hasLength(2));
+    expect(snapshot.discoveredRouteNodeCount, 2);
     expect(snapshot.routeTrail.first.nodeId, 'outer-beacon');
     expect(snapshot.routeTrail.first.state, 'VISITED');
     expect(snapshot.routeTrail.first.decision?.choiceId, 'follow-pulse');
@@ -249,6 +250,7 @@ void main() {
     final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
 
     expect(snapshot.routeTrail, isEmpty);
+    expect(snapshot.discoveredRouteNodeCount, 0);
   });
 
   test('legacy route node without saved decision remains readable', () {

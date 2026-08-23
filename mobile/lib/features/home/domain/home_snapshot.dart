@@ -239,6 +239,8 @@ class HomeSnapshot {
 
   bool get isCached => cacheMetadata != null;
 
+  int get discoveredRouteNodeCount => routeTrail.length;
+
   int get craftableRecipeCount {
     return craftingRecipes
         .where((HomeCraftingRecipe recipe) => recipe.canCraft)
