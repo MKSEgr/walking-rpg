@@ -78,6 +78,11 @@
 
 ### Added
 
+- immutable `alpha-rc2` release dossier pins the accepted post-roadmap
+  master anchor and artifact-producing source to one exact tree, with verified
+  CI/release runs, archive digests, payload checksums and explicit external
+  non-claims;
+
 - forward delivery roadmap from the code-complete alpha baseline through
   physical validation, protected stage, internal alpha, closed beta, store
   rollout and live operations, with explicit evidence-backed exit gates;
