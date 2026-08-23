@@ -395,6 +395,10 @@ Authorization: Bearer <access-token>
   `IN_PROGRESS`, `EVENT_READY` или `COMPLETED`. Mobile локализует literal
   accepted status и не выводит его из energy, `routeTrail`, `decisionLog`,
   unlocked event или completion recap; неизвестное значение отклоняется;
+- `expedition.currentNodeId/currentNode` — required authoritative identity и
+  copy текущей точки. Mobile локализует known mutable current content только
+  по stable ID, сохраняет literal fallback для unknown ID и не выбирает точку
+  из последнего `routeTrail`, `decisionLog`, status или unlocked event;
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;

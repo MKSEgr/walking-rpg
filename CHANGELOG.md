@@ -78,6 +78,9 @@
 
 ### Added
 
+- authoritative RU/EN current-journey position from accepted current-node
+  identity and copy, without deriving it from route or decision ordering;
+
 - authoritative RU/EN current-journey phase from the accepted Home status,
   without client inference from energy, events, routes or decisions;
 

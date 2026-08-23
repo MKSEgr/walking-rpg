@@ -1050,6 +1050,11 @@ start time. Its source is only accepted `expedition.status`: movement, decision
 availability and completion are never inferred from neighboring data. One
 semantics node owns the phase announcement; color is only supportive styling.
 
+One compact current-position label follows phase and precedes optional start
+time. It resolves known mutable node copy only by accepted stable node ID and
+keeps unknown server copy literal. One semantics node owns the same label; the
+last visible route or decision never substitutes for the accepted position.
+
 Each entry uses a numbered code-native signal, a decision arrow and separate
 outcome typography. Compact reward chips repeat the literal pilot XP, named
 companion bond and optional material quantity saved with that decision; they

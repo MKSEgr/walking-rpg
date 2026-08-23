@@ -1397,6 +1397,12 @@
   "platformJourneyPhaseInProgress": "Journey in progress",
   "platformJourneyPhaseDecisionAvailable": "Decision available",
   "platformJourneyPhaseCompleted": "Journey completed",
+  "platformJourneyCurrentPosition": "Current point: {node}",
+  "@platformJourneyCurrentPosition": {
+    "placeholders": {
+      "node": {"type": "String"}
+    }
+  },
   "platformJourneyStartedAt": "Started on {date} at {time}",
   "@platformJourneyStartedAt": {
     "placeholders": {

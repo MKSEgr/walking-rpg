@@ -1271,6 +1271,11 @@ void main() {
     expect(find.text('Route decisions'), findsOneWidget);
     expect(find.text('Journey in progress'), findsOneWidget);
     expect(find.bySemanticsLabel('Journey in progress'), findsOneWidget);
+    expect(find.text('Current point: Outer Beacon'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Current point: Outer Beacon'),
+      findsOneWidget,
+    );
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
     );
@@ -1385,6 +1390,11 @@ void main() {
       expect(find.bySemanticsLabel('Decisions made: 1'), findsNothing);
       expect(find.text('Journey in progress'), findsOneWidget);
       expect(find.bySemanticsLabel('Journey in progress'), findsOneWidget);
+      expect(find.text('Current point: Outer Beacon'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Current point: Outer Beacon'),
+        findsOneWidget,
+      );
       final Finder latest = find.byKey(
         const Key('platform-current-journey-latest-decision'),
       );
@@ -1457,6 +1467,31 @@ void main() {
       semantics.dispose();
     },
   );
+
+  testWidgets('future current position preserves literal server copy', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => _homeWithPersistedDecision(
+            currentNodeId: 'future-signal-v1',
+            currentNodeName: 'Literal future signal',
+          ),
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Current point: Literal future signal'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Current point: Literal future signal'),
+      findsOneWidget,
+    );
+  });
 }
 
 class _LocalizedPlatformApp extends StatelessWidget {
@@ -1496,6 +1531,8 @@ HomeSnapshot _homeWithPersistedDecision({
   List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
       const <HomeExpeditionCompletionRecap>[],
   bool withDecisionRewards = false,
+  String? currentNodeId,
+  String? currentNodeName,
 }) {
   const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
@@ -1511,8 +1548,8 @@ HomeSnapshot _homeWithPersistedDecision({
     contentVersion: demo.contentVersion,
     expeditionId: demo.expeditionId,
     expeditionName: demo.expeditionName,
-    currentNodeId: demo.currentNodeId,
-    currentNodeName: demo.currentNodeName,
+    currentNodeId: currentNodeId ?? demo.currentNodeId,
+    currentNodeName: currentNodeName ?? demo.currentNodeName,
     expeditionProgress: demo.expeditionProgress,
     requiredEnergy: demo.requiredEnergy,
     expeditionStatus: completionRecap == null
