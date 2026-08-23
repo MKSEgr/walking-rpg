@@ -1441,6 +1441,23 @@ Milestone 74 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0088 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 75 — Latest accepted current-journey outcome summary
+
+### CODE_COMPLETE
+
+- [x] Summary использует literal `outcomeSummary` только из последнего
+      элемента accepted `decisionLog`
+- [x] Mobile не интерпретирует последствия, не агрегирует rewards и не
+      соединяет запись с `routeTrail` или текущим event state
+- [x] RU/EN summary и единая semantics node показывают accepted description
+      рядом с event/choice/outcome/save time
+- [x] Domain, legacy-empty и compact large-text coverage фиксируют boundary без
+      изменения Home API, backend, persistence или event resolution
+
+Milestone 75 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0089 без
+изменения rewards, immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -1408,12 +1408,19 @@
       "outcome": {"type": "String"}
     }
   },
-  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Choice: {choice}. Outcome: {outcome}. {resolvedAt}.",
+  "platformLatestDecisionSummary": "Result: {summary}",
+  "@platformLatestDecisionSummary": {
+    "placeholders": {
+      "summary": {"type": "String"}
+    }
+  },
+  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Choice: {choice}. Outcome: {outcome}. Result: {summary}. {resolvedAt}.",
   "@platformLatestDecisionSemantics": {
     "placeholders": {
       "event": {"type": "String"},
       "choice": {"type": "String"},
       "outcome": {"type": "String"},
+      "summary": {"type": "String"},
       "resolvedAt": {"type": "String"}
     }
   },
