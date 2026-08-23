@@ -91,46 +91,53 @@ void main() {
     expect(find.byKey(const Key('platform-loading-state')), findsNothing);
     expect(find.byKey(const Key('platform-journal-hero')), findsOneWidget);
     expect(find.byKey(const Key('platform-journey-archive')), findsNothing);
+    expect(
+      find.byKey(const Key('platform-current-journey-started-at')),
+      findsNothing,
+    );
   });
 
   testWidgets('journal preserves authoritative current-journey decisions', (
     WidgetTester tester,
   ) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
-    final HomeSnapshot home =
-        _homeSnapshotWithDecisions(const <HomeExpeditionDecisionLogEntry>[
-          HomeExpeditionDecisionLogEntry(
-            eventId: 'outer-beacon-v1',
-            eventTitle: 'Сигнал у границы',
-            choiceId: 'follow-pulse',
-            choiceTitle: 'Пойти за импульсом',
-            outcomeTitle: 'Найден маяк',
-            outcomeSummary: 'Импульс открыл безопасный путь.',
-            resolvedAt: '2026-07-26T05:58:00Z',
-            pilotExperienceGained: 42,
-            petId: 'spark-v1',
-            petName: 'Искра',
-            petBondGained: 9,
-            materialReward: HomeJourneyMaterialReward(
-              itemId: 'echo-thread',
-              itemName: 'Эхо-нити',
-              quantity: 2,
-            ),
+    final HomeSnapshot home = _homeSnapshotWithDecisions(
+      const <HomeExpeditionDecisionLogEntry>[
+        HomeExpeditionDecisionLogEntry(
+          eventId: 'outer-beacon-v1',
+          eventTitle: 'Сигнал у границы',
+          choiceId: 'follow-pulse',
+          choiceTitle: 'Пойти за импульсом',
+          outcomeTitle: 'Найден маяк',
+          outcomeSummary: 'Импульс открыл безопасный путь.',
+          resolvedAt: '2026-07-26T05:58:00Z',
+          pilotExperienceGained: 42,
+          petId: 'spark-v1',
+          petName: 'Искра',
+          petBondGained: 9,
+          materialReward: HomeJourneyMaterialReward(
+            itemId: 'echo-thread',
+            itemName: 'Эхо-нити',
+            quantity: 2,
           ),
-          HomeExpeditionDecisionLogEntry(
-            eventId: 'lumen-gate-v1',
-            eventTitle: 'Люминовые ворота',
-            choiceId: 'stabilize-core',
-            choiceTitle: 'Стабилизировать ядро',
-            outcomeTitle: 'Ровный импульс',
-            outcomeSummary: 'Ворота удержали курс экспедиции.',
-            resolvedAt: '2026-07-26T06:12:00Z',
-            pilotExperienceGained: 18,
-            petId: 'moss-v1',
-            petName: 'Мох',
-            petBondGained: 14,
-          ),
-        ], journeyNumber: 4);
+        ),
+        HomeExpeditionDecisionLogEntry(
+          eventId: 'lumen-gate-v1',
+          eventTitle: 'Люминовые ворота',
+          choiceId: 'stabilize-core',
+          choiceTitle: 'Стабилизировать ядро',
+          outcomeTitle: 'Ровный импульс',
+          outcomeSummary: 'Ворота удержали курс экспедиции.',
+          resolvedAt: '2026-07-26T06:12:00Z',
+          pilotExperienceGained: 18,
+          petId: 'moss-v1',
+          petName: 'Мох',
+          petBondGained: 14,
+        ),
+      ],
+      journeyNumber: 4,
+      journeyStartedAt: '2026-07-26T05:30:00Z',
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -154,6 +161,17 @@ void main() {
     );
 
     expect(log, findsOneWidget);
+    final Finder journeyStartedAt = find.byKey(
+      const Key('platform-current-journey-started-at'),
+    );
+    final String startedAt = _formattedJourneyStartTime(
+      tester,
+      journeyStartedAt,
+      '2026-07-26T05:30:00Z',
+      russian: true,
+    );
+    expect(find.text(startedAt), findsOneWidget);
+    expect(find.bySemanticsLabel(startedAt), findsOneWidget);
     expect(
       find.byKey(const Key('platform-current-journey-decision-count')),
       findsOneWidget,
@@ -2660,6 +2678,7 @@ HomeSnapshot _homeSnapshotWithDecisions(
   List<HomeExpeditionDecisionLogEntry> decisions, {
   required int journeyNumber,
   String? expeditionStatus,
+  String? journeyStartedAt,
   HomeExpeditionCompletionRecap? completionRecap,
   HomeJourneyChronicle? journeyChronicle,
   List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
@@ -2686,6 +2705,7 @@ HomeSnapshot _homeSnapshotWithDecisions(
     expeditionStatus: expeditionStatus ?? demo.expeditionStatus,
     expeditionVersion: demo.expeditionVersion,
     expeditionJourneyNumber: journeyNumber,
+    journeyStartedAt: journeyStartedAt,
     routeTrail: demo.routeTrail,
     decisionLog: decisions,
     completionRecap: completionRecap,
@@ -2786,6 +2806,23 @@ String _formattedDecisionTime(
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
   return russian ? 'Сохранено $date в $time' : 'Saved on $date at $time';
+}
+
+String _formattedJourneyStartTime(
+  WidgetTester tester,
+  Finder anchor,
+  String startedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime journeyStart = DateTime.parse(startedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(journeyStart);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(journeyStart),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian ? 'Начат $date в $time' : 'Started on $date at $time';
 }
 
 void _expectNoLayoutException(WidgetTester tester) {

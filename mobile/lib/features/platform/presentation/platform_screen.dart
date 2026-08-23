@@ -1801,6 +1801,14 @@ String _journeyDecisionTimeLabel(
   return context.l10n.platformJourneyDecisionResolvedAt(local.date, local.time);
 }
 
+String _journeyStartedTimeLabel(BuildContext context, String startedAt) {
+  final ({String date, String time}) local = _journeyLocalDateTime(
+    context,
+    startedAt,
+  );
+  return context.l10n.platformJourneyStartedAt(local.date, local.time);
+}
+
 String _journeyDurationLabel(BuildContext context, int? durationSeconds) {
   if (durationSeconds == null) {
     return '';
@@ -1875,6 +1883,10 @@ class _JourneyDecisionLogCard extends StatelessWidget {
     final List<HomeExpeditionDecisionLogEntry> decisions = snapshot.decisionLog;
     final HomeExpeditionDecisionLogEntry? lastDecision =
         snapshot.lastAcceptedJourneyDecision;
+    final String? startedAt = switch (snapshot.journeyStartedAt) {
+      final String value => _journeyStartedTimeLabel(context, value),
+      null => null,
+    };
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -1926,6 +1938,22 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               color: colors.onSurfaceVariant,
             ),
           ),
+          if (startedAt != null) ...<Widget>[
+            const SizedBox(height: 6),
+            Semantics(
+              key: const Key('platform-current-journey-started-at'),
+              container: true,
+              label: startedAt,
+              child: ExcludeSemantics(
+                child: Text(
+                  startedAt,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ],
           if (lastDecision != null) ...<Widget>[
             const SizedBox(height: 12),
             _LatestJourneyDecisionSummary(entry: lastDecision),

@@ -78,6 +78,9 @@
 
 ### Added
 
+- authoritative nullable current-journey start time in Home and the RU/EN
+  journal, preserving legacy omission without client duration inference;
+
 - literal latest accepted current-journey rewards in RU/EN, preserving
   persisted reward components without client aggregation or inference;
 

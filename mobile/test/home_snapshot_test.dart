@@ -80,6 +80,7 @@ void main() {
     expect(snapshot.expeditionProgress, 30);
     expect(snapshot.expeditionVersion, 1);
     expect(snapshot.expeditionJourneyNumber, 2);
+    expect(snapshot.journeyStartedAt, '2026-07-26T05:30:00Z');
     expect(snapshot.routeTrail, hasLength(2));
     expect(snapshot.discoveredRouteNodeCount, 2);
     expect(snapshot.routeTrail.first.nodeId, 'outer-beacon');
@@ -279,6 +280,26 @@ void main() {
     expect(snapshot.decisionLog, isEmpty);
     expect(snapshot.acceptedJourneyDecisionCount, 0);
     expect(snapshot.lastAcceptedJourneyDecision, isNull);
+  });
+
+  test('legacy response without journey start remains readable', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition.remove('startedAt');
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.journeyStartedAt, isNull);
+  });
+
+  test('current journey rejects an invalid start time', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition'] as Map<String, dynamic>;
+    expedition['startedAt'] = 'today';
+
+    expect(() => HomeSnapshot.fromJson(response), throwsFormatException);
   });
 
   test('last accepted journey decision preserves server list ordering', () {
@@ -3242,6 +3263,7 @@ Map<String, dynamic> _readyHomeResponse() {
       'status': 'EVENT_READY',
       'version': 1,
       'journeyNumber': 2,
+      'startedAt': '2026-07-26T05:30:00Z',
       'routeTrail': <Map<String, dynamic>>[
         <String, dynamic>{
           'nodeId': 'outer-beacon',

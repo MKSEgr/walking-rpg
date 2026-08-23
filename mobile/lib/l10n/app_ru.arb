@@ -661,6 +661,7 @@
   "platformSavedEntrySuffix": " · сохранённая запись",
   "platformDecisionLogTitle": "Решения маршрута",
   "platformDecisionLogSubtitle": "Только уже принятые сервером решения текущего похода.",
+  "platformJourneyStartedAt": "Начат {date} в {time}",
   "platformLatestDecisionTitle": "Последнее сохранённое решение",
   "platformLatestDecisionChoice": "Выбрано: {choice}",
   "platformLatestDecisionOutcome": "{event} → {outcome}",

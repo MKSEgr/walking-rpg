@@ -1273,6 +1273,17 @@ void main() {
       const Key('platform-current-journey-latest-decision'),
     );
     expect(latest, findsOneWidget);
+    final Finder journeyStartedAt = find.byKey(
+      const Key('platform-current-journey-started-at'),
+    );
+    final String startedAt = _formattedJourneyStartTime(
+      tester,
+      journeyStartedAt,
+      '2026-08-19T09:15:00Z',
+      russian: false,
+    );
+    expect(find.text(startedAt), findsOneWidget);
+    expect(find.bySemanticsLabel(startedAt), findsOneWidget);
     expect(find.text('Сохранённый выбор'), findsOneWidget);
     expect(find.text('Сохранённый исход'), findsOneWidget);
     final Finder decision = find.byKey(
@@ -1374,6 +1385,17 @@ void main() {
         const Key('platform-current-journey-latest-decision'),
       );
       await _bringIntoView(tester, latest);
+      final Finder journeyStartedAt = find.byKey(
+        const Key('platform-current-journey-started-at'),
+      );
+      final String startedAt = _formattedJourneyStartTime(
+        tester,
+        journeyStartedAt,
+        '2026-08-19T09:15:00Z',
+        russian: false,
+      );
+      expect(find.text(startedAt), findsOneWidget);
+      expect(find.bySemanticsLabel(startedAt), findsOneWidget);
       final String resolvedAt = _formattedDecisionTime(
         tester,
         latest,
@@ -1494,6 +1516,7 @@ HomeSnapshot _homeWithPersistedDecision({
         : 'COMPLETED',
     expeditionVersion: demo.expeditionVersion,
     expeditionJourneyNumber: 7,
+    journeyStartedAt: '2026-08-19T09:15:00Z',
     routeTrail: demo.routeTrail,
     decisionLog: <HomeExpeditionDecisionLogEntry>[
       HomeExpeditionDecisionLogEntry(
@@ -1616,6 +1639,23 @@ String _formattedDecisionTime(
     alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
   );
   return russian ? 'Сохранено $date в $time' : 'Saved on $date at $time';
+}
+
+String _formattedJourneyStartTime(
+  WidgetTester tester,
+  Finder anchor,
+  String startedAt, {
+  required bool russian,
+}) {
+  final BuildContext context = tester.element(anchor);
+  final MaterialLocalizations materialL10n = MaterialLocalizations.of(context);
+  final DateTime journeyStart = DateTime.parse(startedAt).toLocal();
+  final String date = materialL10n.formatMediumDate(journeyStart);
+  final String time = materialL10n.formatTimeOfDay(
+    TimeOfDay.fromDateTime(journeyStart),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return russian ? 'Начат $date в $time' : 'Started on $date at $time';
 }
 
 const String _fallback = 'Literal copy from a newer server';

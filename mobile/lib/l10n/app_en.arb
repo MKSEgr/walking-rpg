@@ -1394,6 +1394,13 @@
   "platformSavedEntrySuffix": " · saved entry",
   "platformDecisionLogTitle": "Route decisions",
   "platformDecisionLogSubtitle": "Only server-accepted decisions from the current journey.",
+  "platformJourneyStartedAt": "Started on {date} at {time}",
+  "@platformJourneyStartedAt": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "platformLatestDecisionTitle": "Latest saved decision",
   "platformLatestDecisionChoice": "Chosen: {choice}",
   "@platformLatestDecisionChoice": {

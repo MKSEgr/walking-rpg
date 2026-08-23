@@ -150,6 +150,8 @@ class HomeControllerTest {
                         .value("starter-expedition-v1"))
                 .andExpect(jsonPath("$.expedition.progress").value(30))
                 .andExpect(jsonPath("$.expedition.journeyNumber").value(1))
+                .andExpect(jsonPath("$.expedition.startedAt")
+                        .value("2026-07-25T11:30:00Z"))
                 .andExpect(jsonPath("$.expedition.routeTrail.length()").value(1))
                 .andExpect(jsonPath("$.expedition.routeTrail[0].nodeId")
                         .value("outer-beacon"))
