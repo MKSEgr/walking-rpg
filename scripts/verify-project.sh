@@ -31,7 +31,10 @@ for file in \
   "$ROOT_DIR/scripts/ci/verify_ios_pod_lock.py" \
   "$ROOT_DIR/scripts/ci/test_verify_ios_pod_lock.py" \
   "$ROOT_DIR/scripts/ci/verify_build_tool_wrapper_pins.py" \
-  "$ROOT_DIR/scripts/ci/test_verify_build_tool_wrapper_pins.py"; do
+  "$ROOT_DIR/scripts/ci/test_verify_build_tool_wrapper_pins.py" \
+  "$ROOT_DIR/scripts/ci/verify_health_device_inventory.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_health_device_inventory.py" \
+  "$ROOT_DIR/docs/evidence/health-device-inventory-template.json"; do
   if [ ! -f "$file" ]; then
     echo "Missing: $file" >&2
     exit 1
@@ -61,6 +64,20 @@ if ! "$ACTION_POLICY_PYTHON" -c \
     exit 1
   fi
 fi
+
+printf '%s\n' "Checking the sanitized Health device inventory contract..."
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/verify_health_device_inventory.py" \
+  "$ROOT_DIR/docs/evidence/health-device-inventory-template.json"
+if PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/verify_health_device_inventory.py" \
+  "$ROOT_DIR/docs/evidence/health-device-inventory-template.json" \
+  --require-recorded >/dev/null 2>&1; then
+  echo "Committed inventory template must not pass as recorded evidence." >&2
+  exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/test_verify_health_device_inventory.py"
 
 printf '%s\n' "Checking immutable backend container base images..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_backend_base_pins.py"

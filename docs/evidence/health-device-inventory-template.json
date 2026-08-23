@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "walking-rpg-health-device-inventory-v1",
+  "recordStatus": "TEMPLATE",
+  "recordedAtUtc": null,
+  "reviewedAtUtc": null,
+  "inventoryOwnerRole": null,
+  "reviewerRole": null,
+  "baseline": {
+    "candidate": "alpha-rc2",
+    "masterAnchorSha": "70520cdc57bd0f1f8cafd7205ce1903afa19c5a9",
+    "artifactSourceSha": "3e5a1623bd2f53a9fe5eeb17d822431cf7b29b23",
+    "treeSha": "09a809cc126c24b8abf5214f60d527958bc71a03",
+    "appVersion": "0.1.0",
+    "buildNumber": "1"
+  },
+  "evidence": {
+    "storageCategory": null,
+    "redactionPolicy": "walking-rpg-evidence-redaction-v1"
+  },
+  "slots": [
+    {
+      "slotId": "ios-phone-no-watch",
+      "required": true,
+      "status": "OWNER_INPUT_REQUIRED",
+      "platform": "ios",
+      "deviceCategory": "iphone_without_watch",
+      "deviceModel": null,
+      "operatingSystemVersion": null,
+      "healthApi": "healthkit",
+      "providerCategories": [],
+      "watchCategory": "none",
+      "ownerRole": null,
+      "availability": {
+        "cleanInstall": null,
+        "upgrade": null,
+        "timeZoneMidnight": null,
+        "batteryMeasurement": null
+      },
+      "blockerCategory": "owner_input_required",
+      "blockerReason": "Replace this template slot with sanitized inventory data."
+    },
+    {
+      "slotId": "ios-phone-with-watch",
+      "required": true,
+      "status": "OWNER_INPUT_REQUIRED",
+      "platform": "ios",
+      "deviceCategory": "iphone_with_apple_watch",
+      "deviceModel": null,
+      "operatingSystemVersion": null,
+      "healthApi": "healthkit",
+      "providerCategories": [],
+      "watchCategory": "apple_watch",
+      "ownerRole": null,
+      "availability": {
+        "cleanInstall": null,
+        "upgrade": null,
+        "timeZoneMidnight": null,
+        "batteryMeasurement": null
+      },
+      "blockerCategory": "owner_input_required",
+      "blockerReason": "Replace this template slot with sanitized inventory data."
+    },
+    {
+      "slotId": "android-health-connect-primary",
+      "required": true,
+      "status": "OWNER_INPUT_REQUIRED",
+      "platform": "android",
+      "deviceCategory": "android_health_connect_primary",
+      "deviceModel": null,
+      "operatingSystemVersion": null,
+      "healthApi": "health_connect",
+      "providerCategories": [],
+      "watchCategory": "none",
+      "ownerRole": null,
+      "availability": {
+        "cleanInstall": null,
+        "upgrade": null,
+        "timeZoneMidnight": null,
+        "batteryMeasurement": null
+      },
+      "blockerCategory": "owner_input_required",
+      "blockerReason": "Replace this template slot with sanitized inventory data."
+    },
+    {
+      "slotId": "android-health-connect-secondary",
+      "required": true,
+      "status": "OWNER_INPUT_REQUIRED",
+      "platform": "android",
+      "deviceCategory": "android_health_connect_secondary_provider",
+      "deviceModel": null,
+      "operatingSystemVersion": null,
+      "healthApi": "health_connect",
+      "providerCategories": [],
+      "watchCategory": "none",
+      "ownerRole": null,
+      "availability": {
+        "cleanInstall": null,
+        "upgrade": null,
+        "timeZoneMidnight": null,
+        "batteryMeasurement": null
+      },
+      "blockerCategory": "owner_input_required",
+      "blockerReason": "Replace this template slot with sanitized inventory data."
+    }
+  ]
+}

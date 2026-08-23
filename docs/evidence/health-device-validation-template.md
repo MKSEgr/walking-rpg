@@ -11,6 +11,13 @@
 - Дата review UTC:
 - Роль/категория внутренней группы без person/account ID (вне JSON):
 - Сценарий и строка матрицы:
+- Inventory schema: `walking-rpg-health-device-inventory-v1`
+- Inventory record status: `RECORDED`
+- Inventory slot ID:
+- Inventory owner role category:
+- Inventory evidence storage category без URL/path:
+- [ ] Inventory прошёл `verify_health_device_inventory.py --require-recorded`
+- [ ] Выбранная строка имеет `status=AVAILABLE`; `BLOCKED` не выдан за pass
 - Source Git SHA (40 lowercase hex):
 - App version/build:
 - Platform и OS version:

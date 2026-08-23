@@ -78,6 +78,11 @@
 
 ### Added
 
+- machine-verifiable F1 Health device inventory contract separates the
+  structural template from a recorded matrix, requires every physical
+  iOS/Android/provider slot to be AVAILABLE or explicitly BLOCKED, rejects
+  identifier-like evidence fields and keeps #149/#21 externally gated;
+
 - immutable `alpha-rc2` release dossier pins the accepted post-roadmap
   master anchor and artifact-producing source to one exact tree, with verified
   CI/release runs, archive digests, payload checksums and explicit external
