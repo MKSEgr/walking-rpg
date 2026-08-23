@@ -29,6 +29,17 @@ void main() {
     expect(russian.homeItemUpgradesReady(21), 'Можно применить 21 улучшение');
   });
 
+  test('equippable inventory count covers Russian and English plurals', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(english.homeInventoryItemsReadyToEquip(2), '2 items ready to equip');
+    expect(
+      russian.homeInventoryItemsReadyToEquip(21),
+      'Можно экипировать 21 предмет',
+    );
+  });
+
   test('Russian quest remaining guidance covers the one plural category', () {
     final AppLocalizationsRu russian = AppLocalizationsRu();
 

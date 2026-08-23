@@ -251,6 +251,14 @@ class HomeSnapshot {
         .length;
   }
 
+  int get equippableInventoryItemCount {
+    return inventory
+        .where(
+          (HomeInventoryItem item) => item.isEquippable && !item.isEquipped,
+        )
+        .length;
+  }
+
   bool get hasPilotExperienceProgress =>
       pilotLevel > 0 &&
       pilotCurrentExperience >= 0 &&

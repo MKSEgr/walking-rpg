@@ -1320,6 +1320,24 @@ server-authoritative item upgrades из ADR 0029 через ADR 0081 без из
 Home API, backend, persistence, upgrade economy, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 68 — Authoritative equippable inventory item count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает ready только accepted inventory items, для которых
+      существующая projection `isEquippable` истинна, а `isEquipped` ложна
+- [x] Materials/non-equippable и equipped items не входят в count; slot state,
+      kind, rarity и level не используются для повторного вывода availability
+- [x] Positive count получает RU/EN singular/plural guidance и одну semantics
+      node, zero не создаёт отдельного сообщения
+- [x] Domain, RU/EN, post-equip и compact large-text coverage фиксируют
+      boundary без изменения equipment slots, routes или equip command
+
+Milestone 68 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative equipment из ADR 0030 через ADR 0082 без изменения Home
+API, backend, persistence, route requirements, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

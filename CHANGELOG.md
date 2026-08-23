@@ -78,6 +78,9 @@
 
 ### Added
 
+- exact RU/EN count of accepted inventory items ready to equip, preserving
+  equipment-slot state, route requirements and equipment-command behavior;
+
 - exact RU/EN count of accepted item upgrades ready to apply, preserving
   server-authored availability, material requirements and upgrade-command
   behavior;
