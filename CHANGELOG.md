@@ -78,6 +78,9 @@
 
 ### Added
 
+- literal latest accepted current-journey outcome summary in RU/EN, preserving
+  immutable server copy without client consequence inference;
+
 - literal latest accepted current-journey choice in RU/EN, preserving immutable
   server copy without inferring choice availability or correctness;
 

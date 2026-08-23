@@ -192,9 +192,17 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.descendant(
+        of: latest,
+        matching: find.text('Результат: Ворота удержали курс экспедиции.'),
+      ),
+      findsOneWidget,
+    );
+    expect(
       find.bySemanticsLabel(
         'Последнее сохранённое решение текущего похода. Люминовые ворота. '
         'Выбор: Стабилизировать ядро. Итог: Ровный импульс. '
+        'Результат: Ворота удержали курс экспедиции. '
         '$latestResolvedAt.',
       ),
       findsOneWidget,

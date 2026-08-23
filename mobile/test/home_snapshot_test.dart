@@ -293,6 +293,7 @@ void main() {
       'eventTitle': 'Последняя принятая запись',
       'choiceTitle': 'Буквальный принятый выбор',
       'outcomeTitle': 'Порядок сохранён',
+      'outcomeSummary': 'Буквальное описание результата',
       'resolvedAt': '2026-07-25T05:58:00Z',
     });
 
@@ -303,6 +304,10 @@ void main() {
     expect(
       snapshot.lastAcceptedJourneyDecision?.choiceTitle,
       'Буквальный принятый выбор',
+    );
+    expect(
+      snapshot.lastAcceptedJourneyDecision?.outcomeSummary,
+      'Буквальное описание результата',
     );
     expect(
       snapshot.lastAcceptedJourneyDecision?.resolvedAt,

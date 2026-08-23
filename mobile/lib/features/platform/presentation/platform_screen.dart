@@ -2001,6 +2001,7 @@ class _LatestJourneyDecisionSummary extends StatelessWidget {
         entry.eventTitle,
         entry.choiceTitle,
         entry.outcomeTitle,
+        entry.outcomeSummary,
         resolvedAt,
       ),
       child: ExcludeSemantics(
@@ -2036,6 +2037,15 @@ class _LatestJourneyDecisionSummary extends StatelessWidget {
                     entry.outcomeTitle,
                   ),
                   style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  context.l10n.platformLatestDecisionSummary(
+                    entry.outcomeSummary,
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
