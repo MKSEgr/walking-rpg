@@ -2024,9 +2024,7 @@ class _LatestJourneyDecisionSummary extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  context.l10n.platformLatestDecisionChoice(
-                    entry.choiceTitle,
-                  ),
+                  context.l10n.platformLatestDecisionChoice(entry.choiceTitle),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
