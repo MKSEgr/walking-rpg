@@ -78,6 +78,10 @@
 
 ### Added
 
+- forward delivery roadmap from the code-complete alpha baseline through
+  physical validation, protected stage, internal alpha, closed beta, store
+  rollout and live operations, with explicit evidence-backed exit gates;
+
 - authoritative positive available-choice count for the current-journey READY
   event in RU/EN, excluding server-locked choices without rechecking rules;
 
