@@ -194,8 +194,12 @@ void main() {
     expect(find.text('Прогресс ENERGY: 0 из 30'), findsOneWidget);
     expect(find.bySemanticsLabel('Прогресс ENERGY: 0 из 30'), findsOneWidget);
     expect(find.text('Текущее событие: Источник сигнала'), findsOneWidget);
+    expect(find.text('О событии: Маяк отвечает импульсом.'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('Текущее событие: Источник сигнала'),
+      find.bySemanticsLabel(
+        'Текущее событие: Источник сигнала. '
+        'О событии: Маяк отвечает импульсом.',
+      ),
       findsOneWidget,
     );
     final Finder journeyStartedAt = find.byKey(
