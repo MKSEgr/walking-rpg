@@ -1507,6 +1507,23 @@ Milestone 78 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0092 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 79 — Authoritative current-journey position
+
+### CODE_COMPLETE
+
+- [x] Journal использует accepted `currentNodeId/currentNode` как единственный
+      source текущей position
+- [x] Known mutable node локализуется по stable ID, unknown future node
+      сохраняет literal server fallback
+- [x] Route trail, decision log, phase и unlocked event не используются для
+      повторного выбора position
+- [x] RU/EN semantics, future fallback и compact large-text coverage фиксируют
+      boundary без изменения Home API, backend, persistence или commands
+
+Milestone 79 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0093 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -1897,6 +1897,12 @@ class _JourneyDecisionLogCard extends StatelessWidget {
       null => null,
     };
     final String phase = _journeyPhaseLabel(context, snapshot.expeditionStatus);
+    final String currentPosition = context.l10n.platformJourneyCurrentPosition(
+      context.l10n.currentNodeName(
+        snapshot.currentNodeId,
+        snapshot.currentNodeName,
+      ),
+    );
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -1959,6 +1965,20 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colors.primary,
                   fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Semantics(
+            key: const Key('platform-current-journey-position'),
+            container: true,
+            label: currentPosition,
+            child: ExcludeSemantics(
+              child: Text(
+                currentPosition,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
                 ),
               ),
             ),

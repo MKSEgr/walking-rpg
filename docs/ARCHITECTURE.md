@@ -422,6 +422,11 @@ fail-closed ограничивает его server enum `IN_PROGRESS`, `EVENT_RE
 `COMPLETED`. Journal не пересчитывает phase из energy, route trail, decisions,
 unlocked event или completion recap; projection не меняет command boundary.
 
+Current-journey position использует только required
+`expedition.currentNodeId/currentNode`. Stable ID разрешает известную mutable
+copy через current-content catalog, а неизвестный ID оставляет server fallback;
+последний route node, decision, phase и event не заменяют accepted position.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает

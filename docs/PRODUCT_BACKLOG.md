@@ -2147,6 +2147,24 @@ Home projection `expedition.startedAt`.
 **Статус:** current-journey phase реализована как literal mobile projection
 accepted `expedition.status`.
 
+### US-095. Видеть текущую точку похода
+
+Как игрок, я хочу видеть текущую точку похода в журнале, чтобы понимать своё
+положение без поиска последнего узла на карте маршрута.
+
+Критерии:
+
+- position использует только accepted `currentNodeId/currentNode`;
+- known mutable current content локализуется существующим stable-ID catalog,
+  unknown future ID сохраняет literal server fallback;
+- mobile не выбирает position из последнего `routeTrail`, `decisionLog`, phase
+  или unlocked event;
+- RU/EN journal показывает одну visible position label и одну semantics node;
+- Home API, backend, persistence, commands и event resolution не меняются.
+
+**Статус:** current-journey position реализована как stable-ID-aware mobile
+projection accepted current-node identity и copy.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

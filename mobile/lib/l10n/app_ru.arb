@@ -664,6 +664,7 @@
   "platformJourneyPhaseInProgress": "Поход продолжается",
   "platformJourneyPhaseDecisionAvailable": "Доступно решение",
   "platformJourneyPhaseCompleted": "Поход завершён",
+  "platformJourneyCurrentPosition": "Текущая точка: {node}",
   "platformJourneyStartedAt": "Начат {date} в {time}",
   "platformLatestDecisionTitle": "Последнее сохранённое решение",
   "platformLatestDecisionChoice": "Выбрано: {choice}",

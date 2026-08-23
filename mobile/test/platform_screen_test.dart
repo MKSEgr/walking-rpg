@@ -96,6 +96,10 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.byKey(const Key('platform-current-journey-position')),
+      findsOneWidget,
+    );
+    expect(
       find.byKey(const Key('platform-current-journey-started-at')),
       findsNothing,
     );
@@ -168,6 +172,11 @@ void main() {
     expect(log, findsOneWidget);
     expect(find.text('Доступно решение'), findsOneWidget);
     expect(find.bySemanticsLabel('Доступно решение'), findsOneWidget);
+    expect(find.text('Текущая точка: Внешний маяк'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Текущая точка: Внешний маяк'),
+      findsOneWidget,
+    );
     final Finder journeyStartedAt = find.byKey(
       const Key('platform-current-journey-started-at'),
     );
