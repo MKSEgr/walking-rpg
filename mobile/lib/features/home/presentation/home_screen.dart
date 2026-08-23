@@ -3106,7 +3106,7 @@ class _ItemUpgradeView extends StatelessWidget {
           builder: (BuildContext context, BoxConstraints constraints) {
             final VoidCallback? onPressed =
                 readOnly || busy || !upgrade.canApply ? null : onUpgrade;
-            if (constraints.maxWidth < 260) {
+            if (constraints.maxWidth < 300) {
               return FilledButton.tonal(
                 key: Key('item-upgrade-${upgrade.upgradeId}'),
                 style: FilledButton.styleFrom(
