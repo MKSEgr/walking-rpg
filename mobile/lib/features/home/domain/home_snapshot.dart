@@ -241,6 +241,8 @@ class HomeSnapshot {
 
   int get discoveredRouteNodeCount => routeTrail.length;
 
+  int get acceptedJourneyDecisionCount => decisionLog.length;
+
   int get craftableRecipeCount {
     return craftingRecipes
         .where((HomeCraftingRecipe recipe) => recipe.canCraft)

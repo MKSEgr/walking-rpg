@@ -1893,9 +1893,29 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Text(
-            context.l10n.platformDecisionLogTitle,
-            style: theme.textTheme.titleLarge,
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              Text(
+                context.l10n.platformDecisionLogTitle,
+                style: theme.textTheme.titleLarge,
+              ),
+              if (decisions.isNotEmpty)
+                ExcludeSemantics(
+                  child: Text(
+                    key: const Key('platform-current-journey-decision-count'),
+                    context.l10n.platformDecisionsAcceptedCount(
+                      snapshot.acceptedJourneyDecisionCount,
+                    ),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(

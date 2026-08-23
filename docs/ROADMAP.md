@@ -1391,6 +1391,23 @@ server-authoritative current-journey state из ADR 0038 через ADR 0085 б�
 изменения Home API, backend, persistence, future topology, immutable
 `alpha-rc1` или внешних gates.
 
+## Milestone 72 — Authoritative current-journey decision count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает решениями ровно accepted элементы текущего `decisionLog`
+- [x] Route trail, event state, rewards и completion не используются для
+      повторного вывода решений
+- [x] Непустой журнал получает видимую RU/EN строку; legacy/empty state
+      сохраняет существующую подсказку без zero-count шума
+- [x] Domain, RU, legacy-empty и compact English large-text coverage фиксируют
+      boundary без изменения Home API, backend или event resolution
+
+Milestone 72 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0086 без
+изменения Home API, backend, persistence, event ordering, immutable
+`alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

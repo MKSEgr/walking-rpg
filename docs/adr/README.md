@@ -102,3 +102,4 @@ NNNN-short-title.md
 - [0083 — authoritative available expedition choice count](0083-authoritative-available-expedition-choice-count.md)
 - [0084 — authoritative equipped slot progress](0084-authoritative-equipped-slot-progress.md)
 - [0085 — authoritative discovered route node count](0085-authoritative-discovered-route-node-count.md)
+- [0086 — authoritative current-journey decision count](0086-authoritative-current-journey-decision-count.md)
