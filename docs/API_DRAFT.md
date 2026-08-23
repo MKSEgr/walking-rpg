@@ -391,6 +391,10 @@ Authorization: Bearer <access-token>
   status `RESOLVED`, selected choice, outcome, durable result, decision log и
   recap остаются persisted literal history и не переписываются при смене
   locale;
+- `expedition.status` — required authoritative phase exact текущего похода:
+  `IN_PROGRESS`, `EVENT_READY` или `COMPLETED`. Mobile локализует literal
+  accepted status и не выводит его из energy, `routeTrail`, `decisionLog`,
+  unlocked event или completion recap; неизвестное значение отклоняется;
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;

@@ -1045,6 +1045,11 @@ locale-aware start label below its explanation. The timestamp is server-owned;
 the client does not infer it from the first decision or turn it into a live
 elapsed timer. Legacy omission leaves the existing spacing and empty state.
 
+The journal always places one compact localized phase label above the optional
+start time. Its source is only accepted `expedition.status`: movement, decision
+availability and completion are never inferred from neighboring data. One
+semantics node owns the phase announcement; color is only supportive styling.
+
 Each entry uses a numbered code-native signal, a decision arrow and separate
 outcome typography. Compact reward chips repeat the literal pilot XP, named
 companion bond and optional material quantity saved with that decision; they

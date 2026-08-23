@@ -1269,6 +1269,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Route decisions'), findsOneWidget);
+    expect(find.text('Journey in progress'), findsOneWidget);
+    expect(find.bySemanticsLabel('Journey in progress'), findsOneWidget);
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
     );
@@ -1381,6 +1383,8 @@ void main() {
       );
       expect(find.text('Decisions made: 1'), findsOneWidget);
       expect(find.bySemanticsLabel('Decisions made: 1'), findsNothing);
+      expect(find.text('Journey in progress'), findsOneWidget);
+      expect(find.bySemanticsLabel('Journey in progress'), findsOneWidget);
       final Finder latest = find.byKey(
         const Key('platform-current-journey-latest-decision'),
       );

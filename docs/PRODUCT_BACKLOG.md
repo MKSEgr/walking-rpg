@@ -2128,6 +2128,25 @@ mobile projection reward fields из `decisionLog.last`.
 **Статус:** authoritative current-journey start time реализован как nullable
 Home projection `expedition.startedAt`.
 
+### US-094. Видеть текущую фазу похода
+
+Как игрок, я хочу видеть фазу текущего похода в журнале, чтобы понимать,
+продолжается путь, доступно решение или поход уже завершён.
+
+Критерии:
+
+- mobile принимает только authoritative `expedition.status` со значениями
+  `IN_PROGRESS`, `EVENT_READY` или `COMPLETED`;
+- phase не выводится повторно из energy, `routeTrail`, `decisionLog`, unlocked
+  event или completion recap;
+- RU/EN journal показывает одну visible phase label и одну semantics node;
+- cached snapshot сохраняет accepted server status без пересчёта;
+- Home API, backend, persistence, commands, rewards и event resolution не
+  меняются.
+
+**Статус:** current-journey phase реализована как literal mobile projection
+accepted `expedition.status`.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

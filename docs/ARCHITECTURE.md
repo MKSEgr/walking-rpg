@@ -417,6 +417,11 @@ journey-start source, который используется для completion 
 текущего `journeyNumber`. Service не выводит start из первого resolution,
 content или response clock; legacy absence остаётся неизвестным значением.
 
+Mobile принимает current phase только из required `expedition.status` и
+fail-closed ограничивает его server enum `IN_PROGRESS`, `EVENT_READY`,
+`COMPLETED`. Journal не пересчитывает phase из energy, route trail, decisions,
+unlocked event или completion recap; projection не меняет command boundary.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает
