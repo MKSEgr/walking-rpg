@@ -2559,6 +2559,45 @@ void main() {
     expect(snapshot.craftingRecipes.single.isCrafted, isTrue);
     expect(snapshot.craftingRecipes.single.canCraft, isFalse);
     expect(snapshot.craftingRecipes.single.ingredients, hasLength(2));
+    expect(snapshot.craftableRecipeCount, 0);
+  });
+
+  test('craftable recipe count trusts only accepted READY statuses', () {
+    Map<String, dynamic> recipe(String recipeId, String status) {
+      return <String, dynamic>{
+        'recipeId': recipeId,
+        'recipeVersion': '1',
+        'name': recipeId,
+        'description': 'Accepted recipe.',
+        'status': status,
+        'ingredients': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'itemId': 'lumen-shard',
+            'name': 'Люминовый осколок',
+            'requiredQuantity': 1,
+            'availableQuantity': status == 'READY' ? 1 : 0,
+          },
+        ],
+        'result': <String, dynamic>{
+          'itemId': '$recipeId-result',
+          'name': '$recipeId result',
+          'description': 'Accepted result.',
+          'kind': 'UNIQUE',
+        },
+      };
+    }
+
+    final Map<String, dynamic> response = _readyHomeResponse();
+    response['craftingRecipes'] = <Map<String, dynamic>>[
+      recipe('ready-a', 'READY'),
+      recipe('missing', 'MISSING_MATERIALS'),
+      recipe('crafted', 'CRAFTED'),
+      recipe('ready-b', 'READY'),
+    ];
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.craftableRecipeCount, 2);
   });
 
   test('item upgrade and unique rarity are mapped additively', () {

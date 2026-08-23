@@ -239,6 +239,12 @@ class HomeSnapshot {
 
   bool get isCached => cacheMetadata != null;
 
+  int get craftableRecipeCount {
+    return craftingRecipes
+        .where((HomeCraftingRecipe recipe) => recipe.canCraft)
+        .length;
+  }
+
   bool get hasPilotExperienceProgress =>
       pilotLevel > 0 &&
       pilotCurrentExperience >= 0 &&

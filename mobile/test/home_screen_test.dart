@@ -785,6 +785,11 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(find.text('1 рецепт готов к созданию'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('1 рецепт готов к созданию'),
+        findsOneWidget,
+      );
       expect(
         find.bySemanticsLabel(
           'Люминовый осколок, 2 из 2, материала достаточно',
@@ -848,6 +853,8 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('home-craftable-recipes')), findsOneWidget);
+    expect(find.text('1 рецепт готов к созданию'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -1602,6 +1609,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(craftedStatus, findsOneWidget);
+    expect(find.byKey(const Key('home-craftable-recipes')), findsNothing);
     expect(
       find.byKey(
         const Key(

@@ -96,3 +96,4 @@ NNNN-short-title.md
 - [0077 — authoritative unlockable pilot skill count](0077-authoritative-unlockable-pilot-skill-count.md)
 - [0078 — authoritative evolvable companion count](0078-authoritative-evolvable-companion-count.md)
 - [0079 — authoritative equippable cosmetic count](0079-authoritative-equippable-cosmetic-count.md)
+- [0080 — authoritative craftable recipe count](0080-authoritative-craftable-recipe-count.md)

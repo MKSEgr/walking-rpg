@@ -78,6 +78,9 @@
 
 ### Added
 
+- exact RU/EN count of accepted crafting recipes ready to craft, preserving
+  server-authored availability, material costs and crafting-command behavior;
+
 - exact RU/EN count of owned accepted-catalog cosmetics ready to equip,
   preserving purchase, ownership, slot and equip-command behavior;
 
