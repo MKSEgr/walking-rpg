@@ -1999,6 +1999,7 @@ class _LatestJourneyDecisionSummary extends StatelessWidget {
       container: true,
       label: context.l10n.platformLatestDecisionSemantics(
         entry.eventTitle,
+        entry.choiceTitle,
         entry.outcomeTitle,
         resolvedAt,
       ),
@@ -2022,6 +2023,13 @@ class _LatestJourneyDecisionSummary extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
+                Text(
+                  context.l10n.platformLatestDecisionChoice(entry.choiceTitle),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
                 Text(
                   context.l10n.platformLatestDecisionOutcome(
                     entry.eventTitle,
