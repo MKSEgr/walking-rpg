@@ -404,6 +404,11 @@ Authorization: Bearer <access-token>
   copy и ограничивает только visual progress indicator диапазоном `0..1`; из
   этих чисел mobile не выводит phase, decision availability, completion,
   rewards, spendability или command eligibility;
+- `expedition.unlockedEvent` со status exact `READY` — authoritative current
+  event для journal. Known mutable title локализуется только по stable
+  `eventId`, unknown ID сохраняет literal server fallback; absent, `RESOLVED`
+  и unknown status не показываются, а phase, node, progress, route trail,
+  choices и decision log не подменяют accepted event;
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;

@@ -2183,6 +2183,25 @@ projection accepted current-node identity и copy.
 **Статус:** current-journey ENERGY progress реализован как literal mobile
 projection accepted progress/target с bounded visual indicator.
 
+### US-097. Видеть текущее событие похода
+
+Как игрок, я хочу видеть принятое сервером текущее событие в журнале, чтобы
+понимать, какое решение ожидает меня в активном походе.
+
+Критерии:
+
+- journal показывает только `unlockedEvent` со status exact `READY`;
+- known mutable title локализуется по stable `eventId`, unknown future ID
+  сохраняет literal server fallback;
+- absent, `RESOLVED` и unknown status fail-closed не создают label;
+- phase, current node, ENERGY progress, route trail, choices и decision log не
+  используются для выбора или восстановления event;
+- RU/EN label, одна semantics node и compact large-text coverage фиксируют
+  boundary без изменения Home API, backend, persistence или commands.
+
+**Статус:** current READY event title реализован как stable-ID-aware mobile
+projection accepted `unlockedEvent`.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

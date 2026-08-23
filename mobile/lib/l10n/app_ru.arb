@@ -666,6 +666,7 @@
   "platformJourneyPhaseCompleted": "Поход завершён",
   "platformJourneyCurrentPosition": "Текущая точка: {node}",
   "platformJourneyEnergyProgress": "Прогресс ENERGY: {progress} из {requiredEnergy}",
+  "platformJourneyReadyEvent": "Текущее событие: {event}",
   "platformJourneyStartedAt": "Начат {date} в {time}",
   "platformLatestDecisionTitle": "Последнее сохранённое решение",
   "platformLatestDecisionChoice": "Выбрано: {choice}",

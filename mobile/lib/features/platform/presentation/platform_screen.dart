@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/cache/cached_snapshot_banner.dart';
 import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/core/localization/current_content_localizations.dart';
+import 'package:walking_rpg_mobile/core/localization/current_event_localizations.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
 import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
@@ -1907,6 +1908,16 @@ class _JourneyDecisionLogCard extends StatelessWidget {
       snapshot.expeditionProgress,
       snapshot.requiredEnergy,
     );
+    final HomeExpeditionEvent? readyEvent = switch (snapshot.unlockedEvent) {
+      final HomeExpeditionEvent event when event.status == 'READY' => event,
+      _ => null,
+    };
+    final String? readyEventLabel = switch (readyEvent) {
+      final HomeExpeditionEvent event => context.l10n.platformJourneyReadyEvent(
+        context.l10n.currentEventTitle(event.eventId, event.title),
+      ),
+      null => null,
+    };
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -2014,6 +2025,23 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               ),
             ),
           ),
+          if (readyEventLabel != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('platform-current-journey-ready-event'),
+              container: true,
+              label: readyEventLabel,
+              child: ExcludeSemantics(
+                child: Text(
+                  readyEventLabel,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
           if (startedAt != null) ...<Widget>[
             const SizedBox(height: 6),
             Semantics(

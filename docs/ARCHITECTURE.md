@@ -433,6 +433,12 @@ clamp-ит только значение декоративного progress ind
 phase, decision availability, completion, remaining rewards, spendability и
 command eligibility из отношения чисел не выводятся.
 
+Current-journey ready event использует только `expedition.unlockedEvent` со
+status exact `READY`. Stable `eventId` разрешает known mutable title через
+current-event catalog, а unknown ID оставляет server fallback; absent,
+`RESOLVED` и unknown status fail-closed не создают label. Phase, current node,
+ENERGY progress, route trail, choices и decision log не выбирают event.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает

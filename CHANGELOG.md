@@ -78,6 +78,9 @@
 
 ### Added
 
+- authoritative RU/EN current-journey READY event title from accepted event
+  status and stable identity, with literal fallback for future event IDs;
+
 - authoritative RU/EN current-journey ENERGY progress from accepted progress
   and target values, with only the visual indicator bounded;
 

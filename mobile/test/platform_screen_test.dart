@@ -104,6 +104,10 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.byKey(const Key('platform-current-journey-ready-event')),
+      findsNothing,
+    );
+    expect(
       find.byKey(const Key('platform-current-journey-started-at')),
       findsNothing,
     );
@@ -150,6 +154,12 @@ void main() {
       journeyNumber: 4,
       expeditionStatus: 'EVENT_READY',
       journeyStartedAt: '2026-07-26T05:30:00Z',
+      unlockedEvent: const HomeExpeditionEvent(
+        eventId: 'signal-source-v1',
+        title: 'Server signal title',
+        summary: 'Server signal summary',
+        status: 'READY',
+      ),
     );
 
     await tester.pumpWidget(
@@ -183,6 +193,11 @@ void main() {
     );
     expect(find.text('Прогресс ENERGY: 0 из 30'), findsOneWidget);
     expect(find.bySemanticsLabel('Прогресс ENERGY: 0 из 30'), findsOneWidget);
+    expect(find.text('Текущее событие: Источник сигнала'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Текущее событие: Источник сигнала'),
+      findsOneWidget,
+    );
     final Finder journeyStartedAt = find.byKey(
       const Key('platform-current-journey-started-at'),
     );
@@ -2703,6 +2718,7 @@ HomeSnapshot _homeSnapshotWithDecisions(
   required int journeyNumber,
   String? expeditionStatus,
   String? journeyStartedAt,
+  HomeExpeditionEvent? unlockedEvent,
   HomeExpeditionCompletionRecap? completionRecap,
   HomeJourneyChronicle? journeyChronicle,
   List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
@@ -2735,7 +2751,7 @@ HomeSnapshot _homeSnapshotWithDecisions(
     completionRecap: completionRecap,
     recentJourneyRecaps: recentJourneyRecaps,
     journeyChronicle: journeyChronicle,
-    unlockedEvent: demo.unlockedEvent,
+    unlockedEvent: unlockedEvent ?? demo.unlockedEvent,
     pilotName: demo.pilotName,
     pilotLevel: demo.pilotLevel,
     pilotCurrentExperience: demo.pilotCurrentExperience,
