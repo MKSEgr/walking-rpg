@@ -880,16 +880,6 @@ void main() {
     expect(find.text('PILOT JOURNAL'), findsOneWidget);
     expect(find.text('Season of the First Signal'), findsOneWidget);
     expect(find.text('SPARK · LV. 1'), findsOneWidget);
-    await _bringIntoView(
-      tester,
-      find.byKey(const Key('platform-journey-decision-log')),
-    );
-    expect(
-      find.byKey(const Key('platform-current-journey-decision-count')),
-      findsOneWidget,
-    );
-    expect(find.text('Decisions made: 1'), findsOneWidget);
-    expect(find.bySemanticsLabel('Decisions made: 1'), findsNothing);
 
     await _bringIntoView(
       tester,
@@ -1293,6 +1283,40 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'current journey decision count reflows in English at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder log = find.byKey(const Key('platform-journey-decision-log'));
+      await _bringIntoView(tester, log);
+      expect(
+        find.byKey(const Key('platform-current-journey-decision-count')),
+        findsOneWidget,
+      );
+      expect(find.text('Decisions made: 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Decisions made: 1'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      semantics.dispose();
+    },
+  );
 }
 
 class _LocalizedPlatformApp extends StatelessWidget {
