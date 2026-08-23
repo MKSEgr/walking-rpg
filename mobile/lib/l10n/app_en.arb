@@ -1414,14 +1414,21 @@
       "summary": {"type": "String"}
     }
   },
-  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Choice: {choice}. Outcome: {outcome}. Result: {summary} {resolvedAt}.",
+  "platformLatestDecisionRewards": "Rewards: {rewards}",
+  "@platformLatestDecisionRewards": {
+    "placeholders": {
+      "rewards": {"type": "String"}
+    }
+  },
+  "platformLatestDecisionSemantics": "Latest saved decision in the current journey. {event}. Choice: {choice}. Outcome: {outcome}. Result: {summary} {resolvedAt}.{rewards}",
   "@platformLatestDecisionSemantics": {
     "placeholders": {
       "event": {"type": "String"},
       "choice": {"type": "String"},
       "outcome": {"type": "String"},
       "summary": {"type": "String"},
-      "resolvedAt": {"type": "String"}
+      "resolvedAt": {"type": "String"},
+      "rewards": {"type": "String"}
     }
   },
   "platformNoDecisions": "Journey {journey}: no decisions yet",

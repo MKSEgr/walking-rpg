@@ -2091,6 +2091,25 @@ mobile projection `decisionLog.last.choiceTitle` без client inference.
 **Статус:** latest accepted current-journey outcome summary реализован как
 literal mobile projection `decisionLog.last.outcomeSummary`.
 
+### US-092. Видеть награды последнего решения
+
+Как игрок, я хочу видеть награды последнего сохранённого решения текущего
+похода, чтобы сразу понимать полученный результат без поиска полной записи.
+
+Критерии:
+
+- latest summary использует reward fields только последнего элемента accepted
+  `decisionLog`;
+- mobile не агрегирует rewards между решениями, не пересчитывает economy и не
+  соединяет запись с текущим state;
+- RU/EN summary показывает persisted pilot XP, pet bond и material reward;
+- summary сохраняет одну semantics node и compact large-text layout;
+- legacy/no-reward/empty state, Home API, backend, persistence и event
+  resolution не меняются.
+
+**Статус:** latest accepted current-journey rewards реализованы как literal
+mobile projection reward fields из `decisionLog.last`.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

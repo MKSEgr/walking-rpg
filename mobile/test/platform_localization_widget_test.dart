@@ -1260,7 +1260,8 @@ void main() {
         locale: const Locale('en'),
         child: PlatformScreen(
           loader: () async => platformSnapshot(),
-          homeLoader: () async => _homeWithPersistedDecision(),
+          homeLoader: () async =>
+              _homeWithPersistedDecision(withDecisionRewards: true),
           recordExperimentExposures: false,
         ),
       ),
@@ -1313,17 +1314,28 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.descendant(
+        of: latest,
+        matching: find.text(
+          'Rewards: +27 pilot XP; Navigator · +8 bond; +3 Signal glass',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
       find.bySemanticsLabel(
         'Latest saved decision in the current journey. Сигнал прошлого. Choice: Сохранённый выбор. '
         'Outcome: Сохранённый исход. Result: Сохранённое описание. '
-        '$resolvedAt.',
+        '$resolvedAt. Rewards: +27 pilot XP; Navigator: +8 bond; '
+        '+3 Signal glass.',
       ),
       findsOneWidget,
     );
     expect(
       find.bySemanticsLabel(
         'Entry 1 of 1. Сигнал прошлого. Decision: Сохранённый выбор. '
-        'Outcome: Сохранённый исход. Сохранённое описание. $resolvedAt.',
+        'Outcome: Сохранённый исход. Сохранённое описание. $resolvedAt. '
+        'Rewards: +27 pilot XP; Navigator: +8 bond; +3 Signal glass.',
       ),
       findsOneWidget,
     );
@@ -1342,7 +1354,8 @@ void main() {
           textScale: 1.6,
           child: PlatformScreen(
             loader: () async => platformSnapshot(),
-            homeLoader: () async => _homeWithPersistedDecision(),
+            homeLoader: () async =>
+                _homeWithPersistedDecision(withDecisionRewards: true),
             recordExperimentExposures: false,
           ),
         ),
@@ -1396,10 +1409,20 @@ void main() {
         findsOneWidget,
       );
       expect(
+        find.descendant(
+          of: latest,
+          matching: find.text(
+            'Rewards: +27 pilot XP; Navigator · +8 bond; +3 Signal glass',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
         find.bySemanticsLabel(
           'Latest saved decision in the current journey. Сигнал прошлого. Choice: Сохранённый выбор. '
           'Outcome: Сохранённый исход. Result: Сохранённое описание. '
-          '$resolvedAt.',
+          '$resolvedAt. Rewards: +27 pilot XP; Navigator: +8 bond; '
+          '+3 Signal glass.',
         ),
         findsOneWidget,
       );
@@ -1446,6 +1469,7 @@ HomeSnapshot _homeWithPersistedDecision({
   HomeJourneyChronicle? journeyChronicle,
   List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
       const <HomeExpeditionCompletionRecap>[],
+  bool withDecisionRewards = false,
 }) {
   const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
@@ -1471,7 +1495,7 @@ HomeSnapshot _homeWithPersistedDecision({
     expeditionVersion: demo.expeditionVersion,
     expeditionJourneyNumber: 7,
     routeTrail: demo.routeTrail,
-    decisionLog: const <HomeExpeditionDecisionLogEntry>[
+    decisionLog: <HomeExpeditionDecisionLogEntry>[
       HomeExpeditionDecisionLogEntry(
         eventId: 'legacy-event-v1',
         eventTitle: 'Сигнал прошлого',
@@ -1480,6 +1504,17 @@ HomeSnapshot _homeWithPersistedDecision({
         outcomeTitle: 'Сохранённый исход',
         outcomeSummary: 'Сохранённое описание.',
         resolvedAt: '2026-08-19T10:00:00Z',
+        pilotExperienceGained: withDecisionRewards ? 27 : 0,
+        petId: withDecisionRewards ? 'navigator-v1' : null,
+        petName: withDecisionRewards ? 'Navigator' : null,
+        petBondGained: withDecisionRewards ? 8 : 0,
+        materialReward: withDecisionRewards
+            ? const HomeJourneyMaterialReward(
+                itemId: 'signal-glass',
+                itemName: 'Signal glass',
+                quantity: 3,
+              )
+            : null,
       ),
     ],
     completionRecap: completionRecap,

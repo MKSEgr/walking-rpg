@@ -1458,6 +1458,23 @@ Milestone 75 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0089 без
 изменения rewards, immutable `alpha-rc1` или внешних gates.
 
+## Milestone 76 — Latest accepted current-journey rewards
+
+### CODE_COMPLETE
+
+- [x] Summary использует persisted reward fields только последнего элемента
+      accepted `decisionLog`
+- [x] Mobile не агрегирует rewards между решениями, не пересчитывает economy и
+      не соединяет запись с текущим state
+- [x] RU/EN summary и единая semantics node показывают pilot XP, pet bond и
+      material reward существующими reward labels
+- [x] Domain, legacy/no-reward и compact large-text coverage фиксируют boundary
+      без изменения Home API, backend, persistence или event resolution
+
+Milestone 76 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0090 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
