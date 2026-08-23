@@ -1,5 +1,9 @@
 # Roadmap
 
+Этот файл сохраняет историческую декомпозицию выполненного software scope.
+Порядок дальнейшей delivery-программы от alpha baseline до release и live
+operations находится в [Forward roadmap](FORWARD_ROADMAP.md).
+
 Roadmap отражает снижение рисков. Статусы:
 
 - `[x] CODE_COMPLETE` — реализовано и проверяется CI;

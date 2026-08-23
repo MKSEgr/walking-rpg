@@ -680,7 +680,9 @@ walking-rpg/
 - A/B-тесты;
 - осторожная монетизация.
 
-Подробная декомпозиция находится в `docs/ROADMAP.md`.
+Историческая декомпозиция software scope находится в `docs/ROADMAP.md`, а
+актуальная delivery-программа от alpha validation до устойчивого релиза — в
+`docs/FORWARD_ROADMAP.md`.
 
 ---
 

@@ -6,6 +6,7 @@
 
 Текущая delivery-оценка и операционный план:
 [project assessment](docs/PROJECT_ASSESSMENT_2026-08-07.md),
+[forward roadmap](docs/FORWARD_ROADMAP.md),
 [validation backlog](docs/VALIDATION_BACKLOG.md) и
 [prompt «следующая задача → PR»](docs/NEXT_TASK_TO_PR_PROMPT.md).
 
