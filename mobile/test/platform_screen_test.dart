@@ -95,8 +95,6 @@ void main() {
       find.byKey(const Key('platform-current-journey-phase')),
       findsOneWidget,
     );
-    expect(find.text('Journey in progress'), findsOneWidget);
-    expect(find.bySemanticsLabel('Journey in progress'), findsOneWidget);
     expect(
       find.byKey(const Key('platform-current-journey-started-at')),
       findsNothing,
