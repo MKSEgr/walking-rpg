@@ -2973,9 +2973,7 @@ class _ItemUpgradeCard extends StatelessWidget {
             Semantics(
               key: const Key('home-ready-item-upgrades'),
               container: true,
-              label: context.l10n.homeItemUpgradesReady(
-                readyItemUpgradeCount,
-              ),
+              label: context.l10n.homeItemUpgradesReady(readyItemUpgradeCount),
               excludeSemantics: true,
               child: Text(
                 context.l10n.homeItemUpgradesReady(readyItemUpgradeCount),
