@@ -116,6 +116,24 @@ class InventoryValidatorTest(unittest.TestCase):
         slot["availability"] = {key: None for key in VALIDATOR.AVAILABILITY_KEYS}
         VALIDATOR.validate_inventory(data, require_recorded=True)
 
+    def test_provider_categories_reject_sensitive_identifier_slugs(self) -> None:
+        for unsafe in (
+            "device_id_123456789012345",
+            "serial_abcdef0123456789abcdef0123456789abcdef0123456789",
+        ):
+            data = recorded()
+            data["slots"][2]["providerCategories"] = [unsafe]
+            self.assert_invalid(data, "sensitive identifier")
+
+    def test_provider_categories_reject_generic_identifier_like_slugs(self) -> None:
+        for unsafe in (
+            "provider_123456789012345",
+            "provider_abcdef0123456789abcdef0123456789abcdef01",
+        ):
+            data = recorded()
+            data["slots"][2]["providerCategories"] = [unsafe]
+            self.assert_invalid(data, "identifiers")
+
     def test_identifier_like_free_text_is_rejected(self) -> None:
         data = recorded()
         data["slots"][0]["deviceModel"] = "iPhone 123e4567-e89b-12d3-a456-426614174000"

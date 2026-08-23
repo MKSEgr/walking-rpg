@@ -195,8 +195,13 @@ def _provider_categories(value: Any, path: str, status: str, platform: str) -> s
         _fail(path, "must be an array without duplicates")
     providers: set[str] = set()
     for index, provider in enumerate(value):
+        provider_path = f"{path}[{index}]"
         if not isinstance(provider, str) or not SAFE_SLUG.fullmatch(provider):
-            _fail(f"{path}[{index}]", "must be a sanitized provider-category slug")
+            _fail(provider_path, "must be a sanitized provider-category slug")
+        # Slug separators are identifier boundaries for redaction purposes.
+        # Without normalization, regex word boundaries treat `_` as a word
+        # character and values such as device_id_<number> bypass _safe_text.
+        _safe_text(provider.replace("_", " "), provider_path, max_length=64)
         providers.add(provider)
     if status == "AVAILABLE":
         if not providers:

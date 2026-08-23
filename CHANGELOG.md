@@ -48,6 +48,10 @@
 
 ### Fixed
 
+- Health inventory provider-category slugs now pass the same sensitive-word
+  and identifier-like redaction boundary as free text, while project
+  verification both retains and enforces its documented executable mode;
+
 - Russian quest remaining guidance now uses the ICU `one` plural category,
   so counts such as 21 steps and 101 events keep grammatically correct forms;
 - protected workflow setup steps now resolve reviewed exact Node.js, Python
