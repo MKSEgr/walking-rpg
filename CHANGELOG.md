@@ -78,6 +78,9 @@
 
 ### Added
 
+- authoritative RU/EN current-journey ENERGY progress from accepted progress
+  and target values, with only the visual indicator bounded;
+
 - authoritative RU/EN current-journey position from accepted current-node
   identity and copy, without deriving it from route or decision ordering;
 

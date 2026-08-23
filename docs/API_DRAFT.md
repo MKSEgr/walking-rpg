@@ -399,6 +399,11 @@ Authorization: Bearer <access-token>
   copy текущей точки. Mobile локализует known mutable current content только
   по stable ID, сохраняет literal fallback для unknown ID и не выбирает точку
   из последнего `routeTrail`, `decisionLog`, status или unlocked event;
+- `expedition.progress/requiredEnergy` — required authoritative ENERGY values
+  exact текущего похода. Journal сохраняет literal accepted integers в RU/EN
+  copy и ограничивает только visual progress indicator диапазоном `0..1`; из
+  этих чисел mobile не выводит phase, decision availability, completion,
+  rewards, spendability или command eligibility;
 - `expedition.journeyNumber` — положительный persistent номер текущего
   прохождения; legacy response без поля трактуется mobile как первый
   поход;

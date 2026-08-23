@@ -110,3 +110,4 @@ NNNN-short-title.md
 - [0091 — authoritative current-journey start time](0091-authoritative-current-journey-start-time.md)
 - [0092 — authoritative current-journey phase](0092-authoritative-current-journey-phase.md)
 - [0093 — authoritative current-journey position](0093-authoritative-current-journey-position.md)
+- [0094 — authoritative current-journey ENERGY progress](0094-authoritative-current-journey-energy-progress.md)
