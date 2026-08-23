@@ -2837,6 +2837,59 @@ void main() {
     expect(snapshot.equippableInventoryItemCount, 2);
   });
 
+  test('available event choice count trusts accepted availability', () {
+    const HomeExpeditionEvent event = HomeExpeditionEvent(
+      eventId: 'accepted-event',
+      title: 'Accepted event',
+      summary: 'Accepted summary.',
+      status: 'READY',
+      choices: <HomeEventChoice>[
+        HomeEventChoice(
+          choiceId: 'available-a',
+          title: 'Available A',
+          description: 'Accepted available choice.',
+          pilotExperienceReward: 1,
+          petBondReward: 1,
+        ),
+        HomeEventChoice(
+          choiceId: 'locked',
+          title: 'Locked',
+          description: 'Accepted locked choice.',
+          pilotExperienceReward: 100,
+          petBondReward: 100,
+          availability: 'LOCKED',
+        ),
+        HomeEventChoice(
+          choiceId: 'available-b',
+          title: 'Available B',
+          description: 'Accepted available choice.',
+          pilotExperienceReward: 0,
+          petBondReward: 0,
+        ),
+      ],
+    );
+
+    expect(event.availableChoiceCount, 2);
+    expect(
+      const HomeExpeditionEvent(
+        eventId: 'resolved-event',
+        title: 'Resolved event',
+        summary: 'Resolved summary.',
+        status: 'RESOLVED',
+        choices: <HomeEventChoice>[
+          HomeEventChoice(
+            choiceId: 'historical-choice',
+            title: 'Historical choice',
+            description: 'Accepted historical choice.',
+            pilotExperienceReward: 1,
+            petBondReward: 1,
+          ),
+        ],
+      ).availableChoiceCount,
+      0,
+    );
+  });
+
   test('legacy choice requirement defaults to upgrade level one', () {
     final HomeChoiceRequirement requirement =
         HomeChoiceRequirement.fromJson(<String, dynamic>{

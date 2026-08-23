@@ -498,6 +498,7 @@
   "homeContinueToNode": "Продолжить к узлу «{name}»",
   "homeEventResolvedStatus": "Событие разрешено",
   "homeEventOpenStatus": "Событие открыто",
+  "homeEventChoicesAvailable": "{count, plural, one{Доступен {count} вариант} few{Доступно {count} варианта} many{Доступно {count} вариантов} other{Доступно {count} варианта}}",
   "homeChoiceRecorded": "Выбор зафиксирован",
   "homeEventResult": "Результат события",
   "homeChoiceReward": "+{experience} XP · +{bond} связь{material}",

@@ -1338,6 +1338,25 @@ server-authoritative equipment из ADR 0030 через ADR 0082 без изме
 API, backend, persistence, route requirements, immutable `alpha-rc1` или
 внешних gates.
 
+## Milestone 69 — Authoritative available expedition choice count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает available только accepted choices текущего unresolved
+      event с существующим `availability == AVAILABLE`
+- [x] `LOCKED` choices не входят в count; equipment, item level, active pet,
+      evolution stage и unlocked skills не используются для повторного вывода
+      availability
+- [x] Positive count получает RU/EN singular/plural guidance и одну semantics
+      node, zero и resolved event не создают отдельного сообщения
+- [x] Domain, RU/EN, mixed availability и compact large-text coverage фиксируют
+      boundary без изменения event topology, requirements или resolve command
+
+Milestone 69 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative event availability из ADR 0030 через ADR 0083 без
+изменения Home API, backend, persistence, rewards, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

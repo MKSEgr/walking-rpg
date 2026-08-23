@@ -13,6 +13,14 @@ import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 import 'support/platform_fixture.dart';
 
 void main() {
+  test('available event choice count covers Russian and English plurals', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(english.homeEventChoicesAvailable(2), '2 choices available');
+    expect(russian.homeEventChoicesAvailable(21), 'Доступен 21 вариант');
+  });
+
   test('craftable recipe count covers Russian and English plurals', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
     final AppLocalizationsRu russian = AppLocalizationsRu();

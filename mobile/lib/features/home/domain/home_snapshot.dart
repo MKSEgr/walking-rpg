@@ -1477,6 +1477,15 @@ class HomeExpeditionEvent {
 
   bool get isResolved => status == 'RESOLVED';
 
+  int get availableChoiceCount {
+    if (isResolved) {
+      return 0;
+    }
+    return choices
+        .where((HomeEventChoice choice) => choice.isAvailable)
+        .length;
+  }
+
   static List<HomeEventChoice> _readChoices(Object? raw, String field) {
     if (raw == null) {
       return const <HomeEventChoice>[];

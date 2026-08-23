@@ -1827,6 +1827,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(impressions, isEmpty);
     expect(
+      find.byKey(const Key('home-available-event-choices')),
+      findsOneWidget,
+    );
+    expect(find.text('Доступен 1 вариант'), findsOneWidget);
+    expect(find.bySemanticsLabel('Доступен 1 вариант'), findsOneWidget);
+    expect(
       find.byKey(const Key('home-equippable-inventory-items')),
       findsOneWidget,
     );
@@ -1869,6 +1875,7 @@ void main() {
     expect(itemInstanceIds, <String?>['33333333-3333-3333-3333-333333333333']);
     expect(idempotencyKeys, <String>['equipment-key-1']);
     expect(loads, 2);
+    expect(find.text('Доступно 2 варианта'), findsOneWidget);
     expect(
       find.byKey(const Key('home-equippable-inventory-items')),
       findsNothing,
@@ -1912,6 +1919,7 @@ void main() {
     ]);
     expect(idempotencyKeys, <String>['equipment-key-1', 'equipment-key-2']);
     expect(loads, 3);
+    expect(find.text('Доступен 1 вариант'), findsOneWidget);
     await _scrollAboveStickyAction(tester, routeChoice);
     expect(tester.widget<FilledButton>(routeChoice).onPressed, isNull);
     expect(impressions, <String>['ROUTE_LOCKED', 'ROUTE_AVAILABLE']);
@@ -2011,6 +2019,12 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const Key('home-available-event-choices')),
+      findsOneWidget,
+    );
+    expect(find.text('1 choice available'), findsOneWidget);
+    expect(find.bySemanticsLabel('1 choice available'), findsOneWidget);
 
     final Finder lockedChoice = find.byKey(
       const Key('home-event-choice-follow-resonance'),
@@ -2088,6 +2102,10 @@ void main() {
     await _scrollAboveStickyAction(tester, choice);
 
     expect(tester.widget<FilledButton>(choice).onPressed, isNull);
+    expect(
+      find.byKey(const Key('home-available-event-choices')),
+      findsNothing,
+    );
     expect(
       find.byKey(const Key('home-choice-locked-root-constellation-gate')),
       findsOneWidget,
@@ -2785,6 +2803,10 @@ void main() {
       expect(find.text('Стабильный резонанс'), findsOneWidget);
       expect(find.text('Ядро перестало разрушаться.'), findsOneWidget);
       expect(find.text('Echo Vault'), findsNothing);
+      expect(
+        find.byKey(const Key('home-available-event-choices')),
+        findsNothing,
+      );
 
       await pump(
         const HomeExpeditionEvent(

@@ -1955,6 +1955,27 @@ server-authored upgrade status без изменения backend/API или upgr
 **Статус:** equippable inventory item count реализован как mobile projection
 accepted item identities без изменения backend/API или equipment command.
 
+### US-085. Видеть число доступных решений текущего события
+
+Как игрок, я хочу видеть, сколько решений текущего события уже доступно, чтобы
+не искать рабочие действия среди заблокированных вариантов.
+
+Критерии:
+
+- count включает только accepted choices текущего unresolved event с
+  существующим `availability == AVAILABLE`;
+- `LOCKED` choices не входят в count;
+- mobile не пересчитывает availability по equipment, item level, active pet,
+  evolution stage, unlocked skills или другим требованиям;
+- положительный count получает короткую RU/EN singular/plural строку, zero и
+  resolved event не создают шум или fake availability promise;
+- visible guidance объявляется одной semantics node;
+- event topology, requirements, rewards, choice ordering и resolve command не
+  меняются.
+
+**Статус:** available expedition choice count реализован как mobile projection
+accepted choice availability без изменения backend/API или event rules.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

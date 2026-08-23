@@ -884,6 +884,10 @@
   },
   "homeEventResolvedStatus": "Event resolved",
   "homeEventOpenStatus": "Event open",
+  "homeEventChoicesAvailable": "{count, plural, =1{1 choice available} other{{count} choices available}}",
+  "@homeEventChoicesAvailable": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "homeChoiceRecorded": "Decision recorded",
   "homeEventResult": "Event result",
   "homeChoiceReward": "+{experience} XP · +{bond} bond{material}",
