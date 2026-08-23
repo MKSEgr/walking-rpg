@@ -78,6 +78,9 @@
 
 ### Added
 
+- literal latest accepted current-journey rewards in RU/EN, preserving
+  persisted reward components without client aggregation or inference;
+
 - literal latest accepted current-journey outcome summary in RU/EN, preserving
   immutable server copy without client consequence inference;
 

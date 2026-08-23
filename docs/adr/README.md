@@ -106,3 +106,4 @@ NNNN-short-title.md
 - [0087 — latest accepted current-journey decision](0087-latest-accepted-current-journey-decision.md)
 - [0088 — latest accepted current-journey choice](0088-latest-accepted-current-journey-choice.md)
 - [0089 — latest accepted current-journey outcome summary](0089-latest-accepted-current-journey-outcome-summary.md)
+- [0090 — latest accepted current-journey rewards](0090-latest-accepted-current-journey-rewards.md)

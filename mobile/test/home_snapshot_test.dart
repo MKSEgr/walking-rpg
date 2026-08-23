@@ -294,6 +294,15 @@ void main() {
       'choiceTitle': 'Буквальный принятый выбор',
       'outcomeTitle': 'Порядок сохранён',
       'outcomeSummary': 'Буквальное описание результата',
+      'pilotExperienceGained': 17,
+      'petId': 'moss-v1',
+      'petName': 'Мох из последней записи',
+      'petBondGained': 6,
+      'materialReward': <String, dynamic>{
+        'itemId': 'lumen-shard',
+        'itemName': 'Люминовый осколок',
+        'quantity': 3,
+      },
       'resolvedAt': '2026-07-25T05:58:00Z',
     });
 
@@ -309,6 +318,17 @@ void main() {
       snapshot.lastAcceptedJourneyDecision?.outcomeSummary,
       'Буквальное описание результата',
     );
+    expect(snapshot.lastAcceptedJourneyDecision?.pilotExperienceGained, 17);
+    expect(
+      snapshot.lastAcceptedJourneyDecision?.petName,
+      'Мох из последней записи',
+    );
+    expect(snapshot.lastAcceptedJourneyDecision?.petBondGained, 6);
+    expect(
+      snapshot.lastAcceptedJourneyDecision?.materialReward?.itemName,
+      'Люминовый осколок',
+    );
+    expect(snapshot.lastAcceptedJourneyDecision?.materialReward?.quantity, 3);
     expect(
       snapshot.lastAcceptedJourneyDecision?.resolvedAt,
       '2026-07-25T05:58:00Z',

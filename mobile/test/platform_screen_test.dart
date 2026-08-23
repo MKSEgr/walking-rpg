@@ -199,11 +199,18 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.descendant(
+        of: latest,
+        matching: find.text('Награды: +18 XP пилота; Мох · +14 связи'),
+      ),
+      findsOneWidget,
+    );
+    expect(
       find.bySemanticsLabel(
         'Последнее сохранённое решение текущего похода. Люминовые ворота. '
         'Выбор: Стабилизировать ядро. Итог: Ровный импульс. '
         'Результат: Ворота удержали курс экспедиции. '
-        '$latestResolvedAt.',
+        '$latestResolvedAt. Награды: +18 XP пилота; Мох: +14 связи.',
       ),
       findsOneWidget,
     );

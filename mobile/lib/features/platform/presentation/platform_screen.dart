@@ -1993,6 +1993,15 @@ class _LatestJourneyDecisionSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final List<String> rewardLabels = _journeyDecisionRewardLabels(
+      context,
+      entry,
+    );
+    final List<String> visibleRewardLabels = _journeyDecisionRewardLabels(
+      context,
+      entry,
+      semantic: false,
+    );
     final String resolvedAt = _journeyDecisionTimeLabel(context, entry);
     return Semantics(
       key: const Key('platform-current-journey-latest-decision'),
@@ -2003,6 +2012,9 @@ class _LatestJourneyDecisionSummary extends StatelessWidget {
         entry.outcomeTitle,
         entry.outcomeSummary,
         resolvedAt,
+        rewardLabels.isEmpty
+            ? ''
+            : context.l10n.platformRewardsSuffix(rewardLabels.join('; ')),
       ),
       child: ExcludeSemantics(
         child: DecoratedBox(
@@ -2054,6 +2066,18 @@ class _LatestJourneyDecisionSummary extends StatelessWidget {
                     color: colors.onSurfaceVariant,
                   ),
                 ),
+                if (visibleRewardLabels.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 3),
+                  Text(
+                    context.l10n.platformLatestDecisionRewards(
+                      visibleRewardLabels.join('; '),
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.secondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -2236,17 +2260,23 @@ class _JourneyDecisionEntry extends StatelessWidget {
 
 List<String> _journeyDecisionRewardLabels(
   BuildContext context,
-  HomeExpeditionDecisionLogEntry entry,
-) {
+  HomeExpeditionDecisionLogEntry entry, {
+  bool semantic = true,
+}) {
   return <String>[
     if (entry.pilotExperienceGained > 0)
       context.l10n.platformPilotXpReward(entry.pilotExperienceGained),
     if (entry.petBondGained > 0)
       switch (entry.petName) {
-        final String petName => context.l10n.platformNamedCompanionBondSemantic(
-          petName,
-          entry.petBondGained,
-        ),
+        final String petName => semantic
+            ? context.l10n.platformNamedCompanionBondSemantic(
+                petName,
+                entry.petBondGained,
+              )
+            : context.l10n.platformNamedCompanionBondReward(
+                petName,
+                entry.petBondGained,
+              ),
         null => context.l10n.platformCompanionBondReward(entry.petBondGained),
       },
     if (entry.materialReward case final HomeJourneyMaterialReward material)
