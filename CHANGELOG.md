@@ -78,6 +78,10 @@
 
 ### Added
 
+- exact RU/EN count of accepted item upgrades ready to apply, preserving
+  server-authored availability, material requirements and upgrade-command
+  behavior;
+
 - exact RU/EN count of accepted crafting recipes ready to craft, preserving
   server-authored availability, material costs and crafting-command behavior;
 

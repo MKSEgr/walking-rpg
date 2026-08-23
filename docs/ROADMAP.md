@@ -1301,6 +1301,25 @@ server-authoritative crafting из ADR 0029 через ADR 0080 без изме�
 API, backend, persistence, crafting economy, immutable `alpha-rc1` или внешних
 gates.
 
+## Milestone 67 — Authoritative ready item upgrade count
+
+### CODE_COMPLETE
+
+- [x] Mobile считает ready только accepted item upgrades с server-authored
+      `status == READY`
+- [x] `LOCKED`, `MISSING_MATERIALS` и `COMPLETED` не входят в count; item,
+      level, rarity и ingredient quantities не используются для повторного
+      вывода availability
+- [x] Positive count получает RU/EN singular/plural guidance и одну semantics
+      node, zero не создаёт отдельного сообщения
+- [x] Domain, RU/EN, post-upgrade и compact large-text coverage фиксируют
+      boundary без изменения upgrades, material costs или apply command
+
+Milestone 67 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative item upgrades из ADR 0029 через ADR 0081 без изменения
+Home API, backend, persistence, upgrade economy, immutable `alpha-rc1` или
+внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

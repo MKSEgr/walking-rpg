@@ -1914,6 +1914,27 @@ commerce rules.
 **Статус:** craftable recipe count реализован как mobile projection accepted
 server-authored recipe status без изменения backend/API или crafting economy.
 
+### US-083. Видеть число улучшений предметов, готовых к применению
+
+Как игрок, я хочу видеть, сколько улучшений снаряжения уже готовы к применению,
+чтобы не искать доступные действия среди всех калибровок.
+
+Критерии:
+
+- count включает только accepted item upgrades с server-authored
+  `status == READY`;
+- `LOCKED`, `MISSING_MATERIALS` и `COMPLETED` не входят в count;
+- mobile не пересчитывает availability по наличию предмета, уровню, редкости
+  или количеству материалов;
+- положительный count получает короткую RU/EN singular/plural строку, zero не
+  создаёт шум или fake availability promise;
+- visible guidance объявляется одной semantics node;
+- upgrades, material costs, resulting level/rarity и apply command не
+  меняются.
+
+**Статус:** ready item upgrade count реализован как mobile projection accepted
+server-authored upgrade status без изменения backend/API или upgrade economy.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

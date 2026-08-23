@@ -946,6 +946,10 @@
   "homeCraftItem": "Create item",
   "homeEquipmentCalibrationTitle": "Equipment calibration",
   "homeEquipmentCalibrationSubtitle": "Permanently strengthen crafted instruments.",
+  "homeItemUpgradesReady": "{count, plural, =1{1 upgrade ready to apply} other{{count} upgrades ready to apply}}",
+  "@homeItemUpgradesReady": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "homeLevelTransition": "Level {from} → {to}",
   "@homeLevelTransition": {
     "placeholders": {

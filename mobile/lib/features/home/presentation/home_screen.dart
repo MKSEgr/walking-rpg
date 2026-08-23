@@ -1216,6 +1216,7 @@ class _HomeBody extends StatelessWidget {
                     const SizedBox(height: 12),
                     _ItemUpgradeCard(
                       upgrades: snapshot.itemUpgrades,
+                      readyItemUpgradeCount: snapshot.readyItemUpgradeCount,
                       readOnly: readOnly,
                       busy: gameplayActionBlocked,
                       upgrading: isUpgrading,
@@ -2940,6 +2941,7 @@ class _CraftingRecipeView extends StatelessWidget {
 class _ItemUpgradeCard extends StatelessWidget {
   const _ItemUpgradeCard({
     required this.upgrades,
+    required this.readyItemUpgradeCount,
     required this.readOnly,
     required this.busy,
     required this.upgrading,
@@ -2947,6 +2949,7 @@ class _ItemUpgradeCard extends StatelessWidget {
   });
 
   final List<HomeItemUpgrade> upgrades;
+  final int readyItemUpgradeCount;
   final bool readOnly;
   final bool busy;
   final bool upgrading;
@@ -2965,6 +2968,19 @@ class _ItemUpgradeCard extends StatelessWidget {
             subtitle: context.l10n.homeEquipmentCalibrationSubtitle,
             icon: Icons.auto_fix_high_outlined,
           ),
+          if (readyItemUpgradeCount > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            Semantics(
+              key: const Key('home-ready-item-upgrades'),
+              container: true,
+              label: context.l10n.homeItemUpgradesReady(readyItemUpgradeCount),
+              excludeSemantics: true,
+              child: Text(
+                context.l10n.homeItemUpgradesReady(readyItemUpgradeCount),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           for (int index = 0; index < upgrades.length; index++) ...<Widget>[
             _ItemUpgradeView(
@@ -3007,6 +3023,15 @@ class _ItemUpgradeView extends StatelessWidget {
       upgrade.upgradeId,
       upgrade.description,
     );
+    final String actionLabel = readOnly
+        ? context.l10n.homeUpgradeUnavailableOffline
+        : upgrade.isCompleted
+        ? context.l10n.homeUpgradeCompleted
+        : upgrade.isLocked
+        ? context.l10n.homeCraftItemFirst
+        : upgrade.canApply
+        ? context.l10n.homeUpgradeItem
+        : context.l10n.homeMissingMaterials;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -3024,11 +3049,11 @@ class _ItemUpgradeView extends StatelessWidget {
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 const Icon(Icons.tune_outlined, size: 20),
-                const SizedBox(width: 8),
                 Text(
                   context.l10n.homeLevelTransition(
                     upgrade.requiredLevel,
@@ -3077,30 +3102,39 @@ class _ItemUpgradeView extends StatelessWidget {
           const SizedBox(height: 8),
         ],
         const SizedBox(height: 8),
-        FilledButton.tonalIcon(
-          key: Key('item-upgrade-${upgrade.upgradeId}'),
-          onPressed: readOnly || busy || !upgrade.canApply ? null : onUpgrade,
-          icon: upgrading && upgrade.canApply
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(
-                  upgrade.isCompleted
-                      ? Icons.check_circle_outline
-                      : Icons.auto_fix_high_outlined,
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final VoidCallback? onPressed =
+                readOnly || busy || !upgrade.canApply ? null : onUpgrade;
+            if (constraints.maxWidth < 300) {
+              return FilledButton.tonal(
+                key: Key('item-upgrade-${upgrade.upgradeId}'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
                 ),
-          label: Text(
-            readOnly
-                ? context.l10n.homeUpgradeUnavailableOffline
-                : upgrade.isCompleted
-                ? context.l10n.homeUpgradeCompleted
-                : upgrade.isLocked
-                ? context.l10n.homeCraftItemFirst
-                : upgrade.canApply
-                ? context.l10n.homeUpgradeItem
-                : context.l10n.homeMissingMaterials,
-          ),
+                onPressed: onPressed,
+                child: Text(actionLabel, textAlign: TextAlign.center),
+              );
+            }
+            return FilledButton.tonalIcon(
+              key: Key('item-upgrade-${upgrade.upgradeId}'),
+              onPressed: onPressed,
+              icon: upgrading && upgrade.canApply
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      upgrade.isCompleted
+                          ? Icons.check_circle_outline
+                          : Icons.auto_fix_high_outlined,
+                    ),
+              label: Text(actionLabel),
+            );
+          },
         ),
       ],
     );

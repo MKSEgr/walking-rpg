@@ -245,6 +245,12 @@ class HomeSnapshot {
         .length;
   }
 
+  int get readyItemUpgradeCount {
+    return itemUpgrades
+        .where((HomeItemUpgrade upgrade) => upgrade.canApply)
+        .length;
+  }
+
   bool get hasPilotExperienceProgress =>
       pilotLevel > 0 &&
       pilotCurrentExperience >= 0 &&

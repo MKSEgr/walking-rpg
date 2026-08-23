@@ -524,6 +524,7 @@
   "homeCraftItem": "Создать предмет",
   "homeEquipmentCalibrationTitle": "Калибровка снаряжения",
   "homeEquipmentCalibrationSubtitle": "Постоянно усиливай созданные приборы.",
+  "homeItemUpgradesReady": "Можно применить {count, plural, one{{count} улучшение} few{{count} улучшения} many{{count} улучшений} other{{count} улучшения}}",
   "homeLevelTransition": "Уровень {from} → {to}",
   "homeUpgradeUnavailableOffline": "Улучшение недоступно офлайн",
   "homeUpgradeCompleted": "Улучшение завершено",
