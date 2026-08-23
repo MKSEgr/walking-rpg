@@ -1903,6 +1903,10 @@ class _JourneyDecisionLogCard extends StatelessWidget {
         snapshot.currentNodeName,
       ),
     );
+    final String energyProgress = context.l10n.platformJourneyEnergyProgress(
+      snapshot.expeditionProgress,
+      snapshot.requiredEnergy,
+    );
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -1980,6 +1984,33 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Semantics(
+            key: const Key('platform-current-journey-energy-progress'),
+            container: true,
+            label: energyProgress,
+            child: ExcludeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    energyProgress,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(
+                    value: snapshot.expeditionProgressValue,
+                    minHeight: 4,
+                    borderRadius: BorderRadius.circular(999),
+                    backgroundColor: colors.surfaceContainerHighest,
+                    color: colors.primary,
+                  ),
+                ],
               ),
             ),
           ),

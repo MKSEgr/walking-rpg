@@ -137,6 +137,20 @@ void main() {
     expect(snapshot.petEvolutionStage, 0);
   });
 
+  test('accepted expedition energy values remain literal above target', () {
+    final Map<String, dynamic> response = _readyHomeResponse();
+    final Map<String, dynamic> expedition =
+        response['expedition']! as Map<String, dynamic>;
+    expedition['progress'] = 37;
+    expedition['requiredEnergy'] = 30;
+
+    final HomeSnapshot snapshot = HomeSnapshot.fromJson(response);
+
+    expect(snapshot.expeditionProgress, 37);
+    expect(snapshot.requiredEnergy, 30);
+    expect(snapshot.expeditionProgressValue, 1);
+  });
+
   test('daily goal feedback reaches zero exactly at the accepted goal', () {
     final Map<String, dynamic> response = _readyHomeResponse();
     response['dailySteps'] = response['dailyGoal'];

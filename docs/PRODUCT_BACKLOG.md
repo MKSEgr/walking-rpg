@@ -2165,6 +2165,24 @@ accepted `expedition.status`.
 **Статус:** current-journey position реализована как stable-ID-aware mobile
 projection accepted current-node identity и copy.
 
+### US-096. Видеть ENERGY-прогресс текущего похода
+
+Как игрок, я хочу видеть принятый сервером ENERGY-прогресс текущего похода в
+журнале, чтобы понимать его числовое состояние без перехода на главный экран.
+
+Критерии:
+
+- journal использует только accepted `expedition.progress/requiredEnergy`;
+- RU/EN copy сохраняет literal integers, включая accepted over-target value;
+- только visual indicator ограничивается диапазоном `0..1`;
+- mobile не выводит из чисел phase, decision availability, completion,
+  rewards, spendability или command eligibility;
+- одна semantics node и compact large-text coverage фиксируют boundary без
+  изменения Home API, backend, persistence или commands.
+
+**Статус:** current-journey ENERGY progress реализован как literal mobile
+projection accepted progress/target с bounded visual indicator.
+
 ### US-074. Видеть, сколько этапов первого пути осталось
 
 Как игрок, я хочу видеть точный остаток этапов первого пути, чтобы понимать

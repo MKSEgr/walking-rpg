@@ -1524,6 +1524,23 @@ Milestone 79 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0093 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 80 — Authoritative current-journey ENERGY progress
+
+### CODE_COMPLETE
+
+- [x] Journal использует accepted `expedition.progress/requiredEnergy` как
+      единственный source ENERGY progress текущего похода
+- [x] RU/EN copy сохраняет literal accepted integers, а только visual
+      indicator ограничивается диапазоном `0..1`
+- [x] Phase, decision availability, completion, rewards, spendability и
+      command eligibility не выводятся из отношения progress/target
+- [x] Domain, semantics, over-target и compact large-text coverage фиксируют
+      boundary без изменения Home API, backend, persistence или commands
+
+Milestone 80 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0094 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

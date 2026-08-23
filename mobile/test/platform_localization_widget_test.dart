@@ -1276,6 +1276,8 @@ void main() {
       find.bySemanticsLabel('Current point: Outer Beacon'),
       findsOneWidget,
     );
+    expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
+    expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
     );
@@ -1395,6 +1397,8 @@ void main() {
         find.bySemanticsLabel('Current point: Outer Beacon'),
         findsOneWidget,
       );
+      expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
+      expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
       final Finder latest = find.byKey(
         const Key('platform-current-journey-latest-decision'),
       );
@@ -1492,6 +1496,42 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('current journey keeps accepted over-target energy literal', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => _homeWithPersistedDecision(
+            expeditionProgress: 37,
+            requiredEnergy: 30,
+          ),
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder progress = find.byKey(
+      const Key('platform-current-journey-energy-progress'),
+    );
+    expect(find.text('ENERGY progress: 37 of 30'), findsOneWidget);
+    expect(find.bySemanticsLabel('ENERGY progress: 37 of 30'), findsOneWidget);
+    expect(
+      tester
+          .widget<LinearProgressIndicator>(
+            find.descendant(
+              of: progress,
+              matching: find.byType(LinearProgressIndicator),
+            ),
+          )
+          .value,
+      1,
+    );
+  });
 }
 
 class _LocalizedPlatformApp extends StatelessWidget {
@@ -1533,6 +1573,8 @@ HomeSnapshot _homeWithPersistedDecision({
   bool withDecisionRewards = false,
   String? currentNodeId,
   String? currentNodeName,
+  int? expeditionProgress,
+  int? requiredEnergy,
 }) {
   const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
@@ -1550,8 +1592,8 @@ HomeSnapshot _homeWithPersistedDecision({
     expeditionName: demo.expeditionName,
     currentNodeId: currentNodeId ?? demo.currentNodeId,
     currentNodeName: currentNodeName ?? demo.currentNodeName,
-    expeditionProgress: demo.expeditionProgress,
-    requiredEnergy: demo.requiredEnergy,
+    expeditionProgress: expeditionProgress ?? demo.expeditionProgress,
+    requiredEnergy: requiredEnergy ?? demo.requiredEnergy,
     expeditionStatus: completionRecap == null
         ? demo.expeditionStatus
         : 'COMPLETED',

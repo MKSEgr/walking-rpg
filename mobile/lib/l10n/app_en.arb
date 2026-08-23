@@ -1403,6 +1403,13 @@
       "node": {"type": "String"}
     }
   },
+  "platformJourneyEnergyProgress": "ENERGY progress: {progress} of {requiredEnergy}",
+  "@platformJourneyEnergyProgress": {
+    "placeholders": {
+      "progress": {"type": "int"},
+      "requiredEnergy": {"type": "int"}
+    }
+  },
   "platformJourneyStartedAt": "Started on {date} at {time}",
   "@platformJourneyStartedAt": {
     "placeholders": {

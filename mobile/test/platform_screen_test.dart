@@ -100,6 +100,10 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.byKey(const Key('platform-current-journey-energy-progress')),
+      findsOneWidget,
+    );
+    expect(
       find.byKey(const Key('platform-current-journey-started-at')),
       findsNothing,
     );
@@ -177,6 +181,8 @@ void main() {
       find.bySemanticsLabel('Текущая точка: Внешний маяк'),
       findsOneWidget,
     );
+    expect(find.text('Прогресс ENERGY: 0 из 30'), findsOneWidget);
+    expect(find.bySemanticsLabel('Прогресс ENERGY: 0 из 30'), findsOneWidget);
     final Finder journeyStartedAt = find.byKey(
       const Key('platform-current-journey-started-at'),
     );

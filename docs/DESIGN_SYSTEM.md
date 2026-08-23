@@ -1055,6 +1055,12 @@ time. It resolves known mutable node copy only by accepted stable node ID and
 keeps unknown server copy literal. One semantics node owns the same label; the
 last visible route or decision never substitutes for the accepted position.
 
+One compact ENERGY-progress block follows position. Its text keeps the literal
+accepted progress and required values even when progress is above target; only
+the thin visual indicator is bounded. One semantics node owns the text and
+excludes the decorative indicator, while status, actions and rewards remain
+separate server-owned facts.
+
 Each entry uses a numbered code-native signal, a decision arrow and separate
 outcome typography. Compact reward chips repeat the literal pilot XP, named
 companion bond and optional material quantity saved with that decision; they

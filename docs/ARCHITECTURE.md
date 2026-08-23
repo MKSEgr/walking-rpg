@@ -427,6 +427,12 @@ Current-journey position использует только required
 copy через current-content catalog, а неизвестный ID оставляет server fallback;
 последний route node, decision, phase и event не заменяют accepted position.
 
+Current-journey ENERGY progress переносит required
+`expedition.progress/requiredEnergy` как literal accepted integers. Mobile
+clamp-ит только значение декоративного progress indicator и не меняет copy;
+phase, decision availability, completion, remaining rewards, spendability и
+command eligibility из отношения чисел не выводятся.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает
