@@ -681,7 +681,13 @@ void main() {
         '2026-08-19T10:00:00Z',
         russian: locale.languageCode == 'ru',
       );
-      expect(find.text(currentDecisionLabel), findsOneWidget);
+      expect(
+        find.descendant(
+          of: currentDecision,
+          matching: find.text(currentDecisionLabel),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const Key('platform-journey-decision-legacy-event-v1-time')),
         findsOneWidget,
