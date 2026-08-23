@@ -1260,9 +1260,8 @@ void main() {
         locale: const Locale('en'),
         child: PlatformScreen(
           loader: () async => platformSnapshot(),
-          homeLoader: () async => _homeWithPersistedDecision(
-            withDecisionRewards: true,
-          ),
+          homeLoader: () async =>
+              _homeWithPersistedDecision(withDecisionRewards: true),
           recordExperimentExposures: false,
         ),
       ),
@@ -1354,9 +1353,8 @@ void main() {
           textScale: 1.6,
           child: PlatformScreen(
             loader: () async => platformSnapshot(),
-            homeLoader: () async => _homeWithPersistedDecision(
-              withDecisionRewards: true,
-            ),
+            homeLoader: () async =>
+                _homeWithPersistedDecision(withDecisionRewards: true),
             recordExperimentExposures: false,
           ),
         ),
