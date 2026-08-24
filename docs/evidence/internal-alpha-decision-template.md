@@ -3,6 +3,22 @@
 > One record per immutable candidate and protocol version. Replace every placeholder.
 > A template or unsigned record is not an expand decision.
 
+The normative machine-verifiable companion is
+`internal-alpha-decision-template.json`. Copy it outside Git, preserve its exact key
+order, replace the owner-input fields and validate the reviewed record before signing:
+
+```bash
+python3 scripts/ci/verify_internal_alpha_decision.py \
+  <approved-decision-record.json> \
+  --require-decided
+```
+
+The validator uses integer cross-multiplication, so rounded percentages cannot turn
+strict `>70%`, `>55%`, `>99.5%` or `<1%` failures into passes. `EXPAND` fails closed
+for a data gap, invalid cohort, threshold miss, qualitative miss, stop/fix finding or
+open release blocker. This Markdown record adds reviewed narrative; it cannot override
+a failing JSON record or prove the referenced external evidence.
+
 ## Contract
 
 - Protocol ID: `walking-rpg-internal-alpha-v1`

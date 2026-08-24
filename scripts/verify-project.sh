@@ -42,7 +42,10 @@ for file in \
   "$ROOT_DIR/docs/evidence/health-device-inventory-template.json" \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_kickoff.py" \
   "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_kickoff.py" \
-  "$ROOT_DIR/docs/evidence/internal-alpha-kickoff-template.json"; do
+  "$ROOT_DIR/docs/evidence/internal-alpha-kickoff-template.json" \
+  "$ROOT_DIR/scripts/ci/verify_internal_alpha_decision.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_decision.py" \
+  "$ROOT_DIR/docs/evidence/internal-alpha-decision-template.json"; do
   if [ ! -f "$file" ]; then
     echo "Missing: $file" >&2
     exit 1
@@ -100,6 +103,20 @@ if PYTHONDONTWRITEBYTECODE=1 python3 \
 fi
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_kickoff.py"
+
+printf '%s\n' "Checking the internal-alpha decision contract..."
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/verify_internal_alpha_decision.py" \
+  "$ROOT_DIR/docs/evidence/internal-alpha-decision-template.json"
+if PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/verify_internal_alpha_decision.py" \
+  "$ROOT_DIR/docs/evidence/internal-alpha-decision-template.json" \
+  --require-decided >/dev/null 2>&1; then
+  echo "Committed decision template must not pass as an owner decision." >&2
+  exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_decision.py"
 
 printf '%s\n' "Checking immutable backend container base images..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_backend_base_pins.py"

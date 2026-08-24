@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "walking-rpg-internal-alpha-decision-v1",
+  "recordStatus": "TEMPLATE",
+  "recordedAtUtc": null,
+  "decisionAtUtc": null,
+  "protocol": {
+    "protocolId": "walking-rpg-internal-alpha-v1",
+    "commitSha": null
+  },
+  "candidate": {
+    "sourceSha": null,
+    "treeSha": null,
+    "kickoffRecordSha256": null,
+    "alphaEvidencePackageSha256": null
+  },
+  "cohort": {
+    "invited": null,
+    "started": null,
+    "completed": null,
+    "iosRealUsers": null,
+    "androidRealUsers": null,
+    "withdrawn": null,
+    "excluded": null,
+    "stoppedOrPaused": null
+  },
+  "metrics": {
+    "unaidedFirstTenMinutes": {
+      "status": "OWNER_INPUT_REQUIRED",
+      "numerator": null,
+      "denominator": null,
+      "dataGapReasonCode": null
+    },
+    "stepPermissionAcceptance": {
+      "status": "OWNER_INPUT_REQUIRED",
+      "numerator": null,
+      "denominator": null,
+      "dataGapReasonCode": null
+    },
+    "firstDayReward": {
+      "status": "OWNER_INPUT_REQUIRED",
+      "numerator": null,
+      "denominator": null,
+      "dataGapReasonCode": null
+    },
+    "crashFreeSessions": {
+      "status": "OWNER_INPUT_REQUIRED",
+      "numerator": null,
+      "denominator": null,
+      "dataGapReasonCode": null
+    },
+    "syncErrorRate": {
+      "status": "OWNER_INPUT_REQUIRED",
+      "numerator": null,
+      "denominator": null,
+      "dataGapReasonCode": null
+    },
+    "instrumentationCoverage": {
+      "status": "OWNER_INPUT_REQUIRED",
+      "numerator": null,
+      "denominator": null,
+      "dataGapReasonCode": null
+    }
+  },
+  "qualitative": {
+    "instrumentationInterpretable": null,
+    "walkingAsAdventureSupported": null,
+    "companionReturnSupported": null,
+    "dataGapReasonCode": null
+  },
+  "findings": {
+    "stopCount": null,
+    "fixBeforeExpandCount": null,
+    "experimentCount": null,
+    "laterCount": null,
+    "openReleaseBlockers": null
+  },
+  "decision": {
+    "selected": null,
+    "rationaleCode": null,
+    "nextScope": null,
+    "authority": "MKSEgr",
+    "confirmationAtUtc": null
+  }
+}
