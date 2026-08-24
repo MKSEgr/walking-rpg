@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import copy
 import importlib.util
 import json
 import subprocess
@@ -149,6 +148,17 @@ class DecisionContractTests(unittest.TestCase):
         for key, value in (("completed", 11), ("iosRealUsers", 3), ("withdrawn", 1)):
             with self.subTest(key=key):
                 document = decided()
+                document["cohort"][key] = value
+                self.assert_invalid(document)
+
+    def test_cohort_counts_are_consistent_for_every_decision(self) -> None:
+        for key, value in (("started", 13), ("completed", 13), ("iosRealUsers", 13)):
+            with self.subTest(key=key):
+                document = decided()
+                document["decision"].update(
+                    selected="FIX_AND_RERUN", rationaleCode="cohort_invalid",
+                    nextScope="focused_fix_and_alpha_rerun",
+                )
                 document["cohort"][key] = value
                 self.assert_invalid(document)
 

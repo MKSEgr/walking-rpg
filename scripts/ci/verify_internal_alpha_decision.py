@@ -202,6 +202,21 @@ def validate(document: Any, require_decided: bool = False) -> None:
     _hash(candidate["alphaEvidencePackageSha256"], DIGEST_RE, "$.candidate.alphaEvidencePackageSha256")
 
     cohort_values = {name: _integer(value, f"$.cohort.{name}") for name, value in cohort.items()}
+    cohort_limits = {
+        "started": "invited",
+        "completed": "started",
+        "iosRealUsers": "started",
+        "androidRealUsers": "started",
+        "withdrawn": "invited",
+        "excluded": "invited",
+        "stoppedOrPaused": "started",
+    }
+    for value_name, limit_name in cohort_limits.items():
+        if cohort_values[value_name] > cohort_values[limit_name]:
+            _fail(
+                f"$.cohort.{value_name}",
+                f"must not exceed cohort.{limit_name}",
+            )
     metric_values: dict[str, tuple[str, int | None, int | None]] = {}
     for name in METRIC_NAMES:
         metric_values[name] = _metric_decided(metrics[name], f"$.metrics.{name}")
@@ -247,8 +262,6 @@ def validate(document: Any, require_decided: bool = False) -> None:
                 _fail(f"$.cohort.{name}", f"must be {expected} for EXPAND")
         if cohort_values["iosRealUsers"] < 4 or cohort_values["androidRealUsers"] < 4:
             _fail("$.cohort", "EXPAND requires at least four real users on each platform")
-        if cohort_values["iosRealUsers"] > 12 or cohort_values["androidRealUsers"] > 12:
-            _fail("$.cohort", "per-platform real-user counts must not exceed the cohort")
         for name, (status, numerator, denominator) in metric_values.items():
             if status != "MEASURED" or numerator is None or denominator is None:
                 _fail(f"$.metrics.{name}", "EXPAND forbids data gaps")
