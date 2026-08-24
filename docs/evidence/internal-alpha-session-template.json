@@ -1,0 +1,144 @@
+{
+  "schemaVersion": "walking-rpg-internal-alpha-session-v1",
+  "recordStatus": "TEMPLATE",
+  "recordedAtUtc": null,
+  "protocol": {
+    "protocolId": "walking-rpg-internal-alpha-v1",
+    "commitSha": null
+  },
+  "candidate": {
+    "sourceSha": null,
+    "treeSha": null,
+    "appVersion": null,
+    "buildNumber": null,
+    "platformArtifactSha256": null,
+    "kickoffRecordSha256": null
+  },
+  "session": {
+    "studyCode": null,
+    "platform": null,
+    "startedAtUtc": null,
+    "endedAtUtc": null,
+    "moderatorRole": "approved_alpha_moderator",
+    "consentConfirmed": null,
+    "withdrawalRouteExplained": null,
+    "exactCandidateVerified": null,
+    "stopPauseStatus": null
+  },
+  "milestones": [
+    {
+      "milestoneId": "registration_shown",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "locale_selected",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "authenticated_shell",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "permission_decision",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "first_sync_receipt",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "first_energy",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "companion_selected",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "first_node_available",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "first_event_resolved",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    },
+    {
+      "milestoneId": "result_ack",
+      "status": "OWNER_INPUT_REQUIRED",
+      "observedAtUtc": null,
+      "elapsedSeconds": null,
+      "sourceCategory": null,
+      "helpRequested": null,
+      "gapReasonCode": null
+    }
+  ],
+  "outcome": {
+    "completedUnaided": null,
+    "permissionRequestShown": null,
+    "permissionDecision": null,
+    "firstDayRewardStatus": null,
+    "candidateSessions": null,
+    "crashFreeSessions": null,
+    "authoritativeSyncAttempts": null,
+    "failedNonCancelledSyncAttempts": null,
+    "applicableMandatoryMilestones": null,
+    "recordedMandatoryMilestones": null,
+    "nextActionComprehension": null,
+    "walkingAsAdventure": null,
+    "companionReturn": null
+  },
+  "findings": [],
+  "evidence": {
+    "storageCategory": null,
+    "evidencePackageSha256": null,
+    "redactionReviewedAtUtc": null,
+    "redactionReviewerRole": null,
+    "participantEvidenceDeleteByUtc": null,
+    "rawEvidenceCommittedToGit": false
+  }
+}
