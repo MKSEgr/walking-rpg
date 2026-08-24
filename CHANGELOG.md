@@ -82,6 +82,11 @@
 
 ### Added
 
+- machine-verifiable internal-alpha kickoff contract keeps the committed
+  template distinct from recruitment readiness and requires one immutable
+  candidate, the fixed cohort/window/privacy boundary and all ten evidence
+  gates to pass before a record can satisfy `--require-ready`;
+
 - versioned internal-alpha protocol fixes the approved 12-participant cohort,
   exact candidate/start gates, first-ten-minutes script, thresholds, stop
   authority, consent/evidence rules and expand/fix/stop decision templates;

@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "walking-rpg-internal-alpha-kickoff-v1",
+  "recordStatus": "TEMPLATE",
+  "recordedAtUtc": null,
+  "approvedAtUtc": null,
+  "protocol": {
+    "protocolId": "walking-rpg-internal-alpha-v1",
+    "commitSha": null
+  },
+  "candidate": {
+    "sourceSha": null,
+    "treeSha": null,
+    "appVersion": null,
+    "buildNumber": null,
+    "ios": {
+      "bundleId": null,
+      "artifactSha256": null,
+      "distributionTrack": null
+    },
+    "android": {
+      "applicationId": null,
+      "artifactSha256": null,
+      "distributionTrack": null
+    },
+    "backend": {
+      "imageDigest": null,
+      "deploymentReceiptSha256": null,
+      "stageEnvironment": null
+    },
+    "contentVersion": null,
+    "remoteConfigVersion": null
+  },
+  "owners": {
+    "productOwner": "MKSEgr",
+    "releaseOwner": "MKSEgr",
+    "cohortOwner": "MKSEgr",
+    "supportOwner": "MKSEgr"
+  },
+  "observationWindow": {
+    "startsAtUtc": null,
+    "endsAtUtc": null,
+    "supportUntilUtc": null
+  },
+  "cohort": {
+    "plannedParticipants": 12,
+    "minimumIosParticipants": 4,
+    "minimumAndroidParticipants": 4,
+    "geography": "RU",
+    "languages": [
+      "ru",
+      "en"
+    ],
+    "registrationDefaultLanguage": "ru"
+  },
+  "evidence": {
+    "storageCategory": null,
+    "redactionPolicy": "walking-rpg-evidence-redaction-v1",
+    "participantEvidenceDeleteByUtc": null,
+    "supportChannelCategory": null
+  },
+  "gates": [
+    {
+      "gateId": "physical_activity",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "identity_lifecycle",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "protected_stage",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "product_flow",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "application_identity",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "signed_candidate",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "distribution",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "operations",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "research_safety",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    },
+    {
+      "gateId": "observability",
+      "status": "OWNER_INPUT_REQUIRED",
+      "checkedAtUtc": null,
+      "evidenceCategory": null,
+      "evidenceDigestSha256": null
+    }
+  ]
+}

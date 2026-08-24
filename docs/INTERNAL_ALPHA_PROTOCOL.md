@@ -31,6 +31,27 @@ are failures.
 | Research safety | Consent text, withdrawal route, redaction review and evidence retention date approved | kickoff record |
 | Observability | Mandatory milestone coverage can be measured and crash/sync/support views are available | kickoff record |
 
+### Machine-verifiable kickoff preflight
+
+The normative template is
+`docs/evidence/internal-alpha-kickoff-template.json` with schema
+`walking-rpg-internal-alpha-kickoff-v1`. Its committed `recordStatus=TEMPLATE`
+is intentionally not recruitment evidence. A reviewed copy is checked with:
+
+```bash
+python3 scripts/ci/verify_internal_alpha_kickoff.py \
+  <approved-kickoff-record.json> \
+  --require-ready
+```
+
+`--require-ready` accepts only one exact candidate, the approved owners and
+12-participant RU/EN cohort, an ordered observation/support window, a bounded
+participant-evidence deletion date and all ten ordered `PASS` gates with
+SHA-256 evidence-package digests. Unknown/reordered fields, placeholders,
+`BLOCKED`, raw URLs/paths/contact details and identifier-like credential text
+fail closed. Passing the validator proves record completeness, not the truth
+of external evidence; the referenced gate owners remain responsible for that.
+
 ## Exact candidate contract
 
 The kickoff record must list all of the following. A branch name, moving tag, latest
