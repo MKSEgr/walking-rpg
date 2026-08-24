@@ -38,7 +38,12 @@ def recorded() -> dict:
         "appVersion": "1.0.0-alpha.1",
         "buildNumber": "42",
         "platformArtifactSha256": "4" * 64,
-        "kickoffRecordSha256": "5" * 64,
+    }
+    document["kickoff"] = {
+        "recordSha256": "5" * 64,
+        "observationStartsAtUtc": "2026-08-20T07:00:00Z",
+        "observationEndsAtUtc": "2026-08-27T18:00:00Z",
+        "participantEvidenceDeleteByUtc": "2026-11-25T18:00:00Z",
     }
     document["session"] = {
         "studyCode": "P01",
@@ -74,6 +79,8 @@ def recorded() -> dict:
         "applicableMandatoryMilestones": 10,
         "recordedMandatoryMilestones": 10,
         "nextActionComprehension": "CLEAR",
+        "nextActionComprehensionAtUtc": utc(590),
+        "nextActionComprehensionElapsedSeconds": 590,
         "walkingAsAdventure": "YES",
         "companionReturn": "YES",
     }
@@ -82,7 +89,7 @@ def recorded() -> dict:
         "evidencePackageSha256": "6" * 64,
         "redactionReviewedAtUtc": utc(900),
         "redactionReviewerRole": "approved_redaction_reviewer",
-        "participantEvidenceDeleteByUtc": "2026-10-20T08:00:00Z",
+        "participantEvidenceDeleteByUtc": "2026-11-25T18:00:00Z",
         "rawEvidenceCommittedToGit": False,
     }
     return document
@@ -118,6 +125,31 @@ class SessionContractTests(unittest.TestCase):
     def test_result_ack_after_ten_minutes_blocks_unaided_claim(self) -> None:
         document = recorded()
         document["milestones"][-1].update(observedAtUtc=utc(601), elapsedSeconds=601)
+        self.assert_invalid(document)
+
+    def test_comprehension_after_ten_minutes_blocks_unaided_claim(self) -> None:
+        document = recorded()
+        document["outcome"].update(
+            nextActionComprehensionAtUtc=utc(601),
+            nextActionComprehensionElapsedSeconds=601,
+        )
+        self.assert_invalid(document)
+
+    def test_comprehension_elapsed_seconds_match_utc(self) -> None:
+        document = recorded()
+        document["outcome"]["nextActionComprehensionElapsedSeconds"] = 589
+        self.assert_invalid(document)
+
+    def test_comprehension_data_gap_has_no_timing_claim(self) -> None:
+        document = recorded()
+        document["outcome"].update(
+            completedUnaided=False,
+            nextActionComprehension="DATA_GAP",
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+        )
+        self.assert_valid(document)
+        document["outcome"]["nextActionComprehensionAtUtc"] = utc(590)
         self.assert_invalid(document)
 
     def test_help_comprehension_and_reward_are_unaided_gates(self) -> None:
@@ -236,6 +268,22 @@ class SessionContractTests(unittest.TestCase):
                 else:
                     document["evidence"]["rawEvidenceCommittedToGit"] = True
                 self.assert_invalid(document)
+
+    def test_early_session_accepts_kickoff_wide_retention_deadline(self) -> None:
+        document = recorded()
+        self.assertEqual(
+            document["kickoff"]["participantEvidenceDeleteByUtc"],
+            "2026-11-25T18:00:00Z",
+        )
+        self.assert_valid(document)
+
+    def test_session_must_match_kickoff_window_and_shared_deadline(self) -> None:
+        document = recorded()
+        document["kickoff"]["observationStartsAtUtc"] = utc(1)
+        self.assert_invalid(document)
+        document = recorded()
+        document["evidence"]["participantEvidenceDeleteByUtc"] = "2026-11-24T18:00:00Z"
+        self.assert_invalid(document)
 
     def test_boolean_and_integer_types_are_not_coerced(self) -> None:
         document = recorded()

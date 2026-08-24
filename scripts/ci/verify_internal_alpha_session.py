@@ -122,6 +122,7 @@ def _validate_template(root: dict[str, Any]) -> None:
     if root["protocol"]["commitSha"] is not None:
         _fail("$.protocol.commitSha", "must be null in the committed template")
     _template_nulls(root["candidate"], "$.candidate")
+    _template_nulls(root["kickoff"], "$.kickoff")
     session = root["session"]
     if session["moderatorRole"] != "approved_alpha_moderator":
         _fail("$.session.moderatorRole", "must preserve the approved role")
@@ -208,7 +209,11 @@ def _validate_milestones(
 
 
 def _validate_outcome(
-    outcome: dict[str, Any], milestones: dict[str, dict[str, Any]], stop_status: str
+    outcome: dict[str, Any],
+    milestones: dict[str, dict[str, Any]],
+    stop_status: str,
+    started: datetime,
+    ended: datetime,
 ) -> None:
     boolean_fields = ("completedUnaided", "permissionRequestShown")
     for key in boolean_fields:
@@ -246,8 +251,36 @@ def _validate_outcome(
     if recorded != actual_recorded:
         _fail("$.outcome.recordedMandatoryMilestones", "must equal the observed milestone count")
 
-    if outcome["nextActionComprehension"] not in {"CLEAR", "PARTIAL", "UNCLEAR", "DATA_GAP"}:
+    comprehension = outcome["nextActionComprehension"]
+    if comprehension not in {"CLEAR", "PARTIAL", "UNCLEAR", "DATA_GAP"}:
         _fail("$.outcome.nextActionComprehension", "has an unsupported code")
+    comprehension_at = outcome["nextActionComprehensionAtUtc"]
+    comprehension_elapsed = outcome["nextActionComprehensionElapsedSeconds"]
+    if comprehension == "DATA_GAP":
+        if comprehension_at is not None or comprehension_elapsed is not None:
+            _fail(
+                "$.outcome.nextActionComprehension",
+                "DATA_GAP requires null comprehension timestamp and elapsed seconds",
+            )
+    else:
+        demonstrated = _utc(
+            comprehension_at,
+            "$.outcome.nextActionComprehensionAtUtc",
+        )
+        if not started <= demonstrated <= ended:
+            _fail(
+                "$.outcome.nextActionComprehensionAtUtc",
+                "must be within the session window",
+            )
+        elapsed = _integer(
+            comprehension_elapsed,
+            "$.outcome.nextActionComprehensionElapsedSeconds",
+        )
+        if elapsed != int((demonstrated - started).total_seconds()):
+            _fail(
+                "$.outcome.nextActionComprehensionElapsedSeconds",
+                "must exactly equal nextActionComprehensionAtUtc - startedAtUtc",
+            )
     for key in ("walkingAsAdventure", "companionReturn"):
         if outcome[key] not in {"YES", "PARTIAL", "NO", "DATA_GAP"}:
             _fail(f"$.outcome.{key}", "has an unsupported code")
@@ -269,8 +302,13 @@ def _validate_outcome(
             _fail("$.outcome.completedUnaided", "requires no facilitator help")
         if milestones["result_ack"]["elapsedSeconds"] > 600:
             _fail("$.outcome.completedUnaided", "requires result ACK within 600 seconds")
-        if outcome["nextActionComprehension"] != "CLEAR":
+        if comprehension != "CLEAR":
             _fail("$.outcome.completedUnaided", "requires CLEAR next-action comprehension")
+        if comprehension_elapsed > 600:
+            _fail(
+                "$.outcome.completedUnaided",
+                "requires next-action comprehension within 600 seconds",
+            )
         if outcome["firstDayRewardStatus"] != "YES":
             _fail("$.outcome.completedUnaided", "requires a confirmed first-day reward")
 
@@ -316,7 +354,8 @@ def _validate_findings(findings: Any) -> None:
 def validate_session(document: Any, *, require_recorded: bool = False) -> None:
     root = _keys(document, [
         "schemaVersion", "recordStatus", "recordedAtUtc", "protocol",
-        "candidate", "session", "milestones", "outcome", "findings", "evidence",
+        "candidate", "kickoff", "session", "milestones", "outcome", "findings",
+        "evidence",
     ], "$")
     if root["schemaVersion"] != SCHEMA:
         _fail("$.schemaVersion", f"must be {SCHEMA}")
@@ -329,8 +368,12 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
         _fail("$.protocol.protocolId", f"must be {PROTOCOL}")
     candidate = _keys(root["candidate"], [
         "sourceSha", "treeSha", "appVersion", "buildNumber",
-        "platformArtifactSha256", "kickoffRecordSha256",
+        "platformArtifactSha256",
     ], "$.candidate")
+    kickoff = _keys(root["kickoff"], [
+        "recordSha256", "observationStartsAtUtc", "observationEndsAtUtc",
+        "participantEvidenceDeleteByUtc",
+    ], "$.kickoff")
     session = _keys(root["session"], [
         "studyCode", "platform", "startedAtUtc", "endedAtUtc", "moderatorRole",
         "consentConfirmed", "withdrawalRouteExplained", "exactCandidateVerified",
@@ -348,7 +391,9 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
         "firstDayRewardStatus", "candidateSessions", "crashFreeSessions",
         "authoritativeSyncAttempts", "failedNonCancelledSyncAttempts",
         "applicableMandatoryMilestones", "recordedMandatoryMilestones",
-        "nextActionComprehension", "walkingAsAdventure", "companionReturn",
+        "nextActionComprehension", "nextActionComprehensionAtUtc",
+        "nextActionComprehensionElapsedSeconds", "walkingAsAdventure",
+        "companionReturn",
     ], "$.outcome")
     evidence = _keys(root["evidence"], [
         "storageCategory", "evidencePackageSha256", "redactionReviewedAtUtc",
@@ -366,7 +411,18 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
     _matches(candidate["appVersion"], SEMVER, "$.candidate.appVersion", "a semantic version")
     _matches(candidate["buildNumber"], BUILD, "$.candidate.buildNumber", "a positive build number string")
     _matches(candidate["platformArtifactSha256"], DIGEST, "$.candidate.platformArtifactSha256", "a lowercase SHA-256")
-    _matches(candidate["kickoffRecordSha256"], DIGEST, "$.candidate.kickoffRecordSha256", "a lowercase SHA-256")
+    _matches(kickoff["recordSha256"], DIGEST, "$.kickoff.recordSha256", "a lowercase SHA-256")
+    kickoff_started = _utc(kickoff["observationStartsAtUtc"], "$.kickoff.observationStartsAtUtc")
+    kickoff_ended = _utc(kickoff["observationEndsAtUtc"], "$.kickoff.observationEndsAtUtc")
+    kickoff_delete_by = _utc(
+        kickoff["participantEvidenceDeleteByUtc"],
+        "$.kickoff.participantEvidenceDeleteByUtc",
+    )
+    if not kickoff_started < kickoff_ended < kickoff_delete_by <= kickoff_ended + timedelta(days=90):
+        _fail(
+            "$.kickoff",
+            "must satisfy observation start < end < shared deletion deadline <= end + 90 days",
+        )
 
     _matches(session["studyCode"], STUDY_CODE, "$.session.studyCode", "P01 through P12")
     if session["platform"] not in {"ios", "android"}:
@@ -375,6 +431,8 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
     ended = _utc(session["endedAtUtc"], "$.session.endedAtUtc")
     if not started < ended <= recorded_at:
         _fail("$.session", "must satisfy startedAtUtc < endedAtUtc <= recordedAtUtc")
+    if not kickoff_started <= started < ended <= kickoff_ended:
+        _fail("$.session", "must be contained within the referenced kickoff observation window")
     if ended - started > timedelta(hours=4):
         _fail("$.session.endedAtUtc", "session window must not exceed four hours")
     if session["moderatorRole"] != "approved_alpha_moderator":
@@ -391,7 +449,7 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
         item["gapReasonCode"] == "session_stopped" for item in milestone_map.values()
     ):
         _fail("$.session.stopPauseStatus", "session_stopped gaps require PAUSED or STOPPED")
-    _validate_outcome(outcome, milestone_map, stop_status)
+    _validate_outcome(outcome, milestone_map, stop_status, started, ended)
     _validate_findings(root["findings"])
 
     if evidence["storageCategory"] not in STORAGE_CATEGORIES:
@@ -401,10 +459,15 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
     if evidence["redactionReviewerRole"] != "approved_redaction_reviewer":
         _fail("$.evidence.redactionReviewerRole", "must be approved_redaction_reviewer")
     delete_by = _utc(evidence["participantEvidenceDeleteByUtc"], "$.evidence.participantEvidenceDeleteByUtc")
-    if not ended <= reviewed <= recorded_at < delete_by <= ended + timedelta(days=90):
+    if delete_by != kickoff_delete_by:
+        _fail(
+            "$.evidence.participantEvidenceDeleteByUtc",
+            "must equal the shared deletion deadline in the referenced kickoff contract",
+        )
+    if not ended <= reviewed <= recorded_at < delete_by:
         _fail(
             "$.evidence",
-            "must satisfy ended <= redaction review <= recorded < delete deadline <= ended + 90 days",
+            "must satisfy ended <= redaction review <= recorded < shared deletion deadline",
         )
     if evidence["rawEvidenceCommittedToGit"] is not False:
         _fail("$.evidence.rawEvidenceCommittedToGit", "must be false")

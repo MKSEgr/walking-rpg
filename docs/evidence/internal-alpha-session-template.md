@@ -15,19 +15,24 @@ python3 scripts/ci/verify_internal_alpha_session.py \
   --require-recorded
 ```
 
-The validator accepts only study codes `P01`–`P12`, one exact candidate and the ten
-ordered protocol milestones. It checks UTC/elapsed arithmetic, observed-source codes,
-consent/privacy invariants and metric bounds. `completedUnaided=true` additionally
-requires every milestone through result ACK within 600 seconds, no facilitator help,
-clear next-action comprehension and a confirmed first-day reward. A passing JSON record
-proves structural completeness and redaction boundaries, not that external evidence is
-true or that #161 is complete.
+The validator accepts only study codes `P01`–`P12`, one exact candidate, one referenced
+kickoff contract and the ten ordered protocol milestones. It checks UTC/elapsed
+arithmetic, observed-source codes, consent/privacy invariants and metric bounds. The
+session must fall inside the referenced kickoff observation window, and its evidence
+deadline must equal the kickoff-wide deadline bounded to 90 days after that window.
+`completedUnaided=true` additionally requires both result ACK and demonstrated clear
+next-action comprehension within 600 seconds, no facilitator help and a confirmed
+first-day reward. A passing JSON record proves structural completeness and redaction
+boundaries, not that external evidence is true or that #161 is complete.
 
 ## Identity and contract
 
 - Protocol ID: `walking-rpg-internal-alpha-v1`
 - Candidate:
 - Protocol commit SHA:
+- Kickoff record SHA-256:
+- Kickoff observation window UTC:
+- Kickoff-wide participant evidence deletion deadline UTC:
 - Study code (`P01`–`P12`):
 - Platform: `ios` / `android`
 - Session start/end UTC:
@@ -61,7 +66,7 @@ true or that #161 is complete.
 - Candidate sessions / crash-free sessions:
 - Authoritative sync attempts / failed non-cancelled sync attempts:
 - Applicable mandatory milestones / recorded mandatory milestones:
-- Next-action comprehension: `CLEAR` / `PARTIAL` / `UNCLEAR` / `DATA_GAP`
+- Next-action comprehension and UTC/elapsed time: `CLEAR` / `PARTIAL` / `UNCLEAR` / `DATA_GAP`
 - Walking felt part of an adventure: `YES` / `PARTIAL` / `NO` / `DATA_GAP`
 - Companion created a reason to return: `YES` / `PARTIAL` / `NO` / `DATA_GAP`
 
@@ -76,5 +81,5 @@ true or that #161 is complete.
 - Storage category:
 - Evidence filename prefix:
 - Redaction review role/date UTC:
-- Participant-level deletion deadline UTC:
+- Participant evidence deletion deadline UTC (must equal kickoff-wide deadline):
 - Raw evidence committed to Git: `NO`

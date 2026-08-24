@@ -11,8 +11,13 @@
     "treeSha": null,
     "appVersion": null,
     "buildNumber": null,
-    "platformArtifactSha256": null,
-    "kickoffRecordSha256": null
+    "platformArtifactSha256": null
+  },
+  "kickoff": {
+    "recordSha256": null,
+    "observationStartsAtUtc": null,
+    "observationEndsAtUtc": null,
+    "participantEvidenceDeleteByUtc": null
   },
   "session": {
     "studyCode": null,
@@ -129,6 +134,8 @@
     "applicableMandatoryMilestones": null,
     "recordedMandatoryMilestones": null,
     "nextActionComprehension": null,
+    "nextActionComprehensionAtUtc": null,
+    "nextActionComprehensionElapsedSeconds": null,
     "walkingAsAdventure": null,
     "companionReturn": null
   },
