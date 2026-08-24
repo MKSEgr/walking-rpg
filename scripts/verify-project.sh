@@ -1,6 +1,11 @@
 #!/usr/bin/env sh
 set -eu
 
+if [ ! -x "$0" ]; then
+  echo "scripts/verify-project.sh must retain executable mode 100755." >&2
+  exit 1
+fi
+
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 
 printf '%s\n' "Checking required project files..."
