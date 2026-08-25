@@ -64,9 +64,9 @@ attempts cannot satisfy the journey. A sync receipt `DATA_GAP` preserves unaided
 completion only with at least one successful authoritative attempt. A session-level
 withdrawal status and UTC time cover withdrawals through record finalization, including
 after the moderated session; no milestone or comprehension may be recorded afterward,
-and qualitative answers are discarded; an authoritative reward receipt must also be no
-later than withdrawal. A post-session withdrawal stops further collection without
-changing an already evidenced timed-flow completion result. The
+and an authoritative reward receipt must also be no later than withdrawal. Withdrawal
+during the session discards later qualitative answers; post-session withdrawal stops
+further collection without changing already evidenced completion or qualitative results. The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
 terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;

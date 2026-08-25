@@ -909,10 +909,13 @@ def validate_session(
                 "$.outcome.nextActionComprehensionAtUtc",
                 "must not record comprehension after withdrawal",
             )
-        if any(outcome[key] != "DATA_GAP" for key in ("walkingAsAdventure", "companionReturn")):
+        if withdrawal_at <= ended and any(
+            outcome[key] != "DATA_GAP"
+            for key in ("walkingAsAdventure", "companionReturn")
+        ):
             _fail(
                 "$.outcome",
-                "participant withdrawal requires post-flow qualitative answers to be DATA_GAP",
+                "withdrawal during the moderated session requires qualitative DATA_GAP values",
             )
     reward_cutoff = _utc(
         outcome["firstDayRewardCutoffAtUtc"],

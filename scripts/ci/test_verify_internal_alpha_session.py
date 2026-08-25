@@ -773,6 +773,8 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionElapsedSeconds=600,
             nextActionComprehensionHelpRequested=False,
             nextActionComprehensionHelpProvided=False,
+            walkingAsAdventure="YES",
+            companionReturn="YES",
         )
         document["evidence"]["redactionReviewedAtUtc"] = utc(1000)
         self.assert_valid(document)
