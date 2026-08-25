@@ -223,12 +223,17 @@ def _validate_milestones(
                 _fail(f"{path}.gapReasonCode", "must be null when OBSERVED")
             previous_time = observed
         elif status in GAP_CODES:
-            for key in (
-                "observedAtUtc", "elapsedSeconds", "sourceCategory",
-                "helpRequested", "facilitatorHelpProvided",
-            ):
+            for key in ("observedAtUtc", "elapsedSeconds", "sourceCategory"):
                 if milestone[key] is not None:
                     _fail(f"{path}.{key}", f"must be null when {status}")
+            if status == "DATA_GAP":
+                for key in ("helpRequested", "facilitatorHelpProvided"):
+                    if type(milestone[key]) is not bool:
+                        _fail(f"{path}.{key}", "must be a boolean when DATA_GAP")
+            else:
+                for key in ("helpRequested", "facilitatorHelpProvided"):
+                    if milestone[key] is not None:
+                        _fail(f"{path}.{key}", "must be null when NOT_REACHED")
             if milestone["gapReasonCode"] not in GAP_CODES[status]:
                 _fail(
                     f"{path}.gapReasonCode",
@@ -476,7 +481,7 @@ def _validate_outcome(
         if stop_status != "NOT_INVOKED":
             _fail("$.outcome.completedUnaided", "cannot be true for a paused/stopped session")
         if any(
-            item["status"] not in {"OBSERVED", "NOT_APPLICABLE"}
+            item["status"] not in {"OBSERVED", "DATA_GAP", "NOT_APPLICABLE"}
             for item in milestones.values()
         ):
             _fail(
@@ -516,7 +521,7 @@ def _validate_outcome(
         evidence_is_unaided = (
             stop_status == "NOT_INVOKED"
             and all(
-                item["status"] in {"OBSERVED", "NOT_APPLICABLE"}
+                item["status"] in {"OBSERVED", "DATA_GAP", "NOT_APPLICABLE"}
                 for item in milestones.values()
             )
             and not any(
@@ -787,6 +792,17 @@ def load_session(path: Path) -> Any:
         raise SessionValidationError(f"cannot read strict UTF-8 JSON: {error}") from error
 
 
+def _validate_session_filename(path: Path, document: dict[str, Any]) -> None:
+    session_start = document["session"]["startedAtUtc"].replace("-", "").replace(":", "")
+    expected = (
+        f"internal-alpha-v1_{document['candidate']['sourceSha']}_"
+        f"{document['session']['platform']}_{document['session']['studyCode']}_"
+        f"{session_start}_session.json"
+    )
+    if path.name != expected:
+        _fail("session filename", f"must be exactly {expected!r}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("session", type=Path)
@@ -794,17 +810,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--require-recorded", action="store_true")
     args = parser.parse_args(argv)
     try:
+        document = load_session(args.session)
         referenced_kickoff = None
         referenced_kickoff_sha256 = None
         if args.kickoff is not None:
             referenced_kickoff = kickoff_validator.load_kickoff(args.kickoff)
             referenced_kickoff_sha256 = hashlib.sha256(args.kickoff.read_bytes()).hexdigest()
         validate_session(
-            load_session(args.session),
+            document,
             require_recorded=args.require_recorded,
             referenced_kickoff=referenced_kickoff,
             referenced_kickoff_sha256=referenced_kickoff_sha256,
         )
+        if document["recordStatus"] == "RECORDED":
+            _validate_session_filename(args.session, document)
     except (SessionValidationError, kickoff_validator.KickoffValidationError, OSError) as error:
         print(f"Internal-alpha session invalid: {error}", file=sys.stderr)
         return 1

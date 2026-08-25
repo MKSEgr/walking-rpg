@@ -173,8 +173,8 @@ def set_gap(document: dict, index: int, status: str, reason: str) -> None:
         observedAtUtc=None,
         elapsedSeconds=None,
         sourceCategory=None,
-        helpRequested=None,
-        facilitatorHelpProvided=None,
+        helpRequested=False if status == "DATA_GAP" else None,
+        facilitatorHelpProvided=False if status == "DATA_GAP" else None,
         gapReasonCode=reason,
     )
 
@@ -433,7 +433,7 @@ class SessionContractTests(unittest.TestCase):
     def test_data_gap_can_preserve_later_observations(self) -> None:
         document = recorded()
         set_gap(document, 5, "DATA_GAP", "instrumentation_missing")
-        document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=9)
+        document["outcome"]["recordedMandatoryMilestones"] = 9
         self.assert_valid(document)
 
     def test_permission_claims_are_consistent(self) -> None:
@@ -518,7 +518,7 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         set_gap(document, 1, "DATA_GAP", "instrumentation_missing")
         document["session"]["selectedLocale"] = None
-        document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=9)
+        document["outcome"]["recordedMandatoryMilestones"] = 9
         self.assert_valid(document)
         document["session"]["selectedLocale"] = "ru"
         self.assert_invalid(document)
@@ -640,7 +640,10 @@ class SessionContractTests(unittest.TestCase):
         kickoff = ready_kickoff()
         document = recorded()
         with tempfile.TemporaryDirectory() as directory:
-            session_path = Path(directory) / "session.json"
+            session_path = Path(directory) / (
+                "internal-alpha-v1_" + document["candidate"]["sourceSha"]
+                + "_ios_P01_20260820T080000Z_session.json"
+            )
             kickoff_path = Path(directory) / "kickoff.json"
             session_path.write_text(json.dumps(document), encoding="utf-8")
             kickoff_path.write_bytes(encoded_kickoff(kickoff))
@@ -665,6 +668,30 @@ class SessionContractTests(unittest.TestCase):
             )
         self.assertNotEqual(missing.returncode, 0)
         self.assertEqual(accepted.returncode, 0, accepted.stderr)
+
+    def test_recorded_cli_rejects_unsafe_or_arbitrary_filename(self) -> None:
+        kickoff = ready_kickoff()
+        document = recorded()
+        with tempfile.TemporaryDirectory() as directory:
+            session_path = Path(directory) / "participant@example.com.json"
+            kickoff_path = Path(directory) / "kickoff.json"
+            session_path.write_text(json.dumps(document), encoding="utf-8")
+            kickoff_path.write_bytes(encoded_kickoff(kickoff))
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(VALIDATOR),
+                    str(session_path),
+                    "--kickoff",
+                    str(kickoff_path),
+                    "--require-recorded",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("session filename", result.stderr)
 
     def test_boolean_and_integer_types_are_not_coerced(self) -> None:
         document = recorded()

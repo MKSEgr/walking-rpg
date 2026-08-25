@@ -44,6 +44,13 @@ non-applicable stages and the `NOT_REACHED` tail; a participant withdrawal requi
 proves structural completeness and redaction boundaries, not that external evidence is
 true or that #161 is complete.
 
+Recorded session JSON filenames are exact and contain only contract fields:
+
+`internal-alpha-v1_<source-sha>_<platform>_<study-code>_<YYYYMMDDTHHMMSSZ>_session.json`
+
+The CLI rejects arbitrary names and any filename that does not match the validated
+candidate, platform, study code and session start UTC.
+
 After the first `NOT_REACHED`, every remaining milestone must also be `NOT_REACHED`.
 An observed sync receipt requires at least one non-failed authoritative sync attempt,
 and every finding must link a positive GitHub issue number regardless of severity.
