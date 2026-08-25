@@ -332,6 +332,65 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_valid()
 
+    def test_shown_unreached_permission_counts_as_known_non_grant(self) -> None:
+        path = self.session_paths[0]
+        document = json.loads(path.read_text(encoding="utf-8"))
+        for index in range(3, 10):
+            session_fixture.set_gap(
+                document, index, "NOT_REACHED", "session_stopped"
+            )
+        document["session"].update(
+            stopPauseStatus="STOPPED",
+            stopPauseAtUtc=session_fixture.utc(90),
+        )
+        document["outcome"].update(
+            completedUnaided=False,
+            permissionDecision="NOT_REACHED",
+            firstDayRewardStatus="DATA_GAP",
+            firstDayRewardReceiptAtUtc=None,
+            applicableMandatoryMilestones=3,
+            recordedMandatoryMilestones=3,
+            nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
+            authoritativeSyncAttempts=0,
+            successfulAuthoritativeSyncAttempts=0,
+            failedNonCancelledSyncAttempts=0,
+        )
+        document["evidence"]["redactionReviewedAtUtc"] = session_fixture.utc(46800)
+        path.write_bytes(_encoded(document))
+        self.decision["cohort"].update(completed=11, stoppedOrPaused=1)
+        self.decision["metrics"]["unaidedFirstTenMinutes"].update(
+            numerator=11,
+            denominator=12,
+        )
+        self.decision["metrics"]["stepPermissionAcceptance"].update(
+            numerator=11,
+            denominator=12,
+        )
+        self.decision["metrics"]["firstDayReward"] = {
+            "status": "DATA_GAP",
+            "numerator": None,
+            "denominator": None,
+            "dataGapReasonCode": "collection_stopped",
+        }
+        self.decision["metrics"]["syncErrorRate"].update(
+            numerator=0,
+            denominator=33,
+        )
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="instrumentation_gap",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.refresh_package()
+        self.assert_valid()
+
     def test_missing_comprehension_propagates_unaided_data_gap(self) -> None:
         path = self.session_paths[0]
         document = json.loads(path.read_text(encoding="utf-8"))
