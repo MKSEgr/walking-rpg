@@ -362,6 +362,53 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.refresh_package()
         self.assert_valid()
 
+    def test_outcome_rationales_reject_all_positive_sessions(self) -> None:
+        cases = (
+            (
+                "FIX_AND_RERUN",
+                "focused_comprehension_gap",
+                "focused_fix_and_alpha_rerun",
+            ),
+            ("STOP", "core_value_not_supported", "stop_and_archive"),
+        )
+        for selected, rationale, scope in cases:
+            with self.subTest(rationale=rationale):
+                self.decision["decision"].update(
+                    selected=selected,
+                    rationaleCode=rationale,
+                    nextScope=scope,
+                )
+                self.write_decision()
+                self.assert_invalid()
+
+    def test_outcome_rationales_require_matching_session_signals(self) -> None:
+        path = self.session_paths[0]
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["outcome"].update(
+            completedUnaided=False,
+            nextActionComprehension="PARTIAL",
+        )
+        path.write_bytes(_encoded(document))
+        self.decision["metrics"]["unaidedFirstTenMinutes"]["numerator"] = 11
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="focused_comprehension_gap",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.refresh_package()
+        self.assert_valid()
+
+        document["outcome"]["walkingAsAdventure"] = "NO"
+        path.write_bytes(_encoded(document))
+        self.decision["qualitative"]["walkingAsAdventureSupported"] = False
+        self.decision["decision"].update(
+            selected="STOP",
+            rationaleCode="core_value_not_supported",
+            nextScope="stop_and_archive",
+        )
+        self.refresh_package()
+        self.assert_valid()
+
     def test_decision_cannot_predate_participant_records(self) -> None:
         self.decision["recordedAtUtc"] = "2026-08-20T09:00:00Z"
         self.write_decision()
