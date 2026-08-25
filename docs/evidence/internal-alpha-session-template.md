@@ -44,6 +44,8 @@ permission/sync/applicable ENERGY by 04:00, companion/node by 06:00, and event/r
 ACK by 09:00. The selected locale is required when observed and must be one of the
 kickoff-approved languages. An unshown permission request uses
 `NOT_APPLICABLE/permission_not_requested` for both the decision and ENERGY stages. A
+session stopped before that stage may instead keep the permission decision and all
+following stages in its legitimate `NOT_REACHED` tail. A
 permission denial may use `NOT_APPLICABLE/permission_denied` for `first_energy` while
 the supported limited path continues; a denial followed by an earlier stop may instead
 put ENERGY in the `NOT_REACHED` tail. Granted permission with no activity data uses

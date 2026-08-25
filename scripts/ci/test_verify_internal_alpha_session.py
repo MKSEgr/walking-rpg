@@ -477,6 +477,28 @@ class SessionContractTests(unittest.TestCase):
         )
         self.assert_valid(document)
 
+    def test_unshown_permission_can_remain_in_stopped_tail(self) -> None:
+        document = recorded()
+        for index in range(3, 10):
+            set_gap(document, index, "NOT_REACHED", "participant_withdrew")
+        document["session"]["stopPauseStatus"] = "STOPPED"
+        document["outcome"].update(
+            completedUnaided=False,
+            permissionRequestShown=False,
+            permissionDecision="NOT_APPLICABLE",
+            firstDayRewardStatus="NO",
+            firstDayRewardReceiptAtUtc=None,
+            applicableMandatoryMilestones=3,
+            recordedMandatoryMilestones=3,
+            nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
+        )
+        self.assert_valid(document)
+
     def test_permission_denial_has_valid_unaided_limited_path(self) -> None:
         document = recorded()
         set_not_applicable(document, 5, "permission_denied")

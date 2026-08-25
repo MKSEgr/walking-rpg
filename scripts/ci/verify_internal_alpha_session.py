@@ -286,14 +286,16 @@ def _validate_outcome(
             _fail("$.outcome.permissionRequestShown", "requires an observed permission milestone")
     elif permission != "NOT_APPLICABLE":
         _fail("$.outcome.permissionDecision", "unshown request requires NOT_APPLICABLE")
-    elif not (
-        milestones["permission_decision"]["status"] == "NOT_APPLICABLE"
-        and milestones["permission_decision"]["gapReasonCode"] == "permission_not_requested"
-    ):
-        _fail(
-            "$.outcome.permissionRequestShown",
-            "unshown request requires NOT_APPLICABLE/permission_not_requested milestone",
-        )
+    else:
+        permission_milestone = milestones["permission_decision"]
+        if permission_milestone["status"] != "NOT_REACHED" and not (
+            permission_milestone["status"] == "NOT_APPLICABLE"
+            and permission_milestone["gapReasonCode"] == "permission_not_requested"
+        ):
+            _fail(
+                "$.outcome.permissionRequestShown",
+                "unshown request requires an explicit non-applicable stage or unreached tail",
+            )
     reward_status = outcome["firstDayRewardStatus"]
     if reward_status not in {"YES", "NO", "DATA_GAP", "PENDING"}:
         _fail("$.outcome.firstDayRewardStatus", "must be YES, NO, DATA_GAP or PENDING")
