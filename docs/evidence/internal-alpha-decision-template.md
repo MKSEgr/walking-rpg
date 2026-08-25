@@ -32,9 +32,12 @@ python3 scripts/ci/verify_internal_alpha_decision_evidence.py \
 ```
 
 The cross-check reruns all three underlying contracts, requires unique study codes and
-exact session filenames, reconciles derivable cohort counts and recomputes every
-quantitative metric. It also counts each unique linked finding issue once by severity
-and rejects conflicting severities for the same issue. `alphaEvidencePackageSha256` is
+exact session filenames, reconciles started/platform/withdrawal/stopped-or-paused counts
+and recomputes every quantitative metric. Actual invitations and exclusions remain
+reviewed owner inputs because the kickoff records only the planned cohort; this permits
+truthful early `STOP`/`FIX_AND_RERUN` decisions. The tool also counts each unique linked
+finding issue once by severity and rejects conflicting severities for the same issue.
+`alphaEvidencePackageSha256` is
 the SHA-256 of a domain-separated manifest containing the exact kickoff digest and each
 exact session-file digest sorted by study code. Therefore argument order is irrelevant,
 while any byte change requires a new package digest and review. A
