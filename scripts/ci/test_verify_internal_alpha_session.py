@@ -435,7 +435,7 @@ class SessionContractTests(unittest.TestCase):
             set_gap(document, index, "NOT_REACHED", "participant_withdrew")
         document["outcome"].update(
             completedUnaided=False,
-            firstDayRewardStatus="NO",
+            firstDayRewardStatus="DATA_GAP",
             firstDayRewardReceiptAtUtc=None,
             applicableMandatoryMilestones=5,
             recordedMandatoryMilestones=5,
@@ -527,7 +527,7 @@ class SessionContractTests(unittest.TestCase):
             completedUnaided=False,
             permissionRequestShown=False,
             permissionDecision="NOT_APPLICABLE",
-            firstDayRewardStatus="NO",
+            firstDayRewardStatus="DATA_GAP",
             firstDayRewardReceiptAtUtc=None,
             applicableMandatoryMilestones=3,
             recordedMandatoryMilestones=3,
@@ -642,7 +642,7 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(
             completedUnaided=False,
             permissionDecision="DENIED",
-            firstDayRewardStatus="NO",
+            firstDayRewardStatus="DATA_GAP",
             firstDayRewardReceiptAtUtc=None,
             applicableMandatoryMilestones=4,
             recordedMandatoryMilestones=4,
@@ -809,6 +809,16 @@ class SessionContractTests(unittest.TestCase):
         document["evidence"]["redactionReviewedAtUtc"] = utc(1000)
         self.assert_valid(document)
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(1001)
+        self.assert_invalid(document)
+        document["session"]["withdrawnAtUtc"] = utc(50000)
+        document["outcome"].update(
+            firstDayRewardStatus="NO",
+            firstDayRewardReceiptAtUtc=None,
+        )
+        document["evidence"]["redactionReviewedAtUtc"] = utc(50000)
+        self.assert_valid(document)
+        document["session"]["withdrawnAtUtc"] = utc(1000)
+        document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         self.assert_invalid(document)
 
     def test_withdrawal_rejects_unanchored_data_gap_tail(self) -> None:

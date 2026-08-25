@@ -75,7 +75,9 @@ post-session withdrawal cannot be used as that tail's cause. The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
 terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;
-`PENDING` retains the pre-cutoff behavior. A passing JSON record
+`PENDING` retains the pre-cutoff behavior. Withdrawal before cutoff without an already
+confirmed receipt resolves as `DATA_GAP`, not `NO`; `NO` remains valid when cutoff
+preceded withdrawal. A passing JSON record
 proves structural completeness and redaction boundaries, not that external evidence is
 true or that #161 is complete.
 

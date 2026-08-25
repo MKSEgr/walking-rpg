@@ -350,7 +350,17 @@ def _validate_outcome(
             "$.outcome.firstDayRewardCutoffAtUtc",
             "must equal the next local midnight derived from session start and UTC offset",
         )
-    if recorded_at < reward_cutoff and reward_status not in {"YES", "PENDING"}:
+    withdrawal_before_cutoff = withdrawal_at is not None and withdrawal_at < reward_cutoff
+    if withdrawal_before_cutoff and reward_status not in {"YES", "DATA_GAP"}:
+        _fail(
+            "$.outcome.firstDayRewardStatus",
+            "withdrawal before cutoff without an existing receipt requires DATA_GAP",
+        )
+    if (
+        recorded_at < reward_cutoff
+        and reward_status not in {"YES", "PENDING"}
+        and not (withdrawal_before_cutoff and reward_status == "DATA_GAP")
+    ):
         _fail(
             "$.outcome.firstDayRewardStatus",
             "must remain PENDING before cutoff unless reward delivery is already YES",
