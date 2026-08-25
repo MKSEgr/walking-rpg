@@ -363,6 +363,10 @@ def _validate_outcome(
     candidate_sessions = _integer(outcome["candidateSessions"], "$.outcome.candidateSessions", positive=True)
     crash_free = _integer(outcome["crashFreeSessions"], "$.outcome.crashFreeSessions")
     sync_attempts = _integer(outcome["authoritativeSyncAttempts"], "$.outcome.authoritativeSyncAttempts")
+    successful_syncs = _integer(
+        outcome["successfulAuthoritativeSyncAttempts"],
+        "$.outcome.successfulAuthoritativeSyncAttempts",
+    )
     failed_syncs = _integer(
         outcome["failedNonCancelledSyncAttempts"],
         "$.outcome.failedNonCancelledSyncAttempts",
@@ -371,16 +375,19 @@ def _validate_outcome(
     recorded = _integer(outcome["recordedMandatoryMilestones"], "$.outcome.recordedMandatoryMilestones")
     if crash_free > candidate_sessions:
         _fail("$.outcome.crashFreeSessions", "must not exceed candidateSessions")
-    if failed_syncs > sync_attempts:
-        _fail("$.outcome.failedNonCancelledSyncAttempts", "must not exceed authoritativeSyncAttempts")
-    if milestones["first_sync_receipt"]["status"] == "OBSERVED" and sync_attempts <= failed_syncs:
+    if successful_syncs + failed_syncs > sync_attempts:
         _fail(
-            "$.outcome.authoritativeSyncAttempts",
-            "an observed sync receipt requires at least one non-failed authoritative attempt",
+            "$.outcome",
+            "successful plus failed non-cancelled sync attempts must not exceed authoritative attempts",
+        )
+    if milestones["first_sync_receipt"]["status"] == "OBSERVED" and successful_syncs == 0:
+        _fail(
+            "$.outcome.successfulAuthoritativeSyncAttempts",
+            "an observed sync receipt requires at least one successful authoritative attempt",
         )
     sync_gap_has_attempt = not (
         milestones["first_sync_receipt"]["status"] == "DATA_GAP"
-        and sync_attempts <= failed_syncs
+        and successful_syncs == 0
     )
     reached = []
     for item in milestones.values():
@@ -514,18 +521,6 @@ def _validate_outcome(
     for key in ("walkingAsAdventure", "companionReturn"):
         if outcome[key] not in {"YES", "PARTIAL", "NO", "DATA_GAP"}:
             _fail(f"$.outcome.{key}", "has an unsupported code")
-    if any(
-        item["gapReasonCode"] == "participant_withdrew"
-        for item in milestones.values()
-    ) and any(
-        outcome[key] != "DATA_GAP"
-        for key in ("walkingAsAdventure", "companionReturn")
-    ):
-        _fail(
-            "$.outcome",
-            "participant withdrawal requires post-flow qualitative answers to be DATA_GAP",
-        )
-
     if reward_status == "YES":
         reward_event = milestones["first_event_resolved"]
         if reward_event["status"] not in {"OBSERVED", "DATA_GAP"}:
@@ -578,7 +573,7 @@ def _validate_outcome(
         if not sync_gap_has_attempt:
             _fail(
                 "$.outcome.completedUnaided",
-                "sync DATA_GAP requires at least one non-failed authoritative attempt",
+                "sync DATA_GAP requires at least one successful authoritative attempt",
             )
         for milestone_id, deadline in UNAIDED_DEADLINES.items():
             item = milestones[milestone_id]
@@ -753,6 +748,7 @@ def validate_session(
         "adultEligibilityConfirmed", "selectedLocale", "startedAtUtc",
         "endedAtUtc", "moderatorRole", "consentConfirmed",
         "withdrawalRouteExplained", "exactCandidateVerified", "stopPauseStatus",
+        "withdrawalStatus", "withdrawnAtUtc",
     ], "$.session")
     if not isinstance(root["milestones"], list) or len(root["milestones"]) != len(MILESTONES):
         _fail("$.milestones", f"must contain exactly {len(MILESTONES)} entries")
@@ -767,7 +763,8 @@ def validate_session(
         "firstDayRewardStatus", "firstDayRewardReceiptAtUtc",
         "firstDayTimeZoneOffsetMinutes", "firstDayRewardCutoffAtUtc",
         "candidateSessions", "crashFreeSessions",
-        "authoritativeSyncAttempts", "failedNonCancelledSyncAttempts",
+        "authoritativeSyncAttempts", "successfulAuthoritativeSyncAttempts",
+        "failedNonCancelledSyncAttempts",
         "applicableMandatoryMilestones", "recordedMandatoryMilestones",
         "nextActionComprehension", "nextActionSummaryCode",
         "nextActionComprehensionAtUtc",
@@ -830,6 +827,19 @@ def validate_session(
     stop_status = session["stopPauseStatus"]
     if stop_status not in {"NOT_INVOKED", "PAUSED", "STOPPED"}:
         _fail("$.session.stopPauseStatus", "has an unsupported code")
+    withdrawal_status = session["withdrawalStatus"]
+    if withdrawal_status not in {"NOT_WITHDRAWN", "WITHDREW"}:
+        _fail("$.session.withdrawalStatus", "must be NOT_WITHDRAWN or WITHDREW")
+    withdrawal_at = None
+    if withdrawal_status == "NOT_WITHDRAWN":
+        if session["withdrawnAtUtc"] is not None:
+            _fail("$.session.withdrawnAtUtc", "must be null when the participant did not withdraw")
+    else:
+        if stop_status != "STOPPED":
+            _fail("$.session.stopPauseStatus", "participant withdrawal requires STOPPED")
+        withdrawal_at = _utc(session["withdrawnAtUtc"], "$.session.withdrawnAtUtc")
+        if not started <= withdrawal_at <= ended:
+            _fail("$.session.withdrawnAtUtc", "must be within the session window")
 
     milestone_map = _validate_milestones(root["milestones"], started, ended)
     selected_locale = session["selectedLocale"]
@@ -847,12 +857,41 @@ def validate_session(
     gap_reasons = {item["gapReasonCode"] for item in milestone_map.values()}
     if stop_status == "NOT_INVOKED" and "session_stopped" in gap_reasons:
         _fail("$.session.stopPauseStatus", "session_stopped gaps require PAUSED or STOPPED")
-    if "participant_withdrew" in gap_reasons and stop_status != "STOPPED":
+    if "participant_withdrew" in gap_reasons and withdrawal_status != "WITHDREW":
         _fail(
-            "$.session.stopPauseStatus",
-            "participant_withdrew gaps require STOPPED",
+            "$.session.withdrawalStatus",
+            "participant_withdrew gaps require session-level WITHDREW evidence",
         )
+    if withdrawal_status == "WITHDREW":
+        for index, item in enumerate(milestone_map.values()):
+            if item["status"] == "OBSERVED" and _utc(
+                item["observedAtUtc"], f"$.milestones[{index}].observedAtUtc"
+            ) > withdrawal_at:
+                _fail(f"$.milestones[{index}]", "must not be observed after withdrawal")
     _validate_outcome(outcome, milestone_map, stop_status, started, ended, recorded_at)
+    if withdrawal_status == "WITHDREW":
+        comprehension_at = outcome["nextActionComprehensionAtUtc"]
+        if comprehension_at is not None and _utc(
+            comprehension_at, "$.outcome.nextActionComprehensionAtUtc"
+        ) > withdrawal_at:
+            _fail(
+                "$.outcome.nextActionComprehensionAtUtc",
+                "must not record comprehension after withdrawal",
+            )
+        if any(outcome[key] != "DATA_GAP" for key in ("walkingAsAdventure", "companionReturn")):
+            _fail(
+                "$.outcome",
+                "participant withdrawal requires post-flow qualitative answers to be DATA_GAP",
+            )
+    reward_cutoff = _utc(
+        outcome["firstDayRewardCutoffAtUtc"],
+        "$.outcome.firstDayRewardCutoffAtUtc",
+    )
+    if kickoff_delete_by <= reward_cutoff:
+        _fail(
+            "$.kickoff.participantEvidenceDeleteByUtc",
+            "must be later than this session's first-day reward cutoff",
+        )
     _validate_findings(root["findings"])
 
     if evidence["storageCategory"] not in STORAGE_CATEGORIES:

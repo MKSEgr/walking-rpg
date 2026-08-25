@@ -32,7 +32,9 @@
     "consentConfirmed": null,
     "withdrawalRouteExplained": null,
     "exactCandidateVerified": null,
-    "stopPauseStatus": null
+    "stopPauseStatus": null,
+    "withdrawalStatus": null,
+    "withdrawnAtUtc": null
   },
   "milestones": [
     {
@@ -147,6 +149,7 @@
     "candidateSessions": null,
     "crashFreeSessions": null,
     "authoritativeSyncAttempts": null,
+    "successfulAuthoritativeSyncAttempts": null,
     "failedNonCancelledSyncAttempts": null,
     "applicableMandatoryMilestones": null,
     "recordedMandatoryMilestones": null,

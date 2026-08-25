@@ -55,8 +55,14 @@ non-applicable stages and the `NOT_REACHED` tail; a participant withdrawal requi
 `STOPPED` and forces both post-flow qualitative answers to `DATA_GAP`. A shown
 permission request whose decision evidence is missing uses `permissionDecision=DATA_GAP`
 with a permission milestone instrumentation gap; because the request was shown, ENERGY
-cannot use `permission_not_requested`. A sync receipt `DATA_GAP` preserves unaided
-completion only with at least one non-failed authoritative attempt. A passing JSON record
+cannot use `permission_not_requested`. Sync metrics separately record total and
+successful authoritative attempts plus failed non-cancelled attempts, so cancelled
+attempts cannot satisfy the journey. A sync receipt `DATA_GAP` preserves unaided
+completion only with at least one successful authoritative attempt. A session-level
+withdrawal status and UTC time cover withdrawals even after the final milestone; no
+milestone or comprehension may be recorded afterward, and qualitative answers are
+discarded. The kickoff-wide evidence deadline must be later than every session's derived
+first-day reward cutoff so a `PENDING` result can be resolved before deletion. A passing JSON record
 proves structural completeness and redaction boundaries, not that external evidence is
 true or that #161 is complete.
 
@@ -91,6 +97,7 @@ and every finding must link a positive GitHub issue number regardless of severit
 - Withdrawal route explained: `PASS` / `FAIL`
 - Exact candidate/start gates verified: `PASS` / `FAIL`
 - Stop/pause invoked: `NO` / `YES`
+- Withdrawal status and UTC: `NOT_WITHDRAWN` / `WITHDREW`
 
 ## Timed milestones
 
@@ -115,7 +122,8 @@ and every finding must link a positive GitHub issue number regardless of severit
 - First-day reward receipt UTC, UTC offset minutes and derived cutoff UTC:
 - First-day reward by cutoff: `YES` / `NO` / `DATA_GAP` / `PENDING`
 - Candidate sessions / crash-free sessions:
-- Authoritative sync attempts / failed non-cancelled sync attempts:
+- Authoritative sync attempts / successful authoritative attempts /
+  failed non-cancelled sync attempts:
 - Applicable mandatory milestones before first `NOT_REACHED` / recorded milestones:
 - Next-action sanitized summary code, comprehension, UTC/elapsed time, help requested
   and facilitator help provided:

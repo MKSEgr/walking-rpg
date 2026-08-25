@@ -122,6 +122,8 @@ def recorded() -> dict:
         "withdrawalRouteExplained": True,
         "exactCandidateVerified": True,
         "stopPauseStatus": "NOT_INVOKED",
+        "withdrawalStatus": "NOT_WITHDRAWN",
+        "withdrawnAtUtc": None,
     }
     elapsed = [0, 30, 60, 120, 180, 240, 300, 360, 480, 540]
     for index, seconds in enumerate(elapsed):
@@ -146,6 +148,7 @@ def recorded() -> dict:
         "candidateSessions": 2,
         "crashFreeSessions": 2,
         "authoritativeSyncAttempts": 3,
+        "successfulAuthoritativeSyncAttempts": 3,
         "failedNonCancelledSyncAttempts": 0,
         "applicableMandatoryMilestones": 10,
         "recordedMandatoryMilestones": 10,
@@ -445,6 +448,11 @@ class SessionContractTests(unittest.TestCase):
         self.assert_invalid(document)
         document["session"]["stopPauseStatus"] = "STOPPED"
         self.assert_invalid(document)
+        document["session"].update(
+            withdrawalStatus="WITHDREW",
+            withdrawnAtUtc=utc(240),
+        )
+        self.assert_invalid(document)
         document["outcome"].update(
             walkingAsAdventure="DATA_GAP",
             companionReturn="DATA_GAP",
@@ -499,7 +507,11 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         for index in range(3, 10):
             set_gap(document, index, "NOT_REACHED", "participant_withdrew")
-        document["session"]["stopPauseStatus"] = "STOPPED"
+        document["session"].update(
+            stopPauseStatus="STOPPED",
+            withdrawalStatus="WITHDREW",
+            withdrawnAtUtc=utc(60),
+        )
         document["outcome"].update(
             completedUnaided=False,
             permissionRequestShown=False,
@@ -538,7 +550,11 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         for index in range(4, 10):
             set_gap(document, index, "NOT_REACHED", "participant_withdrew")
-        document["session"]["stopPauseStatus"] = "STOPPED"
+        document["session"].update(
+            stopPauseStatus="STOPPED",
+            withdrawalStatus="WITHDREW",
+            withdrawnAtUtc=utc(120),
+        )
         document["outcome"].update(
             completedUnaided=False,
             permissionDecision="DENIED",
@@ -624,6 +640,7 @@ class SessionContractTests(unittest.TestCase):
     def test_metric_counts_are_bounded_and_match_milestones(self) -> None:
         for key, value in (
             ("crashFreeSessions", 3),
+            ("successfulAuthoritativeSyncAttempts", 4),
             ("failedNonCancelledSyncAttempts", 4),
             ("recordedMandatoryMilestones", 9),
             ("applicableMandatoryMilestones", 9),
@@ -634,11 +651,12 @@ class SessionContractTests(unittest.TestCase):
                 self.assert_invalid(document)
 
     def test_observed_sync_receipt_requires_successful_attempt(self) -> None:
-        for attempts, failed in ((0, 0), (2, 2)):
-            with self.subTest(attempts=attempts, failed=failed):
+        for attempts, successful, failed in ((0, 0, 0), (2, 0, 0), (2, 1, 2)):
+            with self.subTest(attempts=attempts, successful=successful, failed=failed):
                 document = recorded()
                 document["outcome"].update(
                     authoritativeSyncAttempts=attempts,
+                    successfulAuthoritativeSyncAttempts=successful,
                     failedNonCancelledSyncAttempts=failed,
                 )
                 self.assert_invalid(document)
@@ -647,13 +665,76 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         set_gap(document, 4, "DATA_GAP", "instrumentation_missing")
         document["outcome"].update(
-            authoritativeSyncAttempts=0,
+            authoritativeSyncAttempts=1,
+            successfulAuthoritativeSyncAttempts=0,
             failedNonCancelledSyncAttempts=0,
             recordedMandatoryMilestones=9,
         )
         self.assert_invalid(document)
-        document["outcome"]["authoritativeSyncAttempts"] = 1
+        document["outcome"]["successfulAuthoritativeSyncAttempts"] = 1
         self.assert_valid(document)
+
+    def test_withdrawal_after_result_ack_discards_later_outcomes(self) -> None:
+        document = recorded()
+        document["session"].update(
+            stopPauseStatus="STOPPED",
+            withdrawalStatus="WITHDREW",
+            withdrawnAtUtc=utc(570),
+        )
+        document["outcome"]["completedUnaided"] = False
+        self.assert_invalid(document)
+        document["outcome"].update(
+            nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
+        )
+        self.assert_valid(document)
+
+    def test_reward_cutoff_must_precede_shared_evidence_deadline(self) -> None:
+        kickoff = ready_kickoff()
+        delete_by = utc(640801)
+        kickoff["evidence"]["participantEvidenceDeleteByUtc"] = delete_by
+        document = recorded()
+        start_seconds = 639900
+        document.update(recordedAtUtc=utc(640700))
+        document["kickoff"].update(
+            recordSha256=kickoff_digest(kickoff),
+            participantEvidenceDeleteByUtc=delete_by,
+        )
+        document["session"].update(
+            startedAtUtc=utc(start_seconds),
+            endedAtUtc=utc(start_seconds + 720),
+        )
+        for index, seconds in enumerate((0, 30, 60, 120, 180, 240, 300, 360, 480, 540)):
+            document["milestones"][index].update(
+                observedAtUtc=utc(start_seconds + seconds),
+                elapsedSeconds=seconds,
+            )
+        document["outcome"].update(
+            firstDayRewardStatus="PENDING",
+            firstDayRewardReceiptAtUtc=None,
+            firstDayTimeZoneOffsetMinutes=720,
+            firstDayRewardCutoffAtUtc=utc(705600),
+            nextActionComprehensionAtUtc=utc(start_seconds + 600),
+        )
+        document["evidence"].update(
+            redactionReviewedAtUtc=utc(640650),
+            participantEvidenceDeleteByUtc=delete_by,
+        )
+        self.assert_invalid(document, kickoff)
+        delete_by = utc(705601)
+        kickoff["evidence"]["participantEvidenceDeleteByUtc"] = delete_by
+        document["kickoff"].update(
+            recordSha256=kickoff_digest(kickoff),
+            participantEvidenceDeleteByUtc=delete_by,
+        )
+        document["evidence"]["participantEvidenceDeleteByUtc"] = delete_by
+        self.assert_valid(document, kickoff)
 
     def test_every_finding_requires_issue_and_safe_code(self) -> None:
         document = recorded()
