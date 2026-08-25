@@ -93,6 +93,32 @@ def _metric(status: str, numerator: int, denominator: int) -> tuple[str, int, in
     return status, numerator, denominator
 
 
+def _unaided_non_completion_evidenced(session: dict[str, Any]) -> bool:
+    """Return whether evidence other than missing comprehension proves failure."""
+    milestones = {
+        item["milestoneId"]: item for item in session["milestones"]
+    }
+    if session["session"]["stopPauseStatus"] != "NOT_INVOKED":
+        return True
+    if any(item["status"] == "NOT_REACHED" for item in milestones.values()):
+        return True
+    if any(
+        item["helpRequested"] or item["facilitatorHelpProvided"]
+        for item in milestones.values()
+    ):
+        return True
+    if (
+        milestones["first_sync_receipt"]["status"] == "DATA_GAP"
+        and session["outcome"]["successfulAuthoritativeSyncAttempts"] == 0
+    ):
+        return True
+    return any(
+        milestones[milestone_id]["status"] == "OBSERVED"
+        and milestones[milestone_id]["elapsedSeconds"] > deadline
+        for milestone_id, deadline in session_validator.UNAIDED_DEADLINES.items()
+    )
+
+
 def _derived_metrics(
     records: list[tuple[str, Path, dict[str, Any], bytes]],
 ) -> dict[str, tuple[str, int | None, int | None]]:
@@ -102,7 +128,20 @@ def _derived_metrics(
             name: ("DATA_GAP", None, None)
             for name in decision_validator.METRIC_NAMES
         }
-    unaided = sum(item["outcome"]["completedUnaided"] for item in sessions)
+    unaided_has_gap = any(
+        item["outcome"]["nextActionComprehension"] == "DATA_GAP"
+        and not _unaided_non_completion_evidenced(item)
+        for item in sessions
+    )
+    unaided = (
+        ("DATA_GAP", None, None)
+        if unaided_has_gap
+        else _metric(
+            "MEASURED",
+            sum(item["outcome"]["completedUnaided"] for item in sessions),
+            len(sessions),
+        )
+    )
 
     permission_shown = [
         item for item in sessions if item["outcome"]["permissionRequestShown"]
@@ -169,7 +208,7 @@ def _derived_metrics(
         else ("DATA_GAP", None, None)
     )
     return {
-        "unaidedFirstTenMinutes": _metric("MEASURED", unaided, len(sessions)),
+        "unaidedFirstTenMinutes": unaided,
         "stepPermissionAcceptance": permission,
         "firstDayReward": reward,
         "crashFreeSessions": _metric(
@@ -410,6 +449,30 @@ def validate_bundle(
             _fail("$.recordedAtUtc", "must not precede any participant record")
 
     derived_metrics = _derived_metrics(records)
+    if rationale == "instrumentation_gap":
+        coverage = derived_metrics["instrumentationCoverage"]
+        has_derived_gap = any(
+            status == "DATA_GAP"
+            for status, _numerator, _denominator in derived_metrics.values()
+        )
+        has_coverage_miss = (
+            coverage[0] == "MEASURED"
+            and coverage[1] is not None
+            and coverage[2] is not None
+            and not decision_validator._passes(
+                "instrumentationCoverage", coverage[1], coverage[2]
+            )
+        )
+        if not (
+            has_derived_gap
+            or has_coverage_miss
+            or decision["qualitative"]["instrumentationInterpretable"] is not True
+        ):
+            _fail(
+                "$.decision.rationaleCode",
+                "instrumentation_gap requires a derived data gap, failed coverage "
+                "threshold or non-true reviewed interpretability gate",
+            )
     if decision["decision"]["rationaleCode"] == "threshold_miss":
         has_threshold_miss = any(
             status == "MEASURED"
