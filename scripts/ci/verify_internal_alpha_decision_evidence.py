@@ -481,6 +481,14 @@ def validate_bundle(
                 "instrumentation_gap requires a derived data gap, failed coverage "
                 "threshold or non-true reviewed interpretability gate",
             )
+    if (
+        rationale == "release_blocker"
+        and decision["findings"]["openReleaseBlockers"] == 0
+    ):
+        _fail(
+            "$.decision.rationaleCode",
+            "release_blocker requires at least one reviewed open release blocker",
+        )
     if decision["decision"]["rationaleCode"] == "threshold_miss":
         has_threshold_miss = any(
             status == "MEASURED"
