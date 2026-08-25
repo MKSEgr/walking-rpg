@@ -75,7 +75,9 @@ post-session withdrawal cannot be used as that tail's cause. The
 general stop/pause status also records an exact UTC time: a pause or stop before timed
 comprehension blocks unaided completion, while one afterward preserves the completed
 primary outcome. A PAUSED flow may resume and retain later evidence, but comprehension
-cannot be collected after terminal STOPPED. Withdrawal STOPPED time must equal its
+cannot be collected after terminal STOPPED. Without separately timed qualitative
+answers, STOPPED before session end forces both to `DATA_GAP`; a stop at/after session
+end preserves them. Withdrawal STOPPED time must equal its
 withdrawal time. The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For

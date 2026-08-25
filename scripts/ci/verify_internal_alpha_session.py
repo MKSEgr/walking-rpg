@@ -557,6 +557,14 @@ def _validate_outcome(
     for key in ("walkingAsAdventure", "companionReturn"):
         if outcome[key] not in {"YES", "PARTIAL", "NO", "DATA_GAP"}:
             _fail(f"$.outcome.{key}", "has an unsupported code")
+    if stop_status == "STOPPED" and stop_at < ended and any(
+        outcome[key] != "DATA_GAP"
+        for key in ("walkingAsAdventure", "companionReturn")
+    ):
+        _fail(
+            "$.outcome",
+            "terminal stop before session end requires qualitative DATA_GAP values",
+        )
     if reward_status == "YES":
         reward_event = milestones["first_event_resolved"]
         if reward_event["status"] not in {"OBSERVED", "DATA_GAP"}:
