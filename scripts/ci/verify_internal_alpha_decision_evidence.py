@@ -514,6 +514,16 @@ def validate_bundle(
             "$.decision.rationaleCode",
             "safety_risk requires at least one reviewed STOP finding",
         )
+    if rationale == "operationally_infeasible":
+        has_operational_evidence = (
+            decision["cohort"]["stoppedOrPaused"] > 0
+            or any(value > 0 for value in decision["findings"].values())
+        )
+        if not has_operational_evidence:
+            _fail(
+                "$.decision.rationaleCode",
+                "operationally_infeasible requires a stop/pause or reviewed finding",
+            )
     if rationale == "cohort_invalid":
         cohort = decision["cohort"]
         planned = kickoff["cohort"]["plannedParticipants"]
