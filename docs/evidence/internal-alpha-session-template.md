@@ -26,12 +26,15 @@ sanitized next-action summary code. Both requested help and unsolicited facilita
 are recorded for every milestone and the comprehension task. `completedUnaided` must
 equal the evidence-derived result: no `NOT_REACHED` journey tail, every observed stage
 on time, result ACK by 09:00, clear comprehension during the 09:00–10:00 task, no stop
-and no help. Intermediate `DATA_GAP` stages lower instrumentation coverage but do not
+or pause before that clear timed comprehension, and no help. Intermediate `DATA_GAP`
+stages lower instrumentation coverage but do not
 lower unaided completion when the remaining evidence satisfies that predicate. First-day
 reward remains a separate outcome metric. Its cutoff is derived from the sanitized local
 UTC offset, restricted to the RU cohort's UTC+02 through UTC+12 whole-hour zones: before
-cutoff it stays `PENDING` unless already `YES`; `NO` and `DATA_GAP` are accepted only at
-or after cutoff. Event resolution and reward delivery remain separate: `YES` requires a
+cutoff it stays `PENDING` unless already `YES`, except withdrawal before cutoff without
+an existing receipt resolves immediately as `DATA_GAP`; `NO` and other `DATA_GAP`
+outcomes are accepted only at or after cutoff. Event resolution and reward delivery
+remain separate: `YES` requires a
 dedicated authoritative reward-receipt UTC timestamp at or before cutoff, while every
 non-`YES` status requires that timestamp to be null. The receipt must be at or after the
 authoritative first-event resolution when that milestone is observed; a milestone
@@ -52,7 +55,8 @@ the supported limited path continues; a denial followed by an earlier stop may i
 put ENERGY in the `NOT_REACHED` tail. Granted permission with no activity data uses
 `NOT_APPLICABLE/no_activity_data` for ENERGY. Instrumentation coverage excludes those
 non-applicable stages and the `NOT_REACHED` tail; a participant withdrawal requires
-`STOPPED` and forces both post-flow qualitative answers to `DATA_GAP`. A shown
+`STOPPED`, and an in-session withdrawal forces both post-flow qualitative answers to
+`DATA_GAP`. A shown
 permission request whose decision evidence is missing uses `permissionDecision=DATA_GAP`
 with a permission milestone instrumentation gap; until the decision is represented,
 ENERGY cannot use any decision-derived non-applicable reason. If withdrawal occurs
