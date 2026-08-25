@@ -432,6 +432,11 @@ class SessionContractTests(unittest.TestCase):
             companionReturn="DATA_GAP",
         )
         self.assert_valid(document)
+        document["session"]["stopPauseStatus"] = "PAUSED"
+        self.assert_valid(document)
+        document["session"]["stopPauseAtUtc"] = utc(150)
+        self.assert_invalid(document)
+        document["session"]["stopPauseAtUtc"] = utc(200)
 
     def test_withdrawal_requires_stopped_status(self) -> None:
         document = recorded()

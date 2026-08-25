@@ -944,7 +944,10 @@ def validate_session(
             "$.session.withdrawnAtUtc",
             "a participant-withdrew journey tail requires withdrawal during the session",
         )
-    if stop_status == "STOPPED" and stop_at is not None and stop_at <= ended:
+    stop_orders_tail = stop_status == "STOPPED" or (
+        stop_status == "PAUSED" and "session_stopped" in gap_reasons
+    )
+    if stop_orders_tail and stop_at is not None and stop_at <= ended:
         last_observed_index = max(
             (
                 index

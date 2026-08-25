@@ -75,7 +75,9 @@ post-session withdrawal cannot be used as that tail's cause. The
 general stop/pause status also records an exact UTC time: a pause or stop before timed
 comprehension blocks unaided completion, while one afterward preserves the completed
 primary outcome. A PAUSED flow may resume and retain later evidence, but comprehension
-cannot be collected after terminal STOPPED. Without separately timed qualitative
+cannot be collected after terminal STOPPED. When PAUSED itself backs a
+`session_stopped` tail, it must follow the last observed milestone; an earlier resumed
+pause cannot explain that later tail. Without separately timed qualitative
 answers, STOPPED before session end forces both to `DATA_GAP`; a stop at/after session
 end preserves them, but cannot be used to explain an earlier `session_stopped` or
 `flow_blocked` journey tail. Such a tail requires its stop/pause during the moderated
