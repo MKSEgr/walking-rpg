@@ -32,14 +32,17 @@ python3 scripts/ci/verify_internal_alpha_decision_evidence.py \
 ```
 
 For a reviewed `STOP`/`FIX_AND_RERUN` decision made before the first session, omit
-`--session` entirely. The decision must then record `started=0`, zero derivable cohort
-counts and `DATA_GAP` for all six metrics; the package digest still binds the exact
+`--session` entirely. The decision must then record `started=0`, zero completed,
+platform and stopped-or-paused counts, and `DATA_GAP` for all six metrics; the package
+digest still binds the exact
 READY kickoff. An `EXPAND` decision cannot pass without all 12 participant records.
 
 The cross-check reruns all three underlying contracts, requires unique study codes and
-exact session filenames, reconciles started/completed/platform/withdrawal/stopped-or-paused counts
+exact session filenames, reconciles started/completed/platform/stopped-or-paused counts
 and recomputes every quantitative metric. Actual invitations and exclusions remain
-reviewed owner inputs because the kickoff records only the planned cohort; this permits
+reviewed owner inputs because the kickoff records only the planned cohort. Withdrawals
+in supplied sessions are a mandatory lower bound, while additional pre-session
+withdrawals remain reviewed input bounded by actual invitations. This permits
 truthful early `STOP`/`FIX_AND_RERUN` decisions. The tool also counts each unique linked
 session finding once by severity and rejects conflicting severities for the same issue.
 Those session-derived counts are lower bounds: a decision may include additional reviewed
