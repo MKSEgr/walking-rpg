@@ -194,6 +194,54 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_invalid()
 
+    def test_completed_count_cannot_omit_completed_records(self) -> None:
+        self.decision["cohort"]["completed"] = 0
+        self.write_decision()
+        self.assert_invalid()
+
+    def test_interrupted_session_cannot_be_counted_as_completed(self) -> None:
+        path = self.session_paths[0]
+        document = json.loads(path.read_text(encoding="utf-8"))
+        for index in range(5, 10):
+            session_fixture.set_gap(
+                document, index, "NOT_REACHED", "session_stopped"
+            )
+        document["session"].update(
+            stopPauseStatus="STOPPED",
+            stopPauseAtUtc=session_fixture.utc(200),
+        )
+        document["evidence"]["redactionReviewedAtUtc"] = session_fixture.utc(46800)
+        document["outcome"].update(
+            completedUnaided=False,
+            firstDayRewardStatus="NO",
+            firstDayRewardReceiptAtUtc=None,
+            applicableMandatoryMilestones=5,
+            recordedMandatoryMilestones=5,
+            nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
+        )
+        path.write_bytes(_encoded(document))
+        self.decision["cohort"]["stoppedOrPaused"] = 1
+        self.decision["metrics"]["unaidedFirstTenMinutes"]["numerator"] = 11
+        self.decision["metrics"]["firstDayReward"]["numerator"] = 11
+        self.decision["decision"].update(
+            selected="STOP",
+            rationaleCode="safety_risk",
+            nextScope="stop_and_archive",
+        )
+        self.refresh_package()
+        self.assert_invalid()
+
+        self.decision["cohort"]["completed"] = 11
+        self.write_decision()
+        self.assert_valid()
+
     def test_session_findings_are_counted_by_unique_issue(self) -> None:
         for path in self.session_paths[:2]:
             document = json.loads(path.read_text(encoding="utf-8"))
