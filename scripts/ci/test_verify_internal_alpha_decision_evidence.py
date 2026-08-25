@@ -487,6 +487,29 @@ class DecisionEvidenceTests(unittest.TestCase):
                 self.write_decision()
                 self.assert_invalid()
 
+    def test_expand_requires_supporting_qualitative_session_outcomes(self) -> None:
+        for unsupported in ("NO", "DATA_GAP"):
+            with self.subTest(unsupported=unsupported):
+                for path in self.session_paths:
+                    document = json.loads(path.read_text(encoding="utf-8"))
+                    document["outcome"].update(
+                        walkingAsAdventure=unsupported,
+                        companionReturn=unsupported,
+                    )
+                    path.write_bytes(_encoded(document))
+                self.refresh_package()
+                self.assert_invalid()
+
+        path = self.session_paths[0]
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["outcome"].update(
+            walkingAsAdventure="YES",
+            companionReturn="PARTIAL",
+        )
+        path.write_bytes(_encoded(document))
+        self.refresh_package()
+        self.assert_valid()
+
     def test_outcome_rationales_require_matching_session_signals(self) -> None:
         path = self.session_paths[0]
         document = json.loads(path.read_text(encoding="utf-8"))
