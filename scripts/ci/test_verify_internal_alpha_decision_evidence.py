@@ -89,7 +89,7 @@ class DecisionEvidenceTests(unittest.TestCase):
             "firstDayReward": (12, 12),
             "crashFreeSessions": (24, 24),
             "syncErrorRate": (0, 36),
-            "instrumentationCoverage": (120, 120),
+            "instrumentationCoverage": (12, 12),
         }
         for name, (numerator, denominator) in counts.items():
             self.decision["metrics"][name].update(
@@ -224,6 +224,35 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_valid()
 
+    def test_instrumentation_coverage_is_counted_per_participant(self) -> None:
+        path = self.session_paths[0]
+        document = json.loads(path.read_text(encoding="utf-8"))
+        session_fixture.set_gap(
+            document, 5, "DATA_GAP", "instrumentation_missing"
+        )
+        document["outcome"]["recordedMandatoryMilestones"] = 9
+        path.write_bytes(_encoded(document))
+        self.refresh_package()
+
+        self.decision["metrics"]["instrumentationCoverage"].update(
+            numerator=119,
+            denominator=120,
+        )
+        self.write_decision()
+        self.assert_invalid()
+
+        self.decision["metrics"]["instrumentationCoverage"].update(
+            numerator=11,
+            denominator=12,
+        )
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="instrumentation_gap",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.write_decision()
+        self.assert_valid()
+
     def test_decision_cannot_predate_participant_records(self) -> None:
         self.decision["recordedAtUtc"] = "2026-08-20T09:00:00Z"
         self.write_decision()
@@ -244,7 +273,7 @@ class DecisionEvidenceTests(unittest.TestCase):
             "firstDayReward": (8, 8),
             "crashFreeSessions": (16, 16),
             "syncErrorRate": (0, 24),
-            "instrumentationCoverage": (80, 80),
+            "instrumentationCoverage": (8, 8),
         }
         for name, (numerator, denominator) in counts.items():
             self.decision["metrics"][name].update(
