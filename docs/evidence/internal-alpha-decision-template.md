@@ -54,6 +54,9 @@ Threshold, comprehension and core-value rationales require participant records.
 A `threshold_miss` rationale additionally requires at least one safely derived measured
 metric to fail its approved threshold. Owner confirmation must precede the shared
 participant-evidence deletion deadline.
+`focused_comprehension_gap` requires a `PARTIAL` or `UNCLEAR` participant outcome.
+`core_value_not_supported` requires both a negative adventure/companion session signal
+and the corresponding reviewed qualitative gate to be false.
 
 The cross-check reruns all three underlying contracts, requires unique study codes and
 exact session filenames, reconciles started/completed/platform/stopped-or-paused counts
