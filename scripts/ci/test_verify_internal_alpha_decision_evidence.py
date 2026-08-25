@@ -365,6 +365,40 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_valid()
 
+    def test_late_pause_does_not_turn_comprehension_gap_into_failure(self) -> None:
+        path = self.session_paths[0]
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["session"].update(
+            stopPauseStatus="PAUSED",
+            stopPauseAtUtc=session_fixture.utc(700),
+        )
+        document["outcome"].update(
+            completedUnaided=False,
+            nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
+        )
+        path.write_bytes(_encoded(document))
+        self.decision["cohort"].update(completed=11, stoppedOrPaused=1)
+        self.decision["metrics"]["unaidedFirstTenMinutes"] = {
+            "status": "DATA_GAP",
+            "numerator": None,
+            "denominator": None,
+            "dataGapReasonCode": "instrumentation_missing",
+        }
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="instrumentation_gap",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.refresh_package()
+        self.assert_valid()
+
     def test_instrumentation_gap_rationale_requires_support(self) -> None:
         self.decision["decision"].update(
             selected="FIX_AND_RERUN",
@@ -593,6 +627,26 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.decision["decision"]["confirmationAtUtc"] = "2026-11-26T08:45:00Z"
         self.write_decision()
         self.assert_invalid()
+
+    def test_deletion_deadline_is_within_90_days_of_early_decision(self) -> None:
+        self.make_kickoff_only_stop()
+        self.decision.update(
+            recordedAtUtc="2026-08-20T07:00:00Z",
+            decisionAtUtc="2026-08-20T07:10:00Z",
+        )
+        self.decision["decision"]["confirmationAtUtc"] = "2026-08-20T07:15:00Z"
+        self.write_decision()
+        self.assert_invalid()
+
+        self.kickoff["evidence"]["participantEvidenceDeleteByUtc"] = (
+            "2026-11-18T07:15:00Z"
+        )
+        self.kickoff_path.write_bytes(_encoded(self.kickoff))
+        self.decision["candidate"]["kickoffRecordSha256"] = hashlib.sha256(
+            self.kickoff_path.read_bytes()
+        ).hexdigest()
+        self.refresh_package()
+        self.assert_valid()
 
 
 if __name__ == "__main__":
