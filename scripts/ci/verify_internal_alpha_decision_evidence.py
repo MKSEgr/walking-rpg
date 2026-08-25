@@ -42,8 +42,6 @@ def _read(path: Path) -> bytes:
 def _load_sessions(
     session_paths: list[Path],
 ) -> list[tuple[str, Path, dict[str, Any], bytes]]:
-    if not session_paths:
-        _fail("sessions", "at least one participant record is required")
     records: list[tuple[str, Path, dict[str, Any], bytes]] = []
     seen_codes: set[str] = set()
     for path in session_paths:
@@ -88,6 +86,11 @@ def _derived_metrics(
     records: list[tuple[str, Path, dict[str, Any], bytes]],
 ) -> dict[str, tuple[str, int | None, int | None]]:
     sessions = [item[2] for item in records]
+    if not sessions:
+        return {
+            name: ("DATA_GAP", None, None)
+            for name in decision_validator.METRIC_NAMES
+        }
     unaided = sum(item["outcome"]["completedUnaided"] for item in sessions)
 
     permission_shown = [
@@ -280,9 +283,10 @@ def validate_bundle(
         if decision["findings"][name] != expected:
             _fail(f"$.findings.{name}", f"must equal derived issue count {expected}")
 
-    latest_session = max(_utc(item["recordedAtUtc"]) for item in sessions)
-    if _utc(decision["recordedAtUtc"]) < latest_session:
-        _fail("$.recordedAtUtc", "must not precede any participant record")
+    if sessions:
+        latest_session = max(_utc(item["recordedAtUtc"]) for item in sessions)
+        if _utc(decision["recordedAtUtc"]) < latest_session:
+            _fail("$.recordedAtUtc", "must not precede any participant record")
 
     for name, derived in _derived_metrics(records).items():
         _compare_metric(name, decision["metrics"][name], derived)
@@ -293,7 +297,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("decision", type=Path)
     parser.add_argument("--kickoff", required=True, type=Path)
-    parser.add_argument("--session", required=True, action="append", type=Path)
+    parser.add_argument("--session", action="append", type=Path, default=[])
     args = parser.parse_args(argv)
     try:
         package_sha = validate_bundle(args.decision, args.kickoff, args.session)
