@@ -37,7 +37,7 @@ counts and `DATA_GAP` for all six metrics; the package digest still binds the ex
 READY kickoff. An `EXPAND` decision cannot pass without all 12 participant records.
 
 The cross-check reruns all three underlying contracts, requires unique study codes and
-exact session filenames, reconciles started/platform/withdrawal/stopped-or-paused counts
+exact session filenames, reconciles started/completed/platform/withdrawal/stopped-or-paused counts
 and recomputes every quantitative metric. Actual invitations and exclusions remain
 reviewed owner inputs because the kickoff records only the planned cohort; this permits
 truthful early `STOP`/`FIX_AND_RERUN` decisions. The tool also counts each unique linked
@@ -46,6 +46,9 @@ Those session-derived counts are lower bounds: a decision may include additional
 pre-session or operational findings that have no participant record, but it may not omit
 a finding present in supplied session evidence. Decision recording cannot predate READY
 kickoff approval.
+Completion requires an observed explicit result ACK plus a recorded next-action
+comprehension outcome; facilitator help affects the unaided metric, not whether the
+participant completed the task.
 `alphaEvidencePackageSha256` is
 the SHA-256 of a domain-separated manifest containing the exact kickoff digest and each
 exact session-file digest sorted by study code. Therefore argument order is irrelevant,
