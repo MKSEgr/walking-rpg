@@ -509,6 +509,29 @@ def validate_bundle(
             "$.decision.rationaleCode",
             "release_blocker requires at least one reviewed open release blocker",
         )
+    if rationale == "safety_risk" and decision["findings"]["stopCount"] == 0:
+        _fail(
+            "$.decision.rationaleCode",
+            "safety_risk requires at least one reviewed STOP finding",
+        )
+    if rationale == "cohort_invalid":
+        cohort = decision["cohort"]
+        planned = kickoff["cohort"]["plannedParticipants"]
+        has_cohort_defect = (
+            cohort["invited"] != planned
+            or cohort["started"] != planned
+            or cohort["completed"] != cohort["started"]
+            or cohort["iosRealUsers"] < 4
+            or cohort["androidRealUsers"] < 4
+            or cohort["withdrawn"] > 0
+            or cohort["excluded"] > 0
+            or cohort["stoppedOrPaused"] > 0
+        )
+        if not has_cohort_defect:
+            _fail(
+                "$.decision.rationaleCode",
+                "cohort_invalid requires a recorded cohort defect or exclusion",
+            )
     if decision["decision"]["rationaleCode"] == "threshold_miss":
         has_threshold_miss = any(
             status == "MEASURED"
