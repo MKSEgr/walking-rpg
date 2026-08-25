@@ -604,6 +604,10 @@ class SessionContractTests(unittest.TestCase):
         set_gap(document, 8, "DATA_GAP", "instrumentation_missing")
         document["outcome"]["recordedMandatoryMilestones"] = 9
         self.assert_valid(document)
+        document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(359)
+        self.assert_invalid(document)
+        document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(360)
+        self.assert_valid(document)
 
     def test_reward_yes_must_arrive_by_local_day_cutoff(self) -> None:
         document = recorded()

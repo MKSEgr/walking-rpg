@@ -543,6 +543,22 @@ def _validate_outcome(
                     "$.outcome.firstDayRewardReceiptAtUtc",
                     "must be at or after the authoritative event resolution",
                 )
+        else:
+            observed_prerequisites = [
+                item for milestone_id, item in milestones.items()
+                if milestone_id != "first_event_resolved"
+                and MILESTONES.index(milestone_id) < MILESTONES.index("first_event_resolved")
+                and item["status"] == "OBSERVED"
+            ]
+            latest_prerequisite = max(
+                _utc(item["observedAtUtc"], "$.milestones[].observedAtUtc")
+                for item in observed_prerequisites
+            )
+            if reward_receipt < latest_prerequisite:
+                _fail(
+                    "$.outcome.firstDayRewardReceiptAtUtc",
+                    "event DATA_GAP receipt must follow the latest observed prerequisite",
+                )
     if outcome["completedUnaided"]:
         if stop_status != "NOT_INVOKED":
             _fail("$.outcome.completedUnaided", "cannot be true for a paused/stopped session")
