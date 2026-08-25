@@ -541,6 +541,12 @@ class SessionContractTests(unittest.TestCase):
             companionReturn="DATA_GAP",
         )
         document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
+        self.assert_invalid(document)
+        document["outcome"].update(
+            authoritativeSyncAttempts=0,
+            successfulAuthoritativeSyncAttempts=0,
+            failedNonCancelledSyncAttempts=0,
+        )
         self.assert_valid(document)
 
     def test_shown_permission_can_end_without_decision_on_withdrawal(self) -> None:
@@ -569,6 +575,11 @@ class SessionContractTests(unittest.TestCase):
             companionReturn="DATA_GAP",
         )
         document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
+        document["outcome"].update(
+            authoritativeSyncAttempts=0,
+            successfulAuthoritativeSyncAttempts=0,
+            failedNonCancelledSyncAttempts=0,
+        )
         self.assert_valid(document)
         document["outcome"]["permissionDecision"] = "DATA_GAP"
         self.assert_invalid(document)
@@ -597,6 +608,11 @@ class SessionContractTests(unittest.TestCase):
                     companionReturn="DATA_GAP",
                 )
                 document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
+                document["outcome"].update(
+                    authoritativeSyncAttempts=0,
+                    successfulAuthoritativeSyncAttempts=0,
+                    failedNonCancelledSyncAttempts=0,
+                )
                 self.assert_valid(document)
 
     def test_permission_denial_has_valid_unaided_limited_path(self) -> None:
@@ -640,6 +656,11 @@ class SessionContractTests(unittest.TestCase):
             companionReturn="DATA_GAP",
         )
         document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
+        document["outcome"].update(
+            authoritativeSyncAttempts=0,
+            successfulAuthoritativeSyncAttempts=0,
+            failedNonCancelledSyncAttempts=0,
+        )
         self.assert_valid(document)
 
     def test_granted_permission_without_activity_data_skips_energy(self) -> None:

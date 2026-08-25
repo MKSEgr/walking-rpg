@@ -403,6 +403,11 @@ def _validate_outcome(
             "$.outcome.successfulAuthoritativeSyncAttempts",
             "an observed sync receipt requires at least one successful authoritative attempt",
         )
+    if milestones["first_sync_receipt"]["status"] == "NOT_REACHED" and successful_syncs != 0:
+        _fail(
+            "$.outcome.successfulAuthoritativeSyncAttempts",
+            "an unreached sync receipt requires zero successful authoritative attempts",
+        )
     sync_gap_has_attempt = not (
         milestones["first_sync_receipt"]["status"] == "DATA_GAP"
         and successful_syncs == 0

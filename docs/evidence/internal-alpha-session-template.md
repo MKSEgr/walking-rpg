@@ -88,7 +88,8 @@ candidate, platform, study code and session start UTC.
 
 After the first `NOT_REACHED`, every remaining milestone must also be `NOT_REACHED`.
 An observed sync receipt requires at least one explicitly successful authoritative sync attempt,
-and every finding must link a positive GitHub issue number regardless of severity.
+while an unreached receipt requires zero successes; failed attempts may still precede
+the stop. Every finding must link a positive GitHub issue number regardless of severity.
 
 ## Identity and contract
 
