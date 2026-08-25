@@ -259,7 +259,6 @@ def validate_bundle(
     sessions = [item[2] for item in records]
     cohort = decision["cohort"]
     derived_cohort = {
-        "invited": kickoff["cohort"]["plannedParticipants"],
         "started": len(sessions),
         "iosRealUsers": sum(item["session"]["platform"] == "ios" for item in sessions),
         "androidRealUsers": sum(
