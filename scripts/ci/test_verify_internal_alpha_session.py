@@ -853,6 +853,10 @@ class SessionContractTests(unittest.TestCase):
         )
         document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         self.assert_invalid(document)
+        document["recordedAtUtc"] = utc(1200)
+        document["outcome"]["firstDayRewardStatus"] = "DATA_GAP"
+        document["evidence"]["redactionReviewedAtUtc"] = utc(1100)
+        self.assert_valid(document)
 
     def test_post_task_pause_or_stop_preserves_completion(self) -> None:
         for status in ("PAUSED", "STOPPED"):

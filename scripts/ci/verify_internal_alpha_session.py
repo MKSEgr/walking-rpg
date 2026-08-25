@@ -1019,7 +1019,16 @@ def validate_session(
             "$.evidence.redactionReviewedAtUtc",
             "must be at or after participant withdrawal",
         )
-    if outcome["firstDayRewardStatus"] in {"NO", "DATA_GAP"} and reviewed < reward_cutoff:
+    withdrawal_gap_finalized = (
+        outcome["firstDayRewardStatus"] == "DATA_GAP"
+        and withdrawal_at is not None
+        and withdrawal_at < reward_cutoff
+    )
+    if (
+        outcome["firstDayRewardStatus"] in {"NO", "DATA_GAP"}
+        and reviewed < reward_cutoff
+        and not withdrawal_gap_finalized
+    ):
         _fail(
             "$.evidence.redactionReviewedAtUtc",
             "resolved non-YES reward evidence must be reviewed at or after the cutoff",
