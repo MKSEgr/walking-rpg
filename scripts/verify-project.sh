@@ -43,6 +43,9 @@ for file in \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_kickoff.py" \
   "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_kickoff.py" \
   "$ROOT_DIR/docs/evidence/internal-alpha-kickoff-template.json" \
+  "$ROOT_DIR/scripts/ci/verify_internal_alpha_session.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_session.py" \
+  "$ROOT_DIR/docs/evidence/internal-alpha-session-template.json" \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_decision.py" \
   "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_decision.py" \
   "$ROOT_DIR/docs/evidence/internal-alpha-decision-template.json"; do
@@ -103,6 +106,20 @@ if PYTHONDONTWRITEBYTECODE=1 python3 \
 fi
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_kickoff.py"
+
+printf '%s\n' "Checking the internal-alpha participant session contract..."
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/verify_internal_alpha_session.py" \
+  "$ROOT_DIR/docs/evidence/internal-alpha-session-template.json"
+if PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/verify_internal_alpha_session.py" \
+  "$ROOT_DIR/docs/evidence/internal-alpha-session-template.json" \
+  --require-recorded >/dev/null 2>&1; then
+  echo "Committed session template must not pass as participant evidence." >&2
+  exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_session.py"
 
 printf '%s\n' "Checking the internal-alpha decision contract..."
 PYTHONDONTWRITEBYTECODE=1 python3 \
