@@ -898,6 +898,11 @@ def validate_session(
         _fail("$.evidence.storageCategory", f"must be one of {sorted(STORAGE_CATEGORIES)}")
     _matches(evidence["evidencePackageSha256"], DIGEST, "$.evidence.evidencePackageSha256", "a lowercase SHA-256")
     reviewed = _utc(evidence["redactionReviewedAtUtc"], "$.evidence.redactionReviewedAtUtc")
+    if outcome["firstDayRewardStatus"] in {"NO", "DATA_GAP"} and reviewed < reward_cutoff:
+        _fail(
+            "$.evidence.redactionReviewedAtUtc",
+            "resolved non-YES reward evidence must be reviewed at or after the cutoff",
+        )
     if outcome["firstDayRewardStatus"] == "YES":
         reward_receipt = _utc(
             outcome["firstDayRewardReceiptAtUtc"],

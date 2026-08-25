@@ -321,6 +321,8 @@ class SessionContractTests(unittest.TestCase):
                     firstDayRewardStatus=reward_status,
                     firstDayRewardReceiptAtUtc=None,
                 )
+                self.assert_invalid(document)
+                document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
                 self.assert_valid(document)
 
     def test_reward_no_waits_for_local_first_day_cutoff(self) -> None:
@@ -409,6 +411,7 @@ class SessionContractTests(unittest.TestCase):
         for index in range(5, 10):
             set_gap(document, index, "NOT_REACHED", "session_stopped")
         document["session"]["stopPauseStatus"] = "STOPPED"
+        document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         document["outcome"].update(
             completedUnaided=False,
             firstDayRewardStatus="NO",
@@ -457,6 +460,7 @@ class SessionContractTests(unittest.TestCase):
             walkingAsAdventure="DATA_GAP",
             companionReturn="DATA_GAP",
         )
+        document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         self.assert_valid(document)
 
     def test_data_gap_can_preserve_later_observations(self) -> None:
@@ -529,6 +533,7 @@ class SessionContractTests(unittest.TestCase):
             walkingAsAdventure="DATA_GAP",
             companionReturn="DATA_GAP",
         )
+        document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         self.assert_valid(document)
 
     def test_permission_denial_has_valid_unaided_limited_path(self) -> None:
@@ -571,6 +576,7 @@ class SessionContractTests(unittest.TestCase):
             walkingAsAdventure="DATA_GAP",
             companionReturn="DATA_GAP",
         )
+        document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         self.assert_valid(document)
 
     def test_granted_permission_without_activity_data_skips_energy(self) -> None:

@@ -62,7 +62,9 @@ completion only with at least one successful authoritative attempt. A session-le
 withdrawal status and UTC time cover withdrawals even after the final milestone; no
 milestone or comprehension may be recorded afterward, and qualitative answers are
 discarded. The kickoff-wide evidence deadline must be later than every session's derived
-first-day reward cutoff so a `PENDING` result can be resolved before deletion. A passing JSON record
+first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
+terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;
+`PENDING` retains the pre-cutoff behavior. A passing JSON record
 proves structural completeness and redaction boundaries, not that external evidence is
 true or that #161 is complete.
 
