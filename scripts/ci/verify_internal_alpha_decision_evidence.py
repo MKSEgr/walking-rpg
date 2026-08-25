@@ -216,6 +216,16 @@ def _derived_finding_counts(sessions: list[dict[str, Any]]) -> dict[str, int]:
     }
 
 
+def _completed(session: dict[str, Any]) -> bool:
+    milestones = {
+        item["milestoneId"]: item for item in session["milestones"]
+    }
+    return (
+        milestones["result_ack"]["status"] == "OBSERVED"
+        and session["outcome"]["nextActionComprehension"] != "DATA_GAP"
+    )
+
+
 def validate_bundle(
     decision_path: Path,
     kickoff_path: Path,
@@ -270,6 +280,7 @@ def validate_bundle(
     cohort = decision["cohort"]
     derived_cohort = {
         "started": len(sessions),
+        "completed": sum(_completed(item) for item in sessions),
         "iosRealUsers": sum(item["session"]["platform"] == "ios" for item in sessions),
         "androidRealUsers": sum(
             item["session"]["platform"] == "android" for item in sessions
