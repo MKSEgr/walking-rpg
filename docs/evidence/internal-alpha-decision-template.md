@@ -58,6 +58,7 @@ that final confirmation.
 An `instrumentation_gap` rationale requires a derived metric `DATA_GAP`, failed
 participant-level instrumentation coverage, or a reviewed
 `instrumentationInterpretable` gate that is not true.
+`release_blocker` requires at least one reviewed open release blocker in `findings`.
 `focused_comprehension_gap` requires a `PARTIAL` or `UNCLEAR` participant outcome.
 `core_value_not_supported` requires both a negative adventure/companion session signal
 and the corresponding reviewed qualitative gate to be false.
