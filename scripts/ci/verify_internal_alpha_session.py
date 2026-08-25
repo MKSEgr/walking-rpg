@@ -179,9 +179,9 @@ def _validate_milestones(
         if milestone["milestoneId"] != expected_id:
             _fail(f"{path}.milestoneId", f"must be {expected_id!r}")
         status = milestone["status"]
+        if not_reached and status != "NOT_REACHED":
+            _fail(path, "every milestone after the first NOT_REACHED must remain NOT_REACHED")
         if status == "OBSERVED":
-            if not_reached:
-                _fail(path, "an OBSERVED milestone cannot follow NOT_REACHED")
             observed = _utc(milestone["observedAtUtc"], f"{path}.observedAtUtc")
             if not started <= observed <= ended or observed < previous_time:
                 _fail(f"{path}.observedAtUtc", "must be ordered within the session window")
@@ -267,6 +267,11 @@ def _validate_outcome(
         _fail("$.outcome.crashFreeSessions", "must not exceed candidateSessions")
     if failed_syncs > sync_attempts:
         _fail("$.outcome.failedNonCancelledSyncAttempts", "must not exceed authoritativeSyncAttempts")
+    if milestones["first_sync_receipt"]["status"] == "OBSERVED" and sync_attempts <= failed_syncs:
+        _fail(
+            "$.outcome.authoritativeSyncAttempts",
+            "an observed sync receipt requires at least one non-failed authoritative attempt",
+        )
     reached = []
     for item in milestones.values():
         if item["status"] == "NOT_REACHED":
@@ -413,10 +418,9 @@ def _validate_findings(findings: Any) -> None:
         if finding["owner"] != "MKSEgr":
             _fail(f"{path}.owner", "must be MKSEgr")
         issue = finding["issueNumber"]
-        if issue is not None:
-            _integer(issue, f"{path}.issueNumber", positive=True)
-        if severity in {"STOP", "FIX_BEFORE_EXPAND"} and issue is None:
-            _fail(f"{path}.issueNumber", "STOP/FIX_BEFORE_EXPAND requires a linked issue")
+        if issue is None:
+            _fail(f"{path}.issueNumber", "every finding requires a linked issue")
+        _integer(issue, f"{path}.issueNumber", positive=True)
         _matches(
             finding["evidenceDigestSha256"],
             DIGEST,

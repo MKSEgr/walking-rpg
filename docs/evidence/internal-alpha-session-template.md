@@ -32,6 +32,10 @@ continues. Instrumentation coverage excludes that non-applicable stage and the
 proves structural completeness and redaction boundaries, not that external evidence is
 true or that #161 is complete.
 
+After the first `NOT_REACHED`, every remaining milestone must also be `NOT_REACHED`.
+An observed sync receipt requires at least one non-failed authoritative sync attempt,
+and every finding must link a positive GitHub issue number regardless of severity.
+
 ## Identity and contract
 
 - Protocol ID: `walking-rpg-internal-alpha-v1`

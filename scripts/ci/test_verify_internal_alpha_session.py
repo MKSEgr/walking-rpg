@@ -292,6 +292,17 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=9)
         self.assert_invalid(document)
 
+    def test_data_gap_cannot_follow_not_reached(self) -> None:
+        document = recorded()
+        set_gap(document, 5, "NOT_REACHED", "flow_blocked")
+        set_gap(document, 6, "DATA_GAP", "instrumentation_missing")
+        document["outcome"].update(
+            completedUnaided=False,
+            applicableMandatoryMilestones=5,
+            recordedMandatoryMilestones=8,
+        )
+        self.assert_invalid(document)
+
     def test_stopped_session_with_unreached_tail_is_valid(self) -> None:
         document = recorded()
         for index in range(5, 10):
@@ -378,7 +389,17 @@ class SessionContractTests(unittest.TestCase):
                 document["outcome"][key] = value
                 self.assert_invalid(document)
 
-    def test_blocking_finding_requires_issue_and_safe_code(self) -> None:
+    def test_observed_sync_receipt_requires_successful_attempt(self) -> None:
+        for attempts, failed in ((0, 0), (2, 2)):
+            with self.subTest(attempts=attempts, failed=failed):
+                document = recorded()
+                document["outcome"].update(
+                    authoritativeSyncAttempts=attempts,
+                    failedNonCancelledSyncAttempts=failed,
+                )
+                self.assert_invalid(document)
+
+    def test_every_finding_requires_issue_and_safe_code(self) -> None:
         document = recorded()
         document["findings"] = [{
             "findingCode": "duplicate_reward",
@@ -392,6 +413,9 @@ class SessionContractTests(unittest.TestCase):
         self.assert_invalid(document)
         document["findings"][0]["issueNumber"] = 480
         self.assert_valid(document)
+        document["findings"][0].update(severity="EXPERIMENT", issueNumber=None)
+        self.assert_invalid(document)
+        document["findings"][0]["issueNumber"] = 480
         document["findings"][0]["findingCode"] = "device_id_12345678"
         self.assert_invalid(document)
 
