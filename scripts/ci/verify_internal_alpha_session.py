@@ -295,14 +295,16 @@ def _validate_outcome(
                     "DATA_GAP requires a permission milestone instrumentation gap",
                 )
         elif permission == "NOT_REACHED":
+            gap_reason = milestones["permission_decision"]["gapReasonCode"]
             if not (
                 permission_status == "NOT_REACHED"
-                and milestones["permission_decision"]["gapReasonCode"] == "participant_withdrew"
-                and withdrawal_at is not None
+                and gap_reason in {"participant_withdrew", "session_stopped", "flow_blocked"}
+                and stop_status != "NOT_INVOKED"
+                and (gap_reason != "participant_withdrew" or withdrawal_at is not None)
             ):
                 _fail(
                     "$.outcome.permissionDecision",
-                    "NOT_REACHED requires a participant-withdrawal tail",
+                    "NOT_REACHED requires a consistent stopped, blocked or withdrawn tail",
                 )
         else:
             _fail(
@@ -566,8 +568,12 @@ def _validate_outcome(
                     "$.outcome.firstDayRewardReceiptAtUtc",
                     "event DATA_GAP receipt must follow the latest observed prerequisite",
                 )
+    stop_blocks_unaided = not (
+        stop_status == "NOT_INVOKED"
+        or (withdrawal_at is not None and withdrawal_at > ended)
+    )
     if outcome["completedUnaided"]:
-        if stop_status != "NOT_INVOKED":
+        if stop_blocks_unaided:
             _fail("$.outcome.completedUnaided", "cannot be true for a paused/stopped session")
         if any(
             item["status"] not in {"OBSERVED", "DATA_GAP", "NOT_APPLICABLE"}
@@ -613,7 +619,7 @@ def _validate_outcome(
             )
     else:
         evidence_is_unaided = (
-            stop_status == "NOT_INVOKED"
+            not stop_blocks_unaided
             and all(
                 item["status"] in {"OBSERVED", "DATA_GAP", "NOT_APPLICABLE"}
                 for item in milestones.values()
@@ -872,6 +878,8 @@ def validate_session(
     gap_reasons = {item["gapReasonCode"] for item in milestone_map.values()}
     if stop_status == "NOT_INVOKED" and "session_stopped" in gap_reasons:
         _fail("$.session.stopPauseStatus", "session_stopped gaps require PAUSED or STOPPED")
+    if "flow_blocked" in gap_reasons and stop_status != "STOPPED":
+        _fail("$.session.stopPauseStatus", "flow_blocked gaps require STOPPED")
     if "participant_withdrew" in gap_reasons and withdrawal_status != "WITHDREW":
         _fail(
             "$.session.withdrawalStatus",

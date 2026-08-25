@@ -55,15 +55,18 @@ non-applicable stages and the `NOT_REACHED` tail; a participant withdrawal requi
 `STOPPED` and forces both post-flow qualitative answers to `DATA_GAP`. A shown
 permission request whose decision evidence is missing uses `permissionDecision=DATA_GAP`
 with a permission milestone instrumentation gap; until the decision is represented,
-ENERGY cannot use any decision-derived non-applicable reason. If withdrawal occurs after the prompt but before
-a decision, the outcome and legitimate withdrawn tail use `NOT_REACHED`. Sync metrics separately record total and
+ENERGY cannot use any decision-derived non-applicable reason. If withdrawal occurs
+after the prompt but before a decision, or a safety stop/flow blocker ends the session
+first, the outcome and legitimate stopped tail use `NOT_REACHED`. Sync metrics record
+total and
 successful authoritative attempts plus failed non-cancelled attempts, so cancelled
 attempts cannot satisfy the journey. A sync receipt `DATA_GAP` preserves unaided
 completion only with at least one successful authoritative attempt. A session-level
 withdrawal status and UTC time cover withdrawals through record finalization, including
-after the moderated session; no
-milestone or comprehension may be recorded afterward, and qualitative answers are
-discarded; an authoritative reward receipt must also be no later than withdrawal. The
+after the moderated session; no milestone or comprehension may be recorded afterward,
+and qualitative answers are discarded; an authoritative reward receipt must also be no
+later than withdrawal. A post-session withdrawal stops further collection without
+changing an already evidenced timed-flow completion result. The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
 terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;

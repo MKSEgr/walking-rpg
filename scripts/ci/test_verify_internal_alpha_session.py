@@ -571,6 +571,32 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"]["permissionDecision"] = "DATA_GAP"
         self.assert_invalid(document)
 
+    def test_shown_permission_can_end_without_decision_on_safety_stop(self) -> None:
+        for reason in ("session_stopped", "flow_blocked"):
+            with self.subTest(reason=reason):
+                document = recorded()
+                for index in range(3, 10):
+                    set_gap(document, index, "NOT_REACHED", reason)
+                document["session"]["stopPauseStatus"] = "STOPPED"
+                document["outcome"].update(
+                    completedUnaided=False,
+                    permissionDecision="NOT_REACHED",
+                    firstDayRewardStatus="DATA_GAP",
+                    firstDayRewardReceiptAtUtc=None,
+                    applicableMandatoryMilestones=3,
+                    recordedMandatoryMilestones=3,
+                    nextActionComprehension="DATA_GAP",
+                    nextActionSummaryCode=None,
+                    nextActionComprehensionAtUtc=None,
+                    nextActionComprehensionElapsedSeconds=None,
+                    nextActionComprehensionHelpRequested=None,
+                    nextActionComprehensionHelpProvided=None,
+                    walkingAsAdventure="DATA_GAP",
+                    companionReturn="DATA_GAP",
+                )
+                document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
+                self.assert_valid(document)
+
     def test_permission_denial_has_valid_unaided_limited_path(self) -> None:
         document = recorded()
         set_not_applicable(document, 5, "permission_denied")
@@ -738,7 +764,16 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(571)
         self.assert_invalid(document)
         document["session"]["withdrawnAtUtc"] = utc(1000)
-        document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(480)
+        document["outcome"].update(
+            completedUnaided=True,
+            firstDayRewardReceiptAtUtc=utc(480),
+            nextActionComprehension="CLEAR",
+            nextActionSummaryCode="continue_to_next_node",
+            nextActionComprehensionAtUtc=utc(600),
+            nextActionComprehensionElapsedSeconds=600,
+            nextActionComprehensionHelpRequested=False,
+            nextActionComprehensionHelpProvided=False,
+        )
         document["evidence"]["redactionReviewedAtUtc"] = utc(1000)
         self.assert_valid(document)
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(1001)
