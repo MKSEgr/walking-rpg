@@ -205,5 +205,9 @@ After all 12 planned participants or an earlier stop, `@MKSEgr` signs exactly on
 The signed record includes exact candidate/protocol, invited/started/completed counts,
 per-platform counts, every numerator/denominator, incidents, exclusions, evidence
 location category, open defects and rationale. Expansion to closed beta is forbidden
-without an `EXPAND` record. Issue #162 owns the product decision; issue #161 owns the
-actual first-journey study.
+without an `EXPAND` record. Before signature, run the decision-evidence cross-check
+documented in [the decision template](evidence/internal-alpha-decision-template.md); its
+deterministic package digest binds the exact kickoff and ordered participant-record
+digests, and its derived counts must match the decision. Passing that cross-check proves
+internal consistency, not the truth or approval of external evidence. Issue #162 owns
+the product decision; issue #161 owns the actual first-journey study.
