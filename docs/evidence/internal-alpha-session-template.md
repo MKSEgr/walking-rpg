@@ -25,7 +25,9 @@ The session must fall inside that observation window. Recorded comprehension req
 sanitized next-action summary code. `completedUnaided=true` additionally requires result
 ACK followed by demonstrated clear next-action comprehension during the 09:00–10:00
 task window and no facilitator help. First-day
-reward remains a separate outcome metric. Result ACK must complete by 09:00, and
+reward remains a separate outcome metric. Its cutoff is derived from the sanitized local
+UTC offset: before cutoff it stays `PENDING` unless already `YES`; `NO` and `DATA_GAP`
+are accepted only at or after cutoff. Result ACK must complete by 09:00, and
 `registration_shown` anchors the timer at session start/zero seconds.
 Locale/authentication must complete by 02:00,
 permission/sync/applicable ENERGY by 04:00, companion/node by 06:00, and event/result
@@ -55,6 +57,8 @@ and every finding must link a positive GitHub issue number regardless of severit
 - Kickoff-wide participant evidence deletion deadline UTC:
 - Study code (`P01`–`P12`):
 - Platform: `ios` / `android`
+- Device environment: `physical_device`
+- Session driver: `participant`
 - Selected locale: `ru` / `en`
 - Session start/end UTC:
 - Moderator role:
@@ -83,7 +87,8 @@ and every finding must link a positive GitHub issue number regardless of severit
 - Completed first ten minutes unaided: `PASS` / `FAIL`
 - Permission request shown: `YES` / `NO`
 - Permission granted: `YES` / `NO` / `NOT_APPLICABLE`
-- First-day reward by cutoff: `YES` / `NO` / `DATA_GAP`
+- First-day UTC offset minutes and derived cutoff UTC:
+- First-day reward by cutoff: `YES` / `NO` / `DATA_GAP` / `PENDING`
 - Candidate sessions / crash-free sessions:
 - Authoritative sync attempts / failed non-cancelled sync attempts:
 - Applicable mandatory milestones before first `NOT_REACHED` / recorded milestones:

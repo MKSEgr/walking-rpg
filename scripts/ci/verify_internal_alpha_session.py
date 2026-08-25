@@ -256,6 +256,7 @@ def _validate_outcome(
     stop_status: str,
     started: datetime,
     ended: datetime,
+    recorded_at: datetime,
 ) -> None:
     boolean_fields = ("completedUnaided", "permissionRequestShown")
     for key in boolean_fields:
@@ -277,8 +278,39 @@ def _validate_outcome(
             "$.outcome.permissionRequestShown",
             "unshown request requires NOT_APPLICABLE/permission_not_requested milestone",
         )
-    if outcome["firstDayRewardStatus"] not in {"YES", "NO", "DATA_GAP"}:
-        _fail("$.outcome.firstDayRewardStatus", "must be YES, NO or DATA_GAP")
+    reward_status = outcome["firstDayRewardStatus"]
+    if reward_status not in {"YES", "NO", "DATA_GAP", "PENDING"}:
+        _fail("$.outcome.firstDayRewardStatus", "must be YES, NO, DATA_GAP or PENDING")
+    offset = outcome["firstDayTimeZoneOffsetMinutes"]
+    if type(offset) is not int or not -720 <= offset <= 840 or offset % 15:
+        _fail(
+            "$.outcome.firstDayTimeZoneOffsetMinutes",
+            "must be a 15-minute UTC offset from -720 through 840",
+        )
+    participant_zone = timezone(timedelta(minutes=offset))
+    local_started = started.astimezone(participant_zone)
+    expected_cutoff = (local_started + timedelta(days=1)).replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    ).astimezone(timezone.utc)
+    reward_cutoff = _utc(
+        outcome["firstDayRewardCutoffAtUtc"],
+        "$.outcome.firstDayRewardCutoffAtUtc",
+    )
+    if reward_cutoff != expected_cutoff:
+        _fail(
+            "$.outcome.firstDayRewardCutoffAtUtc",
+            "must equal the next local midnight derived from session start and UTC offset",
+        )
+    if recorded_at < reward_cutoff and reward_status not in {"YES", "PENDING"}:
+        _fail(
+            "$.outcome.firstDayRewardStatus",
+            "must remain PENDING before cutoff unless reward delivery is already YES",
+        )
+    if recorded_at >= reward_cutoff and reward_status == "PENDING":
+        _fail("$.outcome.firstDayRewardStatus", "must be resolved at or after cutoff")
 
     candidate_sessions = _integer(outcome["candidateSessions"], "$.outcome.candidateSessions", positive=True)
     crash_free = _integer(outcome["crashFreeSessions"], "$.outcome.crashFreeSessions")
@@ -416,7 +448,7 @@ def _validate_outcome(
             _fail(f"$.outcome.{key}", "has an unsupported code")
 
     if (
-        outcome["firstDayRewardStatus"] == "YES"
+        reward_status == "YES"
         and milestones["first_event_resolved"]["status"] != "OBSERVED"
     ):
         _fail(
@@ -573,9 +605,10 @@ def validate_session(
         "participantEvidenceDeleteByUtc",
     ], "$.kickoff")
     session = _keys(root["session"], [
-        "studyCode", "platform", "selectedLocale", "startedAtUtc", "endedAtUtc",
-        "moderatorRole", "consentConfirmed", "withdrawalRouteExplained",
-        "exactCandidateVerified", "stopPauseStatus",
+        "studyCode", "platform", "deviceEnvironment", "sessionDriver",
+        "selectedLocale", "startedAtUtc", "endedAtUtc", "moderatorRole",
+        "consentConfirmed", "withdrawalRouteExplained", "exactCandidateVerified",
+        "stopPauseStatus",
     ], "$.session")
     if not isinstance(root["milestones"], list) or len(root["milestones"]) != len(MILESTONES):
         _fail("$.milestones", f"must contain exactly {len(MILESTONES)} entries")
@@ -586,7 +619,8 @@ def validate_session(
         ], f"$.milestones[{index}]")
     outcome = _keys(root["outcome"], [
         "completedUnaided", "permissionRequestShown", "permissionDecision",
-        "firstDayRewardStatus", "candidateSessions", "crashFreeSessions",
+        "firstDayRewardStatus", "firstDayTimeZoneOffsetMinutes",
+        "firstDayRewardCutoffAtUtc", "candidateSessions", "crashFreeSessions",
         "authoritativeSyncAttempts", "failedNonCancelledSyncAttempts",
         "applicableMandatoryMilestones", "recordedMandatoryMilestones",
         "nextActionComprehension", "nextActionSummaryCode",
@@ -614,6 +648,10 @@ def validate_session(
     _matches(session["studyCode"], STUDY_CODE, "$.session.studyCode", "P01 through P12")
     if session["platform"] not in {"ios", "android"}:
         _fail("$.session.platform", "must be ios or android")
+    if session["deviceEnvironment"] != "physical_device":
+        _fail("$.session.deviceEnvironment", "must be physical_device")
+    if session["sessionDriver"] != "participant":
+        _fail("$.session.sessionDriver", "must be participant")
     _validate_kickoff_reference(root, referenced_kickoff, referenced_kickoff_sha256)
     kickoff_started = _utc(kickoff["observationStartsAtUtc"], "$.kickoff.observationStartsAtUtc")
     kickoff_ended = _utc(kickoff["observationEndsAtUtc"], "$.kickoff.observationEndsAtUtc")
@@ -665,7 +703,7 @@ def validate_session(
             "$.session.stopPauseStatus",
             "participant_withdrew gaps require STOPPED",
         )
-    _validate_outcome(outcome, milestone_map, stop_status, started, ended)
+    _validate_outcome(outcome, milestone_map, stop_status, started, ended, recorded_at)
     _validate_findings(root["findings"])
 
     if evidence["storageCategory"] not in STORAGE_CATEGORIES:

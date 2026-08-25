@@ -22,6 +22,8 @@
   "session": {
     "studyCode": null,
     "platform": null,
+    "deviceEnvironment": null,
+    "sessionDriver": null,
     "selectedLocale": null,
     "startedAtUtc": null,
     "endedAtUtc": null,
@@ -128,6 +130,8 @@
     "permissionRequestShown": null,
     "permissionDecision": null,
     "firstDayRewardStatus": null,
+    "firstDayTimeZoneOffsetMinutes": null,
+    "firstDayRewardCutoffAtUtc": null,
     "candidateSessions": null,
     "crashFreeSessions": null,
     "authoritativeSyncAttempts": null,

@@ -93,7 +93,7 @@ def kickoff_digest(document: dict) -> str:
 def recorded() -> dict:
     document = json.loads(TEMPLATE.read_text(encoding="utf-8"))
     kickoff = ready_kickoff()
-    document.update(recordStatus="RECORDED", recordedAtUtc=utc(1200))
+    document.update(recordStatus="RECORDED", recordedAtUtc=utc(60000))
     document["protocol"]["commitSha"] = "1" * 40
     document["candidate"] = {
         "sourceSha": "2" * 40,
@@ -111,6 +111,8 @@ def recorded() -> dict:
     document["session"] = {
         "studyCode": "P01",
         "platform": "ios",
+        "deviceEnvironment": "physical_device",
+        "sessionDriver": "participant",
         "selectedLocale": "ru",
         "startedAtUtc": utc(0),
         "endedAtUtc": utc(720),
@@ -136,6 +138,8 @@ def recorded() -> dict:
         "permissionRequestShown": True,
         "permissionDecision": "GRANTED",
         "firstDayRewardStatus": "YES",
+        "firstDayTimeZoneOffsetMinutes": 0,
+        "firstDayRewardCutoffAtUtc": utc(57600),
         "candidateSessions": 2,
         "crashFreeSessions": 2,
         "authoritativeSyncAttempts": 3,
@@ -291,6 +295,33 @@ class SessionContractTests(unittest.TestCase):
                 document = recorded()
                 document["outcome"]["firstDayRewardStatus"] = reward_status
                 self.assert_valid(document)
+
+    def test_reward_no_waits_for_local_first_day_cutoff(self) -> None:
+        document = recorded()
+        document["recordedAtUtc"] = utc(1200)
+        document["outcome"]["firstDayRewardStatus"] = "NO"
+        self.assert_invalid(document)
+        document["outcome"]["firstDayRewardStatus"] = "PENDING"
+        self.assert_valid(document)
+        document["recordedAtUtc"] = utc(60000)
+        self.assert_invalid(document)
+
+    def test_reward_cutoff_matches_sanitized_timezone_offset(self) -> None:
+        document = recorded()
+        document["outcome"]["firstDayTimeZoneOffsetMinutes"] = 60
+        self.assert_invalid(document)
+        document["outcome"].update(
+            firstDayTimeZoneOffsetMinutes=60,
+            firstDayRewardCutoffAtUtc=utc(54000),
+        )
+        self.assert_valid(document)
+
+    def test_session_requires_physical_device_and_participant_driver(self) -> None:
+        for key, value in (("deviceEnvironment", "emulator"), ("sessionDriver", "developer")):
+            with self.subTest(key=key):
+                document = recorded()
+                document["session"][key] = value
+                self.assert_invalid(document)
 
     def test_elapsed_seconds_must_match_ordered_utc(self) -> None:
         document = recorded()
