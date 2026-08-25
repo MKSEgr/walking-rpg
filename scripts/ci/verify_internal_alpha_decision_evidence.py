@@ -293,6 +293,19 @@ def validate_bundle(
         )
 
     sessions = [item[2] for item in records]
+    evidence_dependent_rationales = {
+        "threshold_miss",
+        "focused_comprehension_gap",
+        "core_value_not_supported",
+    }
+    if (
+        not sessions
+        and decision["decision"]["rationaleCode"] in evidence_dependent_rationales
+    ):
+        _fail(
+            "$.decision.rationaleCode",
+            "requires at least one participant-session record",
+        )
     cohort = decision["cohort"]
     derived_cohort = {
         "started": len(sessions),
