@@ -476,6 +476,12 @@ class SessionContractTests(unittest.TestCase):
             permissionDecision="DATA_GAP",
         )
         self.assert_valid(document)
+        set_not_applicable(document, 5, "permission_not_requested")
+        document["outcome"].update(
+            applicableMandatoryMilestones=9,
+            recordedMandatoryMilestones=8,
+        )
+        self.assert_invalid(document)
 
     def test_unshown_permission_uses_explicit_non_applicable_stages(self) -> None:
         document = recorded()
@@ -632,6 +638,18 @@ class SessionContractTests(unittest.TestCase):
                     failedNonCancelledSyncAttempts=failed,
                 )
                 self.assert_invalid(document)
+
+    def test_sync_data_gap_needs_attempt_evidence_for_unaided_completion(self) -> None:
+        document = recorded()
+        set_gap(document, 4, "DATA_GAP", "instrumentation_missing")
+        document["outcome"].update(
+            authoritativeSyncAttempts=0,
+            failedNonCancelledSyncAttempts=0,
+            recordedMandatoryMilestones=9,
+        )
+        self.assert_invalid(document)
+        document["outcome"]["authoritativeSyncAttempts"] = 1
+        self.assert_valid(document)
 
     def test_every_finding_requires_issue_and_safe_code(self) -> None:
         document = recorded()

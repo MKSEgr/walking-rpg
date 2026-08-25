@@ -378,6 +378,10 @@ def _validate_outcome(
             "$.outcome.authoritativeSyncAttempts",
             "an observed sync receipt requires at least one non-failed authoritative attempt",
         )
+    sync_gap_has_attempt = not (
+        milestones["first_sync_receipt"]["status"] == "DATA_GAP"
+        and sync_attempts <= failed_syncs
+    )
     reached = []
     for item in milestones.values():
         if item["status"] == "NOT_REACHED":
@@ -399,6 +403,15 @@ def _validate_outcome(
                 "$.milestones[5]",
                 "GRANTED permission permits NOT_APPLICABLE only when no activity data exists",
             )
+    elif (
+        permission == "DATA_GAP"
+        and energy["status"] == "NOT_APPLICABLE"
+        and energy["gapReasonCode"] == "permission_not_requested"
+    ):
+        _fail(
+            "$.milestones[5]",
+            "a shown permission request cannot use permission_not_requested for ENERGY",
+        )
     elif permission == "NOT_APPLICABLE" and energy["status"] != "NOT_REACHED" and not (
         energy["status"] == "NOT_APPLICABLE"
         and energy["gapReasonCode"] == "permission_not_requested"
@@ -546,6 +559,11 @@ def _validate_outcome(
             for item in milestones.values()
         ):
             _fail("$.outcome.completedUnaided", "requires no facilitator help")
+        if not sync_gap_has_attempt:
+            _fail(
+                "$.outcome.completedUnaided",
+                "sync DATA_GAP requires at least one non-failed authoritative attempt",
+            )
         for milestone_id, deadline in UNAIDED_DEADLINES.items():
             item = milestones[milestone_id]
             if item["status"] == "OBSERVED" and item["elapsedSeconds"] > deadline:
@@ -581,6 +599,7 @@ def _validate_outcome(
                 item["helpRequested"] or item["facilitatorHelpProvided"]
                 for item in milestones.values()
             )
+            and sync_gap_has_attempt
             and all(
                 item["status"] != "OBSERVED" or item["elapsedSeconds"] <= deadline
                 for milestone_id, deadline in UNAIDED_DEADLINES.items()

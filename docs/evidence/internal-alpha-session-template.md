@@ -53,7 +53,9 @@ put ENERGY in the `NOT_REACHED` tail. Granted permission with no activity data u
 non-applicable stages and the `NOT_REACHED` tail; a participant withdrawal requires
 `STOPPED` and forces both post-flow qualitative answers to `DATA_GAP`. A shown
 permission request whose decision evidence is missing uses `permissionDecision=DATA_GAP`
-with a permission milestone instrumentation gap. A passing JSON record
+with a permission milestone instrumentation gap; because the request was shown, ENERGY
+cannot use `permission_not_requested`. A sync receipt `DATA_GAP` preserves unaided
+completion only with at least one non-failed authoritative attempt. A passing JSON record
 proves structural completeness and redaction boundaries, not that external evidence is
 true or that #161 is complete.
 
