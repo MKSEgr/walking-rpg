@@ -64,8 +64,12 @@ and recomputes every quantitative metric. Actual invitations and exclusions rema
 reviewed owner inputs because the kickoff records only the planned cohort. Withdrawals
 in supplied sessions are a mandatory lower bound, while additional pre-session
 withdrawals remain reviewed input bounded by actual invitations. This permits
-truthful early `STOP`/`FIX_AND_RERUN` decisions. The tool also counts each unique linked
-session finding once by severity and rejects conflicting severities for the same issue.
+truthful early `STOP`/`FIX_AND_RERUN` decisions.
+Actual invitations may be below, but never above, the kickoff's approved planned cohort.
+The exact kickoff and session byte buffers are each read once, parsed, validated and
+hashed without a parse/hash time-of-check gap.
+The tool also counts each unique linked session finding once by severity and rejects
+conflicting severities for the same issue.
 Those session-derived counts are lower bounds: a decision may include additional reviewed
 pre-session or operational findings that have no participant record, but it may not omit
 a finding present in supplied session evidence. Decision recording cannot predate READY
