@@ -73,6 +73,8 @@ reviewed owner inputs because the kickoff records only the planned cohort. Withd
 in supplied sessions are a mandatory lower bound, while additional pre-session
 withdrawals remain reviewed input bounded by actual invitations. This permits
 truthful early `STOP`/`FIX_AND_RERUN` decisions.
+Started sessions plus withdrawals not represented by those sessions cannot exceed the
+actual invitation count; session withdrawals are not double-counted.
 Actual invitations may be below, but never above, the kickoff's approved planned cohort.
 The exact kickoff and session byte buffers are each read once, parsed, validated and
 hashed without a parse/hash time-of-check gap.
