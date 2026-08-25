@@ -222,11 +222,13 @@ package only with zero started/completed/platform/stop counts and six decision m
 instrumentation, release-blocker or cohort rationale can be signed without participant
 evidence; threshold, comprehension and core-value rationales require session records.
 A threshold-miss decision requires an actual failed derived threshold, and owner
-confirmation must occur before the participant-evidence deletion deadline.
+confirmation must occur before the participant-evidence deletion deadline. That deadline
+must be no later than 90 days after the final confirmation, including an early STOP/FIX.
 An instrumentation-gap decision requires a derived metric data gap, failed
 participant-level instrumentation coverage, or a reviewed interpretability gate that is
 not true. Missing next-action comprehension propagates to an unaided-metric data gap
-unless other recorded evidence independently proves non-completion.
+unless other recorded evidence independently proves non-completion; a pause or stop after
+the comprehension window is not such proof.
 Focused comprehension and unsupported-core-value rationales require matching session
 outcomes; core-value rejection also requires a false reviewed qualitative gate.
 Findings from supplied sessions are a
