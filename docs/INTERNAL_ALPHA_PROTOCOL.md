@@ -226,8 +226,9 @@ confirmation must occur before the participant-evidence deletion deadline. That 
 must be no later than 90 days after the final confirmation, including an early STOP/FIX.
 An instrumentation-gap decision requires a derived metric data gap, failed
 participant-level instrumentation coverage, or a reviewed interpretability gate that is
-not true. A release-blocker rationale requires at least one reviewed open release
-blocker. Missing next-action comprehension propagates to an unaided-metric data gap
+not true. A release-blocker rationale requires
+`findings.openReleaseBlockers > 0` in the reviewed decision. Missing next-action
+comprehension propagates to an unaided-metric data gap
 unless other recorded evidence independently proves non-completion; a pause or stop after
 the comprehension window is not such proof.
 Focused comprehension and unsupported-core-value rationales require matching session
