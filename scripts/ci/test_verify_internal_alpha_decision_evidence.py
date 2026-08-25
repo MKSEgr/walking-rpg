@@ -229,6 +229,36 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_invalid()
 
+    def test_early_stop_keeps_actual_invitations_as_owner_input(self) -> None:
+        self.session_paths = self.session_paths[:8]
+        self.decision["cohort"].update(
+            invited=10,
+            started=8,
+            completed=8,
+            iosRealUsers=6,
+            androidRealUsers=2,
+        )
+        counts = {
+            "unaidedFirstTenMinutes": (8, 8),
+            "stepPermissionAcceptance": (8, 8),
+            "firstDayReward": (8, 8),
+            "crashFreeSessions": (16, 16),
+            "syncErrorRate": (0, 24),
+            "instrumentationCoverage": (80, 80),
+        }
+        for name, (numerator, denominator) in counts.items():
+            self.decision["metrics"][name].update(
+                numerator=numerator,
+                denominator=denominator,
+            )
+        self.decision["decision"].update(
+            selected="STOP",
+            rationaleCode="safety_risk",
+            nextScope="stop_and_archive",
+        )
+        self.refresh_package()
+        self.assert_valid()
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
