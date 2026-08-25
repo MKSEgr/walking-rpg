@@ -137,6 +137,7 @@ class DecisionEvidenceTests(unittest.TestCase):
             rationaleCode="operationally_infeasible",
             nextScope="stop_and_archive",
         )
+        self.decision["findings"]["stopCount"] = 1
         self.refresh_package()
 
     def assert_valid(self, paths: list[Path] | None = None) -> str:
@@ -632,9 +633,9 @@ class DecisionEvidenceTests(unittest.TestCase):
                 denominator=denominator,
             )
         self.decision["decision"].update(
-            selected="STOP",
-            rationaleCode="operationally_infeasible",
-            nextScope="stop_and_archive",
+            selected="FIX_AND_RERUN",
+            rationaleCode="cohort_invalid",
+            nextScope="focused_fix_and_alpha_rerun",
         )
         self.refresh_package()
         self.assert_valid()
@@ -671,18 +672,31 @@ class DecisionEvidenceTests(unittest.TestCase):
 
     def test_kickoff_only_stop_preserves_non_session_findings(self) -> None:
         self.make_kickoff_only_stop()
-        self.decision["findings"]["stopCount"] = 1
+        self.decision["findings"]["laterCount"] = 1
         self.write_decision()
         self.assert_valid()
 
     def test_safety_risk_requires_a_reviewed_stop_finding(self) -> None:
         self.make_kickoff_only_stop()
         self.decision["decision"]["rationaleCode"] = "safety_risk"
+        self.decision["findings"]["stopCount"] = 0
         self.write_decision()
         self.assert_invalid()
 
         self.decision["findings"]["stopCount"] = 1
         self.write_decision()
+        self.assert_valid()
+
+    def test_operational_stop_requires_reviewed_evidence(self) -> None:
+        self.decision["decision"].update(
+            selected="STOP",
+            rationaleCode="operationally_infeasible",
+            nextScope="stop_and_archive",
+        )
+        self.write_decision()
+        self.assert_invalid()
+
+        self.make_kickoff_only_stop()
         self.assert_valid()
 
     def test_cohort_invalid_requires_a_recorded_cohort_defect(self) -> None:
