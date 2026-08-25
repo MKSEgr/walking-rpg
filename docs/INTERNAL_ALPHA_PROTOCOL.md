@@ -238,6 +238,9 @@ outcomes; core-value rejection also requires a false reviewed qualitative gate.
 An `EXPAND` record also requires at least one supporting `YES` or `PARTIAL` participant
 outcome for each qualitative dimension; uniformly negative or unavailable outcomes fail
 closed even when the reviewed aggregate gate is true.
+For permission acceptance, every participant shown the request enters the denominator.
+A stopped/blocked/withdrawn `NOT_REACHED` decision is a known non-grant; only permission
+`DATA_GAP` makes the aggregate metric unavailable.
 Findings from supplied sessions are a
 validated lower bound, so a signed decision may retain additional reviewed pre-session
 or operational incidents, and decision recording must follow READY kickoff approval.
