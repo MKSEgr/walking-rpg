@@ -41,7 +41,11 @@ exact session filenames, reconciles started/platform/withdrawal/stopped-or-pause
 and recomputes every quantitative metric. Actual invitations and exclusions remain
 reviewed owner inputs because the kickoff records only the planned cohort; this permits
 truthful early `STOP`/`FIX_AND_RERUN` decisions. The tool also counts each unique linked
-finding issue once by severity and rejects conflicting severities for the same issue.
+session finding once by severity and rejects conflicting severities for the same issue.
+Those session-derived counts are lower bounds: a decision may include additional reviewed
+pre-session or operational findings that have no participant record, but it may not omit
+a finding present in supplied session evidence. Decision recording cannot predate READY
+kickoff approval.
 `alphaEvidencePackageSha256` is
 the SHA-256 of a domain-separated manifest containing the exact kickoff digest and each
 exact session-file digest sorted by study code. Therefore argument order is irrelevant,
