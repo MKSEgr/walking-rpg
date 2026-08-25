@@ -856,6 +856,7 @@ class SessionContractTests(unittest.TestCase):
                     stopPauseAtUtc=utc(650),
                 )
                 if status == "STOPPED":
+                    self.assert_invalid(document)
                     document["outcome"].update(
                         walkingAsAdventure="DATA_GAP",
                         companionReturn="DATA_GAP",
