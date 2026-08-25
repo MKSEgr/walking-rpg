@@ -33,6 +33,7 @@
     "withdrawalRouteExplained": null,
     "exactCandidateVerified": null,
     "stopPauseStatus": null,
+    "stopPauseAtUtc": null,
     "withdrawalStatus": null,
     "withdrawnAtUtc": null
   },

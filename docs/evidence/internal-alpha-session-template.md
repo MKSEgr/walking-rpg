@@ -72,6 +72,9 @@ comprehension, even if the post-flow interview is still open. For a mid-journey
 withdrawal, every stage after the last observed pre-withdrawal milestone must form a
 `NOT_REACHED` tail; untimed `DATA_GAP` entries cannot claim later stage reach, and a
 post-session withdrawal cannot be used as that tail's cause. The
+general stop/pause status also records an exact UTC time: a pause or stop before timed
+comprehension blocks unaided completion, while one afterward preserves the completed
+primary outcome. Withdrawal STOPPED time must equal its withdrawal time. The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
 terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;
@@ -112,7 +115,7 @@ the stop. Every finding must link a positive GitHub issue number regardless of s
 - Consent confirmed before collection: `PASS` / `FAIL`
 - Withdrawal route explained: `PASS` / `FAIL`
 - Exact candidate/start gates verified: `PASS` / `FAIL`
-- Stop/pause invoked: `NO` / `YES`
+- Stop/pause status and UTC: `NOT_INVOKED` / `PAUSED` / `STOPPED`
 - Withdrawal status and UTC: `NOT_WITHDRAWN` / `WITHDREW`
 
 ## Timed milestones

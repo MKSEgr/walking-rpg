@@ -122,6 +122,7 @@ def recorded() -> dict:
         "withdrawalRouteExplained": True,
         "exactCandidateVerified": True,
         "stopPauseStatus": "NOT_INVOKED",
+        "stopPauseAtUtc": None,
         "withdrawalStatus": "NOT_WITHDRAWN",
         "withdrawnAtUtc": None,
     }
@@ -410,7 +411,10 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         for index in range(5, 10):
             set_gap(document, index, "NOT_REACHED", "session_stopped")
-        document["session"]["stopPauseStatus"] = "STOPPED"
+        document["session"].update(
+            stopPauseStatus="STOPPED",
+            stopPauseAtUtc=utc(200),
+        )
         document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         document["outcome"].update(
             completedUnaided=False,
@@ -447,7 +451,10 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionHelpProvided=None,
         )
         self.assert_invalid(document)
-        document["session"]["stopPauseStatus"] = "PAUSED"
+        document["session"].update(
+            stopPauseStatus="PAUSED",
+            stopPauseAtUtc=utc(240),
+        )
         self.assert_invalid(document)
         document["session"]["stopPauseStatus"] = "STOPPED"
         self.assert_invalid(document)
@@ -520,6 +527,7 @@ class SessionContractTests(unittest.TestCase):
             set_gap(document, index, "NOT_REACHED", "participant_withdrew")
         document["session"].update(
             stopPauseStatus="STOPPED",
+            stopPauseAtUtc=utc(60),
             withdrawalStatus="WITHDREW",
             withdrawnAtUtc=utc(60),
         )
@@ -555,6 +563,7 @@ class SessionContractTests(unittest.TestCase):
             set_gap(document, index, "NOT_REACHED", "participant_withdrew")
         document["session"].update(
             stopPauseStatus="STOPPED",
+            stopPauseAtUtc=utc(90),
             withdrawalStatus="WITHDREW",
             withdrawnAtUtc=utc(90),
         )
@@ -590,7 +599,10 @@ class SessionContractTests(unittest.TestCase):
                 document = recorded()
                 for index in range(3, 10):
                     set_gap(document, index, "NOT_REACHED", reason)
-                document["session"]["stopPauseStatus"] = "STOPPED"
+                document["session"].update(
+                    stopPauseStatus="STOPPED",
+                    stopPauseAtUtc=utc(90),
+                )
                 document["outcome"].update(
                     completedUnaided=False,
                     permissionDecision="NOT_REACHED",
@@ -636,6 +648,7 @@ class SessionContractTests(unittest.TestCase):
             set_gap(document, index, "NOT_REACHED", "participant_withdrew")
         document["session"].update(
             stopPauseStatus="STOPPED",
+            stopPauseAtUtc=utc(120),
             withdrawalStatus="WITHDREW",
             withdrawnAtUtc=utc(120),
         )
@@ -768,6 +781,7 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         document["session"].update(
             stopPauseStatus="STOPPED",
+            stopPauseAtUtc=utc(570),
             withdrawalStatus="WITHDREW",
             withdrawnAtUtc=utc(570),
         )
@@ -786,7 +800,10 @@ class SessionContractTests(unittest.TestCase):
         self.assert_valid(document)
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(571)
         self.assert_invalid(document)
-        document["session"]["withdrawnAtUtc"] = utc(650)
+        document["session"].update(
+            stopPauseAtUtc=utc(650),
+            withdrawnAtUtc=utc(650),
+        )
         document["outcome"].update(
             completedUnaided=True,
             firstDayRewardReceiptAtUtc=utc(480),
@@ -801,7 +818,10 @@ class SessionContractTests(unittest.TestCase):
         )
         document["evidence"]["redactionReviewedAtUtc"] = utc(900)
         self.assert_valid(document)
-        document["session"]["withdrawnAtUtc"] = utc(1000)
+        document["session"].update(
+            stopPauseAtUtc=utc(1000),
+            withdrawnAtUtc=utc(1000),
+        )
         document["outcome"].update(
             walkingAsAdventure="YES",
             companionReturn="YES",
@@ -810,16 +830,34 @@ class SessionContractTests(unittest.TestCase):
         self.assert_valid(document)
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(1001)
         self.assert_invalid(document)
-        document["session"]["withdrawnAtUtc"] = utc(50000)
+        document["session"].update(
+            stopPauseAtUtc=utc(50000),
+            withdrawnAtUtc=utc(50000),
+        )
         document["outcome"].update(
             firstDayRewardStatus="NO",
             firstDayRewardReceiptAtUtc=None,
         )
         document["evidence"]["redactionReviewedAtUtc"] = utc(50000)
         self.assert_valid(document)
-        document["session"]["withdrawnAtUtc"] = utc(1000)
+        document["session"].update(
+            stopPauseAtUtc=utc(1000),
+            withdrawnAtUtc=utc(1000),
+        )
         document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         self.assert_invalid(document)
+
+    def test_post_task_pause_or_stop_preserves_completion(self) -> None:
+        for status in ("PAUSED", "STOPPED"):
+            with self.subTest(status=status):
+                document = recorded()
+                document["session"].update(
+                    stopPauseStatus=status,
+                    stopPauseAtUtc=utc(650),
+                )
+                self.assert_valid(document)
+                document["session"]["stopPauseAtUtc"] = utc(590)
+                self.assert_invalid(document)
 
     def test_withdrawal_rejects_unanchored_data_gap_tail(self) -> None:
         document = recorded()
@@ -827,6 +865,7 @@ class SessionContractTests(unittest.TestCase):
             set_gap(document, index, "DATA_GAP", "instrumentation_missing")
         document["session"].update(
             stopPauseStatus="STOPPED",
+            stopPauseAtUtc=utc(200),
             withdrawalStatus="WITHDREW",
             withdrawnAtUtc=utc(200),
         )

@@ -274,6 +274,7 @@ def _validate_outcome(
     ended: datetime,
     recorded_at: datetime,
     withdrawal_at: datetime | None,
+    stop_at: datetime | None,
 ) -> None:
     boolean_fields = ("completedUnaided", "permissionRequestShown")
     for key in boolean_fields:
@@ -585,11 +586,10 @@ def _validate_outcome(
                     "event DATA_GAP receipt must follow the latest observed prerequisite",
                 )
     stop_blocks_unaided = not (
-        stop_status == "NOT_INVOKED"
+        stop_at is None
         or (
-            withdrawal_at is not None
-            and demonstrated is not None
-            and withdrawal_at >= demonstrated
+            demonstrated is not None
+            and stop_at >= demonstrated
         )
     )
     if outcome["completedUnaided"]:
@@ -786,7 +786,7 @@ def validate_session(
         "adultEligibilityConfirmed", "selectedLocale", "startedAtUtc",
         "endedAtUtc", "moderatorRole", "consentConfirmed",
         "withdrawalRouteExplained", "exactCandidateVerified", "stopPauseStatus",
-        "withdrawalStatus", "withdrawnAtUtc",
+        "stopPauseAtUtc", "withdrawalStatus", "withdrawnAtUtc",
     ], "$.session")
     if not isinstance(root["milestones"], list) or len(root["milestones"]) != len(MILESTONES):
         _fail("$.milestones", f"must contain exactly {len(MILESTONES)} entries")
@@ -865,6 +865,17 @@ def validate_session(
     stop_status = session["stopPauseStatus"]
     if stop_status not in {"NOT_INVOKED", "PAUSED", "STOPPED"}:
         _fail("$.session.stopPauseStatus", "has an unsupported code")
+    stop_at = None
+    if stop_status == "NOT_INVOKED":
+        if session["stopPauseAtUtc"] is not None:
+            _fail("$.session.stopPauseAtUtc", "must be null when stop/pause was not invoked")
+    else:
+        stop_at = _utc(session["stopPauseAtUtc"], "$.session.stopPauseAtUtc")
+        if not started <= stop_at <= recorded_at:
+            _fail(
+                "$.session.stopPauseAtUtc",
+                "must be between session start and record finalization",
+            )
     withdrawal_status = session["withdrawalStatus"]
     if withdrawal_status not in {"NOT_WITHDRAWN", "WITHDREW"}:
         _fail("$.session.withdrawalStatus", "must be NOT_WITHDRAWN or WITHDREW")
@@ -880,6 +891,11 @@ def validate_session(
             _fail(
                 "$.session.withdrawnAtUtc",
                 "must be between session start and record finalization",
+            )
+        if stop_at != withdrawal_at:
+            _fail(
+                "$.session.stopPauseAtUtc",
+                "withdrawal STOPPED time must equal withdrawnAtUtc",
             )
 
     milestone_map = _validate_milestones(root["milestones"], started, ended)
@@ -910,7 +926,7 @@ def validate_session(
             "$.session.withdrawnAtUtc",
             "a participant-withdrew journey tail requires withdrawal during the session",
         )
-    if withdrawal_status == "WITHDREW":
+    if stop_at is not None and stop_at <= ended:
         last_observed_index = max(
             (
                 index
@@ -922,17 +938,19 @@ def validate_session(
         for index, item in enumerate(milestone_map.values()):
             if item["status"] == "OBSERVED" and _utc(
                 item["observedAtUtc"], f"$.milestones[{index}].observedAtUtc"
-            ) > withdrawal_at:
-                _fail(f"$.milestones[{index}]", "must not be observed after withdrawal")
-            if (
-                withdrawal_at <= ended
-                and index > last_observed_index
-                and item["status"] != "NOT_REACHED"
-            ):
+            ) > stop_at:
+                _fail(f"$.milestones[{index}]", "must not be observed after final stop/pause")
+            if index > last_observed_index and item["status"] != "NOT_REACHED":
                 _fail(
                     f"$.milestones[{index}]",
-                    "stages after the last observed pre-withdrawal milestone must be NOT_REACHED",
+                    "stages after the last observed pre-stop milestone must be NOT_REACHED",
                 )
+    if withdrawal_status == "WITHDREW":
+        for index, item in enumerate(milestone_map.values()):
+            if item["status"] == "OBSERVED" and _utc(
+                item["observedAtUtc"], f"$.milestones[{index}].observedAtUtc"
+            ) > withdrawal_at:
+                _fail(f"$.milestones[{index}]", "must not be observed after withdrawal")
     _validate_outcome(
         outcome,
         milestone_map,
@@ -941,6 +959,7 @@ def validate_session(
         ended,
         recorded_at,
         withdrawal_at,
+        stop_at,
     )
     if withdrawal_status == "WITHDREW":
         comprehension_at = outcome["nextActionComprehensionAtUtc"]
