@@ -54,6 +54,9 @@ Threshold, comprehension and core-value rationales require participant records.
 A `threshold_miss` rationale additionally requires at least one safely derived measured
 metric to fail its approved threshold. Owner confirmation must precede the shared
 participant-evidence deletion deadline.
+An `instrumentation_gap` rationale requires a derived metric `DATA_GAP`, failed
+participant-level instrumentation coverage, or a reviewed
+`instrumentationInterpretable` gate that is not true.
 `focused_comprehension_gap` requires a `PARTIAL` or `UNCLEAR` participant outcome.
 `core_value_not_supported` requires both a negative adventure/companion session signal
 and the corresponding reviewed qualitative gate to be false.
@@ -82,9 +85,11 @@ the SHA-256 of a domain-separated manifest containing the exact kickoff digest a
 exact session-file digest sorted by study code. Therefore argument order is irrelevant,
 while any byte change requires a new package digest and review. A
 `PENDING`/`DATA_GAP` reward or unknown shown permission forces the corresponding
-decision metric to `DATA_GAP`; missing evidence cannot be counted as a failed
-participant merely to manufacture a measured rate. The tool does not derive qualitative
-support or current open-release-blocker status; those remain reviewed owner inputs and
+decision metric to `DATA_GAP`. Missing next-action comprehension likewise forces the
+unaided metric to `DATA_GAP` unless a stop, unreached milestone, help, sync failure or
+missed protocol deadline independently proves non-completion. Missing evidence cannot
+be counted as a failed participant merely to manufacture a measured rate. The tool does
+not derive current open-release-blocker status; it remains a reviewed owner input and
 can only make `EXPAND` stricter.
 
 ## Contract
