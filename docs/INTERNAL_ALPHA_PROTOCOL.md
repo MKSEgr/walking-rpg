@@ -214,8 +214,9 @@ exclusions, plus pre-session withdrawals, remain reviewed inputs, especially for
 stop. A decision cannot omit a withdrawal present in supplied session evidence. Passing
 that cross-check proves internal consistency, not the truth or approval of external
 evidence.
-For cohort reconciliation, started sessions plus pre-session withdrawals cannot exceed
-actual invitations; a withdrawal already represented by a session is counted only once.
+For cohort reconciliation, started sessions plus pre-session withdrawals and exclusions
+cannot exceed actual invitations; a withdrawal already represented by a session is
+counted only once.
 Actual invitations cannot exceed the approved 12-person cohort, and the cross-check
 parses and hashes the same single-read evidence bytes.
 If the study stops before its first session, the cross-check accepts the kickoff-only
