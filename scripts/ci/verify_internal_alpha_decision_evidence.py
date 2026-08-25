@@ -342,12 +342,36 @@ def validate_bundle(
     kickoff_approved = _utc(kickoff["approvedAtUtc"])
     if _utc(decision["recordedAtUtc"]) < kickoff_approved:
         _fail("$.recordedAtUtc", "must not precede READY kickoff approval")
+    evidence_delete_by = _utc(
+        kickoff["evidence"]["participantEvidenceDeleteByUtc"]
+    )
+    confirmation_at = _utc(decision["decision"]["confirmationAtUtc"])
+    if confirmation_at >= evidence_delete_by:
+        _fail(
+            "$.decision.confirmationAtUtc",
+            "must precede the participant-evidence deletion deadline",
+        )
     if sessions:
         latest_session = max(_utc(item["recordedAtUtc"]) for item in sessions)
         if _utc(decision["recordedAtUtc"]) < latest_session:
             _fail("$.recordedAtUtc", "must not precede any participant record")
 
-    for name, derived in _derived_metrics(records).items():
+    derived_metrics = _derived_metrics(records)
+    if decision["decision"]["rationaleCode"] == "threshold_miss":
+        has_threshold_miss = any(
+            status == "MEASURED"
+            and numerator is not None
+            and denominator is not None
+            and not decision_validator._passes(name, numerator, denominator)
+            for name, (status, numerator, denominator) in derived_metrics.items()
+        )
+        if not has_threshold_miss:
+            _fail(
+                "$.decision.rationaleCode",
+                "threshold_miss requires a failed derived approved threshold",
+            )
+
+    for name, derived in derived_metrics.items():
         _compare_metric(name, decision["metrics"][name], derived)
     return package_sha
 
