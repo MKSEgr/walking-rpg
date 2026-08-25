@@ -226,20 +226,19 @@ def _completed(session: dict[str, Any]) -> bool:
     )
 
 
-def validate_bundle(
-    decision_path: Path,
+def _validated_evidence(
     kickoff_path: Path,
     session_paths: list[Path],
-) -> str:
+) -> tuple[
+    dict[str, Any],
+    bytes,
+    str,
+    list[tuple[str, Path, dict[str, Any], bytes]],
+]:
     try:
-        decision = decision_validator._load(decision_path)
-        decision_validator.validate(decision, require_decided=True)
         kickoff = kickoff_validator.load_kickoff(kickoff_path)
         kickoff_validator.validate_kickoff(kickoff, require_ready=True)
-    except (
-        decision_validator.ContractError,
-        kickoff_validator.KickoffValidationError,
-    ) as error:
+    except kickoff_validator.KickoffValidationError as error:
         raise BundleValidationError(str(error)) from error
 
     kickoff_bytes = _read(kickoff_path)
@@ -259,6 +258,23 @@ def validate_bundle(
             kickoff_validator.KickoffValidationError,
         ) as error:
             raise BundleValidationError(f"{code}: {error}") from error
+    return kickoff, kickoff_bytes, kickoff_sha, records
+
+
+def validate_bundle(
+    decision_path: Path,
+    kickoff_path: Path,
+    session_paths: list[Path],
+) -> str:
+    try:
+        decision = decision_validator._load(decision_path)
+        decision_validator.validate(decision, require_decided=True)
+    except decision_validator.ContractError as error:
+        raise BundleValidationError(str(error)) from error
+
+    kickoff, kickoff_bytes, kickoff_sha, records = _validated_evidence(
+        kickoff_path, session_paths
+    )
 
     candidate = decision["candidate"]
     if decision["protocol"]["commitSha"] != kickoff["protocol"]["commitSha"]:
@@ -325,11 +341,23 @@ def validate_bundle(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("decision", type=Path)
+    parser.add_argument("decision", nargs="?", type=Path)
     parser.add_argument("--kickoff", required=True, type=Path)
     parser.add_argument("--session", action="append", type=Path, default=[])
+    parser.add_argument("--print-package-sha256", action="store_true")
     args = parser.parse_args(argv)
     try:
+        if args.print_package_sha256:
+            if args.decision is not None:
+                parser.error("omit decision when using --print-package-sha256")
+            _kickoff, kickoff_bytes, _kickoff_sha, records = _validated_evidence(
+                args.kickoff, args.session
+            )
+            package_sha = _package_digest(kickoff_bytes, records)
+            print(f"internal-alpha evidence package sha256: {package_sha}")
+            return 0
+        if args.decision is None:
+            parser.error("decision is required unless --print-package-sha256 is used")
         package_sha = validate_bundle(args.decision, args.kickoff, args.session)
     except (BundleValidationError, OSError, ValueError) as error:
         print(f"internal-alpha decision evidence invalid: {error}", file=sys.stderr)
