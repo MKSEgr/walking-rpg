@@ -19,6 +19,31 @@ for a data gap, invalid cohort, threshold miss, qualitative miss, stop/fix findi
 open release blocker. This Markdown record adds reviewed narrative; it cannot override
 a failing JSON record or prove the referenced external evidence.
 
+Before approval, cross-check the quantitative decision fields against the exact READY
+kickoff and every redacted participant record:
+
+```bash
+python3 scripts/ci/verify_internal_alpha_decision_evidence.py \
+  <approved-decision-record.json> \
+  --kickoff <approved-ready-kickoff.json> \
+  --session <P01-session.json> \
+  --session <P02-session.json> \
+  --session <P12-session.json>
+```
+
+The cross-check reruns all three underlying contracts, requires unique study codes and
+exact session filenames, reconciles derivable cohort counts and recomputes every
+quantitative metric. It also counts each unique linked finding issue once by severity
+and rejects conflicting severities for the same issue. `alphaEvidencePackageSha256` is
+the SHA-256 of a domain-separated manifest containing the exact kickoff digest and each
+exact session-file digest sorted by study code. Therefore argument order is irrelevant,
+while any byte change requires a new package digest and review. A
+`PENDING`/`DATA_GAP` reward or unknown shown permission forces the corresponding
+decision metric to `DATA_GAP`; missing evidence cannot be counted as a failed
+participant merely to manufacture a measured rate. The tool does not derive qualitative
+support or current open-release-blocker status; those remain reviewed owner inputs and
+can only make `EXPAND` stricter.
+
 ## Contract
 
 - Protocol ID: `walking-rpg-internal-alpha-v1`
