@@ -31,7 +31,8 @@ UTC offset, restricted to the RU cohort's UTC+02 through UTC+12 whole-hour zones
 cutoff it stays `PENDING` unless already `YES`; `NO` and `DATA_GAP` are accepted only at
 or after cutoff. Event resolution and reward delivery remain separate: `YES` requires a
 dedicated authoritative reward-receipt UTC timestamp at or before cutoff, while every
-non-`YES` status requires that timestamp to be null.
+non-`YES` status requires that timestamp to be null. The receipt must be at or after the
+authoritative first-event resolution.
 Result ACK must complete by 09:00, and
 `registration_shown` anchors the timer at session start/zero seconds.
 Locale/authentication must complete by 02:00,

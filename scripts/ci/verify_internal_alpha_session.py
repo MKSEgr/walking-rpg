@@ -493,6 +493,15 @@ def _validate_outcome(
                 "$.outcome.firstDayRewardStatus",
                 "YES requires an observed authoritative event resolution",
             )
+        reward_event_at = _utc(
+            reward_event["observedAtUtc"],
+            "$.milestones[8].observedAtUtc",
+        )
+        if reward_receipt < reward_event_at:
+            _fail(
+                "$.outcome.firstDayRewardReceiptAtUtc",
+                "must be at or after the authoritative event resolution",
+            )
     if outcome["completedUnaided"]:
         if stop_status != "NOT_INVOKED":
             _fail("$.outcome.completedUnaided", "cannot be true for a paused/stopped session")

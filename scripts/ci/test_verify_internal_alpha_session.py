@@ -545,6 +545,9 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         document["outcome"]["firstDayRewardStatus"] = "NO"
         self.assert_invalid(document)
+        document = recorded()
+        document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(479)
+        self.assert_invalid(document)
 
     def test_reward_yes_must_arrive_by_local_day_cutoff(self) -> None:
         document = recorded()
