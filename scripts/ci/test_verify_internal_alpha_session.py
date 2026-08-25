@@ -113,6 +113,7 @@ def recorded() -> dict:
         "platform": "ios",
         "deviceEnvironment": "physical_device",
         "sessionDriver": "participant",
+        "adultEligibilityConfirmed": True,
         "selectedLocale": "ru",
         "startedAtUtc": utc(0),
         "endedAtUtc": utc(720),
@@ -341,7 +342,11 @@ class SessionContractTests(unittest.TestCase):
         self.assert_valid(document)
 
     def test_session_requires_physical_device_and_participant_driver(self) -> None:
-        for key, value in (("deviceEnvironment", "emulator"), ("sessionDriver", "developer")):
+        for key, value in (
+            ("deviceEnvironment", "emulator"),
+            ("sessionDriver", "developer"),
+            ("adultEligibilityConfirmed", False),
+        ):
             with self.subTest(key=key):
                 document = recorded()
                 document["session"][key] = value
@@ -549,12 +554,16 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(479)
         self.assert_invalid(document)
         document = recorded()
+        document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(901)
+        self.assert_invalid(document)
+        document = recorded()
         set_gap(document, 8, "DATA_GAP", "instrumentation_missing")
         document["outcome"]["recordedMandatoryMilestones"] = 9
         self.assert_valid(document)
 
     def test_reward_yes_must_arrive_by_local_day_cutoff(self) -> None:
         document = recorded()
+        document["evidence"]["redactionReviewedAtUtc"] = utc(15000)
         document["outcome"].update(
             firstDayTimeZoneOffsetMinutes=720,
             firstDayRewardCutoffAtUtc=utc(14400),

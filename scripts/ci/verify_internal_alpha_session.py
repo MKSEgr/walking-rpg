@@ -688,9 +688,9 @@ def validate_session(
     ], "$.kickoff")
     session = _keys(root["session"], [
         "studyCode", "platform", "deviceEnvironment", "sessionDriver",
-        "selectedLocale", "startedAtUtc", "endedAtUtc", "moderatorRole",
-        "consentConfirmed", "withdrawalRouteExplained", "exactCandidateVerified",
-        "stopPauseStatus",
+        "adultEligibilityConfirmed", "selectedLocale", "startedAtUtc",
+        "endedAtUtc", "moderatorRole", "consentConfirmed",
+        "withdrawalRouteExplained", "exactCandidateVerified", "stopPauseStatus",
     ], "$.session")
     if not isinstance(root["milestones"], list) or len(root["milestones"]) != len(MILESTONES):
         _fail("$.milestones", f"must contain exactly {len(MILESTONES)} entries")
@@ -737,6 +737,8 @@ def validate_session(
         _fail("$.session.deviceEnvironment", "must be physical_device")
     if session["sessionDriver"] != "participant":
         _fail("$.session.sessionDriver", "must be participant")
+    if session["adultEligibilityConfirmed"] is not True:
+        _fail("$.session.adultEligibilityConfirmed", "must be true")
     _validate_kickoff_reference(root, referenced_kickoff, referenced_kickoff_sha256)
     kickoff_started = _utc(kickoff["observationStartsAtUtc"], "$.kickoff.observationStartsAtUtc")
     kickoff_ended = _utc(kickoff["observationEndsAtUtc"], "$.kickoff.observationEndsAtUtc")
@@ -795,6 +797,16 @@ def validate_session(
         _fail("$.evidence.storageCategory", f"must be one of {sorted(STORAGE_CATEGORIES)}")
     _matches(evidence["evidencePackageSha256"], DIGEST, "$.evidence.evidencePackageSha256", "a lowercase SHA-256")
     reviewed = _utc(evidence["redactionReviewedAtUtc"], "$.evidence.redactionReviewedAtUtc")
+    if outcome["firstDayRewardStatus"] == "YES":
+        reward_receipt = _utc(
+            outcome["firstDayRewardReceiptAtUtc"],
+            "$.outcome.firstDayRewardReceiptAtUtc",
+        )
+        if reward_receipt > reviewed:
+            _fail(
+                "$.evidence.redactionReviewedAtUtc",
+                "must be at or after the authoritative reward receipt",
+            )
     if evidence["redactionReviewerRole"] != "approved_redaction_reviewer":
         _fail("$.evidence.redactionReviewerRole", "must be approved_redaction_reviewer")
     delete_by = _utc(evidence["participantEvidenceDeleteByUtc"], "$.evidence.participantEvidenceDeleteByUtc")

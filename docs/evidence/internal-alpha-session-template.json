@@ -24,6 +24,7 @@
     "platform": null,
     "deviceEnvironment": null,
     "sessionDriver": null,
+    "adultEligibilityConfirmed": null,
     "selectedLocale": null,
     "startedAtUtc": null,
     "endedAtUtc": null,

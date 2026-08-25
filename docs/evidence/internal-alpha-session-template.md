@@ -35,7 +35,8 @@ or after cutoff. Event resolution and reward delivery remain separate: `YES` req
 dedicated authoritative reward-receipt UTC timestamp at or before cutoff, while every
 non-`YES` status requires that timestamp to be null. The receipt must be at or after the
 authoritative first-event resolution when that milestone is observed; a milestone
-`DATA_GAP` does not erase an independently confirmed authoritative reward receipt.
+`DATA_GAP` does not erase an independently confirmed authoritative reward receipt. A
+late receipt requires the redaction review to occur again after that evidence arrives.
 Result ACK must complete by 09:00, and
 `registration_shown` anchors the timer at session start/zero seconds.
 Locale/authentication must complete by 02:00,
@@ -75,6 +76,7 @@ and every finding must link a positive GitHub issue number regardless of severit
 - Platform: `ios` / `android`
 - Device environment: `physical_device`
 - Session driver: `participant`
+- Adult eligibility confirmed: `PASS` / `FAIL`
 - Selected locale: `ru` / `en`
 - Session start/end UTC:
 - Moderator role:
