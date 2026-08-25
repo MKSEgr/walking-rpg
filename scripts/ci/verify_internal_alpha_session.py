@@ -1014,6 +1014,11 @@ def validate_session(
         _fail("$.evidence.storageCategory", f"must be one of {sorted(STORAGE_CATEGORIES)}")
     _matches(evidence["evidencePackageSha256"], DIGEST, "$.evidence.evidencePackageSha256", "a lowercase SHA-256")
     reviewed = _utc(evidence["redactionReviewedAtUtc"], "$.evidence.redactionReviewedAtUtc")
+    if stop_at is not None and reviewed < stop_at:
+        _fail(
+            "$.evidence.redactionReviewedAtUtc",
+            "must be at or after the recorded stop/pause",
+        )
     if withdrawal_at is not None and reviewed < withdrawal_at:
         _fail(
             "$.evidence.redactionReviewedAtUtc",

@@ -82,7 +82,8 @@ answers, STOPPED before session end forces both to `DATA_GAP`; a stop at/after s
 end preserves them, but cannot be used to explain an earlier `session_stopped` or
 `flow_blocked` journey tail. Such a tail requires its stop/pause during the moderated
 session. Withdrawal STOPPED time must equal its
-withdrawal time. The
+withdrawal time, and redaction review must occur at or after every recorded stop/pause.
+The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
 terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;

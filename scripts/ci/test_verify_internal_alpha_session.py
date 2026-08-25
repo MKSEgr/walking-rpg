@@ -873,6 +873,9 @@ class SessionContractTests(unittest.TestCase):
                         companionReturn="DATA_GAP",
                     )
                 self.assert_valid(document)
+                document["evidence"]["redactionReviewedAtUtc"] = utc(640)
+                self.assert_invalid(document)
+                document["evidence"]["redactionReviewedAtUtc"] = utc(900)
                 document["session"]["stopPauseAtUtc"] = utc(590)
                 self.assert_invalid(document)
                 document["outcome"]["completedUnaided"] = False
