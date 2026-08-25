@@ -62,6 +62,9 @@ participant-level instrumentation coverage, or a reviewed
 `focused_comprehension_gap` requires a `PARTIAL` or `UNCLEAR` participant outcome.
 `core_value_not_supported` requires both a negative adventure/companion session signal
 and the corresponding reviewed qualitative gate to be false.
+Conversely, `EXPAND` requires at least one `YES` or `PARTIAL` participant outcome for
+each of walking-as-adventure and companion-return support; uniformly `NO` or `DATA_GAP`
+outcomes cannot be overridden by a true reviewed gate.
 
 The cross-check reruns all three underlying contracts, requires unique study codes and
 exact session filenames, reconciles started/completed/platform/stopped-or-paused counts
