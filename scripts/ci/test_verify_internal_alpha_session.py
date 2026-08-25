@@ -380,9 +380,27 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(permissionRequestShown=False, permissionDecision="DENIED")
         self.assert_invalid(document)
         document = recorded()
+        document["outcome"].update(
+            permissionRequestShown=False,
+            permissionDecision="NOT_APPLICABLE",
+        )
+        self.assert_invalid(document)
+        document = recorded()
         set_gap(document, 3, "DATA_GAP", "instrumentation_missing")
         document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=9)
         self.assert_invalid(document)
+
+    def test_unshown_permission_uses_explicit_non_applicable_stages(self) -> None:
+        document = recorded()
+        set_not_applicable(document, 3, "permission_not_requested")
+        set_not_applicable(document, 5, "permission_not_requested")
+        document["outcome"].update(
+            permissionRequestShown=False,
+            permissionDecision="NOT_APPLICABLE",
+            applicableMandatoryMilestones=8,
+            recordedMandatoryMilestones=8,
+        )
+        self.assert_valid(document)
 
     def test_permission_denial_has_valid_unaided_limited_path(self) -> None:
         document = recorded()
@@ -416,6 +434,17 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionHelpRequested=None,
         )
         self.assert_valid(document)
+
+    def test_granted_permission_without_activity_data_skips_energy(self) -> None:
+        document = recorded()
+        set_not_applicable(document, 5, "no_activity_data")
+        document["outcome"].update(
+            applicableMandatoryMilestones=9,
+            recordedMandatoryMilestones=9,
+        )
+        self.assert_valid(document)
+        document["milestones"][5]["gapReasonCode"] = "permission_denied"
+        self.assert_invalid(document)
 
     def test_selected_locale_must_be_kickoff_approved(self) -> None:
         document = recorded()

@@ -58,7 +58,14 @@ GAP_CODES = {
     "DATA_GAP": {"instrumentation_missing", "evidence_corrupt"},
     "NOT_REACHED": {"session_stopped", "participant_withdrew", "flow_blocked"},
 }
-NOT_APPLICABLE_CODES = {"first_energy": "permission_denied"}
+NOT_APPLICABLE_CODES = {
+    "permission_decision": {"permission_not_requested"},
+    "first_energy": {
+        "permission_denied",
+        "permission_not_requested",
+        "no_activity_data",
+    },
+}
 UNAIDED_DEADLINES = {
     "locale_selected": 120,
     "authenticated_shell": 120,
@@ -226,11 +233,11 @@ def _validate_milestones(
             for key in ("observedAtUtc", "elapsedSeconds", "sourceCategory", "helpRequested"):
                 if milestone[key] is not None:
                     _fail(f"{path}.{key}", "must be null when NOT_APPLICABLE")
-            expected_reason = NOT_APPLICABLE_CODES.get(expected_id)
-            if expected_reason is None or milestone["gapReasonCode"] != expected_reason:
+            expected_reasons = NOT_APPLICABLE_CODES.get(expected_id, set())
+            if milestone["gapReasonCode"] not in expected_reasons:
                 _fail(
                     f"{path}.gapReasonCode",
-                    "NOT_APPLICABLE is allowed only for first_energy with permission_denied",
+                    f"must be one of {sorted(expected_reasons)} when NOT_APPLICABLE",
                 )
         else:
             _fail(
@@ -262,6 +269,14 @@ def _validate_outcome(
             _fail("$.outcome.permissionRequestShown", "requires an observed permission milestone")
     elif permission != "NOT_APPLICABLE":
         _fail("$.outcome.permissionDecision", "unshown request requires NOT_APPLICABLE")
+    elif not (
+        milestones["permission_decision"]["status"] == "NOT_APPLICABLE"
+        and milestones["permission_decision"]["gapReasonCode"] == "permission_not_requested"
+    ):
+        _fail(
+            "$.outcome.permissionRequestShown",
+            "unshown request requires NOT_APPLICABLE/permission_not_requested milestone",
+        )
     if outcome["firstDayRewardStatus"] not in {"YES", "NO", "DATA_GAP"}:
         _fail("$.outcome.firstDayRewardStatus", "must be YES, NO or DATA_GAP")
 
@@ -289,8 +304,8 @@ def _validate_outcome(
             break
         reached.append(item)
     actual_applicable = sum(item["status"] != "NOT_APPLICABLE" for item in reached)
+    energy = milestones["first_energy"]
     if permission == "DENIED":
-        energy = milestones["first_energy"]
         if energy["status"] != "NOT_REACHED" and not (
             energy["status"] == "NOT_APPLICABLE" and energy["gapReasonCode"] == "permission_denied"
         ):
@@ -298,10 +313,19 @@ def _validate_outcome(
                 "$.milestones[5]",
                 "DENIED permission requires first_energy to be NOT_APPLICABLE or in a NOT_REACHED tail",
             )
-    elif milestones["first_energy"]["status"] == "NOT_APPLICABLE":
+    elif permission == "GRANTED" and energy["status"] == "NOT_APPLICABLE":
+        if energy["gapReasonCode"] != "no_activity_data":
+            _fail(
+                "$.milestones[5]",
+                "GRANTED permission permits NOT_APPLICABLE only when no activity data exists",
+            )
+    elif permission == "NOT_APPLICABLE" and energy["status"] != "NOT_REACHED" and not (
+        energy["status"] == "NOT_APPLICABLE"
+        and energy["gapReasonCode"] == "permission_not_requested"
+    ):
         _fail(
             "$.milestones[5]",
-            "first_energy may be NOT_APPLICABLE only when permission is DENIED",
+            "unshown permission request requires first_energy to be NOT_APPLICABLE or unreached",
         )
     if applicable != actual_applicable:
         _fail(
