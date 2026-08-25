@@ -205,5 +205,50 @@ After all 12 planned participants or an earlier stop, `@MKSEgr` signs exactly on
 The signed record includes exact candidate/protocol, invited/started/completed counts,
 per-platform counts, every numerator/denominator, incidents, exclusions, evidence
 location category, open defects and rationale. Expansion to closed beta is forbidden
-without an `EXPAND` record. Issue #162 owns the product decision; issue #161 owns the
-actual first-journey study.
+without an `EXPAND` record. Before signature, run the decision-evidence cross-check
+documented in [the decision template](evidence/internal-alpha-decision-template.md); its
+deterministic package digest binds the exact kickoff and ordered participant-record
+digests, and its safely derived counts must match the decision. The kickoff's planned
+cohort does not prove how many invitations were actually sent; invitations and
+exclusions, plus pre-session withdrawals, remain reviewed inputs, especially for an early
+stop. A decision cannot omit a withdrawal present in supplied session evidence. Passing
+that cross-check proves internal consistency, not the truth or approval of external
+evidence.
+For cohort reconciliation, started sessions plus pre-session withdrawals and exclusions
+cannot exceed actual invitations; a withdrawal already represented by a session is
+counted only once.
+Actual invitations cannot exceed the approved 12-person cohort, and the cross-check
+parses and hashes the same single-read evidence bytes.
+If the study stops before its first session, the cross-check accepts the kickoff-only
+package only with zero started/completed/platform/stop counts and six decision metric
+`DATA_GAP` values; it never permits `EXPAND`. Only a safety, operational,
+instrumentation, release-blocker or cohort rationale can be signed without participant
+evidence; threshold, comprehension and core-value rationales require session records.
+A threshold-miss decision requires an actual failed derived threshold, and owner
+confirmation must occur before the participant-evidence deletion deadline. That deadline
+must be no later than 90 days after the final confirmation, including an early STOP/FIX.
+An instrumentation-gap decision requires a derived metric data gap, failed
+participant-level instrumentation coverage, or a reviewed interpretability gate that is
+not true. A release-blocker rationale requires
+`findings.openReleaseBlockers > 0` in the reviewed decision. Missing next-action
+comprehension propagates to an unaided-metric data gap
+unless other recorded evidence independently proves non-completion; a pause or stop after
+the comprehension window is not such proof.
+Focused comprehension and unsupported-core-value rationales require matching session
+outcomes; core-value rejection also requires a false reviewed qualitative gate.
+An `EXPAND` record also requires at least one supporting `YES` or `PARTIAL` participant
+outcome for each qualitative dimension; uniformly negative or unavailable outcomes fail
+closed even when the reviewed aggregate gate is true.
+For permission acceptance, every participant shown the request enters the denominator.
+A stopped/blocked/withdrawn `NOT_REACHED` decision is a known non-grant; only permission
+`DATA_GAP` makes the aggregate metric unavailable.
+A safety-risk rationale requires a reviewed `STOP` finding. A cohort-invalid rationale
+requires a recorded recruitment, start, completion, platform-balance, withdrawal,
+exclusion, stop or pause defect; a complete valid cohort cannot use that rationale.
+An operationally-infeasible rationale requires a recorded stop/pause or reviewed
+finding, including a reviewed external incident for a pre-session STOP.
+Findings from supplied sessions are a
+validated lower bound, so a signed decision may retain additional reviewed pre-session
+or operational incidents, and decision recording must follow READY kickoff approval.
+Issue #162 owns the product decision;
+issue #161 owns the actual first-journey study.

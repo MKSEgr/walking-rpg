@@ -19,6 +19,98 @@ for a data gap, invalid cohort, threshold miss, qualitative miss, stop/fix findi
 open release blocker. This Markdown record adds reviewed narrative; it cannot override
 a failing JSON record or prove the referenced external evidence.
 
+First validate the exact READY kickoff and redacted participant records, and print the
+digest to place in `candidate.alphaEvidencePackageSha256`:
+
+```bash
+python3 scripts/ci/verify_internal_alpha_decision_evidence.py \
+  --print-package-sha256 \
+  --kickoff <approved-ready-kickoff.json> \
+  --session <P01-session.json> \
+  --session <P02-session.json> \
+  --session <P12-session.json>
+```
+
+After recording that digest, cross-check the quantitative decision fields against the
+same exact evidence package:
+
+```bash
+python3 scripts/ci/verify_internal_alpha_decision_evidence.py \
+  <approved-decision-record.json> \
+  --kickoff <approved-ready-kickoff.json> \
+  --session <P01-session.json> \
+  --session <P02-session.json> \
+  --session <P12-session.json>
+```
+
+For a reviewed `STOP`/`FIX_AND_RERUN` decision made before the first session, omit
+`--session` entirely. The decision must then record `started=0`, zero completed,
+platform and stopped-or-paused counts, and `DATA_GAP` for all six metrics; the package
+digest still binds the exact
+READY kickoff. An `EXPAND` decision cannot pass without all 12 participant records.
+Without session evidence, only `safety_risk`, `operationally_infeasible`,
+`instrumentation_gap`, `release_blocker` or `cohort_invalid` may justify the decision.
+Threshold, comprehension and core-value rationales require participant records.
+A `threshold_miss` rationale additionally requires at least one safely derived measured
+metric to fail its approved threshold. Owner confirmation must precede the shared
+participant-evidence deletion deadline, which must also be no later than 90 days after
+that final confirmation.
+An `instrumentation_gap` rationale requires a derived metric `DATA_GAP`, failed
+participant-level instrumentation coverage, or a reviewed
+`instrumentationInterpretable` gate that is not true.
+`release_blocker` requires at least one reviewed open release blocker in `findings`.
+`safety_risk` requires at least one reviewed `STOP` finding. `cohort_invalid` requires a
+recorded cohort defect: incomplete recruitment/start/completion, fewer than four users
+on a platform, a withdrawal, exclusion, stop or pause.
+`operationally_infeasible` requires at least one recorded stop/pause or reviewed finding;
+a pre-session operational STOP records its external incident as a reviewed finding.
+`focused_comprehension_gap` requires a `PARTIAL` or `UNCLEAR` participant outcome.
+`core_value_not_supported` requires both a negative adventure/companion session signal
+and the corresponding reviewed qualitative gate to be false.
+Conversely, `EXPAND` requires at least one `YES` or `PARTIAL` participant outcome for
+each of walking-as-adventure and companion-return support; uniformly `NO` or `DATA_GAP`
+outcomes cannot be overridden by a true reviewed gate.
+
+The cross-check reruns all three underlying contracts, requires unique study codes and
+exact session filenames, reconciles started/completed/platform/stopped-or-paused counts
+and recomputes every quantitative metric. Actual invitations and exclusions remain
+reviewed owner inputs because the kickoff records only the planned cohort. Withdrawals
+in supplied sessions are a mandatory lower bound, while additional pre-session
+withdrawals remain reviewed input bounded by actual invitations. This permits
+truthful early `STOP`/`FIX_AND_RERUN` decisions.
+Started sessions plus withdrawals not represented by those sessions and pre-session
+exclusions cannot exceed the actual invitation count; session withdrawals are not
+double-counted.
+Actual invitations may be below, but never above, the kickoff's approved planned cohort.
+The exact kickoff and session byte buffers are each read once, parsed, validated and
+hashed without a parse/hash time-of-check gap.
+The tool also counts each unique linked session finding once by severity and rejects
+conflicting severities for the same issue.
+Those session-derived counts are lower bounds: a decision may include additional reviewed
+pre-session or operational findings that have no participant record, but it may not omit
+a finding present in supplied session evidence. Decision recording cannot predate READY
+kickoff approval.
+Completion requires an observed explicit result ACK plus a recorded next-action
+comprehension outcome; facilitator help affects the unaided metric, not whether the
+participant completed the task.
+`alphaEvidencePackageSha256` is
+the SHA-256 of a domain-separated manifest containing the exact kickoff digest and each
+exact session-file digest sorted by study code. Therefore argument order is irrelevant,
+while any byte change requires a new package digest and review. A
+`PENDING`/`DATA_GAP` reward or unknown shown permission forces the corresponding
+decision metric to `DATA_GAP`. Missing next-action comprehension likewise forces the
+unaided metric to `DATA_GAP` unless an early stop before the comprehension task,
+unreached milestone, help, sync failure or missed protocol deadline independently proves
+non-completion. A pause or stop after the task window does not turn missing comprehension
+into a measured failure. Missing evidence cannot
+be counted as a failed participant merely to manufacture a measured rate. The tool does
+not derive current open-release-blocker status; it remains a reviewed owner input and
+can only make `EXPAND` stricter.
+When the permission request was shown but a stopped/blocked/withdrawn participant never
+reached a decision, `NOT_REACHED` is a known non-grant: include that participant in the
+permission denominator and add zero to the numerator. Only permission `DATA_GAP` makes
+the aggregate metric unknown.
+
 ## Contract
 
 - Protocol ID: `walking-rpg-internal-alpha-v1`

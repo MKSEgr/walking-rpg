@@ -48,6 +48,8 @@ for file in \
   "$ROOT_DIR/docs/evidence/internal-alpha-session-template.json" \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_decision.py" \
   "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_decision.py" \
+  "$ROOT_DIR/scripts/ci/verify_internal_alpha_decision_evidence.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_decision_evidence.py" \
   "$ROOT_DIR/docs/evidence/internal-alpha-decision-template.json"; do
   if [ ! -f "$file" ]; then
     echo "Missing: $file" >&2
@@ -134,6 +136,10 @@ if PYTHONDONTWRITEBYTECODE=1 python3 \
 fi
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_decision.py"
+
+printf '%s\n' "Checking decision metrics against internal-alpha session evidence..."
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_decision_evidence.py"
 
 printf '%s\n' "Checking immutable backend container base images..."
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_backend_base_pins.py"
