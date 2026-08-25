@@ -134,20 +134,27 @@ def _derived_metrics(
     sync_failures = sum(
         item["outcome"]["failedNonCancelledSyncAttempts"] for item in sessions
     )
-    applicable = sum(
-        item["outcome"]["applicableMandatoryMilestones"] for item in sessions
-    )
-    recorded = sum(
-        item["outcome"]["recordedMandatoryMilestones"] for item in sessions
-    )
+    instrumentation_participants = [
+        item
+        for item in sessions
+        if item["outcome"]["applicableMandatoryMilestones"]
+    ]
     sync = (
         _metric("MEASURED", sync_failures, sync_attempts)
         if sync_attempts
         else ("DATA_GAP", None, None)
     )
     instrumentation = (
-        _metric("MEASURED", recorded, applicable)
-        if applicable
+        _metric(
+            "MEASURED",
+            sum(
+                item["outcome"]["recordedMandatoryMilestones"]
+                == item["outcome"]["applicableMandatoryMilestones"]
+                for item in instrumentation_participants
+            ),
+            len(instrumentation_participants),
+        )
+        if instrumentation_participants
         else ("DATA_GAP", None, None)
     )
     return {
