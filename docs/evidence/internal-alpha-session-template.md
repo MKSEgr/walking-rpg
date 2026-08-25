@@ -21,9 +21,10 @@ kickoff contract and the ten ordered protocol milestones. It checks UTC/elapsed
 arithmetic, observed-source codes, consent/privacy invariants and metric bounds. The
 validator checks the exact kickoff file digest and requires its protocol, candidate,
 platform artifact, observation window and shared deletion deadline to match the session.
-The session must fall inside that observation window. `completedUnaided=true`
-additionally requires result ACK followed by demonstrated clear next-action
-comprehension during the 09:00–10:00 task window and no facilitator help. First-day
+The session must fall inside that observation window. Recorded comprehension requires a
+sanitized next-action summary code. `completedUnaided=true` additionally requires result
+ACK followed by demonstrated clear next-action comprehension during the 09:00–10:00
+task window and no facilitator help. First-day
 reward remains a separate outcome metric. Result ACK must complete by 09:00, and
 `registration_shown` anchors the timer at session start/zero seconds.
 Locale/authentication must complete by 02:00,
@@ -86,7 +87,8 @@ and every finding must link a positive GitHub issue number regardless of severit
 - Candidate sessions / crash-free sessions:
 - Authoritative sync attempts / failed non-cancelled sync attempts:
 - Applicable mandatory milestones before first `NOT_REACHED` / recorded milestones:
-- Next-action comprehension, UTC/elapsed time and help requested: `CLEAR` / `PARTIAL` / `UNCLEAR` / `DATA_GAP`
+- Next-action sanitized summary code, comprehension, UTC/elapsed time and help requested:
+  `CLEAR` / `PARTIAL` / `UNCLEAR` / `DATA_GAP`
 - Walking felt part of an adventure: `YES` / `PARTIAL` / `NO` / `DATA_GAP`
 - Companion created a reason to return: `YES` / `PARTIAL` / `NO` / `DATA_GAP`
 

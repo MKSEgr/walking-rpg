@@ -341,20 +341,33 @@ def _validate_outcome(
     comprehension = outcome["nextActionComprehension"]
     if comprehension not in {"CLEAR", "PARTIAL", "UNCLEAR", "DATA_GAP"}:
         _fail("$.outcome.nextActionComprehension", "has an unsupported code")
+    summary_code = outcome["nextActionSummaryCode"]
     comprehension_at = outcome["nextActionComprehensionAtUtc"]
     comprehension_elapsed = outcome["nextActionComprehensionElapsedSeconds"]
     comprehension_help = outcome["nextActionComprehensionHelpRequested"]
     if comprehension == "DATA_GAP":
         if (
-            comprehension_at is not None
+            summary_code is not None
+            or comprehension_at is not None
             or comprehension_elapsed is not None
             or comprehension_help is not None
         ):
             _fail(
                 "$.outcome.nextActionComprehension",
-                "DATA_GAP requires null comprehension timing and help fields",
+                "DATA_GAP requires null summary, timing and help fields",
             )
     else:
+        summary_code = _matches(
+            summary_code,
+            SAFE_CODE,
+            "$.outcome.nextActionSummaryCode",
+            "a sanitized next-action summary code",
+        )
+        if SENSITIVE.search(summary_code) or IDENTIFIER_LIKE.search(summary_code):
+            _fail(
+                "$.outcome.nextActionSummaryCode",
+                "must not contain sensitive or identifier-like data",
+            )
         if type(comprehension_help) is not bool:
             _fail(
                 "$.outcome.nextActionComprehensionHelpRequested",
@@ -576,7 +589,8 @@ def validate_session(
         "firstDayRewardStatus", "candidateSessions", "crashFreeSessions",
         "authoritativeSyncAttempts", "failedNonCancelledSyncAttempts",
         "applicableMandatoryMilestones", "recordedMandatoryMilestones",
-        "nextActionComprehension", "nextActionComprehensionAtUtc",
+        "nextActionComprehension", "nextActionSummaryCode",
+        "nextActionComprehensionAtUtc",
         "nextActionComprehensionElapsedSeconds",
         "nextActionComprehensionHelpRequested", "walkingAsAdventure", "companionReturn",
     ], "$.outcome")

@@ -135,6 +135,7 @@
     "applicableMandatoryMilestones": null,
     "recordedMandatoryMilestones": null,
     "nextActionComprehension": null,
+    "nextActionSummaryCode": null,
     "nextActionComprehensionAtUtc": null,
     "nextActionComprehensionElapsedSeconds": null,
     "nextActionComprehensionHelpRequested": null,

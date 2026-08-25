@@ -143,6 +143,7 @@ def recorded() -> dict:
         "applicableMandatoryMilestones": 10,
         "recordedMandatoryMilestones": 10,
         "nextActionComprehension": "CLEAR",
+        "nextActionSummaryCode": "continue_to_next_node",
         "nextActionComprehensionAtUtc": utc(600),
         "nextActionComprehensionElapsedSeconds": 600,
         "nextActionComprehensionHelpRequested": False,
@@ -256,6 +257,7 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(
             completedUnaided=False,
             nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
@@ -263,6 +265,13 @@ class SessionContractTests(unittest.TestCase):
         self.assert_valid(document)
         document["outcome"]["nextActionComprehensionAtUtc"] = utc(590)
         self.assert_invalid(document)
+
+    def test_comprehension_summary_code_is_required_and_sanitized(self) -> None:
+        for code in (None, "Continue to next node", "device_id_12345678"):
+            with self.subTest(code=code):
+                document = recorded()
+                document["outcome"]["nextActionSummaryCode"] = code
+                self.assert_invalid(document)
 
     def test_help_and_comprehension_are_unaided_gates(self) -> None:
         for mutation in ("milestone_help", "comprehension", "comprehension_help"):
@@ -341,6 +350,7 @@ class SessionContractTests(unittest.TestCase):
             applicableMandatoryMilestones=5,
             recordedMandatoryMilestones=5,
             nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
@@ -359,6 +369,7 @@ class SessionContractTests(unittest.TestCase):
             applicableMandatoryMilestones=5,
             recordedMandatoryMilestones=5,
             nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
@@ -429,6 +440,7 @@ class SessionContractTests(unittest.TestCase):
             applicableMandatoryMilestones=4,
             recordedMandatoryMilestones=4,
             nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
