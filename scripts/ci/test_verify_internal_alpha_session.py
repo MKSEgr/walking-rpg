@@ -858,6 +858,11 @@ class SessionContractTests(unittest.TestCase):
                 self.assert_valid(document)
                 document["session"]["stopPauseAtUtc"] = utc(590)
                 self.assert_invalid(document)
+                document["outcome"]["completedUnaided"] = False
+                if status == "PAUSED":
+                    self.assert_valid(document)
+                else:
+                    self.assert_invalid(document)
 
     def test_withdrawal_rejects_unanchored_data_gap_tail(self) -> None:
         document = recorded()

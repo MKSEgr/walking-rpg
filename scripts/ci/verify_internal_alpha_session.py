@@ -549,6 +549,11 @@ def _validate_outcome(
                 "$.outcome.nextActionComprehensionAtUtc",
                 "must be at or after the result ACK",
             )
+        if stop_status == "STOPPED" and stop_at is not None and demonstrated > stop_at:
+            _fail(
+                "$.outcome.nextActionComprehensionAtUtc",
+                "must not record comprehension after a terminal stop",
+            )
     for key in ("walkingAsAdventure", "companionReturn"):
         if outcome[key] not in {"YES", "PARTIAL", "NO", "DATA_GAP"}:
             _fail(f"$.outcome.{key}", "has an unsupported code")
@@ -926,7 +931,7 @@ def validate_session(
             "$.session.withdrawnAtUtc",
             "a participant-withdrew journey tail requires withdrawal during the session",
         )
-    if stop_at is not None and stop_at <= ended:
+    if stop_status == "STOPPED" and stop_at is not None and stop_at <= ended:
         last_observed_index = max(
             (
                 index
