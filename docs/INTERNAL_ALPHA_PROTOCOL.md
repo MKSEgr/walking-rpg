@@ -244,6 +244,8 @@ A stopped/blocked/withdrawn `NOT_REACHED` decision is a known non-grant; only pe
 A safety-risk rationale requires a reviewed `STOP` finding. A cohort-invalid rationale
 requires a recorded recruitment, start, completion, platform-balance, withdrawal,
 exclusion, stop or pause defect; a complete valid cohort cannot use that rationale.
+An operationally-infeasible rationale requires a recorded stop/pause or reviewed
+finding, including a reviewed external incident for a pre-session STOP.
 Findings from supplied sessions are a
 validated lower bound, so a signed decision may retain additional reviewed pre-session
 or operational incidents, and decision recording must follow READY kickoff approval.
