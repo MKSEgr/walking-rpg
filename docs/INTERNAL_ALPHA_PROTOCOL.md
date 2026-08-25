@@ -241,6 +241,9 @@ closed even when the reviewed aggregate gate is true.
 For permission acceptance, every participant shown the request enters the denominator.
 A stopped/blocked/withdrawn `NOT_REACHED` decision is a known non-grant; only permission
 `DATA_GAP` makes the aggregate metric unavailable.
+A safety-risk rationale requires a reviewed `STOP` finding. A cohort-invalid rationale
+requires a recorded recruitment, start, completion, platform-balance, withdrawal,
+exclusion, stop or pause defect; a complete valid cohort cannot use that rationale.
 Findings from supplied sessions are a
 validated lower bound, so a signed decision may retain additional reviewed pre-session
 or operational incidents, and decision recording must follow READY kickoff approval.
