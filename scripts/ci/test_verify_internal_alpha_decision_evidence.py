@@ -134,7 +134,7 @@ class DecisionEvidenceTests(unittest.TestCase):
             }
         self.decision["decision"].update(
             selected="STOP",
-            rationaleCode="safety_risk",
+            rationaleCode="operationally_infeasible",
             nextScope="stop_and_archive",
         )
         self.refresh_package()
@@ -266,7 +266,7 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.decision["metrics"]["firstDayReward"]["numerator"] = 11
         self.decision["decision"].update(
             selected="STOP",
-            rationaleCode="safety_risk",
+            rationaleCode="operationally_infeasible",
             nextScope="stop_and_archive",
         )
         self.refresh_package()
@@ -295,7 +295,7 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.decision["findings"]["stopCount"] = 1
         self.decision["decision"].update(
             selected="STOP",
-            rationaleCode="safety_risk",
+            rationaleCode="operationally_infeasible",
             nextScope="stop_and_archive",
         )
         self.write_decision()
@@ -633,7 +633,7 @@ class DecisionEvidenceTests(unittest.TestCase):
             )
         self.decision["decision"].update(
             selected="STOP",
-            rationaleCode="safety_risk",
+            rationaleCode="operationally_infeasible",
             nextScope="stop_and_archive",
         )
         self.refresh_package()
@@ -672,6 +672,34 @@ class DecisionEvidenceTests(unittest.TestCase):
     def test_kickoff_only_stop_preserves_non_session_findings(self) -> None:
         self.make_kickoff_only_stop()
         self.decision["findings"]["stopCount"] = 1
+        self.write_decision()
+        self.assert_valid()
+
+    def test_safety_risk_requires_a_reviewed_stop_finding(self) -> None:
+        self.make_kickoff_only_stop()
+        self.decision["decision"]["rationaleCode"] = "safety_risk"
+        self.write_decision()
+        self.assert_invalid()
+
+        self.decision["findings"]["stopCount"] = 1
+        self.write_decision()
+        self.assert_valid()
+
+    def test_cohort_invalid_requires_a_recorded_cohort_defect(self) -> None:
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="cohort_invalid",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.write_decision()
+        self.assert_invalid()
+
+        self.make_kickoff_only_stop()
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="cohort_invalid",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
         self.write_decision()
         self.assert_valid()
 
