@@ -408,6 +408,19 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_invalid()
 
+    def test_release_blocker_rationale_requires_an_open_blocker(self) -> None:
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="release_blocker",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.write_decision()
+        self.assert_invalid()
+
+        self.decision["findings"]["openReleaseBlockers"] = 1
+        self.write_decision()
+        self.assert_valid()
+
     def test_instrumentation_coverage_is_counted_per_participant(self) -> None:
         path = self.session_paths[0]
         document = json.loads(path.read_text(encoding="utf-8"))
