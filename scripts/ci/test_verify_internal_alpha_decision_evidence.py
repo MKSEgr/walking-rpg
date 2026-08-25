@@ -648,6 +648,14 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_valid()
 
+        self.decision["cohort"]["excluded"] = 1
+        self.write_decision()
+        self.assert_invalid()
+
+        self.decision["cohort"]["withdrawn"] = 1
+        self.write_decision()
+        self.assert_valid()
+
         self.decision["cohort"]["invited"] = 13
         self.write_decision()
         self.assert_invalid()
