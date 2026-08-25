@@ -55,13 +55,15 @@ non-applicable stages and the `NOT_REACHED` tail; a participant withdrawal requi
 `STOPPED` and forces both post-flow qualitative answers to `DATA_GAP`. A shown
 permission request whose decision evidence is missing uses `permissionDecision=DATA_GAP`
 with a permission milestone instrumentation gap; because the request was shown, ENERGY
-cannot use `permission_not_requested`. Sync metrics separately record total and
+cannot use `permission_not_requested`. If withdrawal occurs after the prompt but before
+a decision, the outcome and legitimate withdrawn tail use `NOT_REACHED`. Sync metrics separately record total and
 successful authoritative attempts plus failed non-cancelled attempts, so cancelled
 attempts cannot satisfy the journey. A sync receipt `DATA_GAP` preserves unaided
 completion only with at least one successful authoritative attempt. A session-level
 withdrawal status and UTC time cover withdrawals even after the final milestone; no
 milestone or comprehension may be recorded afterward, and qualitative answers are
-discarded. The kickoff-wide evidence deadline must be later than every session's derived
+discarded; an authoritative reward receipt must also be no later than withdrawal. The
+kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
 terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;
 `PENDING` retains the pre-cutoff behavior. A passing JSON record
@@ -120,7 +122,8 @@ and every finding must link a positive GitHub issue number regardless of severit
 
 - Completed first ten minutes unaided: `PASS` / `FAIL`
 - Permission request shown: `YES` / `NO`
-- Permission decision: `GRANTED` / `DENIED` / `NOT_APPLICABLE` / `DATA_GAP`
+- Permission decision: `GRANTED` / `DENIED` / `NOT_APPLICABLE` / `DATA_GAP` /
+  `NOT_REACHED`
 - First-day reward receipt UTC, UTC offset minutes and derived cutoff UTC:
 - First-day reward by cutoff: `YES` / `NO` / `DATA_GAP` / `PENDING`
 - Candidate sessions / crash-free sessions:

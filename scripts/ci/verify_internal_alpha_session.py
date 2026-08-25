@@ -273,6 +273,7 @@ def _validate_outcome(
     started: datetime,
     ended: datetime,
     recorded_at: datetime,
+    withdrawal_at: datetime | None,
 ) -> None:
     boolean_fields = ("completedUnaided", "permissionRequestShown")
     for key in boolean_fields:
@@ -293,10 +294,20 @@ def _validate_outcome(
                     "$.outcome.permissionDecision",
                     "DATA_GAP requires a permission milestone instrumentation gap",
                 )
+        elif permission == "NOT_REACHED":
+            if not (
+                permission_status == "NOT_REACHED"
+                and milestones["permission_decision"]["gapReasonCode"] == "participant_withdrew"
+                and withdrawal_at is not None
+            ):
+                _fail(
+                    "$.outcome.permissionDecision",
+                    "NOT_REACHED requires a participant-withdrawal tail",
+                )
         else:
             _fail(
                 "$.outcome.permissionDecision",
-                "shown request requires GRANTED, DENIED or DATA_GAP",
+                "shown request requires GRANTED, DENIED, DATA_GAP or withdrawal NOT_REACHED",
             )
     elif permission != "NOT_APPLICABLE":
         _fail("$.outcome.permissionDecision", "unshown request requires NOT_APPLICABLE")
@@ -353,6 +364,11 @@ def _validate_outcome(
             _fail(
                 "$.outcome.firstDayRewardReceiptAtUtc",
                 "must be between session start and both the cutoff and record time",
+            )
+        if withdrawal_at is not None and reward_receipt > withdrawal_at:
+            _fail(
+                "$.outcome.firstDayRewardReceiptAtUtc",
+                "must not be collected after participant withdrawal",
             )
     elif reward_receipt_raw is not None:
         _fail(
@@ -868,7 +884,15 @@ def validate_session(
                 item["observedAtUtc"], f"$.milestones[{index}].observedAtUtc"
             ) > withdrawal_at:
                 _fail(f"$.milestones[{index}]", "must not be observed after withdrawal")
-    _validate_outcome(outcome, milestone_map, stop_status, started, ended, recorded_at)
+    _validate_outcome(
+        outcome,
+        milestone_map,
+        stop_status,
+        started,
+        ended,
+        recorded_at,
+        withdrawal_at,
+    )
     if withdrawal_status == "WITHDREW":
         comprehension_at = outcome["nextActionComprehensionAtUtc"]
         if comprehension_at is not None and _utc(
