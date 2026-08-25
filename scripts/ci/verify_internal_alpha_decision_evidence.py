@@ -150,7 +150,7 @@ def _derived_metrics(
         item for item in sessions if item["outcome"]["permissionRequestShown"]
     ]
     permission_unknown = any(
-        item["outcome"]["permissionDecision"] in {"DATA_GAP", "NOT_REACHED"}
+        item["outcome"]["permissionDecision"] == "DATA_GAP"
         for item in permission_shown
     )
     if not permission_shown or permission_unknown:
