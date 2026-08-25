@@ -208,6 +208,8 @@ location category, open defects and rationale. Expansion to closed beta is forbi
 without an `EXPAND` record. Before signature, run the decision-evidence cross-check
 documented in [the decision template](evidence/internal-alpha-decision-template.md); its
 deterministic package digest binds the exact kickoff and ordered participant-record
-digests, and its derived counts must match the decision. Passing that cross-check proves
-internal consistency, not the truth or approval of external evidence. Issue #162 owns
-the product decision; issue #161 owns the actual first-journey study.
+digests, and its safely derived counts must match the decision. The kickoff's planned
+cohort does not prove how many invitations were actually sent; invitations and
+exclusions remain reviewed inputs, especially for an early stop. Passing that
+cross-check proves internal consistency, not the truth or approval of external evidence.
+Issue #162 owns the product decision; issue #161 owns the actual first-journey study.
