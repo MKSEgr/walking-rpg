@@ -291,13 +291,12 @@ def _validate_outcome(
     actual_applicable = sum(item["status"] != "NOT_APPLICABLE" for item in reached)
     if permission == "DENIED":
         energy = milestones["first_energy"]
-        if not (
-            energy["status"] == "NOT_APPLICABLE"
-            and energy["gapReasonCode"] == "permission_denied"
+        if energy["status"] != "NOT_REACHED" and not (
+            energy["status"] == "NOT_APPLICABLE" and energy["gapReasonCode"] == "permission_denied"
         ):
             _fail(
                 "$.milestones[5]",
-                "DENIED permission requires first_energy to be NOT_APPLICABLE/permission_denied",
+                "DENIED permission requires first_energy to be NOT_APPLICABLE or in a NOT_REACHED tail",
             )
     elif milestones["first_energy"]["status"] == "NOT_APPLICABLE":
         _fail(
@@ -404,8 +403,6 @@ def _validate_outcome(
                 "$.outcome.completedUnaided",
                 "requires next-action comprehension within 600 seconds",
             )
-        if outcome["firstDayRewardStatus"] != "YES":
-            _fail("$.outcome.completedUnaided", "requires a confirmed first-day reward")
 
 
 def _validate_findings(findings: Any) -> None:

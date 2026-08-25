@@ -262,17 +262,22 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"]["nextActionComprehensionAtUtc"] = utc(590)
         self.assert_invalid(document)
 
-    def test_help_comprehension_and_reward_are_unaided_gates(self) -> None:
-        for mutation in ("help", "comprehension", "reward"):
+    def test_help_and_comprehension_are_unaided_gates(self) -> None:
+        for mutation in ("help", "comprehension"):
             with self.subTest(mutation=mutation):
                 document = recorded()
                 if mutation == "help":
                     document["milestones"][4]["helpRequested"] = True
-                elif mutation == "comprehension":
-                    document["outcome"]["nextActionComprehension"] = "PARTIAL"
                 else:
-                    document["outcome"]["firstDayRewardStatus"] = "NO"
+                    document["outcome"]["nextActionComprehension"] = "PARTIAL"
                 self.assert_invalid(document)
+
+    def test_first_day_reward_is_independent_of_unaided_completion(self) -> None:
+        for reward_status in ("NO", "DATA_GAP"):
+            with self.subTest(reward_status=reward_status):
+                document = recorded()
+                document["outcome"]["firstDayRewardStatus"] = reward_status
+                self.assert_valid(document)
 
     def test_elapsed_seconds_must_match_ordered_utc(self) -> None:
         document = recorded()
@@ -387,6 +392,23 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         document["outcome"]["permissionDecision"] = "DENIED"
         self.assert_invalid(document)
+
+    def test_permission_denial_can_end_before_energy(self) -> None:
+        document = recorded()
+        for index in range(4, 10):
+            set_gap(document, index, "NOT_REACHED", "participant_withdrew")
+        document["session"]["stopPauseStatus"] = "STOPPED"
+        document["outcome"].update(
+            completedUnaided=False,
+            permissionDecision="DENIED",
+            firstDayRewardStatus="NO",
+            applicableMandatoryMilestones=4,
+            recordedMandatoryMilestones=4,
+            nextActionComprehension="DATA_GAP",
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+        )
+        self.assert_valid(document)
 
     def test_selected_locale_must_be_kickoff_approved(self) -> None:
         document = recorded()
