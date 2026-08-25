@@ -171,6 +171,23 @@ class DecisionEvidenceTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_cli_prints_package_digest_before_decision_exists(self) -> None:
+        command = [
+            sys.executable,
+            str(VALIDATOR),
+            "--print-package-sha256",
+            "--kickoff",
+            str(self.kickoff_path),
+        ]
+        for path in self.session_paths:
+            command.extend(("--session", str(path)))
+        result = subprocess.run(command, check=False, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(
+            self.decision["candidate"]["alphaEvidencePackageSha256"],
+            result.stdout,
+        )
+
     def test_any_session_byte_change_invalidates_the_package(self) -> None:
         path = self.session_paths[0]
         document = json.loads(path.read_text(encoding="utf-8"))
