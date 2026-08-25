@@ -488,20 +488,21 @@ def _validate_outcome(
 
     if reward_status == "YES":
         reward_event = milestones["first_event_resolved"]
-        if reward_event["status"] != "OBSERVED":
+        if reward_event["status"] not in {"OBSERVED", "DATA_GAP"}:
             _fail(
                 "$.outcome.firstDayRewardStatus",
-                "YES requires an observed authoritative event resolution",
+                "YES requires event resolution to be observed or have an instrumentation gap",
             )
-        reward_event_at = _utc(
-            reward_event["observedAtUtc"],
-            "$.milestones[8].observedAtUtc",
-        )
-        if reward_receipt < reward_event_at:
-            _fail(
-                "$.outcome.firstDayRewardReceiptAtUtc",
-                "must be at or after the authoritative event resolution",
+        if reward_event["status"] == "OBSERVED":
+            reward_event_at = _utc(
+                reward_event["observedAtUtc"],
+                "$.milestones[8].observedAtUtc",
             )
+            if reward_receipt < reward_event_at:
+                _fail(
+                    "$.outcome.firstDayRewardReceiptAtUtc",
+                    "must be at or after the authoritative event resolution",
+                )
     if outcome["completedUnaided"]:
         if stop_status != "NOT_INVOKED":
             _fail("$.outcome.completedUnaided", "cannot be true for a paused/stopped session")

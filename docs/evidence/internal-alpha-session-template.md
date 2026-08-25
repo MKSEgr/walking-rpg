@@ -24,15 +24,18 @@ platform artifact, observation window and shared deletion deadline to match the 
 The session must fall inside that observation window. Recorded comprehension requires a
 sanitized next-action summary code. Both requested help and unsolicited facilitator help
 are recorded for every milestone and the comprehension task. `completedUnaided` must
-equal the evidence-derived result: every applicable stage observed on time, clear
-comprehension during the 09:00–10:00 task, no stop and no help. First-day
+equal the evidence-derived result: no `NOT_REACHED` journey tail, every observed stage
+on time, result ACK by 09:00, clear comprehension during the 09:00–10:00 task, no stop
+and no help. Intermediate `DATA_GAP` stages lower instrumentation coverage but do not
+lower unaided completion when the remaining evidence satisfies that predicate. First-day
 reward remains a separate outcome metric. Its cutoff is derived from the sanitized local
 UTC offset, restricted to the RU cohort's UTC+02 through UTC+12 whole-hour zones: before
 cutoff it stays `PENDING` unless already `YES`; `NO` and `DATA_GAP` are accepted only at
 or after cutoff. Event resolution and reward delivery remain separate: `YES` requires a
 dedicated authoritative reward-receipt UTC timestamp at or before cutoff, while every
 non-`YES` status requires that timestamp to be null. The receipt must be at or after the
-authoritative first-event resolution.
+authoritative first-event resolution when that milestone is observed; a milestone
+`DATA_GAP` does not erase an independently confirmed authoritative reward receipt.
 Result ACK must complete by 09:00, and
 `registration_shown` anchors the timer at session start/zero seconds.
 Locale/authentication must complete by 02:00,

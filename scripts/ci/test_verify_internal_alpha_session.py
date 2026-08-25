@@ -548,6 +548,10 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(479)
         self.assert_invalid(document)
+        document = recorded()
+        set_gap(document, 8, "DATA_GAP", "instrumentation_missing")
+        document["outcome"]["recordedMandatoryMilestones"] = 9
+        self.assert_valid(document)
 
     def test_reward_yes_must_arrive_by_local_day_cutoff(self) -> None:
         document = recorded()
