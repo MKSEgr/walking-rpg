@@ -186,9 +186,9 @@ class DecisionEvidenceTests(unittest.TestCase):
 
         self.decision["findings"]["stopCount"] = 1
         self.decision["decision"].update(
-            selected="FIX_AND_RERUN",
-            rationaleCode="release_blocker",
-            nextScope="focused_fix_and_alpha_rerun",
+            selected="STOP",
+            rationaleCode="safety_risk",
+            nextScope="stop_and_archive",
         )
         self.write_decision()
         self.assert_valid()
