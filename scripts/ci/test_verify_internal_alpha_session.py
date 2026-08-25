@@ -530,6 +530,36 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=8)
         self.assert_invalid(document)
 
+    def test_reward_yes_must_arrive_by_local_day_cutoff(self) -> None:
+        document = recorded()
+        document["session"]["endedAtUtc"] = utc(8000)
+        document["evidence"]["redactionReviewedAtUtc"] = utc(9000)
+        document["outcome"].update(
+            completedUnaided=False,
+            firstDayTimeZoneOffsetMinutes=840,
+            firstDayRewardCutoffAtUtc=utc(7200),
+            nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
+        )
+        document["milestones"][8].update(
+            observedAtUtc=utc(7200),
+            elapsedSeconds=7200,
+        )
+        document["milestones"][9].update(
+            observedAtUtc=utc(7300),
+            elapsedSeconds=7300,
+        )
+        self.assert_valid(document)
+        document["milestones"][8].update(
+            observedAtUtc=utc(7201),
+            elapsedSeconds=7201,
+        )
+        self.assert_invalid(document)
+
     def test_metric_counts_are_bounded_and_match_milestones(self) -> None:
         for key, value in (
             ("crashFreeSessions", 3),
