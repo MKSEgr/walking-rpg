@@ -48,6 +48,9 @@ For a reviewed `STOP`/`FIX_AND_RERUN` decision made before the first session, om
 platform and stopped-or-paused counts, and `DATA_GAP` for all six metrics; the package
 digest still binds the exact
 READY kickoff. An `EXPAND` decision cannot pass without all 12 participant records.
+Without session evidence, only `safety_risk`, `operationally_infeasible`,
+`instrumentation_gap`, `release_blocker` or `cohort_invalid` may justify the decision.
+Threshold, comprehension and core-value rationales require participant records.
 
 The cross-check reruns all three underlying contracts, requires unique study codes and
 exact session filenames, reconciles started/completed/platform/stopped-or-paused counts
