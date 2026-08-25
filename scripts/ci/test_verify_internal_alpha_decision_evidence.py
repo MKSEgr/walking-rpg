@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import test_verify_internal_alpha_decision as decision_fixture
 import test_verify_internal_alpha_session as session_fixture
@@ -193,6 +194,22 @@ class DecisionEvidenceTests(unittest.TestCase):
         document = json.loads(path.read_text(encoding="utf-8"))
         path.write_text(json.dumps(document, separators=(",", ":")), encoding="utf-8")
         self.assert_invalid()
+
+    def test_validator_parses_the_same_session_bytes_it_hashes(self) -> None:
+        target = self.session_paths[0]
+        document = json.loads(target.read_text(encoding="utf-8"))
+        document["candidate"]["sourceSha"] = "f" * 40
+        swapped = _encoded(document)
+        original_read_bytes = Path.read_bytes
+
+        def read_bytes(path: Path) -> bytes:
+            return swapped if path == target else original_read_bytes(path)
+
+        with mock.patch.object(Path, "read_bytes", new=read_bytes):
+            with self.assertRaises(validator.BundleValidationError):
+                validator._validated_evidence(
+                    self.kickoff_path, self.session_paths
+                )
 
     def test_duplicate_or_missing_study_code_is_rejected(self) -> None:
         duplicate = self.session_paths[:-1] + [self.session_paths[0]]
@@ -450,6 +467,10 @@ class DecisionEvidenceTests(unittest.TestCase):
         )
         self.refresh_package()
         self.assert_valid()
+
+        self.decision["cohort"]["invited"] = 13
+        self.write_decision()
+        self.assert_invalid()
 
     def test_stop_before_first_session_accepts_an_empty_bundle(self) -> None:
         self.make_kickoff_only_stop()
