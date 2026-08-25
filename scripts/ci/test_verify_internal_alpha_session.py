@@ -139,8 +139,8 @@ def recorded() -> dict:
         "permissionRequestShown": True,
         "permissionDecision": "GRANTED",
         "firstDayRewardStatus": "YES",
-        "firstDayTimeZoneOffsetMinutes": 0,
-        "firstDayRewardCutoffAtUtc": utc(57600),
+        "firstDayTimeZoneOffsetMinutes": 180,
+        "firstDayRewardCutoffAtUtc": utc(46800),
         "candidateSessions": 2,
         "crashFreeSessions": 2,
         "authoritativeSyncAttempts": 3,
@@ -328,8 +328,8 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"]["firstDayTimeZoneOffsetMinutes"] = 60
         self.assert_invalid(document)
         document["outcome"].update(
-            firstDayTimeZoneOffsetMinutes=60,
-            firstDayRewardCutoffAtUtc=utc(54000),
+            firstDayTimeZoneOffsetMinutes=240,
+            firstDayRewardCutoffAtUtc=utc(43200),
         )
         self.assert_valid(document)
 
@@ -532,12 +532,17 @@ class SessionContractTests(unittest.TestCase):
 
     def test_reward_yes_must_arrive_by_local_day_cutoff(self) -> None:
         document = recorded()
-        document["session"]["endedAtUtc"] = utc(8000)
-        document["evidence"]["redactionReviewedAtUtc"] = utc(9000)
+        document["session"].update(
+            startedAtUtc=utc(7200),
+            endedAtUtc=utc(15200),
+        )
+        for milestone in document["milestones"]:
+            milestone["observedAtUtc"] = utc(7200 + milestone["elapsedSeconds"])
+        document["evidence"]["redactionReviewedAtUtc"] = utc(17000)
         document["outcome"].update(
             completedUnaided=False,
-            firstDayTimeZoneOffsetMinutes=840,
-            firstDayRewardCutoffAtUtc=utc(7200),
+            firstDayTimeZoneOffsetMinutes=720,
+            firstDayRewardCutoffAtUtc=utc(14400),
             nextActionComprehension="DATA_GAP",
             nextActionSummaryCode=None,
             nextActionComprehensionAtUtc=None,
@@ -546,16 +551,16 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionHelpProvided=None,
         )
         document["milestones"][8].update(
-            observedAtUtc=utc(7200),
+            observedAtUtc=utc(14400),
             elapsedSeconds=7200,
         )
         document["milestones"][9].update(
-            observedAtUtc=utc(7300),
+            observedAtUtc=utc(14500),
             elapsedSeconds=7300,
         )
         self.assert_valid(document)
         document["milestones"][8].update(
-            observedAtUtc=utc(7201),
+            observedAtUtc=utc(14401),
             elapsedSeconds=7201,
         )
         self.assert_invalid(document)

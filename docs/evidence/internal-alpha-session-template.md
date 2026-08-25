@@ -27,9 +27,10 @@ are recorded for every milestone and the comprehension task. `completedUnaided` 
 equal the evidence-derived result: every applicable stage observed on time, clear
 comprehension during the 09:00–10:00 task, no stop and no help. First-day
 reward remains a separate outcome metric. Its cutoff is derived from the sanitized local
-UTC offset: before cutoff it stays `PENDING` unless already `YES`; `NO` and `DATA_GAP`
-are accepted only at or after cutoff, and `YES` requires the authoritative reward event
-at or before cutoff. Result ACK must complete by 09:00, and
+UTC offset, restricted to the RU cohort's UTC+02 through UTC+12 whole-hour zones: before
+cutoff it stays `PENDING` unless already `YES`; `NO` and `DATA_GAP` are accepted only at
+or after cutoff, and `YES` requires the authoritative reward event at or before cutoff.
+Result ACK must complete by 09:00, and
 `registration_shown` anchors the timer at session start/zero seconds.
 Locale/authentication must complete by 02:00,
 permission/sync/applicable ENERGY by 04:00, companion/node by 06:00, and event/result

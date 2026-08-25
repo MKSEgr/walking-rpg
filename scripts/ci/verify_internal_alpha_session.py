@@ -82,6 +82,7 @@ STORAGE_CATEGORIES = {
     "encrypted_project_storage",
     "approved_research_workspace",
 }
+RU_TIME_ZONE_OFFSETS = set(range(120, 721, 60))
 
 
 class SessionValidationError(ValueError):
@@ -297,10 +298,10 @@ def _validate_outcome(
     if reward_status not in {"YES", "NO", "DATA_GAP", "PENDING"}:
         _fail("$.outcome.firstDayRewardStatus", "must be YES, NO, DATA_GAP or PENDING")
     offset = outcome["firstDayTimeZoneOffsetMinutes"]
-    if type(offset) is not int or not -720 <= offset <= 840 or offset % 15:
+    if type(offset) is not int or offset not in RU_TIME_ZONE_OFFSETS:
         _fail(
             "$.outcome.firstDayTimeZoneOffsetMinutes",
-            "must be a 15-minute UTC offset from -720 through 840",
+            f"must be one of the RU cohort offsets {sorted(RU_TIME_ZONE_OFFSETS)}",
         )
     participant_zone = timezone(timedelta(minutes=offset))
     local_started = started.astimezone(participant_zone)
