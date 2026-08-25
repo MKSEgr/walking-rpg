@@ -440,6 +440,12 @@ def validate_bundle(
             "$.cohort.withdrawn",
             f"must include at least {session_withdrawals} session withdrawals",
         )
+    pre_session_withdrawals = cohort["withdrawn"] - session_withdrawals
+    if cohort["started"] + pre_session_withdrawals > cohort["invited"]:
+        _fail(
+            "$.cohort.withdrawn",
+            "pre-session withdrawals plus started sessions must not exceed invitations",
+        )
 
     for name, expected in _derived_finding_counts(sessions).items():
         if decision["findings"][name] < expected:
