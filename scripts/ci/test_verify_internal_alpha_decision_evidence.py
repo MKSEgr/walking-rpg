@@ -409,6 +409,37 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_valid()
 
+    def test_kickoff_only_fix_accepts_a_pre_session_rationale(self) -> None:
+        self.make_kickoff_only_stop()
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="instrumentation_gap",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.write_decision()
+        self.assert_valid()
+
+    def test_kickoff_only_rejects_evidence_dependent_rationales(self) -> None:
+        cases = (
+            ("FIX_AND_RERUN", "threshold_miss", "focused_fix_and_alpha_rerun"),
+            (
+                "FIX_AND_RERUN",
+                "focused_comprehension_gap",
+                "focused_fix_and_alpha_rerun",
+            ),
+            ("STOP", "core_value_not_supported", "stop_and_archive"),
+        )
+        for selected, rationale, scope in cases:
+            with self.subTest(rationale=rationale):
+                self.make_kickoff_only_stop()
+                self.decision["decision"].update(
+                    selected=selected,
+                    rationaleCode=rationale,
+                    nextScope=scope,
+                )
+                self.write_decision()
+                self.assert_invalid()
+
     def test_kickoff_only_decision_cannot_predate_approval(self) -> None:
         self.make_kickoff_only_stop()
         self.decision.update(
