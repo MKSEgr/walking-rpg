@@ -70,7 +70,8 @@ further collection without changing already evidenced completion or qualitative 
 Completion remains valid whenever withdrawal follows the observed ACK and clear timed
 comprehension, even if the post-flow interview is still open. For a mid-journey
 withdrawal, every stage after the last observed pre-withdrawal milestone must form a
-`NOT_REACHED` tail; untimed `DATA_GAP` entries cannot claim later stage reach. The
+`NOT_REACHED` tail; untimed `DATA_GAP` entries cannot claim later stage reach, and a
+post-session withdrawal cannot be used as that tail's cause. The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
 terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;

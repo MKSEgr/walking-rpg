@@ -890,6 +890,11 @@ def validate_session(
             "$.session.withdrawalStatus",
             "participant_withdrew gaps require session-level WITHDREW evidence",
         )
+    if "participant_withdrew" in gap_reasons and withdrawal_at > ended:
+        _fail(
+            "$.session.withdrawnAtUtc",
+            "a participant-withdrew journey tail requires withdrawal during the session",
+        )
     if withdrawal_status == "WITHDREW":
         last_observed_index = max(
             (

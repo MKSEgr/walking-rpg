@@ -462,6 +462,8 @@ class SessionContractTests(unittest.TestCase):
         )
         document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
         self.assert_valid(document)
+        document["session"]["withdrawnAtUtc"] = utc(1000)
+        self.assert_invalid(document)
 
     def test_data_gap_can_preserve_later_observations(self) -> None:
         document = recorded()
