@@ -367,6 +367,20 @@ def validate_bundle(
             "requires at least one participant-session record",
         )
     rationale = decision["decision"]["rationaleCode"]
+    if decision["decision"]["selected"] == "EXPAND":
+        qualitative_support = {
+            "walkingAsAdventure": "walkingAsAdventureSupported",
+            "companionReturn": "companionReturnSupported",
+        }
+        for outcome_name, gate_name in qualitative_support.items():
+            if not any(
+                item["outcome"][outcome_name] in {"YES", "PARTIAL"}
+                for item in sessions
+            ):
+                _fail(
+                    f"$.qualitative.{gate_name}",
+                    "requires at least one supporting participant outcome for EXPAND",
+                )
     if rationale == "focused_comprehension_gap" and not any(
         item["outcome"]["nextActionComprehension"] in {"PARTIAL", "UNCLEAR"}
         for item in sessions
