@@ -78,7 +78,7 @@ The CLI rejects arbitrary names and any filename that does not match the validat
 candidate, platform, study code and session start UTC.
 
 After the first `NOT_REACHED`, every remaining milestone must also be `NOT_REACHED`.
-An observed sync receipt requires at least one non-failed authoritative sync attempt,
+An observed sync receipt requires at least one explicitly successful authoritative sync attempt,
 and every finding must link a positive GitHub issue number regardless of severity.
 
 ## Identity and contract
