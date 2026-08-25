@@ -280,10 +280,24 @@ def _validate_outcome(
             _fail(f"$.outcome.{key}", "must be a boolean")
     permission = outcome["permissionDecision"]
     if outcome["permissionRequestShown"]:
-        if permission not in {"GRANTED", "DENIED"}:
-            _fail("$.outcome.permissionDecision", "shown request requires GRANTED or DENIED")
-        if milestones["permission_decision"]["status"] != "OBSERVED":
-            _fail("$.outcome.permissionRequestShown", "requires an observed permission milestone")
+        permission_status = milestones["permission_decision"]["status"]
+        if permission in {"GRANTED", "DENIED"}:
+            if permission_status != "OBSERVED":
+                _fail(
+                    "$.outcome.permissionRequestShown",
+                    "recorded decision requires an observed permission milestone",
+                )
+        elif permission == "DATA_GAP":
+            if permission_status != "DATA_GAP":
+                _fail(
+                    "$.outcome.permissionDecision",
+                    "DATA_GAP requires a permission milestone instrumentation gap",
+                )
+        else:
+            _fail(
+                "$.outcome.permissionDecision",
+                "shown request requires GRANTED, DENIED or DATA_GAP",
+            )
     elif permission != "NOT_APPLICABLE":
         _fail("$.outcome.permissionDecision", "unshown request requires NOT_APPLICABLE")
     else:
@@ -487,6 +501,17 @@ def _validate_outcome(
     for key in ("walkingAsAdventure", "companionReturn"):
         if outcome[key] not in {"YES", "PARTIAL", "NO", "DATA_GAP"}:
             _fail(f"$.outcome.{key}", "has an unsupported code")
+    if any(
+        item["gapReasonCode"] == "participant_withdrew"
+        for item in milestones.values()
+    ) and any(
+        outcome[key] != "DATA_GAP"
+        for key in ("walkingAsAdventure", "companionReturn")
+    ):
+        _fail(
+            "$.outcome",
+            "participant withdrawal requires post-flow qualitative answers to be DATA_GAP",
+        )
 
     if reward_status == "YES":
         reward_event = milestones["first_event_resolved"]

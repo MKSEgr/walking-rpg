@@ -272,6 +272,8 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
             nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
         )
         self.assert_valid(document)
         document["outcome"]["nextActionComprehensionAtUtc"] = utc(590)
@@ -442,6 +444,11 @@ class SessionContractTests(unittest.TestCase):
         document["session"]["stopPauseStatus"] = "PAUSED"
         self.assert_invalid(document)
         document["session"]["stopPauseStatus"] = "STOPPED"
+        self.assert_invalid(document)
+        document["outcome"].update(
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
+        )
         self.assert_valid(document)
 
     def test_data_gap_can_preserve_later_observations(self) -> None:
@@ -464,6 +471,11 @@ class SessionContractTests(unittest.TestCase):
         set_gap(document, 3, "DATA_GAP", "instrumentation_missing")
         document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=9)
         self.assert_invalid(document)
+        document["outcome"].update(
+            completedUnaided=True,
+            permissionDecision="DATA_GAP",
+        )
+        self.assert_valid(document)
 
     def test_unshown_permission_uses_explicit_non_applicable_stages(self) -> None:
         document = recorded()
@@ -496,6 +508,8 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
             nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
         )
         self.assert_valid(document)
 
@@ -532,6 +546,8 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
             nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
         )
         self.assert_valid(document)
 

@@ -51,7 +51,9 @@ the supported limited path continues; a denial followed by an earlier stop may i
 put ENERGY in the `NOT_REACHED` tail. Granted permission with no activity data uses
 `NOT_APPLICABLE/no_activity_data` for ENERGY. Instrumentation coverage excludes those
 non-applicable stages and the `NOT_REACHED` tail; a participant withdrawal requires
-`STOPPED`. A passing JSON record
+`STOPPED` and forces both post-flow qualitative answers to `DATA_GAP`. A shown
+permission request whose decision evidence is missing uses `permissionDecision=DATA_GAP`
+with a permission milestone instrumentation gap. A passing JSON record
 proves structural completeness and redaction boundaries, not that external evidence is
 true or that #161 is complete.
 
@@ -106,7 +108,7 @@ and every finding must link a positive GitHub issue number regardless of severit
 
 - Completed first ten minutes unaided: `PASS` / `FAIL`
 - Permission request shown: `YES` / `NO`
-- Permission granted: `YES` / `NO` / `NOT_APPLICABLE`
+- Permission decision: `GRANTED` / `DENIED` / `NOT_APPLICABLE` / `DATA_GAP`
 - First-day reward receipt UTC, UTC offset minutes and derived cutoff UTC:
 - First-day reward by cutoff: `YES` / `NO` / `DATA_GAP` / `PENDING`
 - Candidate sessions / crash-free sessions:
