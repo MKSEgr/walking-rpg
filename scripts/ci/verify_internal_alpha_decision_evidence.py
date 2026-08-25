@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -45,10 +46,20 @@ def _load_sessions(
     records: list[tuple[str, Path, dict[str, Any], bytes]] = []
     seen_codes: set[str] = set()
     for path in session_paths:
+        raw = _read(path)
         try:
-            document = session_validator.load_session(path)
-        except session_validator.SessionValidationError as error:
-            raise BundleValidationError(str(error)) from error
+            document = json.loads(
+                raw.decode("utf-8"),
+                object_pairs_hook=session_validator._unique_object,
+            )
+        except (
+            UnicodeError,
+            json.JSONDecodeError,
+            session_validator.SessionValidationError,
+        ) as error:
+            raise BundleValidationError(
+                f"{path}: cannot parse strict UTF-8 JSON ({error})"
+            ) from error
         if not isinstance(document, dict) or not isinstance(document.get("session"), dict):
             _fail(str(path), "must contain a session object")
         code = document["session"].get("studyCode")
@@ -57,7 +68,7 @@ def _load_sessions(
         if code in seen_codes:
             _fail("sessions", f"duplicate study code {code!r}")
         seen_codes.add(code)
-        records.append((code, path, document, _read(path)))
+        records.append((code, path, document, raw))
     return records
 
 
@@ -235,13 +246,20 @@ def _validated_evidence(
     str,
     list[tuple[str, Path, dict[str, Any], bytes]],
 ]:
+    kickoff_bytes = _read(kickoff_path)
     try:
-        kickoff = kickoff_validator.load_kickoff(kickoff_path)
+        kickoff = json.loads(
+            kickoff_bytes.decode("utf-8"),
+            object_pairs_hook=kickoff_validator._unique_object,
+        )
         kickoff_validator.validate_kickoff(kickoff, require_ready=True)
-    except kickoff_validator.KickoffValidationError as error:
+    except (
+        UnicodeError,
+        json.JSONDecodeError,
+        kickoff_validator.KickoffValidationError,
+    ) as error:
         raise BundleValidationError(str(error)) from error
 
-    kickoff_bytes = _read(kickoff_path)
     kickoff_sha = hashlib.sha256(kickoff_bytes).hexdigest()
     records = _load_sessions(session_paths)
     for code, path, session, _raw in records:
@@ -336,6 +354,12 @@ def validate_bundle(
                 "requires a negative signal matching its reviewed qualitative gate",
             )
     cohort = decision["cohort"]
+    planned_participants = kickoff["cohort"]["plannedParticipants"]
+    if cohort["invited"] > planned_participants:
+        _fail(
+            "$.cohort.invited",
+            f"must not exceed the approved cohort size {planned_participants}",
+        )
     derived_cohort = {
         "started": len(sessions),
         "completed": sum(_completed(item) for item in sessions),
