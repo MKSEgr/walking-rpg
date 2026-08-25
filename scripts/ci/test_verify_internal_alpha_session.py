@@ -763,7 +763,7 @@ class SessionContractTests(unittest.TestCase):
         self.assert_valid(document)
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(571)
         self.assert_invalid(document)
-        document["session"]["withdrawnAtUtc"] = utc(1000)
+        document["session"]["withdrawnAtUtc"] = utc(650)
         document["outcome"].update(
             completedUnaided=True,
             firstDayRewardReceiptAtUtc=utc(480),
@@ -773,6 +773,13 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionElapsedSeconds=600,
             nextActionComprehensionHelpRequested=False,
             nextActionComprehensionHelpProvided=False,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
+        )
+        document["evidence"]["redactionReviewedAtUtc"] = utc(900)
+        self.assert_valid(document)
+        document["session"]["withdrawnAtUtc"] = utc(1000)
+        document["outcome"].update(
             walkingAsAdventure="YES",
             companionReturn="YES",
         )
@@ -780,6 +787,36 @@ class SessionContractTests(unittest.TestCase):
         self.assert_valid(document)
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(1001)
         self.assert_invalid(document)
+
+    def test_withdrawal_rejects_unanchored_data_gap_tail(self) -> None:
+        document = recorded()
+        for index in range(5, 10):
+            set_gap(document, index, "DATA_GAP", "instrumentation_missing")
+        document["session"].update(
+            stopPauseStatus="STOPPED",
+            withdrawalStatus="WITHDREW",
+            withdrawnAtUtc=utc(200),
+        )
+        document["outcome"].update(
+            completedUnaided=False,
+            firstDayRewardStatus="DATA_GAP",
+            firstDayRewardReceiptAtUtc=None,
+            recordedMandatoryMilestones=5,
+            nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
+        )
+        document["evidence"]["redactionReviewedAtUtc"] = utc(46800)
+        self.assert_invalid(document)
+        for index in range(5, 10):
+            set_gap(document, index, "NOT_REACHED", "participant_withdrew")
+        document["outcome"]["applicableMandatoryMilestones"] = 5
+        self.assert_valid(document)
 
     def test_reward_cutoff_must_precede_shared_evidence_deadline(self) -> None:
         kickoff = ready_kickoff()

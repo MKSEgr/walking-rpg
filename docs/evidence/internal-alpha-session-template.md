@@ -66,7 +66,11 @@ withdrawal status and UTC time cover withdrawals through record finalization, in
 after the moderated session; no milestone or comprehension may be recorded afterward,
 and an authoritative reward receipt must also be no later than withdrawal. Withdrawal
 during the session discards later qualitative answers; post-session withdrawal stops
-further collection without changing already evidenced completion or qualitative results. The
+further collection without changing already evidenced completion or qualitative results.
+Completion remains valid whenever withdrawal follows the observed ACK and clear timed
+comprehension, even if the post-flow interview is still open. For a mid-journey
+withdrawal, every stage after the last observed pre-withdrawal milestone must form a
+`NOT_REACHED` tail; untimed `DATA_GAP` entries cannot claim later stage reach. The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For
 terminal `NO` or `DATA_GAP`, redaction review must occur again at or after the cutoff;

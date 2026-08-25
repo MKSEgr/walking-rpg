@@ -460,6 +460,7 @@ def _validate_outcome(
     comprehension_elapsed = outcome["nextActionComprehensionElapsedSeconds"]
     comprehension_help = outcome["nextActionComprehensionHelpRequested"]
     comprehension_help_provided = outcome["nextActionComprehensionHelpProvided"]
+    demonstrated = None
     if comprehension == "DATA_GAP":
         if (
             summary_code is not None
@@ -570,7 +571,11 @@ def _validate_outcome(
                 )
     stop_blocks_unaided = not (
         stop_status == "NOT_INVOKED"
-        or (withdrawal_at is not None and withdrawal_at > ended)
+        or (
+            withdrawal_at is not None
+            and demonstrated is not None
+            and withdrawal_at >= demonstrated
+        )
     )
     if outcome["completedUnaided"]:
         if stop_blocks_unaided:
@@ -886,11 +891,28 @@ def validate_session(
             "participant_withdrew gaps require session-level WITHDREW evidence",
         )
     if withdrawal_status == "WITHDREW":
+        last_observed_index = max(
+            (
+                index
+                for index, item in enumerate(milestone_map.values())
+                if item["status"] == "OBSERVED"
+            ),
+            default=-1,
+        )
         for index, item in enumerate(milestone_map.values()):
             if item["status"] == "OBSERVED" and _utc(
                 item["observedAtUtc"], f"$.milestones[{index}].observedAtUtc"
             ) > withdrawal_at:
                 _fail(f"$.milestones[{index}]", "must not be observed after withdrawal")
+            if (
+                withdrawal_at <= ended
+                and index > last_observed_index
+                and item["status"] != "NOT_REACHED"
+            ):
+                _fail(
+                    f"$.milestones[{index}]",
+                    "stages after the last observed pre-withdrawal milestone must be NOT_REACHED",
+                )
     _validate_outcome(
         outcome,
         milestone_map,
