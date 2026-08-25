@@ -51,6 +51,9 @@ READY kickoff. An `EXPAND` decision cannot pass without all 12 participant recor
 Without session evidence, only `safety_risk`, `operationally_infeasible`,
 `instrumentation_gap`, `release_blocker` or `cohort_invalid` may justify the decision.
 Threshold, comprehension and core-value rationales require participant records.
+A `threshold_miss` rationale additionally requires at least one safely derived measured
+metric to fail its approved threshold. Owner confirmation must precede the shared
+participant-evidence deletion deadline.
 
 The cross-check reruns all three underlying contracts, requires unique study codes and
 exact session filenames, reconciles started/completed/platform/stopped-or-paused counts
