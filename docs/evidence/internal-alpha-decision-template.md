@@ -53,7 +53,8 @@ Without session evidence, only `safety_risk`, `operationally_infeasible`,
 Threshold, comprehension and core-value rationales require participant records.
 A `threshold_miss` rationale additionally requires at least one safely derived measured
 metric to fail its approved threshold. Owner confirmation must precede the shared
-participant-evidence deletion deadline.
+participant-evidence deletion deadline, which must also be no later than 90 days after
+that final confirmation.
 An `instrumentation_gap` rationale requires a derived metric `DATA_GAP`, failed
 participant-level instrumentation coverage, or a reviewed
 `instrumentationInterpretable` gate that is not true.
@@ -86,8 +87,10 @@ exact session-file digest sorted by study code. Therefore argument order is irre
 while any byte change requires a new package digest and review. A
 `PENDING`/`DATA_GAP` reward or unknown shown permission forces the corresponding
 decision metric to `DATA_GAP`. Missing next-action comprehension likewise forces the
-unaided metric to `DATA_GAP` unless a stop, unreached milestone, help, sync failure or
-missed protocol deadline independently proves non-completion. Missing evidence cannot
+unaided metric to `DATA_GAP` unless an early stop before the comprehension task,
+unreached milestone, help, sync failure or missed protocol deadline independently proves
+non-completion. A pause or stop after the task window does not turn missing comprehension
+into a measured failure. Missing evidence cannot
 be counted as a failed participant merely to manufacture a measured rate. The tool does
 not derive current open-release-blocker status; it remains a reviewed owner input and
 can only make `EXPAND` stricter.
