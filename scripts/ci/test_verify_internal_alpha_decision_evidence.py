@@ -259,6 +259,47 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.refresh_package()
         self.assert_valid()
 
+    def test_stop_before_first_session_accepts_an_empty_bundle(self) -> None:
+        self.session_paths = []
+        self.decision["cohort"] = {
+            "invited": 0,
+            "started": 0,
+            "completed": 0,
+            "iosRealUsers": 0,
+            "androidRealUsers": 0,
+            "withdrawn": 0,
+            "excluded": 0,
+            "stoppedOrPaused": 0,
+        }
+        for name in self.decision["metrics"]:
+            self.decision["metrics"][name] = {
+                "status": "DATA_GAP",
+                "numerator": None,
+                "denominator": None,
+                "dataGapReasonCode": "collection_stopped",
+            }
+        self.decision["decision"].update(
+            selected="STOP",
+            rationaleCode="safety_risk",
+            nextScope="stop_and_archive",
+        )
+        self.refresh_package()
+        self.assert_valid()
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(VALIDATOR),
+                str(self.decision_path),
+                "--kickoff",
+                str(self.kickoff_path),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
