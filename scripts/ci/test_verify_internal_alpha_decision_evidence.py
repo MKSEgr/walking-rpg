@@ -386,6 +386,12 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_valid()
 
+    def test_kickoff_only_stop_preserves_pre_session_withdrawal(self) -> None:
+        self.make_kickoff_only_stop()
+        self.decision["cohort"].update(invited=1, withdrawn=1)
+        self.write_decision()
+        self.assert_valid()
+
     def test_kickoff_only_decision_cannot_predate_approval(self) -> None:
         self.make_kickoff_only_stop()
         self.decision.update(
