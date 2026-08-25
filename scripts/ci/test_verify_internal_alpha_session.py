@@ -111,6 +111,7 @@ def recorded() -> dict:
     document["session"] = {
         "studyCode": "P01",
         "platform": "ios",
+        "selectedLocale": "ru",
         "startedAtUtc": utc(0),
         "endedAtUtc": utc(720),
         "moderatorRole": "approved_alpha_moderator",
@@ -286,6 +287,23 @@ class SessionContractTests(unittest.TestCase):
         document["milestones"][0].update(observedAtUtc=utc(1), elapsedSeconds=1)
         self.assert_invalid(document)
 
+    def test_unaided_task_group_deadlines_are_exact(self) -> None:
+        mutations = (
+            ("registration", {1: 121, 2: 121, 3: 180}),
+            ("permission", {3: 241, 4: 241, 5: 241}),
+            ("companion", {6: 361, 7: 361}),
+            ("result", {8: 541, 9: 541}),
+        )
+        for group, timings in mutations:
+            with self.subTest(group=group):
+                document = recorded()
+                for index, seconds in timings.items():
+                    document["milestones"][index].update(
+                        observedAtUtc=utc(seconds),
+                        elapsedSeconds=seconds,
+                    )
+                self.assert_invalid(document)
+
     def test_observation_cannot_follow_not_reached(self) -> None:
         document = recorded()
         set_gap(document, 5, "NOT_REACHED", "flow_blocked")
@@ -368,6 +386,20 @@ class SessionContractTests(unittest.TestCase):
         self.assert_invalid(document)
         document = recorded()
         document["outcome"]["permissionDecision"] = "DENIED"
+        self.assert_invalid(document)
+
+    def test_selected_locale_must_be_kickoff_approved(self) -> None:
+        document = recorded()
+        document["session"]["selectedLocale"] = "en"
+        self.assert_valid(document)
+        document["session"]["selectedLocale"] = "de"
+        self.assert_invalid(document)
+        document = recorded()
+        set_gap(document, 1, "DATA_GAP", "instrumentation_missing")
+        document["session"]["selectedLocale"] = None
+        document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=9)
+        self.assert_valid(document)
+        document["session"]["selectedLocale"] = "ru"
         self.assert_invalid(document)
 
     def test_reward_yes_requires_observed_event_resolution(self) -> None:

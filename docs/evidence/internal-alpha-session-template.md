@@ -25,7 +25,10 @@ The session must fall inside that observation window. `completedUnaided=true`
 additionally requires result ACK followed by demonstrated clear next-action
 comprehension during the 09:00–10:00 task window, no facilitator help and a confirmed
 first-day reward. Result ACK must complete by 09:00, and `registration_shown` anchors
-the timer at session start/zero seconds. A permission denial may use
+the timer at session start/zero seconds. Locale/authentication must complete by 02:00,
+permission/sync/applicable ENERGY by 04:00, companion/node by 06:00, and event/result
+ACK by 09:00. The selected locale is required when observed and must be one of the
+kickoff-approved languages. A permission denial may use
 `NOT_APPLICABLE/permission_denied` for `first_energy` while the supported limited path
 continues. Instrumentation coverage excludes that non-applicable stage and the
 `NOT_REACHED` tail; a participant withdrawal requires `STOPPED`. A passing JSON record
@@ -46,6 +49,7 @@ and every finding must link a positive GitHub issue number regardless of severit
 - Kickoff-wide participant evidence deletion deadline UTC:
 - Study code (`P01`–`P12`):
 - Platform: `ios` / `android`
+- Selected locale: `ru` / `en`
 - Session start/end UTC:
 - Moderator role:
 - Consent confirmed before collection: `PASS` / `FAIL`

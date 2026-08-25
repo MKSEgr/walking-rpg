@@ -22,6 +22,7 @@
   "session": {
     "studyCode": null,
     "platform": null,
+    "selectedLocale": null,
     "startedAtUtc": null,
     "endedAtUtc": null,
     "moderatorRole": "approved_alpha_moderator",

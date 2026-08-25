@@ -59,6 +59,17 @@ GAP_CODES = {
     "NOT_REACHED": {"session_stopped", "participant_withdrew", "flow_blocked"},
 }
 NOT_APPLICABLE_CODES = {"first_energy": "permission_denied"}
+UNAIDED_DEADLINES = {
+    "locale_selected": 120,
+    "authenticated_shell": 120,
+    "permission_decision": 240,
+    "first_sync_receipt": 240,
+    "first_energy": 240,
+    "companion_selected": 360,
+    "first_node_available": 360,
+    "first_event_resolved": 540,
+    "result_ack": 540,
+}
 STORAGE_CATEGORIES = {
     "approved_internal_evidence",
     "encrypted_project_storage",
@@ -379,8 +390,13 @@ def _validate_outcome(
             )
         if any(item["helpRequested"] for item in milestones.values()):
             _fail("$.outcome.completedUnaided", "requires no facilitator help")
-        if milestones["result_ack"]["elapsedSeconds"] > 540:
-            _fail("$.outcome.completedUnaided", "requires result ACK within 540 seconds")
+        for milestone_id, deadline in UNAIDED_DEADLINES.items():
+            item = milestones[milestone_id]
+            if item["status"] == "OBSERVED" and item["elapsedSeconds"] > deadline:
+                _fail(
+                    "$.outcome.completedUnaided",
+                    f"requires {milestone_id} within {deadline} seconds",
+                )
         if comprehension != "CLEAR":
             _fail("$.outcome.completedUnaided", "requires CLEAR next-action comprehension")
         if comprehension_elapsed > 600:
@@ -508,9 +524,9 @@ def validate_session(
         "participantEvidenceDeleteByUtc",
     ], "$.kickoff")
     session = _keys(root["session"], [
-        "studyCode", "platform", "startedAtUtc", "endedAtUtc", "moderatorRole",
-        "consentConfirmed", "withdrawalRouteExplained", "exactCandidateVerified",
-        "stopPauseStatus",
+        "studyCode", "platform", "selectedLocale", "startedAtUtc", "endedAtUtc",
+        "moderatorRole", "consentConfirmed", "withdrawalRouteExplained",
+        "exactCandidateVerified", "stopPauseStatus",
     ], "$.session")
     if not isinstance(root["milestones"], list) or len(root["milestones"]) != len(MILESTONES):
         _fail("$.milestones", f"must contain exactly {len(MILESTONES)} entries")
@@ -579,6 +595,18 @@ def validate_session(
         _fail("$.session.stopPauseStatus", "has an unsupported code")
 
     milestone_map = _validate_milestones(root["milestones"], started, ended)
+    selected_locale = session["selectedLocale"]
+    if milestone_map["locale_selected"]["status"] == "OBSERVED":
+        if selected_locale not in referenced_kickoff["cohort"]["languages"]:
+            _fail(
+                "$.session.selectedLocale",
+                "must be one of the languages approved by the referenced kickoff",
+            )
+    elif selected_locale is not None:
+        _fail(
+            "$.session.selectedLocale",
+            "must be null when locale_selected is not OBSERVED",
+        )
     gap_reasons = {item["gapReasonCode"] for item in milestone_map.values()}
     if stop_status == "NOT_INVOKED" and "session_stopped" in gap_reasons:
         _fail("$.session.stopPauseStatus", "session_stopped gaps require PAUSED or STOPPED")
