@@ -7,7 +7,7 @@ import argparse
 import hashlib
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -99,7 +99,10 @@ def _unaided_non_completion_evidenced(session: dict[str, Any]) -> bool:
         item["milestoneId"]: item for item in session["milestones"]
     }
     if session["session"]["stopPauseStatus"] != "NOT_INVOKED":
-        return True
+        stopped_at = _utc(session["session"]["stopPauseAtUtc"])
+        started_at = _utc(session["session"]["startedAtUtc"])
+        if stopped_at < started_at + timedelta(seconds=540):
+            return True
     if any(item["status"] == "NOT_REACHED" for item in milestones.values()):
         return True
     if any(
@@ -442,6 +445,11 @@ def validate_bundle(
         _fail(
             "$.decision.confirmationAtUtc",
             "must precede the participant-evidence deletion deadline",
+        )
+    if evidence_delete_by > confirmation_at + timedelta(days=90):
+        _fail(
+            "kickoff.evidence.participantEvidenceDeleteByUtc",
+            "must be no more than 90 days after final decision confirmation",
         )
     if sessions:
         latest_session = max(_utc(item["recordedAtUtc"]) for item in sessions)
