@@ -332,6 +332,48 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_valid()
 
+    def test_missing_comprehension_propagates_unaided_data_gap(self) -> None:
+        path = self.session_paths[0]
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["outcome"].update(
+            completedUnaided=False,
+            nextActionComprehension="DATA_GAP",
+            nextActionSummaryCode=None,
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
+            walkingAsAdventure="DATA_GAP",
+            companionReturn="DATA_GAP",
+        )
+        path.write_bytes(_encoded(document))
+        self.refresh_package()
+        self.assert_invalid()
+
+        self.decision["metrics"]["unaidedFirstTenMinutes"] = {
+            "status": "DATA_GAP",
+            "numerator": None,
+            "denominator": None,
+            "dataGapReasonCode": "instrumentation_missing",
+        }
+        self.decision["cohort"]["completed"] = 11
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="instrumentation_gap",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.write_decision()
+        self.assert_valid()
+
+    def test_instrumentation_gap_rationale_requires_support(self) -> None:
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="instrumentation_gap",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.write_decision()
+        self.assert_invalid()
+
     def test_instrumentation_coverage_is_counted_per_participant(self) -> None:
         path = self.session_paths[0]
         document = json.loads(path.read_text(encoding="utf-8"))
