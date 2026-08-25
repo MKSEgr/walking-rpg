@@ -400,13 +400,20 @@ class DecisionEvidenceTests(unittest.TestCase):
 
         document["outcome"]["walkingAsAdventure"] = "NO"
         path.write_bytes(_encoded(document))
-        self.decision["qualitative"]["walkingAsAdventureSupported"] = False
+        self.decision["qualitative"]["companionReturnSupported"] = False
         self.decision["decision"].update(
             selected="STOP",
             rationaleCode="core_value_not_supported",
             nextScope="stop_and_archive",
         )
         self.refresh_package()
+        self.assert_invalid()
+
+        self.decision["qualitative"].update(
+            walkingAsAdventureSupported=False,
+            companionReturnSupported=True,
+        )
+        self.write_decision()
         self.assert_valid()
 
     def test_decision_cannot_predate_participant_records(self) -> None:
