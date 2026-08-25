@@ -488,12 +488,17 @@ class SessionContractTests(unittest.TestCase):
             permissionDecision="DATA_GAP",
         )
         self.assert_valid(document)
-        set_not_applicable(document, 5, "permission_not_requested")
-        document["outcome"].update(
-            applicableMandatoryMilestones=9,
-            recordedMandatoryMilestones=8,
-        )
-        self.assert_invalid(document)
+        for reason in ("permission_not_requested", "permission_denied", "no_activity_data"):
+            with self.subTest(energy_reason=reason):
+                contradiction = recorded()
+                set_gap(contradiction, 3, "DATA_GAP", "instrumentation_missing")
+                set_not_applicable(contradiction, 5, reason)
+                contradiction["outcome"].update(
+                    permissionDecision="DATA_GAP",
+                    applicableMandatoryMilestones=9,
+                    recordedMandatoryMilestones=8,
+                )
+                self.assert_invalid(contradiction)
 
     def test_unshown_permission_uses_explicit_non_applicable_stages(self) -> None:
         document = recorded()
@@ -731,6 +736,12 @@ class SessionContractTests(unittest.TestCase):
         )
         self.assert_valid(document)
         document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(571)
+        self.assert_invalid(document)
+        document["session"]["withdrawnAtUtc"] = utc(1000)
+        document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(480)
+        document["evidence"]["redactionReviewedAtUtc"] = utc(1000)
+        self.assert_valid(document)
+        document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(1001)
         self.assert_invalid(document)
 
     def test_reward_cutoff_must_precede_shared_evidence_deadline(self) -> None:

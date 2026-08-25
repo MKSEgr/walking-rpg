@@ -426,14 +426,10 @@ def _validate_outcome(
                 "$.milestones[5]",
                 "GRANTED permission permits NOT_APPLICABLE only when no activity data exists",
             )
-    elif (
-        permission == "DATA_GAP"
-        and energy["status"] == "NOT_APPLICABLE"
-        and energy["gapReasonCode"] == "permission_not_requested"
-    ):
+    elif permission == "DATA_GAP" and energy["status"] == "NOT_APPLICABLE":
         _fail(
             "$.milestones[5]",
-            "a shown permission request cannot use permission_not_requested for ENERGY",
+            "decision-dependent ENERGY non-applicability requires a represented permission decision",
         )
     elif permission == "NOT_APPLICABLE" and energy["status"] != "NOT_REACHED" and not (
         energy["status"] == "NOT_APPLICABLE"
@@ -854,8 +850,11 @@ def validate_session(
         if stop_status != "STOPPED":
             _fail("$.session.stopPauseStatus", "participant withdrawal requires STOPPED")
         withdrawal_at = _utc(session["withdrawnAtUtc"], "$.session.withdrawnAtUtc")
-        if not started <= withdrawal_at <= ended:
-            _fail("$.session.withdrawnAtUtc", "must be within the session window")
+        if not started <= withdrawal_at <= recorded_at:
+            _fail(
+                "$.session.withdrawnAtUtc",
+                "must be between session start and record finalization",
+            )
 
     milestone_map = _validate_milestones(root["milestones"], started, ended)
     selected_locale = session["selectedLocale"]
@@ -922,6 +921,11 @@ def validate_session(
         _fail("$.evidence.storageCategory", f"must be one of {sorted(STORAGE_CATEGORIES)}")
     _matches(evidence["evidencePackageSha256"], DIGEST, "$.evidence.evidencePackageSha256", "a lowercase SHA-256")
     reviewed = _utc(evidence["redactionReviewedAtUtc"], "$.evidence.redactionReviewedAtUtc")
+    if withdrawal_at is not None and reviewed < withdrawal_at:
+        _fail(
+            "$.evidence.redactionReviewedAtUtc",
+            "must be at or after participant withdrawal",
+        )
     if outcome["firstDayRewardStatus"] in {"NO", "DATA_GAP"} and reviewed < reward_cutoff:
         _fail(
             "$.evidence.redactionReviewedAtUtc",
