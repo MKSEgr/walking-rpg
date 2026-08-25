@@ -221,6 +221,8 @@ instrumentation, release-blocker or cohort rationale can be signed without parti
 evidence; threshold, comprehension and core-value rationales require session records.
 A threshold-miss decision requires an actual failed derived threshold, and owner
 confirmation must occur before the participant-evidence deletion deadline.
+Focused comprehension and unsupported-core-value rationales require matching session
+outcomes; core-value rejection also requires a false reviewed qualitative gate.
 Findings from supplied sessions are a
 validated lower bound, so a signed decision may retain additional reviewed pre-session
 or operational incidents, and decision recording must follow READY kickoff approval.
