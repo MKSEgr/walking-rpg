@@ -233,6 +233,9 @@ unless other recorded evidence independently proves non-completion; a pause or s
 the comprehension window is not such proof.
 Focused comprehension and unsupported-core-value rationales require matching session
 outcomes; core-value rejection also requires a false reviewed qualitative gate.
+An `EXPAND` record also requires at least one supporting `YES` or `PARTIAL` participant
+outcome for each qualitative dimension; uniformly negative or unavailable outcomes fail
+closed even when the reviewed aggregate gate is true.
 Findings from supplied sessions are a
 validated lower bound, so a signed decision may retain additional reviewed pre-session
 or operational incidents, and decision recording must follow READY kickoff approval.
