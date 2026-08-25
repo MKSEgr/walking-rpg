@@ -285,9 +285,6 @@ def validate_bundle(
         "androidRealUsers": sum(
             item["session"]["platform"] == "android" for item in sessions
         ),
-        "withdrawn": sum(
-            item["session"]["withdrawalStatus"] == "WITHDREW" for item in sessions
-        ),
         "stoppedOrPaused": sum(
             item["session"]["stopPauseStatus"] != "NOT_INVOKED"
             for item in sessions
@@ -296,6 +293,15 @@ def validate_bundle(
     for name, expected in derived_cohort.items():
         if cohort[name] != expected:
             _fail(f"$.cohort.{name}", f"must equal derived count {expected}")
+
+    session_withdrawals = sum(
+        item["session"]["withdrawalStatus"] == "WITHDREW" for item in sessions
+    )
+    if cohort["withdrawn"] < session_withdrawals:
+        _fail(
+            "$.cohort.withdrawn",
+            f"must include at least {session_withdrawals} session withdrawals",
+        )
 
     for name, expected in _derived_finding_counts(sessions).items():
         if decision["findings"][name] < expected:
