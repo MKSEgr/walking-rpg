@@ -131,6 +131,7 @@ def recorded() -> dict:
             elapsedSeconds=seconds,
             sourceCategory=validator.SOURCES[milestone["milestoneId"]],
             helpRequested=False,
+            facilitatorHelpProvided=False,
             gapReasonCode=None,
         )
     document["outcome"] = {
@@ -151,6 +152,7 @@ def recorded() -> dict:
         "nextActionComprehensionAtUtc": utc(600),
         "nextActionComprehensionElapsedSeconds": 600,
         "nextActionComprehensionHelpRequested": False,
+        "nextActionComprehensionHelpProvided": False,
         "walkingAsAdventure": "YES",
         "companionReturn": "YES",
     }
@@ -172,6 +174,7 @@ def set_gap(document: dict, index: int, status: str, reason: str) -> None:
         elapsedSeconds=None,
         sourceCategory=None,
         helpRequested=None,
+        facilitatorHelpProvided=None,
         gapReasonCode=reason,
     )
 
@@ -183,6 +186,7 @@ def set_not_applicable(document: dict, index: int, reason: str) -> None:
         elapsedSeconds=None,
         sourceCategory=None,
         helpRequested=None,
+        facilitatorHelpProvided=None,
         gapReasonCode=reason,
     )
 
@@ -265,6 +269,7 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
         )
         self.assert_valid(document)
         document["outcome"]["nextActionComprehensionAtUtc"] = utc(590)
@@ -278,16 +283,28 @@ class SessionContractTests(unittest.TestCase):
                 self.assert_invalid(document)
 
     def test_help_and_comprehension_are_unaided_gates(self) -> None:
-        for mutation in ("milestone_help", "comprehension", "comprehension_help"):
+        for mutation in (
+            "milestone_help", "milestone_help_provided", "comprehension",
+            "comprehension_help", "comprehension_help_provided",
+        ):
             with self.subTest(mutation=mutation):
                 document = recorded()
                 if mutation == "milestone_help":
                     document["milestones"][4]["helpRequested"] = True
+                elif mutation == "milestone_help_provided":
+                    document["milestones"][4]["facilitatorHelpProvided"] = True
                 elif mutation == "comprehension":
                     document["outcome"]["nextActionComprehension"] = "PARTIAL"
-                else:
+                elif mutation == "comprehension_help":
                     document["outcome"]["nextActionComprehensionHelpRequested"] = True
+                else:
+                    document["outcome"]["nextActionComprehensionHelpProvided"] = True
                 self.assert_invalid(document)
+
+    def test_false_unaided_claim_is_rejected_when_evidence_qualifies(self) -> None:
+        document = recorded()
+        document["outcome"]["completedUnaided"] = False
+        self.assert_invalid(document)
 
     def test_first_day_reward_is_independent_of_unaided_completion(self) -> None:
         for reward_status in ("NO", "DATA_GAP"):
@@ -385,6 +402,7 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
             walkingAsAdventure="DATA_GAP",
             companionReturn="DATA_GAP",
         )
@@ -404,6 +422,7 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
         )
         self.assert_invalid(document)
         document["session"]["stopPauseStatus"] = "PAUSED"
@@ -475,6 +494,7 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
             nextActionComprehensionHelpRequested=None,
+            nextActionComprehensionHelpProvided=None,
         )
         self.assert_valid(document)
 

@@ -162,6 +162,7 @@ def _validate_template(root: dict[str, Any]) -> None:
             "elapsedSeconds": None,
             "sourceCategory": None,
             "helpRequested": None,
+            "facilitatorHelpProvided": None,
             "gapReasonCode": None,
         }
         for key, value in expected.items():
@@ -191,7 +192,8 @@ def _validate_milestones(
         path = f"$.milestones[{index}]"
         milestone = _keys(value, [
             "milestoneId", "status", "observedAtUtc", "elapsedSeconds",
-            "sourceCategory", "helpRequested", "gapReasonCode",
+            "sourceCategory", "helpRequested", "facilitatorHelpProvided",
+            "gapReasonCode",
         ], path)
         expected_id = MILESTONES[index]
         if milestone["milestoneId"] != expected_id:
@@ -215,11 +217,16 @@ def _validate_milestones(
                 _fail(f"{path}.sourceCategory", f"must be {SOURCES[expected_id]!r}")
             if type(milestone["helpRequested"]) is not bool:
                 _fail(f"{path}.helpRequested", "must be a boolean")
+            if type(milestone["facilitatorHelpProvided"]) is not bool:
+                _fail(f"{path}.facilitatorHelpProvided", "must be a boolean")
             if milestone["gapReasonCode"] is not None:
                 _fail(f"{path}.gapReasonCode", "must be null when OBSERVED")
             previous_time = observed
         elif status in GAP_CODES:
-            for key in ("observedAtUtc", "elapsedSeconds", "sourceCategory", "helpRequested"):
+            for key in (
+                "observedAtUtc", "elapsedSeconds", "sourceCategory",
+                "helpRequested", "facilitatorHelpProvided",
+            ):
                 if milestone[key] is not None:
                     _fail(f"{path}.{key}", f"must be null when {status}")
             if milestone["gapReasonCode"] not in GAP_CODES[status]:
@@ -230,7 +237,10 @@ def _validate_milestones(
             if status == "NOT_REACHED":
                 not_reached = True
         elif status == "NOT_APPLICABLE":
-            for key in ("observedAtUtc", "elapsedSeconds", "sourceCategory", "helpRequested"):
+            for key in (
+                "observedAtUtc", "elapsedSeconds", "sourceCategory",
+                "helpRequested", "facilitatorHelpProvided",
+            ):
                 if milestone[key] is not None:
                     _fail(f"{path}.{key}", "must be null when NOT_APPLICABLE")
             expected_reasons = NOT_APPLICABLE_CODES.get(expected_id, set())
@@ -377,12 +387,14 @@ def _validate_outcome(
     comprehension_at = outcome["nextActionComprehensionAtUtc"]
     comprehension_elapsed = outcome["nextActionComprehensionElapsedSeconds"]
     comprehension_help = outcome["nextActionComprehensionHelpRequested"]
+    comprehension_help_provided = outcome["nextActionComprehensionHelpProvided"]
     if comprehension == "DATA_GAP":
         if (
             summary_code is not None
             or comprehension_at is not None
             or comprehension_elapsed is not None
             or comprehension_help is not None
+            or comprehension_help_provided is not None
         ):
             _fail(
                 "$.outcome.nextActionComprehension",
@@ -403,6 +415,11 @@ def _validate_outcome(
         if type(comprehension_help) is not bool:
             _fail(
                 "$.outcome.nextActionComprehensionHelpRequested",
+                "must be a boolean when comprehension is recorded",
+            )
+        if type(comprehension_help_provided) is not bool:
+            _fail(
+                "$.outcome.nextActionComprehensionHelpProvided",
                 "must be a boolean when comprehension is recorded",
             )
         demonstrated = _utc(
@@ -466,7 +483,10 @@ def _validate_outcome(
                 "$.outcome.completedUnaided",
                 "requires every applicable milestone to be observed",
             )
-        if any(item["helpRequested"] for item in milestones.values()):
+        if any(
+            item["helpRequested"] or item["facilitatorHelpProvided"]
+            for item in milestones.values()
+        ):
             _fail("$.outcome.completedUnaided", "requires no facilitator help")
         for milestone_id, deadline in UNAIDED_DEADLINES.items():
             item = milestones[milestone_id]
@@ -482,10 +502,41 @@ def _validate_outcome(
                 "$.outcome.completedUnaided",
                 "requires no facilitator help during next-action comprehension",
             )
+        if comprehension_help_provided:
+            _fail(
+                "$.outcome.completedUnaided",
+                "requires no provided help during next-action comprehension",
+            )
         if comprehension_elapsed > 600:
             _fail(
                 "$.outcome.completedUnaided",
                 "requires next-action comprehension within 600 seconds",
+            )
+    else:
+        evidence_is_unaided = (
+            stop_status == "NOT_INVOKED"
+            and all(
+                item["status"] in {"OBSERVED", "NOT_APPLICABLE"}
+                for item in milestones.values()
+            )
+            and not any(
+                item["helpRequested"] or item["facilitatorHelpProvided"]
+                for item in milestones.values()
+            )
+            and all(
+                item["status"] != "OBSERVED" or item["elapsedSeconds"] <= deadline
+                for milestone_id, deadline in UNAIDED_DEADLINES.items()
+                for item in (milestones[milestone_id],)
+            )
+            and comprehension == "CLEAR"
+            and not comprehension_help
+            and not comprehension_help_provided
+            and comprehension_elapsed <= 600
+        )
+        if evidence_is_unaided:
+            _fail(
+                "$.outcome.completedUnaided",
+                "must be true when the recorded evidence satisfies the unaided predicate",
             )
 
 
@@ -615,7 +666,8 @@ def validate_session(
     for index, value in enumerate(root["milestones"]):
         _keys(value, [
             "milestoneId", "status", "observedAtUtc", "elapsedSeconds",
-            "sourceCategory", "helpRequested", "gapReasonCode",
+            "sourceCategory", "helpRequested", "facilitatorHelpProvided",
+            "gapReasonCode",
         ], f"$.milestones[{index}]")
     outcome = _keys(root["outcome"], [
         "completedUnaided", "permissionRequestShown", "permissionDecision",
@@ -626,7 +678,8 @@ def validate_session(
         "nextActionComprehension", "nextActionSummaryCode",
         "nextActionComprehensionAtUtc",
         "nextActionComprehensionElapsedSeconds",
-        "nextActionComprehensionHelpRequested", "walkingAsAdventure", "companionReturn",
+        "nextActionComprehensionHelpRequested",
+        "nextActionComprehensionHelpProvided", "walkingAsAdventure", "companionReturn",
     ], "$.outcome")
     evidence = _keys(root["evidence"], [
         "storageCategory", "evidencePackageSha256", "redactionReviewedAtUtc",
