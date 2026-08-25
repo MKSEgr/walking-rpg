@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+import verify_internal_alpha_kickoff as kickoff_validator
 
 
 SCHEMA = "walking-rpg-internal-alpha-session-v1"
@@ -243,8 +246,19 @@ def _validate_outcome(
         _fail("$.outcome.crashFreeSessions", "must not exceed candidateSessions")
     if failed_syncs > sync_attempts:
         _fail("$.outcome.failedNonCancelledSyncAttempts", "must not exceed authoritativeSyncAttempts")
-    if applicable != len(MILESTONES):
-        _fail("$.outcome.applicableMandatoryMilestones", f"must be {len(MILESTONES)}")
+    actual_applicable = next(
+        (
+            index
+            for index, item in enumerate(milestones.values())
+            if item["status"] == "NOT_REACHED"
+        ),
+        len(MILESTONES),
+    )
+    if applicable != actual_applicable:
+        _fail(
+            "$.outcome.applicableMandatoryMilestones",
+            "must equal the milestone count before the first NOT_REACHED stage",
+        )
     if recorded > applicable:
         _fail("$.outcome.recordedMandatoryMilestones", "must not exceed applicableMandatoryMilestones")
     actual_recorded = sum(item["status"] == "OBSERVED" for item in milestones.values())
@@ -280,6 +294,26 @@ def _validate_outcome(
             _fail(
                 "$.outcome.nextActionComprehensionElapsedSeconds",
                 "must exactly equal nextActionComprehensionAtUtc - startedAtUtc",
+            )
+        if not 540 <= elapsed <= 600:
+            _fail(
+                "$.outcome.nextActionComprehensionElapsedSeconds",
+                "must be within the protocol comprehension task window of 540 through 600 seconds",
+            )
+        result_ack = milestones["result_ack"]
+        if result_ack["status"] != "OBSERVED":
+            _fail(
+                "$.outcome.nextActionComprehension",
+                "requires an observed result ACK",
+            )
+        result_ack_at = _utc(
+            result_ack["observedAtUtc"],
+            "$.milestones[9].observedAtUtc",
+        )
+        if demonstrated < result_ack_at:
+            _fail(
+                "$.outcome.nextActionComprehensionAtUtc",
+                "must be at or after the result ACK",
             )
     for key in ("walkingAsAdventure", "companionReturn"):
         if outcome[key] not in {"YES", "PARTIAL", "NO", "DATA_GAP"}:
@@ -351,7 +385,62 @@ def _validate_findings(findings: Any) -> None:
         )
 
 
-def validate_session(document: Any, *, require_recorded: bool = False) -> None:
+def _validate_kickoff_reference(
+    root: dict[str, Any],
+    referenced_kickoff: Any,
+    referenced_kickoff_sha256: str | None,
+) -> None:
+    if referenced_kickoff is None or referenced_kickoff_sha256 is None:
+        _fail("$.kickoff.recordSha256", "RECORDED evidence requires --kickoff")
+    try:
+        kickoff_validator.validate_kickoff(referenced_kickoff, require_ready=True)
+    except kickoff_validator.KickoffValidationError as error:
+        _fail("$kickoff", f"referenced kickoff is invalid: {error}")
+    if root["kickoff"]["recordSha256"] != referenced_kickoff_sha256:
+        _fail(
+            "$.kickoff.recordSha256",
+            "must equal the SHA-256 of the exact referenced kickoff file",
+        )
+
+    comparisons = (
+        ("$.protocol.commitSha", root["protocol"]["commitSha"], referenced_kickoff["protocol"]["commitSha"]),
+        ("$.candidate.sourceSha", root["candidate"]["sourceSha"], referenced_kickoff["candidate"]["sourceSha"]),
+        ("$.candidate.treeSha", root["candidate"]["treeSha"], referenced_kickoff["candidate"]["treeSha"]),
+        ("$.candidate.appVersion", root["candidate"]["appVersion"], referenced_kickoff["candidate"]["appVersion"]),
+        ("$.candidate.buildNumber", root["candidate"]["buildNumber"], referenced_kickoff["candidate"]["buildNumber"]),
+        (
+            "$.candidate.platformArtifactSha256",
+            root["candidate"]["platformArtifactSha256"],
+            referenced_kickoff["candidate"][root["session"]["platform"]]["artifactSha256"],
+        ),
+        (
+            "$.kickoff.observationStartsAtUtc",
+            root["kickoff"]["observationStartsAtUtc"],
+            referenced_kickoff["observationWindow"]["startsAtUtc"],
+        ),
+        (
+            "$.kickoff.observationEndsAtUtc",
+            root["kickoff"]["observationEndsAtUtc"],
+            referenced_kickoff["observationWindow"]["endsAtUtc"],
+        ),
+        (
+            "$.kickoff.participantEvidenceDeleteByUtc",
+            root["kickoff"]["participantEvidenceDeleteByUtc"],
+            referenced_kickoff["evidence"]["participantEvidenceDeleteByUtc"],
+        ),
+    )
+    for path, actual, expected in comparisons:
+        if actual != expected:
+            _fail(path, "must equal the referenced kickoff contract")
+
+
+def validate_session(
+    document: Any,
+    *,
+    require_recorded: bool = False,
+    referenced_kickoff: Any = None,
+    referenced_kickoff_sha256: str | None = None,
+) -> None:
     root = _keys(document, [
         "schemaVersion", "recordStatus", "recordedAtUtc", "protocol",
         "candidate", "kickoff", "session", "milestones", "outcome", "findings",
@@ -412,6 +501,10 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
     _matches(candidate["buildNumber"], BUILD, "$.candidate.buildNumber", "a positive build number string")
     _matches(candidate["platformArtifactSha256"], DIGEST, "$.candidate.platformArtifactSha256", "a lowercase SHA-256")
     _matches(kickoff["recordSha256"], DIGEST, "$.kickoff.recordSha256", "a lowercase SHA-256")
+    _matches(session["studyCode"], STUDY_CODE, "$.session.studyCode", "P01 through P12")
+    if session["platform"] not in {"ios", "android"}:
+        _fail("$.session.platform", "must be ios or android")
+    _validate_kickoff_reference(root, referenced_kickoff, referenced_kickoff_sha256)
     kickoff_started = _utc(kickoff["observationStartsAtUtc"], "$.kickoff.observationStartsAtUtc")
     kickoff_ended = _utc(kickoff["observationEndsAtUtc"], "$.kickoff.observationEndsAtUtc")
     kickoff_delete_by = _utc(
@@ -424,9 +517,6 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
             "must satisfy observation start < end < shared deletion deadline <= end + 90 days",
         )
 
-    _matches(session["studyCode"], STUDY_CODE, "$.session.studyCode", "P01 through P12")
-    if session["platform"] not in {"ios", "android"}:
-        _fail("$.session.platform", "must be ios or android")
     started = _utc(session["startedAtUtc"], "$.session.startedAtUtc")
     ended = _utc(session["endedAtUtc"], "$.session.endedAtUtc")
     if not started < ended <= recorded_at:
@@ -445,10 +535,14 @@ def validate_session(document: Any, *, require_recorded: bool = False) -> None:
         _fail("$.session.stopPauseStatus", "has an unsupported code")
 
     milestone_map = _validate_milestones(root["milestones"], started, ended)
-    if stop_status == "NOT_INVOKED" and any(
-        item["gapReasonCode"] == "session_stopped" for item in milestone_map.values()
-    ):
+    gap_reasons = {item["gapReasonCode"] for item in milestone_map.values()}
+    if stop_status == "NOT_INVOKED" and "session_stopped" in gap_reasons:
         _fail("$.session.stopPauseStatus", "session_stopped gaps require PAUSED or STOPPED")
+    if "participant_withdrew" in gap_reasons and stop_status != "STOPPED":
+        _fail(
+            "$.session.stopPauseStatus",
+            "participant_withdrew gaps require STOPPED",
+        )
     _validate_outcome(outcome, milestone_map, stop_status, started, ended)
     _validate_findings(root["findings"])
 
@@ -483,11 +577,22 @@ def load_session(path: Path) -> Any:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("session", type=Path)
+    parser.add_argument("--kickoff", type=Path)
     parser.add_argument("--require-recorded", action="store_true")
     args = parser.parse_args(argv)
     try:
-        validate_session(load_session(args.session), require_recorded=args.require_recorded)
-    except SessionValidationError as error:
+        referenced_kickoff = None
+        referenced_kickoff_sha256 = None
+        if args.kickoff is not None:
+            referenced_kickoff = kickoff_validator.load_kickoff(args.kickoff)
+            referenced_kickoff_sha256 = hashlib.sha256(args.kickoff.read_bytes()).hexdigest()
+        validate_session(
+            load_session(args.session),
+            require_recorded=args.require_recorded,
+            referenced_kickoff=referenced_kickoff,
+            referenced_kickoff_sha256=referenced_kickoff_sha256,
+        )
+    except (SessionValidationError, kickoff_validator.KickoffValidationError, OSError) as error:
         print(f"Internal-alpha session invalid: {error}", file=sys.stderr)
         return 1
     print(f"Internal-alpha session valid: {args.session}")

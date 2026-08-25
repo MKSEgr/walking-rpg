@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import subprocess
 import sys
@@ -17,6 +18,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 VALIDATOR = HERE / "verify_internal_alpha_session.py"
 TEMPLATE = ROOT / "docs/evidence/internal-alpha-session-template.json"
+KICKOFF_TEMPLATE = ROOT / "docs/evidence/internal-alpha-kickoff-template.json"
 SPEC = importlib.util.spec_from_file_location("session_validator", VALIDATOR)
 assert SPEC and SPEC.loader
 validator = importlib.util.module_from_spec(SPEC)
@@ -28,8 +30,69 @@ def utc(seconds: int) -> str:
     return (start + timedelta(seconds=seconds)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def ready_kickoff() -> dict:
+    document = json.loads(KICKOFF_TEMPLATE.read_text(encoding="utf-8"))
+    document.update(
+        recordStatus="READY",
+        recordedAtUtc="2026-08-20T06:00:00Z",
+        approvedAtUtc="2026-08-20T06:30:00Z",
+    )
+    document["protocol"]["commitSha"] = "1" * 40
+    document["candidate"].update(
+        sourceSha="2" * 40,
+        treeSha="3" * 40,
+        appVersion="1.0.0-alpha.1",
+        buildNumber="42",
+        contentVersion="chapter-1-v2",
+        remoteConfigVersion="alpha-v1",
+    )
+    document["candidate"]["ios"] = {
+        "bundleId": "app.walkingrpg.stage",
+        "artifactSha256": "4" * 64,
+        "distributionTrack": "testflight_internal",
+    }
+    document["candidate"]["android"] = {
+        "applicationId": "app.walkingrpg.stage",
+        "artifactSha256": "7" * 64,
+        "distributionTrack": "play_internal",
+    }
+    document["candidate"]["backend"] = {
+        "imageDigest": "sha256:" + "8" * 64,
+        "deploymentReceiptSha256": "9" * 64,
+        "stageEnvironment": "walking-rpg-alpha-eu",
+    }
+    document["observationWindow"] = {
+        "startsAtUtc": "2026-08-20T07:00:00Z",
+        "endsAtUtc": "2026-08-27T18:00:00Z",
+        "supportUntilUtc": "2026-08-27T19:00:00Z",
+    }
+    document["evidence"] = {
+        "storageCategory": "approved_research_workspace",
+        "redactionPolicy": validator.kickoff_validator.REDACTION_POLICY,
+        "participantEvidenceDeleteByUtc": "2026-11-25T18:00:00Z",
+        "supportChannelCategory": "approved_private_channel",
+    }
+    for index, gate in enumerate(document["gates"]):
+        gate.update(
+            status="PASS",
+            checkedAtUtc="2026-08-20T06:15:00Z",
+            evidenceCategory="approved_research_workspace",
+            evidenceDigestSha256=format(index + 1, "x") * 64,
+        )
+    return document
+
+
+def encoded_kickoff(document: dict) -> bytes:
+    return (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def kickoff_digest(document: dict) -> str:
+    return hashlib.sha256(encoded_kickoff(document)).hexdigest()
+
+
 def recorded() -> dict:
     document = json.loads(TEMPLATE.read_text(encoding="utf-8"))
+    kickoff = ready_kickoff()
     document.update(recordStatus="RECORDED", recordedAtUtc=utc(1200))
     document["protocol"]["commitSha"] = "1" * 40
     document["candidate"] = {
@@ -40,10 +103,10 @@ def recorded() -> dict:
         "platformArtifactSha256": "4" * 64,
     }
     document["kickoff"] = {
-        "recordSha256": "5" * 64,
-        "observationStartsAtUtc": "2026-08-20T07:00:00Z",
-        "observationEndsAtUtc": "2026-08-27T18:00:00Z",
-        "participantEvidenceDeleteByUtc": "2026-11-25T18:00:00Z",
+        "recordSha256": kickoff_digest(kickoff),
+        "observationStartsAtUtc": kickoff["observationWindow"]["startsAtUtc"],
+        "observationEndsAtUtc": kickoff["observationWindow"]["endsAtUtc"],
+        "participantEvidenceDeleteByUtc": kickoff["evidence"]["participantEvidenceDeleteByUtc"],
     }
     document["session"] = {
         "studyCode": "P01",
@@ -56,7 +119,7 @@ def recorded() -> dict:
         "exactCandidateVerified": True,
         "stopPauseStatus": "NOT_INVOKED",
     }
-    elapsed = [0, 30, 60, 120, 180, 240, 300, 360, 480, 600]
+    elapsed = [0, 30, 60, 120, 180, 240, 300, 360, 480, 540]
     for index, seconds in enumerate(elapsed):
         milestone = document["milestones"][index]
         milestone.update(
@@ -79,8 +142,8 @@ def recorded() -> dict:
         "applicableMandatoryMilestones": 10,
         "recordedMandatoryMilestones": 10,
         "nextActionComprehension": "CLEAR",
-        "nextActionComprehensionAtUtc": utc(590),
-        "nextActionComprehensionElapsedSeconds": 590,
+        "nextActionComprehensionAtUtc": utc(600),
+        "nextActionComprehensionElapsedSeconds": 600,
         "walkingAsAdventure": "YES",
         "companionReturn": "YES",
     }
@@ -107,12 +170,24 @@ def set_gap(document: dict, index: int, status: str, reason: str) -> None:
 
 
 class SessionContractTests(unittest.TestCase):
-    def assert_valid(self, document: dict) -> None:
-        validator.validate_session(document, require_recorded=True)
+    def assert_valid(self, document: dict, kickoff: dict | None = None) -> None:
+        referenced = ready_kickoff() if kickoff is None else kickoff
+        validator.validate_session(
+            document,
+            require_recorded=True,
+            referenced_kickoff=referenced,
+            referenced_kickoff_sha256=kickoff_digest(referenced),
+        )
 
-    def assert_invalid(self, document: dict) -> None:
+    def assert_invalid(self, document: dict, kickoff: dict | None = None) -> None:
+        referenced = ready_kickoff() if kickoff is None else kickoff
         with self.assertRaises(validator.SessionValidationError):
-            validator.validate_session(document, require_recorded=True)
+            validator.validate_session(
+                document,
+                require_recorded=True,
+                referenced_kickoff=referenced,
+                referenced_kickoff_sha256=kickoff_digest(referenced),
+            )
 
     def test_template_is_valid_but_not_recorded(self) -> None:
         template = json.loads(TEMPLATE.read_text(encoding="utf-8"))
@@ -132,6 +207,24 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(
             nextActionComprehensionAtUtc=utc(601),
             nextActionComprehensionElapsedSeconds=601,
+        )
+        self.assert_invalid(document)
+
+    def test_comprehension_must_follow_result_ack(self) -> None:
+        document = recorded()
+        document["milestones"][-1].update(observedAtUtc=utc(560), elapsedSeconds=560)
+        document["outcome"].update(
+            nextActionComprehensionAtUtc=utc(550),
+            nextActionComprehensionElapsedSeconds=550,
+        )
+        self.assert_invalid(document)
+
+    def test_comprehension_must_use_protocol_task_window(self) -> None:
+        document = recorded()
+        document["milestones"][-1].update(observedAtUtc=utc(530), elapsedSeconds=530)
+        document["outcome"].update(
+            nextActionComprehensionAtUtc=utc(539),
+            nextActionComprehensionElapsedSeconds=539,
         )
         self.assert_invalid(document)
 
@@ -186,11 +279,33 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(
             completedUnaided=False,
             firstDayRewardStatus="NO",
+            applicableMandatoryMilestones=5,
             recordedMandatoryMilestones=5,
-            nextActionComprehension="PARTIAL",
+            nextActionComprehension="DATA_GAP",
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
             walkingAsAdventure="DATA_GAP",
             companionReturn="DATA_GAP",
         )
+        self.assert_valid(document)
+
+    def test_withdrawal_requires_stopped_status(self) -> None:
+        document = recorded()
+        for index in range(5, 10):
+            set_gap(document, index, "NOT_REACHED", "participant_withdrew")
+        document["outcome"].update(
+            completedUnaided=False,
+            firstDayRewardStatus="NO",
+            applicableMandatoryMilestones=5,
+            recordedMandatoryMilestones=5,
+            nextActionComprehension="DATA_GAP",
+            nextActionComprehensionAtUtc=None,
+            nextActionComprehensionElapsedSeconds=None,
+        )
+        self.assert_invalid(document)
+        document["session"]["stopPauseStatus"] = "PAUSED"
+        self.assert_invalid(document)
+        document["session"]["stopPauseStatus"] = "STOPPED"
         self.assert_valid(document)
 
     def test_data_gap_can_preserve_later_observations(self) -> None:
@@ -284,6 +399,59 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         document["evidence"]["participantEvidenceDeleteByUtc"] = "2026-11-24T18:00:00Z"
         self.assert_invalid(document)
+
+    def test_referenced_kickoff_digest_is_exact(self) -> None:
+        document = recorded()
+        document["kickoff"]["recordSha256"] = "5" * 64
+        self.assert_invalid(document)
+
+    def test_session_identity_must_equal_referenced_kickoff(self) -> None:
+        mutations = (
+            ("protocol", "commitSha", "a" * 40),
+            ("candidate", "sourceSha", "a" * 40),
+            ("candidate", "treeSha", "b" * 40),
+            ("candidate", "appVersion", "2.0.0"),
+            ("candidate", "buildNumber", "43"),
+            ("candidate", "platformArtifactSha256", "a" * 64),
+            ("kickoff", "observationStartsAtUtc", "2026-08-20T07:00:01Z"),
+            ("kickoff", "observationEndsAtUtc", "2026-08-27T17:59:59Z"),
+            ("kickoff", "participantEvidenceDeleteByUtc", "2026-11-24T18:00:00Z"),
+        )
+        for section, key, value in mutations:
+            with self.subTest(path=f"{section}.{key}"):
+                document = recorded()
+                document[section][key] = value
+                self.assert_invalid(document)
+
+    def test_recorded_cli_requires_exact_kickoff_file(self) -> None:
+        kickoff = ready_kickoff()
+        document = recorded()
+        with tempfile.TemporaryDirectory() as directory:
+            session_path = Path(directory) / "session.json"
+            kickoff_path = Path(directory) / "kickoff.json"
+            session_path.write_text(json.dumps(document), encoding="utf-8")
+            kickoff_path.write_bytes(encoded_kickoff(kickoff))
+            missing = subprocess.run(
+                [sys.executable, str(VALIDATOR), str(session_path), "--require-recorded"],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            accepted = subprocess.run(
+                [
+                    sys.executable,
+                    str(VALIDATOR),
+                    str(session_path),
+                    "--kickoff",
+                    str(kickoff_path),
+                    "--require-recorded",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
 
     def test_boolean_and_integer_types_are_not_coerced(self) -> None:
         document = recorded()

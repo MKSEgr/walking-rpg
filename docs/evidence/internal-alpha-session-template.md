@@ -12,18 +12,22 @@ record with:
 ```bash
 python3 scripts/ci/verify_internal_alpha_session.py \
   <redacted-participant-session.json> \
+  --kickoff <approved-ready-kickoff.json> \
   --require-recorded
 ```
 
 The validator accepts only study codes `P01`–`P12`, one exact candidate, one referenced
 kickoff contract and the ten ordered protocol milestones. It checks UTC/elapsed
 arithmetic, observed-source codes, consent/privacy invariants and metric bounds. The
-session must fall inside the referenced kickoff observation window, and its evidence
-deadline must equal the kickoff-wide deadline bounded to 90 days after that window.
-`completedUnaided=true` additionally requires both result ACK and demonstrated clear
-next-action comprehension within 600 seconds, no facilitator help and a confirmed
-first-day reward. A passing JSON record proves structural completeness and redaction
-boundaries, not that external evidence is true or that #161 is complete.
+validator checks the exact kickoff file digest and requires its protocol, candidate,
+platform artifact, observation window and shared deletion deadline to match the session.
+The session must fall inside that observation window. `completedUnaided=true`
+additionally requires result ACK followed by demonstrated clear next-action
+comprehension during the 09:00–10:00 task window, no facilitator help and a confirmed
+first-day reward. Instrumentation coverage excludes the `NOT_REACHED` tail, and a
+participant withdrawal requires `STOPPED`. A passing JSON record proves structural
+completeness and redaction boundaries, not that external evidence is true or that #161
+is complete.
 
 ## Identity and contract
 
@@ -65,7 +69,7 @@ boundaries, not that external evidence is true or that #161 is complete.
 - First-day reward by cutoff: `YES` / `NO` / `DATA_GAP`
 - Candidate sessions / crash-free sessions:
 - Authoritative sync attempts / failed non-cancelled sync attempts:
-- Applicable mandatory milestones / recorded mandatory milestones:
+- Applicable mandatory milestones before first `NOT_REACHED` / recorded milestones:
 - Next-action comprehension and UTC/elapsed time: `CLEAR` / `PARTIAL` / `UNCLEAR` / `DATA_GAP`
 - Walking felt part of an adventure: `YES` / `PARTIAL` / `NO` / `DATA_GAP`
 - Companion created a reason to return: `YES` / `PARTIAL` / `NO` / `DATA_GAP`
