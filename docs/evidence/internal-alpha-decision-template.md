@@ -100,6 +100,10 @@ into a measured failure. Missing evidence cannot
 be counted as a failed participant merely to manufacture a measured rate. The tool does
 not derive current open-release-blocker status; it remains a reviewed owner input and
 can only make `EXPAND` stricter.
+When the permission request was shown but a stopped/blocked/withdrawn participant never
+reached a decision, `NOT_REACHED` is a known non-grant: include that participant in the
+permission denominator and add zero to the numerator. Only permission `DATA_GAP` makes
+the aggregate metric unknown.
 
 ## Contract
 
