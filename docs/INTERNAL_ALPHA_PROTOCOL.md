@@ -213,7 +213,7 @@ cohort does not prove how many invitations were actually sent; invitations and
 exclusions remain reviewed inputs, especially for an early stop. Passing that
 cross-check proves internal consistency, not the truth or approval of external evidence.
 If the study stops before its first session, the cross-check accepts the kickoff-only
-package only with zero started/platform/withdrawal/stop counts and six decision metric
+package only with zero started/completed/platform/withdrawal/stop counts and six decision metric
 `DATA_GAP` values; it never permits `EXPAND`. Findings from supplied sessions are a
 validated lower bound, so a signed decision may retain additional reviewed pre-session
 or operational incidents, and decision recording must follow READY kickoff approval.
