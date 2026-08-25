@@ -31,6 +31,11 @@ python3 scripts/ci/verify_internal_alpha_decision_evidence.py \
   --session <P12-session.json>
 ```
 
+For a reviewed `STOP`/`FIX_AND_RERUN` decision made before the first session, omit
+`--session` entirely. The decision must then record `started=0`, zero derivable cohort
+counts and `DATA_GAP` for all six metrics; the package digest still binds the exact
+READY kickoff. An `EXPAND` decision cannot pass without all 12 participant records.
+
 The cross-check reruns all three underlying contracts, requires unique study codes and
 exact session filenames, reconciles started/platform/withdrawal/stopped-or-paused counts
 and recomputes every quantitative metric. Actual invitations and exclusions remain
