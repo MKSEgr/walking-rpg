@@ -112,6 +112,32 @@ class DecisionEvidenceTests(unittest.TestCase):
         )
         self.write_decision()
 
+    def make_kickoff_only_stop(self) -> None:
+        self.session_paths = []
+        self.decision["cohort"] = {
+            "invited": 0,
+            "started": 0,
+            "completed": 0,
+            "iosRealUsers": 0,
+            "androidRealUsers": 0,
+            "withdrawn": 0,
+            "excluded": 0,
+            "stoppedOrPaused": 0,
+        }
+        for name in self.decision["metrics"]:
+            self.decision["metrics"][name] = {
+                "status": "DATA_GAP",
+                "numerator": None,
+                "denominator": None,
+                "dataGapReasonCode": "collection_stopped",
+            }
+        self.decision["decision"].update(
+            selected="STOP",
+            rationaleCode="safety_risk",
+            nextScope="stop_and_archive",
+        )
+        self.refresh_package()
+
     def assert_valid(self, paths: list[Path] | None = None) -> str:
         return validator.validate_bundle(
             self.decision_path,
@@ -289,30 +315,7 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.assert_valid()
 
     def test_stop_before_first_session_accepts_an_empty_bundle(self) -> None:
-        self.session_paths = []
-        self.decision["cohort"] = {
-            "invited": 0,
-            "started": 0,
-            "completed": 0,
-            "iosRealUsers": 0,
-            "androidRealUsers": 0,
-            "withdrawn": 0,
-            "excluded": 0,
-            "stoppedOrPaused": 0,
-        }
-        for name in self.decision["metrics"]:
-            self.decision["metrics"][name] = {
-                "status": "DATA_GAP",
-                "numerator": None,
-                "denominator": None,
-                "dataGapReasonCode": "collection_stopped",
-            }
-        self.decision["decision"].update(
-            selected="STOP",
-            rationaleCode="safety_risk",
-            nextScope="stop_and_archive",
-        )
-        self.refresh_package()
+        self.make_kickoff_only_stop()
         self.assert_valid()
 
         result = subprocess.run(
@@ -328,6 +331,22 @@ class DecisionEvidenceTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_kickoff_only_stop_preserves_non_session_findings(self) -> None:
+        self.make_kickoff_only_stop()
+        self.decision["findings"]["stopCount"] = 1
+        self.write_decision()
+        self.assert_valid()
+
+    def test_kickoff_only_decision_cannot_predate_approval(self) -> None:
+        self.make_kickoff_only_stop()
+        self.decision.update(
+            recordedAtUtc="2026-08-20T05:00:00Z",
+            decisionAtUtc="2026-08-20T05:30:00Z",
+        )
+        self.decision["decision"]["confirmationAtUtc"] = "2026-08-20T05:45:00Z"
+        self.write_decision()
+        self.assert_invalid()
 
 
 if __name__ == "__main__":
