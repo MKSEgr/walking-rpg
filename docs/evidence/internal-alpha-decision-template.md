@@ -19,8 +19,20 @@ for a data gap, invalid cohort, threshold miss, qualitative miss, stop/fix findi
 open release blocker. This Markdown record adds reviewed narrative; it cannot override
 a failing JSON record or prove the referenced external evidence.
 
-Before approval, cross-check the quantitative decision fields against the exact READY
-kickoff and every redacted participant record:
+First validate the exact READY kickoff and redacted participant records, and print the
+digest to place in `candidate.alphaEvidencePackageSha256`:
+
+```bash
+python3 scripts/ci/verify_internal_alpha_decision_evidence.py \
+  --print-package-sha256 \
+  --kickoff <approved-ready-kickoff.json> \
+  --session <P01-session.json> \
+  --session <P02-session.json> \
+  --session <P12-session.json>
+```
+
+After recording that digest, cross-check the quantitative decision fields against the
+same exact evidence package:
 
 ```bash
 python3 scripts/ci/verify_internal_alpha_decision_evidence.py \
