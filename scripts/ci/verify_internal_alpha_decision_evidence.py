@@ -287,9 +287,15 @@ def validate_bundle(
             _fail(f"$.cohort.{name}", f"must equal derived count {expected}")
 
     for name, expected in _derived_finding_counts(sessions).items():
-        if decision["findings"][name] != expected:
-            _fail(f"$.findings.{name}", f"must equal derived issue count {expected}")
+        if decision["findings"][name] < expected:
+            _fail(
+                f"$.findings.{name}",
+                f"must include at least {expected} session-derived issues",
+            )
 
+    kickoff_approved = _utc(kickoff["approvedAtUtc"])
+    if _utc(decision["recordedAtUtc"]) < kickoff_approved:
+        _fail("$.recordedAtUtc", "must not precede READY kickoff approval")
     if sessions:
         latest_session = max(_utc(item["recordedAtUtc"]) for item in sessions)
         if _utc(decision["recordedAtUtc"]) < latest_session:
