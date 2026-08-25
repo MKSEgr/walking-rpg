@@ -223,6 +223,10 @@ instrumentation, release-blocker or cohort rationale can be signed without parti
 evidence; threshold, comprehension and core-value rationales require session records.
 A threshold-miss decision requires an actual failed derived threshold, and owner
 confirmation must occur before the participant-evidence deletion deadline.
+An instrumentation-gap decision requires a derived metric data gap, failed
+participant-level instrumentation coverage, or a reviewed interpretability gate that is
+not true. Missing next-action comprehension propagates to an unaided-metric data gap
+unless other recorded evidence independently proves non-completion.
 Focused comprehension and unsupported-core-value rationales require matching session
 outcomes; core-value rejection also requires a false reviewed qualitative gate.
 Findings from supplied sessions are a
