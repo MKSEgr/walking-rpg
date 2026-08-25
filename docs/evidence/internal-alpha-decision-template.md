@@ -59,6 +59,9 @@ An `instrumentation_gap` rationale requires a derived metric `DATA_GAP`, failed
 participant-level instrumentation coverage, or a reviewed
 `instrumentationInterpretable` gate that is not true.
 `release_blocker` requires at least one reviewed open release blocker in `findings`.
+`safety_risk` requires at least one reviewed `STOP` finding. `cohort_invalid` requires a
+recorded cohort defect: incomplete recruitment/start/completion, fewer than four users
+on a platform, a withdrawal, exclusion, stop or pause.
 `focused_comprehension_gap` requires a `PARTIAL` or `UNCLEAR` participant outcome.
 `core_value_not_supported` requires both a negative adventure/companion session signal
 and the corresponding reviewed qualitative gate to be false.
