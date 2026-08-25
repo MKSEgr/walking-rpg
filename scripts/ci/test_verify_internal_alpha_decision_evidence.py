@@ -344,6 +344,24 @@ class DecisionEvidenceTests(unittest.TestCase):
         self.write_decision()
         self.assert_valid()
 
+    def test_threshold_miss_rationale_requires_a_failed_threshold(self) -> None:
+        self.decision["decision"].update(
+            selected="FIX_AND_RERUN",
+            rationaleCode="threshold_miss",
+            nextScope="focused_fix_and_alpha_rerun",
+        )
+        self.write_decision()
+        self.assert_invalid()
+
+        for path in self.session_paths[:4]:
+            document = json.loads(path.read_text(encoding="utf-8"))
+            document["milestones"][4]["helpRequested"] = True
+            document["outcome"]["completedUnaided"] = False
+            path.write_bytes(_encoded(document))
+        self.decision["metrics"]["unaidedFirstTenMinutes"]["numerator"] = 8
+        self.refresh_package()
+        self.assert_valid()
+
     def test_decision_cannot_predate_participant_records(self) -> None:
         self.decision["recordedAtUtc"] = "2026-08-20T09:00:00Z"
         self.write_decision()
@@ -447,6 +465,15 @@ class DecisionEvidenceTests(unittest.TestCase):
             decisionAtUtc="2026-08-20T05:30:00Z",
         )
         self.decision["decision"]["confirmationAtUtc"] = "2026-08-20T05:45:00Z"
+        self.write_decision()
+        self.assert_invalid()
+
+    def test_decision_must_precede_evidence_deletion(self) -> None:
+        self.decision.update(
+            recordedAtUtc="2026-11-26T08:00:00Z",
+            decisionAtUtc="2026-11-26T08:30:00Z",
+        )
+        self.decision["decision"]["confirmationAtUtc"] = "2026-11-26T08:45:00Z"
         self.write_decision()
         self.assert_invalid()
 
