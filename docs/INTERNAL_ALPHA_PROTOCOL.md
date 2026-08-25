@@ -219,6 +219,8 @@ package only with zero started/completed/platform/stop counts and six decision m
 `DATA_GAP` values; it never permits `EXPAND`. Only a safety, operational,
 instrumentation, release-blocker or cohort rationale can be signed without participant
 evidence; threshold, comprehension and core-value rationales require session records.
+A threshold-miss decision requires an actual failed derived threshold, and owner
+confirmation must occur before the participant-evidence deletion deadline.
 Findings from supplied sessions are a
 validated lower bound, so a signed decision may retain additional reviewed pre-session
 or operational incidents, and decision recording must follow READY kickoff approval.
