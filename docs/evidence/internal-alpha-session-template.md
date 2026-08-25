@@ -77,7 +77,9 @@ comprehension blocks unaided completion, while one afterward preserves the compl
 primary outcome. A PAUSED flow may resume and retain later evidence, but comprehension
 cannot be collected after terminal STOPPED. Without separately timed qualitative
 answers, STOPPED before session end forces both to `DATA_GAP`; a stop at/after session
-end preserves them. Withdrawal STOPPED time must equal its
+end preserves them, but cannot be used to explain an earlier `session_stopped` or
+`flow_blocked` journey tail. Such a tail requires its stop/pause during the moderated
+session. Withdrawal STOPPED time must equal its
 withdrawal time. The
 kickoff-wide evidence deadline must be later than every session's derived
 first-day reward cutoff so a `PENDING` result can be resolved before deletion. For

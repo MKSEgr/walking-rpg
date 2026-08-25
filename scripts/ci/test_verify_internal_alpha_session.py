@@ -626,6 +626,8 @@ class SessionContractTests(unittest.TestCase):
                     failedNonCancelledSyncAttempts=0,
                 )
                 self.assert_valid(document)
+                document["session"]["stopPauseAtUtc"] = utc(1000)
+                self.assert_invalid(document)
 
     def test_permission_denial_has_valid_unaided_limited_path(self) -> None:
         document = recorded()

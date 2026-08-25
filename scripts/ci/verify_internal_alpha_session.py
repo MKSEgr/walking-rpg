@@ -929,6 +929,11 @@ def validate_session(
         _fail("$.session.stopPauseStatus", "session_stopped gaps require PAUSED or STOPPED")
     if "flow_blocked" in gap_reasons and stop_status != "STOPPED":
         _fail("$.session.stopPauseStatus", "flow_blocked gaps require STOPPED")
+    if gap_reasons & {"session_stopped", "flow_blocked"} and stop_at > ended:
+        _fail(
+            "$.session.stopPauseAtUtc",
+            "a stop-backed journey tail requires stop/pause during the session",
+        )
     if "participant_withdrew" in gap_reasons and withdrawal_status != "WITHDREW":
         _fail(
             "$.session.withdrawalStatus",
