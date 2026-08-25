@@ -29,7 +29,9 @@ comprehension during the 09:00–10:00 task, no stop and no help. First-day
 reward remains a separate outcome metric. Its cutoff is derived from the sanitized local
 UTC offset, restricted to the RU cohort's UTC+02 through UTC+12 whole-hour zones: before
 cutoff it stays `PENDING` unless already `YES`; `NO` and `DATA_GAP` are accepted only at
-or after cutoff, and `YES` requires the authoritative reward event at or before cutoff.
+or after cutoff. Event resolution and reward delivery remain separate: `YES` requires a
+dedicated authoritative reward-receipt UTC timestamp at or before cutoff, while every
+non-`YES` status requires that timestamp to be null.
 Result ACK must complete by 09:00, and
 `registration_shown` anchors the timer at session start/zero seconds.
 Locale/authentication must complete by 02:00,
@@ -97,7 +99,7 @@ and every finding must link a positive GitHub issue number regardless of severit
 - Completed first ten minutes unaided: `PASS` / `FAIL`
 - Permission request shown: `YES` / `NO`
 - Permission granted: `YES` / `NO` / `NOT_APPLICABLE`
-- First-day UTC offset minutes and derived cutoff UTC:
+- First-day reward receipt UTC, UTC offset minutes and derived cutoff UTC:
 - First-day reward by cutoff: `YES` / `NO` / `DATA_GAP` / `PENDING`
 - Candidate sessions / crash-free sessions:
 - Authoritative sync attempts / failed non-cancelled sync attempts:

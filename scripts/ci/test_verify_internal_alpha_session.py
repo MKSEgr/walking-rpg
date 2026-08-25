@@ -139,6 +139,7 @@ def recorded() -> dict:
         "permissionRequestShown": True,
         "permissionDecision": "GRANTED",
         "firstDayRewardStatus": "YES",
+        "firstDayRewardReceiptAtUtc": utc(480),
         "firstDayTimeZoneOffsetMinutes": 180,
         "firstDayRewardCutoffAtUtc": utc(46800),
         "candidateSessions": 2,
@@ -310,13 +311,19 @@ class SessionContractTests(unittest.TestCase):
         for reward_status in ("NO", "DATA_GAP"):
             with self.subTest(reward_status=reward_status):
                 document = recorded()
-                document["outcome"]["firstDayRewardStatus"] = reward_status
+                document["outcome"].update(
+                    firstDayRewardStatus=reward_status,
+                    firstDayRewardReceiptAtUtc=None,
+                )
                 self.assert_valid(document)
 
     def test_reward_no_waits_for_local_first_day_cutoff(self) -> None:
         document = recorded()
         document["recordedAtUtc"] = utc(1200)
-        document["outcome"]["firstDayRewardStatus"] = "NO"
+        document["outcome"].update(
+            firstDayRewardStatus="NO",
+            firstDayRewardReceiptAtUtc=None,
+        )
         self.assert_invalid(document)
         document["outcome"]["firstDayRewardStatus"] = "PENDING"
         self.assert_valid(document)
@@ -395,6 +402,7 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(
             completedUnaided=False,
             firstDayRewardStatus="NO",
+            firstDayRewardReceiptAtUtc=None,
             applicableMandatoryMilestones=5,
             recordedMandatoryMilestones=5,
             nextActionComprehension="DATA_GAP",
@@ -415,6 +423,7 @@ class SessionContractTests(unittest.TestCase):
         document["outcome"].update(
             completedUnaided=False,
             firstDayRewardStatus="NO",
+            firstDayRewardReceiptAtUtc=None,
             applicableMandatoryMilestones=5,
             recordedMandatoryMilestones=5,
             nextActionComprehension="DATA_GAP",
@@ -487,6 +496,7 @@ class SessionContractTests(unittest.TestCase):
             completedUnaided=False,
             permissionDecision="DENIED",
             firstDayRewardStatus="NO",
+            firstDayRewardReceiptAtUtc=None,
             applicableMandatoryMilestones=4,
             recordedMandatoryMilestones=4,
             nextActionComprehension="DATA_GAP",
@@ -529,40 +539,22 @@ class SessionContractTests(unittest.TestCase):
         set_gap(document, 9, "NOT_REACHED", "flow_blocked")
         document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=8)
         self.assert_invalid(document)
+        document = recorded()
+        document["outcome"]["firstDayRewardReceiptAtUtc"] = None
+        self.assert_invalid(document)
+        document = recorded()
+        document["outcome"]["firstDayRewardStatus"] = "NO"
+        self.assert_invalid(document)
 
     def test_reward_yes_must_arrive_by_local_day_cutoff(self) -> None:
         document = recorded()
-        document["session"].update(
-            startedAtUtc=utc(7200),
-            endedAtUtc=utc(15200),
-        )
-        for milestone in document["milestones"]:
-            milestone["observedAtUtc"] = utc(7200 + milestone["elapsedSeconds"])
-        document["evidence"]["redactionReviewedAtUtc"] = utc(17000)
         document["outcome"].update(
-            completedUnaided=False,
             firstDayTimeZoneOffsetMinutes=720,
             firstDayRewardCutoffAtUtc=utc(14400),
-            nextActionComprehension="DATA_GAP",
-            nextActionSummaryCode=None,
-            nextActionComprehensionAtUtc=None,
-            nextActionComprehensionElapsedSeconds=None,
-            nextActionComprehensionHelpRequested=None,
-            nextActionComprehensionHelpProvided=None,
-        )
-        document["milestones"][8].update(
-            observedAtUtc=utc(14400),
-            elapsedSeconds=7200,
-        )
-        document["milestones"][9].update(
-            observedAtUtc=utc(14500),
-            elapsedSeconds=7300,
+            firstDayRewardReceiptAtUtc=utc(14400),
         )
         self.assert_valid(document)
-        document["milestones"][8].update(
-            observedAtUtc=utc(14401),
-            elapsedSeconds=7201,
-        )
+        document["outcome"]["firstDayRewardReceiptAtUtc"] = utc(14401)
         self.assert_invalid(document)
 
     def test_metric_counts_are_bounded_and_match_milestones(self) -> None:

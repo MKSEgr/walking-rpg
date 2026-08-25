@@ -140,6 +140,7 @@
     "permissionRequestShown": null,
     "permissionDecision": null,
     "firstDayRewardStatus": null,
+    "firstDayRewardReceiptAtUtc": null,
     "firstDayTimeZoneOffsetMinutes": null,
     "firstDayRewardCutoffAtUtc": null,
     "candidateSessions": null,

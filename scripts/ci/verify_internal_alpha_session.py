@@ -297,6 +297,7 @@ def _validate_outcome(
     reward_status = outcome["firstDayRewardStatus"]
     if reward_status not in {"YES", "NO", "DATA_GAP", "PENDING"}:
         _fail("$.outcome.firstDayRewardStatus", "must be YES, NO, DATA_GAP or PENDING")
+    reward_receipt_raw = outcome["firstDayRewardReceiptAtUtc"]
     offset = outcome["firstDayTimeZoneOffsetMinutes"]
     if type(offset) is not int or offset not in RU_TIME_ZONE_OFFSETS:
         _fail(
@@ -327,6 +328,21 @@ def _validate_outcome(
         )
     if recorded_at >= reward_cutoff and reward_status == "PENDING":
         _fail("$.outcome.firstDayRewardStatus", "must be resolved at or after cutoff")
+    if reward_status == "YES":
+        reward_receipt = _utc(
+            reward_receipt_raw,
+            "$.outcome.firstDayRewardReceiptAtUtc",
+        )
+        if not started <= reward_receipt <= min(reward_cutoff, recorded_at):
+            _fail(
+                "$.outcome.firstDayRewardReceiptAtUtc",
+                "must be between session start and both the cutoff and record time",
+            )
+    elif reward_receipt_raw is not None:
+        _fail(
+            "$.outcome.firstDayRewardReceiptAtUtc",
+            "must be null unless firstDayRewardStatus is YES",
+        )
 
     candidate_sessions = _integer(outcome["candidateSessions"], "$.outcome.candidateSessions", positive=True)
     crash_free = _integer(outcome["crashFreeSessions"], "$.outcome.crashFreeSessions")
@@ -475,16 +491,7 @@ def _validate_outcome(
         if reward_event["status"] != "OBSERVED":
             _fail(
                 "$.outcome.firstDayRewardStatus",
-                "YES requires an observed authoritative event resolution/reward receipt",
-            )
-        reward_event_at = _utc(
-            reward_event["observedAtUtc"],
-            "$.milestones[8].observedAtUtc",
-        )
-        if reward_event_at > reward_cutoff:
-            _fail(
-                "$.outcome.firstDayRewardStatus",
-                "YES requires the authoritative reward event at or before first-day cutoff",
+                "YES requires an observed authoritative event resolution",
             )
     if outcome["completedUnaided"]:
         if stop_status != "NOT_INVOKED":
@@ -685,8 +692,9 @@ def validate_session(
         ], f"$.milestones[{index}]")
     outcome = _keys(root["outcome"], [
         "completedUnaided", "permissionRequestShown", "permissionDecision",
-        "firstDayRewardStatus", "firstDayTimeZoneOffsetMinutes",
-        "firstDayRewardCutoffAtUtc", "candidateSessions", "crashFreeSessions",
+        "firstDayRewardStatus", "firstDayRewardReceiptAtUtc",
+        "firstDayTimeZoneOffsetMinutes", "firstDayRewardCutoffAtUtc",
+        "candidateSessions", "crashFreeSessions",
         "authoritativeSyncAttempts", "failedNonCancelledSyncAttempts",
         "applicableMandatoryMilestones", "recordedMandatoryMilestones",
         "nextActionComprehension", "nextActionSummaryCode",
