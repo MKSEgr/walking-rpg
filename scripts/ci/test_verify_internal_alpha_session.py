@@ -169,6 +169,17 @@ def set_gap(document: dict, index: int, status: str, reason: str) -> None:
     )
 
 
+def set_not_applicable(document: dict, index: int, reason: str) -> None:
+    document["milestones"][index].update(
+        status="NOT_APPLICABLE",
+        observedAtUtc=None,
+        elapsedSeconds=None,
+        sourceCategory=None,
+        helpRequested=None,
+        gapReasonCode=reason,
+    )
+
+
 class SessionContractTests(unittest.TestCase):
     def assert_valid(self, document: dict, kickoff: dict | None = None) -> None:
         referenced = ready_kickoff() if kickoff is None else kickoff
@@ -200,6 +211,11 @@ class SessionContractTests(unittest.TestCase):
     def test_result_ack_after_ten_minutes_blocks_unaided_claim(self) -> None:
         document = recorded()
         document["milestones"][-1].update(observedAtUtc=utc(601), elapsedSeconds=601)
+        self.assert_invalid(document)
+
+    def test_result_ack_after_nine_minutes_blocks_unaided_claim(self) -> None:
+        document = recorded()
+        document["milestones"][-1].update(observedAtUtc=utc(541), elapsedSeconds=541)
         self.assert_invalid(document)
 
     def test_comprehension_after_ten_minutes_blocks_unaided_claim(self) -> None:
@@ -265,6 +281,11 @@ class SessionContractTests(unittest.TestCase):
         document["milestones"][3].update(observedAtUtc=utc(20), elapsedSeconds=20)
         self.assert_invalid(document)
 
+    def test_registration_milestone_anchors_session_timer(self) -> None:
+        document = recorded()
+        document["milestones"][0].update(observedAtUtc=utc(1), elapsedSeconds=1)
+        self.assert_invalid(document)
+
     def test_observation_cannot_follow_not_reached(self) -> None:
         document = recorded()
         set_gap(document, 5, "NOT_REACHED", "flow_blocked")
@@ -321,6 +342,21 @@ class SessionContractTests(unittest.TestCase):
         document = recorded()
         set_gap(document, 3, "DATA_GAP", "instrumentation_missing")
         document["outcome"].update(completedUnaided=False, recordedMandatoryMilestones=9)
+        self.assert_invalid(document)
+
+    def test_permission_denial_has_valid_unaided_limited_path(self) -> None:
+        document = recorded()
+        set_not_applicable(document, 5, "permission_denied")
+        document["outcome"].update(
+            permissionDecision="DENIED",
+            applicableMandatoryMilestones=9,
+            recordedMandatoryMilestones=9,
+        )
+        self.assert_valid(document)
+        document["outcome"]["permissionDecision"] = "GRANTED"
+        self.assert_invalid(document)
+        document = recorded()
+        document["outcome"]["permissionDecision"] = "DENIED"
         self.assert_invalid(document)
 
     def test_reward_yes_requires_observed_event_resolution(self) -> None:

@@ -58,6 +58,7 @@ GAP_CODES = {
     "DATA_GAP": {"instrumentation_missing", "evidence_corrupt"},
     "NOT_REACHED": {"session_stopped", "participant_withdrew", "flow_blocked"},
 }
+NOT_APPLICABLE_CODES = {"first_energy": "permission_denied"}
 STORAGE_CATEGORIES = {
     "approved_internal_evidence",
     "encrypted_project_storage",
@@ -187,6 +188,11 @@ def _validate_milestones(
             elapsed = _integer(milestone["elapsedSeconds"], f"{path}.elapsedSeconds")
             if elapsed != int((observed - started).total_seconds()):
                 _fail(f"{path}.elapsedSeconds", "must exactly equal observedAtUtc - startedAtUtc")
+            if expected_id == "registration_shown" and (observed != started or elapsed != 0):
+                _fail(
+                    path,
+                    "registration_shown must anchor the session at startedAtUtc and zero seconds",
+                )
             if milestone["sourceCategory"] != SOURCES[expected_id]:
                 _fail(f"{path}.sourceCategory", f"must be {SOURCES[expected_id]!r}")
             if type(milestone["helpRequested"]) is not bool:
@@ -205,8 +211,23 @@ def _validate_milestones(
                 )
             if status == "NOT_REACHED":
                 not_reached = True
+        elif status == "NOT_APPLICABLE":
+            for key in ("observedAtUtc", "elapsedSeconds", "sourceCategory", "helpRequested"):
+                if milestone[key] is not None:
+                    _fail(f"{path}.{key}", "must be null when NOT_APPLICABLE")
+            expected_reason = NOT_APPLICABLE_CODES.get(expected_id)
+            if expected_reason is None or milestone["gapReasonCode"] != expected_reason:
+                _fail(
+                    f"{path}.gapReasonCode",
+                    "NOT_APPLICABLE is allowed only for first_energy with permission_denied",
+                )
         else:
-            _fail(f"{path}.status", "must be OBSERVED, DATA_GAP or NOT_REACHED")
+            _fail(
+                f"{path}.status",
+                "must be OBSERVED, DATA_GAP, NOT_APPLICABLE or NOT_REACHED",
+            )
+        if expected_id == "registration_shown" and status != "OBSERVED":
+            _fail(path, "registration_shown must be OBSERVED at the session start")
         result[expected_id] = milestone
     return result
 
@@ -246,18 +267,31 @@ def _validate_outcome(
         _fail("$.outcome.crashFreeSessions", "must not exceed candidateSessions")
     if failed_syncs > sync_attempts:
         _fail("$.outcome.failedNonCancelledSyncAttempts", "must not exceed authoritativeSyncAttempts")
-    actual_applicable = next(
-        (
-            index
-            for index, item in enumerate(milestones.values())
-            if item["status"] == "NOT_REACHED"
-        ),
-        len(MILESTONES),
-    )
+    reached = []
+    for item in milestones.values():
+        if item["status"] == "NOT_REACHED":
+            break
+        reached.append(item)
+    actual_applicable = sum(item["status"] != "NOT_APPLICABLE" for item in reached)
+    if permission == "DENIED":
+        energy = milestones["first_energy"]
+        if not (
+            energy["status"] == "NOT_APPLICABLE"
+            and energy["gapReasonCode"] == "permission_denied"
+        ):
+            _fail(
+                "$.milestones[5]",
+                "DENIED permission requires first_energy to be NOT_APPLICABLE/permission_denied",
+            )
+    elif milestones["first_energy"]["status"] == "NOT_APPLICABLE":
+        _fail(
+            "$.milestones[5]",
+            "first_energy may be NOT_APPLICABLE only when permission is DENIED",
+        )
     if applicable != actual_applicable:
         _fail(
             "$.outcome.applicableMandatoryMilestones",
-            "must equal the milestone count before the first NOT_REACHED stage",
+            "must equal applicable stages before the first NOT_REACHED stage",
         )
     if recorded > applicable:
         _fail("$.outcome.recordedMandatoryMilestones", "must not exceed applicableMandatoryMilestones")
@@ -330,12 +364,18 @@ def _validate_outcome(
     if outcome["completedUnaided"]:
         if stop_status != "NOT_INVOKED":
             _fail("$.outcome.completedUnaided", "cannot be true for a paused/stopped session")
-        if any(item["status"] != "OBSERVED" for item in milestones.values()):
-            _fail("$.outcome.completedUnaided", "requires every milestone to be observed")
+        if any(
+            item["status"] not in {"OBSERVED", "NOT_APPLICABLE"}
+            for item in milestones.values()
+        ):
+            _fail(
+                "$.outcome.completedUnaided",
+                "requires every applicable milestone to be observed",
+            )
         if any(item["helpRequested"] for item in milestones.values()):
             _fail("$.outcome.completedUnaided", "requires no facilitator help")
-        if milestones["result_ack"]["elapsedSeconds"] > 600:
-            _fail("$.outcome.completedUnaided", "requires result ACK within 600 seconds")
+        if milestones["result_ack"]["elapsedSeconds"] > 540:
+            _fail("$.outcome.completedUnaided", "requires result ACK within 540 seconds")
         if comprehension != "CLEAR":
             _fail("$.outcome.completedUnaided", "requires CLEAR next-action comprehension")
         if comprehension_elapsed > 600:
