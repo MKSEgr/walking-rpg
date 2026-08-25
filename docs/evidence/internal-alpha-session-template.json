@@ -137,6 +137,7 @@
     "nextActionComprehension": null,
     "nextActionComprehensionAtUtc": null,
     "nextActionComprehensionElapsedSeconds": null,
+    "nextActionComprehensionHelpRequested": null,
     "walkingAsAdventure": null,
     "companionReturn": null
   },

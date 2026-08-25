@@ -83,7 +83,7 @@ and every finding must link a positive GitHub issue number regardless of severit
 - Candidate sessions / crash-free sessions:
 - Authoritative sync attempts / failed non-cancelled sync attempts:
 - Applicable mandatory milestones before first `NOT_REACHED` / recorded milestones:
-- Next-action comprehension and UTC/elapsed time: `CLEAR` / `PARTIAL` / `UNCLEAR` / `DATA_GAP`
+- Next-action comprehension, UTC/elapsed time and help requested: `CLEAR` / `PARTIAL` / `UNCLEAR` / `DATA_GAP`
 - Walking felt part of an adventure: `YES` / `PARTIAL` / `NO` / `DATA_GAP`
 - Companion created a reason to return: `YES` / `PARTIAL` / `NO` / `DATA_GAP`
 

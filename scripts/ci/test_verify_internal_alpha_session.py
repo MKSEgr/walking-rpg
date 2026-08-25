@@ -145,6 +145,7 @@ def recorded() -> dict:
         "nextActionComprehension": "CLEAR",
         "nextActionComprehensionAtUtc": utc(600),
         "nextActionComprehensionElapsedSeconds": 600,
+        "nextActionComprehensionHelpRequested": False,
         "walkingAsAdventure": "YES",
         "companionReturn": "YES",
     }
@@ -257,19 +258,22 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehension="DATA_GAP",
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
         )
         self.assert_valid(document)
         document["outcome"]["nextActionComprehensionAtUtc"] = utc(590)
         self.assert_invalid(document)
 
     def test_help_and_comprehension_are_unaided_gates(self) -> None:
-        for mutation in ("help", "comprehension"):
+        for mutation in ("milestone_help", "comprehension", "comprehension_help"):
             with self.subTest(mutation=mutation):
                 document = recorded()
-                if mutation == "help":
+                if mutation == "milestone_help":
                     document["milestones"][4]["helpRequested"] = True
-                else:
+                elif mutation == "comprehension":
                     document["outcome"]["nextActionComprehension"] = "PARTIAL"
+                else:
+                    document["outcome"]["nextActionComprehensionHelpRequested"] = True
                 self.assert_invalid(document)
 
     def test_first_day_reward_is_independent_of_unaided_completion(self) -> None:
@@ -339,6 +343,7 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehension="DATA_GAP",
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
             walkingAsAdventure="DATA_GAP",
             companionReturn="DATA_GAP",
         )
@@ -356,6 +361,7 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehension="DATA_GAP",
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
         )
         self.assert_invalid(document)
         document["session"]["stopPauseStatus"] = "PAUSED"
@@ -407,6 +413,7 @@ class SessionContractTests(unittest.TestCase):
             nextActionComprehension="DATA_GAP",
             nextActionComprehensionAtUtc=None,
             nextActionComprehensionElapsedSeconds=None,
+            nextActionComprehensionHelpRequested=None,
         )
         self.assert_valid(document)
 

@@ -319,13 +319,23 @@ def _validate_outcome(
         _fail("$.outcome.nextActionComprehension", "has an unsupported code")
     comprehension_at = outcome["nextActionComprehensionAtUtc"]
     comprehension_elapsed = outcome["nextActionComprehensionElapsedSeconds"]
+    comprehension_help = outcome["nextActionComprehensionHelpRequested"]
     if comprehension == "DATA_GAP":
-        if comprehension_at is not None or comprehension_elapsed is not None:
+        if (
+            comprehension_at is not None
+            or comprehension_elapsed is not None
+            or comprehension_help is not None
+        ):
             _fail(
                 "$.outcome.nextActionComprehension",
-                "DATA_GAP requires null comprehension timestamp and elapsed seconds",
+                "DATA_GAP requires null comprehension timing and help fields",
             )
     else:
+        if type(comprehension_help) is not bool:
+            _fail(
+                "$.outcome.nextActionComprehensionHelpRequested",
+                "must be a boolean when comprehension is recorded",
+            )
         demonstrated = _utc(
             comprehension_at,
             "$.outcome.nextActionComprehensionAtUtc",
@@ -398,6 +408,11 @@ def _validate_outcome(
                 )
         if comprehension != "CLEAR":
             _fail("$.outcome.completedUnaided", "requires CLEAR next-action comprehension")
+        if comprehension_help:
+            _fail(
+                "$.outcome.completedUnaided",
+                "requires no facilitator help during next-action comprehension",
+            )
         if comprehension_elapsed > 600:
             _fail(
                 "$.outcome.completedUnaided",
@@ -538,8 +553,8 @@ def validate_session(
         "authoritativeSyncAttempts", "failedNonCancelledSyncAttempts",
         "applicableMandatoryMilestones", "recordedMandatoryMilestones",
         "nextActionComprehension", "nextActionComprehensionAtUtc",
-        "nextActionComprehensionElapsedSeconds", "walkingAsAdventure",
-        "companionReturn",
+        "nextActionComprehensionElapsedSeconds",
+        "nextActionComprehensionHelpRequested", "walkingAsAdventure", "companionReturn",
     ], "$.outcome")
     evidence = _keys(root["evidence"], [
         "storageCategory", "evidencePackageSha256", "redactionReviewedAtUtc",
