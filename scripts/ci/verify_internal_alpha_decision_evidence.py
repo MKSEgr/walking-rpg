@@ -306,6 +306,31 @@ def validate_bundle(
             "$.decision.rationaleCode",
             "requires at least one participant-session record",
         )
+    rationale = decision["decision"]["rationaleCode"]
+    if rationale == "focused_comprehension_gap" and not any(
+        item["outcome"]["nextActionComprehension"] in {"PARTIAL", "UNCLEAR"}
+        for item in sessions
+    ):
+        _fail(
+            "$.decision.rationaleCode",
+            "requires a PARTIAL or UNCLEAR session comprehension outcome",
+        )
+    if rationale == "core_value_not_supported":
+        has_negative_signal = any(
+            item["outcome"]["walkingAsAdventure"] == "NO"
+            or item["outcome"]["companionReturn"] == "NO"
+            for item in sessions
+        )
+        qualitative = decision["qualitative"]
+        has_negative_gate = (
+            qualitative["walkingAsAdventureSupported"] is False
+            or qualitative["companionReturnSupported"] is False
+        )
+        if not has_negative_signal or not has_negative_gate:
+            _fail(
+                "$.decision.rationaleCode",
+                "requires a negative session signal and reviewed qualitative gate",
+            )
     cohort = decision["cohort"]
     derived_cohort = {
         "started": len(sessions),
