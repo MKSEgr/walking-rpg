@@ -1674,12 +1674,8 @@ void main() {
     'ready choice titles follow locale and preserve future literal fallback',
     (WidgetTester tester) async {
       for (final ({Locale locale, String known, String locked, String future})
-          sample in <({
-            Locale locale,
-            String known,
-            String locked,
-            String future,
-          })>[
+          sample
+          in <({Locale locale, String known, String locked, String future})>[
             (
               locale: const Locale('en'),
               known: 'Available choice: Stabilize the core',
