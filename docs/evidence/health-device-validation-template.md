@@ -55,11 +55,15 @@ idempotency key, endpoint, path или raw provider data ни в шаблон, �
 - Checksum algorithm: `SHA-256`
 - Checksum из JSON:
 - Пересчитанный checksum:
+- CLI expected source SHA / app version / build / platform:
+- CLI allowlisted summary сохранён без document body: да / нет
 - [ ] Top-level keys и order совпадают со schema v1: `schemaVersion`,
       `redactionPolicy`, `exportedAtUtc`, `updatedAtUtc`, `launch`,
       `latestHealth`, `latestSync`, `authoritativeCheckpoint`, `journal`,
       `checksum`
 - [ ] Checksum совпадает
+- [ ] `verify_device_validation_evidence.dart --require-physical-health`
+      прошёл со всеми четырьмя exact expected-параметрами candidate
 - [ ] Temporary-файл удалён после возврата/ошибки share
 - Категория одобренного хранилища без URL/path:
 
@@ -68,6 +72,22 @@ top-level полей в нормативном insertion order, без объе�
 хешировать весь файл или переставлять поля. Он подтверждает только целостность
 детерминированного payload и не является подписью, attestation или
 доказательством выполнения сценария.
+
+Команда reviewer-а запускается из `mobile` и получает expected values из
+approved candidate/inventory record, а не из самого export:
+
+```bash
+dart run tool/verify_device_validation_evidence.dart \
+  --require-physical-health \
+  --expect-source-git-sha "$EXPECTED_SOURCE_GIT_SHA" \
+  --expect-app-version "$EXPECTED_APP_VERSION" \
+  --expect-build-number "$EXPECTED_BUILD_NUMBER" \
+  --expect-platform "$EXPECTED_PLATFORM" \
+  "$APPROVED_EVIDENCE_FILE"
+```
+
+Успешный результат не заменяет physical-device review и не переводит #21 в
+`VALIDATED`.
 
 ## Проверка redaction
 

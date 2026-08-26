@@ -281,6 +281,38 @@ exact compact canonical envelope, поэтому pretty-print, перестан�
 тем же schema-v1 codec, а не хешировать весь envelope как файл. Это контроль
 целостности, а не подпись, attestation или доказательство личности тестировщика.
 
+## Независимая проверка export
+
+До переноса typed facts в ручной record reviewer запускает repository-owned
+CLI из каталога `mobile`. Для принимаемого physical Health artifact все четыре
+expected-параметра обязательны и берутся из approved candidate/inventory
+record, а не из проверяемого JSON:
+
+```bash
+cd mobile
+dart run tool/verify_device_validation_evidence.dart \
+  --require-physical-health \
+  --expect-source-git-sha "$EXPECTED_SOURCE_GIT_SHA" \
+  --expect-app-version "$EXPECTED_APP_VERSION" \
+  --expect-build-number "$EXPECTED_BUILD_NUMBER" \
+  --expect-platform android \
+  "$APPROVED_EVIDENCE_FILE"
+```
+
+Для iOS используется `--expect-platform ios`. CLI читает только regular-file
+strict UTF-8 не больше 64 KiB, вызывает тот же
+`DeviceValidationEvidenceCodec.verify`, который защищает mobile export, и
+затем сверяет exact source/app/build/platform. Режим
+`--require-physical-health` дополнительно отклоняет `development` source и
+export без Health observation. В stdout попадает только allowlisted summary:
+schema, candidate metadata, platform/Health source, число journal entries и
+checksum; document body, OS string и arbitrary evidence values не печатаются.
+
+Успешный CLI exit доказывает структуру, redaction/checksum и заявленную
+candidate binding файла. Он не доказывает, что устройство физическое, что
+сценарий выполнен человеком или что #21 закрыт: эти выводы требуют inventory,
+ручного record, review и полного matrix evidence.
+
 ## Redaction workflow
 
 До share exporter применяет allowlist и запрещает:
@@ -303,9 +335,9 @@ exact compact canonical envelope, поэтому pretty-print, перестан�
 4. После возврата или ошибки share приложение пытается удалить временный файл
    в `finally`. Копия, выбранная тестировщиком в share sheet, живёт по правилам
    целевого хранилища.
-5. До публикации reviewer проверяет schema, redaction policy, source SHA,
-   количество записей, размер, отсутствие запрещённых данных и совпадение
-   пересчитанного checksum.
+5. До публикации reviewer запускает независимый CLI с exact candidate
+   expectations, затем проверяет inventory/manual record и отсутствие
+   запрещённых данных вне JSON.
 6. Если нужна redaction или исправление, файл не редактируется вручную:
    причина устраняется и export создаётся заново. Иначе checksum и причинный
    журнал теряют доказательную ценность.
