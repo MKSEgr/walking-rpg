@@ -669,6 +669,7 @@
   "platformJourneyReadyEvent": "Текущее событие: {event}",
   "platformJourneyReadyEventSummary": "О событии: {summary}",
   "platformJourneyReadyChoice": "Доступный вариант: {choice}",
+  "platformJourneyReadyChoiceDescription": "О варианте: {description}",
   "platformJourneyStartedAt": "Начат {date} в {time}",
   "platformLatestDecisionTitle": "Последнее сохранённое решение",
   "platformLatestDecisionChoice": "Выбрано: {choice}",

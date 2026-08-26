@@ -6,6 +6,11 @@
 
 ### Changed
 
+- available READY-event choices in the current-journey journal now pair each
+  accepted title with its server description using RU/EN stable-ID
+  localization and literal future fallback, without exposing requirements,
+  rewards or commands;
+
 - the current-journey journal now lists accepted available READY-event choice
   titles in server order with RU/EN stable-ID localization and literal future
   fallback, without adding commands or re-evaluating requirements;

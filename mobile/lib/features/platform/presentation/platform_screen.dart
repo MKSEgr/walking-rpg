@@ -1881,6 +1881,12 @@ List<String> _journeyRecapRewardLabels(
   ];
 }
 
+typedef _ReadyEventChoiceLabel = ({
+  String choiceId,
+  String descriptionLabel,
+  String titleLabel,
+});
+
 class _JourneyDecisionLogCard extends StatelessWidget {
   const _JourneyDecisionLogCard({required this.snapshot});
 
@@ -1930,23 +1936,30 @@ class _JourneyDecisionLogCard extends StatelessWidget {
         context.l10n.homeEventChoicesAvailable(event.availableChoiceCount),
       _ => null,
     };
-    final List<({String choiceId, String label})> readyEventChoiceLabels =
+    final List<_ReadyEventChoiceLabel> readyEventChoiceLabels =
         switch (readyEvent) {
-          final HomeExpeditionEvent event =>
-            <({String choiceId, String label})>[
-              for (final HomeEventChoice choice in event.availableChoices)
-                (
-                  choiceId: choice.choiceId,
-                  label: context.l10n.platformJourneyReadyChoice(
-                    context.l10n.currentEventChoiceTitle(
-                      event.eventId,
-                      choice.choiceId,
-                      choice.title,
-                    ),
+          final HomeExpeditionEvent event => <_ReadyEventChoiceLabel>[
+            for (final HomeEventChoice choice in event.availableChoices)
+              (
+                choiceId: choice.choiceId,
+                titleLabel: context.l10n.platformJourneyReadyChoice(
+                  context.l10n.currentEventChoiceTitle(
+                    event.eventId,
+                    choice.choiceId,
+                    choice.title,
                   ),
                 ),
-            ],
-          null => const <({String choiceId, String label})>[],
+                descriptionLabel: context.l10n
+                    .platformJourneyReadyChoiceDescription(
+                      context.l10n.currentEventChoiceDescription(
+                        event.eventId,
+                        choice.choiceId,
+                        choice.description,
+                      ),
+                    ),
+              ),
+          ],
+          null => const <_ReadyEventChoiceLabel>[],
         };
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
@@ -2065,7 +2078,10 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 '$readyEventLabel. $readyEventSummaryLabel',
                 if (readyEventChoiceCountLabel != null)
                   readyEventChoiceCountLabel,
-                for (final choice in readyEventChoiceLabels) choice.label,
+                for (final choice in readyEventChoiceLabels) ...<String>[
+                  choice.titleLabel,
+                  choice.descriptionLabel,
+                ],
               ].join('\n'),
               child: ExcludeSemantics(
                 child: Column(
@@ -2105,7 +2121,18 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                           'platform-current-journey-ready-event-choice-'
                           '${choice.choiceId}',
                         ),
-                        choice.label,
+                        choice.titleLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        key: Key(
+                          'platform-current-journey-ready-event-choice-'
+                          '${choice.choiceId}-description',
+                        ),
+                        choice.descriptionLabel,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),

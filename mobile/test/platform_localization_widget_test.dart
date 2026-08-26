@@ -12,6 +12,15 @@ import 'package:walking_rpg_mobile/l10n/generated/app_localizations_ru.dart';
 
 import 'support/platform_fixture.dart';
 
+typedef _ReadyChoiceLocaleSample = ({
+  String futureDescription,
+  String futureTitle,
+  String knownDescription,
+  String knownTitle,
+  Locale locale,
+  String lockedTitle,
+});
+
 void main() {
   test('discovered route node count covers Russian and English', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
@@ -46,6 +55,20 @@ void main() {
     expect(
       russian.platformJourneyReadyChoice('Последовать за эхом'),
       'Доступный вариант: Последовать за эхом',
+    );
+  });
+
+  test('ready choice description label covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyReadyChoiceDescription('Follow the signal.'),
+      'About choice: Follow the signal.',
+    );
+    expect(
+      russian.platformJourneyReadyChoiceDescription('Следовать за сигналом.'),
+      'О варианте: Следовать за сигналом.',
     );
   });
 
@@ -1331,13 +1354,31 @@ void main() {
         'archive of routes. Its core is unstable, and the companion hears a '
         'call from the depths.\n2 choices available\n'
         'Available choice: Stabilize the core\n'
-        'Available choice: Follow the echo',
+        'About choice: The Navigator will lock the resonance and extract safe '
+        'fragments.\n'
+        'Available choice: Follow the echo\n'
+        'About choice: The companion will lead the team along a living trail '
+        'deep in the archive.',
       ),
       findsOneWidget,
     );
     expect(find.text('2 choices available'), findsOneWidget);
     expect(find.text('Available choice: Stabilize the core'), findsOneWidget);
+    expect(
+      find.text(
+        'About choice: The Navigator will lock the resonance and extract safe '
+        'fragments.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Available choice: Follow the echo'), findsOneWidget);
+    expect(
+      find.text(
+        'About choice: The companion will lead the team along a living trail '
+        'deep in the archive.',
+      ),
+      findsOneWidget,
+    );
     expect(find.textContaining('Literal choice locked'), findsNothing);
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
@@ -1485,7 +1526,11 @@ void main() {
           'archive of routes. Its core is unstable, and the companion hears a '
           'call from the depths.\n2 choices available\n'
           'Available choice: Stabilize the core\n'
-          'Available choice: Follow the echo',
+          'About choice: The Navigator will lock the resonance and extract '
+          'safe fragments.\n'
+          'Available choice: Follow the echo\n'
+          'About choice: The companion will lead the team along a living '
+          'trail deep in the archive.',
         ),
         findsOneWidget,
       );
@@ -1501,6 +1546,24 @@ void main() {
       expect(
         find.byKey(
           const Key('platform-current-journey-ready-event-choice-follow-echo'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-stabilize-core-'
+            'description',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-follow-echo-'
+            'description',
+          ),
         ),
         findsOneWidget,
       );
@@ -1671,24 +1734,30 @@ void main() {
   });
 
   testWidgets(
-    'ready choice titles follow locale and preserve future literal fallback',
+    'ready choices follow locale and preserve future literal fallback',
     (WidgetTester tester) async {
-      for (final ({Locale locale, String known, String locked, String future})
-          sample
-          in <({Locale locale, String known, String locked, String future})>[
-            (
-              locale: const Locale('en'),
-              known: 'Available choice: Stabilize the core',
-              locked: 'Available choice: Follow the echo',
-              future: 'Available choice: Literal future choice',
-            ),
-            (
-              locale: const Locale('ru'),
-              known: 'Доступный вариант: Стабилизировать ядро',
-              locked: 'Доступный вариант: Последовать за эхом',
-              future: 'Доступный вариант: Literal future choice',
-            ),
-          ]) {
+      for (final _ReadyChoiceLocaleSample sample in <_ReadyChoiceLocaleSample>[
+        (
+          locale: const Locale('en'),
+          knownTitle: 'Available choice: Stabilize the core',
+          knownDescription:
+              'About choice: The Navigator will lock the resonance and '
+              'extract safe fragments.',
+          lockedTitle: 'Available choice: Follow the echo',
+          futureTitle: 'Available choice: Literal future choice',
+          futureDescription: 'About choice: Literal future choice description',
+        ),
+        (
+          locale: const Locale('ru'),
+          knownTitle: 'Доступный вариант: Стабилизировать ядро',
+          knownDescription:
+              'О варианте: Навигатор зафиксирует резонанс и извлечёт '
+              'безопасные фрагменты.',
+          lockedTitle: 'Доступный вариант: Последовать за эхом',
+          futureTitle: 'Доступный вариант: Literal future choice',
+          futureDescription: 'О варианте: Literal future choice description',
+        ),
+      ]) {
         await tester.pumpWidget(
           _LocalizedPlatformApp(
             locale: sample.locale,
@@ -1705,6 +1774,7 @@ void main() {
                     _eventChoice(
                       'future-choice-v1',
                       title: 'Literal future choice',
+                      description: 'Literal future choice description',
                     ),
                   ],
                 ),
@@ -1715,14 +1785,18 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text(sample.known), findsOneWidget);
-        expect(find.text(sample.locked), findsNothing);
-        expect(find.text(sample.future), findsOneWidget);
+        expect(find.text(sample.knownTitle), findsOneWidget);
+        expect(find.text(sample.knownDescription), findsOneWidget);
+        expect(find.text(sample.lockedTitle), findsNothing);
+        expect(find.text(sample.futureTitle), findsOneWidget);
+        expect(find.text(sample.futureDescription), findsOneWidget);
         expect(
           find.bySemanticsLabel(
             RegExp(
-              '${RegExp.escape(sample.known)}\\n'
-              '${RegExp.escape(sample.future)}\$',
+              '${RegExp.escape(sample.knownTitle)}\\n'
+              '${RegExp.escape(sample.knownDescription)}\\n'
+              '${RegExp.escape(sample.futureTitle)}\\n'
+              '${RegExp.escape(sample.futureDescription)}\$',
             ),
           ),
           findsOneWidget,
@@ -1917,12 +1991,13 @@ HomeExpeditionEvent _readyEvent({
 HomeEventChoice _eventChoice(
   String choiceId, {
   String availability = 'AVAILABLE',
+  String? description,
   String? title,
 }) {
   return HomeEventChoice(
     choiceId: choiceId,
     title: title ?? 'Literal choice $choiceId',
-    description: 'Literal choice description $choiceId',
+    description: description ?? 'Literal choice description $choiceId',
     pilotExperienceReward: 0,
     petBondReward: 0,
     availability: availability,

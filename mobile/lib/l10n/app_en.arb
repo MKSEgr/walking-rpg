@@ -1428,6 +1428,12 @@
       "choice": {"type": "String"}
     }
   },
+  "platformJourneyReadyChoiceDescription": "About choice: {description}",
+  "@platformJourneyReadyChoiceDescription": {
+    "placeholders": {
+      "description": {"type": "String"}
+    }
+  },
   "platformJourneyStartedAt": "Started on {date} at {time}",
   "@platformJourneyStartedAt": {
     "placeholders": {
