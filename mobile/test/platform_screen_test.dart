@@ -214,10 +214,7 @@ void main() {
     expect(find.text('О событии: Маяк отвечает импульсом.'), findsOneWidget);
     expect(find.text('Доступен 1 вариант'), findsOneWidget);
     expect(find.text('Доступный вариант: Available A'), findsOneWidget);
-    expect(
-      find.text('О варианте: Accepted available choice.'),
-      findsOneWidget,
-    );
+    expect(find.text('О варианте: Accepted available choice.'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Текущее событие: Источник сигнала. '

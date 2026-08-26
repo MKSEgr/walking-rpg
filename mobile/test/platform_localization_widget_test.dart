@@ -1736,31 +1736,28 @@ void main() {
   testWidgets(
     'ready choices follow locale and preserve future literal fallback',
     (WidgetTester tester) async {
-      for (final _ReadyChoiceLocaleSample sample
-          in <_ReadyChoiceLocaleSample>[
-            (
-              locale: const Locale('en'),
-              knownTitle: 'Available choice: Stabilize the core',
-              knownDescription:
-                  'About choice: The Navigator will lock the resonance and '
-                  'extract safe fragments.',
-              lockedTitle: 'Available choice: Follow the echo',
-              futureTitle: 'Available choice: Literal future choice',
-              futureDescription:
-                  'About choice: Literal future choice description',
-            ),
-            (
-              locale: const Locale('ru'),
-              knownTitle: 'Доступный вариант: Стабилизировать ядро',
-              knownDescription:
-                  'О варианте: Навигатор зафиксирует резонанс и извлечёт '
-                  'безопасные фрагменты.',
-              lockedTitle: 'Доступный вариант: Последовать за эхом',
-              futureTitle: 'Доступный вариант: Literal future choice',
-              futureDescription:
-                  'О варианте: Literal future choice description',
-            ),
-          ]) {
+      for (final _ReadyChoiceLocaleSample sample in <_ReadyChoiceLocaleSample>[
+        (
+          locale: const Locale('en'),
+          knownTitle: 'Available choice: Stabilize the core',
+          knownDescription:
+              'About choice: The Navigator will lock the resonance and '
+              'extract safe fragments.',
+          lockedTitle: 'Available choice: Follow the echo',
+          futureTitle: 'Available choice: Literal future choice',
+          futureDescription: 'About choice: Literal future choice description',
+        ),
+        (
+          locale: const Locale('ru'),
+          knownTitle: 'Доступный вариант: Стабилизировать ядро',
+          knownDescription:
+              'О варианте: Навигатор зафиксирует резонанс и извлечёт '
+              'безопасные фрагменты.',
+          lockedTitle: 'Доступный вариант: Последовать за эхом',
+          futureTitle: 'Доступный вариант: Literal future choice',
+          futureDescription: 'О варианте: Literal future choice description',
+        ),
+      ]) {
         await tester.pumpWidget(
           _LocalizedPlatformApp(
             locale: sample.locale,

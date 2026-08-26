@@ -1938,28 +1938,27 @@ class _JourneyDecisionLogCard extends StatelessWidget {
     };
     final List<_ReadyEventChoiceLabel> readyEventChoiceLabels =
         switch (readyEvent) {
-          final HomeExpeditionEvent event =>
-            <_ReadyEventChoiceLabel>[
-              for (final HomeEventChoice choice in event.availableChoices)
-                (
-                  choiceId: choice.choiceId,
-                  titleLabel: context.l10n.platformJourneyReadyChoice(
-                    context.l10n.currentEventChoiceTitle(
-                      event.eventId,
-                      choice.choiceId,
-                      choice.title,
-                    ),
+          final HomeExpeditionEvent event => <_ReadyEventChoiceLabel>[
+            for (final HomeEventChoice choice in event.availableChoices)
+              (
+                choiceId: choice.choiceId,
+                titleLabel: context.l10n.platformJourneyReadyChoice(
+                  context.l10n.currentEventChoiceTitle(
+                    event.eventId,
+                    choice.choiceId,
+                    choice.title,
                   ),
-                  descriptionLabel: context.l10n
-                      .platformJourneyReadyChoiceDescription(
-                        context.l10n.currentEventChoiceDescription(
-                          event.eventId,
-                          choice.choiceId,
-                          choice.description,
-                        ),
-                      ),
                 ),
-            ],
+                descriptionLabel: context.l10n
+                    .platformJourneyReadyChoiceDescription(
+                      context.l10n.currentEventChoiceDescription(
+                        event.eventId,
+                        choice.choiceId,
+                        choice.description,
+                      ),
+                    ),
+              ),
+          ],
           null => const <_ReadyEventChoiceLabel>[],
         };
     return ExpeditionPanel(
