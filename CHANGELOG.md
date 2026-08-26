@@ -6,6 +6,11 @@
 
 ### Changed
 
+- available READY-event choices in the current-journey journal now preserve
+  their accepted pilot XP, companion bond and optional material previews in
+  RU/EN with stable item localization and future literal fallback, without
+  reward aggregation, requirement checks or commands;
+
 - available READY-event choices in the current-journey journal now pair each
   accepted title with its server description using RU/EN stable-ID
   localization and literal future fallback, without exposing requirements,

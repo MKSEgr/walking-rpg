@@ -215,13 +215,15 @@ void main() {
     expect(find.text('Доступен 1 вариант'), findsOneWidget);
     expect(find.text('Доступный вариант: Available A'), findsOneWidget);
     expect(find.text('О варианте: Accepted available choice.'), findsOneWidget);
+    expect(find.text('Награды за вариант: +0 XP · +0 связь'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Текущее событие: Источник сигнала. '
         'О событии: Маяк отвечает импульсом.\n'
         'Доступен 1 вариант\n'
         'Доступный вариант: Available A\n'
-        'О варианте: Accepted available choice.',
+        'О варианте: Accepted available choice.\n'
+        'Награды за вариант: +0 XP · +0 связь',
       ),
       findsOneWidget,
     );
