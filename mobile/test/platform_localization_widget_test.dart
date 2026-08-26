@@ -35,6 +35,20 @@ void main() {
     );
   });
 
+  test('ready choice label covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyReadyChoice('Follow the echo'),
+      'Available choice: Follow the echo',
+    );
+    expect(
+      russian.platformJourneyReadyChoice('Последовать за эхом'),
+      'Доступный вариант: Последовать за эхом',
+    );
+  });
+
   test('equipped slot progress covers Russian and English plurals', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
     final AppLocalizationsRu russian = AppLocalizationsRu();
@@ -1281,9 +1295,9 @@ void main() {
               title: 'Literal server vault',
               summary: 'Literal server vault summary',
               choices: <HomeEventChoice>[
-                _eventChoice('available-a'),
+                _eventChoice('stabilize-core'),
                 _eventChoice('locked', availability: 'LOCKED'),
-                _eventChoice('available-b'),
+                _eventChoice('follow-echo'),
               ],
             ),
           ),
@@ -1315,11 +1329,16 @@ void main() {
       find.bySemanticsLabel(
         'Current event: Echo Vault. About event: Beyond the gate lies an '
         'archive of routes. Its core is unstable, and the companion hears a '
-        'call from the depths.\n2 choices available',
+        'call from the depths.\n2 choices available\n'
+        'Available choice: Stabilize the core\n'
+        'Available choice: Follow the echo',
       ),
       findsOneWidget,
     );
     expect(find.text('2 choices available'), findsOneWidget);
+    expect(find.text('Available choice: Stabilize the core'), findsOneWidget);
+    expect(find.text('Available choice: Follow the echo'), findsOneWidget);
+    expect(find.textContaining('Literal choice locked'), findsNothing);
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
     );
@@ -1423,9 +1442,9 @@ void main() {
                 title: 'Literal server vault',
                 summary: 'Literal server vault summary',
                 choices: <HomeEventChoice>[
-                  _eventChoice('available-a'),
+                  _eventChoice('stabilize-core'),
                   _eventChoice('locked', availability: 'LOCKED'),
-                  _eventChoice('available-b'),
+                  _eventChoice('follow-echo'),
                 ],
               ),
             ),
@@ -1464,11 +1483,27 @@ void main() {
         find.bySemanticsLabel(
           'Current event: Echo Vault. About event: Beyond the gate lies an '
           'archive of routes. Its core is unstable, and the companion hears a '
-          'call from the depths.\n2 choices available',
+          'call from the depths.\n2 choices available\n'
+          'Available choice: Stabilize the core\n'
+          'Available choice: Follow the echo',
         ),
         findsOneWidget,
       );
       expect(find.text('2 choices available'), findsOneWidget);
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-stabilize-core',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key('platform-current-journey-ready-event-choice-follow-echo'),
+        ),
+        findsOneWidget,
+      );
       final Finder latest = find.byKey(
         const Key('platform-current-journey-latest-decision'),
       );
@@ -1634,6 +1669,67 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'ready choice titles follow locale and preserve future literal fallback',
+    (WidgetTester tester) async {
+      for (final ({Locale locale, String known, String locked, String future})
+          sample
+          in <({Locale locale, String known, String locked, String future})>[
+            (
+              locale: const Locale('en'),
+              known: 'Available choice: Stabilize the core',
+              locked: 'Available choice: Follow the echo',
+              future: 'Available choice: Literal future choice',
+            ),
+            (
+              locale: const Locale('ru'),
+              known: 'Доступный вариант: Стабилизировать ядро',
+              locked: 'Доступный вариант: Последовать за эхом',
+              future: 'Доступный вариант: Literal future choice',
+            ),
+          ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(),
+              homeLoader: () async => _homeWithPersistedDecision(
+                unlockedEvent: _readyEvent(
+                  eventId: 'echo-vault-v1',
+                  title: 'Literal server vault',
+                  summary: 'Literal server vault summary',
+                  choices: <HomeEventChoice>[
+                    _eventChoice('stabilize-core'),
+                    _eventChoice('follow-echo', availability: 'LOCKED'),
+                    _eventChoice(
+                      'future-choice-v1',
+                      title: 'Literal future choice',
+                    ),
+                  ],
+                ),
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(sample.known), findsOneWidget);
+        expect(find.text(sample.locked), findsNothing);
+        expect(find.text(sample.future), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(
+            RegExp(
+              '${RegExp.escape(sample.known)}\\n'
+              '${RegExp.escape(sample.future)}\$',
+            ),
+          ),
+          findsOneWidget,
+        );
+      }
+    },
+  );
 
   testWidgets('ready event omits empty and locked-only choice counts', (
     WidgetTester tester,
@@ -1821,10 +1917,11 @@ HomeExpeditionEvent _readyEvent({
 HomeEventChoice _eventChoice(
   String choiceId, {
   String availability = 'AVAILABLE',
+  String? title,
 }) {
   return HomeEventChoice(
     choiceId: choiceId,
-    title: 'Literal choice $choiceId',
+    title: title ?? 'Literal choice $choiceId',
     description: 'Literal choice description $choiceId',
     pilotExperienceReward: 0,
     petBondReward: 0,

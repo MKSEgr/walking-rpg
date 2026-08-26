@@ -114,3 +114,4 @@ NNNN-short-title.md
 - [0095 — authoritative current-journey READY event](0095-authoritative-current-journey-ready-event.md)
 - [0096 — authoritative current-journey READY event summary](0096-authoritative-current-journey-ready-event-summary.md)
 - [0097 — authoritative current-journey READY choice count](0097-authoritative-current-journey-ready-choice-count.md)
+- [0098 — authoritative current-journey READY choice titles](0098-authoritative-current-journey-ready-choice-titles.md)

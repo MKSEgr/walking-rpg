@@ -1596,6 +1596,23 @@ Milestone 83 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0097 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 84 — Authoritative current-journey READY choice titles
+
+### CODE_COMPLETE
+
+- [x] Journal показывает accepted available choice titles только для
+      `unlockedEvent` со status exact `READY`
+- [x] Mobile сохраняет server ordering, исключает locked choices и не
+      проверяет requirements повторно
+- [x] Known mutable title локализуется по stable event/choice IDs, unknown
+      future ID сохраняет literal server fallback
+- [x] RU/EN, ordering, future fallback, non-ready и compact large-text coverage
+      фиксируют одну event semantics node без journal actions или API changes
+
+Milestone 84 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0098 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

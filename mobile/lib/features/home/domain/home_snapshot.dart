@@ -1510,12 +1510,16 @@ class HomeExpeditionEvent {
 
   bool get isResolved => status == 'RESOLVED';
 
-  int get availableChoiceCount {
+  List<HomeEventChoice> get availableChoices {
     if (isResolved) {
-      return 0;
+      return const <HomeEventChoice>[];
     }
-    return choices.where((HomeEventChoice choice) => choice.isAvailable).length;
+    return choices
+        .where((HomeEventChoice choice) => choice.isAvailable)
+        .toList(growable: false);
   }
+
+  int get availableChoiceCount => availableChoices.length;
 
   static List<HomeEventChoice> _readChoices(Object? raw, String field) {
     if (raw == null) {

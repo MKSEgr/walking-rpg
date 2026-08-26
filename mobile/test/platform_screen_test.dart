@@ -213,11 +213,13 @@ void main() {
     expect(find.text('Текущее событие: Источник сигнала'), findsOneWidget);
     expect(find.text('О событии: Маяк отвечает импульсом.'), findsOneWidget);
     expect(find.text('Доступен 1 вариант'), findsOneWidget);
+    expect(find.text('Доступный вариант: Available A'), findsOneWidget);
     expect(
       find.bySemanticsLabel(
         'Текущее событие: Источник сигнала. '
         'О событии: Маяк отвечает импульсом.\n'
-        'Доступен 1 вариант',
+        'Доступен 1 вариант\n'
+        'Доступный вариант: Available A',
       ),
       findsOneWidget,
     );
