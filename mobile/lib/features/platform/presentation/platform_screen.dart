@@ -1930,6 +1930,26 @@ class _JourneyDecisionLogCard extends StatelessWidget {
         context.l10n.homeEventChoicesAvailable(event.availableChoiceCount),
       _ => null,
     };
+    final List<({String choiceId, String label})> readyEventChoiceLabels =
+        switch (readyEvent) {
+          final HomeExpeditionEvent event => <({
+            String choiceId,
+            String label,
+          })>[
+            for (final HomeEventChoice choice in event.availableChoices)
+              (
+                choiceId: choice.choiceId,
+                label: context.l10n.platformJourneyReadyChoice(
+                  context.l10n.currentEventChoiceTitle(
+                    event.eventId,
+                    choice.choiceId,
+                    choice.title,
+                  ),
+                ),
+              ),
+          ],
+          null => const <({String choiceId, String label})>[],
+        };
     return ExpeditionPanel(
       key: const Key('platform-journey-decision-log'),
       tone: ExpeditionPanelTone.resonance,
@@ -2043,12 +2063,12 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             Semantics(
               key: const Key('platform-current-journey-ready-event'),
               container: true,
-              label: switch (readyEventChoiceCountLabel) {
-                final String choiceCountLabel =>
-                  '$readyEventLabel. $readyEventSummaryLabel\n'
-                      '$choiceCountLabel',
-                null => '$readyEventLabel. $readyEventSummaryLabel',
-              },
+              label: <String>[
+                '$readyEventLabel. $readyEventSummaryLabel',
+                if (readyEventChoiceCountLabel != null)
+                  readyEventChoiceCountLabel,
+                for (final choice in readyEventChoiceLabels) choice.label,
+              ].join('\n'),
               child: ExcludeSemantics(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2077,6 +2097,19 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colors.primary,
                           fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    for (final choice in readyEventChoiceLabels) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(
+                        key: Key(
+                          'platform-current-journey-ready-event-choice-'
+                          '${choice.choiceId}',
+                        ),
+                        choice.label,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
                         ),
                       ),
                     ],

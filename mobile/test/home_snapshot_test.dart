@@ -3010,6 +3010,10 @@ void main() {
 
     expect(event.availableChoiceCount, 2);
     expect(
+      event.availableChoices.map((HomeEventChoice choice) => choice.choiceId),
+      <String>['available-a', 'available-b'],
+    );
+    expect(
       const HomeExpeditionEvent(
         eventId: 'resolved-event',
         title: 'Resolved event',
@@ -3026,6 +3030,24 @@ void main() {
         ],
       ).availableChoiceCount,
       0,
+    );
+    expect(
+      const HomeExpeditionEvent(
+        eventId: 'resolved-event',
+        title: 'Resolved event',
+        summary: 'Resolved summary.',
+        status: 'RESOLVED',
+        choices: <HomeEventChoice>[
+          HomeEventChoice(
+            choiceId: 'historical-choice',
+            title: 'Historical choice',
+            description: 'Accepted historical choice.',
+            pilotExperienceReward: 1,
+            petBondReward: 1,
+          ),
+        ],
+      ).availableChoices,
+      isEmpty,
     );
   });
 

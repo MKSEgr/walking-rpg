@@ -6,6 +6,10 @@
 
 ### Changed
 
+- the current-journey journal now lists accepted available READY-event choice
+  titles in server order with RU/EN stable-ID localization and literal future
+  fallback, without adding commands or re-evaluating requirements;
+
 - season guidance now shows the exact RU/EN count of earned unclaimed reward
   levels from accepted cadence and receipts without changing claim behavior;
 

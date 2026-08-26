@@ -1422,6 +1422,12 @@
       "summary": {"type": "String"}
     }
   },
+  "platformJourneyReadyChoice": "Available choice: {choice}",
+  "@platformJourneyReadyChoice": {
+    "placeholders": {
+      "choice": {"type": "String"}
+    }
+  },
   "platformJourneyStartedAt": "Started on {date} at {time}",
   "@platformJourneyStartedAt": {
     "placeholders": {
