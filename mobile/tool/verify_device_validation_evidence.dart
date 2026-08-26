@@ -187,9 +187,7 @@ Future<Map<String, dynamic>> _readAndVerify(String path) async {
   try {
     type = await FileSystemEntity.type(path, followLinks: false);
   } on FileSystemException {
-    throw const EvidenceVerifierFailure(
-      'file is not a readable regular file.',
-    );
+    throw const EvidenceVerifierFailure('file is not a readable regular file.');
   }
   if (type != FileSystemEntityType.file) {
     throw const EvidenceVerifierFailure('file must be a regular file.');
@@ -200,9 +198,7 @@ Future<Map<String, dynamic>> _readAndVerify(String path) async {
   try {
     stat = await file.stat();
   } on FileSystemException {
-    throw const EvidenceVerifierFailure(
-      'file is not a readable regular file.',
-    );
+    throw const EvidenceVerifierFailure('file is not a readable regular file.');
   }
   if (stat.size > DeviceValidationEvidenceCodec.maxEncodedBytes) {
     throw const EvidenceVerifierFailure('file exceeds the 64 KiB limit.');
@@ -212,9 +208,7 @@ Future<Map<String, dynamic>> _readAndVerify(String path) async {
   try {
     bytes = await file.readAsBytes();
   } on FileSystemException {
-    throw const EvidenceVerifierFailure(
-      'file is not a readable regular file.',
-    );
+    throw const EvidenceVerifierFailure('file is not a readable regular file.');
   }
   if (bytes.length > DeviceValidationEvidenceCodec.maxEncodedBytes) {
     throw const EvidenceVerifierFailure('file exceeds the 64 KiB limit.');
