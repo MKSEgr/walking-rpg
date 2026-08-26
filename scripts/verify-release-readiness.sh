@@ -788,6 +788,7 @@ grep -Fq 'DeviceValidationEvidenceCodec.verify(json)' mobile/lib/features/valida
 grep -Fq 'await file.delete();' mobile/lib/features/validation/application/validation_evidence_exporter.dart || fail 'temporary validation evidence must be deleted after sharing'
 grep -Fq 'DeviceValidationEvidenceCodec.verify(encoded)' mobile/tool/verify_device_validation_evidence.dart || fail 'offline validation evidence review must reuse the mobile schema verifier'
 grep -Fq -- '--require-physical-health' mobile/tool/verify_device_validation_evidence.dart || fail 'offline validation evidence review must expose the physical Health gate'
+grep -Fq 'dart format --output=none --set-exit-if-changed lib test tool' .github/workflows/ci.yml || fail 'mobile CI must format the offline Dart evidence verifier'
 if grep -RInE 'ENABLE_VALIDATION_CENTER[=:][[:space:]]*true' .github 2>/dev/null | grep -q .; then
   fail 'CI and release workflows must not enable validation center'
 fi

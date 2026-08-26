@@ -524,7 +524,7 @@ idempotency key
 
 ```bash
 flutter pub get
-dart format --output=none --set-exit-if-changed lib test
+dart format --output=none --set-exit-if-changed lib test tool
 flutter analyze --fatal-infos
 flutter test
 flutter build apk --debug

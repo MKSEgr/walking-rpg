@@ -10,7 +10,7 @@ if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
 Push-Location $MobileDir
 try {
     flutter pub get
-    dart format --output=none --set-exit-if-changed lib test
+    dart format --output=none --set-exit-if-changed lib test tool
     flutter analyze --fatal-infos
     flutter test
     Write-Host "Mobile project is ready. Android and iOS host projects are versioned in the repository."

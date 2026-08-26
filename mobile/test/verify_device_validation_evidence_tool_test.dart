@@ -113,8 +113,7 @@ void main() {
   test('rejects every exact candidate metadata mismatch', () async {
     final File evidence = await _writeEvidence(directory, _physicalEvidence());
     final Map<String, String> mismatches = <String, String>{
-      '--expect-source-git-sha':
-          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      '--expect-source-git-sha': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       '--expect-app-version': '0.2.0',
       '--expect-build-number': '47',
       '--expect-platform': 'ios',
@@ -129,7 +128,11 @@ void main() {
       );
 
       expect(result, 1, reason: mismatch.key);
-      expect(error.toString(), contains('does not match'), reason: mismatch.key);
+      expect(
+        error.toString(),
+        contains('does not match'),
+        reason: mismatch.key,
+      );
     }
   });
 
@@ -171,46 +174,52 @@ void main() {
     expect(error.toString(), contains('not strict UTF-8'));
   });
 
-  test('rejects a file above the schema byte limit before reading it', () async {
-    final File evidence = File('${directory.path}/oversized.json');
-    await evidence.writeAsBytes(
-      List<int>.filled(
-        DeviceValidationEvidenceCodec.maxEncodedBytes + 1,
-        0x20,
-      ),
-      flush: true,
-    );
-    final StringBuffer error = StringBuffer();
+  test(
+    'rejects a file above the schema byte limit before reading it',
+    () async {
+      final File evidence = File('${directory.path}/oversized.json');
+      await evidence.writeAsBytes(
+        List<int>.filled(
+          DeviceValidationEvidenceCodec.maxEncodedBytes + 1,
+          0x20,
+        ),
+        flush: true,
+      );
+      final StringBuffer error = StringBuffer();
 
-    final int result = await verifier.runDeviceValidationEvidenceVerifier(
-      <String>[evidence.path],
-      output: StringBuffer(),
-      errorOutput: error,
-    );
+      final int result = await verifier.runDeviceValidationEvidenceVerifier(
+        <String>[evidence.path],
+        output: StringBuffer(),
+        errorOutput: error,
+      );
 
-    expect(result, 1);
-    expect(error.toString(), contains('exceeds the 64 KiB limit'));
-  });
+      expect(result, 1);
+      expect(error.toString(), contains('exceeds the 64 KiB limit'));
+    },
+  );
 
-  test('rejects an export without a Health observation in physical mode', () async {
-    final DeviceValidationEvidenceSnapshot empty =
-        DeviceValidationEvidenceSnapshot(
-          launch: _launch(EvidenceHealthSource.healthConnect),
-          updatedAtUtc: DateTime.utc(2026, 7, 31, 18, 4),
-          journal: const <EvidenceJournalEntry>[],
-        );
-    final File evidence = await _writeEvidence(directory, empty);
-    final StringBuffer error = StringBuffer();
+  test(
+    'rejects an export without a Health observation in physical mode',
+    () async {
+      final DeviceValidationEvidenceSnapshot empty =
+          DeviceValidationEvidenceSnapshot(
+            launch: _launch(EvidenceHealthSource.healthConnect),
+            updatedAtUtc: DateTime.utc(2026, 7, 31, 18, 4),
+            journal: const <EvidenceJournalEntry>[],
+          );
+      final File evidence = await _writeEvidence(directory, empty);
+      final StringBuffer error = StringBuffer();
 
-    final int result = await verifier.runDeviceValidationEvidenceVerifier(
-      _physicalArguments(evidence.path),
-      output: StringBuffer(),
-      errorOutput: error,
-    );
+      final int result = await verifier.runDeviceValidationEvidenceVerifier(
+        _physicalArguments(evidence.path),
+        output: StringBuffer(),
+        errorOutput: error,
+      );
 
-    expect(result, 1);
-    expect(error.toString(), contains('recorded Health observation'));
-  });
+      expect(result, 1);
+      expect(error.toString(), contains('recorded Health observation'));
+    },
+  );
 }
 
 List<String> _physicalArguments(String path) {
