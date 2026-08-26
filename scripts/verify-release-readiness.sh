@@ -79,6 +79,8 @@ for file in \
   mobile/lib/features/validation/application/validation_evidence_exporter.dart \
   mobile/lib/features/validation/domain/device_validation_evidence.dart \
   mobile/lib/features/validation/validation_center_policy.dart \
+  mobile/tool/verify_device_validation_evidence.dart \
+  mobile/test/verify_device_validation_evidence_tool_test.dart \
   mobile/pubspec.lock \
   mobile/ios/Podfile.lock \
   backend/src/main/resources/application-local.yml \
@@ -784,6 +786,10 @@ grep -Fq 'static const int maxEncodedBytes = 64 * 1024;' mobile/lib/features/val
 grep -Fq '_validateSnapshotSemantics(' mobile/lib/features/validation/domain/device_validation_evidence.dart || fail 'validation evidence must enforce cross-field semantics'
 grep -Fq 'DeviceValidationEvidenceCodec.verify(json)' mobile/lib/features/validation/application/validation_evidence_exporter.dart || fail 'validation export must verify schema, redaction and checksum before sharing'
 grep -Fq 'await file.delete();' mobile/lib/features/validation/application/validation_evidence_exporter.dart || fail 'temporary validation evidence must be deleted after sharing'
+grep -Fq 'DeviceValidationEvidenceCodec.verify(encoded)' mobile/tool/verify_device_validation_evidence.dart || fail 'offline validation evidence review must reuse the mobile schema verifier'
+grep -Fq -- '--require-physical-health' mobile/tool/verify_device_validation_evidence.dart || fail 'offline validation evidence review must expose the physical Health gate'
+grep -Fq 'dart format lib test tool' .github/workflows/ci.yml || fail 'mobile CI must format the offline Dart evidence verifier'
+grep -Fq 'git diff --exit-code -- lib test tool' .github/workflows/ci.yml || fail 'mobile CI must expose and reject formatting drift'
 if grep -RInE 'ENABLE_VALIDATION_CENTER[=:][[:space:]]*true' .github 2>/dev/null | grep -q .; then
   fail 'CI and release workflows must not enable validation center'
 fi

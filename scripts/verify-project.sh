@@ -40,6 +40,8 @@ for file in \
   "$ROOT_DIR/scripts/ci/verify_health_device_inventory.py" \
   "$ROOT_DIR/scripts/ci/test_verify_health_device_inventory.py" \
   "$ROOT_DIR/docs/evidence/health-device-inventory-template.json" \
+  "$ROOT_DIR/mobile/tool/verify_device_validation_evidence.dart" \
+  "$ROOT_DIR/mobile/test/verify_device_validation_evidence_tool_test.dart" \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_kickoff.py" \
   "$ROOT_DIR/scripts/ci/test_verify_internal_alpha_kickoff.py" \
   "$ROOT_DIR/docs/evidence/internal-alpha-kickoff-template.json" \

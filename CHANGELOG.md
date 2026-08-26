@@ -82,6 +82,10 @@
 
 ### Added
 
+- independent offline review for schema-v1 Health validation exports reuses
+  the mobile codec, binds one artifact to exact candidate metadata and rejects
+  development or empty Health evidence before any physical-validation claim;
+
 - machine-verifiable internal-alpha kickoff contract keeps the committed
   template distinct from recruitment readiness and requires one immutable
   candidate, the fixed cohort/window/privacy boundary and all ten evidence
