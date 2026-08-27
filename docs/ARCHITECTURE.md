@@ -423,6 +423,12 @@ Current-journey expedition label использует только required
 fallback. Route trail, current node, READY event и local catalog state не
 подменяют accepted expedition identity; projection остаётся read-only.
 
+Current-journey active companion label использует только accepted Home
+`pet.petId/name`. Exact known ID разрешает mutable name через current-content
+catalog; legacy missing ID и unknown future ID сохраняют literal Home name.
+Platform active pet, route trail, READY requirement, decision rewards и local
+catalog state не подменяют accepted Home companion identity.
+
 Mobile принимает current phase только из required `expedition.status` и
 fail-closed ограничивает его server enum `IN_PROGRESS`, `EVENT_READY`,
 `COMPLETED`. Journal не пересчитывает phase из energy, route trail, decisions,

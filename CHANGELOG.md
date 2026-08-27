@@ -6,6 +6,10 @@
 
 ### Changed
 
+- the current-journey journal now shows the active companion accepted in the
+  Home snapshot with RU/EN stable-ID localization and legacy/future literal
+  fallback, without deriving it from Platform, route, event or reward state;
+
 - the current-journey journal now shows the accepted expedition identity in
   RU/EN with stable-ID localization and literal future fallback, without
   deriving it from route, node, event or catalog state;
