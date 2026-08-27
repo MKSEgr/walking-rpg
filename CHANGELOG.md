@@ -7,6 +7,11 @@
 ### Changed
 
 - available READY-event choices in the current-journey journal now preserve
+  their accepted optional requirement descriptions in RU/EN with stable
+  event/choice localization and future literal fallback, without eligibility
+  checks, locked-choice disclosure or commands;
+
+- available READY-event choices in the current-journey journal now preserve
   their accepted pilot XP, companion bond and optional material previews in
   RU/EN with stable item localization and future literal fallback, without
   reward aggregation, requirement checks or commands;

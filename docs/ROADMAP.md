@@ -1647,6 +1647,23 @@ Milestone 86 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0100 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 87 — Authoritative current-journey READY choice requirements
+
+### CODE_COMPLETE
+
+- [x] Journal показывает optional accepted requirement description рядом с
+      каждой available READY choice
+- [x] Mobile сохраняет pairing и server ordering, исключает locked choices и
+      не вычисляет eligibility или requirement satisfaction повторно
+- [x] Known mutable requirement локализуется по stable event/choice IDs,
+      unknown future ID сохраняет literal server fallback
+- [x] RU/EN, optional, ordering, future fallback, locked/non-ready и compact
+      large-text coverage фиксируют одну semantics node без actions/outcomes
+
+Milestone 87 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0101 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
