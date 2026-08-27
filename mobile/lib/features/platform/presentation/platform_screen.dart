@@ -1933,6 +1933,9 @@ class _JourneyDecisionLogCard extends StatelessWidget {
         snapshot.expeditionName,
       ),
     );
+    final String pilot = context.l10n.platformJourneyPilot(
+      context.l10n.currentPilotName(snapshot.pilotId, snapshot.pilotName),
+    );
     final String activeCompanion = context.l10n.platformJourneyActiveCompanion(
       context.l10n.currentPetName(snapshot.petId, snapshot.petName),
     );
@@ -2065,6 +2068,21 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             child: ExcludeSemantics(
               child: Text(
                 expedition,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Semantics(
+            key: const Key('platform-current-journey-pilot'),
+            container: true,
+            label: pilot,
+            child: ExcludeSemantics(
+              child: Text(
+                pilot,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w600,

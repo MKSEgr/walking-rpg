@@ -1400,6 +1400,12 @@
       "expedition": {"type": "String"}
     }
   },
+  "platformJourneyPilot": "Pilot: {pilot}",
+  "@platformJourneyPilot": {
+    "placeholders": {
+      "pilot": {"type": "String"}
+    }
+  },
   "platformJourneyActiveCompanion": "Active companion: {companion}",
   "@platformJourneyActiveCompanion": {
     "placeholders": {

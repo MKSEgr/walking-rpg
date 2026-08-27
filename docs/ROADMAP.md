@@ -1698,6 +1698,22 @@ Milestone 89 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0103 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 90 — Authoritative current-journey pilot identity
+
+### CODE_COMPLETE
+
+- [x] Journal показывает пилота только из accepted Home `pilotId/pilotName`
+- [x] Known pilot ID локализуется через existing RU/EN stable-ID resolver,
+      legacy missing ID и unknown future ID сохраняют literal server fallback
+- [x] Platform hero, route/event/requirement/reward facts, completion history и
+      local catalog state не подменяют accepted Home pilot identity
+- [x] Одна visible label и dedicated semantics node имеют RU/EN и compact
+      large-text coverage без API/backend/persistence/command changes
+
+Milestone 90 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0104 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
