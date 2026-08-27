@@ -6,6 +6,10 @@
 
 ### Changed
 
+- the current-journey journal now shows the accepted expedition identity in
+  RU/EN with stable-ID localization and literal future fallback, without
+  deriving it from route, node, event or catalog state;
+
 - available READY-event choices in the current-journey journal now preserve
   their accepted optional requirement descriptions in RU/EN with stable
   event/choice localization and future literal fallback, without eligibility

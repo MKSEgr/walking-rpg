@@ -417,6 +417,12 @@ journey-start source, который используется для completion 
 текущего `journeyNumber`. Service не выводит start из первого resolution,
 content или response clock; legacy absence остаётся неизвестным значением.
 
+Current-journey expedition label использует только required
+`expedition.expeditionId/name`. Exact stable ID разрешает known mutable name
+через current-content catalog, а unknown future ID сохраняет literal server
+fallback. Route trail, current node, READY event и local catalog state не
+подменяют accepted expedition identity; projection остаётся read-only.
+
 Mobile принимает current phase только из required `expedition.status` и
 fail-closed ограничивает его server enum `IN_PROGRESS`, `EVENT_READY`,
 `COMPLETED`. Journal не пересчитывает phase из energy, route trail, decisions,

@@ -1394,6 +1394,12 @@
   "platformSavedEntrySuffix": " · saved entry",
   "platformDecisionLogTitle": "Route decisions",
   "platformDecisionLogSubtitle": "Only server-accepted decisions from the current journey.",
+  "platformJourneyExpedition": "Expedition: {expedition}",
+  "@platformJourneyExpedition": {
+    "placeholders": {
+      "expedition": {"type": "String"}
+    }
+  },
   "platformJourneyPhaseInProgress": "Journey in progress",
   "platformJourneyPhaseDecisionAvailable": "Decision available",
   "platformJourneyPhaseCompleted": "Journey completed",

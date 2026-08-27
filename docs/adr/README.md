@@ -118,3 +118,4 @@ NNNN-short-title.md
 - [0099 — authoritative current-journey READY choice descriptions](0099-authoritative-current-journey-ready-choice-descriptions.md)
 - [0100 — authoritative current-journey READY choice rewards](0100-authoritative-current-journey-ready-choice-rewards.md)
 - [0101 — authoritative current-journey READY choice requirements](0101-authoritative-current-journey-ready-choice-requirements.md)
+- [0102 — authoritative current-journey expedition identity](0102-authoritative-current-journey-expedition-identity.md)

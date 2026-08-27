@@ -1927,6 +1927,12 @@ class _JourneyDecisionLogCard extends StatelessWidget {
       final String value => _journeyStartedTimeLabel(context, value),
       null => null,
     };
+    final String expedition = context.l10n.platformJourneyExpedition(
+      context.l10n.currentExpeditionName(
+        snapshot.expeditionId,
+        snapshot.expeditionName,
+      ),
+    );
     final String phase = _journeyPhaseLabel(context, snapshot.expeditionStatus);
     final String currentPosition = context.l10n.platformJourneyCurrentPosition(
       context.l10n.currentNodeName(
@@ -2046,6 +2052,21 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             context.l10n.platformDecisionLogSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Semantics(
+            key: const Key('platform-current-journey-expedition'),
+            container: true,
+            label: expedition,
+            child: ExcludeSemantics(
+              child: Text(
+                expedition,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 6),
