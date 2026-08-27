@@ -1526,9 +1526,7 @@ void main() {
         );
         await _bringIntoView(tester, log);
         expect(
-          find.byKey(
-            const Key('platform-current-journey-active-companion'),
-          ),
+          find.byKey(const Key('platform-current-journey-active-companion')),
           findsOneWidget,
         );
         expect(find.text(sample.expectedLabel), findsOneWidget);
