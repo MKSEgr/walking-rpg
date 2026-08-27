@@ -1881,9 +1881,32 @@ List<String> _journeyRecapRewardLabels(
   ];
 }
 
+String _readyEventChoiceRewardLabel(
+  BuildContext context,
+  HomeEventChoice choice,
+) {
+  final HomeMaterialRewardPreview? material = choice.materialReward;
+  final String materialText = switch (material) {
+    final HomeMaterialRewardPreview reward =>
+      context.l10n.homeMaterialRewardSuffix(
+        reward.quantity,
+        context.l10n.currentItemName(reward.itemId, reward.itemName),
+      ),
+    null => '',
+  };
+  return context.l10n.platformJourneyReadyChoiceRewards(
+    context.l10n.homeChoiceReward(
+      choice.pilotExperienceReward,
+      choice.petBondReward,
+      materialText,
+    ),
+  );
+}
+
 typedef _ReadyEventChoiceLabel = ({
   String choiceId,
   String descriptionLabel,
+  String rewardLabel,
   String titleLabel,
 });
 
@@ -1957,6 +1980,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                         choice.description,
                       ),
                     ),
+                rewardLabel: _readyEventChoiceRewardLabel(context, choice),
               ),
           ],
           null => const <_ReadyEventChoiceLabel>[],
@@ -2081,6 +2105,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 for (final choice in readyEventChoiceLabels) ...<String>[
                   choice.titleLabel,
                   choice.descriptionLabel,
+                  choice.rewardLabel,
                 ],
               ].join('\n'),
               child: ExcludeSemantics(
@@ -2135,6 +2160,18 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                         choice.descriptionLabel,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        key: Key(
+                          'platform-current-journey-ready-event-choice-'
+                          '${choice.choiceId}-rewards',
+                        ),
+                        choice.rewardLabel,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],

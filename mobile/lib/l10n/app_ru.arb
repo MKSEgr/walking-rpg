@@ -670,6 +670,7 @@
   "platformJourneyReadyEventSummary": "О событии: {summary}",
   "platformJourneyReadyChoice": "Доступный вариант: {choice}",
   "platformJourneyReadyChoiceDescription": "О варианте: {description}",
+  "platformJourneyReadyChoiceRewards": "Награды за вариант: {rewards}",
   "platformJourneyStartedAt": "Начат {date} в {time}",
   "platformLatestDecisionTitle": "Последнее сохранённое решение",
   "platformLatestDecisionChoice": "Выбрано: {choice}",

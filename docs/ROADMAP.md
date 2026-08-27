@@ -1630,6 +1630,23 @@ Milestone 85 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0099 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 86 — Authoritative current-journey READY choice rewards
+
+### CODE_COMPLETE
+
+- [x] Journal показывает accepted XP пилота, связь спутника и optional
+      material рядом с каждой available READY choice
+- [x] Mobile сохраняет pairing и server ordering, исключает locked choices,
+      не проверяет requirements и не агрегирует rewards между choices
+- [x] Accepted integers и material quantity сохраняются буквально; known item
+      name локализуется по stable ID, unknown future ID сохраняет fallback
+- [x] RU/EN, zero values, ordering, material fallback, non-ready и compact
+      large-text coverage фиксируют одну semantics node без actions/outcomes
+
+Milestone 86 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0100 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

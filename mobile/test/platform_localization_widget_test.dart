@@ -14,10 +14,13 @@ import 'support/platform_fixture.dart';
 
 typedef _ReadyChoiceLocaleSample = ({
   String futureDescription,
+  String futureReward,
   String futureTitle,
   String knownDescription,
+  String knownReward,
   String knownTitle,
   Locale locale,
+  String lockedReward,
   String lockedTitle,
 });
 
@@ -69,6 +72,20 @@ void main() {
     expect(
       russian.platformJourneyReadyChoiceDescription('Следовать за сигналом.'),
       'О варианте: Следовать за сигналом.',
+    );
+  });
+
+  test('ready choice reward label covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyReadyChoiceRewards('+31 XP · +6 bond'),
+      'Choice rewards: +31 XP · +6 bond',
+    );
+    expect(
+      russian.platformJourneyReadyChoiceRewards('+31 XP · +6 связь'),
+      'Награды за вариант: +31 XP · +6 связь',
     );
   });
 
@@ -1355,10 +1372,10 @@ void main() {
         'call from the depths.\n2 choices available\n'
         'Available choice: Stabilize the core\n'
         'About choice: The Navigator will lock the resonance and extract safe '
-        'fragments.\n'
+        'fragments.\nChoice rewards: +0 XP · +0 bond\n'
         'Available choice: Follow the echo\n'
         'About choice: The companion will lead the team along a living trail '
-        'deep in the archive.',
+        'deep in the archive.\nChoice rewards: +0 XP · +0 bond',
       ),
       findsOneWidget,
     );
@@ -1379,6 +1396,7 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.text('Choice rewards: +0 XP · +0 bond'), findsNWidgets(2));
     expect(find.textContaining('Literal choice locked'), findsNothing);
     final Finder latest = find.byKey(
       const Key('platform-current-journey-latest-decision'),
@@ -1527,10 +1545,10 @@ void main() {
           'call from the depths.\n2 choices available\n'
           'Available choice: Stabilize the core\n'
           'About choice: The Navigator will lock the resonance and extract '
-          'safe fragments.\n'
+          'safe fragments.\nChoice rewards: +0 XP · +0 bond\n'
           'Available choice: Follow the echo\n'
           'About choice: The companion will lead the team along a living '
-          'trail deep in the archive.',
+          'trail deep in the archive.\nChoice rewards: +0 XP · +0 bond',
         ),
         findsOneWidget,
       );
@@ -1539,6 +1557,23 @@ void main() {
         find.byKey(
           const Key(
             'platform-current-journey-ready-event-choice-stabilize-core',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-stabilize-core-'
+            'rewards',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-follow-echo-rewards',
           ),
         ),
         findsOneWidget,
@@ -1734,7 +1769,7 @@ void main() {
   });
 
   testWidgets(
-    'ready choices follow locale and preserve future literal fallback',
+    'ready choice details and rewards follow locale with future fallback',
     (WidgetTester tester) async {
       for (final _ReadyChoiceLocaleSample sample in <_ReadyChoiceLocaleSample>[
         (
@@ -1743,9 +1778,13 @@ void main() {
           knownDescription:
               'About choice: The Navigator will lock the resonance and '
               'extract safe fragments.',
+          knownReward: 'Choice rewards: +31 XP · +6 bond, +2 Ash Seed',
           lockedTitle: 'Available choice: Follow the echo',
+          lockedReward: 'Choice rewards: +99 XP · +99 bond',
           futureTitle: 'Available choice: Literal future choice',
           futureDescription: 'About choice: Literal future choice description',
+          futureReward:
+              'Choice rewards: +0 XP · +16 bond, +3 Literal future relic',
         ),
         (
           locale: const Locale('ru'),
@@ -1753,9 +1792,13 @@ void main() {
           knownDescription:
               'О варианте: Навигатор зафиксирует резонанс и извлечёт '
               'безопасные фрагменты.',
+          knownReward: 'Награды за вариант: +31 XP · +6 связь, +2 Семя пепла',
           lockedTitle: 'Доступный вариант: Последовать за эхом',
+          lockedReward: 'Награды за вариант: +99 XP · +99 связь',
           futureTitle: 'Доступный вариант: Literal future choice',
           futureDescription: 'О варианте: Literal future choice description',
+          futureReward:
+              'Награды за вариант: +0 XP · +16 связь, +3 Literal future relic',
         ),
       ]) {
         await tester.pumpWidget(
@@ -1769,12 +1812,33 @@ void main() {
                   title: 'Literal server vault',
                   summary: 'Literal server vault summary',
                   choices: <HomeEventChoice>[
-                    _eventChoice('stabilize-core'),
-                    _eventChoice('follow-echo', availability: 'LOCKED'),
+                    _eventChoice(
+                      'stabilize-core',
+                      pilotExperienceReward: 31,
+                      petBondReward: 6,
+                      materialReward: const HomeMaterialRewardPreview(
+                        itemId: 'ash-seed',
+                        itemName: 'Literal server ash seed',
+                        quantity: 2,
+                      ),
+                    ),
+                    _eventChoice(
+                      'follow-echo',
+                      availability: 'LOCKED',
+                      pilotExperienceReward: 99,
+                      petBondReward: 99,
+                    ),
                     _eventChoice(
                       'future-choice-v1',
                       title: 'Literal future choice',
                       description: 'Literal future choice description',
+                      pilotExperienceReward: 0,
+                      petBondReward: 16,
+                      materialReward: const HomeMaterialRewardPreview(
+                        itemId: 'future-relic-v1',
+                        itemName: 'Literal future relic',
+                        quantity: 3,
+                      ),
                     ),
                   ],
                 ),
@@ -1787,16 +1851,21 @@ void main() {
 
         expect(find.text(sample.knownTitle), findsOneWidget);
         expect(find.text(sample.knownDescription), findsOneWidget);
+        expect(find.text(sample.knownReward), findsOneWidget);
         expect(find.text(sample.lockedTitle), findsNothing);
+        expect(find.text(sample.lockedReward), findsNothing);
         expect(find.text(sample.futureTitle), findsOneWidget);
         expect(find.text(sample.futureDescription), findsOneWidget);
+        expect(find.text(sample.futureReward), findsOneWidget);
         expect(
           find.bySemanticsLabel(
             RegExp(
               '${RegExp.escape(sample.knownTitle)}\\n'
               '${RegExp.escape(sample.knownDescription)}\\n'
+              '${RegExp.escape(sample.knownReward)}\\n'
               '${RegExp.escape(sample.futureTitle)}\\n'
-              '${RegExp.escape(sample.futureDescription)}\$',
+              '${RegExp.escape(sample.futureDescription)}\\n'
+              '${RegExp.escape(sample.futureReward)}\$',
             ),
           ),
           findsOneWidget,
@@ -1832,6 +1901,14 @@ void main() {
         ),
         findsNothing,
       );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-locked-rewards',
+          ),
+        ),
+        findsNothing,
+      );
     }
   });
 
@@ -1858,6 +1935,14 @@ void main() {
 
       expect(
         find.byKey(const Key('platform-current-journey-ready-event')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-available-rewards',
+          ),
+        ),
         findsNothing,
       );
     }
@@ -1992,14 +2077,18 @@ HomeEventChoice _eventChoice(
   String choiceId, {
   String availability = 'AVAILABLE',
   String? description,
+  HomeMaterialRewardPreview? materialReward,
+  int petBondReward = 0,
+  int pilotExperienceReward = 0,
   String? title,
 }) {
   return HomeEventChoice(
     choiceId: choiceId,
     title: title ?? 'Literal choice $choiceId',
     description: description ?? 'Literal choice description $choiceId',
-    pilotExperienceReward: 0,
-    petBondReward: 0,
+    pilotExperienceReward: pilotExperienceReward,
+    petBondReward: petBondReward,
+    materialReward: materialReward,
     availability: availability,
   );
 }
