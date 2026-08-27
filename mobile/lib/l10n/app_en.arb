@@ -1434,6 +1434,12 @@
       "description": {"type": "String"}
     }
   },
+  "platformJourneyReadyChoiceRequirement": "Requirement: {requirement}",
+  "@platformJourneyReadyChoiceRequirement": {
+    "placeholders": {
+      "requirement": {"type": "String"}
+    }
+  },
   "platformJourneyReadyChoiceRewards": "Choice rewards: {rewards}",
   "@platformJourneyReadyChoiceRewards": {
     "placeholders": {

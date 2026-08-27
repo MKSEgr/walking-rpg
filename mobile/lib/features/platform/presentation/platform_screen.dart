@@ -1906,6 +1906,7 @@ String _readyEventChoiceRewardLabel(
 typedef _ReadyEventChoiceLabel = ({
   String choiceId,
   String descriptionLabel,
+  String? requirementLabel,
   String rewardLabel,
   String titleLabel,
 });
@@ -1980,6 +1981,17 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                         choice.description,
                       ),
                     ),
+                requirementLabel: switch (choice.requirement) {
+                  final HomeChoiceRequirement requirement =>
+                    context.l10n.platformJourneyReadyChoiceRequirement(
+                      context.l10n.currentEventRequirementDescription(
+                        event.eventId,
+                        choice.choiceId,
+                        requirement.description,
+                      ),
+                    ),
+                  null => null,
+                },
                 rewardLabel: _readyEventChoiceRewardLabel(context, choice),
               ),
           ],
@@ -2105,6 +2117,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 for (final choice in readyEventChoiceLabels) ...<String>[
                   choice.titleLabel,
                   choice.descriptionLabel,
+                  if (choice.requirementLabel != null) choice.requirementLabel!,
                   choice.rewardLabel,
                 ],
               ].join('\n'),
@@ -2162,6 +2175,20 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                           color: colors.onSurfaceVariant,
                         ),
                       ),
+                      if (choice.requirementLabel != null) ...<Widget>[
+                        const SizedBox(height: 2),
+                        Text(
+                          key: Key(
+                            'platform-current-journey-ready-event-choice-'
+                            '${choice.choiceId}-requirement',
+                          ),
+                          choice.requirementLabel!,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.tertiary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 2),
                       Text(
                         key: Key(
