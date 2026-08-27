@@ -27,6 +27,13 @@ typedef _ReadyChoiceLocaleSample = ({
   String lockedTitle,
 });
 
+typedef _JourneyLocaleSample = ({
+  String expectedLabel,
+  String expeditionId,
+  Locale locale,
+  String serverName,
+});
+
 void main() {
   test('discovered route node count covers Russian and English', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
@@ -47,6 +54,20 @@ void main() {
     expect(
       russian.platformJourneyReadyEventSummary('Описание сигнала'),
       'О событии: Описание сигнала',
+    );
+  });
+
+  test('current journey expedition label covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyExpedition('Signal from the Fog Sector'),
+      'Expedition: Signal from the Fog Sector',
+    );
+    expect(
+      russian.platformJourneyExpedition('Сигнал из туманного сектора'),
+      'Экспедиция: Сигнал из туманного сектора',
     );
   });
 
@@ -1337,6 +1358,81 @@ void main() {
     expect(find.text('Активный питомец изменён'), findsNothing);
   });
 
+  testWidgets(
+    'current journey expedition follows stable identity at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final _JourneyLocaleSample sample in <_JourneyLocaleSample>[
+            (
+              locale: const Locale('en'),
+              expeditionId: 'starter-expedition-v1',
+              serverName: 'Literal server expedition',
+              expectedLabel: 'Expedition: Signal from the Fog Sector',
+            ),
+            (
+              locale: const Locale('ru'),
+              expeditionId: 'starter-expedition-v1',
+              serverName: 'Literal server expedition',
+              expectedLabel: 'Экспедиция: Сигнал из туманного сектора',
+            ),
+            (
+              locale: const Locale('en'),
+              expeditionId: 'future-expedition-v2',
+              serverName: 'Literal future expedition',
+              expectedLabel: 'Expedition: Literal future expedition',
+            ),
+          ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(),
+              homeLoader: () async => _homeWithPersistedDecision(
+                expeditionId: sample.expeditionId,
+                expeditionName: sample.serverName,
+                currentNodeId: 'future-decoy-node-v1',
+                currentNodeName: 'Literal decoy node',
+                unlockedEvent: _readyEvent(
+                  eventId: 'future-decoy-event-v1',
+                  title: 'Literal decoy event',
+                  summary: 'Literal decoy event summary',
+                ),
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder log = find.byKey(
+          const Key('platform-journey-decision-log'),
+        );
+        await _bringIntoView(tester, log);
+        expect(
+          find.byKey(const Key('platform-current-journey-expedition')),
+          findsOneWidget,
+        );
+        expect(find.text(sample.expectedLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
+        expect(
+          find.textContaining('Expedition: Literal decoy'),
+          findsNothing,
+        );
+        expect(
+          find.textContaining('Экспедиция: Literal decoy'),
+          findsNothing,
+        );
+        if (sample.expeditionId == 'starter-expedition-v1') {
+          expect(find.textContaining(sample.serverName), findsNothing);
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('English journal preserves immutable decision literals', (
     WidgetTester tester,
   ) async {
@@ -2133,6 +2229,8 @@ HomeSnapshot _homeWithPersistedDecision({
   bool withDecisionRewards = false,
   String? currentNodeId,
   String? currentNodeName,
+  String? expeditionId,
+  String? expeditionName,
   int? expeditionProgress,
   int? requiredEnergy,
   HomeExpeditionEvent? unlockedEvent,
@@ -2149,8 +2247,8 @@ HomeSnapshot _homeWithPersistedDecision({
     lastActivitySyncAt: demo.lastActivitySyncAt,
     serverTime: demo.serverTime,
     contentVersion: demo.contentVersion,
-    expeditionId: demo.expeditionId,
-    expeditionName: demo.expeditionName,
+    expeditionId: expeditionId ?? demo.expeditionId,
+    expeditionName: expeditionName ?? demo.expeditionName,
     currentNodeId: currentNodeId ?? demo.currentNodeId,
     currentNodeName: currentNodeName ?? demo.currentNodeName,
     expeditionProgress: expeditionProgress ?? demo.expeditionProgress,

@@ -1664,6 +1664,23 @@ Milestone 87 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0101 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 88 — Authoritative current-journey expedition identity
+
+### CODE_COMPLETE
+
+- [x] Journal показывает имя экспедиции только из accepted
+      `expeditionId/expeditionName` текущего Home snapshot
+- [x] Known `starter-expedition-v1` локализуется через existing RU/EN stable-ID
+      resolver, unknown future ID сохраняет literal server fallback
+- [x] Route trail, current node, READY event и local catalog не подменяют
+      accepted expedition identity
+- [x] Одна visible label и dedicated semantics node имеют RU/EN и compact
+      large-text coverage без API/backend/persistence/command changes
+
+Milestone 88 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0102 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

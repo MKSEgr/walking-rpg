@@ -661,6 +661,7 @@
   "platformSavedEntrySuffix": " · сохранённая запись",
   "platformDecisionLogTitle": "Решения маршрута",
   "platformDecisionLogSubtitle": "Только уже принятые сервером решения текущего похода.",
+  "platformJourneyExpedition": "Экспедиция: {expedition}",
   "platformJourneyPhaseInProgress": "Поход продолжается",
   "platformJourneyPhaseDecisionAvailable": "Доступно решение",
   "platformJourneyPhaseCompleted": "Поход завершён",
