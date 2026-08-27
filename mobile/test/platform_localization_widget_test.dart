@@ -1906,6 +1906,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      await _bringIntoView(
+        tester,
+        find.byKey(const Key('platform-journey-decision-log')),
+      );
 
       expect(find.text(sample.knownTitle), findsOneWidget);
       expect(find.text(sample.knownDescription), findsOneWidget);
