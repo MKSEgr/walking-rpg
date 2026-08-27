@@ -1365,25 +1365,25 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       for (final _JourneyLocaleSample sample in <_JourneyLocaleSample>[
-            (
-              locale: const Locale('en'),
-              expeditionId: 'starter-expedition-v1',
-              serverName: 'Literal server expedition',
-              expectedLabel: 'Expedition: Signal from the Fog Sector',
-            ),
-            (
-              locale: const Locale('ru'),
-              expeditionId: 'starter-expedition-v1',
-              serverName: 'Literal server expedition',
-              expectedLabel: 'Экспедиция: Сигнал из туманного сектора',
-            ),
-            (
-              locale: const Locale('en'),
-              expeditionId: 'future-expedition-v2',
-              serverName: 'Literal future expedition',
-              expectedLabel: 'Expedition: Literal future expedition',
-            ),
-          ]) {
+        (
+          locale: const Locale('en'),
+          expeditionId: 'starter-expedition-v1',
+          serverName: 'Literal server expedition',
+          expectedLabel: 'Expedition: Signal from the Fog Sector',
+        ),
+        (
+          locale: const Locale('ru'),
+          expeditionId: 'starter-expedition-v1',
+          serverName: 'Literal server expedition',
+          expectedLabel: 'Экспедиция: Сигнал из туманного сектора',
+        ),
+        (
+          locale: const Locale('en'),
+          expeditionId: 'future-expedition-v2',
+          serverName: 'Literal future expedition',
+          expectedLabel: 'Expedition: Literal future expedition',
+        ),
+      ]) {
         await tester.pumpWidget(
           _LocalizedPlatformApp(
             locale: sample.locale,
@@ -1417,14 +1417,8 @@ void main() {
         );
         expect(find.text(sample.expectedLabel), findsOneWidget);
         expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
-        expect(
-          find.textContaining('Expedition: Literal decoy'),
-          findsNothing,
-        );
-        expect(
-          find.textContaining('Экспедиция: Literal decoy'),
-          findsNothing,
-        );
+        expect(find.textContaining('Expedition: Literal decoy'), findsNothing);
+        expect(find.textContaining('Экспедиция: Literal decoy'), findsNothing);
         if (sample.expeditionId == 'starter-expedition-v1') {
           expect(find.textContaining(sample.serverName), findsNothing);
         }
