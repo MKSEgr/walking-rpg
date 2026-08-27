@@ -1400,6 +1400,12 @@
       "expedition": {"type": "String"}
     }
   },
+  "platformJourneyActiveCompanion": "Active companion: {companion}",
+  "@platformJourneyActiveCompanion": {
+    "placeholders": {
+      "companion": {"type": "String"}
+    }
+  },
   "platformJourneyPhaseInProgress": "Journey in progress",
   "platformJourneyPhaseDecisionAvailable": "Decision available",
   "platformJourneyPhaseCompleted": "Journey completed",

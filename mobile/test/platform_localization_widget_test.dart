@@ -34,6 +34,14 @@ typedef _JourneyLocaleSample = ({
   String serverName,
 });
 
+typedef _CompanionLocaleSample = ({
+  String expectedLabel,
+  bool legacyId,
+  Locale locale,
+  String? petId,
+  String serverName,
+});
+
 void main() {
   test('discovered route node count covers Russian and English', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
@@ -68,6 +76,20 @@ void main() {
     expect(
       russian.platformJourneyExpedition('Сигнал из туманного сектора'),
       'Экспедиция: Сигнал из туманного сектора',
+    );
+  });
+
+  test('current journey companion label covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyActiveCompanion('Spark'),
+      'Active companion: Spark',
+    );
+    expect(
+      russian.platformJourneyActiveCompanion('Искра'),
+      'Активный спутник: Искра',
     );
   });
 
@@ -1427,6 +1449,101 @@ void main() {
     },
   );
 
+  testWidgets(
+    'current journey companion follows Home identity at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final _CompanionLocaleSample sample in <_CompanionLocaleSample>[
+        (
+          locale: const Locale('en'),
+          petId: 'spark-v1',
+          serverName: 'Literal server companion',
+          expectedLabel: 'Active companion: Spark',
+          legacyId: false,
+        ),
+        (
+          locale: const Locale('ru'),
+          petId: 'spark-v1',
+          serverName: 'Literal server companion',
+          expectedLabel: 'Активный спутник: Искра',
+          legacyId: false,
+        ),
+        (
+          locale: const Locale('en'),
+          petId: 'future-companion-v2',
+          serverName: 'Literal future companion',
+          expectedLabel: 'Active companion: Literal future companion',
+          legacyId: false,
+        ),
+        (
+          locale: const Locale('en'),
+          petId: null,
+          serverName: 'Literal legacy companion',
+          expectedLabel: 'Active companion: Literal legacy companion',
+          legacyId: true,
+        ),
+      ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(),
+              homeLoader: () async => _homeWithPersistedDecision(
+                petId: sample.petId,
+                petName: sample.serverName,
+                legacyPetId: sample.legacyId,
+                withDecisionRewards: true,
+                unlockedEvent: _readyEvent(
+                  eventId: 'future-decoy-event-v1',
+                  title: 'Literal decoy event',
+                  summary: 'Literal decoy event summary',
+                  choices: <HomeEventChoice>[
+                    _eventChoice(
+                      'future-decoy-choice-v1',
+                      requirement: const HomeChoiceRequirement(
+                        type: 'PET',
+                        slotId: 'PET',
+                        slotName: 'Literal decoy slot',
+                        itemId: 'moss-v1',
+                        itemName: 'Literal decoy companion',
+                        description: 'Select the decoy companion.',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder log = find.byKey(
+          const Key('platform-journey-decision-log'),
+        );
+        await _bringIntoView(tester, log);
+        expect(
+          find.byKey(const Key('platform-current-journey-active-companion')),
+          findsOneWidget,
+        );
+        expect(find.text(sample.expectedLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
+        if (sample.petId != 'spark-v1') {
+          expect(find.text('Active companion: Spark'), findsNothing);
+          expect(find.text('Active companion: Navigator'), findsNothing);
+          expect(find.text('Active companion: Moss'), findsNothing);
+        }
+        if (sample.petId == 'spark-v1') {
+          expect(find.textContaining(sample.serverName), findsNothing);
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('English journal preserves immutable decision literals', (
     WidgetTester tester,
   ) async {
@@ -2226,6 +2343,9 @@ HomeSnapshot _homeWithPersistedDecision({
   String? expeditionId,
   String? expeditionName,
   int? expeditionProgress,
+  bool legacyPetId = false,
+  String? petId,
+  String? petName,
   int? requiredEnergy,
   HomeExpeditionEvent? unlockedEvent,
 }) {
@@ -2284,8 +2404,8 @@ HomeSnapshot _homeWithPersistedDecision({
     pilotLevel: demo.pilotLevel,
     pilotCurrentExperience: demo.pilotCurrentExperience,
     pilotNextLevelExperience: demo.pilotNextLevelExperience,
-    petId: demo.petId,
-    petName: demo.petName,
+    petId: legacyPetId ? null : petId ?? demo.petId,
+    petName: petName ?? demo.petName,
     petSpecies: demo.petSpecies,
     petLevel: demo.petLevel,
     petBond: demo.petBond,

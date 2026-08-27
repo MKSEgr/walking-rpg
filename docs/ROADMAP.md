@@ -1681,6 +1681,23 @@ Milestone 88 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0102 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 89 — Authoritative current-journey active companion
+
+### CODE_COMPLETE
+
+- [x] Journal показывает active companion только из accepted Home
+      `petId/petName`
+- [x] Known companion ID локализуется через existing RU/EN stable-ID resolver,
+      legacy missing ID и unknown future ID сохраняют literal server fallback
+- [x] Platform active pet, route trail, READY requirement, decision reward и
+      local catalog state не подменяют accepted Home companion identity
+- [x] Одна visible label и dedicated semantics node имеют RU/EN и compact
+      large-text coverage без API/backend/persistence/command changes
+
+Milestone 89 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0103 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
