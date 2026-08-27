@@ -1785,195 +1785,193 @@ void main() {
     );
   });
 
-  testWidgets(
-    'ready choice details, requirements and rewards follow locale',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      for (final _ReadyChoiceLocaleSample sample in <_ReadyChoiceLocaleSample>[
-        (
-          locale: const Locale('en'),
-          knownTitle: 'Available choice: Cross on the first light',
-          knownDescription:
-              'About choice: Use Steady Step to hold the rhythm of the moving '
-              'causeway above the meridian.',
-          knownRequirement:
-              'Requirement: Unlock Steady Step to cross on the first light.',
-          knownReward: 'Choice rewards: +31 XP · +6 bond, +2 Ash Seed',
-          lockedTitle:
-              'Available choice: Share the current with the companion',
-          lockedRequirement: 'Requirement: Literal locked requirement',
-          lockedReward: 'Choice rewards: +99 XP · +99 bond',
-          futureTitle: 'Available choice: Literal future choice',
-          futureDescription: 'About choice: Literal future choice description',
-          futureRequirement: 'Requirement: Literal future requirement',
-          futureReward:
-              'Choice rewards: +0 XP · +16 bond, +3 Literal future relic',
-        ),
-        (
-          locale: const Locale('ru'),
-          knownTitle: 'Доступный вариант: Перейти по первому свету',
-          knownDescription:
-              'О варианте: Применить Ровный шаг и удержать ритм подвижного '
-              'перехода над меридианом.',
-          knownRequirement:
-              'Условие: Откройте навык «Ровный шаг», чтобы перейти по первому '
-              'свету.',
-          knownReward: 'Награды за вариант: +31 XP · +6 связь, +2 Семя пепла',
-          lockedTitle: 'Доступный вариант: Разделить поток с питомцем',
-          lockedRequirement: 'Условие: Literal locked requirement',
-          lockedReward: 'Награды за вариант: +99 XP · +99 связь',
-          futureTitle: 'Доступный вариант: Literal future choice',
-          futureDescription: 'О варианте: Literal future choice description',
-          futureRequirement: 'Условие: Literal future requirement',
-          futureReward:
-              'Награды за вариант: +0 XP · +16 связь, +3 Literal future relic',
-        ),
-      ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(),
-              homeLoader: () async => _homeWithPersistedDecision(
-                unlockedEvent: _readyEvent(
-                  eventId: 'dawn-meridian-v1',
-                  title: 'Literal server meridian',
-                  summary: 'Literal server meridian summary',
-                  choices: <HomeEventChoice>[
-                    _eventChoice(
-                      'plain-choice-v1',
-                      title: 'Literal plain choice',
-                      description: 'Literal plain choice description',
+  testWidgets('ready choice details, requirements and rewards follow locale', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    for (final _ReadyChoiceLocaleSample sample in <_ReadyChoiceLocaleSample>[
+      (
+        locale: const Locale('en'),
+        knownTitle: 'Available choice: Cross on the first light',
+        knownDescription:
+            'About choice: Use Steady Step to hold the rhythm of the moving '
+            'causeway above the meridian.',
+        knownRequirement:
+            'Requirement: Unlock Steady Step to cross on the first light.',
+        knownReward: 'Choice rewards: +31 XP · +6 bond, +2 Ash Seed',
+        lockedTitle: 'Available choice: Share the current with the companion',
+        lockedRequirement: 'Requirement: Literal locked requirement',
+        lockedReward: 'Choice rewards: +99 XP · +99 bond',
+        futureTitle: 'Available choice: Literal future choice',
+        futureDescription: 'About choice: Literal future choice description',
+        futureRequirement: 'Requirement: Literal future requirement',
+        futureReward:
+            'Choice rewards: +0 XP · +16 bond, +3 Literal future relic',
+      ),
+      (
+        locale: const Locale('ru'),
+        knownTitle: 'Доступный вариант: Перейти по первому свету',
+        knownDescription:
+            'О варианте: Применить Ровный шаг и удержать ритм подвижного '
+            'перехода над меридианом.',
+        knownRequirement:
+            'Условие: Откройте навык «Ровный шаг», чтобы перейти по первому '
+            'свету.',
+        knownReward: 'Награды за вариант: +31 XP · +6 связь, +2 Семя пепла',
+        lockedTitle: 'Доступный вариант: Разделить поток с питомцем',
+        lockedRequirement: 'Условие: Literal locked requirement',
+        lockedReward: 'Награды за вариант: +99 XP · +99 связь',
+        futureTitle: 'Доступный вариант: Literal future choice',
+        futureDescription: 'О варианте: Literal future choice description',
+        futureRequirement: 'Условие: Literal future requirement',
+        futureReward:
+            'Награды за вариант: +0 XP · +16 связь, +3 Literal future relic',
+      ),
+    ]) {
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: sample.locale,
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              unlockedEvent: _readyEvent(
+                eventId: 'dawn-meridian-v1',
+                title: 'Literal server meridian',
+                summary: 'Literal server meridian summary',
+                choices: <HomeEventChoice>[
+                  _eventChoice(
+                    'plain-choice-v1',
+                    title: 'Literal plain choice',
+                    description: 'Literal plain choice description',
+                  ),
+                  _eventChoice(
+                    'cross-first-light-causeway',
+                    pilotExperienceReward: 31,
+                    petBondReward: 6,
+                    materialReward: const HomeMaterialRewardPreview(
+                      itemId: 'ash-seed',
+                      itemName: 'Literal server ash seed',
+                      quantity: 2,
                     ),
-                    _eventChoice(
-                      'cross-first-light-causeway',
-                      pilotExperienceReward: 31,
-                      petBondReward: 6,
-                      materialReward: const HomeMaterialRewardPreview(
-                        itemId: 'ash-seed',
-                        itemName: 'Literal server ash seed',
-                        quantity: 2,
-                      ),
-                      requirement: const HomeChoiceRequirement(
-                        type: 'SKILL',
-                        slotId: 'PILOT',
-                        slotName: 'Literal pilot',
-                        itemId: 'steady-step',
-                        itemName: 'Literal steady step',
-                        description: 'Literal known requirement',
-                      ),
+                    requirement: const HomeChoiceRequirement(
+                      type: 'SKILL',
+                      slotId: 'PILOT',
+                      slotName: 'Literal pilot',
+                      itemId: 'steady-step',
+                      itemName: 'Literal steady step',
+                      description: 'Literal known requirement',
                     ),
-                    _eventChoice(
-                      'share-dawn-flow-with-pet',
-                      availability: 'LOCKED',
-                      pilotExperienceReward: 99,
-                      petBondReward: 99,
-                      requirement: const HomeChoiceRequirement(
-                        type: 'PET_EVOLUTION',
-                        slotId: 'PET',
-                        slotName: 'Literal pet',
-                        itemId: 'spark-v1',
-                        itemName: 'Literal spark',
-                        description: 'Literal locked requirement',
-                      ),
+                  ),
+                  _eventChoice(
+                    'share-dawn-flow-with-pet',
+                    availability: 'LOCKED',
+                    pilotExperienceReward: 99,
+                    petBondReward: 99,
+                    requirement: const HomeChoiceRequirement(
+                      type: 'PET_EVOLUTION',
+                      slotId: 'PET',
+                      slotName: 'Literal pet',
+                      itemId: 'spark-v1',
+                      itemName: 'Literal spark',
+                      description: 'Literal locked requirement',
                     ),
-                    _eventChoice(
-                      'future-choice-v1',
-                      title: 'Literal future choice',
-                      description: 'Literal future choice description',
-                      pilotExperienceReward: 0,
-                      petBondReward: 16,
-                      materialReward: const HomeMaterialRewardPreview(
-                        itemId: 'future-relic-v1',
-                        itemName: 'Literal future relic',
-                        quantity: 3,
-                      ),
-                      requirement: const HomeChoiceRequirement(
-                        type: 'FUTURE_REQUIREMENT',
-                        slotId: 'FUTURE',
-                        slotName: 'Literal future slot',
-                        itemId: 'future-item-v1',
-                        itemName: 'Literal future item',
-                        description: 'Literal future requirement',
-                      ),
+                  ),
+                  _eventChoice(
+                    'future-choice-v1',
+                    title: 'Literal future choice',
+                    description: 'Literal future choice description',
+                    pilotExperienceReward: 0,
+                    petBondReward: 16,
+                    materialReward: const HomeMaterialRewardPreview(
+                      itemId: 'future-relic-v1',
+                      itemName: 'Literal future relic',
+                      quantity: 3,
                     ),
-                  ],
-                ),
+                    requirement: const HomeChoiceRequirement(
+                      type: 'FUTURE_REQUIREMENT',
+                      slotId: 'FUTURE',
+                      slotName: 'Literal future slot',
+                      itemId: 'future-item-v1',
+                      itemName: 'Literal future item',
+                      description: 'Literal future requirement',
+                    ),
+                  ),
+                ],
               ),
-              recordExperimentExposures: false,
             ),
+            recordExperimentExposures: false,
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.text(sample.knownTitle), findsOneWidget);
-        expect(find.text(sample.knownDescription), findsOneWidget);
-        expect(find.text(sample.knownRequirement), findsOneWidget);
-        expect(find.text(sample.knownReward), findsOneWidget);
-        expect(find.text(sample.lockedTitle), findsNothing);
-        expect(find.text(sample.lockedRequirement), findsNothing);
-        expect(find.text(sample.lockedReward), findsNothing);
-        expect(find.text(sample.futureTitle), findsOneWidget);
-        expect(find.text(sample.futureDescription), findsOneWidget);
-        expect(find.text(sample.futureRequirement), findsOneWidget);
-        expect(find.text(sample.futureReward), findsOneWidget);
-        expect(
-          find.byKey(
-            const Key(
-              'platform-current-journey-ready-event-choice-plain-choice-v1-'
-              'requirement',
-            ),
+      expect(find.text(sample.knownTitle), findsOneWidget);
+      expect(find.text(sample.knownDescription), findsOneWidget);
+      expect(find.text(sample.knownRequirement), findsOneWidget);
+      expect(find.text(sample.knownReward), findsOneWidget);
+      expect(find.text(sample.lockedTitle), findsNothing);
+      expect(find.text(sample.lockedRequirement), findsNothing);
+      expect(find.text(sample.lockedReward), findsNothing);
+      expect(find.text(sample.futureTitle), findsOneWidget);
+      expect(find.text(sample.futureDescription), findsOneWidget);
+      expect(find.text(sample.futureRequirement), findsOneWidget);
+      expect(find.text(sample.futureReward), findsOneWidget);
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-plain-choice-v1-'
+            'requirement',
           ),
-          findsNothing,
-        );
-        expect(
-          find.byKey(
-            const Key(
-              'platform-current-journey-ready-event-choice-'
-              'cross-first-light-causeway-requirement',
-            ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-'
+            'cross-first-light-causeway-requirement',
           ),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(
-            const Key(
-              'platform-current-journey-ready-event-choice-'
-              'share-dawn-flow-with-pet-requirement',
-            ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-'
+            'share-dawn-flow-with-pet-requirement',
           ),
-          findsNothing,
-        );
-        expect(
-          find.byKey(
-            const Key(
-              'platform-current-journey-ready-event-choice-'
-              'future-choice-v1-requirement',
-            ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-'
+            'future-choice-v1-requirement',
           ),
-          findsOneWidget,
-        );
-        expect(
-          find.bySemanticsLabel(
-            RegExp(
-              '${RegExp.escape(sample.knownTitle)}\\n'
-              '${RegExp.escape(sample.knownDescription)}\\n'
-              '${RegExp.escape(sample.knownRequirement)}\\n'
-              '${RegExp.escape(sample.knownReward)}\\n'
-              '${RegExp.escape(sample.futureTitle)}\\n'
-              '${RegExp.escape(sample.futureDescription)}\\n'
-              '${RegExp.escape(sample.futureRequirement)}\\n'
-              '${RegExp.escape(sample.futureReward)}\$',
-            ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          RegExp(
+            '${RegExp.escape(sample.knownTitle)}\\n'
+            '${RegExp.escape(sample.knownDescription)}\\n'
+            '${RegExp.escape(sample.knownRequirement)}\\n'
+            '${RegExp.escape(sample.knownReward)}\\n'
+            '${RegExp.escape(sample.futureTitle)}\\n'
+            '${RegExp.escape(sample.futureDescription)}\\n'
+            '${RegExp.escape(sample.futureRequirement)}\\n'
+            '${RegExp.escape(sample.futureReward)}\$',
           ),
-          findsOneWidget,
-        );
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    }
+  });
 
   testWidgets('ready event omits empty and locked-only choice counts', (
     WidgetTester tester,

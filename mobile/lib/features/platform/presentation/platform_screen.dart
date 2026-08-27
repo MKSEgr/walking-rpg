@@ -2117,8 +2117,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 for (final choice in readyEventChoiceLabels) ...<String>[
                   choice.titleLabel,
                   choice.descriptionLabel,
-                  if (choice.requirementLabel != null)
-                    choice.requirementLabel!,
+                  if (choice.requirementLabel != null) choice.requirementLabel!,
                   choice.rewardLabel,
                 ],
               ].join('\n'),
