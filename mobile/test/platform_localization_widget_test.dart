@@ -1683,10 +1683,8 @@ void main() {
             locale: sample.locale,
             textScale: 1.6,
             child: PlatformScreen(
-              loader: () async => platformSnapshot(
-                sparkLevel: 12,
-                sparkBond: 999,
-              ),
+              loader: () async =>
+                  platformSnapshot(sparkLevel: 12, sparkBond: 999),
               homeLoader: () async => _homeWithPersistedDecision(
                 petLevel: 6,
                 petBond: 742,
