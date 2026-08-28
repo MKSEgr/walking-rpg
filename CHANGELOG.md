@@ -6,6 +6,10 @@
 
 ### Changed
 
+- the current-journey journal now shows accepted Home pilot level and XP
+  progression in RU/EN, omits invalid legacy progression, and does not derive
+  current state from Platform season XP, rewards, history or local content;
+
 - the current-journey journal now shows the pilot accepted in the Home snapshot
   with RU/EN stable-ID localization and legacy/future literal fallback, without
   deriving it from Platform, route, event, reward, history or catalog state;

@@ -1406,6 +1406,15 @@
       "pilot": {"type": "String"}
     }
   },
+  "platformJourneyPilotProgression": "Pilot progression: level {level} · XP {current} / {target} · {remaining} XP to next level",
+  "@platformJourneyPilotProgression": {
+    "placeholders": {
+      "level": {"type": "int"},
+      "current": {"type": "int"},
+      "target": {"type": "int"},
+      "remaining": {"type": "int"}
+    }
+  },
   "platformJourneyActiveCompanion": "Active companion: {companion}",
   "@platformJourneyActiveCompanion": {
     "placeholders": {
