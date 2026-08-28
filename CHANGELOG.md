@@ -6,6 +6,10 @@
 
 ### Changed
 
+- the current-journey journal now shows the pilot accepted in the Home snapshot
+  with RU/EN stable-ID localization and legacy/future literal fallback, without
+  deriving it from Platform, route, event, reward, history or catalog state;
+
 - the current-journey journal now shows the active companion accepted in the
   Home snapshot with RU/EN stable-ID localization and legacy/future literal
   fallback, without deriving it from Platform, route, event or reward state;

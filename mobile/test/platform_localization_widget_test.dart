@@ -42,6 +42,14 @@ typedef _CompanionLocaleSample = ({
   String serverName,
 });
 
+typedef _PilotLocaleSample = ({
+  String expectedLabel,
+  bool legacyId,
+  Locale locale,
+  String? pilotId,
+  String serverName,
+});
+
 void main() {
   test('discovered route node count covers Russian and English', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
@@ -91,6 +99,14 @@ void main() {
       russian.platformJourneyActiveCompanion('Искра'),
       'Активный спутник: Искра',
     );
+  });
+
+  test('current journey pilot label covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(english.platformJourneyPilot('Navigator'), 'Pilot: Navigator');
+    expect(russian.platformJourneyPilot('Навигатор'), 'Пилот: Навигатор');
   });
 
   test('ready choice label covers Russian and English', () {
@@ -1450,6 +1466,89 @@ void main() {
   );
 
   testWidgets(
+    'current journey pilot follows Home identity at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final _PilotLocaleSample sample in <_PilotLocaleSample>[
+        (
+          locale: const Locale('en'),
+          pilotId: 'navigator-v1',
+          serverName: 'Literal server pilot',
+          expectedLabel: 'Pilot: Navigator',
+          legacyId: false,
+        ),
+        (
+          locale: const Locale('ru'),
+          pilotId: 'navigator-v1',
+          serverName: 'Literal server pilot',
+          expectedLabel: 'Пилот: Навигатор',
+          legacyId: false,
+        ),
+        (
+          locale: const Locale('en'),
+          pilotId: 'future-pilot-v2',
+          serverName: 'Literal future pilot',
+          expectedLabel: 'Pilot: Literal future pilot',
+          legacyId: false,
+        ),
+        (
+          locale: const Locale('en'),
+          pilotId: null,
+          serverName: 'Literal legacy pilot',
+          expectedLabel: 'Pilot: Literal legacy pilot',
+          legacyId: true,
+        ),
+      ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(),
+              homeLoader: () async => _homeWithPersistedDecision(
+                pilotId: sample.pilotId,
+                pilotName: sample.serverName,
+                legacyPilotId: sample.legacyId,
+                withDecisionRewards: true,
+                currentNodeId: 'future-decoy-node-v1',
+                currentNodeName: 'Literal decoy pilot',
+                unlockedEvent: _readyEvent(
+                  eventId: 'future-decoy-event-v1',
+                  title: 'Literal decoy pilot',
+                  summary: 'Literal decoy pilot summary',
+                ),
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder log = find.byKey(
+          const Key('platform-journey-decision-log'),
+        );
+        await _bringIntoView(tester, log);
+        expect(
+          find.byKey(const Key('platform-current-journey-pilot')),
+          findsOneWidget,
+        );
+        expect(find.text(sample.expectedLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
+        if (sample.pilotId != 'navigator-v1') {
+          expect(find.text('Pilot: Navigator'), findsNothing);
+          expect(find.text('Пилот: Навигатор'), findsNothing);
+        }
+        if (sample.pilotId == 'navigator-v1') {
+          expect(find.textContaining(sample.serverName), findsNothing);
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
     'current journey companion follows Home identity at compact large text',
     (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -2343,6 +2442,9 @@ HomeSnapshot _homeWithPersistedDecision({
   String? expeditionId,
   String? expeditionName,
   int? expeditionProgress,
+  bool legacyPilotId = false,
+  String? pilotId,
+  String? pilotName,
   bool legacyPetId = false,
   String? petId,
   String? petName,
@@ -2400,7 +2502,8 @@ HomeSnapshot _homeWithPersistedDecision({
     recentJourneyRecaps: recentJourneyRecaps,
     journeyChronicle: journeyChronicle,
     unlockedEvent: unlockedEvent ?? demo.unlockedEvent,
-    pilotName: demo.pilotName,
+    pilotId: legacyPilotId ? null : pilotId ?? demo.pilotId,
+    pilotName: pilotName ?? demo.pilotName,
     pilotLevel: demo.pilotLevel,
     pilotCurrentExperience: demo.pilotCurrentExperience,
     pilotNextLevelExperience: demo.pilotNextLevelExperience,
