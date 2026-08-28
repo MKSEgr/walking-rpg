@@ -1731,6 +1731,22 @@ Milestone 91 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0105 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 92 — Authoritative current-journey companion progression
+
+### CODE_COMPLETE
+
+- [x] Journal показывает companion level/bond только из accepted Home active
+      companion state
+- [x] Platform pet progression, decision rewards, completion/chronicle totals и
+      local catalog state не подменяют accepted Home facts
+- [x] Label не агрегирует rewards и не прогнозирует level/evolution
+- [x] Одна visible label и dedicated semantics node имеют RU/EN и compact
+      large-text coverage без API/backend/persistence/command changes
+
+Milestone 92 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0106 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

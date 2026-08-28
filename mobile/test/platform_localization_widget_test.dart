@@ -42,6 +42,11 @@ typedef _CompanionLocaleSample = ({
   String serverName,
 });
 
+typedef _CompanionProgressLocaleSample = ({
+  String expectedLabel,
+  Locale locale,
+});
+
 typedef _PilotLocaleSample = ({
   String expectedLabel,
   bool legacyId,
@@ -104,6 +109,20 @@ void main() {
     expect(
       russian.platformJourneyActiveCompanion('Искра'),
       'Активный спутник: Искра',
+    );
+  });
+
+  test('current journey companion progression covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyCompanionProgression(6, 742),
+      'Companion progression: level 6 · bond 742',
+    );
+    expect(
+      russian.platformJourneyCompanionProgression(6, 742),
+      'Прогресс спутника: уровень 6 · связь 742',
     );
   });
 
@@ -1643,6 +1662,67 @@ void main() {
   );
 
   testWidgets(
+    'current journey companion progression follows Home at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final _CompanionProgressLocaleSample sample
+          in <_CompanionProgressLocaleSample>[
+            (
+              locale: const Locale('en'),
+              expectedLabel: 'Companion progression: level 6 · bond 742',
+            ),
+            (
+              locale: const Locale('ru'),
+              expectedLabel: 'Прогресс спутника: уровень 6 · связь 742',
+            ),
+          ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(
+                sparkLevel: 12,
+                sparkBond: 999,
+              ),
+              homeLoader: () async => _homeWithPersistedDecision(
+                petLevel: 6,
+                petBond: 742,
+                withDecisionRewards: true,
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder log = find.byKey(
+          const Key('platform-journey-decision-log'),
+        );
+        await _bringIntoView(tester, log);
+        expect(
+          find.byKey(
+            const Key('platform-current-journey-companion-progression'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(sample.expectedLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
+        expect(
+          find.descendant(
+            of: log,
+            matching: find.textContaining('level 12 · bond 999'),
+          ),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
     'current journey companion follows Home identity at compact large text',
     (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -2544,7 +2624,9 @@ HomeSnapshot _homeWithPersistedDecision({
   String? pilotName,
   int? pilotNextLevelExperience,
   bool legacyPetId = false,
+  int? petBond,
   String? petId,
+  int? petLevel,
   String? petName,
   int? requiredEnergy,
   HomeExpeditionEvent? unlockedEvent,
@@ -2612,8 +2694,8 @@ HomeSnapshot _homeWithPersistedDecision({
     petId: legacyPetId ? null : petId ?? demo.petId,
     petName: petName ?? demo.petName,
     petSpecies: demo.petSpecies,
-    petLevel: demo.petLevel,
-    petBond: demo.petBond,
+    petLevel: petLevel ?? demo.petLevel,
+    petBond: petBond ?? demo.petBond,
     petEvolutionStage: demo.petEvolutionStage,
     dailyGoalPolicy: demo.dailyGoalPolicy,
   );

@@ -1947,6 +1947,11 @@ class _JourneyDecisionLogCard extends StatelessWidget {
     final String activeCompanion = context.l10n.platformJourneyActiveCompanion(
       context.l10n.currentPetName(snapshot.petId, snapshot.petName),
     );
+    final String companionProgression = context.l10n
+        .platformJourneyCompanionProgression(
+          snapshot.petLevel,
+          snapshot.petBond,
+        );
     final String phase = _journeyPhaseLabel(context, snapshot.expeditionStatus);
     final String currentPosition = context.l10n.platformJourneyCurrentPosition(
       context.l10n.currentNodeName(
@@ -2124,6 +2129,20 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Semantics(
+            key: const Key('platform-current-journey-companion-progression'),
+            container: true,
+            label: companionProgression,
+            child: ExcludeSemantics(
+              child: Text(
+                companionProgression,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
                 ),
               ),
             ),
