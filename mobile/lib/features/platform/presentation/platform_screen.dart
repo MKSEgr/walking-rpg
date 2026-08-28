@@ -1936,6 +1936,14 @@ class _JourneyDecisionLogCard extends StatelessWidget {
     final String pilot = context.l10n.platformJourneyPilot(
       context.l10n.currentPilotName(snapshot.pilotId, snapshot.pilotName),
     );
+    final String? pilotProgression = snapshot.hasPilotExperienceProgress
+        ? context.l10n.platformJourneyPilotProgression(
+            snapshot.pilotLevel,
+            snapshot.pilotCurrentExperience,
+            snapshot.pilotNextLevelExperience,
+            snapshot.remainingPilotExperience,
+          )
+        : null;
     final String activeCompanion = context.l10n.platformJourneyActiveCompanion(
       context.l10n.currentPetName(snapshot.petId, snapshot.petName),
     );
@@ -2091,6 +2099,21 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
+          if (pilotProgression != null)
+            Semantics(
+              key: const Key('platform-current-journey-pilot-progression'),
+              container: true,
+              label: pilotProgression,
+              child: ExcludeSemantics(
+                child: Text(
+                  pilotProgression,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          if (pilotProgression != null) const SizedBox(height: 6),
           Semantics(
             key: const Key('platform-current-journey-active-companion'),
             container: true,

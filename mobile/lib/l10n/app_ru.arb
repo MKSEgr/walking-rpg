@@ -663,6 +663,7 @@
   "platformDecisionLogSubtitle": "Только уже принятые сервером решения текущего похода.",
   "platformJourneyExpedition": "Экспедиция: {expedition}",
   "platformJourneyPilot": "Пилот: {pilot}",
+  "platformJourneyPilotProgression": "Прогресс пилота: уровень {level} · XP {current} / {target} · до следующего уровня {remaining} XP",
   "platformJourneyActiveCompanion": "Активный спутник: {companion}",
   "platformJourneyPhaseInProgress": "Поход продолжается",
   "platformJourneyPhaseDecisionAvailable": "Доступно решение",

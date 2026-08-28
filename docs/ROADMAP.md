@@ -1714,6 +1714,23 @@ Milestone 90 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0104 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 91 — Authoritative current-journey pilot progression
+
+### CODE_COMPLETE
+
+- [x] Journal показывает pilot level/current/target только из accepted Home
+      progression и remaining из existing Home getter
+- [x] Platform season XP, decision rewards, completion/chronicle totals и local
+      content не подменяют accepted Home progression
+- [x] Legacy direct snapshot без valid progression не показывает ложные
+      значения `0 / 0`
+- [x] Одна optional visible label и dedicated semantics node имеют RU/EN и
+      compact large-text coverage без API/backend/persistence/command changes
+
+Milestone 91 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0105 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

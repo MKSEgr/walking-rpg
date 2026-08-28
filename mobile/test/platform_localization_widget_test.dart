@@ -50,6 +50,12 @@ typedef _PilotLocaleSample = ({
   String serverName,
 });
 
+typedef _PilotProgressLocaleSample = ({
+  String? expectedLabel,
+  bool legacyProgression,
+  Locale locale,
+});
+
 void main() {
   test('discovered route node count covers Russian and English', () {
     final AppLocalizationsEn english = AppLocalizationsEn();
@@ -107,6 +113,21 @@ void main() {
 
     expect(english.platformJourneyPilot('Navigator'), 'Pilot: Navigator');
     expect(russian.platformJourneyPilot('Навигатор'), 'Пилот: Навигатор');
+  });
+
+  test('current journey pilot progression covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyPilotProgression(7, 888, 1400, 512),
+      'Pilot progression: level 7 · XP 888 / 1400 · 512 XP to next level',
+    );
+    expect(
+      russian.platformJourneyPilotProgression(7, 888, 1400, 512),
+      'Прогресс пилота: уровень 7 · XP 888 / 1400 · '
+      'до следующего уровня 512 XP',
+    );
   });
 
   test('ready choice label covers Russian and English', () {
@@ -1549,6 +1570,79 @@ void main() {
   );
 
   testWidgets(
+    'current journey pilot progression follows Home at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final _PilotProgressLocaleSample sample
+          in <_PilotProgressLocaleSample>[
+            (
+              locale: const Locale('en'),
+              expectedLabel:
+                  'Pilot progression: level 7 · XP 888 / 1400 · '
+                  '512 XP to next level',
+              legacyProgression: false,
+            ),
+            (
+              locale: const Locale('ru'),
+              expectedLabel:
+                  'Прогресс пилота: уровень 7 · XP 888 / 1400 · '
+                  'до следующего уровня 512 XP',
+              legacyProgression: false,
+            ),
+            (
+              locale: const Locale('en'),
+              expectedLabel: null,
+              legacyProgression: true,
+            ),
+          ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(seasonXp: 220),
+              homeLoader: () async => _homeWithPersistedDecision(
+                pilotLevel: 7,
+                pilotCurrentExperience: 888,
+                pilotNextLevelExperience: 1400,
+                legacyPilotProgression: sample.legacyProgression,
+                withDecisionRewards: true,
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder log = find.byKey(
+          const Key('platform-journey-decision-log'),
+        );
+        await _bringIntoView(tester, log);
+        final Finder progression = find.byKey(
+          const Key('platform-current-journey-pilot-progression'),
+        );
+        if (sample.expectedLabel case final String expectedLabel) {
+          expect(progression, findsOneWidget);
+          expect(find.text(expectedLabel), findsOneWidget);
+          expect(find.bySemanticsLabel(expectedLabel), findsOneWidget);
+        } else {
+          expect(progression, findsNothing);
+          expect(
+            find.descendant(
+              of: log,
+              matching: find.textContaining('Pilot progression:'),
+            ),
+            findsNothing,
+          );
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
     'current journey companion follows Home identity at compact large text',
     (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -2443,8 +2537,12 @@ HomeSnapshot _homeWithPersistedDecision({
   String? expeditionName,
   int? expeditionProgress,
   bool legacyPilotId = false,
+  bool legacyPilotProgression = false,
   String? pilotId,
+  int? pilotCurrentExperience,
+  int? pilotLevel,
   String? pilotName,
+  int? pilotNextLevelExperience,
   bool legacyPetId = false,
   String? petId,
   String? petName,
@@ -2504,9 +2602,13 @@ HomeSnapshot _homeWithPersistedDecision({
     unlockedEvent: unlockedEvent ?? demo.unlockedEvent,
     pilotId: legacyPilotId ? null : pilotId ?? demo.pilotId,
     pilotName: pilotName ?? demo.pilotName,
-    pilotLevel: demo.pilotLevel,
-    pilotCurrentExperience: demo.pilotCurrentExperience,
-    pilotNextLevelExperience: demo.pilotNextLevelExperience,
+    pilotLevel: pilotLevel ?? demo.pilotLevel,
+    pilotCurrentExperience: legacyPilotProgression
+        ? 0
+        : pilotCurrentExperience ?? demo.pilotCurrentExperience,
+    pilotNextLevelExperience: legacyPilotProgression
+        ? 0
+        : pilotNextLevelExperience ?? demo.pilotNextLevelExperience,
     petId: legacyPetId ? null : petId ?? demo.petId,
     petName: petName ?? demo.petName,
     petSpecies: demo.petSpecies,

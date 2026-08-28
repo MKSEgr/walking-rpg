@@ -436,6 +436,13 @@ literal Home name. Platform hero, route trail, READY requirement, decision
 rewards, completion history и local catalog state не подменяют accepted Home
 pilot identity.
 
+Current-journey pilot progression использует только accepted Home
+`pilot.level/currentExperience/nextLevelExperience`. Existing Home invariant и
+remaining getter дают current/target/remaining из одного snapshot; Platform
+season XP, decision rewards, completion/chronicle totals и local content не
+подменяют progression. Legacy direct snapshot без valid progression не
+проецирует ложные `0 / 0`; journal остаётся read-only.
+
 Mobile принимает current phase только из required `expedition.status` и
 fail-closed ограничивает его server enum `IN_PROGRESS`, `EVENT_READY`,
 `COMPLETED`. Journal не пересчитывает phase из energy, route trail, decisions,
