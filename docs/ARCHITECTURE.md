@@ -556,6 +556,19 @@ history и catalog не создают emblem и не подменяют item id
 literal quantity в combined reward label остаются единственным accessible
 источником.
 
+Положительные channels `pilotExperienceReward` и `petBondReward` каждого
+accepted available READY choice добавляют existing decorative
+`ProgressionGainSignal`. Subject identity берётся только из exact
+`pilot.pilotId` или `pet.petId` того же accepted Home snapshot соответственно:
+known reviewed ID выбирает existing mark, unknown future ID получает neutral
+fallback. Zero channel и legacy snapshot без соответствующего subject ID не
+создают signal, но accepted numeric reward copy остаётся буквальным. Locked и
+non-READY choices, names, Platform hero/pets, progression totals, route,
+history и catalog не подменяют channel или identity. Signals описывают только
+accepted preview context, не фиксируют будущего получателя, не прогнозируют
+level/bond result и остаются внутри existing event `ExcludeSemantics`, поэтому
+combined READY-event label остаётся единственным accessibility источником.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает

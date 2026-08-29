@@ -6,6 +6,12 @@
 
 ### Changed
 
+- positive pilot-XP and companion-bond channels on available READY-event
+  choices in the current-journey journal now use the existing exact-subject
+  progression signals from the same accepted Home snapshot, while zero,
+  legacy, future, locked/non-READY and Platform/history/catalog decoys stay
+  fail-closed or neutral;
+
 - optional material rewards on available READY-event choices in the
   current-journey journal now use the existing exact-item emblem beside their
   paired choice signal, while absent/future/locked/non-READY and

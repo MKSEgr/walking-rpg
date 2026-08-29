@@ -1921,6 +1921,28 @@ Milestone 101 продолжает post-alpha code-only gameplay track из ADR 
 server-authoritative current-journey state из ADR 0038 через ADR 0115 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 102 — Authoritative current-journey READY choice progression signals
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing pilot-XP и companion-bond signals только для
+      положительных accepted reward channels available choices accepted Home
+      event со status exact `READY`
+- [x] Exact `pilot.pilotId` и `pet.petId` того же accepted Home snapshot
+      выбирают subject identity соответствующего channel; unknown future IDs
+      используют neutral fallback без dispatch по name, reward amount или copy
+- [x] Zero channels и legacy snapshot без subject ID не создают signal;
+      locked/non-READY state, Platform hero/pets, progression totals, route,
+      history и catalog не подменяют presence или identity
+- [x] Signals не меняют literal reward preview, material emblem или accepted
+      server ordering, остаются внутри одной existing READY-event semantics
+      node и выдерживают RU/EN compact large text без API/backend/persistence/
+      command/asset changes
+
+Milestone 102 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0116 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

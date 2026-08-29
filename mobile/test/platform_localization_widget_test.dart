@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
@@ -3433,8 +3434,47 @@ void main() {
           'material-art',
         ),
       );
+      final Finder knownPilotGain = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-'
+          'cross-first-light-causeway-pilot-experience-signal',
+        ),
+      );
+      final Finder knownPetGain = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-'
+          'cross-first-light-causeway-pet-bond-signal',
+        ),
+      );
+      final Finder futurePetGain = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-future-choice-v1-'
+          'pet-bond-signal',
+        ),
+      );
       expect(knownMaterialArt, findsOneWidget);
       expect(futureMaterialArt, findsOneWidget);
+      expect(knownPilotGain, findsOneWidget);
+      expect(knownPetGain, findsOneWidget);
+      expect(futurePetGain, findsOneWidget);
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-plain-choice-v1-'
+            'progression-signals',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-future-choice-v1-'
+            'pilot-experience-signal',
+          ),
+        ),
+        findsNothing,
+      );
       expect(
         find.byKey(
           const Key(
@@ -3477,6 +3517,20 @@ void main() {
       expect(futureMaterial.itemId, 'future-relic-v1');
       expect(futureMaterial.size, 42);
       expect(futureMaterial.highlighted, isFalse);
+      final ProgressionGainSignal pilotGain = tester
+          .widget<ProgressionGainSignal>(knownPilotGain);
+      expect(pilotGain.kind, ProgressionGainKind.pilotExperience);
+      expect(pilotGain.subjectId, 'navigator-v1');
+      expect(pilotGain.size, 36);
+      final ProgressionGainSignal petGain = tester
+          .widget<ProgressionGainSignal>(knownPetGain);
+      expect(petGain.kind, ProgressionGainKind.petBond);
+      expect(petGain.subjectId, 'spark-v1');
+      expect(petGain.size, 36);
+      expect(
+        tester.widget<ProgressionGainSignal>(futurePetGain).subjectId,
+        'spark-v1',
+      );
       expect(
         find.descendant(of: knownSignal, matching: knownMaterialArt),
         findsOneWidget,
@@ -3492,6 +3546,21 @@ void main() {
       );
       expect(find.byKey(const Key('item-art-lumen-shard')), findsNothing);
       expect(find.byType(ExpeditionItemEmblem), findsNWidgets(2));
+      expect(find.byType(ProgressionGainSignal), findsNWidgets(3));
+      expect(
+        find.byKey(
+          const Key(
+            'progression-gain-signal-pilotExperience-navigator-v1-navigator',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key('progression-gain-signal-petBond-spark-v1-spark'),
+        ),
+        findsNWidgets(2),
+      );
       expect(
         find.byKey(
           const Key(
@@ -3573,6 +3642,158 @@ void main() {
     }
   });
 
+  testWidgets(
+    'ready progression signals keep future Home identities neutral despite '
+    'Platform decoys',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              pilotId: 'future-pilot-v1',
+              pilotName: 'Literal future pilot',
+              petId: 'future-pet-v1',
+              petName: 'Literal future pet',
+              unlockedEvent: _readyEvent(
+                choices: <HomeEventChoice>[
+                  _eventChoice(
+                    'future-progression',
+                    pilotExperienceReward: 17,
+                    petBondReward: 9,
+                  ),
+                ],
+              ),
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder pilotFinder = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-future-progression-'
+          'pilot-experience-signal',
+        ),
+      );
+      final Finder petFinder = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-future-progression-'
+          'pet-bond-signal',
+        ),
+      );
+      await _bringIntoView(tester, pilotFinder);
+      final ProgressionGainSignal pilot = tester
+          .widget<ProgressionGainSignal>(pilotFinder);
+      final ProgressionGainSignal pet = tester
+          .widget<ProgressionGainSignal>(petFinder);
+      expect(pilot.kind, ProgressionGainKind.pilotExperience);
+      expect(pilot.subjectId, 'future-pilot-v1');
+      expect(pet.kind, ProgressionGainKind.petBond);
+      expect(pet.subjectId, 'future-pet-v1');
+      expect(
+        find.byKey(
+          const Key(
+            'progression-gain-signal-pilotExperience-future-pilot-v1-unknown',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'progression-gain-signal-petBond-future-pet-v1-unknown',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'progression-gain-signal-pilotExperience-navigator-v1-navigator',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key('progression-gain-signal-petBond-spark-v1-spark'),
+        ),
+        findsNothing,
+      );
+      expect(find.text('Choice rewards: +17 XP · +9 bond'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          RegExp('Choice rewards: \\+17 XP · \\+9 bond\$'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('ready progression signals fail closed without Home subject IDs', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      _LocalizedPlatformApp(
+        locale: const Locale('en'),
+        textScale: 1.6,
+        child: PlatformScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => _homeWithPersistedDecision(
+            legacyPilotId: true,
+            legacyPetId: true,
+            unlockedEvent: _readyEvent(
+              choices: <HomeEventChoice>[
+                _eventChoice(
+                  'legacy-subjects',
+                  pilotExperienceReward: 17,
+                  petBondReward: 9,
+                ),
+              ],
+            ),
+          ),
+          recordExperimentExposures: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _bringIntoView(
+      tester,
+      find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-legacy-subjects-'
+          'rewards',
+        ),
+      ),
+    );
+
+    expect(find.text('Choice rewards: +17 XP · +9 bond'), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-legacy-subjects-'
+          'progression-signals',
+        ),
+      ),
+      findsNothing,
+    );
+    expect(find.byType(ProgressionGainSignal), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('ready event omits empty and locked-only choice counts', (
     WidgetTester tester,
   ) async {
@@ -3637,6 +3858,7 @@ void main() {
       expect(find.byType(EventChoiceSignalLayout), findsNothing);
       expect(find.byType(EventChoiceSignal), findsNothing);
       expect(find.byType(ExpeditionItemEmblem), findsNothing);
+      expect(find.byType(ProgressionGainSignal), findsNothing);
     }
   });
 
@@ -3687,6 +3909,7 @@ void main() {
       expect(find.byType(EventChoiceSignalLayout), findsNothing);
       expect(find.byType(EventChoiceSignal), findsNothing);
       expect(find.byType(ExpeditionItemEmblem), findsNothing);
+      expect(find.byType(ProgressionGainSignal), findsNothing);
       expect(
         find.byKey(
           const Key(
