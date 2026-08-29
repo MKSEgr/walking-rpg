@@ -1933,9 +1933,14 @@ class _JourneyDecisionLogCard extends StatelessWidget {
         snapshot.expeditionName,
       ),
     );
-    final String pilot = context.l10n.platformJourneyPilot(
-      context.l10n.currentPilotName(snapshot.pilotId, snapshot.pilotName),
+    final String pilotName = context.l10n.currentPilotName(
+      snapshot.pilotId,
+      snapshot.pilotName,
     );
+    final String pilot = context.l10n.platformJourneyPilot(pilotName);
+    final String? pilotPortraitLabel = snapshot.pilotId == 'navigator-v1'
+        ? context.l10n.pilotPortraitSemantics(pilotName)
+        : null;
     final String? pilotProgression = snapshot.hasPilotExperienceProgress
         ? context.l10n.platformJourneyPilotProgression(
             snapshot.pilotLevel,
@@ -2094,32 +2099,53 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               color: colors.onSurfaceVariant,
             ),
           ),
-          if (companionPortraitLabel != null) ...<Widget>[
+          if (pilotPortraitLabel != null ||
+              companionPortraitLabel != null) ...<Widget>[
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Semantics(
-                key: const Key('platform-current-journey-companion-portrait'),
-                container: true,
-                image: true,
-                label: companionPortraitLabel,
-                child: ExcludeSemantics(
-                  child: CompanionPortrait(
-                    petId: snapshot.petId!,
-                    name: context.l10n.currentPetName(
-                      snapshot.petId,
-                      snapshot.petName,
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: <Widget>[
+                if (pilotPortraitLabel != null)
+                  Semantics(
+                    key: const Key('platform-current-journey-pilot-portrait'),
+                    container: true,
+                    image: true,
+                    label: pilotPortraitLabel,
+                    child: ExcludeSemantics(
+                      child: PilotPortrait(
+                        name: pilotName,
+                        highlighted: true,
+                        size: 72,
+                      ),
                     ),
-                    species: context.l10n.currentPetSpecies(
-                      snapshot.petId,
-                      petSpecies!,
-                    ),
-                    evolutionStage: petEvolutionStage!,
-                    active: true,
-                    size: 72,
                   ),
-                ),
-              ),
+                if (companionPortraitLabel != null)
+                  Semantics(
+                    key: const Key(
+                      'platform-current-journey-companion-portrait',
+                    ),
+                    container: true,
+                    image: true,
+                    label: companionPortraitLabel,
+                    child: ExcludeSemantics(
+                      child: CompanionPortrait(
+                        petId: snapshot.petId!,
+                        name: context.l10n.currentPetName(
+                          snapshot.petId,
+                          snapshot.petName,
+                        ),
+                        species: context.l10n.currentPetSpecies(
+                          snapshot.petId,
+                          petSpecies!,
+                        ),
+                        evolutionStage: petEvolutionStage!,
+                        active: true,
+                        size: 72,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ],
           const SizedBox(height: 6),
