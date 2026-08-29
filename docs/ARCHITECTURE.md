@@ -545,6 +545,17 @@ locked choices. Signals остаются внутри existing event `ExcludeSem
 поэтому combined READY-event node остаётся единственным accessibility
 announcement и journal не получает action semantics.
 
+Optional material preview каждого accepted available READY choice наполняет
+trailing `ExpeditionItemEmblem` того же `EventChoiceSignalLayout`. Presence и
+identity берутся только из paired Home `materialReward.itemId`: exact reviewed
+ID выбирает existing asset или code-native art, unknown future ID получает
+neutral fallback без dispatch по item name, quantity или reward copy. Choice
+без material, locked/non-READY state, Platform inventory, route, decision
+history и catalog не создают emblem и не подменяют item identity. Emblem
+остаётся внутри existing event `ExcludeSemantics`; localized material name и
+literal quantity в combined reward label остаются единственным accessible
+источником.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает

@@ -4,6 +4,7 @@ import 'package:walking_rpg_mobile/core/localization/current_platform_content_lo
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
@@ -3220,6 +3221,13 @@ void main() {
       expect(signal.choiceId, 'analyze-signal');
       expect(signal.muted, isFalse);
       expect(
+        find.descendant(
+          of: signalFinder,
+          matching: find.byType(ExpeditionItemEmblem),
+        ),
+        findsNothing,
+      );
+      expect(
         find.byKey(
           const Key(
             'event-choice-signal-future-event-v1-analyze-signal-unknown-active',
@@ -3265,7 +3273,7 @@ void main() {
             'causeway above the meridian.',
         knownRequirement:
             'Requirement: Unlock Steady Step to cross on the first light.',
-        knownReward: 'Choice rewards: +31 XP · +6 bond, +2 Ash Seed',
+        knownReward: 'Choice rewards: +31 XP · +6 bond, +2 Echo Thread',
         lockedTitle: 'Available choice: Share the current with the companion',
         lockedRequirement: 'Requirement: Literal locked requirement',
         lockedReward: 'Choice rewards: +99 XP · +99 bond',
@@ -3284,7 +3292,7 @@ void main() {
         knownRequirement:
             'Условие: Откройте навык «Ровный шаг», чтобы перейти по первому '
             'свету.',
-        knownReward: 'Награды за вариант: +31 XP · +6 связь, +2 Семя пепла',
+        knownReward: 'Награды за вариант: +31 XP · +6 связь, +2 Нить эха',
         lockedTitle: 'Доступный вариант: Разделить поток с питомцем',
         lockedRequirement: 'Условие: Literal locked requirement',
         lockedReward: 'Награды за вариант: +99 XP · +99 связь',
@@ -3317,8 +3325,8 @@ void main() {
                     pilotExperienceReward: 31,
                     petBondReward: 6,
                     materialReward: const HomeMaterialRewardPreview(
-                      itemId: 'ash-seed',
-                      itemName: 'Literal server ash seed',
+                      itemId: 'echo-thread',
+                      itemName: 'Literal server echo thread',
                       quantity: 2,
                     ),
                     requirement: const HomeChoiceRequirement(
@@ -3335,6 +3343,11 @@ void main() {
                     availability: 'LOCKED',
                     pilotExperienceReward: 99,
                     petBondReward: 99,
+                    materialReward: const HomeMaterialRewardPreview(
+                      itemId: 'lumen-shard',
+                      itemName: 'Literal locked lumen shard',
+                      quantity: 99,
+                    ),
                     requirement: const HomeChoiceRequirement(
                       type: 'PET_EVOLUTION',
                       slotId: 'PET',
@@ -3408,6 +3421,29 @@ void main() {
       expect(plainSignal, findsOneWidget);
       expect(knownSignal, findsOneWidget);
       expect(futureSignal, findsOneWidget);
+      final Finder knownMaterialArt = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-'
+          'cross-first-light-causeway-material-art',
+        ),
+      );
+      final Finder futureMaterialArt = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-future-choice-v1-'
+          'material-art',
+        ),
+      );
+      expect(knownMaterialArt, findsOneWidget);
+      expect(futureMaterialArt, findsOneWidget);
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-plain-choice-v1-'
+            'material-art',
+          ),
+        ),
+        findsNothing,
+      );
       expect(
         find.byKey(
           const Key(
@@ -3417,11 +3453,45 @@ void main() {
         ),
         findsNothing,
       );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-'
+            'share-dawn-flow-with-pet-material-art',
+          ),
+        ),
+        findsNothing,
+      );
       final EventChoiceSignalLayout known = tester
           .widget<EventChoiceSignalLayout>(knownSignal);
       expect(known.eventId, 'dawn-meridian-v1');
       expect(known.choiceId, 'cross-first-light-causeway');
       expect(known.muted, isFalse);
+      final ExpeditionItemEmblem knownMaterial = tester
+          .widget<ExpeditionItemEmblem>(knownMaterialArt);
+      expect(knownMaterial.itemId, 'echo-thread');
+      expect(knownMaterial.size, 42);
+      expect(knownMaterial.highlighted, isFalse);
+      final ExpeditionItemEmblem futureMaterial = tester
+          .widget<ExpeditionItemEmblem>(futureMaterialArt);
+      expect(futureMaterial.itemId, 'future-relic-v1');
+      expect(futureMaterial.size, 42);
+      expect(futureMaterial.highlighted, isFalse);
+      expect(
+        find.descendant(of: knownSignal, matching: knownMaterialArt),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: futureSignal, matching: futureMaterialArt),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('item-art-echo-thread')), findsOneWidget);
+      expect(
+        find.byKey(const Key('item-art-fallback-future-relic-v1')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('item-art-lumen-shard')), findsNothing);
+      expect(find.byType(ExpeditionItemEmblem), findsNWidgets(2));
       expect(
         find.byKey(
           const Key(
@@ -3512,6 +3582,11 @@ void main() {
         _eventChoice(
           'locked',
           availability: 'LOCKED',
+          materialReward: const HomeMaterialRewardPreview(
+            itemId: 'echo-thread',
+            itemName: 'Literal locked echo thread',
+            quantity: 99,
+          ),
           requirement: const HomeChoiceRequirement(
             type: 'FUTURE_REQUIREMENT',
             slotId: 'FUTURE',
@@ -3561,6 +3636,7 @@ void main() {
       );
       expect(find.byType(EventChoiceSignalLayout), findsNothing);
       expect(find.byType(EventChoiceSignal), findsNothing);
+      expect(find.byType(ExpeditionItemEmblem), findsNothing);
     }
   });
 
@@ -3580,6 +3656,11 @@ void main() {
                 choices: <HomeEventChoice>[
                   _eventChoice(
                     'available',
+                    materialReward: const HomeMaterialRewardPreview(
+                      itemId: 'echo-thread',
+                      itemName: 'Literal non-ready echo thread',
+                      quantity: 99,
+                    ),
                     requirement: const HomeChoiceRequirement(
                       type: 'FUTURE_REQUIREMENT',
                       slotId: 'FUTURE',
@@ -3605,6 +3686,7 @@ void main() {
       expect(find.byType(ExpeditionEventScene), findsNothing);
       expect(find.byType(EventChoiceSignalLayout), findsNothing);
       expect(find.byType(EventChoiceSignal), findsNothing);
+      expect(find.byType(ExpeditionItemEmblem), findsNothing);
       expect(
         find.byKey(
           const Key(

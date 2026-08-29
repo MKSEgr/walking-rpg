@@ -16,6 +16,7 @@ import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
@@ -1911,6 +1912,7 @@ String _readyEventChoiceRewardLabel(
 typedef _ReadyEventChoiceLabel = ({
   String choiceId,
   String descriptionLabel,
+  String? materialItemId,
   String? requirementLabel,
   String rewardLabel,
   String titleLabel,
@@ -2065,6 +2067,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                         choice.description,
                       ),
                     ),
+                materialItemId: choice.materialReward?.itemId,
                 requirementLabel: switch (choice.requirement) {
                   final HomeChoiceRequirement requirement =>
                     context.l10n.platformJourneyReadyChoiceRequirement(
@@ -2443,6 +2446,17 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                         ),
                         eventId: readyEvent.eventId,
                         choiceId: choice.choiceId,
+                        trailing: switch (choice.materialItemId) {
+                          final String itemId => ExpeditionItemEmblem(
+                            key: Key(
+                              'platform-current-journey-ready-event-choice-'
+                              '${choice.choiceId}-material-art',
+                            ),
+                            itemId: itemId,
+                            size: 42,
+                          ),
+                          null => null,
+                        },
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: <Widget>[

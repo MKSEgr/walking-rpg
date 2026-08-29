@@ -1901,6 +1901,26 @@ Milestone 100 продолжает post-alpha code-only gameplay track из ADR 
 server-authoritative current-journey state из ADR 0038 через ADR 0114 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 101 — Authoritative current-journey READY choice material art
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing item emblem только для accepted optional
+      material preview каждого available choice accepted Home READY event
+- [x] Exact reviewed `materialReward.itemId` выбирает known asset/code-native
+      art, unknown future ID использует neutral fallback без dispatch по name,
+      quantity, reward copy или catalog
+- [x] Emblem остаётся paired trailing visual того же choice signal в accepted
+      server order; absent material, locked/non-READY state, Platform inventory,
+      route и history не подменяют presence или identity
+- [x] Material art остаётся внутри одной existing READY-event semantics node
+      без duplicate image announcement или actions и выдерживает RU/EN compact
+      large text без API/backend/persistence/command/asset changes
+
+Milestone 101 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0115 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
