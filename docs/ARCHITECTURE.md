@@ -412,6 +412,17 @@ immutable event resolutions exact текущего `journeyNumber`. Additive nul
 меняет literal state на `COMPLETED`, сохраняя фактическую annotation, а новый
 поход начинает один неаннотированный `CURRENT` node без schema migration.
 
+Current-journey journal route map использует только ordered accepted Home
+`routeTrail`. Existing `ExpeditionRouteTrail` сохраняет literal node state и
+optional decision pairing; known mutable node name локализуется по stable
+`nodeId`, а unknown future ID сохраняет literal Home fallback. Persisted
+`choiceTitle/outcomeTitle` остаются literal, потому что route annotation не
+содержит достаточной event/outcome identity для безопасного current-content
+mapping. Journal не соединяет trail с `decisionLog`, READY event, Platform
+weekly route, history или local catalog, не прогнозирует topology и скрывает
+legacy empty trail. Видимый accepted count исключён из semantics, а одна
+existing route summary сохраняет order, terminal point и decisions.
+
 Additive nullable `expedition.startedAt` читается из того же durable
 journey-start source, который используется для completion duration, но exact
 текущего `journeyNumber`. Service не выводит start из первого resolution,

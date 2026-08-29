@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
@@ -83,6 +84,13 @@ typedef _PilotPortraitLocaleSample = ({
   String expectedLabel,
   String expectedName,
   Locale locale,
+});
+
+typedef _RouteTrailLocaleSample = ({
+  String countLabel,
+  Locale locale,
+  String routeSemantics,
+  List<String> nodeNames,
 });
 
 typedef _PilotProgressLocaleSample = ({
@@ -2660,6 +2668,164 @@ void main() {
     );
   });
 
+  testWidgets(
+    'current journey route trail follows ordered Home facts at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      const List<HomeExpeditionRouteNode> acceptedRoute =
+          <HomeExpeditionRouteNode>[
+            HomeExpeditionRouteNode(
+              nodeId: 'outer-beacon',
+              nodeName: 'Literal server beacon',
+              state: 'VISITED',
+              decision: HomeExpeditionRouteDecision(
+                choiceId: 'follow-pulse',
+                choiceTitle: 'Literal saved choice',
+                outcomeTitle: 'Literal saved outcome',
+              ),
+            ),
+            HomeExpeditionRouteNode(
+              nodeId: 'lumen-gate',
+              nodeName: 'Literal server gate',
+              state: 'VISITED',
+            ),
+            HomeExpeditionRouteNode(
+              nodeId: 'future-node-v2',
+              nodeName: 'Literal future node',
+              state: 'CURRENT',
+            ),
+          ];
+
+      for (final _RouteTrailLocaleSample sample in <_RouteTrailLocaleSample>[
+        (
+          countLabel: 'Discovered nodes: 3',
+          locale: const Locale('en'),
+          nodeNames: <String>[
+            'Outer Beacon',
+            'Lumen Gate',
+            'Literal future node',
+          ],
+          routeSemantics:
+              'Journey route: 3 discovered nodes. Last point: Literal future '
+              'node. Accepted decisions: Outer Beacon: Literal saved choice '
+              '→ Literal saved outcome.',
+        ),
+        (
+          countLabel: 'Открыто узлов: 3',
+          locale: const Locale('ru'),
+          nodeNames: <String>[
+            'Внешний маяк',
+            'Люминовые ворота',
+            'Literal future node',
+          ],
+          routeSemantics:
+              'Маршрут похода: открыто узлов — 3. Последняя точка: Literal '
+              'future node. Принятые решения: Внешний маяк: Literal saved '
+              'choice → Literal saved outcome.',
+        ),
+      ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(weeklyRouteProgress: 99),
+              homeLoader: () async =>
+                  _homeWithPersistedDecision(routeTrail: acceptedRoute),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder routeFinder = find.byKey(
+          const Key('platform-current-journey-route-trail'),
+        );
+        await _bringIntoView(tester, routeFinder);
+        final ExpeditionRouteTrail route = tester.widget<ExpeditionRouteTrail>(
+          routeFinder,
+        );
+        expect(
+          route.nodes.map((ExpeditionRouteTrailNode node) => node.nodeId),
+          <String>['outer-beacon', 'lumen-gate', 'future-node-v2'],
+        );
+        expect(
+          route.nodes.map((ExpeditionRouteTrailNode node) => node.nodeName),
+          sample.nodeNames,
+        );
+        expect(
+          route.nodes.map((ExpeditionRouteTrailNode node) => node.state),
+          <String>['VISITED', 'VISITED', 'CURRENT'],
+        );
+        expect(route.nodes.first.decision?.choiceId, 'follow-pulse');
+        expect(route.nodes.first.decision?.choiceTitle, 'Literal saved choice');
+        expect(
+          route.nodes.first.decision?.outcomeTitle,
+          'Literal saved outcome',
+        );
+        expect(
+          find.byKey(const Key('platform-current-journey-route-node-count')),
+          findsOneWidget,
+        );
+        expect(find.text(sample.countLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(sample.countLabel), findsNothing);
+        expect(find.bySemanticsLabel(sample.routeSemantics), findsOneWidget);
+        expect(
+          find.text('Literal saved choice → Literal saved outcome'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      }
+
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'current journey route trail omits empty Home facts despite Platform decoy',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(weeklyRouteProgress: 100),
+            homeLoader: () async => _homeWithPersistedDecision(
+              routeTrail: const <HomeExpeditionRouteNode>[],
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await _bringIntoView(
+        tester,
+        find.byKey(const Key('platform-current-journey-energy-progress')),
+      );
+      expect(
+        find.byKey(const Key('platform-current-journey-route-trail')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('platform-current-journey-route-node-count')),
+        findsNothing,
+      );
+      expect(find.byType(ExpeditionRouteTrail), findsNothing);
+      expect(find.text('Trail of this journey'), findsNothing);
+      expect(
+        find.byKey(const Key('platform-current-journey-latest-decision')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('future ready event preserves literal server title and summary', (
     WidgetTester tester,
   ) async {
@@ -3059,6 +3225,7 @@ HomeSnapshot _homeWithPersistedDecision({
   int? petLevel,
   String? petName,
   String? petSpecies,
+  List<HomeExpeditionRouteNode>? routeTrail,
   int? requiredEnergy,
   HomeExpeditionEvent? unlockedEvent,
 }) {
@@ -3086,7 +3253,7 @@ HomeSnapshot _homeWithPersistedDecision({
     expeditionVersion: demo.expeditionVersion,
     expeditionJourneyNumber: 7,
     journeyStartedAt: '2026-08-19T09:15:00Z',
-    routeTrail: demo.routeTrail,
+    routeTrail: routeTrail ?? demo.routeTrail,
     decisionLog: <HomeExpeditionDecisionLogEntry>[
       HomeExpeditionDecisionLogEntry(
         eventId: 'legacy-event-v1',

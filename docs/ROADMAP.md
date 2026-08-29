@@ -1803,6 +1803,26 @@ Milestone 95 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0109 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 96 — Authoritative current-journey route trail
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing code-native route map только из ordered
+      accepted Home `routeTrail`, сохраняя literal node state и optional
+      decision pairing
+- [x] Known node ID локализует mutable name через existing RU/EN resolver,
+      unknown future ID сохраняет literal Home fallback
+- [x] Persisted choice/outcome copy остаётся literal; journal не соединяет
+      trail с `decisionLog`, READY event, Platform weekly route, history или
+      local catalog и fail-closed скрывает empty/legacy trail
+- [x] Видимый accepted discovered-node count не дублирует одну localized route
+      semantics summary, а horizontal map выдерживает compact large text без
+      API/backend/persistence/command changes
+
+Milestone 96 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0110 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
