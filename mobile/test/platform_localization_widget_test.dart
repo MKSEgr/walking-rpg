@@ -3214,8 +3214,8 @@ void main() {
         ),
       );
       await _bringIntoView(tester, signalFinder);
-      final EventChoiceSignalLayout signal =
-          tester.widget<EventChoiceSignalLayout>(signalFinder);
+      final EventChoiceSignalLayout signal = tester
+          .widget<EventChoiceSignalLayout>(signalFinder);
       expect(signal.eventId, 'future-event-v1');
       expect(signal.choiceId, 'analyze-signal');
       expect(signal.muted, isFalse);
@@ -3417,8 +3417,8 @@ void main() {
         ),
         findsNothing,
       );
-      final EventChoiceSignalLayout known =
-          tester.widget<EventChoiceSignalLayout>(knownSignal);
+      final EventChoiceSignalLayout known = tester
+          .widget<EventChoiceSignalLayout>(knownSignal);
       expect(known.eventId, 'dawn-meridian-v1');
       expect(known.choiceId, 'cross-first-light-causeway');
       expect(known.muted, isFalse);
