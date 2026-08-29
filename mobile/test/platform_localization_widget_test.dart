@@ -2731,10 +2731,7 @@ void main() {
             locale: sample.locale,
             textScale: 1.6,
             child: PlatformScreen(
-              loader: () async => platformSnapshot(
-                weeklyRouteProgress: 99,
-                weeklyRouteRequiredEnergy: 100,
-              ),
+              loader: () async => platformSnapshot(weeklyRouteProgress: 99),
               homeLoader: () async =>
                   _homeWithPersistedDecision(routeTrail: acceptedRoute),
               recordExperimentExposures: false,
@@ -2797,10 +2794,7 @@ void main() {
           locale: const Locale('en'),
           textScale: 1.6,
           child: PlatformScreen(
-            loader: () async => platformSnapshot(
-              weeklyRouteProgress: 100,
-              weeklyRouteRequiredEnergy: 100,
-            ),
+            loader: () async => platformSnapshot(weeklyRouteProgress: 100),
             homeLoader: () async => _homeWithPersistedDecision(
               routeTrail: const <HomeExpeditionRouteNode>[],
             ),
