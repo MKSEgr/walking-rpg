@@ -1884,8 +1884,7 @@ void main() {
           in <_CompanionPortraitLocaleSample>[
             (
               expectedAsset: 'assets/characters/companion_spark.webp',
-              expectedLabel:
-                  'Spark, lumin, Adult · form 3, active companion',
+              expectedLabel: 'Spark, lumin, Adult · form 3, active companion',
               expectedName: 'Spark',
               expectedSpecies: 'lumin',
               locale: const Locale('en'),
@@ -2004,9 +2003,7 @@ void main() {
         );
         await _bringIntoView(tester, log);
         expect(
-          find.byKey(
-            const Key('platform-current-journey-companion-portrait'),
-          ),
+          find.byKey(const Key('platform-current-journey-companion-portrait')),
           findsNothing,
         );
         expect(

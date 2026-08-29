@@ -1967,14 +1967,8 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             petEvolutionStage == null
         ? null
         : context.l10n.companionPortraitDescription(
-            name: context.l10n.currentPetName(
-              snapshot.petId,
-              snapshot.petName,
-            ),
-            species: context.l10n.currentPetSpecies(
-              snapshot.petId,
-              petSpecies,
-            ),
+            name: context.l10n.currentPetName(snapshot.petId, snapshot.petName),
+            species: context.l10n.currentPetSpecies(snapshot.petId, petSpecies),
             stage: petEvolutionStage,
             active: true,
             hasSparkHalo: false,
