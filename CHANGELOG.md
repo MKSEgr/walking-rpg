@@ -6,6 +6,11 @@
 
 ### Changed
 
+- the current-journey journal now renders the accepted Home companion through
+  the existing stage-aware portrait and RU/EN semantics, while partial legacy
+  snapshots fail closed and Platform pet state, cosmetics, rewards and
+  evolution rules cannot substitute portrait inputs;
+
 - the current-journey journal now shows the optional Home companion species and
   evolution form in RU/EN with stable-ID localization and literal future
   fallback, without deriving them from Platform pet state, evolution rules or

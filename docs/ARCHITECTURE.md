@@ -441,6 +441,15 @@ fallback, а stage получает существующее RU/EN имя фор
 threshold или следующей evolution. При отсутствии любого optional field label
 не показывается; Platform active pet и local catalog его не восстанавливают.
 
+Current-journey companion portrait использует только полную accepted Home
+группу `pet.petId/name/species/evolutionStage`. Existing `CompanionPortrait`
+выбирает stage-aware illustration для known stable identity и code-native
+fallback для future ID; name/species/form проходят те же current-content RU/EN
+resolvers, что соседние labels. Неполная группа скрывает portrait, а Platform
+active pet, cosmetics, rewards, catalog и evolution rules его не дополняют.
+Journal исключает внутреннюю portrait semantics и публикует одну dedicated
+image semantics node без duplicate announcement.
+
 Current-journey pilot label использует только accepted Home
 `pilot.pilotId/name`. Exact known ID разрешает mutable name через
 current-content catalog; legacy missing ID и unknown future ID сохраняют
