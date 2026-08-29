@@ -1881,6 +1881,26 @@ Milestone 99 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0113 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 100 — Authoritative current-journey READY choice signals
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing choice signal для каждого accepted available
+      choice только внутри accepted Home event со status exact `READY`
+- [x] Только exact reviewed pair `eventId + choiceId` выбирает known mark;
+      unknown future pair, включая знакомый choice ID другого event, остаётся
+      neutral без dispatch по copy
+- [x] Signals сохраняют accepted server ordering и pairing title, description,
+      optional requirement и reward; locked/non-READY choice state, Platform,
+      route, history и catalog не подменяют identity или availability
+- [x] Signals остаются внутри одной existing READY-event semantics node без
+      duplicate announcement или actions и выдерживают RU/EN compact large
+      text без API/backend/persistence/command/asset changes
+
+Milestone 100 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0114 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

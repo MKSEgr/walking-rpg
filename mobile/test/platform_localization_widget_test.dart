@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
@@ -3170,6 +3171,86 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets(
+    'future event cannot borrow a familiar choice signal at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(
+              resolvedEventCount: 99,
+              weeklyRouteProgress: 100,
+            ),
+            homeLoader: () async => _homeWithPersistedDecision(
+              expeditionStatus: 'IN_PROGRESS',
+              unlockedEvent: _readyEvent(
+                eventId: 'future-event-v1',
+                title: 'Literal future event',
+                summary: 'Literal future summary',
+                choices: <HomeEventChoice>[
+                  _eventChoice(
+                    'analyze-signal',
+                    title: 'Literal familiar choice',
+                    description: 'Literal familiar choice description',
+                  ),
+                ],
+              ),
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder signalFinder = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-analyze-signal-signal',
+        ),
+      );
+      await _bringIntoView(tester, signalFinder);
+      final EventChoiceSignalLayout signal =
+          tester.widget<EventChoiceSignalLayout>(signalFinder);
+      expect(signal.eventId, 'future-event-v1');
+      expect(signal.choiceId, 'analyze-signal');
+      expect(signal.muted, isFalse);
+      expect(
+        find.byKey(
+          const Key(
+            'event-choice-signal-future-event-v1-analyze-signal-unknown-active',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'event-choice-signal-future-event-v1-analyze-signal-frequency-'
+            'active',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.text('Available choice: Literal familiar choice'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          RegExp('Available choice: Literal familiar choice'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
   testWidgets('ready choice details, requirements and rewards follow locale', (
     WidgetTester tester,
   ) async {
@@ -3307,6 +3388,66 @@ void main() {
       expect(find.text(sample.futureDescription), findsOneWidget);
       expect(find.text(sample.futureRequirement), findsOneWidget);
       expect(find.text(sample.futureReward), findsOneWidget);
+      final Finder plainSignal = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-plain-choice-v1-signal',
+        ),
+      );
+      final Finder knownSignal = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-'
+          'cross-first-light-causeway-signal',
+        ),
+      );
+      final Finder futureSignal = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-future-choice-v1-'
+          'signal',
+        ),
+      );
+      expect(plainSignal, findsOneWidget);
+      expect(knownSignal, findsOneWidget);
+      expect(futureSignal, findsOneWidget);
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-'
+            'share-dawn-flow-with-pet-signal',
+          ),
+        ),
+        findsNothing,
+      );
+      final EventChoiceSignalLayout known =
+          tester.widget<EventChoiceSignalLayout>(knownSignal);
+      expect(known.eventId, 'dawn-meridian-v1');
+      expect(known.choiceId, 'cross-first-light-causeway');
+      expect(known.muted, isFalse);
+      expect(
+        find.byKey(
+          const Key(
+            'event-choice-signal-dawn-meridian-v1-'
+            'cross-first-light-causeway-stabilize-active',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'event-choice-signal-dawn-meridian-v1-future-choice-v1-unknown-'
+            'active',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(plainSignal).dy,
+        lessThan(tester.getTopLeft(knownSignal).dy),
+      );
+      expect(
+        tester.getTopLeft(knownSignal).dy,
+        lessThan(tester.getTopLeft(futureSignal).dy),
+      );
       expect(
         find.byKey(
           const Key(
@@ -3418,6 +3559,8 @@ void main() {
         ),
         findsNothing,
       );
+      expect(find.byType(EventChoiceSignalLayout), findsNothing);
+      expect(find.byType(EventChoiceSignal), findsNothing);
     }
   });
 
@@ -3460,6 +3603,8 @@ void main() {
         findsNothing,
       );
       expect(find.byType(ExpeditionEventScene), findsNothing);
+      expect(find.byType(EventChoiceSignalLayout), findsNothing);
+      expect(find.byType(EventChoiceSignal), findsNothing);
       expect(
         find.byKey(
           const Key(

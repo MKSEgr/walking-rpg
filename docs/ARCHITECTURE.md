@@ -534,6 +534,17 @@ history и catalog не подменяют scene identity или readiness. Scen
 existing event `ExcludeSemantics`, поэтому title, summary, choice facts и visual
 остаются одной authoritative accessibility semantics node.
 
+Accepted available choices того же READY event используют existing
+`EventChoiceSignalLayout`. Reviewed mark выбирается только по exact pair
+`eventId + choiceId`; знакомый choice ID внутри unknown future event не
+заимствует known identity и получает neutral signal. Journal сохраняет
+accepted ordering и уже существующее pairing title/description/optional
+requirement/reward, не выводит availability или identity из Platform state,
+phase, route trail, decision history, copy либо local catalog и не показывает
+locked choices. Signals остаются внутри existing event `ExcludeSemantics`,
+поэтому combined READY-event node остаётся единственным accessibility
+announcement и journal не получает action semantics.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает
