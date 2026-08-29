@@ -3556,9 +3556,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byKey(
-          const Key('progression-gain-signal-petBond-spark-v1-spark'),
-        ),
+        find.byKey(const Key('progression-gain-signal-petBond-spark-v1-spark')),
         findsNWidgets(2),
       );
       expect(
@@ -3690,10 +3688,12 @@ void main() {
         ),
       );
       await _bringIntoView(tester, pilotFinder);
-      final ProgressionGainSignal pilot = tester
-          .widget<ProgressionGainSignal>(pilotFinder);
-      final ProgressionGainSignal pet = tester
-          .widget<ProgressionGainSignal>(petFinder);
+      final ProgressionGainSignal pilot = tester.widget<ProgressionGainSignal>(
+        pilotFinder,
+      );
+      final ProgressionGainSignal pet = tester.widget<ProgressionGainSignal>(
+        petFinder,
+      );
       expect(pilot.kind, ProgressionGainKind.pilotExperience);
       expect(pilot.subjectId, 'future-pilot-v1');
       expect(pet.kind, ProgressionGainKind.petBond);
@@ -3708,9 +3708,7 @@ void main() {
       );
       expect(
         find.byKey(
-          const Key(
-            'progression-gain-signal-petBond-future-pet-v1-unknown',
-          ),
+          const Key('progression-gain-signal-petBond-future-pet-v1-unknown'),
         ),
         findsOneWidget,
       );
@@ -3723,16 +3721,12 @@ void main() {
         findsNothing,
       );
       expect(
-        find.byKey(
-          const Key('progression-gain-signal-petBond-spark-v1-spark'),
-        ),
+        find.byKey(const Key('progression-gain-signal-petBond-spark-v1-spark')),
         findsNothing,
       );
       expect(find.text('Choice rewards: +17 XP · +9 bond'), findsOneWidget);
       expect(
-        find.bySemanticsLabel(
-          RegExp('Choice rewards: \\+17 XP · \\+9 bond\$'),
-        ),
+        find.bySemanticsLabel(RegExp('Choice rewards: \\+17 XP · \\+9 bond\$')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -3740,59 +3734,60 @@ void main() {
     },
   );
 
-  testWidgets('ready progression signals fail closed without Home subject IDs', (
-    WidgetTester tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+  testWidgets(
+    'ready progression signals fail closed without Home subject IDs',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(
-      _LocalizedPlatformApp(
-        locale: const Locale('en'),
-        textScale: 1.6,
-        child: PlatformScreen(
-          loader: () async => platformSnapshot(),
-          homeLoader: () async => _homeWithPersistedDecision(
-            legacyPilotId: true,
-            legacyPetId: true,
-            unlockedEvent: _readyEvent(
-              choices: <HomeEventChoice>[
-                _eventChoice(
-                  'legacy-subjects',
-                  pilotExperienceReward: 17,
-                  petBondReward: 9,
-                ),
-              ],
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              legacyPilotId: true,
+              legacyPetId: true,
+              unlockedEvent: _readyEvent(
+                choices: <HomeEventChoice>[
+                  _eventChoice(
+                    'legacy-subjects',
+                    pilotExperienceReward: 17,
+                    petBondReward: 9,
+                  ),
+                ],
+              ),
             ),
+            recordExperimentExposures: false,
           ),
-          recordExperimentExposures: false,
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await _bringIntoView(
-      tester,
-      find.byKey(
-        const Key(
-          'platform-current-journey-ready-event-choice-legacy-subjects-'
-          'rewards',
+      );
+      await tester.pumpAndSettle();
+      await _bringIntoView(
+        tester,
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-legacy-subjects-'
+            'rewards',
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(find.text('Choice rewards: +17 XP · +9 bond'), findsOneWidget);
-    expect(
-      find.byKey(
-        const Key(
-          'platform-current-journey-ready-event-choice-legacy-subjects-'
-          'progression-signals',
+      expect(find.text('Choice rewards: +17 XP · +9 bond'), findsOneWidget);
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-legacy-subjects-'
+            'progression-signals',
+          ),
         ),
-      ),
-      findsNothing,
-    );
-    expect(find.byType(ProgressionGainSignal), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+        findsNothing,
+      );
+      expect(find.byType(ProgressionGainSignal), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('ready event omits empty and locked-only choice counts', (
     WidgetTester tester,

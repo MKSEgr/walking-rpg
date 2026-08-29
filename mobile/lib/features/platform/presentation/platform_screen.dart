@@ -2529,8 +2529,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                                         'event-choice-${choice.choiceId}-'
                                         'pilot-experience-signal',
                                       ),
-                                      kind: ProgressionGainKind
-                                          .pilotExperience,
+                                      kind: ProgressionGainKind.pilotExperience,
                                       subjectId:
                                           choice.pilotExperienceSubjectId!,
                                       size: 36,
