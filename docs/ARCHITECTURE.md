@@ -434,6 +434,13 @@ Current-journey companion progression использует только accepted
 completion/chronicle totals и local catalog state не подменяют эти facts;
 journal не агрегирует rewards, не прогнозирует evolution и остаётся read-only.
 
+Current-journey companion form использует только optional accepted Home
+`pet.species/evolutionStage`. Known `petId` разрешает mutable species через
+current-content localization, legacy/unknown ID сохраняет literal Home
+fallback, а stage получает существующее RU/EN имя формы без вычисления
+threshold или следующей evolution. При отсутствии любого optional field label
+не показывается; Platform active pet и local catalog его не восстанавливают.
+
 Current-journey pilot label использует только accepted Home
 `pilot.pilotId/name`. Exact known ID разрешает mutable name через
 current-content catalog; legacy missing ID и unknown future ID сохраняют

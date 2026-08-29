@@ -6,6 +6,11 @@
 
 ### Changed
 
+- the current-journey journal now shows the optional Home companion species and
+  evolution form in RU/EN with stable-ID localization and literal future
+  fallback, without deriving them from Platform pet state, evolution rules or
+  local content;
+
 - the current-journey journal now shows accepted Home companion level and bond
   in RU/EN without deriving them from Platform pet state, decision rewards,
   journey history or local content;
