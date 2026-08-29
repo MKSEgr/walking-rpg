@@ -130,3 +130,4 @@ NNNN-short-title.md
 - [0111 — authoritative current-journey node landmark](0111-authoritative-current-journey-node-landmark.md)
 - [0112 — authoritative current-journey expedition progress signal](0112-authoritative-current-journey-expedition-progress-signal.md)
 - [0113 — authoritative current-journey READY event scene](0113-authoritative-current-journey-ready-event-scene.md)
+- [0114 — authoritative current-journey READY choice signals](0114-authoritative-current-journey-ready-choice-signals.md)

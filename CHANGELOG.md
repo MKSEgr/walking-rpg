@@ -6,6 +6,11 @@
 
 ### Changed
 
+- available READY-event choices in the current-journey journal now use the
+  existing exact event/choice signal vocabulary in accepted server order,
+  while future pairs stay neutral, locked/non-READY state fails closed and
+  Platform/history/catalog facts cannot substitute choice identity;
+
 - the current-journey journal now pairs its accepted Home READY-event copy
   with the existing exact-ID expedition scene, while future IDs stay neutral,
   non-READY state fails closed and phase/Platform/route facts cannot substitute

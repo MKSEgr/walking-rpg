@@ -14,6 +14,7 @@ import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/companion_bond_signal.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
@@ -2434,52 +2435,65 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                       ),
                     ],
                     for (final choice in readyEventChoiceLabels) ...<Widget>[
-                      const SizedBox(height: 2),
-                      Text(
+                      const SizedBox(height: 8),
+                      EventChoiceSignalLayout(
                         key: Key(
                           'platform-current-journey-ready-event-choice-'
-                          '${choice.choiceId}',
+                          '${choice.choiceId}-signal',
                         ),
-                        choice.titleLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        key: Key(
-                          'platform-current-journey-ready-event-choice-'
-                          '${choice.choiceId}-description',
-                        ),
-                        choice.descriptionLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      if (choice.requirementLabel != null) ...<Widget>[
-                        const SizedBox(height: 2),
-                        Text(
-                          key: Key(
-                            'platform-current-journey-ready-event-choice-'
-                            '${choice.choiceId}-requirement',
-                          ),
-                          choice.requirementLabel!,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colors.tertiary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 2),
-                      Text(
-                        key: Key(
-                          'platform-current-journey-ready-event-choice-'
-                          '${choice.choiceId}-rewards',
-                        ),
-                        choice.rewardLabel,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colors.primary,
-                          fontWeight: FontWeight.w600,
+                        eventId: readyEvent.eventId,
+                        choiceId: choice.choiceId,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            Text(
+                              key: Key(
+                                'platform-current-journey-ready-event-choice-'
+                                '${choice.choiceId}',
+                              ),
+                              choice.titleLabel,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              key: Key(
+                                'platform-current-journey-ready-event-choice-'
+                                '${choice.choiceId}-description',
+                              ),
+                              choice.descriptionLabel,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                            if (choice.requirementLabel != null) ...<Widget>[
+                              const SizedBox(height: 2),
+                              Text(
+                                key: Key(
+                                  'platform-current-journey-ready-event-'
+                                  'choice-${choice.choiceId}-requirement',
+                                ),
+                                choice.requirementLabel!,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colors.tertiary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 2),
+                            Text(
+                              key: Key(
+                                'platform-current-journey-ready-event-choice-'
+                                '${choice.choiceId}-rewards',
+                              ),
+                              choice.rewardLabel,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
