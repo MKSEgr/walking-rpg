@@ -1069,9 +1069,7 @@ void main() {
                 HomeExpeditionCompletionRecap(
                   journeyNumber: 6,
                   decisionCount: 1,
-                  decisions: <HomeExpeditionDecisionLogEntry>[
-                    archivedDecision,
-                  ],
+                  decisions: <HomeExpeditionDecisionLogEntry>[archivedDecision],
                   pilotExperienceGained: 0,
                   petBondGained: 0,
                   materials: <HomeJourneyMaterialReward>[],
