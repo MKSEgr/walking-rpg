@@ -1843,6 +1843,25 @@ Milestone 97 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0111 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 98 — Authoritative current-journey expedition progress signal
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing code-native progress trace только из
+      accepted Home `expeditionId/progress/requiredEnergy`
+- [x] Exact known expedition ID выбирает reviewed contour, unknown future ID
+      использует existing neutral field без mapping по display name
+- [x] Literal ENERGY copy сохраняет accepted integers, включая over-target;
+      clamp применяется только к painted trace без вывода gameplay state
+- [x] Platform weekly route, route/current-node, READY event, decisions,
+      history и catalog не подменяют identity или progress, а existing ENERGY
+      semantics остаётся единственной и выдерживает compact large text без
+      API/backend/persistence/command changes
+
+Milestone 98 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0112 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

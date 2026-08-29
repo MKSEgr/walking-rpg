@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -32,6 +33,7 @@ typedef _ReadyChoiceLocaleSample = ({
 });
 
 typedef _JourneyLocaleSample = ({
+  String energyLabel,
   String expectedLabel,
   String expeditionId,
   Locale locale,
@@ -1508,18 +1510,21 @@ void main() {
           expeditionId: 'starter-expedition-v1',
           serverName: 'Literal server expedition',
           expectedLabel: 'Expedition: Signal from the Fog Sector',
+          energyLabel: 'ENERGY progress: 12 of 30',
         ),
         (
           locale: const Locale('ru'),
           expeditionId: 'starter-expedition-v1',
           serverName: 'Literal server expedition',
           expectedLabel: 'Экспедиция: Сигнал из туманного сектора',
+          energyLabel: 'Прогресс ENERGY: 12 из 30',
         ),
         (
           locale: const Locale('en'),
           expeditionId: 'future-expedition-v2',
           serverName: 'Literal future expedition',
           expectedLabel: 'Expedition: Literal future expedition',
+          energyLabel: 'ENERGY progress: 12 of 30',
         ),
       ]) {
         await tester.pumpWidget(
@@ -1527,10 +1532,12 @@ void main() {
             locale: sample.locale,
             textScale: 1.6,
             child: PlatformScreen(
-              loader: () async => platformSnapshot(),
+              loader: () async => platformSnapshot(weeklyRouteProgress: 100),
               homeLoader: () async => _homeWithPersistedDecision(
                 expeditionId: sample.expeditionId,
                 expeditionName: sample.serverName,
+                expeditionProgress: 12,
+                requiredEnergy: 30,
                 currentNodeId: 'future-decoy-node-v1',
                 currentNodeName: 'Literal decoy node',
                 unlockedEvent: _readyEvent(
@@ -1557,6 +1564,34 @@ void main() {
         expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
         expect(find.textContaining('Expedition: Literal decoy'), findsNothing);
         expect(find.textContaining('Экспедиция: Literal decoy'), findsNothing);
+        final Finder signalFinder = find.byKey(
+          const Key('platform-current-journey-expedition-progress-signal'),
+        );
+        await _bringIntoView(tester, signalFinder);
+        final ExpeditionProgressSignal signal = tester
+            .widget<ExpeditionProgressSignal>(signalFinder);
+        expect(signal.expeditionId, sample.expeditionId);
+        expect(signal.progress, 12);
+        expect(signal.target, 30);
+        expect(signal.height, 72);
+        final String kind = sample.expeditionId == 'starter-expedition-v1'
+            ? 'outerBeacon'
+            : 'unknown';
+        expect(
+          find.byKey(
+            Key('expedition-progress-signal-${sample.expeditionId}-$kind'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(sample.energyLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(sample.energyLabel), findsOneWidget);
+        expect(
+          find.descendant(
+            of: signalFinder,
+            matching: find.byType(LinearProgressIndicator),
+          ),
+          findsNothing,
+        );
         if (sample.expeditionId == 'starter-expedition-v1') {
           expect(find.textContaining(sample.serverName), findsNothing);
         }
@@ -2762,11 +2797,16 @@ void main() {
   testWidgets('current journey keeps accepted over-target energy literal', (
     WidgetTester tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
     await tester.pumpWidget(
       _LocalizedPlatformApp(
         locale: const Locale('en'),
+        textScale: 1.6,
         child: PlatformScreen(
-          loader: () async => platformSnapshot(),
+          loader: () async => platformSnapshot(weeklyRouteProgress: 100),
           homeLoader: () async => _homeWithPersistedDecision(
             expeditionProgress: 37,
             requiredEnergy: 30,
@@ -2780,19 +2820,35 @@ void main() {
     final Finder progress = find.byKey(
       const Key('platform-current-journey-energy-progress'),
     );
+    await _bringIntoView(tester, progress);
     expect(find.text('ENERGY progress: 37 of 30'), findsOneWidget);
     expect(find.bySemanticsLabel('ENERGY progress: 37 of 30'), findsOneWidget);
-    expect(
-      tester
-          .widget<LinearProgressIndicator>(
-            find.descendant(
-              of: progress,
-              matching: find.byType(LinearProgressIndicator),
-            ),
-          )
-          .value,
-      1,
+    final Finder signalFinder = find.byKey(
+      const Key('platform-current-journey-expedition-progress-signal'),
     );
+    await _bringIntoView(tester, signalFinder);
+    final ExpeditionProgressSignal signal = tester
+        .widget<ExpeditionProgressSignal>(signalFinder);
+    expect(signal.expeditionId, 'starter-expedition-v1');
+    expect(signal.progress, 37);
+    expect(signal.target, 30);
+    expect(
+      find.byKey(
+        const Key(
+          'expedition-progress-signal-starter-expedition-v1-outerBeacon',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: progress,
+        matching: find.byType(LinearProgressIndicator),
+      ),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets(
