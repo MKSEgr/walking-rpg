@@ -2281,9 +2281,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   ExpeditionNodeSignal(
-                    key: const Key(
-                      'platform-current-journey-node-landmark',
-                    ),
+                    key: const Key('platform-current-journey-node-landmark'),
                     nodeId: snapshot.currentNodeId,
                     nodeName: currentNodeName,
                     completed: snapshot.expeditionStatus == 'COMPLETED',

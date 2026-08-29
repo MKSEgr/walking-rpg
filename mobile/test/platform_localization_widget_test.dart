@@ -2675,19 +2675,14 @@ void main() {
         expect(landmark.markSize, 38);
         expect(
           find.byKey(
-            const Key(
-              'expedition-node-mark-outer-beacon-outerBeacon',
-            ),
+            const Key('expedition-node-mark-outer-beacon-outerBeacon'),
           ),
           findsOneWidget,
         );
         expect(find.text(sample.nodeName.toUpperCase()), findsOneWidget);
         expect(find.text(sample.positionLabel), findsOneWidget);
         expect(find.bySemanticsLabel(sample.positionLabel), findsOneWidget);
-        expect(
-          find.bySemanticsLabel(sample.landmarkSemantics),
-          findsNothing,
-        );
+        expect(find.bySemanticsLabel(sample.landmarkSemantics), findsNothing);
         expect(tester.takeException(), isNull);
       }
 
@@ -2730,16 +2725,15 @@ void main() {
       const Key('platform-current-journey-node-landmark'),
     );
     await _bringIntoView(tester, landmarkFinder);
-    final ExpeditionNodeSignal landmark = tester
-        .widget<ExpeditionNodeSignal>(landmarkFinder);
+    final ExpeditionNodeSignal landmark = tester.widget<ExpeditionNodeSignal>(
+      landmarkFinder,
+    );
     expect(landmark.nodeId, 'future-signal-v1');
     expect(landmark.nodeName, 'Literal future signal');
     expect(landmark.completed, isTrue);
     expect(landmark.role, ExpeditionNodeSignalRole.current);
     expect(
-      find.byKey(
-        const Key('expedition-node-mark-future-signal-v1-unknown'),
-      ),
+      find.byKey(const Key('expedition-node-mark-future-signal-v1-unknown')),
       findsOneWidget,
     );
     expect(
