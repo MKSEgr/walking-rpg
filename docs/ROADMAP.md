@@ -1747,6 +1747,24 @@ Milestone 92 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0106 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 93 — Authoritative current-journey companion form
+
+### CODE_COMPLETE
+
+- [x] Journal показывает species/evolution form только из optional accepted
+      Home active companion state и fail-closed скрывает неполную пару
+- [x] Known pet ID локализует species, legacy/unknown ID сохраняет literal
+      Home fallback, а accepted stage использует existing RU/EN form resolver
+- [x] Platform active pet, local catalog и evolution thresholds/forecasts не
+      подменяют accepted Home facts
+- [x] Одна optional visible label и dedicated semantics node имеют RU/EN,
+      future fallback, legacy omission и compact large-text coverage без
+      API/backend/persistence/command changes
+
+Milestone 93 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0107 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

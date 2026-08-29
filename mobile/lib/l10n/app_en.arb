@@ -1428,6 +1428,13 @@
       "bond": {"type": "int"}
     }
   },
+  "platformJourneyCompanionForm": "Companion form: {species} · {form}",
+  "@platformJourneyCompanionForm": {
+    "placeholders": {
+      "species": {"type": "String"},
+      "form": {"type": "String"}
+    }
+  },
   "platformJourneyPhaseInProgress": "Journey in progress",
   "platformJourneyPhaseDecisionAvailable": "Decision available",
   "platformJourneyPhaseCompleted": "Journey completed",
