@@ -429,6 +429,11 @@ catalog; legacy missing ID и unknown future ID сохраняют literal Home 
 Platform active pet, route trail, READY requirement, decision rewards и local
 catalog state не подменяют accepted Home companion identity.
 
+Current-journey companion progression использует только accepted Home
+`pet.level/bond`. Platform active pet progression, decision reward delta,
+completion/chronicle totals и local catalog state не подменяют эти facts;
+journal не агрегирует rewards, не прогнозирует evolution и остаётся read-only.
+
 Current-journey pilot label использует только accepted Home
 `pilot.pilotId/name`. Exact known ID разрешает mutable name через
 current-content catalog; legacy missing ID и unknown future ID сохраняют

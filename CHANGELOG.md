@@ -6,6 +6,10 @@
 
 ### Changed
 
+- the current-journey journal now shows accepted Home companion level and bond
+  in RU/EN without deriving them from Platform pet state, decision rewards,
+  journey history or local content;
+
 - the current-journey journal now shows accepted Home pilot level and XP
   progression in RU/EN, omits invalid legacy progression, and does not derive
   current state from Platform season XP, rewards, history or local content;

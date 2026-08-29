@@ -1421,6 +1421,13 @@
       "companion": {"type": "String"}
     }
   },
+  "platformJourneyCompanionProgression": "Companion progression: level {level} · bond {bond}",
+  "@platformJourneyCompanionProgression": {
+    "placeholders": {
+      "level": {"type": "int"},
+      "bond": {"type": "int"}
+    }
+  },
   "platformJourneyPhaseInProgress": "Journey in progress",
   "platformJourneyPhaseDecisionAvailable": "Decision available",
   "platformJourneyPhaseCompleted": "Journey completed",

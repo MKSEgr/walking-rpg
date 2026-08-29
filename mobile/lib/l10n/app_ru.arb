@@ -665,6 +665,7 @@
   "platformJourneyPilot": "Пилот: {pilot}",
   "platformJourneyPilotProgression": "Прогресс пилота: уровень {level} · XP {current} / {target} · до следующего уровня {remaining} XP",
   "platformJourneyActiveCompanion": "Активный спутник: {companion}",
+  "platformJourneyCompanionProgression": "Прогресс спутника: уровень {level} · связь {bond}",
   "platformJourneyPhaseInProgress": "Поход продолжается",
   "platformJourneyPhaseDecisionAvailable": "Доступно решение",
   "platformJourneyPhaseCompleted": "Поход завершён",
