@@ -450,6 +450,15 @@ active pet, cosmetics, rewards, catalog и evolution rules его не допо�
 Journal исключает внутреннюю portrait semantics и публикует одну dedicated
 image semantics node без duplicate announcement.
 
+Current-journey pilot portrait использует exact accepted Home
+`pilot.pilotId/name` и показывает existing Navigator illustration только для
+known `navigator-v1`. Legacy missing ID и future ID сохраняют literal text
+fallback без ложного known artwork. Platform hero progression, cosmetics,
+rewards, history и catalog не меняют portrait; journal использует base asset,
+исключает внутреннюю semantics и публикует одну dedicated localized image
+semantics node. Pilot и companion portraits делят wrapping crew row, но
+сохраняют независимые source и fail-closed правила.
+
 Current-journey pilot label использует только accepted Home
 `pilot.pilotId/name`. Exact known ID разрешает mutable name через
 current-content catalog; legacy missing ID и unknown future ID сохраняют

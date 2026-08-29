@@ -1784,6 +1784,25 @@ Milestone 94 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0108 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 95 — Authoritative current-journey pilot portrait
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing illustrated pilot portrait только для exact
+      accepted Home `pilotId == navigator-v1` и локализует accepted name через
+      current-content RU/EN resolver
+- [x] Legacy missing ID и unknown future ID сохраняют literal text fallback,
+      но fail-closed не получают ложный Navigator artwork
+- [x] Platform hero progression, cosmetics, rewards, history и local catalog не
+      подменяют accepted Home pilot portrait
+- [x] Pilot и companion portraits образуют compact wrapping crew row с двумя
+      независимыми dedicated image semantics nodes без duplicate child
+      semantics или API/backend/persistence/command changes
+
+Milestone 95 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0109 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
