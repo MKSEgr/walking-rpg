@@ -128,3 +128,4 @@ NNNN-short-title.md
 - [0109 — authoritative current-journey pilot portrait](0109-authoritative-current-journey-pilot-portrait.md)
 - [0110 — authoritative current-journey route trail](0110-authoritative-current-journey-route-trail.md)
 - [0111 — authoritative current-journey node landmark](0111-authoritative-current-journey-node-landmark.md)
+- [0112 — authoritative current-journey expedition progress signal](0112-authoritative-current-journey-expedition-progress-signal.md)

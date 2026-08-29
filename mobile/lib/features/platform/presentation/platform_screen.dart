@@ -15,6 +15,7 @@ import 'package:walking_rpg_mobile/design_system/companion_bond_signal.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -2314,12 +2315,14 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  LinearProgressIndicator(
-                    value: snapshot.expeditionProgressValue,
-                    minHeight: 4,
-                    borderRadius: BorderRadius.circular(999),
-                    backgroundColor: colors.surfaceContainerHighest,
-                    color: colors.primary,
+                  ExpeditionProgressSignal(
+                    key: const Key(
+                      'platform-current-journey-expedition-progress-signal',
+                    ),
+                    expeditionId: snapshot.expeditionId,
+                    progress: snapshot.expeditionProgress,
+                    target: snapshot.requiredEnergy,
+                    height: 72,
                   ),
                 ],
               ),

@@ -6,6 +6,11 @@
 
 ### Changed
 
+- the current-journey journal now renders accepted Home ENERGY through the
+  existing exact-expedition progress trace, while future IDs stay neutral,
+  over-target copy remains literal and Platform/route/event state cannot
+  substitute identity or progress;
+
 - the current-journey journal now pairs the accepted Home current-position
   label with the existing exact-ID code-native node landmark, while future IDs
   use neutral artwork and route/Platform state cannot substitute identity or

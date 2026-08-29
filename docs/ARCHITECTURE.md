@@ -506,9 +506,15 @@ node без duplicate announcement.
 
 Current-journey ENERGY progress переносит required
 `expedition.progress/requiredEnergy` как literal accepted integers. Mobile
-clamp-ит только значение декоративного progress indicator и не меняет copy;
-phase, decision availability, completion, remaining rewards, spendability и
-command eligibility из отношения чисел не выводятся.
+передаёт эти integers и accepted `expeditionId` в existing
+`ExpeditionProgressSignal`: exact known ID выбирает reviewed code-native route
+contour, а future ID получает neutral field без dispatch по display name.
+Signal clamp-ит только painted trace и не меняет copy; Platform weekly route,
+route/current-node, READY event, decisions, history и catalog не подменяют
+identity или progress. Signal вложен в existing ENERGY `ExcludeSemantics`,
+поэтому остаётся одна authoritative semantics node. Phase, decision
+availability, completion, remaining rewards, spendability и command eligibility
+из отношения чисел не выводятся.
 
 Current-journey ready event использует только `expedition.unlockedEvent` со
 status exact `READY`. Stable `eventId` разрешает known mutable title и summary
