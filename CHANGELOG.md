@@ -6,6 +6,11 @@
 
 ### Changed
 
+- canonical skill, navigation-equipment and active-pet requirements on
+  available READY-event choices in the current-journey journal now reuse their
+  existing exact-ID art, while unknown/legacy type-slot pairs, locked/non-READY
+  state and Platform/history/catalog decoys stay text-only and fail closed;
+
 - positive pilot-XP and companion-bond channels on available READY-event
   choices in the current-journey journal now use the existing exact-subject
   progression signals from the same accepted Home snapshot, while zero,
