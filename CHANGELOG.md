@@ -6,6 +6,11 @@
 
 ### Changed
 
+- optional material rewards on available READY-event choices in the
+  current-journey journal now use the existing exact-item emblem beside their
+  paired choice signal, while absent/future/locked/non-READY and
+  Platform/history/catalog decoys stay fail-closed or neutral;
+
 - available READY-event choices in the current-journey journal now use the
   existing exact event/choice signal vocabulary in accepted server order,
   while future pairs stay neutral, locked/non-READY state fails closed and
