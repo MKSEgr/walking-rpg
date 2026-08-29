@@ -526,6 +526,14 @@ event. Positive available-choice count фильтрует только accepted 
 actions. Title, summary и count принадлежат одной accessibility semantics node;
 legacy/empty и locked-only choice state не создают count.
 
+Тот же accepted READY event наполняет existing `ExpeditionEventScene`. Exact
+reviewed event ID выбирает existing illustration, unknown future ID получает
+neutral code-native fallback без dispatch по title или summary. Expedition
+phase, current node, route trail, ENERGY, decisions, Platform event/progression,
+history и catalog не подменяют scene identity или readiness. Scene вложена в
+existing event `ExcludeSemantics`, поэтому title, summary, choice facts и visual
+остаются одной authoritative accessibility semantics node.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает

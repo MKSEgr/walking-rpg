@@ -6,6 +6,11 @@
 
 ### Changed
 
+- the current-journey journal now pairs its accepted Home READY-event copy
+  with the existing exact-ID expedition scene, while future IDs stay neutral,
+  non-READY state fails closed and phase/Platform/route facts cannot substitute
+  the event;
+
 - the current-journey journal now renders accepted Home ENERGY through the
   existing exact-expedition progress trace, while future IDs stay neutral,
   over-target copy remains literal and Platform/route/event state cannot
