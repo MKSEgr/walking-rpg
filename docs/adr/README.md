@@ -134,3 +134,4 @@ NNNN-short-title.md
 - [0115 — authoritative current-journey READY choice material art](0115-authoritative-current-journey-ready-choice-material-art.md)
 - [0116 — authoritative current-journey READY choice progression signals](0116-authoritative-current-journey-ready-choice-progression-signals.md)
 - [0117 — authoritative current-journey READY choice requirement art](0117-authoritative-current-journey-ready-choice-requirement-art.md)
+- [0118 — authoritative saved journey decision choice signals](0118-authoritative-saved-journey-decision-choice-signals.md)

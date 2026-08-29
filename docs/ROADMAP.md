@@ -1965,6 +1965,27 @@ Milestone 103 продолжает post-alpha code-only gameplay track из ADR 
 server-authoritative current-journey state из ADR 0038 через ADR 0117 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 104 — Authoritative saved journey decision choice signals
+
+### CODE_COMPLETE
+
+- [x] Current `decisionLog` и expanded recent archive history показывают
+      existing choice mark только по exact persisted `eventId + choiceId`
+      каждой immutable decision entry
+- [x] Known reviewed pairs используют established signal, а
+      unknown/future/legacy pairs остаются neutral даже при знакомом choice ID
+      внутри другого event
+- [x] READY-event, Platform, route, names, literal copy и catalog не подменяют
+      historical identity; current и recent entries используют общий read-only
+      renderer
+- [x] Literal event/choice/outcome/reward/timestamp copy и одна existing
+      localized semantics node сохраняются; RU/EN compact large text работает
+      без API/backend/persistence/command/asset changes
+
+Milestone 104 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0118 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

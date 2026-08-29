@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 41072)
+Total output lines: 4725
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
@@ -1015,6 +1018,217 @@ void main() {
     }
   });
 
+  testWidgets(
+    'saved decision signals follow persisted pairs at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      const List<HomeExpeditionDecisionLogEntry> currentDecisions =
+          <HomeExpeditionDecisionLogEntry>[
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'echo-vault-v1',
+              eventTitle: 'Persisted vault event',
+              choiceId: 'stabilize-core',
+              choiceTitle: 'Persisted stabilize choice',
+              outcomeTitle: 'Persisted stable outcome',
+              outcomeSummary: 'Persisted stable summary.',
+              resolvedAt: '2026-08-19T10:00:00Z',
+            ),
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'future-event-v1',
+              eventTitle: 'Persisted future event',
+              choiceId: 'stabilize-core',
+              choiceTitle: 'Persisted future choice',
+              outcomeTitle: 'Persisted future outcome',
+              outcomeSummary: 'Persisted future summary.',
+              resolvedAt: '2026-08-19T10:05:00Z',
+            ),
+          ];
+      const HomeExpeditionDecisionLogEntry archivedDecision =
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'mirror-delta-v1',
+            eventTitle: 'Persisted archived event',
+            choiceId: 'follow-resonance',
+            choiceTitle: 'Persisted archived choice',
+            outcomeTitle: 'Persisted archived outcome',
+            outcomeSummary: 'Persisted archived summary.',
+            resolvedAt: '2026-08-18T08:30:00Z',
+          );
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              decisionLog: currentDecisions,
+              unlockedEvent: _readyEvent(
+                eventId: 'echo-vault-v1',
+                choices: <HomeEventChoice>[_eventChoice('follow-echo')],
+              ),
+              recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
+                HomeExpeditionCompletionRecap(
+                  journeyNumber: 6,
+                  decisionCount: 1,
+                  decisions: <HomeExpeditionDecisionLogEntry>[
+                    archivedDecision,
+                  ],
+                  pilotExperienceGained: 0,
+                  petBondGained: 0,
+                  materials: <HomeJourneyMaterialReward>[],
+                ),
+              ],
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder log = find.byKey(const Key('platform-journey-decision-log'));
+      await _bringIntoView(tester, log);
+      final Finder knownEntry = find.byKey(
+        const Key('platform-journey-decision-echo-vault-v1'),
+      );
+      final Finder knownLayout = find.byKey(
+        const Key(
+          'platform-journey-decision-echo-vault-v1-stabilize-core-'
+          'choice-signal',
+        ),
+      );
+      await _bringIntoView(tester, knownEntry);
+      final EventChoiceSignalLayout knownSignal = tester
+          .widget<EventChoiceSignalLayout>(knownLayout);
+      expect(knownSignal.eventId, 'echo-vault-v1');
+      expect(knownSignal.choiceId, 'stabilize-core');
+      expect(knownSignal.muted, isFalse);
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-echo-vault-v1-stabilize-core-'
+              'stabilize-active',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-echo-vault-v1-follow-echo-echo-active',
+            ),
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.text('Persisted stabilize choice'),
+        ),
+        findsOneWidget,
+      );
+      final String knownTime = _formattedDecisionTime(
+        tester,
+        knownEntry,
+        currentDecisions.first.resolvedAt,
+        russian: false,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Entry 1 of 2. Persisted vault event. Decision: Persisted stabilize '
+          'choice. Outcome: Persisted stable outcome. Persisted stable '
+          'summary. $knownTime.',
+        ),
+        findsOneWidget,
+      );
+
+      final Finder futureEntry = find.byKey(
+        const Key('platform-journey-decision-future-event-v1'),
+      );
+      await _bringIntoView(tester, futureEntry);
+      expect(
+        find.descendant(
+          of: futureEntry,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-future-event-v1-stabilize-core-'
+              'unknown-active',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: futureEntry,
+          matching: find.text('Persisted future choice'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'event-choice-layout-future-event-v1-stabilize-core-compact',
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      final Finder archive = find.byKey(
+        const Key('platform-journey-archive-6'),
+      );
+      await _bringIntoView(tester, archive);
+      final Finder historyToggle = find.byKey(
+        const Key('platform-journey-archive-6-history-toggle'),
+      );
+      await _bringIntoView(tester, historyToggle);
+      await tester.tap(historyToggle);
+      await tester.pumpAndSettle();
+      final Finder archivedEntry = find.byKey(
+        const Key('platform-journey-decision-mirror-delta-v1'),
+      );
+      await _bringIntoView(tester, archivedEntry);
+      final Finder archivedLayout = find.byKey(
+        const Key(
+          'platform-journey-decision-mirror-delta-v1-follow-resonance-'
+          'choice-signal',
+        ),
+      );
+      final EventChoiceSignalLayout archivedSignal = tester
+          .widget<EventChoiceSignalLayout>(archivedLayout);
+      expect(archivedSignal.eventId, archivedDecision.eventId);
+      expect(archivedSignal.choiceId, archivedDecision.choiceId);
+      expect(
+        find.descendant(
+          of: archivedEntry,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-mirror-delta-v1-follow-resonance-'
+              'resonance-active',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: archivedEntry,
+          matching: find.text('Persisted archived choice'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
   testWidgets('English Platform journal stays readable at compact large text', (
     WidgetTester tester,
   ) async {
@@ -1528,1238 +1742,7 @@ void main() {
         ),
         (
           locale: const Locale('ru'),
-          expeditionId: 'starter-expedition-v1',
-          serverName: 'Literal server expedition',
-          expectedLabel: 'Экспедиция: Сигнал из туманного сектора',
-          energyLabel: 'Прогресс ENERGY: 12 из 30',
-        ),
-        (
-          locale: const Locale('en'),
-          expeditionId: 'future-expedition-v2',
-          serverName: 'Literal future expedition',
-          expectedLabel: 'Expedition: Literal future expedition',
-          energyLabel: 'ENERGY progress: 12 of 30',
-        ),
-      ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(weeklyRouteProgress: 100),
-              homeLoader: () async => _homeWithPersistedDecision(
-                expeditionId: sample.expeditionId,
-                expeditionName: sample.serverName,
-                expeditionProgress: 12,
-                requiredEnergy: 30,
-                currentNodeId: 'future-decoy-node-v1',
-                currentNodeName: 'Literal decoy node',
-                unlockedEvent: _readyEvent(
-                  eventId: 'future-decoy-event-v1',
-                  title: 'Literal decoy event',
-                  summary: 'Literal decoy event summary',
-                ),
-              ),
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        expect(
-          find.byKey(const Key('platform-current-journey-expedition')),
-          findsOneWidget,
-        );
-        expect(find.text(sample.expectedLabel), findsOneWidget);
-        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
-        expect(find.textContaining('Expedition: Literal decoy'), findsNothing);
-        expect(find.textContaining('Экспедиция: Literal decoy'), findsNothing);
-        final Finder signalFinder = find.byKey(
-          const Key('platform-current-journey-expedition-progress-signal'),
-        );
-        await _bringIntoView(tester, signalFinder);
-        final ExpeditionProgressSignal signal = tester
-            .widget<ExpeditionProgressSignal>(signalFinder);
-        expect(signal.expeditionId, sample.expeditionId);
-        expect(signal.progress, 12);
-        expect(signal.target, 30);
-        expect(signal.height, 72);
-        final String kind = sample.expeditionId == 'starter-expedition-v1'
-            ? 'outerBeacon'
-            : 'unknown';
-        expect(
-          find.byKey(
-            Key('expedition-progress-signal-${sample.expeditionId}-$kind'),
-          ),
-          findsOneWidget,
-        );
-        expect(find.text(sample.energyLabel), findsOneWidget);
-        expect(find.bySemanticsLabel(sample.energyLabel), findsOneWidget);
-        expect(
-          find.descendant(
-            of: signalFinder,
-            matching: find.byType(LinearProgressIndicator),
-          ),
-          findsNothing,
-        );
-        if (sample.expeditionId == 'starter-expedition-v1') {
-          expect(find.textContaining(sample.serverName), findsNothing);
-        }
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
-
-  testWidgets(
-    'current journey pilot follows Home identity at compact large text',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      for (final _PilotLocaleSample sample in <_PilotLocaleSample>[
-        (
-          locale: const Locale('en'),
-          pilotId: 'navigator-v1',
-          serverName: 'Literal server pilot',
-          expectedLabel: 'Pilot: Navigator',
-          legacyId: false,
-        ),
-        (
-          locale: const Locale('ru'),
-          pilotId: 'navigator-v1',
-          serverName: 'Literal server pilot',
-          expectedLabel: 'Пилот: Навигатор',
-          legacyId: false,
-        ),
-        (
-          locale: const Locale('en'),
-          pilotId: 'future-pilot-v2',
-          serverName: 'Literal future pilot',
-          expectedLabel: 'Pilot: Literal future pilot',
-          legacyId: false,
-        ),
-        (
-          locale: const Locale('en'),
-          pilotId: null,
-          serverName: 'Literal legacy pilot',
-          expectedLabel: 'Pilot: Literal legacy pilot',
-          legacyId: true,
-        ),
-      ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(),
-              homeLoader: () async => _homeWithPersistedDecision(
-                pilotId: sample.pilotId,
-                pilotName: sample.serverName,
-                legacyPilotId: sample.legacyId,
-                withDecisionRewards: true,
-                currentNodeId: 'future-decoy-node-v1',
-                currentNodeName: 'Literal decoy pilot',
-                unlockedEvent: _readyEvent(
-                  eventId: 'future-decoy-event-v1',
-                  title: 'Literal decoy pilot',
-                  summary: 'Literal decoy pilot summary',
-                ),
-              ),
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        expect(
-          find.byKey(const Key('platform-current-journey-pilot')),
-          findsOneWidget,
-        );
-        expect(find.text(sample.expectedLabel), findsOneWidget);
-        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
-        if (sample.pilotId != 'navigator-v1') {
-          expect(find.text('Pilot: Navigator'), findsNothing);
-          expect(find.text('Пилот: Навигатор'), findsNothing);
-        }
-        if (sample.pilotId == 'navigator-v1') {
-          expect(find.textContaining(sample.serverName), findsNothing);
-        }
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
-
-  testWidgets('current journey pilot portrait follows known Home identity', (
-    WidgetTester tester,
-  ) async {
-    final SemanticsHandle semantics = tester.ensureSemantics();
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    for (final _PilotPortraitLocaleSample sample
-        in <_PilotPortraitLocaleSample>[
-          (
-            expectedLabel: 'Pilot Navigator',
-            expectedName: 'Navigator',
-            locale: const Locale('en'),
-          ),
-          (
-            expectedLabel: 'Пилот Навигатор',
-            expectedName: 'Навигатор',
-            locale: const Locale('ru'),
-          ),
-        ]) {
-      await tester.pumpWidget(
-        _LocalizedPlatformApp(
-          locale: sample.locale,
-          textScale: 1.6,
-          child: PlatformScreen(
-            loader: () async => platformSnapshot(),
-            homeLoader: () async => _homeWithPersistedDecision(
-              pilotId: 'navigator-v1',
-              pilotName: 'Literal server pilot',
-            ),
-            recordExperimentExposures: false,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final Finder log = find.byKey(const Key('platform-journey-decision-log'));
-      await _bringIntoView(tester, log);
-      final Finder portraitSemantics = find.byKey(
-        const Key('platform-current-journey-pilot-portrait'),
-      );
-      final Finder portraitFinder = find.descendant(
-        of: portraitSemantics,
-        matching: find.byType(PilotPortrait),
-      );
-      expect(portraitSemantics, findsOneWidget);
-      expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
-      expect(portraitFinder, findsOneWidget);
-      final PilotPortrait portrait = tester.widget<PilotPortrait>(
-        portraitFinder,
-      );
-      expect(portrait.name, sample.expectedName);
-      expect(portrait.highlighted, isTrue);
-      expect(portrait.equippedCosmeticIds, isEmpty);
-      expect(portrait.illustrationAsset, PilotPortrait.assetPath);
-      expect(
-        find.byKey(const Key('platform-current-journey-companion-portrait')),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    }
-
-    semantics.dispose();
-  });
-
-  testWidgets(
-    'current journey pilot portrait fails closed for unknown Home identity',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      final List<HomeSnapshot> unsupportedHomes = <HomeSnapshot>[
-        _homeWithPersistedDecision(
-          pilotId: 'future-pilot-v2',
-          pilotName: 'Literal future pilot',
-        ),
-        _homeWithPersistedDecision(
-          legacyPilotId: true,
-          pilotName: 'Literal legacy pilot',
-        ),
-      ];
-      final List<String> expectedLabels = <String>[
-        'Pilot: Literal future pilot',
-        'Pilot: Literal legacy pilot',
-      ];
-
-      for (int index = 0; index < unsupportedHomes.length; index += 1) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: const Locale('en'),
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(),
-              homeLoader: () async => unsupportedHomes[index],
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        expect(
-          find.byKey(const Key('platform-current-journey-pilot-portrait')),
-          findsNothing,
-        );
-        expect(
-          find.descendant(of: log, matching: find.byType(PilotPortrait)),
-          findsNothing,
-        );
-        expect(find.text(expectedLabels[index]), findsOneWidget);
-        expect(find.bySemanticsLabel(expectedLabels[index]), findsOneWidget);
-        expect(
-          find.byKey(const Key('platform-current-journey-companion-portrait')),
-          findsOneWidget,
-        );
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
-
-  testWidgets(
-    'current journey pilot progression follows Home at compact large text',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      for (final _PilotProgressLocaleSample sample
-          in <_PilotProgressLocaleSample>[
-            (
-              locale: const Locale('en'),
-              expectedLabel:
-                  'Pilot progression: level 7 · XP 888 / 1400 · '
-                  '512 XP to next level',
-              legacyProgression: false,
-            ),
-            (
-              locale: const Locale('ru'),
-              expectedLabel:
-                  'Прогресс пилота: уровень 7 · XP 888 / 1400 · '
-                  'до следующего уровня 512 XP',
-              legacyProgression: false,
-            ),
-            (
-              locale: const Locale('en'),
-              expectedLabel: null,
-              legacyProgression: true,
-            ),
-          ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(seasonXp: 220),
-              homeLoader: () async => _homeWithPersistedDecision(
-                pilotLevel: 7,
-                pilotCurrentExperience: 888,
-                pilotNextLevelExperience: 1400,
-                legacyPilotProgression: sample.legacyProgression,
-                withDecisionRewards: true,
-              ),
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        final Finder progression = find.byKey(
-          const Key('platform-current-journey-pilot-progression'),
-        );
-        if (sample.expectedLabel case final String expectedLabel) {
-          expect(progression, findsOneWidget);
-          expect(find.text(expectedLabel), findsOneWidget);
-          expect(find.bySemanticsLabel(expectedLabel), findsOneWidget);
-        } else {
-          expect(progression, findsNothing);
-          expect(
-            find.descendant(
-              of: log,
-              matching: find.textContaining('Pilot progression:'),
-            ),
-            findsNothing,
-          );
-        }
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
-
-  testWidgets(
-    'current journey companion progression follows Home at compact large text',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      for (final _CompanionProgressLocaleSample sample
-          in <_CompanionProgressLocaleSample>[
-            (
-              locale: const Locale('en'),
-              expectedLabel: 'Companion progression: level 6 · bond 742',
-            ),
-            (
-              locale: const Locale('ru'),
-              expectedLabel: 'Прогресс спутника: уровень 6 · связь 742',
-            ),
-          ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async =>
-                  platformSnapshot(sparkLevel: 12, sparkBond: 999),
-              homeLoader: () async => _homeWithPersistedDecision(
-                petLevel: 6,
-                petBond: 742,
-                withDecisionRewards: true,
-              ),
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        expect(
-          find.byKey(
-            const Key('platform-current-journey-companion-progression'),
-          ),
-          findsOneWidget,
-        );
-        expect(find.text(sample.expectedLabel), findsOneWidget);
-        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
-        expect(
-          find.descendant(
-            of: log,
-            matching: find.textContaining('level 12 · bond 999'),
-          ),
-          findsNothing,
-        );
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
-
-  testWidgets(
-    'current journey companion form follows Home at compact large text',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      for (final _CompanionFormLocaleSample sample
-          in <_CompanionFormLocaleSample>[
-            (
-              locale: const Locale('en'),
-              petId: 'spark-v1',
-              serverSpecies: 'Literal server species',
-              stage: 2,
-              expectedLabel: 'Companion form: lumin · Adult · form 3',
-              missingSpecies: false,
-              missingStage: false,
-            ),
-            (
-              locale: const Locale('ru'),
-              petId: 'spark-v1',
-              serverSpecies: 'Literal server species',
-              stage: 2,
-              expectedLabel: 'Форма спутника: люмин · Взрослый · форма 3',
-              missingSpecies: false,
-              missingStage: false,
-            ),
-            (
-              locale: const Locale('en'),
-              petId: 'future-companion-v2',
-              serverSpecies: 'Literal future species',
-              stage: 5,
-              expectedLabel: 'Companion form: Literal future species · Form 6',
-              missingSpecies: false,
-              missingStage: false,
-            ),
-            (
-              locale: const Locale('en'),
-              petId: 'spark-v1',
-              serverSpecies: 'Missing species',
-              stage: 2,
-              expectedLabel: null,
-              missingSpecies: true,
-              missingStage: false,
-            ),
-            (
-              locale: const Locale('en'),
-              petId: 'spark-v1',
-              serverSpecies: 'Missing stage species',
-              stage: 2,
-              expectedLabel: null,
-              missingSpecies: false,
-              missingStage: true,
-            ),
-          ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(
-                activePetId: 'moss-v1',
-                sparkEvolutionStage: 1,
-              ),
-              homeLoader: () async => _homeWithPersistedDecision(
-                missingPetEvolutionStage: sample.missingStage,
-                missingPetSpecies: sample.missingSpecies,
-                petEvolutionStage: sample.stage,
-                petId: sample.petId,
-                petSpecies: sample.serverSpecies,
-                withDecisionRewards: true,
-              ),
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        final Finder form = find.byKey(
-          const Key('platform-current-journey-companion-form'),
-        );
-        if (sample.expectedLabel case final String expectedLabel) {
-          expect(form, findsOneWidget);
-          expect(find.text(expectedLabel), findsOneWidget);
-          expect(find.bySemanticsLabel(expectedLabel), findsOneWidget);
-        } else {
-          expect(form, findsNothing);
-          expect(
-            find.descendant(
-              of: log,
-              matching: find.textContaining('Companion form:'),
-            ),
-            findsNothing,
-          );
-        }
-        expect(
-          find.descendant(of: log, matching: find.textContaining('terra')),
-          findsNothing,
-        );
-        expect(
-          find.descendant(of: log, matching: find.textContaining('терра')),
-          findsNothing,
-        );
-        if (sample.petId == 'spark-v1' &&
-            !sample.missingSpecies &&
-            !sample.missingStage) {
-          expect(find.textContaining(sample.serverSpecies), findsNothing);
-        }
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
-
-  testWidgets(
-    'current journey companion portrait follows Home at compact large text',
-    (WidgetTester tester) async {
-      final SemanticsHandle semantics = tester.ensureSemantics();
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      for (final _CompanionPortraitLocaleSample sample
-          in <_CompanionPortraitLocaleSample>[
-            (
-              expectedAsset: 'assets/characters/companion_spark.webp',
-              expectedLabel: 'Spark, lumin, Adult · form 3, active companion',
-              expectedName: 'Spark',
-              expectedSpecies: 'lumin',
-              locale: const Locale('en'),
-              petId: 'spark-v1',
-              serverName: 'Literal server companion',
-              serverSpecies: 'Literal server species',
-              stage: 2,
-            ),
-            (
-              expectedAsset: 'assets/characters/companion_spark.webp',
-              expectedLabel:
-                  'Искра, люмин, Взрослый · форма 3, активный спутник',
-              expectedName: 'Искра',
-              expectedSpecies: 'люмин',
-              locale: const Locale('ru'),
-              petId: 'spark-v1',
-              serverName: 'Literal server companion',
-              serverSpecies: 'Literal server species',
-              stage: 2,
-            ),
-            (
-              expectedAsset: null,
-              expectedLabel:
-                  'Literal future companion, Literal future species, '
-                  'Form 6, active companion',
-              expectedName: 'Literal future companion',
-              expectedSpecies: 'Literal future species',
-              locale: const Locale('en'),
-              petId: 'future-companion-v2',
-              serverName: 'Literal future companion',
-              serverSpecies: 'Literal future species',
-              stage: 5,
-            ),
-          ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(
-                activePetId: 'moss-v1',
-                sparkEvolutionStage: 1,
-              ),
-              homeLoader: () async => _homeWithPersistedDecision(
-                petEvolutionStage: sample.stage,
-                petId: sample.petId,
-                petName: sample.serverName,
-                petSpecies: sample.serverSpecies,
-              ),
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        final Finder portraitSemantics = find.byKey(
-          const Key('platform-current-journey-companion-portrait'),
-        );
-        final Finder portraitFinder = find.descendant(
-          of: portraitSemantics,
-          matching: find.byType(CompanionPortrait),
-        );
-        expect(portraitSemantics, findsOneWidget);
-        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
-        expect(portraitFinder, findsOneWidget);
-        final CompanionPortrait portrait = tester.widget<CompanionPortrait>(
-          portraitFinder,
-        );
-        expect(portrait.petId, sample.petId);
-        expect(portrait.name, sample.expectedName);
-        expect(portrait.species, sample.expectedSpecies);
-        expect(portrait.evolutionStage, sample.stage);
-        expect(portrait.active, isTrue);
-        expect(portrait.equippedCosmeticIds, isEmpty);
-        expect(portrait.illustrationAsset, sample.expectedAsset);
-        expect(portrait.identity == CompanionIdentity.moss, isFalse);
-        expect(tester.takeException(), isNull);
-      }
-
-      semantics.dispose();
-    },
-  );
-
-  testWidgets(
-    'current journey companion portrait fails closed on partial Home facts',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      final List<HomeSnapshot> incompleteHomes = <HomeSnapshot>[
-        _homeWithPersistedDecision(legacyPetId: true),
-        _homeWithPersistedDecision(missingPetSpecies: true),
-        _homeWithPersistedDecision(missingPetEvolutionStage: true),
-      ];
-
-      for (final HomeSnapshot home in incompleteHomes) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: const Locale('en'),
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(activePetId: 'moss-v1'),
-              homeLoader: () async => home,
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        expect(
-          find.byKey(const Key('platform-current-journey-companion-portrait')),
-          findsNothing,
-        );
-        expect(
-          find.descendant(of: log, matching: find.byType(CompanionPortrait)),
-          findsNothing,
-        );
-        expect(
-          find.byKey(const Key('platform-current-journey-active-companion')),
-          findsOneWidget,
-        );
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
-
-  testWidgets(
-    'current journey companion follows Home identity at compact large text',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      for (final _CompanionLocaleSample sample in <_CompanionLocaleSample>[
-        (
-          locale: const Locale('en'),
-          petId: 'spark-v1',
-          serverName: 'Literal server companion',
-          expectedLabel: 'Active companion: Spark',
-          legacyId: false,
-        ),
-        (
-          locale: const Locale('ru'),
-          petId: 'spark-v1',
-          serverName: 'Literal server companion',
-          expectedLabel: 'Активный спутник: Искра',
-          legacyId: false,
-        ),
-        (
-          locale: const Locale('en'),
-          petId: 'future-companion-v2',
-          serverName: 'Literal future companion',
-          expectedLabel: 'Active companion: Literal future companion',
-          legacyId: false,
-        ),
-        (
-          locale: const Locale('en'),
-          petId: null,
-          serverName: 'Literal legacy companion',
-          expectedLabel: 'Active companion: Literal legacy companion',
-          legacyId: true,
-        ),
-      ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(),
-              homeLoader: () async => _homeWithPersistedDecision(
-                petId: sample.petId,
-                petName: sample.serverName,
-                legacyPetId: sample.legacyId,
-                withDecisionRewards: true,
-                unlockedEvent: _readyEvent(
-                  eventId: 'future-decoy-event-v1',
-                  title: 'Literal decoy event',
-                  summary: 'Literal decoy event summary',
-                  choices: <HomeEventChoice>[
-                    _eventChoice(
-                      'future-decoy-choice-v1',
-                      requirement: const HomeChoiceRequirement(
-                        type: 'PET',
-                        slotId: 'PET',
-                        slotName: 'Literal decoy slot',
-                        itemId: 'moss-v1',
-                        itemName: 'Literal decoy companion',
-                        description: 'Select the decoy companion.',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        expect(
-          find.byKey(const Key('platform-current-journey-active-companion')),
-          findsOneWidget,
-        );
-        expect(find.text(sample.expectedLabel), findsOneWidget);
-        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
-        if (sample.petId != 'spark-v1') {
-          expect(find.text('Active companion: Spark'), findsNothing);
-          expect(find.text('Active companion: Navigator'), findsNothing);
-          expect(find.text('Active companion: Moss'), findsNothing);
-        }
-        if (sample.petId == 'spark-v1') {
-          expect(find.textContaining(sample.serverName), findsNothing);
-        }
-        expect(tester.takeException(), isNull);
-      }
-    },
-  );
-
-  testWidgets('English journal preserves immutable decision literals', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      _LocalizedPlatformApp(
-        locale: const Locale('en'),
-        child: PlatformScreen(
-          loader: () async => platformSnapshot(),
-          homeLoader: () async => _homeWithPersistedDecision(
-            withDecisionRewards: true,
-            unlockedEvent: _readyEvent(
-              eventId: 'echo-vault-v1',
-              title: 'Literal server vault',
-              summary: 'Literal server vault summary',
-              choices: <HomeEventChoice>[
-                _eventChoice('stabilize-core'),
-                _eventChoice('locked', availability: 'LOCKED'),
-                _eventChoice('follow-echo'),
-              ],
-            ),
-          ),
-          recordExperimentExposures: false,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Route decisions'), findsOneWidget);
-    expect(find.text('Journey in progress'), findsOneWidget);
-    expect(find.bySemanticsLabel('Journey in progress'), findsOneWidget);
-    expect(find.text('Current point: Outer Beacon'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('Current point: Outer Beacon'),
-      findsOneWidget,
-    );
-    expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
-    expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
-    expect(find.text('Current event: Echo Vault'), findsOneWidget);
-    expect(
-      find.text(
-        'About event: Beyond the gate lies an archive of routes. Its core is '
-        'unstable, and the companion hears a call from the depths.',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel(
-        'Current event: Echo Vault. About event: Beyond the gate lies an '
-        'archive of routes. Its core is unstable, and the companion hears a '
-        'call from the depths.\n2 choices available\n'
-        'Available choice: Stabilize the core\n'
-        'About choice: The Navigator will lock the resonance and extract safe '
-        'fragments.\nChoice rewards: +0 XP · +0 bond\n'
-        'Available choice: Follow the echo\n'
-        'About choice: The companion will lead the team along a living trail '
-        'deep in the archive.\nChoice rewards: +0 XP · +0 bond',
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('2 choices available'), findsOneWidget);
-    expect(find.text('Available choice: Stabilize the core'), findsOneWidget);
-    expect(
-      find.text(
-        'About choice: The Navigator will lock the resonance and extract safe '
-        'fragments.',
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Available choice: Follow the echo'), findsOneWidget);
-    expect(
-      find.text(
-        'About choice: The companion will lead the team along a living trail '
-        'deep in the archive.',
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Choice rewards: +0 XP · +0 bond'), findsNWidgets(2));
-    expect(find.textContaining('Literal choice locked'), findsNothing);
-    final Finder latest = find.byKey(
-      const Key('platform-current-journey-latest-decision'),
-    );
-    expect(latest, findsOneWidget);
-    final Finder journeyStartedAt = find.byKey(
-      const Key('platform-current-journey-started-at'),
-    );
-    final String startedAt = _formattedJourneyStartTime(
-      tester,
-      journeyStartedAt,
-      '2026-08-19T09:15:00Z',
-      russian: false,
-    );
-    expect(find.text(startedAt), findsOneWidget);
-    expect(find.bySemanticsLabel(startedAt), findsOneWidget);
-    expect(find.text('Сохранённый выбор'), findsOneWidget);
-    expect(find.text('Сохранённый исход'), findsOneWidget);
-    final Finder decision = find.byKey(
-      const Key('platform-journey-decision-legacy-event-v1'),
-    );
-    final String resolvedAt = _formattedDecisionTime(
-      tester,
-      decision,
-      '2026-08-19T10:00:00Z',
-      russian: false,
-    );
-    expect(
-      find.descendant(of: decision, matching: find.text(resolvedAt)),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: latest, matching: find.text('Latest saved decision')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: latest,
-        matching: find.text('Chosen: Сохранённый выбор'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: latest,
-        matching: find.text('Сигнал прошлого → Сохранённый исход'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: latest,
-        matching: find.text('Result: Сохранённое описание.'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: latest,
-        matching: find.text(
-          'Rewards: +27 pilot XP; Navigator · +8 bond; +3 Signal glass',
-        ),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel(
-        'Latest saved decision in the current journey. Сигнал прошлого. Choice: Сохранённый выбор. '
-        'Outcome: Сохранённый исход. Result: Сохранённое описание. '
-        '$resolvedAt. Rewards: +27 pilot XP; Navigator: +8 bond; '
-        '+3 Signal glass.',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel(
-        'Entry 1 of 1. Сигнал прошлого. Decision: Сохранённый выбор. '
-        'Outcome: Сохранённый исход. Сохранённое описание. $resolvedAt. '
-        'Rewards: +27 pilot XP; Navigator: +8 bond; +3 Signal glass.',
-      ),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets(
-    'latest current journey decision reflows in English at compact large text',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final SemanticsHandle semantics = tester.ensureSemantics();
-
-      await tester.pumpWidget(
-        _LocalizedPlatformApp(
-          locale: const Locale('en'),
-          textScale: 1.6,
-          child: PlatformScreen(
-            loader: () async => platformSnapshot(),
-            homeLoader: () async => _homeWithPersistedDecision(
-              withDecisionRewards: true,
-              unlockedEvent: _readyEvent(
-                eventId: 'echo-vault-v1',
-                title: 'Literal server vault',
-                summary: 'Literal server vault summary',
-                choices: <HomeEventChoice>[
-                  _eventChoice('stabilize-core'),
-                  _eventChoice('locked', availability: 'LOCKED'),
-                  _eventChoice('follow-echo'),
-                ],
-              ),
-            ),
-            recordExperimentExposures: false,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final Finder log = find.byKey(const Key('platform-journey-decision-log'));
-      await _bringIntoView(tester, log);
-      expect(
-        find.byKey(const Key('platform-current-journey-decision-count')),
-        findsOneWidget,
-      );
-      expect(find.text('Decisions made: 1'), findsOneWidget);
-      expect(find.bySemanticsLabel('Decisions made: 1'), findsNothing);
-      expect(find.text('Journey in progress'), findsOneWidget);
-      expect(find.bySemanticsLabel('Journey in progress'), findsOneWidget);
-      expect(find.text('Current point: Outer Beacon'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Current point: Outer Beacon'),
-        findsOneWidget,
-      );
-      expect(find.text('ENERGY progress: 0 of 30'), findsOneWidget);
-      expect(find.bySemanticsLabel('ENERGY progress: 0 of 30'), findsOneWidget);
-      expect(find.text('Current event: Echo Vault'), findsOneWidget);
-      expect(
-        find.text(
-          'About event: Beyond the gate lies an archive of routes. Its core '
-          'is unstable, and the companion hears a call from the depths.',
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.bySemanticsLabel(
-          'Current event: Echo Vault. About event: Beyond the gate lies an '
-          'archive of routes. Its core is unstable, and the companion hears a '
-          'call from the depths.\n2 choices available\n'
-          'Available choice: Stabilize the core\n'
-          'About choice: The Navigator will lock the resonance and extract '
-          'safe fragments.\nChoice rewards: +0 XP · +0 bond\n'
-          'Available choice: Follow the echo\n'
-          'About choice: The companion will lead the team along a living '
-          'trail deep in the archive.\nChoice rewards: +0 XP · +0 bond',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('2 choices available'), findsOneWidget);
-      expect(
-        find.byKey(
-          const Key(
-            'platform-current-journey-ready-event-choice-stabilize-core',
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(
-          const Key(
-            'platform-current-journey-ready-event-choice-stabilize-core-'
-            'rewards',
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(
-          const Key(
-            'platform-current-journey-ready-event-choice-follow-echo-rewards',
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(
-          const Key('platform-current-journey-ready-event-choice-follow-echo'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(
-          const Key(
-            'platform-current-journey-ready-event-choice-stabilize-core-'
-            'description',
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(
-          const Key(
-            'platform-current-journey-ready-event-choice-follow-echo-'
-            'description',
-          ),
-        ),
-        findsOneWidget,
-      );
-      final Finder latest = find.byKey(
-        const Key('platform-current-journey-latest-decision'),
-      );
-      await _bringIntoView(tester, latest);
-      final Finder journeyStartedAt = find.byKey(
-        const Key('platform-current-journey-started-at'),
-      );
-      final String startedAt = _formattedJourneyStartTime(
-        tester,
-        journeyStartedAt,
-        '2026-08-19T09:15:00Z',
-        russian: false,
-      );
-      expect(find.text(startedAt), findsOneWidget);
-      expect(find.bySemanticsLabel(startedAt), findsOneWidget);
-      final String resolvedAt = _formattedDecisionTime(
-        tester,
-        latest,
-        '2026-08-19T10:00:00Z',
-        russian: false,
-      );
-      expect(
-        find.descendant(
-          of: latest,
-          matching: find.text('Latest saved decision'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: latest,
-          matching: find.text('Chosen: Сохранённый выбор'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: latest,
-          matching: find.text('Сигнал прошлого → Сохранённый исход'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: latest,
-          matching: find.text('Result: Сохранённое описание.'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: latest,
-          matching: find.text(
-            'Rewards: +27 pilot XP; Navigator · +8 bond; +3 Signal glass',
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.bySemanticsLabel(
-          'Latest saved decision in the current journey. Сигнал прошлого. Choice: Сохранённый выбор. '
-          'Outcome: Сохранённый исход. Result: Сохранённое описание. '
-          '$resolvedAt. Rewards: +27 pilot XP; Navigator: +8 bond; '
-          '+3 Signal glass.',
-        ),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-
-      semantics.dispose();
-    },
-  );
-
-  testWidgets(
-    'current journey node landmark follows Home identity at compact large text',
-    (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final SemanticsHandle semantics = tester.ensureSemantics();
-      const List<HomeExpeditionRouteNode> routeDecoy =
-          <HomeExpeditionRouteNode>[
-            HomeExpeditionRouteNode(
-              nodeId: 'lumen-gate',
-              nodeName: 'Literal route terminal',
-              state: 'COMPLETED',
-            ),
-          ];
-
-      for (final _NodeLandmarkLocaleSample sample
-          in <_NodeLandmarkLocaleSample>[
-            (
-              landmarkSemantics: 'Current node “Outer Beacon”',
-              locale: const Locale('en'),
-              nodeName: 'Outer Beacon',
-              positionLabel: 'Current point: Outer Beacon',
-            ),
-            (
-              landmarkSemantics: 'Текущий узел «Внешний маяк»',
-              locale: const Locale('ru'),
-              nodeName: 'Внешний маяк',
-              positionLabel: 'Текущая точка: Внешний маяк',
-            ),
-          ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(weeklyRouteProgress: 100),
-              homeLoader: () async => _homeWithPersistedDecision(
-                currentNodeId: 'outer-beacon',
-                currentNodeName: 'Literal server beacon',
-                routeTrail: routeDecoy,
-              ),
-              recordExperimentExposures: false,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder landmarkFinder = find.byKey(
-          const Key('platform-current-journey-node-landmark'),
-        );
-        await _bringIntoView(tester, landmarkFinder);
-        final ExpeditionNodeSignal landmark = tester
-            .widget<ExpeditionNodeSignal>(landmarkFinder);
-        expect(landmark.nodeId, 'outer-beacon');
-        expect(landmark.nodeName, sample.nodeName);
-        expect(landmark.completed, isFalse);
-        expect(landmark.role, ExpeditionNodeSignalRole.current);
-        expect(landmark.markSize, 38);
-        expect(
-          find.byKey(
-            const Key('expedition-node-mark-outer-beacon-outerBeacon'),
-          ),
-          findsOneWidget,
-        );
-        expect(find.text(sample.nodeName.toUpperCase()), findsOneWidget);
-        expect(find.text(sample.positionLabel), findsOneWidget);
-        expect(find.bySemanticsLabel(sample.positionLabel), findsOneWidget);
-        expect(find.bySemanticsLabel(sample.landmarkSemantics), findsNothing);
-        expect(tester.takeException(), isNull);
-      }
-
-      semantics.dispose();
-    },
-  );
-
-  testWidgets('future current position preserves literal neutral landmark', (
-    WidgetTester tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final SemanticsHandle semantics = tester.ensureSemantics();
-
-    await tester.pumpWidget(
-      _LocalizedPlatformApp(
-        locale: const Locale('en'),
-        textScale: 1.6,
-        child: PlatformScreen(
-          loader: () async => platformSnapshot(weeklyRouteProgress: 100),
-          homeLoader: () async => _homeWithPersistedDecision(
-            currentNodeId: 'future-signal-v1',
-            currentNodeName: 'Literal future signal',
-            expeditionStatus: 'COMPLETED',
-            routeTrail: const <HomeExpeditionRouteNode>[
-              HomeExpeditionRouteNode(
-                nodeId: 'outer-beacon',
-                nodeName: 'Literal route decoy',
+          exp…11072 tokens truncated…   nodeName: 'Literal route decoy',
                 state: 'CURRENT',
               ),
             ],
@@ -4205,6 +3188,7 @@ class _LocalizedPlatformApp extends StatelessWidget {
 
 HomeSnapshot _homeWithPersistedDecision({
   HomeExpeditionCompletionRecap? completionRecap,
+  List<HomeExpeditionDecisionLogEntry>? decisionLog,
   HomeJourneyChronicle? journeyChronicle,
   List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
       const <HomeExpeditionCompletionRecap>[],
@@ -4260,28 +3244,30 @@ HomeSnapshot _homeWithPersistedDecision({
     expeditionJourneyNumber: 7,
     journeyStartedAt: '2026-08-19T09:15:00Z',
     routeTrail: routeTrail ?? demo.routeTrail,
-    decisionLog: <HomeExpeditionDecisionLogEntry>[
-      HomeExpeditionDecisionLogEntry(
-        eventId: 'legacy-event-v1',
-        eventTitle: 'Сигнал прошлого',
-        choiceId: 'legacy-choice',
-        choiceTitle: 'Сохранённый выбор',
-        outcomeTitle: 'Сохранённый исход',
-        outcomeSummary: 'Сохранённое описание.',
-        resolvedAt: '2026-08-19T10:00:00Z',
-        pilotExperienceGained: withDecisionRewards ? 27 : 0,
-        petId: withDecisionRewards ? 'navigator-v1' : null,
-        petName: withDecisionRewards ? 'Navigator' : null,
-        petBondGained: withDecisionRewards ? 8 : 0,
-        materialReward: withDecisionRewards
-            ? const HomeJourneyMaterialReward(
-                itemId: 'signal-glass',
-                itemName: 'Signal glass',
-                quantity: 3,
-              )
-            : null,
-      ),
-    ],
+    decisionLog:
+        decisionLog ??
+        <HomeExpeditionDecisionLogEntry>[
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'legacy-event-v1',
+            eventTitle: 'Сигнал прошлого',
+            choiceId: 'legacy-choice',
+            choiceTitle: 'Сохранённый выбор',
+            outcomeTitle: 'Сохранённый исход',
+            outcomeSummary: 'Сохранённое описание.',
+            resolvedAt: '2026-08-19T10:00:00Z',
+            pilotExperienceGained: withDecisionRewards ? 27 : 0,
+            petId: withDecisionRewards ? 'navigator-v1' : null,
+            petName: withDecisionRewards ? 'Navigator' : null,
+            petBondGained: withDecisionRewards ? 8 : 0,
+            materialReward: withDecisionRewards
+                ? const HomeJourneyMaterialReward(
+                    itemId: 'signal-glass',
+                    itemName: 'Signal glass',
+                    quantity: 3,
+                  )
+                : null,
+          ),
+        ],
     completionRecap: completionRecap,
     recentJourneyRecaps: recentJourneyRecaps,
     journeyChronicle: journeyChronicle,

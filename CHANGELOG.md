@@ -6,6 +6,11 @@
 
 ### Changed
 
+- current and expanded recent journey decision entries now reuse the existing
+  exact persisted event/choice signal vocabulary, while unknown/future pairs
+  stay neutral and READY-event, Platform, route or catalog state cannot
+  substitute immutable history identity;
+
 - canonical skill, navigation-equipment and active-pet requirements on
   available READY-event choices in the current-journey journal now reuse their
   existing exact-ID art, while unknown/legacy type-slot pairs, locked/non-READY
