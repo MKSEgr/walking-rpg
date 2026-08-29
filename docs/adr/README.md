@@ -124,3 +124,4 @@ NNNN-short-title.md
 - [0105 — authoritative current-journey pilot progression](0105-authoritative-current-journey-pilot-progression.md)
 - [0106 — authoritative current-journey companion progression](0106-authoritative-current-journey-companion-progression.md)
 - [0107 — authoritative current-journey companion form](0107-authoritative-current-journey-companion-form.md)
+- [0108 — authoritative current-journey companion portrait](0108-authoritative-current-journey-companion-portrait.md)

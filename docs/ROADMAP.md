@@ -1765,6 +1765,25 @@ Milestone 93 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0107 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 94 — Authoritative current-journey companion portrait
+
+### CODE_COMPLETE
+
+- [x] Journal показывает stage-aware portrait только из полной accepted Home
+      группы `petId/name/species/evolutionStage` и fail-closed скрывает его при
+      отсутствии любого portrait input
+- [x] Known pet ID выбирает existing illustrated stage asset, unknown future ID
+      сохраняет design-system fallback без нового content mapping
+- [x] Platform active pet, cosmetics, rewards, local catalog и evolution
+      thresholds/forecasts не подменяют accepted Home portrait
+- [x] Одна dedicated image semantics node использует RU/EN current-content
+      name/species/form, исключает duplicate child semantics и выдерживает
+      compact large-text layout без API/backend/persistence/command changes
+
+Milestone 94 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0108 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

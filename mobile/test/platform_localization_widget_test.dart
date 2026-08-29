@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
+import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
@@ -53,6 +54,18 @@ typedef _CompanionFormLocaleSample = ({
   bool missingSpecies,
   bool missingStage,
   String petId,
+  String serverSpecies,
+  int stage,
+});
+
+typedef _CompanionPortraitLocaleSample = ({
+  String? expectedAsset,
+  String expectedLabel,
+  String expectedName,
+  String expectedSpecies,
+  Locale locale,
+  String petId,
+  String serverName,
   String serverSpecies,
   int stage,
 });
@@ -1855,6 +1868,155 @@ void main() {
             !sample.missingStage) {
           expect(find.textContaining(sample.serverSpecies), findsNothing);
         }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'current journey companion portrait follows Home at compact large text',
+    (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final _CompanionPortraitLocaleSample sample
+          in <_CompanionPortraitLocaleSample>[
+            (
+              expectedAsset: 'assets/characters/companion_spark.webp',
+              expectedLabel:
+                  'Spark, lumin, Adult · form 3, active companion',
+              expectedName: 'Spark',
+              expectedSpecies: 'lumin',
+              locale: const Locale('en'),
+              petId: 'spark-v1',
+              serverName: 'Literal server companion',
+              serverSpecies: 'Literal server species',
+              stage: 2,
+            ),
+            (
+              expectedAsset: 'assets/characters/companion_spark.webp',
+              expectedLabel:
+                  'Искра, люмин, Взрослый · форма 3, активный спутник',
+              expectedName: 'Искра',
+              expectedSpecies: 'люмин',
+              locale: const Locale('ru'),
+              petId: 'spark-v1',
+              serverName: 'Literal server companion',
+              serverSpecies: 'Literal server species',
+              stage: 2,
+            ),
+            (
+              expectedAsset: null,
+              expectedLabel:
+                  'Literal future companion, Literal future species, '
+                  'Form 6, active companion',
+              expectedName: 'Literal future companion',
+              expectedSpecies: 'Literal future species',
+              locale: const Locale('en'),
+              petId: 'future-companion-v2',
+              serverName: 'Literal future companion',
+              serverSpecies: 'Literal future species',
+              stage: 5,
+            ),
+          ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(
+                activePetId: 'moss-v1',
+                sparkEvolutionStage: 1,
+              ),
+              homeLoader: () async => _homeWithPersistedDecision(
+                petEvolutionStage: sample.stage,
+                petId: sample.petId,
+                petName: sample.serverName,
+                petSpecies: sample.serverSpecies,
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder log = find.byKey(
+          const Key('platform-journey-decision-log'),
+        );
+        await _bringIntoView(tester, log);
+        final Finder portraitSemantics = find.byKey(
+          const Key('platform-current-journey-companion-portrait'),
+        );
+        final Finder portraitFinder = find.descendant(
+          of: portraitSemantics,
+          matching: find.byType(CompanionPortrait),
+        );
+        expect(portraitSemantics, findsOneWidget);
+        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
+        expect(portraitFinder, findsOneWidget);
+        final CompanionPortrait portrait = tester.widget<CompanionPortrait>(
+          portraitFinder,
+        );
+        expect(portrait.petId, sample.petId);
+        expect(portrait.name, sample.expectedName);
+        expect(portrait.species, sample.expectedSpecies);
+        expect(portrait.evolutionStage, sample.stage);
+        expect(portrait.active, isTrue);
+        expect(portrait.equippedCosmeticIds, isEmpty);
+        expect(portrait.illustrationAsset, sample.expectedAsset);
+        expect(portrait.identity == CompanionIdentity.moss, isFalse);
+        expect(tester.takeException(), isNull);
+      }
+
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'current journey companion portrait fails closed on partial Home facts',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final List<HomeSnapshot> incompleteHomes = <HomeSnapshot>[
+        _homeWithPersistedDecision(legacyPetId: true),
+        _homeWithPersistedDecision(missingPetSpecies: true),
+        _homeWithPersistedDecision(missingPetEvolutionStage: true),
+      ];
+
+      for (final HomeSnapshot home in incompleteHomes) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: const Locale('en'),
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(activePetId: 'moss-v1'),
+              homeLoader: () async => home,
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder log = find.byKey(
+          const Key('platform-journey-decision-log'),
+        );
+        await _bringIntoView(tester, log);
+        expect(
+          find.byKey(
+            const Key('platform-current-journey-companion-portrait'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: log, matching: find.byType(CompanionPortrait)),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('platform-current-journey-active-companion')),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       }
     },
