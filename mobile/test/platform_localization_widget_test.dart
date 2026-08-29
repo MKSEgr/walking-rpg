@@ -1565,9 +1565,7 @@ void main() {
         expect(find.textContaining('Expedition: Literal decoy'), findsNothing);
         expect(find.textContaining('Экспедиция: Literal decoy'), findsNothing);
         final Finder signalFinder = find.byKey(
-          const Key(
-            'platform-current-journey-expedition-progress-signal',
-          ),
+          const Key('platform-current-journey-expedition-progress-signal'),
         );
         await _bringIntoView(tester, signalFinder);
         final ExpeditionProgressSignal signal = tester
@@ -1581,9 +1579,7 @@ void main() {
             : 'unknown';
         expect(
           find.byKey(
-            Key(
-              'expedition-progress-signal-${sample.expeditionId}-$kind',
-            ),
+            Key('expedition-progress-signal-${sample.expeditionId}-$kind'),
           ),
           findsOneWidget,
         );
