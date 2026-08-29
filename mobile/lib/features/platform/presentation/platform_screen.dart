@@ -1910,12 +1910,49 @@ String _readyEventChoiceRewardLabel(
   );
 }
 
+Widget? _readyEventChoiceRequirementArt({
+  required String choiceId,
+  required HomeChoiceRequirement? requirement,
+}) {
+  if (requirement == null) {
+    return null;
+  }
+  final Key key = Key(
+    'platform-current-journey-ready-event-choice-$choiceId-requirement-art',
+  );
+  return switch ((requirement.type, requirement.slotId)) {
+    ('UNLOCKED_SKILL', 'PILOT_SKILL') => ProgressionSigil(
+      key: key,
+      identity: requirement.itemId,
+      active: true,
+      size: 36,
+    ),
+    ('EQUIPPED_ITEM', 'NAVIGATION') => ExpeditionItemEmblem(
+      key: key,
+      itemId: requirement.itemId,
+      size: 36,
+      highlighted: true,
+    ),
+    ('ACTIVE_PET', 'ACTIVE_PET') => CompanionPortrait(
+      key: key,
+      petId: requirement.itemId,
+      name: requirement.itemName,
+      species: requirement.slotName,
+      evolutionStage: requirement.minimumEvolutionStage,
+      active: true,
+      size: 42,
+    ),
+    _ => null,
+  };
+}
+
 typedef _ReadyEventChoiceLabel = ({
   String choiceId,
   String descriptionLabel,
   String? materialItemId,
   String? petBondSubjectId,
   String? pilotExperienceSubjectId,
+  Widget? requirementArt,
   String? requirementLabel,
   String rewardLabel,
   String titleLabel,
@@ -2083,6 +2120,10 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                         snapshot.pilotId!.isNotEmpty
                     ? snapshot.pilotId
                     : null,
+                requirementArt: _readyEventChoiceRequirementArt(
+                  choiceId: choice.choiceId,
+                  requirement: choice.requirement,
+                ),
                 requirementLabel: switch (choice.requirement) {
                   final HomeChoiceRequirement requirement =>
                     context.l10n.platformJourneyReadyChoiceRequirement(
@@ -2508,6 +2549,13 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                                   color: colors.tertiary,
                                   fontWeight: FontWeight.w600,
                                 ),
+                              ),
+                            ],
+                            if (choice.requirementArt != null) ...<Widget>[
+                              const SizedBox(height: 4),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: choice.requirementArt!,
                               ),
                             ],
                             if (choice.pilotExperienceSubjectId != null ||

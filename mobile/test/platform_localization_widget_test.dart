@@ -10,6 +10,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
+import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
@@ -3331,8 +3332,8 @@ void main() {
                       quantity: 2,
                     ),
                     requirement: const HomeChoiceRequirement(
-                      type: 'SKILL',
-                      slotId: 'PILOT',
+                      type: 'UNLOCKED_SKILL',
+                      slotId: 'PILOT_SKILL',
                       slotName: 'Literal pilot',
                       itemId: 'steady-step',
                       itemName: 'Literal steady step',
@@ -3434,6 +3435,12 @@ void main() {
           'material-art',
         ),
       );
+      final Finder knownRequirementArt = find.byKey(
+        const Key(
+          'platform-current-journey-ready-event-choice-'
+          'cross-first-light-causeway-requirement-art',
+        ),
+      );
       final Finder knownPilotGain = find.byKey(
         const Key(
           'platform-current-journey-ready-event-choice-'
@@ -3454,6 +3461,7 @@ void main() {
       );
       expect(knownMaterialArt, findsOneWidget);
       expect(futureMaterialArt, findsOneWidget);
+      expect(knownRequirementArt, findsOneWidget);
       expect(knownPilotGain, findsOneWidget);
       expect(knownPetGain, findsOneWidget);
       expect(futurePetGain, findsOneWidget);
@@ -3517,6 +3525,12 @@ void main() {
       expect(futureMaterial.itemId, 'future-relic-v1');
       expect(futureMaterial.size, 42);
       expect(futureMaterial.highlighted, isFalse);
+      final ProgressionSigil requirementArt = tester.widget<ProgressionSigil>(
+        knownRequirementArt,
+      );
+      expect(requirementArt.identity, 'steady-step');
+      expect(requirementArt.active, isTrue);
+      expect(requirementArt.size, 36);
       final ProgressionGainSignal pilotGain = tester
           .widget<ProgressionGainSignal>(knownPilotGain);
       expect(pilotGain.kind, ProgressionGainKind.pilotExperience);
@@ -3537,6 +3551,10 @@ void main() {
       );
       expect(
         find.descendant(of: futureSignal, matching: futureMaterialArt),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: knownSignal, matching: knownRequirementArt),
         findsOneWidget,
       );
       expect(find.byKey(const Key('item-art-echo-thread')), findsOneWidget);
@@ -3616,10 +3634,28 @@ void main() {
         find.byKey(
           const Key(
             'platform-current-journey-ready-event-choice-'
+            'share-dawn-flow-with-pet-requirement-art',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-'
             'future-choice-v1-requirement',
           ),
         ),
         findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-'
+            'future-choice-v1-requirement-art',
+          ),
+        ),
+        findsNothing,
       );
       expect(
         find.bySemanticsLabel(
@@ -3639,6 +3675,198 @@ void main() {
       expect(tester.takeException(), isNull);
     }
   });
+
+  testWidgets(
+    'ready requirement art uses only exact accepted Home channels and IDs',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      HomeChoiceRequirement requirement({
+        required String type,
+        required String slotId,
+        required String itemId,
+        int minimumEvolutionStage = 0,
+      }) {
+        return HomeChoiceRequirement(
+          type: type,
+          slotId: slotId,
+          slotName: 'Literal requirement slot $slotId',
+          itemId: itemId,
+          itemName: 'Hidden requirement identity $itemId',
+          description: 'Literal requirement for $itemId',
+          minimumEvolutionStage: minimumEvolutionStage,
+        );
+      }
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              unlockedEvent: _readyEvent(
+                eventId: 'future-requirement-event-v1',
+                choices: <HomeEventChoice>[
+                  _eventChoice(
+                    'known-skill',
+                    requirement: requirement(
+                      type: 'UNLOCKED_SKILL',
+                      slotId: 'PILOT_SKILL',
+                      itemId: 'steady-step',
+                    ),
+                  ),
+                  _eventChoice(
+                    'future-skill',
+                    requirement: requirement(
+                      type: 'UNLOCKED_SKILL',
+                      slotId: 'PILOT_SKILL',
+                      itemId: 'future-skill-v1',
+                    ),
+                  ),
+                  _eventChoice(
+                    'known-equipment',
+                    requirement: requirement(
+                      type: 'EQUIPPED_ITEM',
+                      slotId: 'NAVIGATION',
+                      itemId: 'resonance-compass',
+                    ),
+                  ),
+                  _eventChoice(
+                    'future-equipment',
+                    requirement: requirement(
+                      type: 'EQUIPPED_ITEM',
+                      slotId: 'NAVIGATION',
+                      itemId: 'future-instrument-v1',
+                    ),
+                  ),
+                  _eventChoice(
+                    'known-pet',
+                    requirement: requirement(
+                      type: 'ACTIVE_PET',
+                      slotId: 'ACTIVE_PET',
+                      itemId: 'moss-v1',
+                      minimumEvolutionStage: 2,
+                    ),
+                  ),
+                  _eventChoice(
+                    'future-pet',
+                    requirement: requirement(
+                      type: 'ACTIVE_PET',
+                      slotId: 'ACTIVE_PET',
+                      itemId: 'future-pet-v1',
+                      minimumEvolutionStage: 1,
+                    ),
+                  ),
+                  _eventChoice(
+                    'wrong-slot',
+                    requirement: requirement(
+                      type: 'UNLOCKED_SKILL',
+                      slotId: 'FUTURE_SLOT',
+                      itemId: 'steady-step',
+                    ),
+                  ),
+                  _eventChoice(
+                    'legacy-type',
+                    requirement: requirement(
+                      type: 'SKILL',
+                      slotId: 'PILOT_SKILL',
+                      itemId: 'steady-step',
+                    ),
+                  ),
+                  _eventChoice('plain'),
+                ],
+              ),
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Finder art(String choiceId) => find.byKey(
+        Key(
+          'platform-current-journey-ready-event-choice-$choiceId-'
+          'requirement-art',
+        ),
+      );
+
+      await _bringIntoView(tester, art('future-pet'));
+
+      for (final String choiceId in <String>[
+        'known-skill',
+        'future-skill',
+        'known-equipment',
+        'future-equipment',
+        'known-pet',
+        'future-pet',
+      ]) {
+        expect(art(choiceId), findsOneWidget, reason: choiceId);
+      }
+      for (final String choiceId in <String>[
+        'wrong-slot',
+        'legacy-type',
+        'plain',
+      ]) {
+        expect(art(choiceId), findsNothing, reason: choiceId);
+      }
+
+      final ProgressionSigil knownSkill = tester.widget<ProgressionSigil>(
+        art('known-skill'),
+      );
+      final ProgressionSigil futureSkill = tester.widget<ProgressionSigil>(
+        art('future-skill'),
+      );
+      expect(knownSkill.identity, 'steady-step');
+      expect(knownSkill.active, isTrue);
+      expect(knownSkill.size, 36);
+      expect(futureSkill.identity, 'future-skill-v1');
+      expect(
+        ProgressionSigilCatalog.kindFor(futureSkill.identity),
+        ProgressionSigilKind.unknown,
+      );
+
+      final ExpeditionItemEmblem knownEquipment = tester
+          .widget<ExpeditionItemEmblem>(art('known-equipment'));
+      final ExpeditionItemEmblem futureEquipment = tester
+          .widget<ExpeditionItemEmblem>(art('future-equipment'));
+      expect(knownEquipment.itemId, 'resonance-compass');
+      expect(knownEquipment.highlighted, isTrue);
+      expect(knownEquipment.size, 36);
+      expect(futureEquipment.itemId, 'future-instrument-v1');
+      expect(
+        find.byKey(const Key('item-art-fallback-future-instrument-v1')),
+        findsOneWidget,
+      );
+
+      final CompanionPortrait knownPet = tester.widget<CompanionPortrait>(
+        art('known-pet'),
+      );
+      final CompanionPortrait futurePet = tester.widget<CompanionPortrait>(
+        art('future-pet'),
+      );
+      expect(knownPet.petId, 'moss-v1');
+      expect(knownPet.evolutionStage, 2);
+      expect(knownPet.active, isTrue);
+      expect(knownPet.size, 42);
+      expect(futurePet.petId, 'future-pet-v1');
+      expect(futurePet.evolutionStage, 1);
+      expect(futurePet.identity, CompanionIdentity.unknown);
+      expect(futurePet.illustrationAsset, isNull);
+      expect(
+        find.bySemanticsLabel(RegExp('Hidden requirement identity moss-v1')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('platform-current-journey-ready-event')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
 
   testWidgets(
     'ready progression signals keep future Home identities neutral despite '
@@ -3804,11 +4032,11 @@ void main() {
             quantity: 99,
           ),
           requirement: const HomeChoiceRequirement(
-            type: 'FUTURE_REQUIREMENT',
-            slotId: 'FUTURE',
-            slotName: 'Literal future slot',
-            itemId: 'future-item-v1',
-            itemName: 'Literal future item',
+            type: 'UNLOCKED_SKILL',
+            slotId: 'PILOT_SKILL',
+            slotName: 'Literal pilot skill',
+            itemId: 'steady-step',
+            itemName: 'Literal steady step',
             description: 'Literal locked requirement',
           ),
         ),
@@ -3850,6 +4078,15 @@ void main() {
         ),
         findsNothing,
       );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-locked-'
+            'requirement-art',
+          ),
+        ),
+        findsNothing,
+      );
       expect(find.byType(EventChoiceSignalLayout), findsNothing);
       expect(find.byType(EventChoiceSignal), findsNothing);
       expect(find.byType(ExpeditionItemEmblem), findsNothing);
@@ -3879,11 +4116,11 @@ void main() {
                       quantity: 99,
                     ),
                     requirement: const HomeChoiceRequirement(
-                      type: 'FUTURE_REQUIREMENT',
-                      slotId: 'FUTURE',
-                      slotName: 'Literal future slot',
-                      itemId: 'future-item-v1',
-                      itemName: 'Literal future item',
+                      type: 'UNLOCKED_SKILL',
+                      slotId: 'PILOT_SKILL',
+                      slotName: 'Literal pilot skill',
+                      itemId: 'steady-step',
+                      itemName: 'Literal steady step',
                       description: 'Literal non-ready requirement',
                     ),
                   ),
@@ -3918,6 +4155,15 @@ void main() {
           const Key(
             'platform-current-journey-ready-event-choice-'
             'available-requirement',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-current-journey-ready-event-choice-available-'
+            'requirement-art',
           ),
         ),
         findsNothing,

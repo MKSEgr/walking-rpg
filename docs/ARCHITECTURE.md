@@ -569,6 +569,19 @@ accepted preview context, не фиксируют будущего получа�
 level/bond result и остаются внутри existing event `ExcludeSemantics`, поэтому
 combined READY-event label остаётся единственным accessibility источником.
 
+Accepted optional requirement каждого available READY choice получает existing
+art только для exact canonical `type + slotId`: `UNLOCKED_SKILL + PILOT_SKILL`
+использует `ProgressionSigil`, `EQUIPPED_ITEM + NAVIGATION` —
+`ExpeditionItemEmblem`, `ACTIVE_PET + ACTIVE_PET` — `CompanionPortrait` на
+accepted `minimumEvolutionStage`. Identity во всех трёх channels берётся только
+из paired requirement `itemId`; unknown future ID остаётся на fallback самого
+компонента, а unknown/legacy type-slot pair остаётся text-only даже со знакомым
+item ID. Journal не проверяет requirement повторно и не читает для art names,
+description, Platform equipment/skills/pets, progression, route, history или
+catalog. Requirement art находится внутри existing event `ExcludeSemantics`,
+поэтому combined localized requirement label остаётся единственным accessible
+источником и journal не получает actions.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает

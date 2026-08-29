@@ -1943,6 +1943,28 @@ Milestone 102 продолжает post-alpha code-only gameplay track из ADR 
 server-authoritative current-journey state из ADR 0038 через ADR 0116 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 103 — Authoritative current-journey READY choice requirement art
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing requirement art только для exact canonical
+      `type + slotId` accepted optional requirements available choices accepted
+      Home event со status exact `READY`
+- [x] Skill, navigation-equipment и active-pet channels используют paired
+      requirement `itemId`, а pet portrait также accepted
+      `minimumEvolutionStage`; future IDs сохраняют component fallback
+- [x] Unknown/legacy/wrong-slot channels остаются text-only даже со знакомым
+      item ID; absent, locked/non-READY state, Platform equipment/skills/pets,
+      route, history и catalog не подменяют presence или identity
+- [x] Art не меняет literal requirement/reward copy, material/progression
+      visuals или accepted server ordering, остаётся внутри одной existing
+      READY-event semantics node и выдерживает RU/EN compact large text без
+      API/backend/persistence/command/asset changes
+
+Milestone 103 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0117 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
