@@ -1928,10 +1928,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
         .map(
           (HomeExpeditionRouteNode node) => ExpeditionRouteTrailNode(
             nodeId: node.nodeId,
-            nodeName: context.l10n.currentNodeName(
-              node.nodeId,
-              node.nodeName,
-            ),
+            nodeName: context.l10n.currentNodeName(node.nodeId, node.nodeName),
             state: node.state,
             decision: node.decision == null
                 ? null
@@ -2327,9 +2324,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                     style: theme.textTheme.titleSmall,
                   ),
                   Text(
-                    key: const Key(
-                      'platform-current-journey-route-node-count',
-                    ),
+                    key: const Key('platform-current-journey-route-node-count'),
                     context.l10n.homeDiscoveredRouteNodes(
                       snapshot.discoveredRouteNodeCount,
                     ),

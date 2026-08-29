@@ -2735,9 +2735,8 @@ void main() {
                 weeklyRouteProgress: 99,
                 weeklyRouteRequiredEnergy: 100,
               ),
-              homeLoader: () async => _homeWithPersistedDecision(
-                routeTrail: acceptedRoute,
-              ),
+              homeLoader: () async =>
+                  _homeWithPersistedDecision(routeTrail: acceptedRoute),
               recordExperimentExposures: false,
             ),
           ),
@@ -2748,8 +2747,9 @@ void main() {
           const Key('platform-current-journey-route-trail'),
         );
         await _bringIntoView(tester, routeFinder);
-        final ExpeditionRouteTrail route = tester
-            .widget<ExpeditionRouteTrail>(routeFinder);
+        final ExpeditionRouteTrail route = tester.widget<ExpeditionRouteTrail>(
+          routeFinder,
+        );
         expect(
           route.nodes.map((ExpeditionRouteTrailNode node) => node.nodeId),
           <String>['outer-beacon', 'lumen-gate', 'future-node-v2'],
@@ -2763,18 +2763,13 @@ void main() {
           <String>['VISITED', 'VISITED', 'CURRENT'],
         );
         expect(route.nodes.first.decision?.choiceId, 'follow-pulse');
-        expect(
-          route.nodes.first.decision?.choiceTitle,
-          'Literal saved choice',
-        );
+        expect(route.nodes.first.decision?.choiceTitle, 'Literal saved choice');
         expect(
           route.nodes.first.decision?.outcomeTitle,
           'Literal saved outcome',
         );
         expect(
-          find.byKey(
-            const Key('platform-current-journey-route-node-count'),
-          ),
+          find.byKey(const Key('platform-current-journey-route-node-count')),
           findsOneWidget,
         );
         expect(find.text(sample.countLabel), findsOneWidget);
