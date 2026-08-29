@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
@@ -91,6 +92,13 @@ typedef _RouteTrailLocaleSample = ({
   Locale locale,
   String routeSemantics,
   List<String> nodeNames,
+});
+
+typedef _NodeLandmarkLocaleSample = ({
+  String landmarkSemantics,
+  Locale locale,
+  String nodeName,
+  String positionLabel,
 });
 
 typedef _PilotProgressLocaleSample = ({
@@ -2607,17 +2615,105 @@ void main() {
     },
   );
 
-  testWidgets('future current position preserves literal server copy', (
+  testWidgets(
+    'current journey node landmark follows Home identity at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      const List<HomeExpeditionRouteNode> routeDecoy =
+          <HomeExpeditionRouteNode>[
+            HomeExpeditionRouteNode(
+              nodeId: 'lumen-gate',
+              nodeName: 'Literal route terminal',
+              state: 'COMPLETED',
+            ),
+          ];
+
+      for (final _NodeLandmarkLocaleSample sample
+          in <_NodeLandmarkLocaleSample>[
+            (
+              landmarkSemantics: 'Current node “Outer Beacon”',
+              locale: const Locale('en'),
+              nodeName: 'Outer Beacon',
+              positionLabel: 'Current point: Outer Beacon',
+            ),
+            (
+              landmarkSemantics: 'Текущий узел «Внешний маяк»',
+              locale: const Locale('ru'),
+              nodeName: 'Внешний маяк',
+              positionLabel: 'Текущая точка: Внешний маяк',
+            ),
+          ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(weeklyRouteProgress: 100),
+              homeLoader: () async => _homeWithPersistedDecision(
+                currentNodeId: 'outer-beacon',
+                currentNodeName: 'Literal server beacon',
+                routeTrail: routeDecoy,
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder landmarkFinder = find.byKey(
+          const Key('platform-current-journey-node-landmark'),
+        );
+        await _bringIntoView(tester, landmarkFinder);
+        final ExpeditionNodeSignal landmark = tester
+            .widget<ExpeditionNodeSignal>(landmarkFinder);
+        expect(landmark.nodeId, 'outer-beacon');
+        expect(landmark.nodeName, sample.nodeName);
+        expect(landmark.completed, isFalse);
+        expect(landmark.role, ExpeditionNodeSignalRole.current);
+        expect(landmark.markSize, 38);
+        expect(
+          find.byKey(
+            const Key('expedition-node-mark-outer-beacon-outerBeacon'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(sample.nodeName.toUpperCase()), findsOneWidget);
+        expect(find.text(sample.positionLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(sample.positionLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(sample.landmarkSemantics), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('future current position preserves literal neutral landmark', (
     WidgetTester tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
     await tester.pumpWidget(
       _LocalizedPlatformApp(
         locale: const Locale('en'),
+        textScale: 1.6,
         child: PlatformScreen(
-          loader: () async => platformSnapshot(),
+          loader: () async => platformSnapshot(weeklyRouteProgress: 100),
           homeLoader: () async => _homeWithPersistedDecision(
             currentNodeId: 'future-signal-v1',
             currentNodeName: 'Literal future signal',
+            expeditionStatus: 'COMPLETED',
+            routeTrail: const <HomeExpeditionRouteNode>[
+              HomeExpeditionRouteNode(
+                nodeId: 'outer-beacon',
+                nodeName: 'Literal route decoy',
+                state: 'CURRENT',
+              ),
+            ],
           ),
           recordExperimentExposures: false,
         ),
@@ -2625,11 +2721,42 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final Finder landmarkFinder = find.byKey(
+      const Key('platform-current-journey-node-landmark'),
+    );
+    await _bringIntoView(tester, landmarkFinder);
+    final ExpeditionNodeSignal landmark = tester.widget<ExpeditionNodeSignal>(
+      landmarkFinder,
+    );
+    expect(landmark.nodeId, 'future-signal-v1');
+    expect(landmark.nodeName, 'Literal future signal');
+    expect(landmark.completed, isTrue);
+    expect(landmark.role, ExpeditionNodeSignalRole.current);
+    expect(
+      find.byKey(const Key('expedition-node-mark-future-signal-v1-unknown')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: landmarkFinder,
+        matching: find.byIcon(Icons.flag_outlined),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('LITERAL FUTURE SIGNAL'), findsOneWidget);
     expect(find.text('Current point: Literal future signal'), findsOneWidget);
     expect(
       find.bySemanticsLabel('Current point: Literal future signal'),
       findsOneWidget,
     );
+    expect(
+      find.bySemanticsLabel(
+        'Current node “Literal future signal”, expedition completed',
+      ),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets('current journey keeps accepted over-target energy literal', (
@@ -3209,6 +3336,7 @@ HomeSnapshot _homeWithPersistedDecision({
   String? expeditionId,
   String? expeditionName,
   int? expeditionProgress,
+  String? expeditionStatus,
   bool legacyPilotId = false,
   bool legacyPilotProgression = false,
   String? pilotId,
@@ -3247,9 +3375,9 @@ HomeSnapshot _homeWithPersistedDecision({
     currentNodeName: currentNodeName ?? demo.currentNodeName,
     expeditionProgress: expeditionProgress ?? demo.expeditionProgress,
     requiredEnergy: requiredEnergy ?? demo.requiredEnergy,
-    expeditionStatus: completionRecap == null
-        ? demo.expeditionStatus
-        : 'COMPLETED',
+    expeditionStatus:
+        expeditionStatus ??
+        (completionRecap == null ? demo.expeditionStatus : 'COMPLETED'),
     expeditionVersion: demo.expeditionVersion,
     expeditionJourneyNumber: 7,
     journeyStartedAt: '2026-08-19T09:15:00Z',

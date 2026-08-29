@@ -494,6 +494,16 @@ Current-journey position использует только required
 copy через current-content catalog, а неизвестный ID оставляет server fallback;
 последний route node, decision, phase и event не заменяют accepted position.
 
+Current-journey node landmark использует ту же accepted Home пару
+`currentNodeId/currentNode` и exact `expedition.status`. Existing
+`ExpeditionNodeSignal` выбирает known code-native landmark только по exact
+stable ID; future ID получает neutral artwork и literal localized-name fallback.
+Completed flag передаётся только для accepted `COMPLETED`, а route terminal,
+READY event, Platform progression/history и local catalog не подменяют identity
+или styling. Landmark вложен в existing current-position `ExcludeSemantics`,
+поэтому visible signal и label публикуют одну прежнюю authoritative semantics
+node без duplicate announcement.
+
 Current-journey ENERGY progress переносит required
 `expedition.progress/requiredEnergy` как literal accepted integers. Mobile
 clamp-ит только значение декоративного progress indicator и не меняет copy;

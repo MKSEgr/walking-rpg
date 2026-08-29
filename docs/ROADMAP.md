@@ -1823,6 +1823,26 @@ Milestone 96 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0110 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 97 — Authoritative current-journey node landmark
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing code-native node landmark только из accepted
+      Home `currentNodeId/currentNode` и локализует known mutable name через
+      existing RU/EN stable-ID resolver
+- [x] Exact known ID выбирает landmark artwork, unknown future ID сохраняет
+      literal Home name и использует existing neutral fallback
+- [x] Completed styling следует только accepted expedition `COMPLETED`; route
+      terminal, READY event, Platform progression/history и local catalog не
+      подменяют identity или status
+- [x] Landmark и visible current-position label остаются внутри одной existing
+      semantics node без duplicate announcement и выдерживают compact large
+      text без API/backend/persistence/command changes
+
+Milestone 97 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0111 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
