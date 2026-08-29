@@ -2820,6 +2820,7 @@ void main() {
     final Finder progress = find.byKey(
       const Key('platform-current-journey-energy-progress'),
     );
+    await _bringIntoView(tester, progress);
     expect(find.text('ENERGY progress: 37 of 30'), findsOneWidget);
     expect(find.bySemanticsLabel('ENERGY progress: 37 of 30'), findsOneWidget);
     final Finder signalFinder = find.byKey(
