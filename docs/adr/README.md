@@ -132,3 +132,4 @@ NNNN-short-title.md
 - [0113 — authoritative current-journey READY event scene](0113-authoritative-current-journey-ready-event-scene.md)
 - [0114 — authoritative current-journey READY choice signals](0114-authoritative-current-journey-ready-choice-signals.md)
 - [0115 — authoritative current-journey READY choice material art](0115-authoritative-current-journey-ready-choice-material-art.md)
+- [0116 — authoritative current-journey READY choice progression signals](0116-authoritative-current-journey-ready-choice-progression-signals.md)

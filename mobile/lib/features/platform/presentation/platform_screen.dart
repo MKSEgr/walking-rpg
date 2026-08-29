@@ -26,6 +26,7 @@ import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart
 import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/profile_cosmetic_art.dart';
+import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/progression_sigil.dart';
 import 'package:walking_rpg_mobile/design_system/quest_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/season_reward_seal.dart';
@@ -1913,6 +1914,8 @@ typedef _ReadyEventChoiceLabel = ({
   String choiceId,
   String descriptionLabel,
   String? materialItemId,
+  String? petBondSubjectId,
+  String? pilotExperienceSubjectId,
   String? requirementLabel,
   String rewardLabel,
   String titleLabel,
@@ -2068,6 +2071,18 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                       ),
                     ),
                 materialItemId: choice.materialReward?.itemId,
+                petBondSubjectId:
+                    choice.petBondReward > 0 &&
+                        snapshot.petId != null &&
+                        snapshot.petId!.isNotEmpty
+                    ? snapshot.petId
+                    : null,
+                pilotExperienceSubjectId:
+                    choice.pilotExperienceReward > 0 &&
+                        snapshot.pilotId != null &&
+                        snapshot.pilotId!.isNotEmpty
+                    ? snapshot.pilotId
+                    : null,
                 requirementLabel: switch (choice.requirement) {
                   final HomeChoiceRequirement requirement =>
                     context.l10n.platformJourneyReadyChoiceRequirement(
@@ -2493,6 +2508,44 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                                   color: colors.tertiary,
                                   fontWeight: FontWeight.w600,
                                 ),
+                              ),
+                            ],
+                            if (choice.pilotExperienceSubjectId != null ||
+                                choice.petBondSubjectId != null) ...<Widget>[
+                              const SizedBox(height: 4),
+                              Wrap(
+                                key: Key(
+                                  'platform-current-journey-ready-event-'
+                                  'choice-${choice.choiceId}-progression-'
+                                  'signals',
+                                ),
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: <Widget>[
+                                  if (choice.pilotExperienceSubjectId != null)
+                                    ProgressionGainSignal(
+                                      key: Key(
+                                        'platform-current-journey-ready-'
+                                        'event-choice-${choice.choiceId}-'
+                                        'pilot-experience-signal',
+                                      ),
+                                      kind: ProgressionGainKind.pilotExperience,
+                                      subjectId:
+                                          choice.pilotExperienceSubjectId!,
+                                      size: 36,
+                                    ),
+                                  if (choice.petBondSubjectId != null)
+                                    ProgressionGainSignal(
+                                      key: Key(
+                                        'platform-current-journey-ready-'
+                                        'event-choice-${choice.choiceId}-'
+                                        'pet-bond-signal',
+                                      ),
+                                      kind: ProgressionGainKind.petBond,
+                                      subjectId: choice.petBondSubjectId!,
+                                      size: 36,
+                                    ),
+                                ],
                               ),
                             ],
                             const SizedBox(height: 2),
