@@ -14,6 +14,7 @@ import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/companion_bond_signal.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -1996,11 +1997,12 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             hasSparkHalo: false,
           );
     final String phase = _journeyPhaseLabel(context, snapshot.expeditionStatus);
+    final String currentNodeName = context.l10n.currentNodeName(
+      snapshot.currentNodeId,
+      snapshot.currentNodeName,
+    );
     final String currentPosition = context.l10n.platformJourneyCurrentPosition(
-      context.l10n.currentNodeName(
-        snapshot.currentNodeId,
-        snapshot.currentNodeName,
-      ),
+      currentNodeName,
     );
     final String energyProgress = context.l10n.platformJourneyEnergyProgress(
       snapshot.expeditionProgress,
@@ -2275,11 +2277,26 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             container: true,
             label: currentPosition,
             child: ExcludeSemantics(
-              child: Text(
-                currentPosition,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  ExpeditionNodeSignal(
+                    key: const Key(
+                      'platform-current-journey-node-landmark',
+                    ),
+                    nodeId: snapshot.currentNodeId,
+                    nodeName: currentNodeName,
+                    completed: snapshot.expeditionStatus == 'COMPLETED',
+                    markSize: 38,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    currentPosition,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -127,3 +127,4 @@ NNNN-short-title.md
 - [0108 — authoritative current-journey companion portrait](0108-authoritative-current-journey-companion-portrait.md)
 - [0109 — authoritative current-journey pilot portrait](0109-authoritative-current-journey-pilot-portrait.md)
 - [0110 — authoritative current-journey route trail](0110-authoritative-current-journey-route-trail.md)
+- [0111 — authoritative current-journey node landmark](0111-authoritative-current-journey-node-landmark.md)

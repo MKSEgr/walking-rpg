@@ -6,6 +6,11 @@
 
 ### Changed
 
+- the current-journey journal now pairs the accepted Home current-position
+  label with the existing exact-ID code-native node landmark, while future IDs
+  use neutral artwork and route/Platform state cannot substitute identity or
+  completion styling;
+
 - the current-journey journal now renders the ordered accepted Home route trail
   through the existing code-native map with RU/EN node localization and literal
   saved decisions, while empty snapshots fail closed and Platform route/catalog
