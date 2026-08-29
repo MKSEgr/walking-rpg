@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
@@ -38,6 +39,15 @@ typedef _JourneyLocaleSample = ({
   String expeditionId,
   Locale locale,
   String serverName,
+});
+
+typedef _EventSceneLocaleSample = ({
+  String eventLabel,
+  String fallbackLabel,
+  Locale locale,
+  String sceneLabel,
+  String summaryLabel,
+  String title,
 });
 
 typedef _CompanionLocaleSample = ({
@@ -3009,15 +3019,110 @@ void main() {
     },
   );
 
-  testWidgets('future ready event preserves literal server title and summary', (
+  testWidgets(
+    'current journey READY scene follows Home event at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+
+      for (final _EventSceneLocaleSample sample in <_EventSceneLocaleSample>[
+        (
+          locale: const Locale('en'),
+          title: 'Signal Source',
+          eventLabel: 'Current event: Signal Source',
+          summaryLabel: 'About event: The beacon answers with a pulse.',
+          fallbackLabel: 'Event scene “Signal Source”',
+          sceneLabel:
+              'Event scene “Signal Source”: the outer beacon sends '
+              'repeating pulses through the fog.',
+        ),
+        (
+          locale: const Locale('ru'),
+          title: 'Источник сигнала',
+          eventLabel: 'Текущее событие: Источник сигнала',
+          summaryLabel: 'О событии: Маяк отвечает импульсом.',
+          fallbackLabel: 'Сцена события «Источник сигнала»',
+          sceneLabel:
+              'Сцена события «Источник сигнала»: внешний маяк посылает '
+              'повторяющиеся импульсы сквозь туман.',
+        ),
+      ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(
+                resolvedEventCount: 99,
+                weeklyRouteProgress: 100,
+              ),
+              homeLoader: () async => _homeWithPersistedDecision(
+                expeditionStatus: 'IN_PROGRESS',
+                currentNodeId: 'future-decoy-node-v1',
+                currentNodeName: 'Literal decoy node',
+                unlockedEvent: _readyEvent(
+                  eventId: 'signal-source-v1',
+                  title: 'Literal server event',
+                  summary: 'Literal server summary',
+                ),
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder eventFinder = find.byKey(
+          const Key('platform-current-journey-ready-event'),
+        );
+        await _bringIntoView(tester, eventFinder);
+        final Finder sceneFinder = find.byKey(
+          const Key('platform-current-journey-ready-event-scene'),
+        );
+        final ExpeditionEventScene scene = tester.widget<ExpeditionEventScene>(
+          sceneFinder,
+        );
+        expect(scene.eventId, 'signal-source-v1');
+        expect(scene.eventTitle, sample.title);
+        expect(scene.fallbackSemanticLabel, sample.fallbackLabel);
+        expect(scene.maxHeight, 144);
+        expect(
+          find.byKey(const Key('event-scene-signal-source-v1')),
+          findsOneWidget,
+        );
+        expect(find.text(sample.eventLabel), findsOneWidget);
+        expect(find.text(sample.summaryLabel), findsOneWidget);
+        expect(
+          find.bySemanticsLabel('${sample.eventLabel}. ${sample.summaryLabel}'),
+          findsOneWidget,
+        );
+        expect(find.bySemanticsLabel(sample.sceneLabel), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('future ready event preserves literal neutral scene', (
     WidgetTester tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final SemanticsHandle semantics = tester.ensureSemantics();
+
     await tester.pumpWidget(
       _LocalizedPlatformApp(
         locale: const Locale('en'),
+        textScale: 1.6,
         child: PlatformScreen(
-          loader: () async => platformSnapshot(),
+          loader: () async => platformSnapshot(
+            resolvedEventCount: 99,
+            weeklyRouteProgress: 100,
+          ),
           homeLoader: () async => _homeWithPersistedDecision(
+            expeditionStatus: 'EVENT_READY',
             unlockedEvent: _readyEvent(
               eventId: 'future-event-v1',
               title: 'Literal future event',
@@ -3030,6 +3135,24 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final Finder eventFinder = find.byKey(
+      const Key('platform-current-journey-ready-event'),
+    );
+    await _bringIntoView(tester, eventFinder);
+    final Finder sceneFinder = find.byKey(
+      const Key('platform-current-journey-ready-event-scene'),
+    );
+    final ExpeditionEventScene scene = tester.widget<ExpeditionEventScene>(
+      sceneFinder,
+    );
+    expect(scene.eventId, 'future-event-v1');
+    expect(scene.eventTitle, 'Literal future event');
+    expect(scene.fallbackSemanticLabel, 'Event scene “Literal future event”');
+    expect(
+      find.byKey(const Key('event-scene-fallback-future-event-v1')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('event-scene-signal-source-v1')), findsNothing);
     expect(find.text('Current event: Literal future event'), findsOneWidget);
     expect(find.text('About event: Literal future summary'), findsOneWidget);
     expect(
@@ -3039,6 +3162,12 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      find.bySemanticsLabel('Event scene “Literal future event”'),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets('ready choice details, requirements and rewards follow locale', (
@@ -3300,8 +3429,9 @@ void main() {
         _LocalizedPlatformApp(
           locale: const Locale('en'),
           child: PlatformScreen(
-            loader: () async => platformSnapshot(),
+            loader: () async => platformSnapshot(resolvedEventCount: 99),
             homeLoader: () async => _homeWithPersistedDecision(
+              expeditionStatus: 'EVENT_READY',
               unlockedEvent: _readyEvent(
                 status: status,
                 choices: <HomeEventChoice>[
@@ -3329,6 +3459,7 @@ void main() {
         find.byKey(const Key('platform-current-journey-ready-event')),
         findsNothing,
       );
+      expect(find.byType(ExpeditionEventScene), findsNothing);
       expect(
         find.byKey(
           const Key(

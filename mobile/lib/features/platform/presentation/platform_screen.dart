@@ -14,6 +14,7 @@ import 'package:walking_rpg_mobile/design_system/character_cosmetics.dart';
 import 'package:walking_rpg_mobile/design_system/companion_bond_signal.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
@@ -2013,17 +2014,28 @@ class _JourneyDecisionLogCard extends StatelessWidget {
       final HomeExpeditionEvent event when event.status == 'READY' => event,
       _ => null,
     };
-    final String? readyEventLabel = switch (readyEvent) {
-      final HomeExpeditionEvent event => context.l10n.platformJourneyReadyEvent(
-        context.l10n.currentEventTitle(event.eventId, event.title),
+    final String? readyEventTitle = switch (readyEvent) {
+      final HomeExpeditionEvent event => context.l10n.currentEventTitle(
+        event.eventId,
+        event.title,
       ),
       null => null,
     };
-    final String? readyEventSummaryLabel = switch (readyEvent) {
-      final HomeExpeditionEvent event =>
-        context.l10n.platformJourneyReadyEventSummary(
-          context.l10n.currentEventSummary(event.eventId, event.summary),
-        ),
+    final String? readyEventSummary = switch (readyEvent) {
+      final HomeExpeditionEvent event => context.l10n.currentEventSummary(
+        event.eventId,
+        event.summary,
+      ),
+      null => null,
+    };
+    final String? readyEventLabel = switch (readyEventTitle) {
+      final String title => context.l10n.platformJourneyReadyEvent(title),
+      null => null,
+    };
+    final String? readyEventSummaryLabel = switch (readyEventSummary) {
+      final String summary => context.l10n.platformJourneyReadyEventSummary(
+        summary,
+      ),
       null => null,
     };
     final String? readyEventChoiceCountLabel = switch (readyEvent) {
@@ -2359,7 +2371,9 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               nodes: routeTrailNodes,
             ),
           ],
-          if (readyEventLabel != null &&
+          if (readyEvent != null &&
+              readyEventTitle != null &&
+              readyEventLabel != null &&
               readyEventSummaryLabel != null) ...<Widget>[
             const SizedBox(height: 8),
             Semantics(
@@ -2380,6 +2394,18 @@ class _JourneyDecisionLogCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
+                    ExpeditionEventScene(
+                      key: const Key(
+                        'platform-current-journey-ready-event-scene',
+                      ),
+                      eventId: readyEvent.eventId,
+                      eventTitle: readyEventTitle,
+                      fallbackSemanticLabel: context.l10n.eventFallbackScene(
+                        readyEventTitle,
+                      ),
+                      maxHeight: 144,
+                    ),
+                    const SizedBox(height: 8),
                     Text(
                       readyEventLabel,
                       style: theme.textTheme.labelMedium?.copyWith(

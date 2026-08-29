@@ -1862,6 +1862,25 @@ Milestone 98 продолжает post-alpha code-only gameplay track из ADR 0
 server-authoritative current-journey state из ADR 0038 через ADR 0112 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 99 — Authoritative current-journey READY event scene
+
+### CODE_COMPLETE
+
+- [x] Journal показывает existing expedition scene только из accepted Home
+      `unlockedEvent` со status exact `READY`
+- [x] Known event ID и localized current title выбирают reviewed illustration;
+      unknown future ID сохраняет literal copy и neutral code-native fallback
+- [x] Expedition phase, current node, route trail, ENERGY, decisions, Platform
+      event/progression, history и catalog не подменяют identity или readiness,
+      а non-READY event fail-closed не показывает scene
+- [x] Scene остаётся внутри одной existing event semantics node без duplicate
+      image announcement и выдерживает RU/EN compact large text без
+      API/backend/persistence/command/asset changes
+
+Milestone 99 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0113 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;
