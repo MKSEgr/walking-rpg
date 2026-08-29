@@ -1775,8 +1775,7 @@ void main() {
               petId: 'future-companion-v2',
               serverSpecies: 'Literal future species',
               stage: 5,
-              expectedLabel:
-                  'Companion form: Literal future species · Form 6',
+              expectedLabel: 'Companion form: Literal future species · Form 6',
               missingSpecies: false,
               missingStage: false,
             ),

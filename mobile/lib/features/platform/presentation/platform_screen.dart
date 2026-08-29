@@ -1954,7 +1954,8 @@ class _JourneyDecisionLogCard extends StatelessWidget {
         );
     final String? petSpecies = snapshot.petSpecies;
     final int? petEvolutionStage = snapshot.petEvolutionStage;
-    final String? companionForm = petSpecies == null || petEvolutionStage == null
+    final String? companionForm =
+        petSpecies == null || petEvolutionStage == null
         ? null
         : context.l10n.platformJourneyCompanionForm(
             context.l10n.currentPetSpecies(snapshot.petId, petSpecies),
