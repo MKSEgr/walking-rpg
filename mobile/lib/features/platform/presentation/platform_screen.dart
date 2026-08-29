@@ -1952,6 +1952,14 @@ class _JourneyDecisionLogCard extends StatelessWidget {
           snapshot.petLevel,
           snapshot.petBond,
         );
+    final String? petSpecies = snapshot.petSpecies;
+    final int? petEvolutionStage = snapshot.petEvolutionStage;
+    final String? companionForm = petSpecies == null || petEvolutionStage == null
+        ? null
+        : context.l10n.platformJourneyCompanionForm(
+            context.l10n.currentPetSpecies(snapshot.petId, petSpecies),
+            context.l10n.companionFormLabel(petEvolutionStage),
+          );
     final String phase = _journeyPhaseLabel(context, snapshot.expeditionStatus);
     final String currentPosition = context.l10n.platformJourneyCurrentPosition(
       context.l10n.currentNodeName(
@@ -2148,6 +2156,21 @@ class _JourneyDecisionLogCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
+          if (companionForm != null)
+            Semantics(
+              key: const Key('platform-current-journey-companion-form'),
+              container: true,
+              label: companionForm,
+              child: ExcludeSemantics(
+                child: Text(
+                  companionForm,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          if (companionForm != null) const SizedBox(height: 6),
           Semantics(
             key: const Key('platform-current-journey-phase'),
             container: true,

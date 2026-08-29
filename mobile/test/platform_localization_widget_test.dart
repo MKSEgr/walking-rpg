@@ -47,6 +47,16 @@ typedef _CompanionProgressLocaleSample = ({
   Locale locale,
 });
 
+typedef _CompanionFormLocaleSample = ({
+  String? expectedLabel,
+  Locale locale,
+  bool missingSpecies,
+  bool missingStage,
+  String petId,
+  String serverSpecies,
+  int stage,
+});
+
 typedef _PilotLocaleSample = ({
   String expectedLabel,
   bool legacyId,
@@ -123,6 +133,20 @@ void main() {
     expect(
       russian.platformJourneyCompanionProgression(6, 742),
       'Прогресс спутника: уровень 6 · связь 742',
+    );
+  });
+
+  test('current journey companion form covers Russian and English', () {
+    final AppLocalizationsEn english = AppLocalizationsEn();
+    final AppLocalizationsRu russian = AppLocalizationsRu();
+
+    expect(
+      english.platformJourneyCompanionForm('lumin', 'Adult · form 3'),
+      'Companion form: lumin · Adult · form 3',
+    );
+    expect(
+      russian.platformJourneyCompanionForm('люмин', 'Взрослый · форма 3'),
+      'Форма спутника: люмин · Взрослый · форма 3',
     );
   });
 
@@ -1721,6 +1745,123 @@ void main() {
   );
 
   testWidgets(
+    'current journey companion form follows Home at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final _CompanionFormLocaleSample sample
+          in <_CompanionFormLocaleSample>[
+            (
+              locale: const Locale('en'),
+              petId: 'spark-v1',
+              serverSpecies: 'Literal server species',
+              stage: 2,
+              expectedLabel: 'Companion form: lumin · Adult · form 3',
+              missingSpecies: false,
+              missingStage: false,
+            ),
+            (
+              locale: const Locale('ru'),
+              petId: 'spark-v1',
+              serverSpecies: 'Literal server species',
+              stage: 2,
+              expectedLabel: 'Форма спутника: люмин · Взрослый · форма 3',
+              missingSpecies: false,
+              missingStage: false,
+            ),
+            (
+              locale: const Locale('en'),
+              petId: 'future-companion-v2',
+              serverSpecies: 'Literal future species',
+              stage: 5,
+              expectedLabel:
+                  'Companion form: Literal future species · Form 6',
+              missingSpecies: false,
+              missingStage: false,
+            ),
+            (
+              locale: const Locale('en'),
+              petId: 'spark-v1',
+              serverSpecies: 'Missing species',
+              stage: 2,
+              expectedLabel: null,
+              missingSpecies: true,
+              missingStage: false,
+            ),
+            (
+              locale: const Locale('en'),
+              petId: 'spark-v1',
+              serverSpecies: 'Missing stage species',
+              stage: 2,
+              expectedLabel: null,
+              missingSpecies: false,
+              missingStage: true,
+            ),
+          ]) {
+        await tester.pumpWidget(
+          _LocalizedPlatformApp(
+            locale: sample.locale,
+            textScale: 1.6,
+            child: PlatformScreen(
+              loader: () async => platformSnapshot(
+                activePetId: 'moss-v1',
+                sparkEvolutionStage: 1,
+              ),
+              homeLoader: () async => _homeWithPersistedDecision(
+                missingPetEvolutionStage: sample.missingStage,
+                missingPetSpecies: sample.missingSpecies,
+                petEvolutionStage: sample.stage,
+                petId: sample.petId,
+                petSpecies: sample.serverSpecies,
+                withDecisionRewards: true,
+              ),
+              recordExperimentExposures: false,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder log = find.byKey(
+          const Key('platform-journey-decision-log'),
+        );
+        await _bringIntoView(tester, log);
+        final Finder form = find.byKey(
+          const Key('platform-current-journey-companion-form'),
+        );
+        if (sample.expectedLabel case final String expectedLabel) {
+          expect(form, findsOneWidget);
+          expect(find.text(expectedLabel), findsOneWidget);
+          expect(find.bySemanticsLabel(expectedLabel), findsOneWidget);
+        } else {
+          expect(form, findsNothing);
+          expect(
+            find.descendant(
+              of: log,
+              matching: find.textContaining('Companion form:'),
+            ),
+            findsNothing,
+          );
+        }
+        expect(
+          find.descendant(of: log, matching: find.textContaining('terra')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: log, matching: find.textContaining('терра')),
+          findsNothing,
+        );
+        if (sample.petId == 'spark-v1' &&
+            !sample.missingSpecies &&
+            !sample.missingStage) {
+          expect(find.textContaining(sample.serverSpecies), findsNothing);
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
     'current journey companion follows Home identity at compact large text',
     (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -2622,10 +2763,14 @@ HomeSnapshot _homeWithPersistedDecision({
   String? pilotName,
   int? pilotNextLevelExperience,
   bool legacyPetId = false,
+  bool missingPetEvolutionStage = false,
+  bool missingPetSpecies = false,
   int? petBond,
+  int? petEvolutionStage,
   String? petId,
   int? petLevel,
   String? petName,
+  String? petSpecies,
   int? requiredEnergy,
   HomeExpeditionEvent? unlockedEvent,
 }) {
@@ -2691,10 +2836,12 @@ HomeSnapshot _homeWithPersistedDecision({
         : pilotNextLevelExperience ?? demo.pilotNextLevelExperience,
     petId: legacyPetId ? null : petId ?? demo.petId,
     petName: petName ?? demo.petName,
-    petSpecies: demo.petSpecies,
+    petSpecies: missingPetSpecies ? null : petSpecies ?? demo.petSpecies,
     petLevel: petLevel ?? demo.petLevel,
     petBond: petBond ?? demo.petBond,
-    petEvolutionStage: demo.petEvolutionStage,
+    petEvolutionStage: missingPetEvolutionStage
+        ? null
+        : petEvolutionStage ?? demo.petEvolutionStage,
     dailyGoalPolicy: demo.dailyGoalPolicy,
   );
 }
