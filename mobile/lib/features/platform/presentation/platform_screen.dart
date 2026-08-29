@@ -15,6 +15,7 @@ import 'package:walking_rpg_mobile/design_system/companion_bond_signal.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/first_journey_route_signal.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
@@ -1923,6 +1924,25 @@ class _JourneyDecisionLogCard extends StatelessWidget {
     final List<HomeExpeditionDecisionLogEntry> decisions = snapshot.decisionLog;
     final HomeExpeditionDecisionLogEntry? lastDecision =
         snapshot.lastAcceptedJourneyDecision;
+    final List<ExpeditionRouteTrailNode> routeTrailNodes = snapshot.routeTrail
+        .map(
+          (HomeExpeditionRouteNode node) => ExpeditionRouteTrailNode(
+            nodeId: node.nodeId,
+            nodeName: context.l10n.currentNodeName(
+              node.nodeId,
+              node.nodeName,
+            ),
+            state: node.state,
+            decision: node.decision == null
+                ? null
+                : ExpeditionRouteTrailDecision(
+                    choiceId: node.decision!.choiceId,
+                    choiceTitle: node.decision!.choiceTitle,
+                    outcomeTitle: node.decision!.outcomeTitle,
+                  ),
+          ),
+        )
+        .toList(growable: false);
     final String? startedAt = switch (snapshot.journeyStartedAt) {
       final String value => _journeyStartedTimeLabel(context, value),
       null => null,
@@ -2293,6 +2313,39 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               ),
             ),
           ),
+          if (routeTrailNodes.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 12),
+            ExcludeSemantics(
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Text(
+                    context.l10n.expeditionRouteTrailTitle,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  Text(
+                    key: const Key(
+                      'platform-current-journey-route-node-count',
+                    ),
+                    context.l10n.homeDiscoveredRouteNodes(
+                      snapshot.discoveredRouteNodeCount,
+                    ),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            ExpeditionRouteTrail(
+              key: const Key('platform-current-journey-route-trail'),
+              nodes: routeTrailNodes,
+            ),
+          ],
           if (readyEventLabel != null &&
               readyEventSummaryLabel != null) ...<Widget>[
             const SizedBox(height: 8),

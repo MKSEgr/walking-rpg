@@ -6,6 +6,11 @@
 
 ### Changed
 
+- the current-journey journal now renders the ordered accepted Home route trail
+  through the existing code-native map with RU/EN node localization and literal
+  saved decisions, while empty snapshots fail closed and Platform route/catalog
+  state cannot substitute or extend the trail;
+
 - the current-journey journal now pairs the accepted Home Navigator portrait
   with the companion portrait in a compact RU/EN crew row, while unknown or
   legacy pilot IDs fail closed and Platform hero/cosmetic state cannot

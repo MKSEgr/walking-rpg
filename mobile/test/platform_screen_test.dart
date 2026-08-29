@@ -1318,7 +1318,7 @@ void main() {
     await tester.scrollUntilVisible(
       firstJourney,
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.byType(FirstJourneyRouteSignal), findsOneWidget);
     expect(firstJourney, findsOneWidget);
@@ -1340,7 +1340,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('platform-advance-weekly')),
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.byType(WeeklyRouteSignal), findsOneWidget);
     expect(
@@ -1391,7 +1391,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('platform-advance-weekly')),
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
 
     expect(find.textContaining('До награды уровня'), findsNothing);
@@ -1712,7 +1712,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Искра · уровень 1'),
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Искра · уровень 1'), findsOneWidget);
     expect(find.byType(CompanionPortrait), findsWidgets);
@@ -1748,7 +1748,7 @@ void main() {
     await tester.scrollUntilVisible(
       firstJourney,
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     expect(firstJourney, findsOneWidget);
     expect(find.text('1/6'), findsOneWidget);
@@ -1797,7 +1797,7 @@ void main() {
     await tester.scrollUntilVisible(
       squadName,
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.enterText(squadName, 'Сохранённый отряд');
     await tester.pump();
@@ -1812,7 +1812,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('platform-squad-name'), skipOffstage: false),
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     final TextField refreshedSquadName = tester.widget<TextField>(
       find.byKey(const Key('platform-squad-name'), skipOffstage: false),
@@ -1848,7 +1848,7 @@ void main() {
     await tester.scrollUntilVisible(
       squadName,
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.enterText(squadName, 'Первые ходоки');
     await tester.pump();
@@ -2029,7 +2029,7 @@ void main() {
     await tester.scrollUntilVisible(
       weekly,
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     final FilledButton weeklyButton = tester.widget<FilledButton>(weekly);
     expect(weeklyButton.onPressed, isNull);
@@ -2423,7 +2423,7 @@ void main() {
     await tester.scrollUntilVisible(
       weekly,
       300,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(Scrollable).first,
     );
     final FilledButton weeklyButton = tester.widget<FilledButton>(weekly);
     expect(weeklyButton.onPressed, isNull);
