@@ -3026,29 +3026,28 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final SemanticsHandle semantics = tester.ensureSemantics();
 
-      for (final _EventSceneLocaleSample sample
-          in <_EventSceneLocaleSample>[
-            (
-              locale: const Locale('en'),
-              title: 'Signal Source',
-              eventLabel: 'Current event: Signal Source',
-              summaryLabel: 'About event: The beacon answers with a pulse.',
-              fallbackLabel: 'Event scene “Signal Source”',
-              sceneLabel:
-                  'Event scene “Signal Source”: the outer beacon sends '
-                  'repeating pulses through the fog.',
-            ),
-            (
-              locale: const Locale('ru'),
-              title: 'Источник сигнала',
-              eventLabel: 'Текущее событие: Источник сигнала',
-              summaryLabel: 'О событии: Маяк отвечает импульсом.',
-              fallbackLabel: 'Сцена события «Источник сигнала»',
-              sceneLabel:
-                  'Сцена события «Источник сигнала»: внешний маяк посылает '
-                  'повторяющиеся импульсы сквозь туман.',
-            ),
-          ]) {
+      for (final _EventSceneLocaleSample sample in <_EventSceneLocaleSample>[
+        (
+          locale: const Locale('en'),
+          title: 'Signal Source',
+          eventLabel: 'Current event: Signal Source',
+          summaryLabel: 'About event: The beacon answers with a pulse.',
+          fallbackLabel: 'Event scene “Signal Source”',
+          sceneLabel:
+              'Event scene “Signal Source”: the outer beacon sends '
+              'repeating pulses through the fog.',
+        ),
+        (
+          locale: const Locale('ru'),
+          title: 'Источник сигнала',
+          eventLabel: 'Текущее событие: Источник сигнала',
+          summaryLabel: 'О событии: Маяк отвечает импульсом.',
+          fallbackLabel: 'Сцена события «Источник сигнала»',
+          sceneLabel:
+              'Сцена события «Источник сигнала»: внешний маяк посылает '
+              'повторяющиеся импульсы сквозь туман.',
+        ),
+      ]) {
         await tester.pumpWidget(
           _LocalizedPlatformApp(
             locale: sample.locale,
@@ -3095,9 +3094,7 @@ void main() {
         expect(find.text(sample.eventLabel), findsOneWidget);
         expect(find.text(sample.summaryLabel), findsOneWidget);
         expect(
-          find.bySemanticsLabel(
-            '${sample.eventLabel}. ${sample.summaryLabel}',
-          ),
+          find.bySemanticsLabel('${sample.eventLabel}. ${sample.summaryLabel}'),
           findsOneWidget,
         );
         expect(find.bySemanticsLabel(sample.sceneLabel), findsNothing);
