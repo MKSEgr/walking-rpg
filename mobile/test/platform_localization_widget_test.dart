@@ -1632,75 +1632,70 @@ void main() {
     },
   );
 
-  testWidgets(
-    'current journey pilot portrait follows known Home identity',
-    (WidgetTester tester) async {
-      final SemanticsHandle semantics = tester.ensureSemantics();
-      await tester.binding.setSurfaceSize(const Size(320, 640));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+  testWidgets('current journey pilot portrait follows known Home identity', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      for (final _PilotPortraitLocaleSample sample
-          in <_PilotPortraitLocaleSample>[
-            (
-              expectedLabel: 'Pilot Navigator',
-              expectedName: 'Navigator',
-              locale: const Locale('en'),
-            ),
-            (
-              expectedLabel: 'Пилот Навигатор',
-              expectedName: 'Навигатор',
-              locale: const Locale('ru'),
-            ),
-          ]) {
-        await tester.pumpWidget(
-          _LocalizedPlatformApp(
-            locale: sample.locale,
-            textScale: 1.6,
-            child: PlatformScreen(
-              loader: () async => platformSnapshot(),
-              homeLoader: () async => _homeWithPersistedDecision(
-                pilotId: 'navigator-v1',
-                pilotName: 'Literal server pilot',
-              ),
-              recordExperimentExposures: false,
-            ),
+    for (final _PilotPortraitLocaleSample sample
+        in <_PilotPortraitLocaleSample>[
+          (
+            expectedLabel: 'Pilot Navigator',
+            expectedName: 'Navigator',
+            locale: const Locale('en'),
           ),
-        );
-        await tester.pumpAndSettle();
-
-        final Finder log = find.byKey(
-          const Key('platform-journey-decision-log'),
-        );
-        await _bringIntoView(tester, log);
-        final Finder portraitSemantics = find.byKey(
-          const Key('platform-current-journey-pilot-portrait'),
-        );
-        final Finder portraitFinder = find.descendant(
-          of: portraitSemantics,
-          matching: find.byType(PilotPortrait),
-        );
-        expect(portraitSemantics, findsOneWidget);
-        expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
-        expect(portraitFinder, findsOneWidget);
-        final PilotPortrait portrait = tester.widget<PilotPortrait>(
-          portraitFinder,
-        );
-        expect(portrait.name, sample.expectedName);
-        expect(portrait.highlighted, isTrue);
-        expect(portrait.equippedCosmeticIds, isEmpty);
-        expect(portrait.illustrationAsset, PilotPortrait.assetPath);
-        expect(
-          find.byKey(
-            const Key('platform-current-journey-companion-portrait'),
+          (
+            expectedLabel: 'Пилот Навигатор',
+            expectedName: 'Навигатор',
+            locale: const Locale('ru'),
           ),
-          findsOneWidget,
-        );
-        expect(tester.takeException(), isNull);
-      }
+        ]) {
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: sample.locale,
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              pilotId: 'navigator-v1',
+              pilotName: 'Literal server pilot',
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-      semantics.dispose();
-    },
-  );
+      final Finder log = find.byKey(const Key('platform-journey-decision-log'));
+      await _bringIntoView(tester, log);
+      final Finder portraitSemantics = find.byKey(
+        const Key('platform-current-journey-pilot-portrait'),
+      );
+      final Finder portraitFinder = find.descendant(
+        of: portraitSemantics,
+        matching: find.byType(PilotPortrait),
+      );
+      expect(portraitSemantics, findsOneWidget);
+      expect(find.bySemanticsLabel(sample.expectedLabel), findsOneWidget);
+      expect(portraitFinder, findsOneWidget);
+      final PilotPortrait portrait = tester.widget<PilotPortrait>(
+        portraitFinder,
+      );
+      expect(portrait.name, sample.expectedName);
+      expect(portrait.highlighted, isTrue);
+      expect(portrait.equippedCosmeticIds, isEmpty);
+      expect(portrait.illustrationAsset, PilotPortrait.assetPath);
+      expect(
+        find.byKey(const Key('platform-current-journey-companion-portrait')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    }
+
+    semantics.dispose();
+  });
 
   testWidgets(
     'current journey pilot portrait fails closed for unknown Home identity',
@@ -1750,14 +1745,9 @@ void main() {
           findsNothing,
         );
         expect(find.text(expectedLabels[index]), findsOneWidget);
+        expect(find.bySemanticsLabel(expectedLabels[index]), findsOneWidget);
         expect(
-          find.bySemanticsLabel(expectedLabels[index]),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(
-            const Key('platform-current-journey-companion-portrait'),
-          ),
+          find.byKey(const Key('platform-current-journey-companion-portrait')),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);

@@ -2108,9 +2108,7 @@ class _JourneyDecisionLogCard extends StatelessWidget {
               children: <Widget>[
                 if (pilotPortraitLabel != null)
                   Semantics(
-                    key: const Key(
-                      'platform-current-journey-pilot-portrait',
-                    ),
+                    key: const Key('platform-current-journey-pilot-portrait'),
                     container: true,
                     image: true,
                     label: pilotPortraitLabel,
