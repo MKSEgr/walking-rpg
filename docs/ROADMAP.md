@@ -1986,6 +1986,27 @@ Milestone 104 продолжает post-alpha code-only gameplay track из ADR 
 server-authoritative current-journey state из ADR 0038 через ADR 0118 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 105 — Authoritative saved journey decision reward art
+
+### CODE_COMPLETE
+
+- [x] Positive companion bond current и expanded recent decision entries
+      использует existing gain signal только по exact persisted non-empty
+      `petId`; unknown/future IDs сохраняют neutral component fallback
+- [x] Persisted material reward использует existing item emblem только по
+      exact paired `itemId`; known reviewed и future items не выводятся из
+      names, amounts или другого reward
+- [x] Missing companion identity и pilot XP остаются generic text/icon:
+      current Home/READY/Platform pilot или pet, route, totals, catalog и
+      соседние decisions не подменяют отсутствующий persisted subject
+- [x] Shared current/recent renderer сохраняет literal reward ordering/copy,
+      read-only behavior и одну localized semantics node, выдерживает compact
+      large text без API/backend/persistence/command/content/asset changes
+
+Milestone 105 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0119 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

@@ -2923,6 +2923,20 @@ class _JourneyDecisionEntry extends StatelessWidget {
                             if (entry.petBondGained > 0)
                               _JourneyRewardChip(
                                 icon: Icons.favorite_border,
+                                avatar: switch (entry.petId) {
+                                  final String petId when petId.isNotEmpty =>
+                                    ProgressionGainSignal(
+                                      key: Key(
+                                        'platform-journey-decision-'
+                                        '${entry.eventId}-${entry.choiceId}-'
+                                        'pet-bond-art',
+                                      ),
+                                      kind: ProgressionGainKind.petBond,
+                                      subjectId: petId,
+                                      size: 24,
+                                    ),
+                                  _ => null,
+                                },
                                 label: switch (entry.petName) {
                                   final String petName =>
                                     context.l10n
@@ -2940,6 +2954,17 @@ class _JourneyDecisionEntry extends StatelessWidget {
                                 case final HomeJourneyMaterialReward material)
                               _JourneyRewardChip(
                                 icon: Icons.inventory_2_outlined,
+                                avatar: material.itemId.isEmpty
+                                    ? null
+                                    : ExpeditionItemEmblem(
+                                        key: Key(
+                                          'platform-journey-decision-'
+                                          '${entry.eventId}-${entry.choiceId}-'
+                                          'material-art',
+                                        ),
+                                        itemId: material.itemId,
+                                        size: 24,
+                                      ),
                                 label: context.l10n.platformMaterialReward(
                                   material.quantity,
                                   material.itemName,
@@ -2992,16 +3017,18 @@ class _JourneyRewardChip extends StatelessWidget {
     super.key,
     required this.icon,
     required this.label,
+    this.avatar,
   });
 
   final IconData icon;
   final String label;
+  final Widget? avatar;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     return Chip(
-      avatar: Icon(icon, size: 16, color: colors.secondary),
+      avatar: avatar ?? Icon(icon, size: 16, color: colors.secondary),
       label: Text(label),
       visualDensity: VisualDensity.compact,
       side: BorderSide(color: colors.outlineVariant),

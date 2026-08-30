@@ -592,6 +592,18 @@ Signal остаётся декоративным внутри existing entry `Ex
 persisted event/choice/outcome/reward/timestamp text и одна localized semantics
 node остаются authoritative, read-only и неизменными.
 
+Persisted reward art той же decision entry также не обращается к current state.
+Positive companion bond получает `ProgressionGainSignal` только из exact
+non-empty persisted `petId`; material reward получает `ExpeditionItemEmblem`
+только из собственного exact `itemId`. Known reviewed IDs выбирают established
+art, future IDs остаются на neutral component fallback. Missing companion ID
+оставляет generic reward chip, а pilot XP намеренно остаётся generic, потому
+что `decisionLog` не переносит pilot identity. Names, amounts, current pilot or
+pet, READY preview, Platform, route, totals, catalog и соседние decisions не
+заполняют отсутствующую identity. Art остаётся внутри той же
+`ExcludeSemantics`, поэтому literal reward ordering/copy и single localized
+decision semantics node не меняются.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает
