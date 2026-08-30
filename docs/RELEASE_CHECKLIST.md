@@ -4,15 +4,17 @@ CI создаёт технические release candidates. Подпись и �
 
 ## Current engineering baseline
 
-`alpha-rc2` зафиксирован в
-[release dossier](evidence/alpha-rc2-release-dossier.md) после принятия
-forward roadmap: post-merge `master` anchor и artifact-producing PR source
-имеют один exact tree, Standard CI и Release quality зелёные, а digests всех
-unsigned/no-codesign artifacts независимо проверены. Dossier не заменяет
-production signing, physical-device, stage, real-restore или store evidence.
+`alpha-rc3` зафиксирован в
+[release dossier](evidence/alpha-rc3-release-dossier.md) после принятия
+завершающего gameplay-presentation PR #532: post-merge `master` anchor и
+artifact-producing PR source имеют один exact tree, Standard CI и Release
+quality зелёные, а digests всех unsigned/no-codesign artifacts независимо
+проверены. Dossier не заменяет production signing, physical-device, stage,
+real-restore или store evidence.
 
-Предыдущий [`alpha-rc1` dossier](evidence/alpha-rc1-release-dossier.md)
-остаётся immutable историческим baseline и не переносится на новый SHA/tree.
+Предыдущие [`alpha-rc1`](evidence/alpha-rc1-release-dossier.md) и
+[`alpha-rc2`](evidence/alpha-rc2-release-dossier.md) dossiers остаются
+immutable историческими baselines и не переносятся на новый SHA/tree.
 
 ## Source gate
 

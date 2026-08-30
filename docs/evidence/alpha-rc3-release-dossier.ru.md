@@ -148,4 +148,5 @@ release-blocker issue и пометки candidate revoked новым PR. Нел�
       payload checksums.
 - [x] Проверены build metadata и synthetic restore scope.
 - [x] External gates сохранены как явные non-claims с owner-action handoff.
-- [x] Изменения #533 ограничены release/evidence documentation.
+- [x] Изменения #533 ограничены release/evidence documentation и F1 inventory
+      baseline validator; application/runtime code не изменён.

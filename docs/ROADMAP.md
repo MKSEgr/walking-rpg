@@ -2040,7 +2040,8 @@ server-authoritative current-journey state из ADR 0038 через ADR 0120 б�
 - [x] Пять Release quality artifacts повторно скачаны, archive SHA-256 сверены
       с GitHub, а payload checksum независимо пересчитаны и сверены с manifests
 - [x] Build metadata, synthetic restore scope и внешние non-claims записаны в
-      двуязычном immutable dossier без runtime/source изменений
+      двуязычном immutable dossier без runtime/application изменений; F1
+      inventory validator переведён на тот же exact candidate tuple
 
 Milestone 107 устанавливает `alpha-rc3` как текущий engineering baseline для
 следующих этапов [`FORWARD_ROADMAP.md`](FORWARD_ROADMAP.md), не редактируя и не

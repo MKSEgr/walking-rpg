@@ -83,7 +83,7 @@ python3 scripts/ci/verify_health_device_inventory.py \
 
 `--require-recorded` требует:
 
-- exact immutable `alpha-rc2` tuple из release dossier;
+- exact immutable `alpha-rc3` tuple из release dossier;
 - четыре обязательные строки без дублей и перестановки;
 - `AVAILABLE` с model/OS, role category и явной доступностью clean install,
   upgrade, timezone/midnight и battery measurement;

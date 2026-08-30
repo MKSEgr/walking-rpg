@@ -154,4 +154,5 @@ this record to relabel a different source, anchor or tree.
       checksums are recorded.
 - [x] Build metadata and synthetic restore scope were inspected.
 - [x] External gates remain explicit non-claims with owner-action handoffs.
-- [x] Issue #533 changes only release/evidence documentation.
+- [x] Issue #533 changes only release/evidence documentation and the F1
+      inventory baseline validator; application/runtime code is unchanged.
