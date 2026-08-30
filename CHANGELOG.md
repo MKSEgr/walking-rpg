@@ -6,6 +6,11 @@
 
 ### Changed
 
+- persisted companion-bond and material rewards in current and expanded recent
+  journey decisions now reuse their exact subject/item art, while future IDs
+  stay neutral, missing companion identity and pilot XP stay generic, and live
+  Home/READY/Platform state cannot substitute immutable reward identity;
+
 - current and expanded recent journey decision entries now reuse the existing
   exact persisted event/choice signal vocabulary, while unknown/future pairs
   stay neutral and READY-event, Platform, route or catalog state cannot

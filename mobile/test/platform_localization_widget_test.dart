@@ -1224,6 +1224,308 @@ void main() {
     },
   );
 
+  testWidgets(
+    'saved decision reward art follows persisted identities at large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      const List<HomeExpeditionDecisionLogEntry> currentDecisions =
+          <HomeExpeditionDecisionLogEntry>[
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'echo-vault-v1',
+              eventTitle: 'Persisted known reward event',
+              choiceId: 'stabilize-core',
+              choiceTitle: 'Persisted known reward choice',
+              outcomeTitle: 'Persisted known reward outcome',
+              outcomeSummary: 'Persisted known reward summary.',
+              resolvedAt: '2026-08-19T10:00:00Z',
+              pilotExperienceGained: 19,
+              petId: 'spark-v1',
+              petName: 'Persisted Spark',
+              petBondGained: 7,
+              materialReward: HomeJourneyMaterialReward(
+                itemId: 'echo-thread',
+                itemName: 'Persisted echo thread',
+                quantity: 2,
+              ),
+            ),
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'future-reward-event-v1',
+              eventTitle: 'Persisted future reward event',
+              choiceId: 'future-reward-choice-v1',
+              choiceTitle: 'Persisted future reward choice',
+              outcomeTitle: 'Persisted future reward outcome',
+              outcomeSummary: 'Persisted future reward summary.',
+              resolvedAt: '2026-08-19T10:05:00Z',
+              pilotExperienceGained: 13,
+              petId: 'future-companion-v2',
+              petName: 'Persisted future companion',
+              petBondGained: 5,
+              materialReward: HomeJourneyMaterialReward(
+                itemId: 'future-material-v2',
+                itemName: 'Persisted future material',
+                quantity: 3,
+              ),
+            ),
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'legacy-reward-event-v1',
+              eventTitle: 'Persisted legacy reward event',
+              choiceId: 'legacy-reward-choice-v1',
+              choiceTitle: 'Persisted legacy reward choice',
+              outcomeTitle: 'Persisted legacy reward outcome',
+              outcomeSummary: 'Persisted legacy reward summary.',
+              resolvedAt: '2026-08-19T10:10:00Z',
+              pilotExperienceGained: 5,
+              petBondGained: 4,
+            ),
+          ];
+      const HomeExpeditionDecisionLogEntry archivedDecision =
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'mirror-delta-v1',
+            eventTitle: 'Persisted archived reward event',
+            choiceId: 'follow-resonance',
+            choiceTitle: 'Persisted archived reward choice',
+            outcomeTitle: 'Persisted archived reward outcome',
+            outcomeSummary: 'Persisted archived reward summary.',
+            resolvedAt: '2026-08-18T08:30:00Z',
+            petId: 'rune-v1',
+            petName: 'Persisted Rune',
+            petBondGained: 4,
+            materialReward: HomeJourneyMaterialReward(
+              itemId: 'resonance-compass',
+              itemName: 'Persisted resonance compass',
+              quantity: 1,
+            ),
+          );
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(activePetId: 'moss-v1'),
+            homeLoader: () async => _homeWithPersistedDecision(
+              decisionLog: currentDecisions,
+              petId: 'moss-v1',
+              petName: 'Current decoy companion',
+              unlockedEvent: _readyEvent(
+                eventId: 'echo-vault-v1',
+                choices: <HomeEventChoice>[
+                  _eventChoice(
+                    'follow-echo',
+                    pilotExperienceReward: 99,
+                    petBondReward: 99,
+                    materialReward: const HomeMaterialRewardPreview(
+                      itemId: 'lumen-shard',
+                      itemName: 'Current decoy material',
+                      quantity: 99,
+                    ),
+                  ),
+                ],
+              ),
+              recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
+                HomeExpeditionCompletionRecap(
+                  journeyNumber: 6,
+                  decisionCount: 1,
+                  decisions: <HomeExpeditionDecisionLogEntry>[archivedDecision],
+                  pilotExperienceGained: 0,
+                  petBondGained: 4,
+                  materials: <HomeJourneyMaterialReward>[
+                    HomeJourneyMaterialReward(
+                      itemId: 'resonance-compass',
+                      itemName: 'Persisted resonance compass',
+                      quantity: 1,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder log = find.byKey(const Key('platform-journey-decision-log'));
+      await _bringIntoView(tester, log);
+      final Finder knownEntry = find.byKey(
+        const Key('platform-journey-decision-echo-vault-v1'),
+      );
+      await _bringIntoView(tester, knownEntry);
+      final Finder knownPetArt = find.byKey(
+        const Key(
+          'platform-journey-decision-echo-vault-v1-stabilize-core-'
+          'pet-bond-art',
+        ),
+      );
+      final ProgressionGainSignal knownPet = tester
+          .widget<ProgressionGainSignal>(knownPetArt);
+      expect(knownPet.kind, ProgressionGainKind.petBond);
+      expect(knownPet.subjectId, 'spark-v1');
+      expect(knownPet.size, 24);
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(
+            const Key('progression-gain-signal-petBond-spark-v1-spark'),
+          ),
+        ),
+        findsOneWidget,
+      );
+      final Finder knownMaterialArt = find.byKey(
+        const Key(
+          'platform-journey-decision-echo-vault-v1-stabilize-core-'
+          'material-art',
+        ),
+      );
+      final ExpeditionItemEmblem knownMaterial = tester
+          .widget<ExpeditionItemEmblem>(knownMaterialArt);
+      expect(knownMaterial.itemId, 'echo-thread');
+      expect(knownMaterial.size, 24);
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(const Key('item-art-echo-thread')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(
+            const Key(
+              'progression-gain-signal-pilotExperience-navigator-v1-'
+              'navigator',
+            ),
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(const Key('item-art-lumen-shard')),
+        ),
+        findsNothing,
+      );
+      final String knownTime = _formattedDecisionTime(
+        tester,
+        knownEntry,
+        currentDecisions.first.resolvedAt,
+        russian: false,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Entry 1 of 3. Persisted known reward event. Decision: Persisted '
+          'known reward choice. Outcome: Persisted known reward outcome. '
+          'Persisted known reward summary. $knownTime. Rewards: +19 pilot XP; '
+          'Persisted Spark: +7 bond; +2 Persisted echo thread.',
+        ),
+        findsOneWidget,
+      );
+
+      final Finder futureEntry = find.byKey(
+        const Key('platform-journey-decision-future-reward-event-v1'),
+      );
+      await _bringIntoView(tester, futureEntry);
+      final ProgressionGainSignal futurePet = tester
+          .widget<ProgressionGainSignal>(
+            find.byKey(
+              const Key(
+                'platform-journey-decision-future-reward-event-v1-'
+                'future-reward-choice-v1-pet-bond-art',
+              ),
+            ),
+          );
+      expect(futurePet.subjectId, 'future-companion-v2');
+      expect(
+        find.descendant(
+          of: futureEntry,
+          matching: find.byKey(
+            const Key(
+              'progression-gain-signal-petBond-future-companion-v2-unknown',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      final ExpeditionItemEmblem futureMaterial = tester
+          .widget<ExpeditionItemEmblem>(
+            find.byKey(
+              const Key(
+                'platform-journey-decision-future-reward-event-v1-'
+                'future-reward-choice-v1-material-art',
+              ),
+            ),
+          );
+      expect(futureMaterial.itemId, 'future-material-v2');
+      expect(
+        find.descendant(
+          of: futureEntry,
+          matching: find.byKey(
+            const Key('item-art-fallback-future-material-v2'),
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      final Finder legacyEntry = find.byKey(
+        const Key('platform-journey-decision-legacy-reward-event-v1'),
+      );
+      await _bringIntoView(tester, legacyEntry);
+      expect(
+        find.descendant(
+          of: legacyEntry,
+          matching: find.byType(ProgressionGainSignal),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'platform-journey-decision-legacy-reward-event-v1-'
+            'legacy-reward-choice-v1-pet-bond-art',
+          ),
+        ),
+        findsNothing,
+      );
+
+      final Finder archive = find.byKey(
+        const Key('platform-journey-archive-6'),
+      );
+      await _bringIntoView(tester, archive);
+      final Finder historyToggle = find.byKey(
+        const Key('platform-journey-archive-6-history-toggle'),
+      );
+      await _bringIntoView(tester, historyToggle);
+      await tester.tap(historyToggle);
+      await tester.pumpAndSettle();
+      final Finder archivedEntry = find.byKey(
+        const Key('platform-journey-decision-mirror-delta-v1'),
+      );
+      await _bringIntoView(tester, archivedEntry);
+      expect(
+        find.descendant(
+          of: archivedEntry,
+          matching: find.byKey(
+            const Key('progression-gain-signal-petBond-rune-v1-rune'),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: archivedEntry,
+          matching: find.byKey(const Key('item-art-resonance-compass')),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
   testWidgets('English Platform journal stays readable at compact large text', (
     WidgetTester tester,
   ) async {
