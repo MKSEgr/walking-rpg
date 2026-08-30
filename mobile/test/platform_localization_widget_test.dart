@@ -4735,9 +4735,7 @@ void main() {
       );
       expect(readyEvent, findsNothing);
       expect(
-        find.byKey(
-          const Key('platform-current-journey-ready-event-scene'),
-        ),
+        find.byKey(const Key('platform-current-journey-ready-event-scene')),
         findsNothing,
       );
       expect(
