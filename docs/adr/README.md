@@ -136,3 +136,4 @@ NNNN-short-title.md
 - [0117 — authoritative current-journey READY choice requirement art](0117-authoritative-current-journey-ready-choice-requirement-art.md)
 - [0118 — authoritative saved journey decision choice signals](0118-authoritative-saved-journey-decision-choice-signals.md)
 - [0119 — authoritative saved journey decision reward art](0119-authoritative-saved-journey-decision-reward-art.md)
+- [0120 — authoritative saved journey decision event scenes](0120-authoritative-saved-journey-decision-event-scenes.md)

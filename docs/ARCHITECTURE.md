@@ -604,6 +604,17 @@ pet, READY preview, Platform, route, totals, catalog и соседние decisio
 `ExcludeSemantics`, поэтому literal reward ordering/copy и single localized
 decision semantics node не меняются.
 
+Persisted event scene каждой такой decision entry выбирается только по exact
+non-empty `eventId` самой immutable записи. Shared current/recent renderer
+передаёт existing `ExpeditionEventScene` тот же literal persisted `eventTitle`:
+reviewed ID получает established artwork, unknown future ID — neutral
+code-native fallback. Current READY event, expedition phase, route, Platform,
+localized mutable names, choice/outcome copy, catalog и соседние decisions не
+подменяют historical identity; empty defensive constructor value fail-closed
+не создаёт scene. Visual остаётся внутри existing entry `ExcludeSemantics`,
+поэтому literal copy/order, timestamp, rewards, read-only behavior и одна
+localized decision semantics node сохраняются.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает

@@ -2007,6 +2007,28 @@ Milestone 105 продолжает post-alpha code-only gameplay track из ADR 
 server-authoritative current-journey state из ADR 0038 через ADR 0119 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 106 — Authoritative saved journey decision event scenes
+
+### CODE_COMPLETE
+
+- [x] Current `decisionLog` и expanded recent archive history показывают
+      existing event scene только из exact persisted non-empty `eventId`
+      каждой immutable decision entry
+- [x] Known reviewed event ID выбирает established artwork, unknown future ID
+      использует neutral code-native fallback, а empty defensive value
+      fail-closed не создаёт scene
+- [x] Current READY event, expedition phase, route, Platform, names,
+      choice/outcome copy, catalog и соседние decisions не подменяют
+      historical event identity
+- [x] Shared current/recent renderer сохраняет literal copy/order, timestamp,
+      rewards, read-only behavior и одну localized semantics node, выдерживает
+      compact large text без API/backend/persistence/command/content/asset
+      changes
+
+Milestone 106 продолжает post-alpha code-only gameplay track из ADR 0039 и
+server-authoritative current-journey state из ADR 0038 через ADR 0120 без
+изменения immutable `alpha-rc1` или внешних gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

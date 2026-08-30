@@ -6,6 +6,11 @@
 
 ### Changed
 
+- current and expanded recent journey decision entries now reuse the existing
+  event scene selected only from their exact persisted event ID, while future
+  IDs stay neutral and current READY/Platform/route/catalog state cannot
+  substitute immutable history identity;
+
 - persisted companion-bond and material rewards in current and expanded recent
   journey decisions now reuse their exact subject/item art, while future IDs
   stay neutral, missing companion identity and pilot XP stay generic, and live
