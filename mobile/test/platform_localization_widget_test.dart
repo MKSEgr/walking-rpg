@@ -1016,7 +1016,7 @@ void main() {
   });
 
   testWidgets(
-    'saved decision signals follow persisted pairs at compact large text',
+    'saved decision visual signals follow persisted ids at compact large text',
     (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1062,8 +1062,9 @@ void main() {
             homeLoader: () async => _homeWithPersistedDecision(
               decisionLog: currentDecisions,
               unlockedEvent: _readyEvent(
-                eventId: 'echo-vault-v1',
-                choices: <HomeEventChoice>[_eventChoice('follow-echo')],
+                eventId: 'signal-source-v1',
+                title: 'Current decoy event',
+                choices: <HomeEventChoice>[_eventChoice('analyze-signal')],
               ),
               recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
                 HomeExpeditionCompletionRecap(
@@ -1087,6 +1088,12 @@ void main() {
       final Finder knownEntry = find.byKey(
         const Key('platform-journey-decision-echo-vault-v1'),
       );
+      final Finder knownScene = find.byKey(
+        const Key(
+          'platform-journey-decision-echo-vault-v1-stabilize-core-'
+          'event-scene',
+        ),
+      );
       final Finder knownLayout = find.byKey(
         const Key(
           'platform-journey-decision-echo-vault-v1-stabilize-core-'
@@ -1094,6 +1101,25 @@ void main() {
         ),
       );
       await _bringIntoView(tester, knownEntry);
+      final ExpeditionEventScene knownEventScene = tester
+          .widget<ExpeditionEventScene>(knownScene);
+      expect(knownEventScene.eventId, currentDecisions.first.eventId);
+      expect(knownEventScene.eventTitle, currentDecisions.first.eventTitle);
+      expect(knownEventScene.maxHeight, 112);
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(const Key('event-scene-echo-vault-v1')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(const Key('event-scene-signal-source-v1')),
+        ),
+        findsNothing,
+      );
       final EventChoiceSignalLayout knownSignal = tester
           .widget<EventChoiceSignalLayout>(knownLayout);
       expect(knownSignal.eventId, 'echo-vault-v1');
@@ -1148,6 +1174,33 @@ void main() {
         const Key('platform-journey-decision-future-event-v1'),
       );
       await _bringIntoView(tester, futureEntry);
+      final ExpeditionEventScene futureEventScene = tester
+          .widget<ExpeditionEventScene>(
+            find.byKey(
+              const Key(
+                'platform-journey-decision-future-event-v1-stabilize-core-'
+                'event-scene',
+              ),
+            ),
+          );
+      expect(futureEventScene.eventId, currentDecisions.last.eventId);
+      expect(futureEventScene.eventTitle, currentDecisions.last.eventTitle);
+      expect(
+        find.descendant(
+          of: futureEntry,
+          matching: find.byKey(
+            const Key('event-scene-fallback-future-event-v1'),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: futureEntry,
+          matching: find.byKey(const Key('event-scene-signal-source-v1')),
+        ),
+        findsNothing,
+      );
       expect(
         find.descendant(
           of: futureEntry,
@@ -1190,6 +1243,24 @@ void main() {
         const Key('platform-journey-decision-mirror-delta-v1'),
       );
       await _bringIntoView(tester, archivedEntry);
+      final ExpeditionEventScene archivedEventScene = tester
+          .widget<ExpeditionEventScene>(
+            find.byKey(
+              const Key(
+                'platform-journey-decision-mirror-delta-v1-follow-resonance-'
+                'event-scene',
+              ),
+            ),
+          );
+      expect(archivedEventScene.eventId, archivedDecision.eventId);
+      expect(archivedEventScene.eventTitle, archivedDecision.eventTitle);
+      expect(
+        find.descendant(
+          of: archivedEntry,
+          matching: find.byKey(const Key('event-scene-mirror-delta-v1')),
+        ),
+        findsOneWidget,
+      );
       final Finder archivedLayout = find.byKey(
         const Key(
           'platform-journey-decision-mirror-delta-v1-follow-resonance-'
@@ -4663,7 +4734,10 @@ void main() {
         const Key('platform-current-journey-ready-event'),
       );
       expect(readyEvent, findsNothing);
-      expect(find.byType(ExpeditionEventScene), findsNothing);
+      expect(
+        find.byKey(const Key('platform-current-journey-ready-event-scene')),
+        findsNothing,
+      );
       expect(
         find.descendant(
           of: readyEvent,

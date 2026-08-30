@@ -2863,6 +2863,20 @@ class _JourneyDecisionEntry extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
+                      if (entry.eventId.isNotEmpty) ...<Widget>[
+                        ExpeditionEventScene(
+                          key: Key(
+                            'platform-journey-decision-${entry.eventId}-'
+                            '${entry.choiceId}-event-scene',
+                          ),
+                          eventId: entry.eventId,
+                          eventTitle: entry.eventTitle,
+                          fallbackSemanticLabel: context.l10n
+                              .eventFallbackScene(entry.eventTitle),
+                          maxHeight: 112,
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                       Text(
                         entry.eventTitle,
                         style: theme.textTheme.titleMedium?.copyWith(
