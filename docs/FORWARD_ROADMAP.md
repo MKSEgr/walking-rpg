@@ -29,6 +29,12 @@ Roadmap не является календарным обещанием. Эта�
 устройствах, реального stage, production identity, подписанной сборки,
 магазинной публикации или пользовательской ценности.
 
+Точная текущая engineering-кандидатура зафиксирована в
+[`alpha-rc3` release dossier](evidence/alpha-rc3-release-dossier.md):
+post-merge anchor, artifact source, одно exact tree, успешные CI/Release
+quality runs и независимо проверенные unsigned/no-codesign artifacts.
+Предыдущие candidate dossiers остаются неизменяемой историей.
+
 ## Статусы и правила перехода
 
 - `CODE_COMPLETE` — код и документация прошли protected CI.
@@ -85,6 +91,10 @@ Roadmap не является календарным обещанием. Эта�
 
 Цель — остановить бесконечное добавление мелких code-only milestones и
 зафиксировать точку, которую действительно проверяют внешние этапы.
+
+Текущий F0 baseline — `alpha-rc3`. Его dossier закрывает code/evidence часть
+этапа; переход к F1–F5 по-прежнему зависит от внешних владельцев, окружений,
+устройств и product decisions и не считается `VALIDATED` заранее.
 
 Реализация:
 

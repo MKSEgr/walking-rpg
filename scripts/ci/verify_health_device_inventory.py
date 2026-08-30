@@ -16,10 +16,10 @@ SCHEMA_VERSION = "walking-rpg-health-device-inventory-v1"
 REDACTION_POLICY = "walking-rpg-evidence-redaction-v1"
 
 BASELINE = {
-    "candidate": "alpha-rc2",
-    "masterAnchorSha": "70520cdc57bd0f1f8cafd7205ce1903afa19c5a9",
-    "artifactSourceSha": "3e5a1623bd2f53a9fe5eeb17d822431cf7b29b23",
-    "treeSha": "09a809cc126c24b8abf5214f60d527958bc71a03",
+    "candidate": "alpha-rc3",
+    "masterAnchorSha": "ffd67f099256135ff0b9c7df5534516aa074bf74",
+    "artifactSourceSha": "dc2119a8305ecb7786f1c0a6fee8609d261f1195",
+    "treeSha": "d622a8fc974f234c9a0744b9e99426a201dd2cad",
     "appVersion": "0.1.0",
     "buildNumber": "1",
 }
@@ -301,7 +301,7 @@ def validate_inventory(data: Any, *, require_recorded: bool = False) -> None:
     baseline = _require_object(root["baseline"], "baseline", BASELINE_KEYS)
     for key, expected in BASELINE.items():
         if baseline[key] != expected:
-            _fail(f"baseline.{key}", f"must equal the alpha-rc2 value {expected!r}")
+            _fail(f"baseline.{key}", f"must equal the alpha-rc3 value {expected!r}")
     for key in ("masterAnchorSha", "artifactSourceSha", "treeSha"):
         if not LOWER_SHA.fullmatch(baseline[key]):
             _fail(f"baseline.{key}", "must be a lowercase 40-hex SHA")
