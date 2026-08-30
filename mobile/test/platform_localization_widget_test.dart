@@ -1015,6 +1015,215 @@ void main() {
     }
   });
 
+  testWidgets(
+    'saved decision signals follow persisted pairs at compact large text',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      const List<HomeExpeditionDecisionLogEntry> currentDecisions =
+          <HomeExpeditionDecisionLogEntry>[
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'echo-vault-v1',
+              eventTitle: 'Persisted vault event',
+              choiceId: 'stabilize-core',
+              choiceTitle: 'Persisted stabilize choice',
+              outcomeTitle: 'Persisted stable outcome',
+              outcomeSummary: 'Persisted stable summary.',
+              resolvedAt: '2026-08-19T10:00:00Z',
+            ),
+            HomeExpeditionDecisionLogEntry(
+              eventId: 'future-event-v1',
+              eventTitle: 'Persisted future event',
+              choiceId: 'stabilize-core',
+              choiceTitle: 'Persisted future choice',
+              outcomeTitle: 'Persisted future outcome',
+              outcomeSummary: 'Persisted future summary.',
+              resolvedAt: '2026-08-19T10:05:00Z',
+            ),
+          ];
+      const HomeExpeditionDecisionLogEntry archivedDecision =
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'mirror-delta-v1',
+            eventTitle: 'Persisted archived event',
+            choiceId: 'follow-resonance',
+            choiceTitle: 'Persisted archived choice',
+            outcomeTitle: 'Persisted archived outcome',
+            outcomeSummary: 'Persisted archived summary.',
+            resolvedAt: '2026-08-18T08:30:00Z',
+          );
+
+      await tester.pumpWidget(
+        _LocalizedPlatformApp(
+          locale: const Locale('en'),
+          textScale: 1.6,
+          child: PlatformScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => _homeWithPersistedDecision(
+              decisionLog: currentDecisions,
+              unlockedEvent: _readyEvent(
+                eventId: 'echo-vault-v1',
+                choices: <HomeEventChoice>[_eventChoice('follow-echo')],
+              ),
+              recentJourneyRecaps: const <HomeExpeditionCompletionRecap>[
+                HomeExpeditionCompletionRecap(
+                  journeyNumber: 6,
+                  decisionCount: 1,
+                  decisions: <HomeExpeditionDecisionLogEntry>[archivedDecision],
+                  pilotExperienceGained: 0,
+                  petBondGained: 0,
+                  materials: <HomeJourneyMaterialReward>[],
+                ),
+              ],
+            ),
+            recordExperimentExposures: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder log = find.byKey(const Key('platform-journey-decision-log'));
+      await _bringIntoView(tester, log);
+      final Finder knownEntry = find.byKey(
+        const Key('platform-journey-decision-echo-vault-v1'),
+      );
+      final Finder knownLayout = find.byKey(
+        const Key(
+          'platform-journey-decision-echo-vault-v1-stabilize-core-'
+          'choice-signal',
+        ),
+      );
+      await _bringIntoView(tester, knownEntry);
+      final EventChoiceSignalLayout knownSignal = tester
+          .widget<EventChoiceSignalLayout>(knownLayout);
+      expect(knownSignal.eventId, 'echo-vault-v1');
+      expect(knownSignal.choiceId, 'stabilize-core');
+      expect(knownSignal.muted, isFalse);
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-echo-vault-v1-stabilize-core-'
+              'stabilize-active',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-echo-vault-v1-follow-echo-echo-active',
+            ),
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: knownEntry,
+          matching: find.text('Persisted stabilize choice'),
+        ),
+        findsOneWidget,
+      );
+      final String knownTime = _formattedDecisionTime(
+        tester,
+        knownEntry,
+        currentDecisions.first.resolvedAt,
+        russian: false,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Entry 1 of 2. Persisted vault event. Decision: Persisted stabilize '
+          'choice. Outcome: Persisted stable outcome. Persisted stable '
+          'summary. $knownTime.',
+        ),
+        findsOneWidget,
+      );
+
+      final Finder futureEntry = find.byKey(
+        const Key('platform-journey-decision-future-event-v1'),
+      );
+      await _bringIntoView(tester, futureEntry);
+      expect(
+        find.descendant(
+          of: futureEntry,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-future-event-v1-stabilize-core-'
+              'unknown-active',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: futureEntry,
+          matching: find.text('Persisted future choice'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'event-choice-layout-future-event-v1-stabilize-core-compact',
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      final Finder archive = find.byKey(
+        const Key('platform-journey-archive-6'),
+      );
+      await _bringIntoView(tester, archive);
+      final Finder historyToggle = find.byKey(
+        const Key('platform-journey-archive-6-history-toggle'),
+      );
+      await _bringIntoView(tester, historyToggle);
+      await tester.tap(historyToggle);
+      await tester.pumpAndSettle();
+      final Finder archivedEntry = find.byKey(
+        const Key('platform-journey-decision-mirror-delta-v1'),
+      );
+      await _bringIntoView(tester, archivedEntry);
+      final Finder archivedLayout = find.byKey(
+        const Key(
+          'platform-journey-decision-mirror-delta-v1-follow-resonance-'
+          'choice-signal',
+        ),
+      );
+      final EventChoiceSignalLayout archivedSignal = tester
+          .widget<EventChoiceSignalLayout>(archivedLayout);
+      expect(archivedSignal.eventId, archivedDecision.eventId);
+      expect(archivedSignal.choiceId, archivedDecision.choiceId);
+      expect(
+        find.descendant(
+          of: archivedEntry,
+          matching: find.byKey(
+            const Key(
+              'event-choice-signal-mirror-delta-v1-follow-resonance-'
+              'resonance-active',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: archivedEntry,
+          matching: find.text('Persisted archived choice'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
   testWidgets('English Platform journal stays readable at compact large text', (
     WidgetTester tester,
   ) async {
@@ -4056,6 +4265,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final Finder readyEvent = find.byKey(
+        const Key('platform-current-journey-ready-event'),
+      );
       expect(
         find.byKey(
           const Key('platform-current-journey-ready-event-choice-count'),
@@ -4087,8 +4299,20 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.byType(EventChoiceSignalLayout), findsNothing);
-      expect(find.byType(EventChoiceSignal), findsNothing);
+      expect(
+        find.descendant(
+          of: readyEvent,
+          matching: find.byType(EventChoiceSignalLayout),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: readyEvent,
+          matching: find.byType(EventChoiceSignal),
+        ),
+        findsNothing,
+      );
       expect(find.byType(ExpeditionItemEmblem), findsNothing);
       expect(find.byType(ProgressionGainSignal), findsNothing);
     }
@@ -4133,13 +4357,25 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final Finder readyEvent = find.byKey(
+        const Key('platform-current-journey-ready-event'),
+      );
+      expect(readyEvent, findsNothing);
+      expect(find.byType(ExpeditionEventScene), findsNothing);
       expect(
-        find.byKey(const Key('platform-current-journey-ready-event')),
+        find.descendant(
+          of: readyEvent,
+          matching: find.byType(EventChoiceSignalLayout),
+        ),
         findsNothing,
       );
-      expect(find.byType(ExpeditionEventScene), findsNothing);
-      expect(find.byType(EventChoiceSignalLayout), findsNothing);
-      expect(find.byType(EventChoiceSignal), findsNothing);
+      expect(
+        find.descendant(
+          of: readyEvent,
+          matching: find.byType(EventChoiceSignal),
+        ),
+        findsNothing,
+      );
       expect(find.byType(ExpeditionItemEmblem), findsNothing);
       expect(find.byType(ProgressionGainSignal), findsNothing);
       expect(
@@ -4205,6 +4441,7 @@ class _LocalizedPlatformApp extends StatelessWidget {
 
 HomeSnapshot _homeWithPersistedDecision({
   HomeExpeditionCompletionRecap? completionRecap,
+  List<HomeExpeditionDecisionLogEntry>? decisionLog,
   HomeJourneyChronicle? journeyChronicle,
   List<HomeExpeditionCompletionRecap> recentJourneyRecaps =
       const <HomeExpeditionCompletionRecap>[],
@@ -4260,28 +4497,30 @@ HomeSnapshot _homeWithPersistedDecision({
     expeditionJourneyNumber: 7,
     journeyStartedAt: '2026-08-19T09:15:00Z',
     routeTrail: routeTrail ?? demo.routeTrail,
-    decisionLog: <HomeExpeditionDecisionLogEntry>[
-      HomeExpeditionDecisionLogEntry(
-        eventId: 'legacy-event-v1',
-        eventTitle: 'Сигнал прошлого',
-        choiceId: 'legacy-choice',
-        choiceTitle: 'Сохранённый выбор',
-        outcomeTitle: 'Сохранённый исход',
-        outcomeSummary: 'Сохранённое описание.',
-        resolvedAt: '2026-08-19T10:00:00Z',
-        pilotExperienceGained: withDecisionRewards ? 27 : 0,
-        petId: withDecisionRewards ? 'navigator-v1' : null,
-        petName: withDecisionRewards ? 'Navigator' : null,
-        petBondGained: withDecisionRewards ? 8 : 0,
-        materialReward: withDecisionRewards
-            ? const HomeJourneyMaterialReward(
-                itemId: 'signal-glass',
-                itemName: 'Signal glass',
-                quantity: 3,
-              )
-            : null,
-      ),
-    ],
+    decisionLog:
+        decisionLog ??
+        <HomeExpeditionDecisionLogEntry>[
+          HomeExpeditionDecisionLogEntry(
+            eventId: 'legacy-event-v1',
+            eventTitle: 'Сигнал прошлого',
+            choiceId: 'legacy-choice',
+            choiceTitle: 'Сохранённый выбор',
+            outcomeTitle: 'Сохранённый исход',
+            outcomeSummary: 'Сохранённое описание.',
+            resolvedAt: '2026-08-19T10:00:00Z',
+            pilotExperienceGained: withDecisionRewards ? 27 : 0,
+            petId: withDecisionRewards ? 'navigator-v1' : null,
+            petName: withDecisionRewards ? 'Navigator' : null,
+            petBondGained: withDecisionRewards ? 8 : 0,
+            materialReward: withDecisionRewards
+                ? const HomeJourneyMaterialReward(
+                    itemId: 'signal-glass',
+                    itemName: 'Signal glass',
+                    quantity: 3,
+                  )
+                : null,
+          ),
+        ],
     completionRecap: completionRecap,
     recentJourneyRecaps: recentJourneyRecaps,
     journeyChronicle: journeyChronicle,

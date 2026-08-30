@@ -2870,22 +2870,17 @@ class _JourneyDecisionEntry extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Icon(
-                            Icons.subdirectory_arrow_right,
-                            size: 18,
-                            color: colors.secondary,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              entry.choiceTitle,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
+                      EventChoiceSignalLayout(
+                        key: Key(
+                          'platform-journey-decision-${entry.eventId}-'
+                          '${entry.choiceId}-choice-signal',
+                        ),
+                        eventId: entry.eventId,
+                        choiceId: entry.choiceId,
+                        child: Text(
+                          entry.choiceTitle,
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(

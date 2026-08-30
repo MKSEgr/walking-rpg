@@ -582,6 +582,16 @@ catalog. Requirement art находится внутри existing event `Exclude
 поэтому combined localized requirement label остаётся единственным accessible
 источником и journal не получает actions.
 
+Каждая current `decisionLog` entry и запись раскрытой recent archive history
+переиспользует existing `EventChoiceSignal` только по exact persisted
+`eventId + choiceId` самой immutable записи. Known reviewed pair получает
+established mark, unknown/future/legacy pair — neutral fallback, даже если
+choice ID знаком внутри другого event. Текущий READY event, Platform snapshot,
+route, names, literal copy и mutable catalog не подменяют historical identity.
+Signal остаётся декоративным внутри existing entry `ExcludeSemantics`; полный
+persisted event/choice/outcome/reward/timestamp text и одна localized semantics
+node остаются authoritative, read-only и неизменными.
+
 Тот же immutable источник наполняет additive `decisions[]` в current и recent
 journey recap. Каждая запись переносит полный persisted decision/reward fact,
 поэтому архивный журнал не обращается к current content и не восстанавливает
