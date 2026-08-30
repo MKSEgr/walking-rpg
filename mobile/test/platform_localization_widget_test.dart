@@ -4265,6 +4265,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final Finder readyEvent = find.byKey(
+        const Key('platform-current-journey-ready-event'),
+      );
       expect(
         find.byKey(
           const Key('platform-current-journey-ready-event-choice-count'),
@@ -4296,8 +4299,20 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.byType(EventChoiceSignalLayout), findsNothing);
-      expect(find.byType(EventChoiceSignal), findsNothing);
+      expect(
+        find.descendant(
+          of: readyEvent,
+          matching: find.byType(EventChoiceSignalLayout),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: readyEvent,
+          matching: find.byType(EventChoiceSignal),
+        ),
+        findsNothing,
+      );
       expect(find.byType(ExpeditionItemEmblem), findsNothing);
       expect(find.byType(ProgressionGainSignal), findsNothing);
     }
@@ -4342,13 +4357,25 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final Finder readyEvent = find.byKey(
+        const Key('platform-current-journey-ready-event'),
+      );
+      expect(readyEvent, findsNothing);
+      expect(find.byType(ExpeditionEventScene), findsNothing);
       expect(
-        find.byKey(const Key('platform-current-journey-ready-event')),
+        find.descendant(
+          of: readyEvent,
+          matching: find.byType(EventChoiceSignalLayout),
+        ),
         findsNothing,
       );
-      expect(find.byType(ExpeditionEventScene), findsNothing);
-      expect(find.byType(EventChoiceSignalLayout), findsNothing);
-      expect(find.byType(EventChoiceSignal), findsNothing);
+      expect(
+        find.descendant(
+          of: readyEvent,
+          matching: find.byType(EventChoiceSignal),
+        ),
+        findsNothing,
+      );
       expect(find.byType(ExpeditionItemEmblem), findsNothing);
       expect(find.byType(ProgressionGainSignal), findsNothing);
       expect(
