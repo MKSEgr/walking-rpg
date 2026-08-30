@@ -4734,7 +4734,12 @@ void main() {
         const Key('platform-current-journey-ready-event'),
       );
       expect(readyEvent, findsNothing);
-      expect(find.byType(ExpeditionEventScene), findsNothing);
+      expect(
+        find.byKey(
+          const Key('platform-current-journey-ready-event-scene'),
+        ),
+        findsNothing,
+      );
       expect(
         find.descendant(
           of: readyEvent,
