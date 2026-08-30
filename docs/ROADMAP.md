@@ -2029,6 +2029,25 @@ Milestone 106 продолжает post-alpha code-only gameplay track из ADR 
 server-authoritative current-journey state из ADR 0038 через ADR 0120 без
 изменения immutable `alpha-rc1` или внешних gates.
 
+## Milestone 107 — Exact `alpha-rc3` release baseline
+
+### CODE_COMPLETE
+
+- [x] Post-gameplay-presentation candidate связывает accepted PR source и
+      post-merge `master` anchor через одно exact Git tree
+- [x] Standard CI и Release quality зафиксированы exact run IDs; skipped
+      неприменимый finalizer не выдан за пройденный gate
+- [x] Пять Release quality artifacts повторно скачаны, archive SHA-256 сверены
+      с GitHub, а payload checksum независимо пересчитаны и сверены с manifests
+- [x] Build metadata, synthetic restore scope и внешние non-claims записаны в
+      двуязычном immutable dossier без runtime/source изменений
+
+Milestone 107 устанавливает `alpha-rc3` как текущий engineering baseline для
+следующих этапов [`FORWARD_ROADMAP.md`](FORWARD_ROADMAP.md), не редактируя и не
+переназначая исторические `alpha-rc1` и `alpha-rc2`. Physical Health, real
+identity/stage, production signing/distribution и product/alpha validation
+остаются внешними gates.
+
 ## Exit criteria autonomous scope
 
 - standard CI и Release quality зелёные;

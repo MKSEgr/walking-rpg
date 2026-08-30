@@ -1,7 +1,8 @@
 # Release policy
 
 Current engineering baseline:
-[`alpha-rc1` release dossier](evidence/alpha-rc1-release-dossier.md).
+[`alpha-rc3` release dossier](evidence/alpha-rc3-release-dossier.md). Earlier
+candidate dossiers remain immutable historical records and are never relabeled.
 
 - Source changes enter `master` only through reviewed pull requests.
 - Standard CI validates behavior; `Release quality` validates packaging and policy.

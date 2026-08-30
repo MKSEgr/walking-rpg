@@ -192,6 +192,12 @@
 
 ### Added
 
+- immutable `alpha-rc3` release dossier pins the completed
+  gameplay-presentation baseline to one accepted source/master tree, exact
+  CI/release runs and five independently checksum-verified release artifacts,
+  while preserving signing, physical-device, stage, store and product gates as
+  explicit external non-claims;
+
 - independent offline review for schema-v1 Health validation exports reuses
   the mobile codec, binds one artifact to exact candidate metadata and rejects
   development or empty Health evidence before any physical-validation claim;
