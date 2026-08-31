@@ -122,7 +122,10 @@ void main() {
     // The mounted Journal owns the first pair; Crew must not add another pair.
     expect(platformLoads, 1);
     expect(platformHomeLoads, 1);
-    expect(find.byKey(const Key('crew-deferred')), findsOneWidget);
+    expect(
+      find.byKey(const Key('crew-deferred'), skipOffstage: false),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('navigation-crew')));
     await tester.pumpAndSettle();
