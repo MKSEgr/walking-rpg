@@ -17,6 +17,7 @@ void main() {
       const _ShellLocaleCase(
         locale: Locale('ru'),
         expedition: 'Экспедиция',
+        crewNavigation: 'Экипаж',
         journal: 'Журнал',
         waiting: 'Экспедиция ждёт твоих шагов',
         crew: 'Команда экспедиции',
@@ -30,6 +31,7 @@ void main() {
       const _ShellLocaleCase(
         locale: Locale('en'),
         expedition: 'Expedition',
+        crewNavigation: 'Crew',
         journal: 'Journal',
         waiting: 'The expedition is waiting for your steps',
         crew: 'Expedition crew',
@@ -46,6 +48,7 @@ void main() {
           locale: localeCase.locale,
           child: MainNavigationShell(
             home: HomeScreen(loader: () async => HomeSnapshot.demo),
+            crew: const Center(child: Text('crew-placeholder')),
             platform: const Center(child: Text('platform-placeholder')),
           ),
         ),
@@ -53,6 +56,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(localeCase.expedition), findsOneWidget);
+      expect(find.text(localeCase.crewNavigation), findsOneWidget);
       expect(find.text(localeCase.journal), findsOneWidget);
       expect(find.text(localeCase.waiting), findsOneWidget);
       expect(find.text(localeCase.expeditionName), findsAtLeastNWidgets(1));
@@ -87,16 +91,19 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1180, 820));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    for (final ({Locale locale, String terminal, String journal}) localeCase
-        in <({Locale locale, String terminal, String journal})>[
+    for (final ({Locale locale, String terminal, String crew, String journal})
+        localeCase
+        in <({Locale locale, String terminal, String crew, String journal})>[
           (
             locale: const Locale('ru'),
             terminal: 'ПОЛЕВОЙ ТЕРМИНАЛ',
+            crew: 'Экипаж',
             journal: 'Журнал',
           ),
           (
             locale: const Locale('en'),
             terminal: 'FIELD TERMINAL',
+            crew: 'Crew',
             journal: 'Journal',
           ),
         ]) {
@@ -105,6 +112,7 @@ void main() {
           locale: localeCase.locale,
           child: const MainNavigationShell(
             home: Center(child: Text('home-placeholder')),
+            crew: Center(child: Text('crew-placeholder')),
             platform: Center(child: Text('platform-placeholder')),
           ),
         ),
@@ -113,6 +121,7 @@ void main() {
 
       expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.text(localeCase.terminal), findsOneWidget);
+      expect(find.text(localeCase.crew), findsOneWidget);
       expect(find.text(localeCase.journal), findsOneWidget);
       expect(tester.takeException(), isNull);
     }
@@ -149,6 +158,7 @@ class _ShellLocaleCase {
   const _ShellLocaleCase({
     required this.locale,
     required this.expedition,
+    required this.crewNavigation,
     required this.journal,
     required this.waiting,
     required this.crew,
@@ -162,6 +172,7 @@ class _ShellLocaleCase {
 
   final Locale locale;
   final String expedition;
+  final String crewNavigation;
   final String journal;
   final String waiting;
   final String crew;

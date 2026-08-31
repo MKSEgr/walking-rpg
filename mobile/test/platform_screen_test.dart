@@ -1530,6 +1530,7 @@ void main() {
         },
         home: MainNavigationShell(
           home: const SizedBox.expand(),
+          crew: const SizedBox.expand(),
           platform: PlatformScreen(
             loader: () async {
               loads += 1;

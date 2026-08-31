@@ -23,6 +23,13 @@ void main() {
                 ),
                 SizedBox(width: 20),
                 ExpeditionNavigationGlyph(
+                  key: Key('crew-glyph-under-test'),
+                  destination: ExpeditionNavigationDestination.crew,
+                  selected: true,
+                  size: 28,
+                ),
+                SizedBox(width: 20),
+                ExpeditionNavigationGlyph(
                   key: Key('journal-glyph-under-test'),
                   destination: ExpeditionNavigationDestination.journal,
                   selected: false,
@@ -43,6 +50,7 @@ void main() {
       await pump(theme);
       for (final Key key in <Key>[
         const Key('expedition-glyph-under-test'),
+        const Key('crew-glyph-under-test'),
         const Key('journal-glyph-under-test'),
       ]) {
         final Finder glyph = find.byKey(key);

@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/application/activity_sync_coordinator.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
+import 'package:walking_rpg_mobile/features/crew/presentation/crew_screen.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 import 'package:walking_rpg_mobile/features/platform/presentation/platform_screen.dart';
 
@@ -61,6 +62,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
   MobileCommandRuntime? _scheduledRuntime;
   bool _demoActivitySync = false;
   int _homeGeneration = 0;
+  int _crewGeneration = 0;
   int _platformGeneration = 0;
   bool _isSyncing = false;
   bool _isRecovering = false;
@@ -79,6 +81,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
             widget.authoritativeRefreshGeneration &&
         widget.homeBuilder != null) {
       _homeGeneration += 1;
+      _crewGeneration += 1;
       _platformGeneration += 1;
     }
     if (oldWidget.synchronizer != widget.synchronizer ||
@@ -160,6 +163,18 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         recoveryUnavailable: widget.recoveryUnavailable,
         authoritativeRefreshGeneration: widget.authoritativeRefreshGeneration,
         activitySyncAction: activitySyncAction,
+      ),
+      crew: CrewScreen(
+        key: ValueKey<String>('crew-$_crewGeneration'),
+        loader: widget.platformLoader,
+        homeLoader: widget.platformHomeLoader,
+        commandExecutor: runtime?.executePlatform,
+        onServerStateChanged: _handleCrewStateChanged,
+        onOpenAccount: widget.onOpenAccount,
+        onOpenRecovery: widget.onOpenRecovery,
+        recoveryCount: widget.recoveryCount,
+        recoveryUnavailable: widget.recoveryUnavailable,
+        authoritativeRefreshGeneration: widget.authoritativeRefreshGeneration,
       ),
       platform: PlatformScreen(
         key: ValueKey<String>('platform-$_platformGeneration'),
@@ -291,6 +306,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       if (report.changedServerState) {
         setState(() {
           _homeGeneration += 1;
+          _crewGeneration += 1;
           _platformGeneration += 1;
         });
       }
@@ -345,6 +361,17 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     }
     setState(() {
       _homeGeneration += 1;
+      _crewGeneration += 1;
+    });
+  }
+
+  void _handleCrewStateChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _homeGeneration += 1;
+      _platformGeneration += 1;
     });
   }
 
@@ -377,6 +404,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       );
       setState(() {
         _homeGeneration += 1;
+        _crewGeneration += 1;
         _platformGeneration += 1;
       });
     } on Object {

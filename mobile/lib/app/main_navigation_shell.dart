@@ -13,11 +13,13 @@ class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({
     super.key,
     required this.home,
+    required this.crew,
     required this.platform,
     this.onDestinationChanged,
   });
 
   final Widget home;
+  final Widget crew;
   final Widget platform;
   final ValueChanged<int>? onDestinationChanged;
 
@@ -74,6 +76,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         ),
         NavigationDestinationVisibility(
           isVisible: _selectedIndex == 1,
+          child: widget.crew,
+        ),
+        NavigationDestinationVisibility(
+          isVisible: _selectedIndex == 2,
           child: widget.platform,
         ),
       ],
@@ -115,6 +121,18 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   selected: true,
                 ),
                 label: context.l10n.navigationExpeditionLabel,
+              ),
+              NavigationDestination(
+                key: const Key('navigation-crew'),
+                icon: const ExpeditionNavigationGlyph(
+                  destination: ExpeditionNavigationDestination.crew,
+                  selected: false,
+                ),
+                selectedIcon: const ExpeditionNavigationGlyph(
+                  destination: ExpeditionNavigationDestination.crew,
+                  selected: true,
+                ),
+                label: context.l10n.navigationCrewLabel,
               ),
               NavigationDestination(
                 key: const Key('navigation-platform'),
@@ -189,9 +207,17 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   ),
                   NavigationRailDestination(
                     icon: ExpeditionNavigationGlyph(
+                      key: const Key('navigation-crew-wide'),
+                      destination: ExpeditionNavigationDestination.crew,
+                      selected: _selectedIndex == 1,
+                    ),
+                    label: Text(context.l10n.navigationCrewLabel),
+                  ),
+                  NavigationRailDestination(
+                    icon: ExpeditionNavigationGlyph(
                       key: const Key('navigation-platform-wide'),
                       destination: ExpeditionNavigationDestination.journal,
-                      selected: _selectedIndex == 1,
+                      selected: _selectedIndex == 2,
                     ),
                     label: Text(context.l10n.navigationJournalLabel),
                   ),
