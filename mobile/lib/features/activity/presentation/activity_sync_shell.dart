@@ -64,6 +64,8 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
   int _homeGeneration = 0;
   int _crewGeneration = 0;
   int _platformGeneration = 0;
+  bool _crewOpened = false;
+  bool _crewDirty = false;
   bool _isSyncing = false;
   bool _isRecovering = false;
   int _selectedDestination = 0;
@@ -81,7 +83,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
             widget.authoritativeRefreshGeneration &&
         widget.homeBuilder != null) {
       _homeGeneration += 1;
-      _crewGeneration += 1;
+      _invalidateCrew();
       _platformGeneration += 1;
     }
     if (oldWidget.synchronizer != widget.synchronizer ||
@@ -164,18 +166,21 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
         authoritativeRefreshGeneration: widget.authoritativeRefreshGeneration,
         activitySyncAction: activitySyncAction,
       ),
-      crew: CrewScreen(
-        key: ValueKey<String>('crew-$_crewGeneration'),
-        loader: widget.platformLoader,
-        homeLoader: widget.platformHomeLoader,
-        commandExecutor: runtime?.executePlatform,
-        onServerStateChanged: _handleCrewStateChanged,
-        onOpenAccount: widget.onOpenAccount,
-        onOpenRecovery: widget.onOpenRecovery,
-        recoveryCount: widget.recoveryCount,
-        recoveryUnavailable: widget.recoveryUnavailable,
-        authoritativeRefreshGeneration: widget.authoritativeRefreshGeneration,
-      ),
+      crew: _crewOpened
+          ? CrewScreen(
+              key: ValueKey<String>('crew-$_crewGeneration'),
+              loader: widget.platformLoader,
+              homeLoader: widget.platformHomeLoader,
+              commandExecutor: runtime?.executePlatform,
+              onServerStateChanged: _handleCrewStateChanged,
+              onOpenAccount: widget.onOpenAccount,
+              onOpenRecovery: widget.onOpenRecovery,
+              recoveryCount: widget.recoveryCount,
+              recoveryUnavailable: widget.recoveryUnavailable,
+              authoritativeRefreshGeneration:
+                  widget.authoritativeRefreshGeneration,
+            )
+          : const SizedBox(key: Key('crew-deferred')),
       platform: PlatformScreen(
         key: ValueKey<String>('platform-$_platformGeneration'),
         loader: widget.platformLoader,
@@ -306,7 +311,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       if (report.changedServerState) {
         setState(() {
           _homeGeneration += 1;
-          _crewGeneration += 1;
+          _invalidateCrew();
           _platformGeneration += 1;
         });
       }
@@ -352,7 +357,22 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     }
     setState(() {
       _selectedDestination = index;
+      if (index == 1) {
+        _crewOpened = true;
+        if (_crewDirty) {
+          _crewGeneration += 1;
+          _crewDirty = false;
+        }
+      }
     });
+  }
+
+  void _invalidateCrew() {
+    if (_selectedDestination == 1) {
+      _crewGeneration += 1;
+    } else {
+      _crewDirty = true;
+    }
   }
 
   void _handlePlatformStateChanged() {
@@ -361,7 +381,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
     }
     setState(() {
       _homeGeneration += 1;
-      _crewGeneration += 1;
+      _invalidateCrew();
     });
   }
 
@@ -404,7 +424,7 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       );
       setState(() {
         _homeGeneration += 1;
-        _crewGeneration += 1;
+        _invalidateCrew();
         _platformGeneration += 1;
       });
     } on Object {
