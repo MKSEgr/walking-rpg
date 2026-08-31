@@ -453,15 +453,16 @@ Future<void> _capture(WidgetTester tester, String name) async {
   final RenderRepaintBoundary boundary = tester.renderObject<
     RenderRepaintBoundary
   >(find.byKey(_captureKey));
-  final ui.Image image = await boundary.toImage(pixelRatio: 2);
+  final ui.Image image = await boundary.toImage(pixelRatio: 1);
   final ByteData? bytes = await image.toByteData(format: ui.ImageByteFormat.png);
   if (bytes == null) {
     throw StateError('Could not encode $name');
   }
   await File(
     'test/render_output/$name.png',
-  ).writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+  ).writeAsBytes(bytes.buffer.asUint8List());
   image.dispose();
+  debugPrint('Rendered $name');
 }
 
 HomeSnapshot _currentHomeSnapshot() {
