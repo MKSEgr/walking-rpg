@@ -199,15 +199,10 @@ class _CrewScreenState extends State<CrewScreen> {
       final CrewHomeLoader homeLoader =
           widget.homeLoader ??
           () => HomeApiClient.fromEnvironment().fetchHome(DateTime.now());
-      final HomeSnapshot home;
-      try {
-        home = await homeLoader();
-      } on Object {
-        // The command was already accepted by the server. Keep the last Home
-        // snapshot instead of reporting a mutation failure or inviting a
-        // duplicate retry with a new idempotency key.
-        home = currentData.home;
-      }
+      final HomeSnapshot home = await _refreshHomeOrFallback(
+        homeLoader,
+        currentData.home,
+      );
       if (!mounted) {
         return;
       }
@@ -239,6 +234,20 @@ class _CrewScreenState extends State<CrewScreen> {
           _busyCommand = null;
         });
       }
+    }
+  }
+
+  Future<HomeSnapshot> _refreshHomeOrFallback(
+    CrewHomeLoader loader,
+    HomeSnapshot fallback,
+  ) async {
+    try {
+      return await loader();
+    } on Object {
+      // The command was already accepted by the server. Keep the last Home
+      // snapshot instead of reporting a mutation failure or inviting a
+      // duplicate retry with a new idempotency key.
+      return fallback;
     }
   }
 
