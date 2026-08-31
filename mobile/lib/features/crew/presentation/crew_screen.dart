@@ -470,80 +470,290 @@ class _CrewHero extends StatelessWidget {
     return ExpeditionPanel(
       key: const Key('crew-hero'),
       tone: ExpeditionPanelTone.resonance,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          ExpeditionBadge(
-            label: context.l10n.crewOverviewBadge,
-            icon: Icons.route_outlined,
-            tone: ExpeditionPanelTone.resonance,
-          ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final Widget portraits = Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  PilotPortrait(
-                    key: const Key('crew-pilot-portrait'),
-                    name: pilotName,
-                    size: 78,
-                    highlighted: true,
-                    equippedCosmeticIds: equippedCosmeticIds,
-                  ),
-                  const SizedBox(width: 10),
-                  CompanionPortrait(
-                    key: const Key('crew-active-pet-portrait'),
-                    petId: pet.petId,
-                    name: petName,
-                    species: petSpecies,
-                    evolutionStage: pet.evolutionStage,
-                    active: true,
-                    size: 78,
-                    equippedCosmeticIds: equippedCosmeticIds,
-                  ),
-                ],
-              );
-              final Widget copy = Column(
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(23),
+        child: Stack(
+          children: <Widget>[
+            Positioned(
+              top: -72,
+              right: -44,
+              child: _CrewGlowOrb(
+                color: context.walkingRpgPalette.resonance,
+                size: 190,
+              ),
+            ),
+            Positioned(
+              bottom: -88,
+              left: -64,
+              child: _CrewGlowOrb(
+                color: context.walkingRpgPalette.energy,
+                size: 180,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    context.l10n.platformCrewTitle(petName),
-                    style: Theme.of(context).textTheme.headlineSmall,
+                  ExpeditionBadge(
+                    label: context.l10n.crewOverviewBadge,
+                    icon: Icons.route_outlined,
+                    tone: ExpeditionPanelTone.resonance,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    equippedNames.isEmpty
-                        ? context.l10n.platformNoActiveCosmetics
-                        : context.l10n.platformEquippedCosmetics(
-                            equippedNames.join(' · '),
-                          ),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 16),
+                  LayoutBuilder(
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          final Widget portraits = _CrewPortraitStage(
+                            pilotName: pilotName,
+                            pet: pet,
+                            petName: petName,
+                            petSpecies: petSpecies,
+                            equippedCosmeticIds: equippedCosmeticIds,
+                          );
+                          final Widget copy = Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                context.l10n.platformCrewTitle(petName),
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                equippedNames.isEmpty
+                                    ? context.l10n.platformNoActiveCosmetics
+                                    : context.l10n.platformEquippedCosmetics(
+                                        equippedNames.join(' · '),
+                                      ),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: <Widget>[
+                                  _CrewMetric(
+                                    icon: Icons.navigation_outlined,
+                                    label: context.l10n.homePilotLabel,
+                                    value: '${home.pilotLevel}',
+                                    color: context.walkingRpgPalette.energy,
+                                  ),
+                                  _CrewMetric(
+                                    icon: Icons.favorite_outline,
+                                    label: context.l10n.platformBondLabel,
+                                    value: '${pet.bond}',
+                                    color: context.walkingRpgPalette.resonance,
+                                  ),
+                                  _CrewMetric(
+                                    icon: Icons.auto_awesome_outlined,
+                                    label: context.l10n.homeActiveCompanion,
+                                    value: context.l10n.companionFormLabel(
+                                      pet.evolutionStage,
+                                    ),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                          if (constraints.maxWidth < 420) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                portraits,
+                                const SizedBox(height: 14),
+                                copy,
+                              ],
+                            );
+                          }
+                          return Row(
+                            children: <Widget>[
+                              portraits,
+                              const SizedBox(width: 18),
+                              Expanded(child: copy),
+                            ],
+                          );
+                        },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CrewPortraitStage extends StatelessWidget {
+  const _CrewPortraitStage({
+    required this.pilotName,
+    required this.pet,
+    required this.petName,
+    required this.petSpecies,
+    required this.equippedCosmeticIds,
+  });
+
+  final String pilotName;
+  final PlatformPet pet;
+  final String petName;
+  final String petSpecies;
+  final Set<String> equippedCosmeticIds;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      key: const Key('crew-portrait-stage'),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.56),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: context.walkingRpgPalette.resonance.withValues(alpha: 0.34),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            PilotPortrait(
+              key: const Key('crew-pilot-portrait'),
+              name: pilotName,
+              size: 86,
+              highlighted: true,
+              equippedCosmeticIds: equippedCosmeticIds,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    width: 30,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: <Color>[
+                          context.walkingRpgPalette.energy,
+                          context.walkingRpgPalette.resonance,
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Icon(
+                    Icons.link,
+                    size: 17,
+                    color: context.walkingRpgPalette.resonance,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: 30,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: <Color>[
+                          context.walkingRpgPalette.energy,
+                          context.walkingRpgPalette.resonance,
+                        ],
+                      ),
                     ),
                   ),
                 ],
-              );
-              if (constraints.maxWidth < 420) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    portraits,
-                    const SizedBox(height: 14),
-                    copy,
-                  ],
-                );
-              }
-              return Row(
-                children: <Widget>[
-                  portraits,
-                  const SizedBox(width: 18),
-                  Expanded(child: copy),
-                ],
-              );
-            },
+              ),
+            ),
+            CompanionPortrait(
+              key: const Key('crew-active-pet-portrait'),
+              petId: pet.petId,
+              name: petName,
+              species: petSpecies,
+              evolutionStage: pet.evolutionStage,
+              active: true,
+              size: 86,
+              equippedCosmeticIds: equippedCosmeticIds,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CrewMetric extends StatelessWidget {
+  const _CrewMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 210),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        children: <Widget>[
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              '$label · $value',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CrewGlowOrb extends StatelessWidget {
+  const _CrewGlowOrb({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: <Color>[
+              color.withValues(alpha: 0.2),
+              color.withValues(alpha: 0),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -607,6 +817,27 @@ class _PilotCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.bolt_outlined,
+                size: 17,
+                color: context.walkingRpgPalette.energy,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  context.l10n.homePilotExperienceProgress(
+                    home.pilotCurrentExperience,
+                    home.pilotNextLevelExperience,
+                    home.remainingPilotExperience,
+                  ),
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Semantics(
             label: context.l10n.homePilotExperienceProgress(
               home.pilotCurrentExperience,
@@ -718,9 +949,24 @@ class _ActivePetCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Text(
-            '${context.l10n.platformBondLabel}: ${pet.bond}'
-            '${pet.isFullyEvolved ? '' : ' / ${pet.evolutionBond}'}',
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.favorite_outline,
+                size: 17,
+                color: context.walkingRpgPalette.resonance,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  '${context.l10n.platformBondLabel}: ${pet.bond}'
+                  '${pet.isFullyEvolved ? '' : ' / ${pet.evolutionBond}'}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
@@ -790,7 +1036,20 @@ class _PetRosterCard extends StatelessWidget {
       ],
     );
     final Widget status = pet.active
-        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+        ? Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check_circle,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          )
         : FilledButton.tonal(
             key: Key('crew-select-pet-${pet.petId}'),
             onPressed: busy ? null : onSelect,
@@ -1099,27 +1358,56 @@ class _SectionHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+    final Color accent = Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: <Color>[
+            accent.withValues(alpha: 0.12),
+            accent.withValues(alpha: 0),
+          ],
         ),
-      ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 3,
+            height: 44,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(width: 9),
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 20, color: accent),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

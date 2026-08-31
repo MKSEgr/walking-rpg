@@ -30,8 +30,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('crew-hero')), findsOneWidget);
+    expect(find.byKey(const Key('crew-portrait-stage')), findsOneWidget);
+    expect(find.byIcon(Icons.link), findsOneWidget);
     expect(find.byKey(const Key('crew-pilot-card')), findsOneWidget);
-    expect(find.byKey(const Key('crew-active-pet-card')), findsOneWidget);
     expect(find.byKey(const Key('crew-pilot-xp-progress')), findsOneWidget);
 
     final Finder scrollable = find
@@ -41,6 +42,7 @@ void main() {
         )
         .first;
     for (final Key key in const <Key>[
+      Key('crew-active-pet-card'),
       Key('crew-pet-spark-v1'),
       Key('crew-pet-moss-v1'),
       Key('crew-pet-rune-v1'),
@@ -280,18 +282,19 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
 
     await tester.scrollUntilVisible(
       find.byKey(const Key('crew-equip-cosmetic-spark-halo')),
       360,
     );
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
 
     expect(
       find.byKey(const Key('crew-equip-cosmetic-spark-halo')),
       findsOneWidget,
     );
-    expect(tester.takeException(), isNull);
   });
 }
 
