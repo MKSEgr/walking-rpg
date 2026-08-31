@@ -282,18 +282,19 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
 
     await tester.scrollUntilVisible(
       find.byKey(const Key('crew-equip-cosmetic-spark-halo')),
       360,
     );
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
 
     expect(
       find.byKey(const Key('crew-equip-cosmetic-spark-halo')),
       findsOneWidget,
     );
-    expect(tester.takeException(), isNull);
   });
 }
 
