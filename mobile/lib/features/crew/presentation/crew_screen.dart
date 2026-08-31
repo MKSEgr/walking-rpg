@@ -4,6 +4,7 @@ import 'package:walking_rpg_mobile/core/localization/app_localizations_extension
 import 'package:walking_rpg_mobile/core/localization/current_content_localizations.dart';
 import 'package:walking_rpg_mobile/core/localization/current_platform_content_localizations.dart';
 import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
+import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
@@ -166,11 +167,14 @@ class _CrewScreenState extends State<CrewScreen> {
     final CrewHomeLoader homeLoader =
         widget.homeLoader ??
         () => HomeApiClient.fromEnvironment().fetchHome(DateTime.now());
-    final Future<PlatformSnapshot> platformFuture = platformLoader();
-    final Future<HomeSnapshot> homeFuture = homeLoader();
-    final PlatformSnapshot platform = await platformFuture;
-    final HomeSnapshot home = await homeFuture;
-    return _CrewViewData(platform: platform, home: home);
+    final List<Object> snapshots = await Future.wait<Object>(<Future<Object>>[
+      platformLoader(),
+      homeLoader(),
+    ]);
+    return _CrewViewData(
+      platform: snapshots[0] as PlatformSnapshot,
+      home: snapshots[1] as HomeSnapshot,
+    );
   }
 
   Future<void> _executeCommand(
@@ -186,6 +190,7 @@ class _CrewScreenState extends State<CrewScreen> {
       _busyCommand = commandType;
     });
     try {
+      final _CrewViewData currentData = await _dataFuture;
       final PlatformCommandResult result = await executor(
         commandType: commandType,
         payload: payload,
@@ -194,7 +199,15 @@ class _CrewScreenState extends State<CrewScreen> {
       final CrewHomeLoader homeLoader =
           widget.homeLoader ??
           () => HomeApiClient.fromEnvironment().fetchHome(DateTime.now());
-      final HomeSnapshot home = await homeLoader();
+      final HomeSnapshot home;
+      try {
+        home = await homeLoader();
+      } on Object {
+        // The command was already accepted by the server. Keep the last Home
+        // snapshot instead of reporting a mutation failure or inviting a
+        // duplicate retry with a new idempotency key.
+        home = currentData.home;
+      }
       if (!mounted) {
         return;
       }
@@ -292,13 +305,16 @@ class _CrewBody extends StatelessWidget {
         .toList(growable: false);
     final bool blocked = busy || data.isReadOnly;
     final cacheMetadata = platform.cacheMetadata ?? home.cacheMetadata;
+    final double bottomDockInset = NavigationChromeInsets.bottomDockInsetOf(
+      context,
+    );
 
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
       child: ListView(
         key: const Key('crew-screen-list'),
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 36),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 36 + bottomDockInset),
         children: <Widget>[
           if (cacheMetadata != null) ...<Widget>[
             CachedSnapshotBanner(metadata: cacheMetadata),

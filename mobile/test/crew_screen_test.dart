@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crew/presentation/crew_screen.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
+import 'package:walking_rpg_mobile/features/platform/domain/platform_snapshot.dart';
 
 import 'support/platform_fixture.dart';
 
@@ -106,6 +110,107 @@ void main() {
     expect(sentIdempotencyKey, 'crew-command-key');
     expect(stateChanged, isTrue);
     expect(find.byKey(const Key('crew-select-pet-moss-v1')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps an accepted command when the Home refresh fails', (
+    WidgetTester tester,
+  ) async {
+    int homeLoads = 0;
+    bool stateChanged = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: CrewScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async {
+            homeLoads += 1;
+            if (homeLoads > 1) {
+              throw StateError('Home refresh failed');
+            }
+            return HomeSnapshot.demo;
+          },
+          onServerStateChanged: () {
+            stateChanged = true;
+          },
+          commandExecutor:
+              ({
+                required String commandType,
+                required Map<String, Object?> payload,
+                required String idempotencyKey,
+              }) async {
+                return platformCommandResult(
+                  commandType: commandType,
+                  idempotencyKey: idempotencyKey,
+                  snapshot: platformSnapshot(
+                    stateVersion: 4,
+                    activePetId: 'moss-v1',
+                  ),
+                );
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder selectMoss = find.byKey(const Key('crew-select-pet-moss-v1'));
+    await tester.scrollUntilVisible(selectMoss, 300);
+    await tester.tap(selectMoss);
+    await tester.pumpAndSettle();
+
+    expect(homeLoads, 2);
+    expect(stateChanged, isTrue);
+    expect(find.byKey(const Key('crew-select-pet-moss-v1')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('handles both concurrent snapshot failures', (
+    WidgetTester tester,
+  ) async {
+    final Completer<PlatformSnapshot> platform = Completer<PlatformSnapshot>();
+    final Completer<HomeSnapshot> home = Completer<HomeSnapshot>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: CrewScreen(
+          loader: () => platform.future,
+          homeLoader: () => home.future,
+        ),
+      ),
+    );
+
+    home.completeError(StateError('Home failed first'));
+    await tester.pump();
+    platform.completeError(StateError('Platform failed second'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('crew-error-state')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reserves the navigation dock below crew content', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: NavigationChromeInsets(
+          bottomDockInset: 120,
+          child: CrewScreen(
+            loader: () async => platformSnapshot(),
+            homeLoader: () async => HomeSnapshot.demo,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ListView list = tester.widget<ListView>(
+      find.byKey(const Key('crew-screen-list')),
+    );
+    expect(list.padding, const EdgeInsets.fromLTRB(16, 16, 16, 156));
     expect(tester.takeException(), isNull);
   });
 
