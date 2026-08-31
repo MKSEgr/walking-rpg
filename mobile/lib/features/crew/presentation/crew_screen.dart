@@ -503,80 +503,88 @@ class _CrewHero extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final Widget portraits = _CrewPortraitStage(
-                pilotName: pilotName,
-                pet: pet,
-                petName: petName,
-                petSpecies: petSpecies,
-                equippedCosmeticIds: equippedCosmeticIds,
-              );
-              final Widget copy = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    context.l10n.platformCrewTitle(petName),
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          final Widget portraits = _CrewPortraitStage(
+                            pilotName: pilotName,
+                            pet: pet,
+                            petName: petName,
+                            petSpecies: petSpecies,
+                            equippedCosmeticIds: equippedCosmeticIds,
+                          );
+                          final Widget copy = Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                context.l10n.platformCrewTitle(petName),
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                equippedNames.isEmpty
+                                    ? context.l10n.platformNoActiveCosmetics
+                                    : context.l10n.platformEquippedCosmetics(
+                                        equippedNames.join(' · '),
+                                      ),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: <Widget>[
+                                  _CrewMetric(
+                                    icon: Icons.navigation_outlined,
+                                    label: context.l10n.homePilotLabel,
+                                    value: '${home.pilotLevel}',
+                                    color: context.walkingRpgPalette.energy,
+                                  ),
+                                  _CrewMetric(
+                                    icon: Icons.favorite_outline,
+                                    label: context.l10n.platformBondLabel,
+                                    value: '${pet.bond}',
+                                    color: context.walkingRpgPalette.resonance,
+                                  ),
+                                  _CrewMetric(
+                                    icon: Icons.auto_awesome_outlined,
+                                    label: context.l10n.homeActiveCompanion,
+                                    value: context.l10n.companionFormLabel(
+                                      pet.evolutionStage,
+                                    ),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                          if (constraints.maxWidth < 420) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                portraits,
+                                const SizedBox(height: 14),
+                                copy,
+                              ],
+                            );
+                          }
+                          return Row(
+                            children: <Widget>[
+                              portraits,
+                              const SizedBox(width: 18),
+                              Expanded(child: copy),
+                            ],
+                          );
+                        },
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    equippedNames.isEmpty
-                        ? context.l10n.platformNoActiveCosmetics
-                        : context.l10n.platformEquippedCosmetics(
-                            equippedNames.join(' · '),
-                          ),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      _CrewMetric(
-                        icon: Icons.navigation_outlined,
-                        label: context.l10n.homePilotLabel,
-                        value: '${home.pilotLevel}',
-                        color: context.walkingRpgPalette.energy,
-                      ),
-                      _CrewMetric(
-                        icon: Icons.favorite_outline,
-                        label: context.l10n.platformBondLabel,
-                        value: '${pet.bond}',
-                        color: context.walkingRpgPalette.resonance,
-                      ),
-                      _CrewMetric(
-                        icon: Icons.auto_awesome_outlined,
-                        label: context.l10n.homeActiveCompanion,
-                        value: context.l10n.companionFormLabel(
-                          pet.evolutionStage,
-                        ),
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                  ),
-                ],
-              );
-              if (constraints.maxWidth < 420) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    portraits,
-                    const SizedBox(height: 14),
-                    copy,
-                  ],
-                );
-              }
-              return Row(
-                children: <Widget>[
-                  portraits,
-                  const SizedBox(width: 18),
-                  Expanded(child: copy),
-                ],
-              );
-            },
-          ),
                 ],
               ),
             ),
