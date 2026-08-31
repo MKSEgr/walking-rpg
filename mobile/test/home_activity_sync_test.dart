@@ -104,6 +104,7 @@ void main() {
       MaterialApp(
         theme: WalkingRpgTheme.dark(),
         home: ActivitySyncShell(
+          synchronizer: () async => _syncResult(),
           homeLoader: () async => HomeSnapshot.demo,
           platformLoader: () async {
             platformLoads += 1;
