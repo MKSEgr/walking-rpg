@@ -35,20 +35,23 @@ void main() {
           matching: find.byType(Scrollable),
         )
         .first;
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('crew-cosmetic-spark-halo')),
-      420,
-      scrollable: scrollable,
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('crew-pet-spark-v1')), findsOneWidget);
-    expect(find.byKey(const Key('crew-pet-moss-v1')), findsOneWidget);
-    expect(find.byKey(const Key('crew-pet-rune-v1')), findsOneWidget);
-    expect(find.byKey(const Key('crew-skills-card')), findsOneWidget);
-    expect(find.byKey(const Key('crew-equipment-card')), findsOneWidget);
-    expect(find.byKey(const Key('crew-cosmetic-pilot-scarf')), findsOneWidget);
-    expect(find.byKey(const Key('crew-cosmetic-spark-halo')), findsOneWidget);
+    for (final Key key in const <Key>[
+      Key('crew-pet-spark-v1'),
+      Key('crew-pet-moss-v1'),
+      Key('crew-pet-rune-v1'),
+      Key('crew-skills-card'),
+      Key('crew-equipment-card'),
+      Key('crew-cosmetic-pilot-scarf'),
+      Key('crew-cosmetic-spark-halo'),
+    ]) {
+      await tester.scrollUntilVisible(
+        find.byKey(key),
+        320,
+        scrollable: scrollable,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(key), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
 
