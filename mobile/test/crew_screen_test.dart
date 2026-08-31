@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crew/presentation/crew_screen.dart';
@@ -109,6 +110,45 @@ void main() {
     expect(sentPayload, <String, Object?>{'petId': 'moss-v1'});
     expect(sentIdempotencyKey, 'crew-command-key');
     expect(stateChanged, isTrue);
+    expect(find.byKey(const Key('crew-select-pet-moss-v1')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps Platform commands enabled with a cached Home snapshot', (
+    WidgetTester tester,
+  ) async {
+    int commands = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: CrewScreen(
+          loader: () async => platformSnapshot(),
+          homeLoader: () async => _cachedHomeSnapshot(),
+          commandExecutor:
+              ({
+                required String commandType,
+                required Map<String, Object?> payload,
+                required String idempotencyKey,
+              }) async {
+                commands += 1;
+                return platformCommandResult(
+                  commandType: commandType,
+                  idempotencyKey: idempotencyKey,
+                  snapshot: platformSnapshot(activePetId: 'moss-v1'),
+                );
+              },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder selectMoss = find.byKey(const Key('crew-select-pet-moss-v1'));
+    await tester.scrollUntilVisible(selectMoss, 300);
+    await tester.tap(selectMoss);
+    await tester.pumpAndSettle();
+
+    expect(commands, 1);
     expect(find.byKey(const Key('crew-select-pet-moss-v1')), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -253,4 +293,41 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+}
+
+HomeSnapshot _cachedHomeSnapshot() {
+  const HomeSnapshot demo = HomeSnapshot.demo;
+  return HomeSnapshot(
+    localDate: demo.localDate,
+    timeZone: demo.timeZone,
+    dailySteps: demo.dailySteps,
+    dailyGoal: demo.dailyGoal,
+    availableEnergy: demo.availableEnergy,
+    activityStateVersion: demo.activityStateVersion,
+    economyVersion: demo.economyVersion,
+    lastActivitySyncAt: demo.lastActivitySyncAt,
+    serverTime: demo.serverTime,
+    contentVersion: demo.contentVersion,
+    expeditionId: demo.expeditionId,
+    expeditionName: demo.expeditionName,
+    currentNodeId: demo.currentNodeId,
+    currentNodeName: demo.currentNodeName,
+    expeditionProgress: demo.expeditionProgress,
+    requiredEnergy: demo.requiredEnergy,
+    expeditionStatus: demo.expeditionStatus,
+    expeditionVersion: demo.expeditionVersion,
+    unlockedEvent: demo.unlockedEvent,
+    pilotName: demo.pilotName,
+    pilotLevel: demo.pilotLevel,
+    pilotCurrentExperience: demo.pilotCurrentExperience,
+    pilotNextLevelExperience: demo.pilotNextLevelExperience,
+    petName: demo.petName,
+    petLevel: demo.petLevel,
+    petBond: demo.petBond,
+    equipment: demo.equipment,
+    cacheMetadata: CachedReadMetadata(
+      cachedAt: DateTime.utc(2026, 8, 31, 13),
+      reason: 'Home unavailable',
+    ),
+  );
 }
