@@ -30,6 +30,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('crew-hero')), findsOneWidget);
+    expect(find.byKey(const Key('crew-portrait-stage')), findsOneWidget);
+    expect(find.byIcon(Icons.link), findsOneWidget);
     expect(find.byKey(const Key('crew-pilot-card')), findsOneWidget);
     expect(find.byKey(const Key('crew-active-pet-card')), findsOneWidget);
     expect(find.byKey(const Key('crew-pilot-xp-progress')), findsOneWidget);
