@@ -785,13 +785,10 @@ class _PilotCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _CrewPortraitFrame(
-                color: context.walkingRpgPalette.energy,
-                child: PilotPortrait(
-                  name: pilotName,
-                  size: 68,
-                  equippedCosmeticIds: equippedCosmeticIds,
-                ),
+              PilotPortrait(
+                name: pilotName,
+                size: 68,
+                equippedCosmeticIds: equippedCosmeticIds,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -911,17 +908,14 @@ class _ActivePetCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _CrewPortraitFrame(
-                color: context.walkingRpgPalette.resonance,
-                child: CompanionPortrait(
-                  petId: pet.petId,
-                  name: petName,
-                  species: petSpecies,
-                  evolutionStage: pet.evolutionStage,
-                  active: true,
-                  size: 82,
-                  equippedCosmeticIds: equippedCosmeticIds,
-                ),
+              CompanionPortrait(
+                petId: pet.petId,
+                name: petName,
+                species: petSpecies,
+                evolutionStage: pet.evolutionStage,
+                active: true,
+                size: 82,
+                equippedCosmeticIds: equippedCosmeticIds,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -963,12 +957,14 @@ class _ActivePetCard extends StatelessWidget {
                 color: context.walkingRpgPalette.resonance,
               ),
               const SizedBox(width: 7),
-              Text(
-                '${context.l10n.platformBondLabel}: ${pet.bond}'
-                '${pet.isFullyEvolved ? '' : ' / ${pet.evolutionBond}'}',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  '${context.l10n.platformBondLabel}: ${pet.bond}'
+                  '${pet.isFullyEvolved ? '' : ' / ${pet.evolutionBond}'}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1406,39 +1402,6 @@ class _SectionHeading extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CrewPortraitFrame extends StatelessWidget {
-  const _CrewPortraitFrame({required this.color, required this.child});
-
-  final Color color;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            color.withValues(alpha: 0.82),
-            color.withValues(alpha: 0.08),
-          ],
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: color.withValues(alpha: 0.18),
-            blurRadius: 18,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: child,
     );
   }
 }
