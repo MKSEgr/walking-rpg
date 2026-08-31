@@ -14,11 +14,13 @@ class MainNavigationShell extends StatefulWidget {
     super.key,
     required this.home,
     required this.platform,
+    this.crew,
     this.onDestinationChanged,
   });
 
   final Widget home;
   final Widget platform;
+  final Widget? crew;
   final ValueChanged<int>? onDestinationChanged;
 
   @override
@@ -72,8 +74,13 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           isVisible: _selectedIndex == 0,
           child: widget.home,
         ),
+        if (widget.crew case final Widget crew)
+          NavigationDestinationVisibility(
+            isVisible: _selectedIndex == 1,
+            child: crew,
+          ),
         NavigationDestinationVisibility(
-          isVisible: _selectedIndex == 1,
+          isVisible: _selectedIndex == _platformIndex,
           child: widget.platform,
         ),
       ],
@@ -116,6 +123,19 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 ),
                 label: context.l10n.navigationExpeditionLabel,
               ),
+              if (widget.crew != null)
+                NavigationDestination(
+                  key: const Key('navigation-crew'),
+                  icon: const ExpeditionNavigationGlyph(
+                    destination: ExpeditionNavigationDestination.crew,
+                    selected: false,
+                  ),
+                  selectedIcon: const ExpeditionNavigationGlyph(
+                    destination: ExpeditionNavigationDestination.crew,
+                    selected: true,
+                  ),
+                  label: context.l10n.navigationCrewLabel,
+                ),
               NavigationDestination(
                 key: const Key('navigation-platform'),
                 icon: const ExpeditionNavigationGlyph(
@@ -187,11 +207,20 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     ),
                     label: Text(context.l10n.navigationExpeditionLabel),
                   ),
+                  if (widget.crew != null)
+                    NavigationRailDestination(
+                      icon: ExpeditionNavigationGlyph(
+                        key: const Key('navigation-crew-wide'),
+                        destination: ExpeditionNavigationDestination.crew,
+                        selected: _selectedIndex == 1,
+                      ),
+                      label: Text(context.l10n.navigationCrewLabel),
+                    ),
                   NavigationRailDestination(
                     icon: ExpeditionNavigationGlyph(
                       key: const Key('navigation-platform-wide'),
                       destination: ExpeditionNavigationDestination.journal,
-                      selected: _selectedIndex == 1,
+                      selected: _selectedIndex == _platformIndex,
                     ),
                     label: Text(context.l10n.navigationJournalLabel),
                   ),
@@ -213,4 +242,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     });
     widget.onDestinationChanged?.call(index);
   }
+
+  int get _platformIndex => widget.crew == null ? 1 : 2;
 }

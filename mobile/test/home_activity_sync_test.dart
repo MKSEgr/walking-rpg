@@ -94,6 +94,48 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('defers Crew requests until the destination is opened', (
+    WidgetTester tester,
+  ) async {
+    int platformLoads = 0;
+    int platformHomeLoads = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ActivitySyncShell(
+          synchronizer: () async => _syncResult(),
+          homeLoader: () async => HomeSnapshot.demo,
+          platformLoader: () async {
+            platformLoads += 1;
+            return platformSnapshot();
+          },
+          platformHomeLoader: () async {
+            platformHomeLoads += 1;
+            return HomeSnapshot.demo;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The mounted Journal owns the first pair; Crew must not add another pair.
+    expect(platformLoads, 1);
+    expect(platformHomeLoads, 1);
+    expect(
+      find.byKey(const Key('crew-deferred'), skipOffstage: false),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('navigation-crew')));
+    await tester.pumpAndSettle();
+
+    expect(platformLoads, 2);
+    expect(platformHomeLoads, 2);
+    expect(find.byKey(const Key('crew-hero')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('full Home supports compact enlarged text without overflow', (
     WidgetTester tester,
   ) async {

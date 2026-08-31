@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
-enum ExpeditionNavigationDestination { expedition, journal }
+enum ExpeditionNavigationDestination { expedition, crew, journal }
 
-/// Code-native identity for the two stable player destinations.
+/// Code-native identity for the three stable player destinations.
 ///
 /// The glyph is deliberately decorative. The owning navigation control keeps
 /// the complete destination label, selection semantics and callback.
@@ -27,6 +27,7 @@ class ExpeditionNavigationGlyph extends StatelessWidget {
         IconTheme.of(context).color ?? colors.onSurfaceVariant;
     final Color accent = switch (destination) {
       ExpeditionNavigationDestination.expedition => palette.energy,
+      ExpeditionNavigationDestination.crew => colors.primary,
       ExpeditionNavigationDestination.journal => palette.resonance,
     };
 
@@ -70,9 +71,78 @@ class _ExpeditionNavigationGlyphPainter extends CustomPainter {
       case ExpeditionNavigationDestination.expedition:
         _paintExpedition(canvas, size);
         return;
+      case ExpeditionNavigationDestination.crew:
+        _paintCrew(canvas, size);
+        return;
       case ExpeditionNavigationDestination.journal:
         _paintJournal(canvas, size);
         return;
+    }
+  }
+
+  void _paintCrew(Canvas canvas, Size size) {
+    final double unit = size.shortestSide;
+    final Paint outline = Paint()
+      ..color = foreground.withValues(alpha: selected ? 0.96 : 0.74)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = unit * 0.075;
+    final Paint signal = Paint()
+      ..color = (selected ? accent : foreground).withValues(
+        alpha: selected ? 0.88 : 0.5,
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = unit * 0.065;
+
+    canvas
+      ..drawCircle(
+        Offset(size.width * 0.36, size.height * 0.33),
+        unit * 0.14,
+        outline,
+      )
+      ..drawCircle(
+        Offset(size.width * 0.7, size.height * 0.42),
+        unit * 0.115,
+        outline,
+      )
+      ..drawArc(
+        Rect.fromLTRB(
+          size.width * 0.13,
+          size.height * 0.48,
+          size.width * 0.59,
+          size.height * 0.88,
+        ),
+        3.45,
+        2.98,
+        false,
+        outline,
+      )
+      ..drawArc(
+        Rect.fromLTRB(
+          size.width * 0.5,
+          size.height * 0.54,
+          size.width * 0.89,
+          size.height * 0.84,
+        ),
+        3.52,
+        2.82,
+        false,
+        outline,
+      )
+      ..drawLine(
+        Offset(size.width * 0.48, size.height * 0.47),
+        Offset(size.width * 0.59, size.height * 0.49),
+        signal,
+      );
+
+    if (selected) {
+      canvas.drawCircle(
+        Offset(size.width * 0.535, size.height * 0.48),
+        unit * 0.055,
+        Paint()..color = accent,
+      );
     }
   }
 

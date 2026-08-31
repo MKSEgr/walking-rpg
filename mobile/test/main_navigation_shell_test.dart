@@ -10,7 +10,7 @@ import 'package:walking_rpg_mobile/features/platform/presentation/platform_scree
 import 'support/platform_fixture.dart';
 
 void main() {
-  testWidgets('switches between expedition and platform journal', (
+  testWidgets('switches between expedition, crew and platform journal', (
     WidgetTester tester,
   ) async {
     int? selected;
@@ -18,6 +18,7 @@ void main() {
       MaterialApp(
         home: MainNavigationShell(
           home: const Center(child: Text('home-content')),
+          crew: const Center(child: Text('crew-content')),
           platform: const Center(child: Text('platform-content')),
           onDestinationChanged: (int index) {
             selected = index;
@@ -27,14 +28,21 @@ void main() {
     );
 
     expect(find.text('home-content'), findsOneWidget);
+    expect(find.text('crew-content', skipOffstage: false), findsOneWidget);
     expect(find.text('platform-content', skipOffstage: false), findsOneWidget);
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
 
-    await tester.tap(find.byKey(const Key('navigation-platform')));
+    await tester.tap(find.byKey(const Key('navigation-crew')));
     await tester.pumpAndSettle();
 
     expect(selected, 1);
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 1);
+
+    await tester.tap(find.byKey(const Key('navigation-platform')));
+    await tester.pumpAndSettle();
+
+    expect(selected, 2);
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 2);
 
     await tester.tap(find.byKey(const Key('navigation-home')));
     await tester.pumpAndSettle();
@@ -63,6 +71,7 @@ void main() {
         },
         home: MainNavigationShell(
           home: const Center(child: Text('compact-home-content')),
+          crew: const Center(child: Text('compact-crew-content')),
           platform: const Center(child: Text('compact-platform-content')),
           onDestinationChanged: selections.add,
         ),
@@ -84,6 +93,7 @@ void main() {
           .toList(),
       <(ExpeditionNavigationDestination, bool)>[
         (ExpeditionNavigationDestination.expedition, true),
+        (ExpeditionNavigationDestination.crew, false),
         (ExpeditionNavigationDestination.journal, false),
       ],
     );
@@ -97,8 +107,8 @@ void main() {
     await tester.tap(find.byKey(const Key('navigation-platform')));
     await tester.pumpAndSettle();
 
-    expect(selections, <int>[1]);
-    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 1);
+    expect(selections, <int>[2]);
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 2);
     expect(
       tester
           .widgetList<ExpeditionNavigationGlyph>(
@@ -106,7 +116,7 @@ void main() {
           )
           .map((ExpeditionNavigationGlyph glyph) => glyph.selected)
           .toList(),
-      <bool>[false, true],
+      <bool>[false, false, true],
     );
     expect(tester.takeException(), isNull);
   });
@@ -131,6 +141,7 @@ void main() {
         },
         home: MainNavigationShell(
           home: const Center(child: Text('wide-home-content')),
+          crew: const Center(child: Text('wide-crew-content')),
           platform: const Center(child: Text('wide-platform-content')),
           onDestinationChanged: selections.add,
         ),
@@ -140,7 +151,7 @@ void main() {
     expect(find.byKey(const Key('main-navigation-shell')), findsOneWidget);
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byType(ExpeditionNavigationGlyph), findsNWidgets(2));
+    expect(find.byType(ExpeditionNavigationGlyph), findsNWidgets(3));
     expect(find.text('ПОЛЕВОЙ ТЕРМИНАЛ'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const Key('main-navigation-rail'))).width,
@@ -150,12 +161,12 @@ void main() {
     await tester.tap(find.byKey(const Key('navigation-platform-wide')));
     await tester.pumpAndSettle();
 
-    expect(selections, <int>[1]);
+    expect(selections, <int>[2]);
     expect(
       tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex,
-      1,
+      2,
     );
-    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 1);
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 2);
     expect(
       tester
           .widgetList<ExpeditionNavigationGlyph>(
@@ -163,17 +174,17 @@ void main() {
           )
           .map((ExpeditionNavigationGlyph glyph) => glyph.selected)
           .toList(),
-      <bool>[false, true],
+      <bool>[false, false, true],
     );
 
     await tester.tap(find.byKey(const Key('navigation-platform-wide')));
     await tester.pump();
-    expect(selections, <int>[1]);
+    expect(selections, <int>[2]);
 
     await tester.tap(find.byKey(const Key('navigation-home-wide')));
     await tester.pumpAndSettle();
 
-    expect(selections, <int>[1, 0]);
+    expect(selections, <int>[2, 0]);
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
     expect(tester.takeException(), isNull);
   });
@@ -197,6 +208,7 @@ void main() {
         },
         home: const MainNavigationShell(
           home: Center(child: Text('short-wide-home-content')),
+          crew: Center(child: Text('short-wide-crew-content')),
           platform: Center(child: Text('short-wide-platform-content')),
         ),
       ),
@@ -237,6 +249,7 @@ void main() {
               decoration: InputDecoration(labelText: 'Полевая заметка'),
             ),
           ),
+          crew: const Center(child: Text('stateful-crew-content')),
           platform: const Center(child: Text('stateful-platform-content')),
           onDestinationChanged: selections.add,
         ),
@@ -287,6 +300,7 @@ void main() {
         },
         home: MainNavigationShell(
           home: HomeScreen(loader: () async => HomeSnapshot.demo),
+          crew: const SizedBox.expand(),
           platform: PlatformScreen(
             loader: () async => platformSnapshot(),
             homeLoader: () async => HomeSnapshot.demo,
