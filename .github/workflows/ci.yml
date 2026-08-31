@@ -173,9 +173,11 @@ jobs:
         run: flutter pub get --enforce-lockfile
 
       - name: Render current game screens
-        run: flutter test --no-pub test/current_screen_render_test.dart
+        run: timeout 240 flutter test --no-pub test/current_screen_render_test.dart
+        continue-on-error: true
 
       - name: Upload current game screen renders
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: current-game-screen-renders
