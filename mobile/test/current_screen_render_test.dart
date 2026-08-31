@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
@@ -48,6 +50,9 @@ const List<String> _completeJourneySteps = <String>[
 ];
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(_loadRenderFonts);
+
   testWidgets('render every current working screen', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -422,13 +427,17 @@ Future<void> _pumpScreen(
   AppLocaleController localeController,
   Widget screen,
 ) async {
+  final ThemeData theme = WalkingRpgTheme.dark();
   await tester.pumpWidget(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       locale: const Locale('ru'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      theme: WalkingRpgTheme.dark(),
+      theme: theme.copyWith(
+        textTheme: theme.textTheme.apply(fontFamily: 'Roboto'),
+        primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'Roboto'),
+      ),
       builder: (BuildContext context, Widget? child) {
         return RepaintBoundary(
           key: _captureKey,
@@ -443,6 +452,35 @@ Future<void> _pumpScreen(
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 800));
+}
+
+Future<void> _loadRenderFonts() async {
+  final String? flutterRoot = Platform.environment['FLUTTER_ROOT'];
+  if (flutterRoot == null || flutterRoot.isEmpty) {
+    throw StateError('FLUTTER_ROOT is required for current screen renders');
+  }
+  final String fontRoot = '$flutterRoot/bin/cache/artifacts/material_fonts';
+  final FontLoader roboto = FontLoader('Roboto');
+  for (final String fileName in <String>[
+    'Roboto-Regular.ttf',
+    'Roboto-Medium.ttf',
+    'Roboto-Bold.ttf',
+  ]) {
+    final Uint8List bytes = File('$fontRoot/$fileName').readAsBytesSync();
+    roboto.addFont(Future<ByteData>.value(ByteData.sublistView(bytes)));
+  }
+  final FontLoader materialIcons = FontLoader('MaterialIcons')
+    ..addFont(
+      Future<ByteData>.value(
+        ByteData.sublistView(
+          File('$fontRoot/MaterialIcons-Regular.otf').readAsBytesSync(),
+        ),
+      ),
+    );
+  await Future.wait<void>(<Future<void>>[
+    roboto.load(),
+    materialIcons.load(),
+  ]);
 }
 
 Future<void> _capture(WidgetTester tester, String name) async {
