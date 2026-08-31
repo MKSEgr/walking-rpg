@@ -33,7 +33,6 @@ void main() {
     expect(find.byKey(const Key('crew-portrait-stage')), findsOneWidget);
     expect(find.byIcon(Icons.link), findsOneWidget);
     expect(find.byKey(const Key('crew-pilot-card')), findsOneWidget);
-    expect(find.byKey(const Key('crew-active-pet-card')), findsOneWidget);
     expect(find.byKey(const Key('crew-pilot-xp-progress')), findsOneWidget);
 
     final Finder scrollable = find
@@ -43,6 +42,7 @@ void main() {
         )
         .first;
     for (final Key key in const <Key>[
+      Key('crew-active-pet-card'),
       Key('crew-pet-spark-v1'),
       Key('crew-pet-moss-v1'),
       Key('crew-pet-rune-v1'),
