@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crew/presentation/crew_screen.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
-import 'package:walking_rpg_mobile/features/platform/domain/platform_command_result.dart';
 
 import 'support/platform_fixture.dart';
 
