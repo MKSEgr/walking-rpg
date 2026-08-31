@@ -1369,13 +1369,19 @@ class _SectionHeading extends StatelessWidget {
             accent.withValues(alpha: 0),
           ],
         ),
-        border: Border(
-          left: BorderSide(color: accent.withValues(alpha: 0.72), width: 3),
-        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Container(
+            width: 3,
+            height: 44,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(width: 9),
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
