@@ -81,7 +81,8 @@ class _CrewScreenState extends State<CrewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool compactChrome = MediaQuery.sizeOf(context).width < 380 ||
+    final bool compactChrome =
+        MediaQuery.sizeOf(context).width < 380 ||
         MediaQuery.textScalerOf(context).scale(16) > 21;
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -138,7 +139,8 @@ class _CrewScreenState extends State<CrewScreen> {
                       key: const Key('crew-error-state'),
                       title: context.l10n.crewLoadFailureTitle,
                       message: context.l10n.crewLoadFailureMessage,
-                      details: snapshot.error?.toString() ??
+                      details:
+                          snapshot.error?.toString() ??
                           context.l10n.platformMissingSnapshotDetails,
                       primaryActionKey: const Key('crew-retry'),
                       primaryActionLabel: context.l10n.crewRefresh,
@@ -387,10 +389,9 @@ class _CrewBody extends StatelessWidget {
                 ),
                 active: equippedCosmeticIds.contains(cosmetic.cosmeticId),
                 busy: blocked,
-                onEquip: () =>
-                    onCommand('EQUIP_COSMETIC', <String, Object?>{
-                      'cosmeticId': cosmetic.cosmeticId,
-                    }),
+                onEquip: () => onCommand('EQUIP_COSMETIC', <String, Object?>{
+                  'cosmeticId': cosmetic.cosmeticId,
+                }),
               ),
               const SizedBox(height: 8),
             ],
@@ -764,10 +765,7 @@ class _PetRosterCard extends StatelessWidget {
       ],
     );
     final Widget status = pet.active
-        ? Icon(
-            Icons.check_circle,
-            color: Theme.of(context).colorScheme.primary,
-          )
+        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
         : FilledButton.tonal(
             key: Key('crew-select-pet-${pet.petId}'),
             onPressed: busy ? null : onSelect,
@@ -775,7 +773,8 @@ class _PetRosterCard extends StatelessWidget {
           );
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compact = constraints.maxWidth < 390 ||
+        final bool compact =
+            constraints.maxWidth < 390 ||
             MediaQuery.textScalerOf(context).scale(16) > 21;
         return ExpeditionPanel(
           key: Key('crew-pet-${pet.petId}'),
@@ -830,7 +829,11 @@ class _SkillsPanel extends StatelessWidget {
           ? Text(context.l10n.crewSkillsEmpty)
           : Column(
               children: <Widget>[
-                for (int index = 0; index < skills.length; index += 1) ...<Widget>[
+                for (
+                  int index = 0;
+                  index < skills.length;
+                  index += 1
+                ) ...<Widget>[
                   _SkillRow(skill: skills[index]),
                   if (index != skills.length - 1) const Divider(height: 22),
                 ],
@@ -894,7 +897,11 @@ class _EquipmentPanel extends StatelessWidget {
           ? Text(context.l10n.crewEquipmentEmpty)
           : Column(
               children: <Widget>[
-                for (int index = 0; index < slots.length; index += 1) ...<Widget>[
+                for (
+                  int index = 0;
+                  index < slots.length;
+                  index += 1
+                ) ...<Widget>[
                   _EquipmentRow(slot: slots[index]),
                   if (index != slots.length - 1) const Divider(height: 22),
                 ],
@@ -980,43 +987,42 @@ class _CosmeticCard extends StatelessWidget {
         ? context.l10n.platformCosmeticPilotSlot
         : context.l10n.platformCosmeticPetSlot;
     final Widget icon = CircleAvatar(
-            backgroundColor: context.walkingRpgPalette.resonance.withValues(
-              alpha: 0.14,
-            ),
-            child: Icon(
-              cosmetic.slot == 'PILOT'
-                  ? Icons.explore_outlined
-                  : Icons.pets_outlined,
-            ),
-          );
+      backgroundColor: context.walkingRpgPalette.resonance.withValues(
+        alpha: 0.14,
+      ),
+      child: Icon(
+        cosmetic.slot == 'PILOT' ? Icons.explore_outlined : Icons.pets_outlined,
+      ),
+    );
     final Widget details = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(name, style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 3),
-                Text(
-                  slot,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            );
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(name, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 3),
+        Text(
+          slot,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
     final Widget status = active
         ? Chip(label: Text(context.l10n.platformCosmeticEquipped))
         : owned
         ? FilledButton.tonal(
-              key: Key('crew-equip-cosmetic-${cosmetic.cosmeticId}'),
-              onPressed: busy ? null : onEquip,
-              child: Text(context.l10n.platformEquipCosmetic),
-            )
+            key: Key('crew-equip-cosmetic-${cosmetic.cosmeticId}'),
+            onPressed: busy ? null : onEquip,
+            child: Text(context.l10n.platformEquipCosmetic),
+          )
         : Tooltip(
-              message: context.l10n.crewAppearanceLocked,
-              child: const Icon(Icons.lock_outline),
-            );
+            message: context.l10n.crewAppearanceLocked,
+            child: const Icon(Icons.lock_outline),
+          );
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compact = constraints.maxWidth < 390 ||
+        final bool compact =
+            constraints.maxWidth < 390 ||
             MediaQuery.textScalerOf(context).scale(16) > 21;
         return ExpeditionPanel(
           key: Key('crew-cosmetic-${cosmetic.cosmeticId}'),
@@ -1120,29 +1126,28 @@ class _CrewAppActionsMenu extends StatelessWidget {
             break;
         }
       },
-      itemBuilder: (BuildContext context) =>
-          <PopupMenuEntry<_CrewAppAction>>[
-            PopupMenuItem<_CrewAppAction>(
-              key: const Key('crew-menu-refresh'),
-              value: _CrewAppAction.refresh,
-              enabled: refreshEnabled,
-              child: ListTile(
-                dense: true,
-                leading: const Icon(Icons.refresh),
-                title: Text(context.l10n.crewRefresh),
-              ),
-            ),
-            PopupMenuItem<_CrewAppAction>(
-              key: const Key('crew-menu-account'),
-              value: _CrewAppAction.account,
-              enabled: onOpenAccount != null,
-              child: ListTile(
-                dense: true,
-                leading: const Icon(Icons.account_circle_outlined),
-                title: Text(context.l10n.accountTooltip),
-              ),
-            ),
-          ],
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<_CrewAppAction>>[
+        PopupMenuItem<_CrewAppAction>(
+          key: const Key('crew-menu-refresh'),
+          value: _CrewAppAction.refresh,
+          enabled: refreshEnabled,
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.refresh),
+            title: Text(context.l10n.crewRefresh),
+          ),
+        ),
+        PopupMenuItem<_CrewAppAction>(
+          key: const Key('crew-menu-account'),
+          value: _CrewAppAction.account,
+          enabled: onOpenAccount != null,
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.account_circle_outlined),
+            title: Text(context.l10n.accountTooltip),
+          ),
+        ),
+      ],
     );
   }
 }

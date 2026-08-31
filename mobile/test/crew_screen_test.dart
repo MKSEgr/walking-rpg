@@ -48,10 +48,7 @@ void main() {
     expect(find.byKey(const Key('crew-pet-rune-v1')), findsOneWidget);
     expect(find.byKey(const Key('crew-skills-card')), findsOneWidget);
     expect(find.byKey(const Key('crew-equipment-card')), findsOneWidget);
-    expect(
-      find.byKey(const Key('crew-cosmetic-pilot-scarf')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('crew-cosmetic-pilot-scarf')), findsOneWidget);
     expect(find.byKey(const Key('crew-cosmetic-spark-halo')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -97,9 +94,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final Finder selectMoss = find.byKey(
-      const Key('crew-select-pet-moss-v1'),
-    );
+    final Finder selectMoss = find.byKey(const Key('crew-select-pet-moss-v1'));
     await tester.scrollUntilVisible(selectMoss, 300);
     await tester.tap(selectMoss);
     await tester.pumpAndSettle();
