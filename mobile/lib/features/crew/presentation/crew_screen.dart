@@ -713,11 +713,11 @@ class _CrewMetric extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.24)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: <Widget>[
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 7),
-          Flexible(
+          Expanded(
             child: Text(
               '$label · $value',
               maxLines: 2,
