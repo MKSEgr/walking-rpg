@@ -273,7 +273,7 @@ class _CrewViewData {
   final PlatformSnapshot platform;
   final HomeSnapshot home;
 
-  bool get isReadOnly => platform.isCached || home.isCached;
+  bool get isReadOnly => platform.isCached;
 }
 
 class _CrewBody extends StatelessWidget {
