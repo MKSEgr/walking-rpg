@@ -1,9 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/auth/auth_models.dart';
@@ -450,18 +447,10 @@ Future<void> _pumpScreen(
 
 Future<void> _capture(WidgetTester tester, String name) async {
   await tester.pump();
-  final RenderRepaintBoundary boundary = tester.renderObject<
-    RenderRepaintBoundary
-  >(find.byKey(_captureKey));
-  final ui.Image image = await boundary.toImage(pixelRatio: 1);
-  final ByteData? bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-  if (bytes == null) {
-    throw StateError('Could not encode $name');
-  }
-  File(
-    'test/render_output/$name.png',
-  ).writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
-  image.dispose();
+  await expectLater(
+    find.byKey(_captureKey),
+    matchesGoldenFile('render_output/$name.png'),
+  );
   debugPrint('Rendered $name');
 }
 
