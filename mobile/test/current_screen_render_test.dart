@@ -206,7 +206,7 @@ Future<void> _renderMainScreens(
       loader: () async => home,
       onOpenAccount: () {},
       onOpenRecovery: () {},
-      activitySyncAction: const FilledButton.icon(
+      activitySyncAction: FilledButton.icon(
         onPressed: null,
         icon: Icon(Icons.sync),
         label: Text('Синхронизировать шаги'),
@@ -514,6 +514,7 @@ HomeSnapshot _currentHomeSnapshot() {
     expeditionVersion: 12,
     expeditionJourneyNumber: 2,
     journeyStartedAt: '2026-08-29T06:00:00Z',
+    unlockedEvent: null,
     routeTrail: <HomeExpeditionRouteNode>[
       HomeExpeditionRouteNode(
         nodeId: 'outer-beacon',
