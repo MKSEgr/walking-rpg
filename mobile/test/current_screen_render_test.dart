@@ -458,9 +458,9 @@ Future<void> _capture(WidgetTester tester, String name) async {
   if (bytes == null) {
     throw StateError('Could not encode $name');
   }
-  await File(
+  File(
     'test/render_output/$name.png',
-  ).writeAsBytes(bytes.buffer.asUint8List());
+  ).writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
   image.dispose();
   debugPrint('Rendered $name');
 }
