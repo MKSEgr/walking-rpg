@@ -198,6 +198,9 @@ Exit gate:
 Реализация:
 
 - утвердить visual direction первого мира и питомцев ([#156](https://github.com/MKSEgr/walking-rpg/issues/156));
+  физические снимки и owner decision фиксируются через fail-closed
+  [`visual-direction-template.json`](evidence/visual-direction-template.json), а
+  пустой шаблон или CI-render не считаются evidence;
 - проверить целиком путь: вход → разрешение шагов → ENERGY → спутник → узел →
   событие → решение → награда → развитие;
 - провести accessibility audit RU/EN, screen reader, reduced motion, contrast,

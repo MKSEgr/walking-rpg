@@ -97,6 +97,20 @@ fi
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/test_verify_health_device_inventory.py"
 
+printf '%s\n' "Checking the physical visual-direction evidence contract..."
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/verify_visual_direction_evidence.py" \
+  "$ROOT_DIR/docs/evidence/visual-direction-template.json"
+if PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/verify_visual_direction_evidence.py" \
+  "$ROOT_DIR/docs/evidence/visual-direction-template.json" \
+  --require-recorded >/dev/null 2>&1; then
+  echo "Committed visual-direction template must not pass as recorded evidence." >&2
+  exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/test_verify_visual_direction_evidence.py"
+
 printf '%s\n' "Checking the internal-alpha kickoff contract..."
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_kickoff.py" \
