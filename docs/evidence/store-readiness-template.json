@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "walking-rpg-store-readiness-v1",
+  "recordStatus": "TEMPLATE",
+  "recordedAtUtc": null,
+  "baseline": {
+    "releaseId": "alpha-rc3",
+    "sourceGitSha": "dc2119a8305ecb7786f1c0a6fee8609d261f1195",
+    "visualDirectionSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "publicUrls": {"privacy": null, "support": null, "deletion": null},
+  "capabilities": {"health": true, "push": false, "billing": false, "telegramLogin": false},
+  "stores": [],
+  "approval": {"status": "PENDING", "ownerRole": null, "approvedAtUtc": null}
+}

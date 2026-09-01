@@ -313,7 +313,10 @@ restore evidence.
 4. `production environment/config/operations hardening`;
 5. `target API 36 + production signing scaffolding` — `CODE_COMPLETE`;
 6. `device-validation fixes`;
-7. `store metadata/declarations pack`;
+7. `store metadata/declarations pack`; его machine-readable handoff использует
+   [`store-readiness-template.json`](evidence/store-readiness-template.json):
+   committed `TEMPLATE` не является upload-ready evidence и fail-closed
+   отклоняется в режиме `--require-recorded`;
 8. `signed TestFlight / Play internal and closed-beta candidates`;
 9. `submission fixes`.
 
