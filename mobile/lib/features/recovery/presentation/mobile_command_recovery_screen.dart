@@ -441,19 +441,13 @@ class _RecoveryQueueRoute extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         child: Row(
           children: <Widget>[
-            _RecoveryRouteNode(
-              icon: Icons.save_outlined,
-              color: localAccent,
-            ),
+            _RecoveryRouteNode(icon: Icons.save_outlined, color: localAccent),
             _RecoveryRouteConnector(from: localAccent, to: transitAccent),
             _RecoveryRouteNode(
               icon: failedOnly ? Icons.sync_problem_outlined : Icons.sync,
               color: transitAccent,
             ),
-            _RecoveryRouteConnector(
-              from: transitAccent,
-              to: destinationAccent,
-            ),
+            _RecoveryRouteConnector(from: transitAccent, to: destinationAccent),
             _RecoveryRouteNode(
               icon: failedOnly
                   ? Icons.cloud_off_outlined
