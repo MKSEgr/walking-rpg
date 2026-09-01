@@ -8,6 +8,8 @@ import json
 import unittest
 from pathlib import Path
 
+import test_verify_health_device_inventory as HEALTH_TEST
+
 MODULE = Path(__file__).with_name("verify_visual_direction_evidence.py")
 SPEC = importlib.util.spec_from_file_location("visual_evidence", MODULE)
 assert SPEC and SPEC.loader
@@ -26,26 +28,25 @@ def recorded() -> dict:
     data["recordStatus"] = "RECORDED"
     data["recordedAtUtc"] = "2026-09-01T11:00:00Z"
     data["baseline"]["deviceInventorySha256"] = inventory_digest()
-    specs = [
-        ("ios-first", "ios", "light", 1.0, "first-journey", "spark-v1"),
-        ("ios-expedition", "ios", "dark", 1.0, "expedition", "moss-v1"),
-        ("ios-crew", "ios", "light", 1.6, "crew", "rune-v1"),
-        ("ios-journal", "ios", "dark", 1.0, "journal", "spark-v1"),
-        ("ios-event", "ios", "light", 1.0, "event", "moss-v1"),
-        ("android-first", "android", "light", 1.0, "first-journey", "spark-v1"),
-        ("android-expedition", "android", "dark", 1.0, "expedition", "moss-v1"),
-        ("android-crew", "android", "light", 1.6, "crew", "rune-v1"),
-        ("android-journal", "android", "dark", 1.0, "journal", "spark-v1"),
-        ("android-event", "android", "light", 1.0, "event", "moss-v1"),
-    ]
+    screens = ["first-journey", "expedition", "crew", "journal", "event"]
+    specs = []
+    for platform in ("ios", "android"):
+        for companion_index, companion in enumerate(("spark-v1", "moss-v1", "rune-v1")):
+            for stage in (0, 1, 2):
+                index = companion_index * 3 + stage
+                specs.append((f"{platform}-{companion}-{stage}", platform,
+                              "light" if index % 2 == 0 else "dark",
+                              1.6 if index == 0 else 1.0, screens[index % len(screens)],
+                              companion, stage))
     data["captures"] = [{
         "id": capture_id, "platform": platform, "osVersion": "current-stable",
-        "deviceInventorySlotId": f"{platform}-primary", "theme": theme,
+        "deviceInventorySlotId": ("ios-phone-no-watch" if platform == "ios" else
+                                  "android-health-connect-primary"), "theme": theme,
         "textScale": scale, "screen": screen, "sourceType": "PHYSICAL_DEVICE",
         "capturedAtUtc": "2026-09-01T10:00:00Z", "artifactSha256": "b" * 64,
         "evidenceRef": f"approved-internal/{capture_id}", "companionId": companion,
-        "evolutionStage": "base", "motionState": "reduced_motion",
-    } for capture_id, platform, theme, scale, screen, companion in specs]
+        "evolutionStage": stage, "motionState": "reduced_motion",
+    } for capture_id, platform, theme, scale, screen, companion, stage in specs]
     data["decision"] = {
         "status": "APPROVED", "decidedAtUtc": "2026-09-01T12:00:00Z",
         "ownerRole": "product_owner", "inclusions": ["world and pet direction"],
@@ -57,10 +58,7 @@ def recorded() -> dict:
 
 
 def inventory() -> dict:
-    return {"recordStatus": "RECORDED", "slots": [
-        {"slotId": "ios-primary", "status": "AVAILABLE", "platform": "ios"},
-        {"slotId": "android-primary", "status": "AVAILABLE", "platform": "android"},
-    ]}
+    return HEALTH_TEST.recorded()
 
 
 def inventory_digest() -> str:
@@ -88,11 +86,14 @@ class VisualEvidenceTest(unittest.TestCase):
 
     def test_every_screen_and_large_text_on_both_platforms_are_required(self) -> None:
         data = recorded()
-        data["captures"] = data["captures"][:-1]
+        data["captures"] = [capture for capture in data["captures"] if not (
+            capture["platform"] == "ios" and capture["screen"] == "event")]
         with self.assertRaisesRegex(V.VisualEvidenceError, "must cover"):
             validate(data)
         data = recorded()
-        data["captures"][2]["textScale"] = 1.0
+        for capture in data["captures"]:
+            if capture["platform"] == "ios":
+                capture["textScale"] = 1.0
         with self.assertRaisesRegex(V.VisualEvidenceError, "must cover"):
             validate(data)
 
@@ -115,6 +116,29 @@ class VisualEvidenceTest(unittest.TestCase):
         data["decision"]["inclusions"] = ["owner@example.com"]
         with self.assertRaisesRegex(V.VisualEvidenceError, "personal data"):
             validate(data)
+
+    def test_source_inventory_stages_and_motion_are_fully_bound(self) -> None:
+        data = recorded()
+        data["baseline"]["sourceGitSha"] = "f" * 40
+        with self.assertRaisesRegex(V.VisualEvidenceError, "exact alpha-rc3"):
+            validate(data)
+        data = recorded()
+        data["captures"] = [capture for capture in data["captures"] if not (
+            capture["companionId"] == "rune-v1" and capture["evolutionStage"] == 2)]
+        with self.assertRaisesRegex(V.VisualEvidenceError, "canonical stages"):
+            validate(data)
+        data = recorded()
+        for capture in data["captures"]:
+            if capture["platform"] == "android" and capture["companionId"] == "moss-v1":
+                capture["motionState"] = "static"
+        with self.assertRaisesRegex(V.VisualEvidenceError, "android/moss-v1"):
+            validate(data)
+        data = recorded()
+        bad_inventory = inventory()
+        del bad_inventory["baseline"]
+        with self.assertRaisesRegex(V.VisualEvidenceError, "recorded inventory contract"):
+            V.validate_evidence(data, require_recorded=True, inventory=bad_inventory,
+                                inventory_sha256=inventory_digest())
 
 
 if __name__ == "__main__":

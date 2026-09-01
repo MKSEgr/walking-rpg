@@ -12,7 +12,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import verify_health_device_inventory as health_inventory
+
 SCHEMA_VERSION = "walking-rpg-visual-direction-v1"
+SOURCE_GIT_SHA = "dc2119a8305ecb7786f1c0a6fee8609d261f1195"
 TOP_KEYS = {"schemaVersion", "recordStatus", "recordedAtUtc", "baseline", "captures", "decision"}
 BASELINE_KEYS = {"releaseId", "sourceGitSha", "deviceInventorySha256"}
 CAPTURE_KEYS = {"id", "platform", "osVersion", "deviceInventorySlotId", "theme", "textScale", "screen", "sourceType", "capturedAtUtc", "artifactSha256", "evidenceRef", "companionId", "evolutionStage", "motionState"}
@@ -23,7 +26,7 @@ SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 SLUG = re.compile(r"^[a-z][a-z0-9_-]{1,63}$")
 UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
-SENSITIVE = re.compile(r"(?i)(?:https?://|www\.|\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b|\b(?:token|secret|password|serial|imei|account[_ -]?id|device[_ -]?id)\b|\b\d{10,}\b)")
+SENSITIVE = re.compile(r"(?i)(?:https?://|www\.|\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b|\b[0-9a-f]{8}-[0-9a-f-]{27,}\b|\b[0-9a-f]{40,64}\b|\b(?:token|secret|password|subject|serial|imei|account[_ -]?id|device[_ -]?id|user[_ -]?id|installation[_ -]?id|advertising[_ -]?id)\b|\b\d{10,}\b)")
 
 
 class VisualEvidenceError(ValueError):
@@ -68,7 +71,7 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
         _fail("recordStatus", "recorded evidence is required")
 
     baseline = _object(root["baseline"], "baseline", BASELINE_KEYS)
-    if baseline["releaseId"] != "alpha-rc3" or not SHA40.fullmatch(baseline["sourceGitSha"]):
+    if baseline["releaseId"] != "alpha-rc3" or baseline["sourceGitSha"] != SOURCE_GIT_SHA:
         _fail("baseline", "must identify the exact alpha-rc3 source")
     if not SHA64.fullmatch(baseline["deviceInventorySha256"]):
         _fail("baseline.deviceInventorySha256", "must be a lowercase SHA-256")
@@ -80,6 +83,10 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
             _fail("baseline.deviceInventorySha256", "must match the supplied recorded inventory bytes")
         if not isinstance(inventory, dict) or inventory.get("recordStatus") != "RECORDED":
             _fail("inventory", "must be a RECORDED device inventory")
+        try:
+            health_inventory.validate_inventory(inventory, require_recorded=True)
+        except health_inventory.InventoryValidationError as error:
+            _fail("inventory", f"must satisfy the recorded inventory contract: {error}")
         for slot in inventory.get("slots", []):
             if isinstance(slot, dict) and slot.get("status") == "AVAILABLE":
                 inventory_slots[slot.get("slotId")] = slot.get("platform")
@@ -99,7 +106,9 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
 
     recorded_at = _timestamp(root["recordedAtUtc"], "recordedAtUtc")
     coverage = {platform: {"themes": set(), "screens": set(), "largeText": False} for platform in ("ios", "android")}
-    companions, motion_states, ids = set(), set(), set()
+    companion_stages = {companion: set() for companion in COMPANIONS}
+    motion_coverage = {(platform, companion): set() for platform in coverage for companion in COMPANIONS}
+    ids = set()
     if not captures:
         _fail("captures", "recorded evidence requires physical captures")
     for index, raw in enumerate(captures):
@@ -121,8 +130,8 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
             _fail(f"{path}.deviceInventorySlotId", "must resolve to an AVAILABLE inventory slot on the same platform")
         if capture["companionId"] not in COMPANIONS:
             _fail(f"{path}.companionId", f"must be one of {sorted(COMPANIONS)}")
-        if capture["evolutionStage"] not in {"base", "evolved"}:
-            _fail(f"{path}.evolutionStage", "must be base or evolved")
+        if isinstance(capture["evolutionStage"], bool) or capture["evolutionStage"] not in {0, 1, 2}:
+            _fail(f"{path}.evolutionStage", "must be canonical stage 0, 1, or 2")
         if capture["motionState"] not in {"static", "reduced_motion", "motion"}:
             _fail(f"{path}.motionState", "must be static, reduced_motion, or motion")
         scale = capture["textScale"]
@@ -139,13 +148,13 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
         platform_coverage["screens"].add(capture["screen"])
         if scale >= 1.6:
             platform_coverage["largeText"] = True
-        companions.add(capture["companionId"])
-        motion_states.add(capture["motionState"])
+        companion_stages[capture["companionId"]].add(capture["evolutionStage"])
+        motion_coverage[(capture["platform"], capture["companionId"])].add(capture["motionState"])
     for platform, platform_coverage in coverage.items():
         if platform_coverage != {"themes": {"light", "dark"}, "screens": REQUIRED_SCREENS, "largeText": True}:
             _fail("captures", f"{platform} must cover light/dark, every required screen, and large text")
-    if companions != COMPANIONS:
-        _fail("captures", "must cover every candidate companion")
+    if any(stages != {0, 1, 2} for stages in companion_stages.values()):
+        _fail("captures", "must cover canonical stages 0, 1, and 2 for every candidate companion")
 
     if decision["status"] != "APPROVED":
         _fail("decision.status", "must equal APPROVED")
@@ -162,8 +171,9 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
     if decision["motionDecision"] not in {"REDUCED_MOTION_SAFE", "STATIC_ONLY", "APPROVED_MOTION"}:
         _fail("decision.motionDecision", "must contain an explicit approved motion scope")
     required_motion = {"REDUCED_MOTION_SAFE": "reduced_motion", "STATIC_ONLY": "static", "APPROVED_MOTION": "motion"}[decision["motionDecision"]]
-    if required_motion not in motion_states:
-        _fail("captures", f"must contain {required_motion!r} evidence for the motion decision")
+    missing_motion = [f"{platform}/{companion}" for (platform, companion), states in motion_coverage.items() if required_motion not in states]
+    if missing_motion:
+        _fail("captures", f"must contain {required_motion!r} evidence for every platform/companion pair; missing={missing_motion}")
     _text(decision["iconSplashDecision"], "decision.iconSplashDecision")
 
 
