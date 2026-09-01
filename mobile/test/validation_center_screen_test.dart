@@ -169,6 +169,68 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.pump(const Duration(seconds: 5));
     await tester.pump(const Duration(milliseconds: 300));
+
+    await _tapAction(
+      tester,
+      const Key('validation-read-button'),
+      isComplete: () =>
+          !controller.busy && controller.snapshot.journal.length == 8,
+    );
+    expect(
+      find.byKey(const Key('validation-route-health-complete')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-sync-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-pending')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('failed Health observation keeps the operator route pending', (
+    WidgetTester tester,
+  ) async {
+    final ValidationEvidenceController controller = _idleValidationController(
+      stepReaderEnabled: false,
+    );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ValidationCenterScreen(
+          controller: controller,
+          activeOwnerProvider: () => 'owner-1',
+        ),
+      ),
+    );
+
+    await _tapAction(
+      tester,
+      const Key('validation-read-button'),
+      isComplete: () =>
+          !controller.busy && controller.snapshot.latestHealth != null,
+    );
+
+    expect(
+      controller.snapshot.latestHealth!.status,
+      EvidenceObservationStatus.blocked,
+    );
+    expect(
+      find.byKey(const Key('validation-route-health-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-sync-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-pending')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('compact validation center stays scrollable with enlarged text', (
@@ -244,7 +306,9 @@ void main() {
   });
 }
 
-ValidationEvidenceController _idleValidationController() {
+ValidationEvidenceController _idleValidationController({
+  bool stepReaderEnabled = true,
+}) {
   return ValidationEvidenceController(
     ownerId: 'owner-1',
     activeOwnerProvider: () => 'owner-1',
@@ -261,11 +325,13 @@ ValidationEvidenceController _idleValidationController() {
       authenticationMode: 'oidc',
       healthSource: EvidenceHealthSource.healthConnect,
     ),
-    stepReader: () async => StepReading(
-      authoritativeTotal: 3000,
-      localDate: DateTime(2026, 8, 2),
-      timeZone: 'Europe/Berlin',
-    ),
+    stepReader: stepReaderEnabled
+        ? () async => StepReading(
+            authoritativeTotal: 3000,
+            localDate: DateTime(2026, 8, 2),
+            timeZone: 'Europe/Berlin',
+          )
+        : null,
     synchronizer: (_) async => firstJourneyActivityResult,
     homeLoader: () async => firstJourneyHome(synced: true, energy: 30),
     platformLoader: () async => platformSnapshot(

@@ -362,9 +362,32 @@ class _ValidationOperatorRoute extends StatelessWidget {
     final WalkingRpgPalette palette = context.walkingRpgPalette;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final Color idle = colors.onSurfaceVariant;
-    final bool healthComplete = snapshot.latestHealth != null;
-    final bool syncComplete = snapshot.latestSync != null;
-    final bool checkpointComplete = snapshot.authoritativeCheckpoint != null;
+    final int healthIndex = snapshot.journal.lastIndexWhere(
+      (EvidenceJournalEntry entry) =>
+          entry.scenario == EvidenceScenario.read &&
+          entry.outcome == EvidenceOutcome.passed,
+    );
+    final int syncIndex = snapshot.journal.lastIndexWhere(
+      (EvidenceJournalEntry entry) =>
+          entry.scenario == EvidenceScenario.sync &&
+          entry.outcome == EvidenceOutcome.passed,
+    );
+    final int checkpointIndex = snapshot.journal.lastIndexWhere(
+      (EvidenceJournalEntry entry) =>
+          entry.scenario == EvidenceScenario.checkpoint &&
+          entry.outcome == EvidenceOutcome.passed,
+    );
+    final bool healthComplete =
+        snapshot.latestHealth?.status == EvidenceObservationStatus.succeeded &&
+        healthIndex >= 0;
+    final bool syncComplete =
+        healthComplete &&
+        snapshot.latestSync?.status == EvidenceObservationStatus.succeeded &&
+        syncIndex > healthIndex;
+    final bool checkpointComplete =
+        syncComplete &&
+        snapshot.authoritativeCheckpoint != null &&
+        checkpointIndex > syncIndex;
 
     return DecoratedBox(
       key: const Key('validation-operator-route'),
