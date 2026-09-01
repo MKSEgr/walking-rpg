@@ -111,6 +111,10 @@ void main() {
       );
       expect(store.snapshot.single.state, MobileCommandState.failed);
 
+      await tester.scrollUntilVisible(
+        find.text('Убрать диагностическую запись'),
+        240,
+      );
       await tester.tap(find.text('Убрать диагностическую запись'));
       await tester.pumpAndSettle();
       expect(
