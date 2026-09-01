@@ -25,7 +25,7 @@ void main() {
   testWidgets('account deletion requires two confirmations and fresh login', (
     WidgetTester tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 844));
+    await tester.binding.setSurfaceSize(const Size(326, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final SemanticsHandle semantics = tester.ensureSemantics();
     final OidcConfiguration oidc = _oidc();

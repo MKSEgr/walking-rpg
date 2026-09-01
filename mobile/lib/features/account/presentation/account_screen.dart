@@ -29,7 +29,7 @@ bool _usesCompactAccountLayout(
   BuildContext context,
   BoxConstraints constraints,
 ) {
-  return constraints.maxWidth <= 320 ||
+  return constraints.maxWidth < 360 ||
       (constraints.maxWidth < 400 && _accountTextScale(context) > 1.3);
 }
 
