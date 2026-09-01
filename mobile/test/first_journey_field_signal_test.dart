@@ -145,6 +145,11 @@ void main() {
       find.byKey(const Key('first-journey-progress-compact')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const Key('first-journey-route-console')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('first-journey-route-mark')), findsOneWidget);
     expect(find.byType(FirstJourneyRouteSignal), findsOneWidget);
     expect(
       find.byKey(const Key('first-journey-route-signal-0-6')),

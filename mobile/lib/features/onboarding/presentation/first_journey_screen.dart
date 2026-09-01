@@ -340,6 +340,8 @@ class _JourneyProgressHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = _usesCompactFirstJourneySection(
@@ -348,49 +350,93 @@ class _JourneyProgressHeader extends StatelessWidget {
         );
         final String count =
             '${progress.completedCount}/${FirstJourneyProgress.steps.length}';
-        return Column(
-          key: Key(
-            compact
-                ? 'first-journey-progress-compact'
-                : 'first-journey-progress-wide',
-          ),
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            if (compact) ...<Widget>[
-              Text(
-                context.l10n.firstJourneyProgressTitle,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              ExpeditionBadge(
-                label: context.l10n.firstJourneyCompletedSteps(
-                  progress.completedCount,
-                  FirstJourneyProgress.steps.length,
-                ),
-                icon: Icons.route_outlined,
-                allowWrap: true,
-              ),
-            ] else
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      context.l10n.firstJourneyProgressTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  Text(count, style: Theme.of(context).textTheme.labelLarge),
-                ],
-              ),
-            const SizedBox(height: 8),
-            ExcludeSemantics(
-              child: FirstJourneyRouteSignal(
-                steps: FirstJourneyProgress.steps,
-                completedSteps: progress.completedSteps,
-                height: compact ? 88 : 96,
-              ),
+        final Widget routeMark = DecoratedBox(
+          key: const Key('first-journey-route-mark'),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: palette.resonance.withValues(alpha: 0.52),
             ),
-          ],
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[
+                palette.resonance.withValues(alpha: 0.24),
+                colors.primary.withValues(alpha: 0.12),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(11),
+            child: Icon(
+              Icons.explore_outlined,
+              color: palette.resonance,
+              size: 26,
+            ),
+          ),
+        );
+        final Widget completedBadge = ExpeditionBadge(
+          label: context.l10n.firstJourneyCompletedSteps(
+            progress.completedCount,
+            FirstJourneyProgress.steps.length,
+          ),
+          icon: Icons.route_outlined,
+          tone: ExpeditionPanelTone.resonance,
+          allowWrap: true,
+        );
+        return ExpeditionPanel(
+          key: const Key('first-journey-route-console'),
+          tone: ExpeditionPanelTone.resonance,
+          padding: EdgeInsets.all(compact ? 14 : 18),
+          child: Column(
+            key: Key(
+              compact
+                  ? 'first-journey-progress-compact'
+                  : 'first-journey-progress-wide',
+            ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (compact) ...<Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    routeMark,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        context.l10n.firstJourneyProgressTitle,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                completedBadge,
+              ] else
+                Row(
+                  children: <Widget>[
+                    routeMark,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        context.l10n.firstJourneyProgressTitle,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(count, style: Theme.of(context).textTheme.labelLarge),
+                  ],
+                ),
+              const SizedBox(height: 12),
+              ExcludeSemantics(
+                child: FirstJourneyRouteSignal(
+                  steps: FirstJourneyProgress.steps,
+                  completedSteps: progress.completedSteps,
+                  height: compact ? 88 : 96,
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
