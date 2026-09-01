@@ -25,6 +25,8 @@ void main() {
   testWidgets('account deletion requires two confirmations and fresh login', (
     WidgetTester tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(326, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final SemanticsHandle semantics = tester.ensureSemantics();
     final OidcConfiguration oidc = _oidc();
     final _MemoryStore store = _MemoryStore(
@@ -74,7 +76,15 @@ void main() {
 
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byKey(const Key('account-pilot-dossier')), findsOneWidget);
+    expect(
+      find.byKey(const Key('account-pilot-dossier-compact')),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('account-pilot-portrait')), findsOneWidget);
+    expect(
+      find.byKey(const Key('account-identity-route-oidc')),
+      findsOneWidget,
+    );
     expect(find.byType(PilotPortrait), findsOneWidget);
     expect(find.text('ДОСЬЕ ПИЛОТА'), findsOneWidget);
     expect(find.text('OIDC ПОДТВЕРЖДЕНА'), findsOneWidget);
@@ -191,6 +201,10 @@ void main() {
 
     expect(find.text('Account and data'), findsOneWidget);
     expect(find.text('PILOT DOSSIER'), findsOneWidget);
+    expect(
+      find.byKey(const Key('account-identity-route-oidc')),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Pilot dossier, account-english-user, Protected OIDC session',

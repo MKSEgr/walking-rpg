@@ -29,7 +29,7 @@ bool _usesCompactAccountLayout(
   BuildContext context,
   BoxConstraints constraints,
 ) {
-  return constraints.maxWidth < 320 ||
+  return constraints.maxWidth < 360 ||
       (constraints.maxWidth < 400 && _accountTextScale(context) > 1.3);
 }
 
@@ -591,6 +591,8 @@ class _PilotDossier extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 14),
+        _AccountIdentityRoute(development: development),
       ],
     );
 
@@ -621,6 +623,106 @@ class _PilotDossier extends StatelessWidget {
                   Expanded(child: details),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _AccountIdentityRoute extends StatelessWidget {
+  const _AccountIdentityRoute({required this.development});
+
+  final bool development;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final Color sessionAccent = development
+        ? palette.resonance
+        : colors.primary;
+    final Color profileAccent = development
+        ? palette.energy
+        : palette.resonance;
+    return DecoratedBox(
+      key: Key(
+        development
+            ? 'account-identity-route-development'
+            : 'account-identity-route-oidc',
+      ),
+      decoration: BoxDecoration(
+        color: palette.panelHighlight.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: sessionAccent.withValues(alpha: 0.32)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: <Widget>[
+            _AccountIdentityNode(
+              icon: Icons.person_outline,
+              color: colors.primary,
+            ),
+            _AccountIdentityConnector(from: colors.primary, to: sessionAccent),
+            _AccountIdentityNode(
+              icon: development
+                  ? Icons.developer_mode_outlined
+                  : Icons.verified_user_outlined,
+              color: sessionAccent,
+            ),
+            _AccountIdentityConnector(from: sessionAccent, to: profileAccent),
+            _AccountIdentityNode(
+              icon: development
+                  ? Icons.save_outlined
+                  : Icons.cloud_done_outlined,
+              color: profileAccent,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountIdentityNode extends StatelessWidget {
+  const _AccountIdentityNode({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: SizedBox.square(
+        dimension: 38,
+        child: Icon(icon, size: 20, color: color),
+      ),
+    );
+  }
+}
+
+class _AccountIdentityConnector extends StatelessWidget {
+  const _AccountIdentityConnector({required this.from, required this.to});
+
+  final Color from;
+  final Color to;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: <Color>[from, to]),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: const SizedBox(height: 2),
+        ),
       ),
     );
   }
