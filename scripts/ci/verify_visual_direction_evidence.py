@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -14,13 +15,15 @@ from typing import Any
 SCHEMA_VERSION = "walking-rpg-visual-direction-v1"
 TOP_KEYS = {"schemaVersion", "recordStatus", "recordedAtUtc", "baseline", "captures", "decision"}
 BASELINE_KEYS = {"releaseId", "sourceGitSha", "deviceInventorySha256"}
-CAPTURE_KEYS = {"id", "platform", "osVersion", "deviceInventorySlotId", "theme", "textScale", "screen", "sourceType", "capturedAtUtc", "artifactSha256", "evidenceRef"}
+CAPTURE_KEYS = {"id", "platform", "osVersion", "deviceInventorySlotId", "theme", "textScale", "screen", "sourceType", "capturedAtUtc", "artifactSha256", "evidenceRef", "companionId", "evolutionStage", "motionState"}
 DECISION_KEYS = {"status", "decidedAtUtc", "ownerRole", "inclusions", "exclusions", "motionDecision", "iconSplashDecision", "storeArtworkPrinciples"}
 REQUIRED_SCREENS = {"first-journey", "expedition", "crew", "journal", "event"}
+COMPANIONS = {"spark-v1", "moss-v1", "rune-v1"}
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 SLUG = re.compile(r"^[a-z][a-z0-9_-]{1,63}$")
 UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+SENSITIVE = re.compile(r"(?i)(?:https?://|www\.|\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b|\b(?:token|secret|password|serial|imei|account[_ -]?id|device[_ -]?id)\b|\b\d{10,}\b)")
 
 
 class VisualEvidenceError(ValueError):
@@ -49,10 +52,12 @@ def _timestamp(value: Any, path: str) -> datetime:
 def _text(value: Any, path: str) -> str:
     if not isinstance(value, str) or not value.strip() or len(value) > 240:
         _fail(path, "must be non-empty text of at most 240 characters")
+    if SENSITIVE.search(value):
+        _fail(path, "must not contain URLs, credentials, identifiers, or personal data")
     return value
 
 
-def validate_evidence(data: Any, *, require_recorded: bool = False) -> None:
+def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: Any = None, inventory_sha256: str | None = None) -> None:
     root = _object(data, "$", TOP_KEYS)
     if root["schemaVersion"] != SCHEMA_VERSION:
         _fail("schemaVersion", f"must equal {SCHEMA_VERSION!r}")
@@ -69,6 +74,15 @@ def validate_evidence(data: Any, *, require_recorded: bool = False) -> None:
         _fail("baseline.deviceInventorySha256", "must be a lowercase SHA-256")
     if status == "RECORDED" and baseline["deviceInventorySha256"] == "0" * 64:
         _fail("baseline.deviceInventorySha256", "recorded evidence must bind a real inventory digest")
+    inventory_slots = {}
+    if status == "RECORDED":
+        if inventory is None or inventory_sha256 != baseline["deviceInventorySha256"]:
+            _fail("baseline.deviceInventorySha256", "must match the supplied recorded inventory bytes")
+        if not isinstance(inventory, dict) or inventory.get("recordStatus") != "RECORDED":
+            _fail("inventory", "must be a RECORDED device inventory")
+        for slot in inventory.get("slots", []):
+            if isinstance(slot, dict) and slot.get("status") == "AVAILABLE":
+                inventory_slots[slot.get("slotId")] = slot.get("platform")
 
     decision = _object(root["decision"], "decision", DECISION_KEYS)
     captures = root["captures"]
@@ -84,7 +98,8 @@ def validate_evidence(data: Any, *, require_recorded: bool = False) -> None:
         return
 
     recorded_at = _timestamp(root["recordedAtUtc"], "recordedAtUtc")
-    platforms, themes, screens, large_text, ids = set(), set(), set(), set(), set()
+    coverage = {platform: {"themes": set(), "screens": set(), "largeText": False} for platform in ("ios", "android")}
+    companions, motion_states, ids = set(), set(), set()
     if not captures:
         _fail("captures", "recorded evidence requires physical captures")
     for index, raw in enumerate(captures):
@@ -102,6 +117,14 @@ def validate_evidence(data: Any, *, require_recorded: bool = False) -> None:
             _fail(f"{path}.screen", f"must be one of {sorted(REQUIRED_SCREENS)}")
         if capture["sourceType"] != "PHYSICAL_DEVICE":
             _fail(f"{path}.sourceType", "must equal PHYSICAL_DEVICE")
+        if inventory_slots.get(capture["deviceInventorySlotId"]) != capture["platform"]:
+            _fail(f"{path}.deviceInventorySlotId", "must resolve to an AVAILABLE inventory slot on the same platform")
+        if capture["companionId"] not in COMPANIONS:
+            _fail(f"{path}.companionId", f"must be one of {sorted(COMPANIONS)}")
+        if capture["evolutionStage"] not in {"base", "evolved"}:
+            _fail(f"{path}.evolutionStage", "must be base or evolved")
+        if capture["motionState"] not in {"static", "reduced_motion", "motion"}:
+            _fail(f"{path}.motionState", "must be static, reduced_motion, or motion")
         scale = capture["textScale"]
         if isinstance(scale, bool) or not isinstance(scale, (int, float)) or not 1.0 <= scale <= 2.0:
             _fail(f"{path}.textScale", "must be between 1.0 and 2.0")
@@ -111,13 +134,18 @@ def validate_evidence(data: Any, *, require_recorded: bool = False) -> None:
             _fail(f"{path}.artifactSha256", "must be a lowercase SHA-256")
         if _timestamp(capture["capturedAtUtc"], f"{path}.capturedAtUtc") > recorded_at:
             _fail(f"{path}.capturedAtUtc", "must not follow recordedAtUtc")
-        platforms.add(capture["platform"])
-        themes.add(capture["theme"])
-        screens.add(capture["screen"])
+        platform_coverage = coverage[capture["platform"]]
+        platform_coverage["themes"].add(capture["theme"])
+        platform_coverage["screens"].add(capture["screen"])
         if scale >= 1.6:
-            large_text.add(capture["platform"])
-    if platforms != {"ios", "android"} or themes != {"light", "dark"} or screens != REQUIRED_SCREENS or large_text != {"ios", "android"}:
-        _fail("captures", "must cover iOS/Android, light/dark, every required screen, and large text on both platforms")
+            platform_coverage["largeText"] = True
+        companions.add(capture["companionId"])
+        motion_states.add(capture["motionState"])
+    for platform, platform_coverage in coverage.items():
+        if platform_coverage != {"themes": {"light", "dark"}, "screens": REQUIRED_SCREENS, "largeText": True}:
+            _fail("captures", f"{platform} must cover light/dark, every required screen, and large text")
+    if companions != COMPANIONS:
+        _fail("captures", "must cover every candidate companion")
 
     if decision["status"] != "APPROVED":
         _fail("decision.status", "must equal APPROVED")
@@ -133,6 +161,9 @@ def validate_evidence(data: Any, *, require_recorded: bool = False) -> None:
             _text(value, f"decision.{key}[{index}]")
     if decision["motionDecision"] not in {"REDUCED_MOTION_SAFE", "STATIC_ONLY", "APPROVED_MOTION"}:
         _fail("decision.motionDecision", "must contain an explicit approved motion scope")
+    required_motion = {"REDUCED_MOTION_SAFE": "reduced_motion", "STATIC_ONLY": "static", "APPROVED_MOTION": "motion"}[decision["motionDecision"]]
+    if required_motion not in motion_states:
+        _fail("captures", f"must contain {required_motion!r} evidence for the motion decision")
     _text(decision["iconSplashDecision"], "decision.iconSplashDecision")
 
 
@@ -149,10 +180,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("evidence", type=Path)
     parser.add_argument("--require-recorded", action="store_true")
+    parser.add_argument("--device-inventory", type=Path)
     args = parser.parse_args(argv)
     try:
         data = json.loads(args.evidence.read_text(encoding="utf-8"), object_pairs_hook=_unique)
-        validate_evidence(data, require_recorded=args.require_recorded)
+        inventory_bytes = args.device_inventory.read_bytes() if args.device_inventory else None
+        inventory = json.loads(inventory_bytes, object_pairs_hook=_unique) if inventory_bytes else None
+        digest = hashlib.sha256(inventory_bytes).hexdigest() if inventory_bytes else None
+        validate_evidence(data, require_recorded=args.require_recorded, inventory=inventory, inventory_sha256=digest)
     except (OSError, UnicodeError, json.JSONDecodeError, VisualEvidenceError) as error:
         print(f"Visual direction evidence invalid: {error}", file=sys.stderr)
         return 1
