@@ -64,6 +64,10 @@ void main() {
 
     final Finder vistaFinder = find.byKey(const Key('home-expedition-vista'));
     expect(vistaFinder, findsOneWidget);
+    expect(
+      find.byKey(const Key('home-expedition-visual-stage')),
+      findsOneWidget,
+    );
     final ChapterVista vista = tester.widget<ChapterVista>(vistaFinder);
     expect(vista.progress, HomeSnapshot.demo.expeditionProgressValue);
     expect(

@@ -1437,51 +1437,50 @@ class _ExpeditionHero extends StatelessWidget {
         snapshot.petSpecies != null &&
         snapshot.petEvolutionStage != null;
     return ExpeditionPanel(
+      key: const Key('home-expedition-hero'),
       tone: ExpeditionPanelTone.lumen,
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          ChapterVista(
-            key: const Key('home-expedition-vista'),
-            semanticLabel: '$expeditionName, $currentNodeName',
-            progress: snapshot.expeditionProgressValue,
-            height: 178,
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              ExpeditionNodeSignal(
-                key: const Key('home-current-node-badge'),
-                nodeId: snapshot.currentNodeId,
-                nodeName: currentNodeName,
-                completed: completed,
-              ),
-              ExpeditionBadge(
-                key: const Key('home-expedition-journey-number'),
-                label: context.l10n.homeJourneyNumber(
-                  snapshot.expeditionJourneyNumber,
-                ),
-                icon: Icons.route_outlined,
-                tone: ExpeditionPanelTone.energy,
-              ),
-              if (!hasCompanionPortrait)
-                ExpeditionBadge(
-                  key: const Key('home-active-companion-badge'),
-                  label: context.l10n.homeCompanionLevel(
-                    petName,
-                    snapshot.petLevel,
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(23),
+        child: Stack(
+          children: <Widget>[
+            Positioned(
+              top: -82,
+              right: -58,
+              child: _ExpeditionGlowOrb(color: palette.resonance, size: 210),
+            ),
+            Positioned(
+              bottom: -96,
+              left: -70,
+              child: _ExpeditionGlowOrb(color: palette.energy, size: 190),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _ExpeditionVistaStage(
+                    expeditionName: expeditionName,
+                    currentNodeName: currentNodeName,
+                    currentNodeId: snapshot.currentNodeId,
+                    journeyNumber: snapshot.expeditionJourneyNumber,
+                    progress: snapshot.expeditionProgressValue,
+                    completed: completed,
                   ),
-                  icon: Icons.pets_outlined,
-                  tone: ExpeditionPanelTone.resonance,
-                ),
-            ],
-          ),
           if (hasCompanionPortrait) ...<Widget>[
             const SizedBox(height: 12),
             _ActiveCompanionCard(snapshot: snapshot),
+          ] else ...<Widget>[
+            const SizedBox(height: 12),
+            ExpeditionBadge(
+              key: const Key('home-active-companion-badge'),
+              label: context.l10n.homeCompanionLevel(
+                petName,
+                snapshot.petLevel,
+              ),
+              icon: Icons.pets_outlined,
+              tone: ExpeditionPanelTone.resonance,
+            ),
           ],
           const SizedBox(height: 16),
           Text(
@@ -1587,7 +1586,160 @@ class _ExpeditionHero extends StatelessWidget {
               context,
             ).textTheme.labelMedium?.copyWith(color: palette.energy),
           ),
-        ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpeditionVistaStage extends StatelessWidget {
+  const _ExpeditionVistaStage({
+    required this.expeditionName,
+    required this.currentNodeName,
+    required this.currentNodeId,
+    required this.journeyNumber,
+    required this.progress,
+    required this.completed,
+  });
+
+  final String expeditionName;
+  final String currentNodeName;
+  final String currentNodeId;
+  final int journeyNumber;
+  final double progress;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      key: const Key('home-expedition-visual-stage'),
+      children: <Widget>[
+        ChapterVista(
+          key: const Key('home-expedition-vista'),
+          semanticLabel: '$expeditionName, $currentNodeName',
+          progress: progress,
+          height: 206,
+        ),
+        Positioned(
+          top: 12,
+          left: 12,
+          right: 12,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            children: <Widget>[
+              ExpeditionBadge(
+                key: const Key('home-expedition-journey-number'),
+                label: context.l10n.homeJourneyNumber(journeyNumber),
+                icon: Icons.route_outlined,
+                tone: ExpeditionPanelTone.energy,
+              ),
+              ExpeditionNodeSignal(
+                key: const Key('home-current-node-badge'),
+                nodeId: currentNodeId,
+                nodeName: currentNodeName,
+                completed: completed,
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: 12,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.86),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: context.walkingRpgPalette.panelBorder.withValues(
+                  alpha: 0.72,
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    completed ? Icons.flag_outlined : Icons.explore_outlined,
+                    size: 20,
+                    color: completed
+                        ? context.walkingRpgPalette.resonance
+                        : context.walkingRpgPalette.energy,
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          expeditionName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          currentNodeName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${(progress * 100).round()}%',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: context.walkingRpgPalette.energy,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExpeditionGlowOrb extends StatelessWidget {
+  const _ExpeditionGlowOrb({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: <Color>[
+              color.withValues(alpha: 0.16),
+              color.withValues(alpha: 0),
+            ],
+          ),
+        ),
       ),
     );
   }
