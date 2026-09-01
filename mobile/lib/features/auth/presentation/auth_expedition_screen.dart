@@ -220,6 +220,10 @@ class _SignInPanel extends StatelessWidget {
               context,
             ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
           ),
+          const SizedBox(height: 18),
+          _AuthChannelSignal(
+            semanticLabel: context.l10n.authChannelSignalSemantics,
+          ),
           if (message != null && message!.isNotEmpty) ...<Widget>[
             const SizedBox(height: 14),
             _AuthStatus(
@@ -274,6 +278,106 @@ class _SignInPanel extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AuthChannelSignal extends StatelessWidget {
+  const _AuthChannelSignal({required this.semanticLabel});
+
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    return Semantics(
+      key: const Key('auth-channel-signal'),
+      container: true,
+      label: semanticLabel,
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: palette.panelHighlight.withValues(alpha: 0.32),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: palette.resonance.withValues(alpha: 0.34),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: <Widget>[
+                _AuthChannelNode(
+                  icon: Icons.phone_iphone_outlined,
+                  color: colors.primary,
+                ),
+                _AuthChannelConnector(
+                  from: colors.primary,
+                  to: palette.resonance,
+                ),
+                _AuthChannelNode(
+                  icon: Icons.open_in_browser_outlined,
+                  color: palette.resonance,
+                ),
+                _AuthChannelConnector(
+                  from: palette.resonance,
+                  to: palette.energy,
+                ),
+                _AuthChannelNode(
+                  icon: Icons.shield_outlined,
+                  color: palette.energy,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthChannelNode extends StatelessWidget {
+  const _AuthChannelNode({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.52)),
+      ),
+      child: SizedBox.square(
+        dimension: 42,
+        child: Icon(icon, size: 21, color: color),
+      ),
+    );
+  }
+}
+
+class _AuthChannelConnector extends StatelessWidget {
+  const _AuthChannelConnector({required this.from, required this.to});
+
+  final Color from;
+  final Color to;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: <Color>[from, to]),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: const SizedBox(height: 2),
+        ),
       ),
     );
   }

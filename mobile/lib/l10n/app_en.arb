@@ -32,6 +32,7 @@
   "authReauthenticationBody": "Your session has ended. Sign in again to continue synchronization and game actions.",
   "authOpenBody": "Sign in with Telegram, an email code, Apple, or Google. Authorization opens in the system browser.",
   "authPasswordNote": "Your password is neither entered nor stored in the app.",
+  "authChannelSignalSemantics": "Protected transition: app, system browser, expedition",
   "authOpeningButton": "Opening secure sign-in...",
   "authSignInButton": "Sign in to the expedition",
   "authInitializingBadge": "Expedition channel",
