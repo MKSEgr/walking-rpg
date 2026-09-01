@@ -1455,7 +1455,10 @@ class _ExpeditionHero extends StatelessWidget {
               child: _ExpeditionGlowOrb(color: palette.energy, size: 190),
             ),
             Padding(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 22,
+                vertical: 18,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -1643,7 +1646,6 @@ class _ExpeditionVistaStage extends StatelessWidget {
     );
     final Widget routePlate = ExcludeSemantics(
       child: _ExpeditionRoutePlate(
-        expeditionName: expeditionName,
         currentNodeName: currentNodeName,
         progress: progress,
         completed: completed,
@@ -1681,13 +1683,11 @@ class _ExpeditionVistaStage extends StatelessWidget {
 
 class _ExpeditionRoutePlate extends StatelessWidget {
   const _ExpeditionRoutePlate({
-    required this.expeditionName,
     required this.currentNodeName,
     required this.progress,
     required this.completed,
   });
 
-  final String expeditionName;
   final String currentNodeName;
   final double progress;
   final bool completed;
@@ -1719,19 +1719,10 @@ class _ExpeditionRoutePlate extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    expeditionName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
                     currentNodeName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ],
               ),
