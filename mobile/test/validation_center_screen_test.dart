@@ -242,16 +242,12 @@ void main() {
     for (int cycle = 0; cycle < 11; cycle += 1) {
       await controller.readHealth(activeOwnerId: 'owner-1');
       await controller.synchronize(activeOwnerId: 'owner-1');
-      await controller.captureAuthoritativeCheckpoint(
-        activeOwnerId: 'owner-1',
-      );
+      await controller.captureAuthoritativeCheckpoint(activeOwnerId: 'owner-1');
     }
     await controller.readHealth(activeOwnerId: 'owner-1');
     await controller.readHealth(activeOwnerId: 'owner-1');
     await controller.synchronize(activeOwnerId: 'owner-1');
-    await controller.captureAuthoritativeCheckpoint(
-      activeOwnerId: 'owner-1',
-    );
+    await controller.captureAuthoritativeCheckpoint(activeOwnerId: 'owner-1');
     expect(controller.snapshot.journal, hasLength(63));
 
     await tester.pumpWidget(
