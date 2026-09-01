@@ -1671,12 +1671,7 @@ class _ExpeditionVistaStage extends StatelessWidget {
           children: <Widget>[
             vista,
             Positioned(top: 12, left: 12, right: 12, child: badges),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: routePlate,
-            ),
+            Positioned(left: 12, right: 12, bottom: 12, child: routePlate),
           ],
         );
       },
