@@ -115,10 +115,7 @@ void main() {
         find.text('Убрать диагностическую запись'),
         240,
       );
-      await tester.drag(
-        find.byType(ListView).first,
-        const Offset(0, -120),
-      );
+      await tester.drag(find.byType(ListView).first, const Offset(0, -120));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Убрать диагностическую запись'));
       await tester.pumpAndSettle();
