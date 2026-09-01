@@ -96,6 +96,18 @@ void main() {
     semantics.dispose();
     expect(find.byKey(const Key('validation-source-sha')), findsOneWidget);
     expect(find.text('Журнал · 0/64'), findsOneWidget);
+    expect(
+      find.byKey(const Key('validation-route-health-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-sync-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-pending')),
+      findsOneWidget,
+    );
 
     await _tapAction(
       tester,
@@ -106,6 +118,10 @@ void main() {
     expect(readCalls, 1);
     expect(find.text('Aggregated total: 3000'), findsOneWidget);
     expect(find.text('Журнал · 3/64'), findsOneWidget);
+    expect(
+      find.byKey(const Key('validation-route-health-complete')),
+      findsOneWidget,
+    );
     _expectHeading(tester, const Key('validation-observations-heading'));
 
     await _tapAction(
@@ -116,6 +132,10 @@ void main() {
     );
     expect(readCalls, 1);
     expect(find.text('ENERGY: +30 (balance 30)'), findsOneWidget);
+    expect(
+      find.byKey(const Key('validation-route-sync-complete')),
+      findsOneWidget,
+    );
 
     await _tapAction(
       tester,
@@ -126,6 +146,10 @@ void main() {
     );
     expect(find.text('Accepted total: 3000'), findsWidgets);
     expect(find.text('Журнал · 5/64'), findsOneWidget);
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-complete')),
+      findsOneWidget,
+    );
 
     final Finder exportButton = find.byKey(
       const Key('validation-export-button'),
@@ -205,6 +229,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byKey(const Key('validation-safety-note')), findsOneWidget);
+    expect(find.byKey(const Key('validation-operator-route')), findsOneWidget);
     expect(find.byKey(const Key('validation-export-button')), findsOneWidget);
     expect(find.text('Journal · 5/64'), findsOneWidget);
     expect(find.text('Real-device validation'), findsOneWidget);
