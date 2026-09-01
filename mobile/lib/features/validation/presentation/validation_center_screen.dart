@@ -370,9 +370,7 @@ class _ValidationOperatorRoute extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.resonance.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: palette.resonance.withValues(alpha: 0.24),
-        ),
+        border: Border.all(color: palette.resonance.withValues(alpha: 0.24)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
@@ -447,10 +445,7 @@ class _ValidationRouteNode extends StatelessWidget {
         ),
         boxShadow: complete
             ? <BoxShadow>[
-                BoxShadow(
-                  color: color.withValues(alpha: 0.2),
-                  blurRadius: 12,
-                ),
+                BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 12),
               ]
             : null,
       ),
@@ -463,10 +458,7 @@ class _ValidationRouteNode extends StatelessWidget {
 }
 
 class _ValidationRouteConnector extends StatelessWidget {
-  const _ValidationRouteConnector({
-    required this.active,
-    required this.color,
-  });
+  const _ValidationRouteConnector({required this.active, required this.color});
 
   final bool active;
   final Color color;
