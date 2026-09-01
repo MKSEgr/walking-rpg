@@ -221,6 +221,10 @@ void main() {
     expect(find.text('Trail of this journey'), findsOneWidget);
     expect(find.text('Discovered nodes: 2'), findsOneWidget);
     expect(find.bySemanticsLabel('Discovered nodes: 2'), findsNothing);
+    expect(
+      find.byKey(const Key('home-expedition-stage-compact')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
 
     semantics.dispose();

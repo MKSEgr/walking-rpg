@@ -1616,106 +1616,142 @@ class _ExpeditionVistaStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      key: const Key('home-expedition-visual-stage'),
+    final Widget vista = ChapterVista(
+      key: const Key('home-expedition-vista'),
+      semanticLabel: '$expeditionName, $currentNodeName',
+      progress: progress,
+      height: 206,
+    );
+    final Widget badges = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.spaceBetween,
       children: <Widget>[
-        ChapterVista(
-          key: const Key('home-expedition-vista'),
-          semanticLabel: '$expeditionName, $currentNodeName',
-          progress: progress,
-          height: 206,
+        ExpeditionBadge(
+          key: const Key('home-expedition-journey-number'),
+          label: context.l10n.homeJourneyNumber(journeyNumber),
+          icon: Icons.route_outlined,
+          tone: ExpeditionPanelTone.energy,
         ),
-        Positioned(
-          top: 12,
-          left: 12,
-          right: 12,
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.spaceBetween,
+        ExpeditionNodeSignal(
+          key: const Key('home-current-node-badge'),
+          nodeId: currentNodeId,
+          nodeName: currentNodeName,
+          completed: completed,
+        ),
+      ],
+    );
+    final Widget routePlate = ExcludeSemantics(
+      child: _ExpeditionRoutePlate(
+        expeditionName: expeditionName,
+        currentNodeName: currentNodeName,
+        progress: progress,
+        completed: completed,
+      ),
+    );
+
+    return LayoutBuilder(
+      key: const Key('home-expedition-visual-stage'),
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (_usesCompactHomeSection(context, constraints)) {
+          return Column(
+            key: const Key('home-expedition-stage-compact'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              ExpeditionBadge(
-                key: const Key('home-expedition-journey-number'),
-                label: context.l10n.homeJourneyNumber(journeyNumber),
-                icon: Icons.route_outlined,
-                tone: ExpeditionPanelTone.energy,
-              ),
-              ExpeditionNodeSignal(
-                key: const Key('home-current-node-badge'),
-                nodeId: currentNodeId,
-                nodeName: currentNodeName,
-                completed: completed,
-              ),
+              badges,
+              const SizedBox(height: 10),
+              vista,
+              const SizedBox(height: 10),
+              routePlate,
             ],
-          ),
-        ),
-        Positioned(
-          left: 12,
-          right: 12,
-          bottom: 12,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surface.withValues(alpha: 0.86),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: context.walkingRpgPalette.panelBorder.withValues(
-                  alpha: 0.72,
-                ),
-              ),
+          );
+        }
+        return Stack(
+          key: const Key('home-expedition-stage-overlay'),
+          children: <Widget>[
+            vista,
+            Positioned(top: 12, left: 12, right: 12, child: badges),
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: routePlate,
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-              child: Row(
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ExpeditionRoutePlate extends StatelessWidget {
+  const _ExpeditionRoutePlate({
+    required this.expeditionName,
+    required this.currentNodeName,
+    required this.progress,
+    required this.completed,
+  });
+
+  final String expeditionName;
+  final String currentNodeName;
+  final double progress;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.walkingRpgPalette.panelBorder.withValues(alpha: 0.72),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              completed ? Icons.flag_outlined : Icons.explore_outlined,
+              size: 20,
+              color: completed
+                  ? context.walkingRpgPalette.resonance
+                  : context.walkingRpgPalette.energy,
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Icon(
-                    completed ? Icons.flag_outlined : Icons.explore_outlined,
-                    size: 20,
-                    color: completed
-                        ? context.walkingRpgPalette.resonance
-                        : context.walkingRpgPalette.energy,
-                  ),
-                  const SizedBox(width: 9),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          expeditionName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          currentNodeName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   Text(
-                    '${(progress * 100).round()}%',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: context.walkingRpgPalette.energy,
-                      fontWeight: FontWeight.w800,
+                    expeditionName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    currentNodeName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+            const SizedBox(width: 8),
+            Text(
+              '${(progress * 100).round()}%',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: context.walkingRpgPalette.energy,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
