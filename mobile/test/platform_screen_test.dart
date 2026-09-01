@@ -1296,6 +1296,14 @@ void main() {
     expect(find.byType(ExpeditionPanel), findsWidgets);
     expect(find.byType(ChapterVista), findsOneWidget);
     expect(find.byKey(const Key('platform-chapter-vista')), findsOneWidget);
+    expect(
+      find.byKey(const Key('platform-journal-memory-stage')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('platform-journal-portrait-stage')),
+      findsOneWidget,
+    );
     final ExpeditionPanel hero = tester.widget<ExpeditionPanel>(
       find.byKey(const Key('platform-journal-hero')),
     );
