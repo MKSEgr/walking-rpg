@@ -79,6 +79,10 @@ void main() {
       );
       expect(find.text('Синхронизация шагов'), findsOneWidget);
       expect(find.text('Продвижение экспедиции'), findsOneWidget);
+      expect(
+        find.byKey(const Key('command-recovery-queue-route')),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('command-recovery-retry')), findsOneWidget);
       expect(find.text('Убрать диагностическую запись'), findsOneWidget);
       expect(find.textContaining('private-idempotency-key'), findsNothing);
@@ -522,6 +526,10 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Event result acknowledgement'), findsOneWidget);
+    expect(
+      find.byKey(const Key('command-recovery-queue-route')),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Recovery boundary. Pending delivery: 0. Rejected: 1.',
