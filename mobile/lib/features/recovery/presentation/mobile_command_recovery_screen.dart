@@ -370,6 +370,11 @@ class _RecoverySummary extends StatelessWidget {
               ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
+            _RecoveryQueueRoute(
+              pendingCount: snapshot.pendingCount,
+              failedCount: snapshot.failedCount,
+            ),
+            const SizedBox(height: 16),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -393,6 +398,110 @@ class _RecoverySummary extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecoveryQueueRoute extends StatelessWidget {
+  const _RecoveryQueueRoute({
+    required this.pendingCount,
+    required this.failedCount,
+  });
+
+  final int pendingCount;
+  final int failedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final bool pending = pendingCount > 0;
+    final bool failedOnly = !pending && failedCount > 0;
+    final Color localAccent = pending ? palette.energy : colors.primary;
+    final Color transitAccent = failedOnly
+        ? colors.error
+        : pending
+        ? palette.energy
+        : colors.primary;
+    final Color destinationAccent = failedOnly
+        ? colors.error
+        : pending
+        ? colors.onSurfaceVariant
+        : colors.primary;
+    return DecoratedBox(
+      key: const Key('command-recovery-queue-route'),
+      decoration: BoxDecoration(
+        color: palette.panelHighlight.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: transitAccent.withValues(alpha: 0.34)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        child: Row(
+          children: <Widget>[
+            _RecoveryRouteNode(icon: Icons.save_outlined, color: localAccent),
+            _RecoveryRouteConnector(from: localAccent, to: transitAccent),
+            _RecoveryRouteNode(
+              icon: failedOnly ? Icons.sync_problem_outlined : Icons.sync,
+              color: transitAccent,
+            ),
+            _RecoveryRouteConnector(from: transitAccent, to: destinationAccent),
+            _RecoveryRouteNode(
+              icon: failedOnly
+                  ? Icons.cloud_off_outlined
+                  : pending
+                  ? Icons.cloud_upload_outlined
+                  : Icons.cloud_done_outlined,
+              color: destinationAccent,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecoveryRouteNode extends StatelessWidget {
+  const _RecoveryRouteNode({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: SizedBox.square(
+        dimension: 40,
+        child: Icon(icon, size: 20, color: color),
+      ),
+    );
+  }
+}
+
+class _RecoveryRouteConnector extends StatelessWidget {
+  const _RecoveryRouteConnector({required this.from, required this.to});
+
+  final Color from;
+  final Color to;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: <Color>[from, to]),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: const SizedBox(height: 2),
         ),
       ),
     );

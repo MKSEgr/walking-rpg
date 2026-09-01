@@ -79,6 +79,10 @@ void main() {
       );
       expect(find.text('Синхронизация шагов'), findsOneWidget);
       expect(find.text('Продвижение экспедиции'), findsOneWidget);
+      expect(
+        find.byKey(const Key('command-recovery-queue-route')),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('command-recovery-retry')), findsOneWidget);
       expect(find.text('Убрать диагностическую запись'), findsOneWidget);
       expect(find.textContaining('private-idempotency-key'), findsNothing);
@@ -107,6 +111,12 @@ void main() {
       );
       expect(store.snapshot.single.state, MobileCommandState.failed);
 
+      await tester.scrollUntilVisible(
+        find.text('Убрать диагностическую запись'),
+        240,
+      );
+      await tester.drag(find.byType(ListView).first, const Offset(0, -120));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Убрать диагностическую запись'));
       await tester.pumpAndSettle();
       expect(
@@ -522,6 +532,10 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Event result acknowledgement'), findsOneWidget);
+    expect(
+      find.byKey(const Key('command-recovery-queue-route')),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Recovery boundary. Pending delivery: 0. Rejected: 1.',
