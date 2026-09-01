@@ -269,6 +269,35 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('expedition stage reflows large text on a wider phone', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(412, 700));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(loader: () async => _routeWithDecision()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('home-expedition-stage-compact')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'legacy cached companion stays textual without guessed identity',
     (WidgetTester tester) async {

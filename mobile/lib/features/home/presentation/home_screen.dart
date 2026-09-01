@@ -1652,7 +1652,8 @@ class _ExpeditionVistaStage extends StatelessWidget {
     return LayoutBuilder(
       key: const Key('home-expedition-visual-stage'),
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (_usesCompactHomeSection(context, constraints)) {
+        if (_usesCompactHomeSection(context, constraints) ||
+            _effectiveTextScale(context) > 1.5) {
           return Column(
             key: const Key('home-expedition-stage-compact'),
             crossAxisAlignment: CrossAxisAlignment.stretch,
