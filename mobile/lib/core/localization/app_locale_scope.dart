@@ -317,9 +317,7 @@ class _LocaleChoiceCard extends StatelessWidget {
       button: true,
       child: Material(
         color: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         clipBehavior: Clip.antiAlias,
         child: Ink(
           decoration: BoxDecoration(
@@ -350,9 +348,7 @@ class _LocaleChoiceCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   DecoratedBox(
-                    key: Key(
-                      'app-locale-mark-${locale.languageCode}',
-                    ),
+                    key: Key('app-locale-mark-${locale.languageCode}'),
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: selected ? 0.2 : 0.1),
                       borderRadius: BorderRadius.circular(14),
