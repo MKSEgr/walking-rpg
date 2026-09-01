@@ -1455,10 +1455,7 @@ class _ExpeditionHero extends StatelessWidget {
               child: _ExpeditionGlowOrb(color: palette.energy, size: 190),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 22,
-                vertical: 18,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
