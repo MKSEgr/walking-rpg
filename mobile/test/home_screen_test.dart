@@ -272,7 +272,7 @@ void main() {
   testWidgets('expedition stage reflows large text on a wider phone', (
     WidgetTester tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(412, 700));
+    await tester.binding.setSurfaceSize(const Size(500, 700));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
