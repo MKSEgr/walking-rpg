@@ -364,30 +364,32 @@ class _ValidationOperatorRoute extends StatelessWidget {
     final Color idle = colors.onSurfaceVariant;
     final int healthIndex = snapshot.journal.lastIndexWhere(
       (EvidenceJournalEntry entry) =>
-          entry.scenario == EvidenceScenario.read &&
-          entry.outcome == EvidenceOutcome.passed,
+          entry.scenario == EvidenceScenario.provider ||
+          entry.scenario == EvidenceScenario.permission ||
+          entry.scenario == EvidenceScenario.read,
     );
     final int syncIndex = snapshot.journal.lastIndexWhere(
-      (EvidenceJournalEntry entry) =>
-          entry.scenario == EvidenceScenario.sync &&
-          entry.outcome == EvidenceOutcome.passed,
+      (EvidenceJournalEntry entry) => entry.scenario == EvidenceScenario.sync,
     );
     final int checkpointIndex = snapshot.journal.lastIndexWhere(
       (EvidenceJournalEntry entry) =>
-          entry.scenario == EvidenceScenario.checkpoint &&
-          entry.outcome == EvidenceOutcome.passed,
+          entry.scenario == EvidenceScenario.checkpoint,
     );
     final bool healthComplete =
         snapshot.latestHealth?.status == EvidenceObservationStatus.succeeded &&
-        healthIndex >= 0;
+        healthIndex >= 0 &&
+        snapshot.journal[healthIndex].scenario == EvidenceScenario.read &&
+        snapshot.journal[healthIndex].outcome == EvidenceOutcome.passed;
     final bool syncComplete =
         healthComplete &&
         snapshot.latestSync?.status == EvidenceObservationStatus.succeeded &&
-        syncIndex > healthIndex;
+        syncIndex > healthIndex &&
+        snapshot.journal[syncIndex].outcome == EvidenceOutcome.passed;
     final bool checkpointComplete =
         syncComplete &&
         snapshot.authoritativeCheckpoint != null &&
-        checkpointIndex > syncIndex;
+        checkpointIndex > syncIndex &&
+        snapshot.journal[checkpointIndex].outcome == EvidenceOutcome.passed;
 
     return DecoratedBox(
       key: const Key('validation-operator-route'),

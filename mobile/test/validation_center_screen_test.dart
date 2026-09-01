@@ -233,6 +233,66 @@ void main() {
     );
   });
 
+  testWidgets('journal limit marker invalidates the blocked route step', (
+    WidgetTester tester,
+  ) async {
+    final ValidationEvidenceController controller = _idleValidationController();
+    addTearDown(controller.dispose);
+
+    for (int cycle = 0; cycle < 11; cycle += 1) {
+      await controller.readHealth(activeOwnerId: 'owner-1');
+      await controller.synchronize(activeOwnerId: 'owner-1');
+      await controller.captureAuthoritativeCheckpoint(
+        activeOwnerId: 'owner-1',
+      );
+    }
+    await controller.readHealth(activeOwnerId: 'owner-1');
+    await controller.readHealth(activeOwnerId: 'owner-1');
+    await controller.synchronize(activeOwnerId: 'owner-1');
+    await controller.captureAuthoritativeCheckpoint(
+      activeOwnerId: 'owner-1',
+    );
+    expect(controller.snapshot.journal, hasLength(63));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ValidationCenterScreen(
+          controller: controller,
+          activeOwnerProvider: () => 'owner-1',
+        ),
+      ),
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-complete')),
+      findsOneWidget,
+    );
+
+    await expectLater(
+      controller.captureAuthoritativeCheckpoint(activeOwnerId: 'owner-1'),
+      throwsA(isA<ValidationActionException>()),
+    );
+    await tester.pump();
+
+    expect(controller.snapshot.journal, hasLength(64));
+    expect(
+      controller.snapshot.journal.last.errorCategory,
+      EvidenceErrorCategory.journalLimitReached,
+    );
+    expect(
+      find.byKey(const Key('validation-route-health-complete')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-sync-complete')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-pending')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('compact validation center stays scrollable with enlarged text', (
     WidgetTester tester,
   ) async {
