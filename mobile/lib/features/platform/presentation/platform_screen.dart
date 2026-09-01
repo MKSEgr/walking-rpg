@@ -3090,28 +3090,12 @@ class _JournalHero extends StatelessWidget {
         )
         .toList(growable: false);
     final Widget crewPortraits = ExcludeSemantics(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          PilotPortrait(
-            key: const Key('platform-hero-pilot-portrait'),
-            name: pilotName,
-            size: 64,
-            highlighted: true,
-            equippedCosmeticIds: equippedCosmeticIds,
-          ),
-          const SizedBox(width: 10),
-          CompanionPortrait(
-            key: const Key('platform-hero-pet-portrait'),
-            petId: activePet.petId,
-            name: activePetName,
-            species: activePetSpecies,
-            evolutionStage: activePet.evolutionStage,
-            active: true,
-            size: 64,
-            equippedCosmeticIds: equippedCosmeticIds,
-          ),
-        ],
+      child: _JournalCrewPortraitStage(
+        pilotName: pilotName,
+        activePet: activePet,
+        activePetName: activePetName,
+        activePetSpecies: activePetSpecies,
+        equippedCosmeticIds: equippedCosmeticIds,
       ),
     );
     final Widget crewCopy = Column(
@@ -3159,31 +3143,16 @@ class _JournalHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          ProfileCosmeticFrame(
-            key: const Key('platform-profile-cosmetic-frame'),
-            cosmeticId: _profileCosmeticIdFor(snapshot),
-            child: ChapterVista(
-              key: const Key('platform-chapter-vista'),
-              semanticLabel: context.l10n.platformChapterVistaSemantics,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            context.l10n.currentPlatformSeasonName(
+          _JournalMemoryStage(
+            seasonName: context.l10n.currentPlatformSeasonName(
               snapshot.content.season.seasonId,
               snapshot.content.season.name,
             ),
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            context.l10n.platformChapterState(
+            chapterState: context.l10n.platformChapterState(
               snapshot.content.chapterNodes,
               snapshot.stateVersion,
             ),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+            cosmeticId: _profileCosmeticIdFor(snapshot),
           ),
           const SizedBox(height: 18),
           Wrap(
@@ -3257,6 +3226,161 @@ class _JournalHero extends StatelessWidget {
                 },
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _JournalMemoryStage extends StatelessWidget {
+  const _JournalMemoryStage({
+    required this.seasonName,
+    required this.chapterState,
+    required this.cosmeticId,
+  });
+
+  final String seasonName;
+  final String chapterState;
+  final String? cosmeticId;
+
+  @override
+  Widget build(BuildContext context) {
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    return DecoratedBox(
+      key: const Key('platform-journal-memory-stage'),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: palette.resonance.withValues(alpha: 0.32)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            palette.resonance.withValues(alpha: 0.12),
+            palette.energy.withValues(alpha: 0.04),
+          ],
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(23),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            ProfileCosmeticFrame(
+              key: const Key('platform-profile-cosmetic-frame'),
+              cosmeticId: cosmeticId,
+              child: ChapterVista(
+                key: const Key('platform-chapter-vista'),
+                semanticLabel: context.l10n.platformChapterVistaSemantics,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: palette.resonance.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(
+                      Icons.auto_stories_outlined,
+                      size: 21,
+                      color: palette.resonance,
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          seasonName,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          chapterState,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _JournalCrewPortraitStage extends StatelessWidget {
+  const _JournalCrewPortraitStage({
+    required this.pilotName,
+    required this.activePet,
+    required this.activePetName,
+    required this.activePetSpecies,
+    required this.equippedCosmeticIds,
+  });
+
+  final String pilotName;
+  final PlatformPet activePet;
+  final String activePetName;
+  final String activePetSpecies;
+  final Set<String> equippedCosmeticIds;
+
+  @override
+  Widget build(BuildContext context) {
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    return Container(
+      key: const Key('platform-journal-portrait-stage'),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
+      decoration: BoxDecoration(
+        color: palette.resonance.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.resonance.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          PilotPortrait(
+            key: const Key('platform-hero-pilot-portrait'),
+            name: pilotName,
+            size: 68,
+            highlighted: true,
+            equippedCosmeticIds: equippedCosmeticIds,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(width: 24, height: 2, color: palette.energy),
+                const SizedBox(height: 4),
+                Icon(Icons.history, size: 16, color: palette.resonance),
+                const SizedBox(height: 4),
+                Container(width: 24, height: 2, color: palette.resonance),
+              ],
+            ),
+          ),
+          CompanionPortrait(
+            key: const Key('platform-hero-pet-portrait'),
+            petId: activePet.petId,
+            name: activePetName,
+            species: activePetSpecies,
+            evolutionStage: activePet.evolutionStage,
+            active: true,
+            size: 68,
+            equippedCosmeticIds: equippedCosmeticIds,
           ),
         ],
       ),
