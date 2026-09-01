@@ -320,6 +320,10 @@ class _ValidationHero extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 18),
+            ExcludeSemantics(
+              child: _ValidationOperatorRoute(snapshot: snapshot),
+            ),
+            const SizedBox(height: 18),
             DecoratedBox(
               key: const Key('validation-safety-note'),
               decoration: BoxDecoration(
@@ -342,6 +346,171 @@ class _ValidationHero extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ValidationOperatorRoute extends StatelessWidget {
+  const _ValidationOperatorRoute({required this.snapshot});
+
+  final DeviceValidationEvidenceSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final Color idle = colors.onSurfaceVariant;
+    final int healthIndex = snapshot.journal.lastIndexWhere(
+      (EvidenceJournalEntry entry) =>
+          entry.scenario == EvidenceScenario.provider ||
+          entry.scenario == EvidenceScenario.permission ||
+          entry.scenario == EvidenceScenario.read,
+    );
+    final int syncIndex = snapshot.journal.lastIndexWhere(
+      (EvidenceJournalEntry entry) => entry.scenario == EvidenceScenario.sync,
+    );
+    final int checkpointIndex = snapshot.journal.lastIndexWhere(
+      (EvidenceJournalEntry entry) =>
+          entry.scenario == EvidenceScenario.checkpoint,
+    );
+    final bool healthComplete =
+        snapshot.latestHealth?.status == EvidenceObservationStatus.succeeded &&
+        healthIndex >= 0 &&
+        snapshot.journal[healthIndex].scenario == EvidenceScenario.read &&
+        snapshot.journal[healthIndex].outcome == EvidenceOutcome.passed;
+    final bool syncComplete =
+        healthComplete &&
+        snapshot.latestSync?.status == EvidenceObservationStatus.succeeded &&
+        syncIndex > healthIndex &&
+        snapshot.journal[syncIndex].outcome == EvidenceOutcome.passed;
+    final bool checkpointComplete =
+        syncComplete &&
+        snapshot.authoritativeCheckpoint != null &&
+        checkpointIndex > syncIndex &&
+        snapshot.journal[checkpointIndex].outcome == EvidenceOutcome.passed;
+
+    return DecoratedBox(
+      key: const Key('validation-operator-route'),
+      decoration: BoxDecoration(
+        color: palette.resonance.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.resonance.withValues(alpha: 0.24)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        child: Row(
+          children: <Widget>[
+            _ValidationRouteNode(
+              key: Key(
+                healthComplete
+                    ? 'validation-route-health-complete'
+                    : 'validation-route-health-pending',
+              ),
+              icon: Icons.health_and_safety_outlined,
+              color: healthComplete ? colors.primary : idle,
+              complete: healthComplete,
+            ),
+            _ValidationRouteConnector(
+              active: healthComplete,
+              color: colors.primary,
+            ),
+            _ValidationRouteNode(
+              key: Key(
+                syncComplete
+                    ? 'validation-route-sync-complete'
+                    : 'validation-route-sync-pending',
+              ),
+              icon: Icons.sync,
+              color: syncComplete ? palette.energy : idle,
+              complete: syncComplete,
+            ),
+            _ValidationRouteConnector(
+              active: syncComplete,
+              color: palette.energy,
+            ),
+            _ValidationRouteNode(
+              key: Key(
+                checkpointComplete
+                    ? 'validation-route-checkpoint-complete'
+                    : 'validation-route-checkpoint-pending',
+              ),
+              icon: Icons.fact_check_outlined,
+              color: checkpointComplete ? palette.resonance : idle,
+              complete: checkpointComplete,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ValidationRouteNode extends StatelessWidget {
+  const _ValidationRouteNode({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.complete,
+  });
+
+  final IconData icon;
+  final Color color;
+  final bool complete;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withValues(alpha: complete ? 0.18 : 0.08),
+        border: Border.all(
+          color: color.withValues(alpha: complete ? 0.72 : 0.28),
+          width: complete ? 1.5 : 1,
+        ),
+        boxShadow: complete
+            ? <BoxShadow>[
+                BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 12),
+              ]
+            : null,
+      ),
+      child: SizedBox.square(
+        dimension: 42,
+        child: Icon(icon, color: color, size: 21),
+      ),
+    );
+  }
+}
+
+class _ValidationRouteConnector extends StatelessWidget {
+  const _ValidationRouteConnector({required this.active, required this.color});
+
+  final bool active;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color idle = Theme.of(context).colorScheme.outlineVariant;
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 7),
+        child: Container(
+          height: 2,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            gradient: LinearGradient(
+              colors: active
+                  ? <Color>[
+                      color.withValues(alpha: 0.35),
+                      color.withValues(alpha: 0.9),
+                    ]
+                  : <Color>[
+                      idle.withValues(alpha: 0.35),
+                      idle.withValues(alpha: 0.65),
+                    ],
+            ),
+          ),
         ),
       ),
     );

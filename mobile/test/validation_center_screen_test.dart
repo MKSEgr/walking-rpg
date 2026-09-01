@@ -96,6 +96,18 @@ void main() {
     semantics.dispose();
     expect(find.byKey(const Key('validation-source-sha')), findsOneWidget);
     expect(find.text('Журнал · 0/64'), findsOneWidget);
+    expect(
+      find.byKey(const Key('validation-route-health-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-sync-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-pending')),
+      findsOneWidget,
+    );
 
     await _tapAction(
       tester,
@@ -106,6 +118,10 @@ void main() {
     expect(readCalls, 1);
     expect(find.text('Aggregated total: 3000'), findsOneWidget);
     expect(find.text('Журнал · 3/64'), findsOneWidget);
+    expect(
+      find.byKey(const Key('validation-route-health-complete')),
+      findsOneWidget,
+    );
     _expectHeading(tester, const Key('validation-observations-heading'));
 
     await _tapAction(
@@ -116,6 +132,10 @@ void main() {
     );
     expect(readCalls, 1);
     expect(find.text('ENERGY: +30 (balance 30)'), findsOneWidget);
+    expect(
+      find.byKey(const Key('validation-route-sync-complete')),
+      findsOneWidget,
+    );
 
     await _tapAction(
       tester,
@@ -126,6 +146,10 @@ void main() {
     );
     expect(find.text('Accepted total: 3000'), findsWidgets);
     expect(find.text('Журнал · 5/64'), findsOneWidget);
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-complete')),
+      findsOneWidget,
+    );
 
     final Finder exportButton = find.byKey(
       const Key('validation-export-button'),
@@ -145,6 +169,124 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.pump(const Duration(seconds: 5));
     await tester.pump(const Duration(milliseconds: 300));
+
+    await _tapAction(
+      tester,
+      const Key('validation-read-button'),
+      isComplete: () =>
+          !controller.busy && controller.snapshot.journal.length == 8,
+    );
+    expect(
+      find.byKey(const Key('validation-route-health-complete')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-sync-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-pending')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('failed Health observation keeps the operator route pending', (
+    WidgetTester tester,
+  ) async {
+    final ValidationEvidenceController controller = _idleValidationController(
+      stepReaderEnabled: false,
+    );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ValidationCenterScreen(
+          controller: controller,
+          activeOwnerProvider: () => 'owner-1',
+        ),
+      ),
+    );
+
+    await _tapAction(
+      tester,
+      const Key('validation-read-button'),
+      isComplete: () =>
+          !controller.busy && controller.snapshot.latestHealth != null,
+    );
+
+    expect(
+      controller.snapshot.latestHealth!.status,
+      EvidenceObservationStatus.blocked,
+    );
+    expect(
+      find.byKey(const Key('validation-route-health-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-sync-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-pending')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('journal limit marker invalidates the blocked route step', (
+    WidgetTester tester,
+  ) async {
+    final ValidationEvidenceController controller = _idleValidationController();
+    addTearDown(controller.dispose);
+
+    for (int cycle = 0; cycle < 11; cycle += 1) {
+      await controller.readHealth(activeOwnerId: 'owner-1');
+      await controller.synchronize(activeOwnerId: 'owner-1');
+      await controller.captureAuthoritativeCheckpoint(activeOwnerId: 'owner-1');
+    }
+    await controller.readHealth(activeOwnerId: 'owner-1');
+    await controller.readHealth(activeOwnerId: 'owner-1');
+    await controller.synchronize(activeOwnerId: 'owner-1');
+    await controller.captureAuthoritativeCheckpoint(activeOwnerId: 'owner-1');
+    expect(controller.snapshot.journal, hasLength(63));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ValidationCenterScreen(
+          controller: controller,
+          activeOwnerProvider: () => 'owner-1',
+        ),
+      ),
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-complete')),
+      findsOneWidget,
+    );
+
+    await expectLater(
+      controller.captureAuthoritativeCheckpoint(activeOwnerId: 'owner-1'),
+      throwsA(isA<ValidationActionException>()),
+    );
+    await tester.pump();
+
+    expect(controller.snapshot.journal, hasLength(64));
+    expect(
+      controller.snapshot.journal.last.errorCategory,
+      EvidenceErrorCategory.journalLimitReached,
+    );
+    expect(
+      find.byKey(const Key('validation-route-health-complete')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-sync-complete')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('validation-route-checkpoint-pending')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('compact validation center stays scrollable with enlarged text', (
@@ -205,6 +347,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byKey(const Key('validation-safety-note')), findsOneWidget);
+    expect(find.byKey(const Key('validation-operator-route')), findsOneWidget);
     expect(find.byKey(const Key('validation-export-button')), findsOneWidget);
     expect(find.text('Journal · 5/64'), findsOneWidget);
     expect(find.text('Real-device validation'), findsOneWidget);
@@ -219,7 +362,9 @@ void main() {
   });
 }
 
-ValidationEvidenceController _idleValidationController() {
+ValidationEvidenceController _idleValidationController({
+  bool stepReaderEnabled = true,
+}) {
   return ValidationEvidenceController(
     ownerId: 'owner-1',
     activeOwnerProvider: () => 'owner-1',
@@ -236,11 +381,13 @@ ValidationEvidenceController _idleValidationController() {
       authenticationMode: 'oidc',
       healthSource: EvidenceHealthSource.healthConnect,
     ),
-    stepReader: () async => StepReading(
-      authoritativeTotal: 3000,
-      localDate: DateTime(2026, 8, 2),
-      timeZone: 'Europe/Berlin',
-    ),
+    stepReader: stepReaderEnabled
+        ? () async => StepReading(
+            authoritativeTotal: 3000,
+            localDate: DateTime(2026, 8, 2),
+            timeZone: 'Europe/Berlin',
+          )
+        : null,
     synchronizer: (_) async => firstJourneyActivityResult,
     homeLoader: () async => firstJourneyHome(synced: true, energy: 30),
     platformLoader: () async => platformSnapshot(
