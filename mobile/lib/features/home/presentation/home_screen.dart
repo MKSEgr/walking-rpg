@@ -1467,125 +1467,126 @@ class _ExpeditionHero extends StatelessWidget {
                     progress: snapshot.expeditionProgressValue,
                     completed: completed,
                   ),
-          if (hasCompanionPortrait) ...<Widget>[
-            const SizedBox(height: 12),
-            _ActiveCompanionCard(snapshot: snapshot),
-          ] else ...<Widget>[
-            const SizedBox(height: 12),
-            ExpeditionBadge(
-              key: const Key('home-active-companion-badge'),
-              label: context.l10n.homeCompanionLevel(
-                petName,
-                snapshot.petLevel,
-              ),
-              icon: Icons.pets_outlined,
-              tone: ExpeditionPanelTone.resonance,
-            ),
-          ],
-          const SizedBox(height: 16),
-          Text(
-            completed
-                ? context.l10n.homeJourneyCompleted(
-                    snapshot.expeditionJourneyNumber,
-                  )
-                : context.l10n.homeWaitingForSteps,
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.homeWalkFirst,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 22),
-          _DailyProgressSummary(
-            snapshot: snapshot,
-            activitySubtitle: activitySubtitle,
-          ),
-          const SizedBox(height: 22),
-          Divider(color: context.walkingRpgPalette.panelBorder),
-          const SizedBox(height: 2),
-          _RouteEnergySummary(
-            expeditionName: expeditionName,
-            availableEnergy: snapshot.availableEnergy,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.homeEnergyProgress(
-              snapshot.expeditionProgress,
-              snapshot.requiredEnergy,
-              currentNodeName,
-            ),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          if (snapshot.routeTrail.isNotEmpty) ...<Widget>[
-            Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                Text(
-                  context.l10n.expeditionRouteTrailTitle,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                ExcludeSemantics(
-                  child: Text(
-                    key: const Key('home-discovered-route-node-count'),
-                    context.l10n.homeDiscoveredRouteNodes(
-                      snapshot.discoveredRouteNodeCount,
+                  if (hasCompanionPortrait) ...<Widget>[
+                    const SizedBox(height: 12),
+                    _ActiveCompanionCard(snapshot: snapshot),
+                  ] else ...<Widget>[
+                    const SizedBox(height: 12),
+                    ExpeditionBadge(
+                      key: const Key('home-active-companion-badge'),
+                      label: context.l10n.homeCompanionLevel(
+                        petName,
+                        snapshot.petLevel,
+                      ),
+                      icon: Icons.pets_outlined,
+                      tone: ExpeditionPanelTone.resonance,
                     ),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    completed
+                        ? context.l10n.homeJourneyCompleted(
+                            snapshot.expeditionJourneyNumber,
+                          )
+                        : context.l10n.homeWaitingForSteps,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.homeWalkFirst,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ExpeditionRouteTrail(
-              nodes: snapshot.routeTrail
-                  .map(
-                    (HomeExpeditionRouteNode node) => ExpeditionRouteTrailNode(
-                      nodeId: node.nodeId,
-                      nodeName: context.l10n.currentNodeName(
-                        node.nodeId,
-                        node.nodeName,
-                      ),
-                      state: node.state,
-                      decision: node.decision == null
-                          ? null
-                          : ExpeditionRouteTrailDecision(
-                              choiceId: node.decision!.choiceId,
-                              choiceTitle: node.decision!.choiceTitle,
-                              outcomeTitle: node.decision!.outcomeTitle,
-                            ),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-            const SizedBox(height: 10),
-          ],
-          ExpeditionProgressSignal(
-            expeditionId: snapshot.expeditionId,
-            progress: snapshot.expeditionProgress,
-            target: snapshot.requiredEnergy,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            completed
-                ? context.l10n.homeRouteCompleted
-                : context.l10n.homeEnergyToNextNode(
-                    snapshot.remainingExpeditionEnergy,
+                  const SizedBox(height: 22),
+                  _DailyProgressSummary(
+                    snapshot: snapshot,
+                    activitySubtitle: activitySubtitle,
                   ),
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: palette.energy),
-          ),
+                  const SizedBox(height: 22),
+                  Divider(color: context.walkingRpgPalette.panelBorder),
+                  const SizedBox(height: 2),
+                  _RouteEnergySummary(
+                    expeditionName: expeditionName,
+                    availableEnergy: snapshot.availableEnergy,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.homeEnergyProgress(
+                      snapshot.expeditionProgress,
+                      snapshot.requiredEnergy,
+                      currentNodeName,
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (snapshot.routeTrail.isNotEmpty) ...<Widget>[
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          context.l10n.expeditionRouteTrailTitle,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        ExcludeSemantics(
+                          child: Text(
+                            key: const Key('home-discovered-route-node-count'),
+                            context.l10n.homeDiscoveredRouteNodes(
+                              snapshot.discoveredRouteNodeCount,
+                            ),
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(color: colors.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ExpeditionRouteTrail(
+                      nodes: snapshot.routeTrail
+                          .map(
+                            (
+                              HomeExpeditionRouteNode node,
+                            ) => ExpeditionRouteTrailNode(
+                              nodeId: node.nodeId,
+                              nodeName: context.l10n.currentNodeName(
+                                node.nodeId,
+                                node.nodeName,
+                              ),
+                              state: node.state,
+                              decision: node.decision == null
+                                  ? null
+                                  : ExpeditionRouteTrailDecision(
+                                      choiceId: node.decision!.choiceId,
+                                      choiceTitle: node.decision!.choiceTitle,
+                                      outcomeTitle: node.decision!.outcomeTitle,
+                                    ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  ExpeditionProgressSignal(
+                    expeditionId: snapshot.expeditionId,
+                    progress: snapshot.expeditionProgress,
+                    target: snapshot.requiredEnergy,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    completed
+                        ? context.l10n.homeRouteCompleted
+                        : context.l10n.homeEnergyToNextNode(
+                            snapshot.remainingExpeditionEnergy,
+                          ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(color: palette.energy),
+                  ),
                 ],
               ),
             ),
