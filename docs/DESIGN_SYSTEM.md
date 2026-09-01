@@ -147,6 +147,14 @@ opt-in. These candidates are material for the physical motion review in
 TASK-011, not evidence that the three-pet visual direction or motion tolerance
 has already been validated.
 
+TASK-011 closes only against a `RECORDED` copy of
+[`visual-direction-template.json`](evidence/visual-direction-template.json).
+The record binds physical iOS and Android captures to the device inventory,
+covers light/dark and enlarged text, and stores an explicit product-owner
+decision for inclusions, exclusions, motion, icon/splash and store artwork.
+The committed `TEMPLATE` and CI-rendered screenshots remain preparation
+material and deliberately fail the recorded-evidence gate.
+
 The universal `navigator-v1` pilot now has a separate transparent motion atlas
 under the identity and movement rules in
 [PILOT_ART_BIBLE.md](PILOT_ART_BIBLE.md). Home plays one non-looping idle pass

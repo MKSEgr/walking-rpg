@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "walking-rpg-visual-direction-v1",
+  "recordStatus": "TEMPLATE",
+  "recordedAtUtc": null,
+  "baseline": {
+    "releaseId": "alpha-rc3",
+    "sourceGitSha": "dc2119a8305ecb7786f1c0a6fee8609d261f1195",
+    "deviceInventorySha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "captures": [],
+  "decision": {
+    "status": "PENDING",
+    "decidedAtUtc": null,
+    "ownerRole": null,
+    "inclusions": [],
+    "exclusions": [],
+    "motionDecision": null,
+    "iconSplashDecision": null,
+    "storeArtworkPrinciples": []
+  }
+}
