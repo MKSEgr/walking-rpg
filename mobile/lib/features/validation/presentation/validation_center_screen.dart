@@ -360,7 +360,8 @@ class _ValidationOperatorRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final WalkingRpgPalette palette = context.walkingRpgPalette;
-    final Color idle = Theme.of(context).colorScheme.onSurfaceVariant;
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final Color idle = colors.onSurfaceVariant;
     final bool healthComplete = snapshot.latestHealth != null;
     final bool syncComplete = snapshot.latestSync != null;
     final bool checkpointComplete = snapshot.authoritativeCheckpoint != null;
@@ -383,12 +384,12 @@ class _ValidationOperatorRoute extends StatelessWidget {
                     : 'validation-route-health-pending',
               ),
               icon: Icons.health_and_safety_outlined,
-              color: healthComplete ? palette.lumen : idle,
+              color: healthComplete ? colors.primary : idle,
               complete: healthComplete,
             ),
             _ValidationRouteConnector(
               active: healthComplete,
-              color: palette.lumen,
+              color: colors.primary,
             ),
             _ValidationRouteNode(
               key: Key(
