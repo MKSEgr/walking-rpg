@@ -64,6 +64,10 @@ void main() {
 
     final Finder vistaFinder = find.byKey(const Key('home-expedition-vista'));
     expect(vistaFinder, findsOneWidget);
+    expect(
+      find.byKey(const Key('home-expedition-visual-stage')),
+      findsOneWidget,
+    );
     final ChapterVista vista = tester.widget<ChapterVista>(vistaFinder);
     expect(vista.progress, HomeSnapshot.demo.expeditionProgressValue);
     expect(
@@ -217,6 +221,10 @@ void main() {
     expect(find.text('Trail of this journey'), findsOneWidget);
     expect(find.text('Discovered nodes: 2'), findsOneWidget);
     expect(find.bySemanticsLabel('Discovered nodes: 2'), findsNothing);
+    expect(
+      find.byKey(const Key('home-expedition-stage-compact')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
@@ -259,6 +267,35 @@ void main() {
     expect(tester.takeException(), isNull);
 
     semantics.dispose();
+  });
+
+  testWidgets('expedition stage reflows large text on a wider phone', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(500, 700));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          );
+        },
+        home: HomeScreen(loader: () async => _routeWithDecision()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('home-expedition-stage-compact')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

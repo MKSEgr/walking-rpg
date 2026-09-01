@@ -1437,157 +1437,330 @@ class _ExpeditionHero extends StatelessWidget {
         snapshot.petSpecies != null &&
         snapshot.petEvolutionStage != null;
     return ExpeditionPanel(
+      key: const Key('home-expedition-hero'),
       tone: ExpeditionPanelTone.lumen,
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          ChapterVista(
-            key: const Key('home-expedition-vista'),
-            semanticLabel: '$expeditionName, $currentNodeName',
-            progress: snapshot.expeditionProgressValue,
-            height: 178,
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              ExpeditionNodeSignal(
-                key: const Key('home-current-node-badge'),
-                nodeId: snapshot.currentNodeId,
-                nodeName: currentNodeName,
-                completed: completed,
-              ),
-              ExpeditionBadge(
-                key: const Key('home-expedition-journey-number'),
-                label: context.l10n.homeJourneyNumber(
-                  snapshot.expeditionJourneyNumber,
-                ),
-                icon: Icons.route_outlined,
-                tone: ExpeditionPanelTone.energy,
-              ),
-              if (!hasCompanionPortrait)
-                ExpeditionBadge(
-                  key: const Key('home-active-companion-badge'),
-                  label: context.l10n.homeCompanionLevel(
-                    petName,
-                    snapshot.petLevel,
-                  ),
-                  icon: Icons.pets_outlined,
-                  tone: ExpeditionPanelTone.resonance,
-                ),
-            ],
-          ),
-          if (hasCompanionPortrait) ...<Widget>[
-            const SizedBox(height: 12),
-            _ActiveCompanionCard(snapshot: snapshot),
-          ],
-          const SizedBox(height: 16),
-          Text(
-            completed
-                ? context.l10n.homeJourneyCompleted(
-                    snapshot.expeditionJourneyNumber,
-                  )
-                : context.l10n.homeWaitingForSteps,
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.homeWalkFirst,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 22),
-          _DailyProgressSummary(
-            snapshot: snapshot,
-            activitySubtitle: activitySubtitle,
-          ),
-          const SizedBox(height: 22),
-          Divider(color: context.walkingRpgPalette.panelBorder),
-          const SizedBox(height: 2),
-          _RouteEnergySummary(
-            expeditionName: expeditionName,
-            availableEnergy: snapshot.availableEnergy,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.homeEnergyProgress(
-              snapshot.expeditionProgress,
-              snapshot.requiredEnergy,
-              currentNodeName,
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(23),
+        child: Stack(
+          children: <Widget>[
+            Positioned(
+              top: -82,
+              right: -58,
+              child: _ExpeditionGlowOrb(color: palette.resonance, size: 210),
             ),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          if (snapshot.routeTrail.isNotEmpty) ...<Widget>[
-            Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                Text(
-                  context.l10n.expeditionRouteTrailTitle,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                ExcludeSemantics(
-                  child: Text(
-                    key: const Key('home-discovered-route-node-count'),
-                    context.l10n.homeDiscoveredRouteNodes(
-                      snapshot.discoveredRouteNodeCount,
+            Positioned(
+              bottom: -96,
+              left: -70,
+              child: _ExpeditionGlowOrb(color: palette.energy, size: 190),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _ExpeditionVistaStage(
+                    expeditionName: expeditionName,
+                    currentNodeName: currentNodeName,
+                    currentNodeId: snapshot.currentNodeId,
+                    journeyNumber: snapshot.expeditionJourneyNumber,
+                    progress: snapshot.expeditionProgressValue,
+                    completed: completed,
+                  ),
+                  if (hasCompanionPortrait) ...<Widget>[
+                    const SizedBox(height: 12),
+                    _ActiveCompanionCard(snapshot: snapshot),
+                  ] else ...<Widget>[
+                    const SizedBox(height: 12),
+                    ExpeditionBadge(
+                      key: const Key('home-active-companion-badge'),
+                      label: context.l10n.homeCompanionLevel(
+                        petName,
+                        snapshot.petLevel,
+                      ),
+                      icon: Icons.pets_outlined,
+                      tone: ExpeditionPanelTone.resonance,
                     ),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    completed
+                        ? context.l10n.homeJourneyCompleted(
+                            snapshot.expeditionJourneyNumber,
+                          )
+                        : context.l10n.homeWaitingForSteps,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.homeWalkFirst,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ExpeditionRouteTrail(
-              nodes: snapshot.routeTrail
-                  .map(
-                    (HomeExpeditionRouteNode node) => ExpeditionRouteTrailNode(
-                      nodeId: node.nodeId,
-                      nodeName: context.l10n.currentNodeName(
-                        node.nodeId,
-                        node.nodeName,
-                      ),
-                      state: node.state,
-                      decision: node.decision == null
-                          ? null
-                          : ExpeditionRouteTrailDecision(
-                              choiceId: node.decision!.choiceId,
-                              choiceTitle: node.decision!.choiceTitle,
-                              outcomeTitle: node.decision!.outcomeTitle,
-                            ),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-            const SizedBox(height: 10),
-          ],
-          ExpeditionProgressSignal(
-            expeditionId: snapshot.expeditionId,
-            progress: snapshot.expeditionProgress,
-            target: snapshot.requiredEnergy,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            completed
-                ? context.l10n.homeRouteCompleted
-                : context.l10n.homeEnergyToNextNode(
-                    snapshot.remainingExpeditionEnergy,
+                  const SizedBox(height: 22),
+                  _DailyProgressSummary(
+                    snapshot: snapshot,
+                    activitySubtitle: activitySubtitle,
                   ),
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: palette.energy),
+                  const SizedBox(height: 22),
+                  Divider(color: context.walkingRpgPalette.panelBorder),
+                  const SizedBox(height: 2),
+                  _RouteEnergySummary(
+                    expeditionName: expeditionName,
+                    availableEnergy: snapshot.availableEnergy,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.homeEnergyProgress(
+                      snapshot.expeditionProgress,
+                      snapshot.requiredEnergy,
+                      currentNodeName,
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (snapshot.routeTrail.isNotEmpty) ...<Widget>[
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          context.l10n.expeditionRouteTrailTitle,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        ExcludeSemantics(
+                          child: Text(
+                            key: const Key('home-discovered-route-node-count'),
+                            context.l10n.homeDiscoveredRouteNodes(
+                              snapshot.discoveredRouteNodeCount,
+                            ),
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(color: colors.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ExpeditionRouteTrail(
+                      nodes: snapshot.routeTrail
+                          .map(
+                            (
+                              HomeExpeditionRouteNode node,
+                            ) => ExpeditionRouteTrailNode(
+                              nodeId: node.nodeId,
+                              nodeName: context.l10n.currentNodeName(
+                                node.nodeId,
+                                node.nodeName,
+                              ),
+                              state: node.state,
+                              decision: node.decision == null
+                                  ? null
+                                  : ExpeditionRouteTrailDecision(
+                                      choiceId: node.decision!.choiceId,
+                                      choiceTitle: node.decision!.choiceTitle,
+                                      outcomeTitle: node.decision!.outcomeTitle,
+                                    ),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  ExpeditionProgressSignal(
+                    expeditionId: snapshot.expeditionId,
+                    progress: snapshot.expeditionProgress,
+                    target: snapshot.requiredEnergy,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    completed
+                        ? context.l10n.homeRouteCompleted
+                        : context.l10n.homeEnergyToNextNode(
+                            snapshot.remainingExpeditionEnergy,
+                          ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(color: palette.energy),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpeditionVistaStage extends StatelessWidget {
+  const _ExpeditionVistaStage({
+    required this.expeditionName,
+    required this.currentNodeName,
+    required this.currentNodeId,
+    required this.journeyNumber,
+    required this.progress,
+    required this.completed,
+  });
+
+  final String expeditionName;
+  final String currentNodeName;
+  final String currentNodeId;
+  final int journeyNumber;
+  final double progress;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget vista = ChapterVista(
+      key: const Key('home-expedition-vista'),
+      semanticLabel: '$expeditionName, $currentNodeName',
+      progress: progress,
+      height: 206,
+    );
+    final Widget badges = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.spaceBetween,
+      children: <Widget>[
+        ExpeditionBadge(
+          key: const Key('home-expedition-journey-number'),
+          label: context.l10n.homeJourneyNumber(journeyNumber),
+          icon: Icons.route_outlined,
+          tone: ExpeditionPanelTone.energy,
+        ),
+        ExpeditionNodeSignal(
+          key: const Key('home-current-node-badge'),
+          nodeId: currentNodeId,
+          nodeName: currentNodeName,
+          completed: completed,
+        ),
+      ],
+    );
+    final Widget routePlate = ExcludeSemantics(
+      child: _ExpeditionRoutePlate(
+        currentNodeName: currentNodeName,
+        progress: progress,
+        completed: completed,
+      ),
+    );
+
+    return LayoutBuilder(
+      key: const Key('home-expedition-visual-stage'),
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (_usesCompactHomeSection(context, constraints) ||
+            _effectiveTextScale(context) > 1.5) {
+          return Column(
+            key: const Key('home-expedition-stage-compact'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              badges,
+              const SizedBox(height: 10),
+              vista,
+              const SizedBox(height: 10),
+              routePlate,
+            ],
+          );
+        }
+        return Stack(
+          key: const Key('home-expedition-stage-overlay'),
+          children: <Widget>[
+            vista,
+            Positioned(top: 12, left: 12, right: 12, child: badges),
+            Positioned(left: 12, right: 12, bottom: 12, child: routePlate),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ExpeditionRoutePlate extends StatelessWidget {
+  const _ExpeditionRoutePlate({
+    required this.currentNodeName,
+    required this.progress,
+    required this.completed,
+  });
+
+  final String currentNodeName;
+  final double progress;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.walkingRpgPalette.panelBorder.withValues(alpha: 0.72),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              completed ? Icons.flag_outlined : Icons.explore_outlined,
+              size: 20,
+              color: completed
+                  ? context.walkingRpgPalette.resonance
+                  : context.walkingRpgPalette.energy,
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    currentNodeName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${(progress * 100).round()}%',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: context.walkingRpgPalette.energy,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpeditionGlowOrb extends StatelessWidget {
+  const _ExpeditionGlowOrb({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: <Color>[
+              color.withValues(alpha: 0.16),
+              color.withValues(alpha: 0),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
