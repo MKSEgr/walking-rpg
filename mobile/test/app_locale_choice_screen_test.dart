@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/core/localization/app_locale_controller.dart';
 import 'package:walking_rpg_mobile/core/localization/app_locale_scope.dart';
+import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
@@ -28,6 +29,13 @@ void main() {
     final Finder english = find.byKey(const Key('app-locale-choice-en'));
     expect(russian, findsOneWidget);
     expect(english, findsOneWidget);
+    expect(find.byType(ChapterVista), findsOneWidget);
+    final ChapterVista vista = tester.widget<ChapterVista>(
+      find.byKey(const Key('app-locale-gateway-vista')),
+    );
+    expect(vista.semanticLabel, 'Маршрут к сигнальному маяку');
+    expect(find.byKey(const Key('app-locale-mark-ru')), findsOneWidget);
+    expect(find.byKey(const Key('app-locale-mark-en')), findsOneWidget);
     expect(
       tester.getTopLeft(russian).dy,
       lessThan(tester.getTopLeft(english).dy),
