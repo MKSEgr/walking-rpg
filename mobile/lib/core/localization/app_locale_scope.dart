@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/localization/app_locale_controller.dart';
 import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
+import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
+import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 class AppLocaleScope extends InheritedNotifier<AppLocaleController> {
   const AppLocaleScope({
@@ -190,6 +192,13 @@ class _AppLocaleChoiceScreenState extends State<AppLocaleChoiceScreen> {
                         context.l10n.appNameRussian,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
+                      const SizedBox(height: 16),
+                      ChapterVista(
+                        key: const Key('app-locale-gateway-vista'),
+                        semanticLabel:
+                            context.l10n.languageChoiceVistaSemanticLabel,
+                        height: 144,
+                      ),
                       const SizedBox(height: 18),
                       Text(
                         context.l10n.languageChoiceTitle,
@@ -301,47 +310,87 @@ class _LocaleChoiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final Color accent = selected ? palette.resonance : colors.primary;
     return Semantics(
       selected: selected,
       button: true,
       child: Material(
-        color: selected
-            ? colors.primaryContainer.withValues(alpha: 0.42)
-            : colors.surfaceContainerHighest.withValues(alpha: 0.62),
+        color: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: BorderSide(
-            color: selected ? colors.primary : colors.outlineVariant,
-            width: selected ? 2 : 1,
-          ),
         ),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => onSelected(locale),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: <Widget>[
-                CircleAvatar(child: Text(locale.languageCode.toUpperCase())),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(subtitle),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? palette.resonance : colors.outlineVariant,
+              width: selected ? 2 : 1,
+            ),
+            gradient: selected
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: <Color>[
+                      palette.resonance.withValues(alpha: 0.22),
+                      colors.primary.withValues(alpha: 0.08),
                     ],
+                  )
+                : null,
+            color: selected
+                ? null
+                : colors.surfaceContainerHighest.withValues(alpha: 0.62),
+          ),
+          child: InkWell(
+            onTap: () => onSelected(locale),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  DecoratedBox(
+                    key: Key(
+                      'app-locale-mark-${locale.languageCode}',
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: selected ? 0.2 : 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: accent.withValues(alpha: selected ? 0.64 : 0.3),
+                      ),
+                    ),
+                    child: SizedBox.square(
+                      dimension: 48,
+                      child: Center(
+                        child: Text(
+                          locale.languageCode.toUpperCase(),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(color: accent, letterSpacing: 0.8),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                if (selected) ...<Widget>[
-                  const SizedBox(width: 10),
-                  const Icon(Icons.check_circle),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(subtitle),
+                      ],
+                    ),
+                  ),
+                  if (selected) ...<Widget>[
+                    const SizedBox(width: 10),
+                    Icon(Icons.check_circle, color: palette.resonance),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

@@ -5,6 +5,7 @@
   "languageChoiceBadge": "Language · Язык",
   "languageChoiceTitle": "Выберите язык / Choose a language",
   "languageChoiceBody": "Русский указан первым для российского alpha-теста. Выбор обязателен и его можно изменить позже. / Russian is listed first for the alpha test in Russia. Your choice is explicit and can be changed later.",
+  "languageChoiceVistaSemanticLabel": "Route to the signal beacon",
   "russianLanguageNative": "Русский",
   "russianLanguageDescription": "Интерфейс на русском языке",
   "englishLanguageNative": "English",
