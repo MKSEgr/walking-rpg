@@ -75,6 +75,10 @@ void main() {
     expect(find.byType(ExpeditionBackdrop), findsOneWidget);
     expect(find.byKey(const Key('account-pilot-dossier')), findsOneWidget);
     expect(find.byKey(const Key('account-pilot-portrait')), findsOneWidget);
+    expect(
+      find.byKey(const Key('account-identity-route-oidc')),
+      findsOneWidget,
+    );
     expect(find.byType(PilotPortrait), findsOneWidget);
     expect(find.text('ДОСЬЕ ПИЛОТА'), findsOneWidget);
     expect(find.text('OIDC ПОДТВЕРЖДЕНА'), findsOneWidget);
@@ -191,6 +195,10 @@ void main() {
 
     expect(find.text('Account and data'), findsOneWidget);
     expect(find.text('PILOT DOSSIER'), findsOneWidget);
+    expect(
+      find.byKey(const Key('account-identity-route-oidc')),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Pilot dossier, account-english-user, Protected OIDC session',
