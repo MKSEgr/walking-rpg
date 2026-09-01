@@ -32,6 +32,7 @@
   "authReauthenticationBody": "Сессия завершена. Войдите снова, чтобы продолжить синхронизацию и игровые действия.",
   "authOpenBody": "Войдите через Telegram, по коду из email, через Apple или Google. Авторизация откроется в системном браузере.",
   "authPasswordNote": "Пароль не вводится и не хранится в приложении.",
+  "authChannelSignalSemantics": "Защищённый переход: приложение, системный браузер, экспедиция",
   "authOpeningButton": "Открываем защищённый вход...",
   "authSignInButton": "Войти в экспедицию",
   "authInitializingBadge": "Канал экспедиции",

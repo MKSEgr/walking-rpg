@@ -31,6 +31,13 @@ void main() {
     expect(find.text('БЕЗ GPS'), findsOneWidget);
     expect(find.text('ТОЛЬКО ШАГИ · ЧТЕНИЕ'), findsOneWidget);
     expect(find.textContaining('Telegram'), findsOneWidget);
+    expect(find.byKey(const Key('auth-channel-signal')), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Защищённый переход: приложение, системный браузер, экспедиция',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel('Туманный сектор и сигнальный маяк'),
       findsOneWidget,
@@ -75,6 +82,7 @@ void main() {
     expect(find.text('Вернуться в экспедицию'), findsOneWidget);
     expect(find.byKey(const Key('auth-message')), findsOneWidget);
     expect(find.byKey(const Key('auth-notice')), findsOneWidget);
+    expect(find.byKey(const Key('auth-channel-signal')), findsOneWidget);
     expect(find.text('Сервер входа временно недоступен.'), findsOneWidget);
     expect(
       tester
