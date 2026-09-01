@@ -140,6 +140,17 @@ class VisualEvidenceTest(unittest.TestCase):
             V.validate_evidence(data, require_recorded=True, inventory=bad_inventory,
                                 inventory_sha256=inventory_digest())
 
+    def test_product_owner_and_path_redaction_are_mandatory(self) -> None:
+        data = recorded()
+        data["decision"]["ownerRole"] = "art_director"
+        with self.assertRaisesRegex(V.VisualEvidenceError, "product_owner"):
+            validate(data)
+        for unsafe_path in ("/home/alice/private/capture.png", r"C:\\Users\\Alice\\capture.png"):
+            data = recorded()
+            data["decision"]["inclusions"] = [unsafe_path]
+            with self.assertRaisesRegex(V.VisualEvidenceError, "personal data"):
+                validate(data)
+
 
 if __name__ == "__main__":
     unittest.main()

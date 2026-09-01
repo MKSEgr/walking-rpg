@@ -55,7 +55,7 @@ def _timestamp(value: Any, path: str) -> datetime:
 def _text(value: Any, path: str) -> str:
     if not isinstance(value, str) or not value.strip() or len(value) > 240:
         _fail(path, "must be non-empty text of at most 240 characters")
-    if SENSITIVE.search(value):
+    if SENSITIVE.search(value) or health_inventory.URL_OR_PATH.search(value):
         _fail(path, "must not contain URLs, credentials, identifiers, or personal data")
     return value
 
@@ -160,8 +160,8 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
         _fail("decision.status", "must equal APPROVED")
     if _timestamp(decision["decidedAtUtc"], "decision.decidedAtUtc") < recorded_at:
         _fail("decision.decidedAtUtc", "must not precede recordedAtUtc")
-    if decision["ownerRole"] not in {"product_owner", "art_director"}:
-        _fail("decision.ownerRole", "must be product_owner or art_director")
+    if decision["ownerRole"] != "product_owner":
+        _fail("decision.ownerRole", "must equal product_owner")
     for key in ("inclusions", "exclusions", "storeArtworkPrinciples"):
         values = decision[key]
         if not isinstance(values, list) or not values:
