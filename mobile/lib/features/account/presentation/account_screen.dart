@@ -640,7 +640,9 @@ class _AccountIdentityRoute extends StatelessWidget {
     final Color sessionAccent = development
         ? palette.resonance
         : colors.primary;
-    final Color profileAccent = development ? palette.energy : palette.resonance;
+    final Color profileAccent = development
+        ? palette.energy
+        : palette.resonance;
     return DecoratedBox(
       key: Key(
         development
@@ -660,20 +662,14 @@ class _AccountIdentityRoute extends StatelessWidget {
               icon: Icons.person_outline,
               color: colors.primary,
             ),
-            _AccountIdentityConnector(
-              from: colors.primary,
-              to: sessionAccent,
-            ),
+            _AccountIdentityConnector(from: colors.primary, to: sessionAccent),
             _AccountIdentityNode(
               icon: development
                   ? Icons.developer_mode_outlined
                   : Icons.verified_user_outlined,
               color: sessionAccent,
             ),
-            _AccountIdentityConnector(
-              from: sessionAccent,
-              to: profileAccent,
-            ),
+            _AccountIdentityConnector(from: sessionAccent, to: profileAccent),
             _AccountIdentityNode(
               icon: development
                   ? Icons.save_outlined
