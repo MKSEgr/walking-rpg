@@ -129,6 +129,15 @@ if PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_store_account_
 fi
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_store_account_readiness.py"
 
+printf '%s\n' "Checking the protected signed-candidate evidence contract..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_signed_candidate_evidence.py" \
+  "$ROOT_DIR/docs/evidence/signed-candidate-template.json"
+if PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_signed_candidate_evidence.py" \
+  "$ROOT_DIR/docs/evidence/signed-candidate-template.json" --require-ready >/dev/null 2>&1; then
+  echo "Committed signed-candidate template must not pass as ready evidence." >&2; exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_signed_candidate_evidence.py"
+
 printf '%s\n' "Checking the internal-alpha kickoff contract..."
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_kickoff.py" \

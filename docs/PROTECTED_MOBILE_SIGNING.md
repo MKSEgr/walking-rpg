@@ -138,6 +138,83 @@ afterward without repeating the protected build from the approved post-merge
 
 ## Required retained evidence
 
+The sanitized handoff uses
+[`signed-candidate-template.json`](evidence/signed-candidate-template.json).
+Only a `RECORDED` + `READY` record that passes `--require-ready` may unblock
+physical install/distribution work. A committed `TEMPLATE`, a structurally
+valid `BLOCKED` record, or ordinary unsigned/no-codesign CI output is not
+signed-candidate evidence.
+
+`--require-ready` is an online, fail-closed check. It resolves `master` and the
+successful `CI` and `Release quality` runs through the GitHub API rather than
+trusting a local remote-tracking ref or copied conclusion strings. The checkout
+must also have canonical `origin` set to `MKSEgr/walking-rpg`.
+
+Each `verifierReceiptSha256` identifies an offline GitHub artifact-attestation
+bundle for the corresponding artifact. The validator invokes
+`gh attestation verify` and restricts the signer to
+`.github/workflows/protected-mobile-signing.yml` in this repository. That
+protected workflow may create the attestation only after the platform-native
+signature verifier has succeeded and the recorded public certificate
+fingerprint has been extracted from the same artifact. It also extracts the
+application ID, version and build number from the AAB/IPA and compares all
+three with the exact checked-out source before attesting. Android verification
+uses the checksum-pinned bundletool release; offline validation requires the
+same tool either on `PATH` or through `BUNDLETOOL_JAR`. Plain JSON written by
+the evidence author, an ordinary CI artifact, or an attestation from another
+workflow does not satisfy the contract.
+
+The protected workflow is manually dispatched against the exact current
+`master` SHA, reads a signed IPA/AAB only from a private draft-release asset,
+verifies its native signature and expected public certificate fingerprint, and
+retains an offline attestation bundle. The validator independently repeats the
+native signature/fingerprint extraction and enforces the attestation
+`--source-digest` against `source.commitSha`. Only successful `push` runs count
+as source CI evidence; manually dispatched workflow results cannot replace the
+required master checks.
+
+An internal-availability boolean is not trusted on its own. Every record that
+contains a READY platform must also supply an offline attestation for the exact
+candidate-evidence bytes through `--evidence-attestation`. Only
+`.github/workflows/protected-mobile-evidence.yml`, running behind the same
+protected environment against the exact current `master` SHA, may create that
+attestation. The protected approval therefore authenticates the complete
+distribution/install assertion, artifact digest, track and owner fields; an
+ordinary workflow or a locally edited record fails verification. Create this
+attestation only after the TestFlight/Play internal upload and approved-device
+installation have actually succeeded.
+
+Use the exact store-track enums `testflight_internal` and `play_internal`.
+`toolchain` must be a platform-specific numeric version set in one of these
+exact formats:
+
+```text
+flutter_<semver>+xcode_<version>+ios-sdk_<version>
+flutter_<semver>+android-sdk_<api>+agp_<version>+jdk_<major>
+```
+
+Every numeric component is limited to one through three digits (JDK major to
+two), and the complete value is capped at 96 characters. Arbitrary lowercase
+tokens, oversized numeric payloads, paths, URLs and credential-like strings are
+not accepted. The protected evidence workflow applies the same nested metadata
+check before attesting the record. A BLOCKED platform retains none of version,
+build, toolchain or distribution-track metadata; it records only an approved
+coarse blocker, owner role and next-action timestamp.
+
+The complete fail-closed check is:
+
+```bash
+BUNDLETOOL_JAR=/protected/tools/bundletool-all-1.18.3.jar \
+python3 scripts/ci/verify_signed_candidate_evidence.py signed-candidate.json \
+  --account-readiness store-account-readiness.json \
+  --ios-artifact candidate.ipa \
+  --android-artifact candidate.aab \
+  --ios-verifier-receipt ios-artifact-attestation.jsonl \
+  --android-verifier-receipt android-artifact-attestation.jsonl \
+  --evidence-attestation signed-candidate-evidence-attestation.jsonl \
+  --require-ready
+```
+
 Retained evidence may contain:
 
 - date and operator;

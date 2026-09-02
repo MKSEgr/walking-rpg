@@ -68,7 +68,8 @@ def _candidate_identities(repository_root: Path) -> tuple[dict[str, str], str]:
 
 
 def validate(data: Any, *, require_recorded: bool = False, require_ready: bool = False,
-             repository_root: Path | None = None) -> None:
+             repository_root: Path | None = None,
+             candidate_configuration: tuple[dict[str, str], str] | None = None) -> None:
     root = _object(data, "$", TOP)
     if root["schemaVersion"] != SCHEMA: _fail("schemaVersion", f"must equal {SCHEMA!r}")
     record = root["recordStatus"]
@@ -86,7 +87,7 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
         expected_approval = {"status": "OWNER_INPUT_REQUIRED", "productOwnerRole": None, "releaseOwnerRole": None, "nextActionDueAtUtc": None, "blockerCategory": None}
         if overall != "OWNER_INPUT_REQUIRED" or root["recordedAtUtc"] is not None or root["reviewedAtUtc"] is not None or root["legalOperatorRole"] is not None or root["markets"] or root["locales"] or stores or urls or testing != expected_testing or approval != expected_approval: _fail("$", "committed TEMPLATE must remain empty and owner-input-required")
         return
-    candidate_ids, candidate_scheme = _candidate_identities(
+    candidate_ids, candidate_scheme = candidate_configuration or _candidate_identities(
         repository_root or Path(__file__).resolve().parents[2]
     )
     recorded_at, reviewed_at = _time(root["recordedAtUtc"], "recordedAtUtc"), _time(root["reviewedAtUtc"], "reviewedAtUtc")
