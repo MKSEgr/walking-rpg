@@ -193,8 +193,10 @@ flutter_<semver>+xcode_<version>+ios-sdk_<version>
 flutter_<semver>+android-sdk_<api>+agp_<version>+jdk_<major>
 ```
 
-Arbitrary lowercase tokens, paths, URLs and credential-like strings are not
-accepted. The protected evidence workflow applies the same nested metadata
+Every numeric component is limited to one through three digits (JDK major to
+two), and the complete value is capped at 96 characters. Arbitrary lowercase
+tokens, oversized numeric payloads, paths, URLs and credential-like strings are
+not accepted. The protected evidence workflow applies the same nested metadata
 check before attesting the record. A BLOCKED platform retains none of version,
 build, toolchain or distribution-track metadata; it records only an approved
 coarse blocker, owner role and next-action timestamp.

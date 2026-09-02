@@ -31,8 +31,8 @@ SHA = re.compile(r"^[0-9a-f]{40}$"); SHA256 = re.compile(r"^[0-9a-f]{64}$"); UTC
 VERSION = re.compile(r"^[0-9]+(?:\.[0-9]+){2}(?:[-+][0-9A-Za-z.-]+)?$")
 BUILD = re.compile(r"^[1-9][0-9]{0,17}$")
 TOOLCHAINS = {
-    "ios": re.compile(r"^flutter_[0-9]+(?:\.[0-9]+){2}\+xcode_[0-9]+(?:\.[0-9]+){1,2}\+ios-sdk_[0-9]+(?:\.[0-9]+){1,2}$"),
-    "android": re.compile(r"^flutter_[0-9]+(?:\.[0-9]+){2}\+android-sdk_[0-9]{2,3}\+agp_[0-9]+(?:\.[0-9]+){1,2}\+jdk_[0-9]{1,2}$"),
+    "ios": re.compile(r"^flutter_[0-9]{1,3}(?:\.[0-9]{1,3}){2}\+xcode_[0-9]{1,3}(?:\.[0-9]{1,3}){1,2}\+ios-sdk_[0-9]{1,3}(?:\.[0-9]{1,3}){1,2}$"),
+    "android": re.compile(r"^flutter_[0-9]{1,3}(?:\.[0-9]{1,3}){2}\+android-sdk_[0-9]{2,3}\+agp_[0-9]{1,3}(?:\.[0-9]{1,3}){1,2}\+jdk_[0-9]{1,2}$"),
 }
 BLOCKERS = {"account_not_ready", "signing_access_unavailable", "protected_runner_unavailable", "distribution_unavailable", "signature_verification_failed", "cleanup_unconfirmed", "other_coarse"}
 ATTESTATION_WORKFLOW = "MKSEgr/walking-rpg/.github/workflows/protected-mobile-signing.yml"
@@ -60,7 +60,7 @@ def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 def _toolchain(value: Any, platform: str, path: str) -> None:
-    if not isinstance(value, str) or not TOOLCHAINS[platform].fullmatch(value):
+    if not isinstance(value, str) or len(value) > 96 or not TOOLCHAINS[platform].fullmatch(value):
         _fail(path, f"must use the exact safe {platform} toolchain/version format")
 
 def _git(repo: Path, *args: str) -> str:

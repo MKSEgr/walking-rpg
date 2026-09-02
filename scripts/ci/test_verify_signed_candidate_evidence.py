@@ -119,7 +119,7 @@ class SignedCandidateTest(unittest.TestCase):
         with self.assertRaisesRegex(V.SignedCandidateError, "attestation: rejected"):
             V.validate(data, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts(), evidence_bytes=encoded(data), evidence_receipt=b"untrusted", **{**trust(), "evidence_attestation_verifier": lambda *_: (_ for _ in ()).throw(V.SignedCandidateError("attestation: rejected"))})
     def test_platform_metadata_is_secret_free_and_bounded(self) -> None:
-        for platform, unsafe in ((0, "/private/keychain/token"), (1, "secret_token")):
+        for platform, unsafe in ((0, "/private/keychain/token"), (1, "secret_token"), (0, f"flutter_{'1' * 100000}.2.3+xcode_26.0+ios-sdk_26.0")):
             data = recorded(); data["platforms"][platform]["toolchain"] = unsafe
             with self.assertRaisesRegex(V.SignedCandidateError, "exact safe .* toolchain/version format"): validate(data)
         data = recorded(); data["platforms"][1]["distributionTrack"] = "secret-token"
