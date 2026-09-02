@@ -28,7 +28,7 @@ def receipts() -> dict[str, bytes]:
     for platform, content in artifacts().items(): values[platform] = receipt(platform, hashlib.sha256(content).hexdigest(), "b" * 64)
     return values
 def trust() -> dict:
-    return {"github_state": {"masterSha": source_commit(), "successfulWorkflows": {"CI", "Release quality"}}, "attestation_verifier": lambda repository, artifact, bundle: None}
+    return {"github_state": {"masterSha": source_commit(), "successfulWorkflows": {"CI", "Release quality"}}, "attestation_verifier": lambda repository, commit, artifact, bundle: None, "fingerprint_extractor": lambda platform, artifact: "b" * 64}
 def recorded(ready: bool = True) -> dict:
     data = template(); data.update({"recordStatus": "RECORDED", "overallStatus": "READY" if ready else "BLOCKED", "recordedAtUtc": "2026-09-02T10:00:00Z"})
     commit = source_commit(); tree = git("rev-parse", "HEAD^{tree}")
@@ -40,7 +40,7 @@ def recorded(ready: bool = True) -> dict:
     if not ready:
         data["platforms"][0].update({"status": "BLOCKED", "artifactSha256": None, "verifierReceiptSha256": None, "publicCertificateFingerprintSha256": None, "signatureVerified": False, "installableByInternalAudience": False, "nextActionDueAtUtc": "2026-09-10T10:00:00Z", "blockerCategory": "signing_access_unavailable"})
     return data
-def validate(data: dict, ready: bool = False, account_value: dict | None = None) -> None: V.validate(data, require_recorded=True, require_ready=ready, account=account_value or account(), account_sha256=hashlib.sha256(json.dumps(account_value or account(), separators=(",", ":")).encode()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts(), github_state={"masterSha": source_commit(), "successfulWorkflows": {"CI", "Release quality"}}, attestation_verifier=lambda repository, artifact, bundle: None)
+def validate(data: dict, ready: bool = False, account_value: dict | None = None) -> None: V.validate(data, require_recorded=True, require_ready=ready, account=account_value or account(), account_sha256=hashlib.sha256(json.dumps(account_value or account(), separators=(",", ":")).encode()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts(), **trust())
 
 class SignedCandidateTest(unittest.TestCase):
     def test_template_is_valid_but_not_ready(self) -> None:
@@ -82,7 +82,16 @@ class SignedCandidateTest(unittest.TestCase):
             V.validate(data, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts(), github_state={"masterSha": "f" * 40, "successfulWorkflows": {"CI", "Release quality"}}, attestation_verifier=lambda *_: None)
         def reject(*_: object) -> None: raise V.SignedCandidateError("attestation: rejected")
         with self.assertRaisesRegex(V.SignedCandidateError, "attestation: rejected"):
-            V.validate(data, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts(), github_state={"masterSha": source_commit(), "successfulWorkflows": {"CI", "Release quality"}}, attestation_verifier=reject)
+            V.validate(data, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts(), github_state={"masterSha": source_commit(), "successfulWorkflows": {"CI", "Release quality"}}, attestation_verifier=reject, fingerprint_extractor=lambda *_: "b" * 64)
+    def test_fingerprint_and_approval_shapes_are_strict(self) -> None:
+        data = recorded()
+        with self.assertRaisesRegex(V.SignedCandidateError, "fingerprint must match"):
+            V.validate(data, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts(), github_state=trust()["github_state"], attestation_verifier=trust()["attestation_verifier"], fingerprint_extractor=lambda *_: "c" * 64)
+        data = recorded(False); data["approval"] = {"status": {}, "releaseOwnerRole": [], "approvedAtUtc": {"secret": "value"}}
+        with self.assertRaisesRegex(V.SignedCandidateError, "exact BLOCKED or APPROVED"): validate(data)
+    def test_only_successful_push_workflows_are_trusted(self) -> None:
+        runs = [{"name": "CI", "head_sha": source_commit(), "event": "workflow_dispatch", "conclusion": "success"}, {"name": "Release quality", "head_sha": source_commit(), "event": "push", "conclusion": "success"}]
+        self.assertEqual(V._successful_push_workflows(runs, source_commit()), {"Release quality"})
     def test_cleanup_values_are_strict_booleans(self) -> None:
         data = recorded(False); data["cleanup"]["temporaryMaterialRemoved"] = {"path": "/private/key"}
         with self.assertRaisesRegex(V.SignedCandidateError, "strict booleans"): validate(data)

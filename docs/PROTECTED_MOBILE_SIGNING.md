@@ -160,6 +160,15 @@ fingerprint has been extracted from the same artifact. Plain JSON written by
 the evidence author, an ordinary CI artifact, or an attestation from another
 workflow does not satisfy the contract.
 
+The protected workflow is manually dispatched against the exact current
+`master` SHA, reads a signed IPA/AAB only from a private draft-release asset,
+verifies its native signature and expected public certificate fingerprint, and
+retains an offline attestation bundle. The validator independently repeats the
+native signature/fingerprint extraction and enforces the attestation
+`--source-digest` against `source.commitSha`. Only successful `push` runs count
+as source CI evidence; manually dispatched workflow results cannot replace the
+required master checks.
+
 Retained evidence may contain:
 
 - date and operator;

@@ -62,21 +62,47 @@ def _github_state(repository: str, commit: str) -> dict[str, Any]:
         with urllib.request.urlopen(request, timeout=30) as response: return json.load(response)
     master = get("git/ref/heads/master")["object"]["sha"]
     runs = get(f"actions/runs?head_sha={commit}&status=completed&per_page=100")["workflow_runs"]
-    successful = {run["name"] for run in runs if run.get("head_sha") == commit and run.get("conclusion") == "success"}
+    successful = _successful_push_workflows(runs, commit)
     return {"masterSha": master, "successfulWorkflows": successful}
 
-def _verify_attestation(repository: str, artifact: bytes, bundle: bytes) -> None:
+def _successful_push_workflows(runs: list[dict[str, Any]], commit: str) -> set[str]:
+    return {run["name"] for run in runs if run.get("head_sha") == commit and run.get("event") == "push" and run.get("conclusion") == "success"}
+
+def _verify_attestation(repository: str, commit: str, artifact: bytes, bundle: bytes) -> None:
     with tempfile.TemporaryDirectory() as directory:
         artifact_path, bundle_path = Path(directory) / "artifact", Path(directory) / "bundle.jsonl"
         artifact_path.write_bytes(artifact); bundle_path.write_bytes(bundle)
-        result = subprocess.run(["gh", "attestation", "verify", str(artifact_path), "--repo", repository, "--bundle", str(bundle_path), "--signer-workflow", ATTESTATION_WORKFLOW], text=True, capture_output=True, check=False)
+        result = subprocess.run(["gh", "attestation", "verify", str(artifact_path), "--repo", repository, "--bundle", str(bundle_path), "--signer-workflow", ATTESTATION_WORKFLOW, "--source-digest", commit], text=True, capture_output=True, check=False)
         if result.returncode != 0: _fail("attestation", "GitHub artifact attestation verification failed")
+
+def _artifact_fingerprint(platform: str, artifact: bytes) -> str:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory); artifact_path = root / ("candidate.ipa" if platform == "ios" else "candidate.aab")
+        artifact_path.write_bytes(artifact)
+        if platform == "android":
+            verify = subprocess.run(["jarsigner", "-verify", "-strict", str(artifact_path)], text=True, capture_output=True, check=False)
+            details = subprocess.run(["keytool", "-printcert", "-jarfile", str(artifact_path)], text=True, capture_output=True, check=False)
+            output = details.stdout + details.stderr
+        else:
+            unpack = subprocess.run(["unzip", "-q", str(artifact_path), "-d", str(root / "ipa")], text=True, capture_output=True, check=False)
+            apps = list((root / "ipa" / "Payload").glob("*.app"))
+            if unpack.returncode != 0 or len(apps) != 1: _fail("attestation", "iOS artifact must contain exactly one app")
+            verify = subprocess.run(["codesign", "--verify", "--deep", "--strict", str(apps[0])], text=True, capture_output=True, check=False)
+            certificate_prefix, certificate = root / "certificate", root / "certificate0"
+            details = subprocess.run(["codesign", "-d", f"--extract-certificates={certificate_prefix}", str(apps[0])], text=True, capture_output=True, check=False)
+            if details.returncode != 0: _fail("attestation", "cannot extract iOS signing certificate")
+            details = subprocess.run(["openssl", "x509", "-inform", "DER", "-in", str(certificate), "-noout", "-fingerprint", "-sha256"], text=True, capture_output=True, check=False)
+            output = details.stdout + details.stderr
+        if verify.returncode != 0 or details.returncode != 0: _fail("attestation", f"{platform} native signature verification failed")
+        match = re.search(r"SHA(?:-?256)?\s*(?:fingerprint)?:?\s*([0-9A-F:]{64,95})", output, re.IGNORECASE)
+        if not match: _fail("attestation", f"cannot extract {platform} certificate fingerprint")
+        return match.group(1).replace(":", "").lower()
 
 def validate(data: Any, *, require_recorded: bool = False, require_ready: bool = False,
              account: Any = None, account_sha256: str | None = None,
              repository_root: Path | None = None, artifacts: dict[str, bytes] | None = None,
              receipts: dict[str, bytes] | None = None, github_state: dict[str, Any] | None = None,
-             attestation_verifier: Any = None) -> None:
+             attestation_verifier: Any = None, fingerprint_extractor: Any = None) -> None:
     root = _object(data, "$", TOP); record, overall = root["recordStatus"], root["overallStatus"]
     if root["schemaVersion"] != SCHEMA: _fail("schemaVersion", f"must equal {SCHEMA!r}")
     if record not in {"TEMPLATE", "RECORDED"} or overall not in {"OWNER_INPUT_REQUIRED", "READY", "BLOCKED"}: _fail("$", "invalid status")
@@ -96,7 +122,7 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
     repo = repository_root or Path(__file__).resolve().parents[2]
     if source["repository"] != "MKSEgr/walking-rpg": _fail("source.repository", "must identify the approved repository")
     remote = _git(repo, "remote", "get-url", "origin")
-    if remote not in {"https://github.com/MKSEgr/walking-rpg.git", "git@github.com:MKSEgr/walking-rpg.git"}: _fail("source.repository", "origin must be the canonical GitHub repository")
+    if remote.removesuffix(".git") not in {"https://github.com/MKSEgr/walking-rpg", "git@github.com:MKSEgr/walking-rpg"}: _fail("source.repository", "origin must be the canonical GitHub repository")
     state = github_state or _github_state(source["repository"], source["commitSha"])
     if source["commitSha"] != state.get("masterSha"): _fail("source.commitSha", "must equal GitHub's current master commit")
     actual_tree = _git(repo, "rev-parse", f'{source["commitSha"]}^{{tree}}')
@@ -117,7 +143,9 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
             artifact_bytes = (artifacts or {}).get(platform); receipt_bytes = (receipts or {}).get(platform)
             if artifact_bytes is None or hashlib.sha256(artifact_bytes).hexdigest() != item["artifactSha256"]: _fail(path, "artifact digest must match supplied artifact bytes")
             if receipt_bytes is None or hashlib.sha256(receipt_bytes).hexdigest() != item["verifierReceiptSha256"]: _fail(path, "receipt digest must match supplied verifier receipt bytes")
-            (attestation_verifier or _verify_attestation)(source["repository"], artifact_bytes, receipt_bytes)
+            (attestation_verifier or _verify_attestation)(source["repository"], source["commitSha"], artifact_bytes, receipt_bytes)
+            fingerprint = (fingerprint_extractor or _artifact_fingerprint)(platform, artifact_bytes)
+            if fingerprint != item["publicCertificateFingerprintSha256"]: _fail(path, "certificate fingerprint must match the signed artifact")
             if item["signatureVerified"] is not True or item["installableByInternalAudience"] is not True: _fail(path, "READY requires verified signature and internal availability")
             for key in ("version", "buildNumber", "toolchain", "distributionTrack"):
                 if not isinstance(item[key], str) or not item[key].strip(): _fail(f"{path}.{key}", "must be non-empty")
@@ -143,9 +171,11 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
     except accounts.AccountReadinessError as error: _fail("accountReadiness", f"has incompatible status: {error}")
     safe_cleanup = cleanup == {"temporaryMaterialRemoved": True, "ordinaryCiHadSigningAccess": False, "secretExposureDetected": False}
     if not safe_cleanup: ready = False
-    if approval["status"] == "APPROVED" and approval["releaseOwnerRole"] == "release_owner":
+    if approval == {"status": "BLOCKED", "releaseOwnerRole": None, "approvedAtUtc": None}:
+        ready = False
+    elif approval["status"] == "APPROVED" and approval["releaseOwnerRole"] == "release_owner" and approval["approvedAtUtc"] is not None:
         if _time(approval["approvedAtUtc"], "approval.approvedAtUtc") < recorded_at: _fail("approval.approvedAtUtc", "must not precede recording")
-    else: ready = False
+    else: _fail("approval", "must be exact BLOCKED or APPROVED shape")
     if overall != ("READY" if ready else "BLOCKED"): _fail("overallStatus", "must match artifact, cleanup and approval outcomes")
 
 def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
