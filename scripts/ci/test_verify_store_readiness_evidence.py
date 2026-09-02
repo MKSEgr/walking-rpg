@@ -20,9 +20,11 @@ def template() -> dict: return json.loads(TEMPLATE.read_text(encoding="utf-8"))
 def recorded() -> dict:
     data = template(); data["recordStatus"] = "RECORDED"; data["recordedAtUtc"] = "2026-09-01T10:00:00Z"
     data["baseline"]["visualDirectionSha256"] = visual_digest()
-    data["publicUrls"] = {key: f"https://walking.example/{key}" for key in V.URLS}
-    data["stores"] = [{"platform": platform, "appRecordStatus": "APPROVED", "privacyDeclarationStatus": "APPROVED", "healthDeclarationStatus": "APPROVED", "locales": ["en", "ru"], "screenshotSetSha256": "b" * 64, "iconSha256": "c" * 64, "reviewerFlowStatus": "APPROVED", "advertisedCapabilities": ["health"]} for platform in ("apple", "google")]
-    data["approval"] = {"status": "APPROVED", "ownerRole": "product_owner", "approvedAtUtc": "2026-09-01T11:00:00Z"}
+    data["publicUrls"] = {key: f"https://walking-rpg.com/{key}" for key in V.URLS}
+    data["stores"] = []
+    for platform in ("apple", "google"):
+        data["stores"].append({"platform": platform, "appRecordStatus": "APPROVED", "privacyDeclarationStatus": "APPROVED", "healthDeclarationStatus": "APPROVED", "locales": ["en", "ru"], "assetDigests": {key: "b" * 64 for key in V.ASSET_KEYS[platform]}, "metadataPackSha256": "c" * 64, "reviewerFlowStatus": "APPROVED", "advertisedCapabilities": ["health", "telegramLogin"]})
+    data["approval"] = {"status": "APPROVED", "ownerRole": "product_owner", "approvedAtUtc": "2026-09-01T13:00:00Z"}
     return data
 
 def visual() -> dict: return VISUAL_TEST.recorded()
@@ -41,7 +43,7 @@ class StoreReadinessTest(unittest.TestCase):
     def test_complete_record_valid(self) -> None: validate(recorded())
     def test_disabled_capability_cannot_be_advertised(self) -> None:
         data = recorded(); data["stores"][0]["advertisedCapabilities"] = ["health", "billing"]
-        with self.assertRaisesRegex(V.StoreReadinessError, "only enabled"): validate(data)
+        with self.assertRaisesRegex(V.StoreReadinessError, "enabled shipped"): validate(data)
     def test_both_stores_and_public_urls_are_required(self) -> None:
         data = recorded(); data["stores"] = data["stores"][:1]
         with self.assertRaisesRegex(V.StoreReadinessError, "exactly Apple"): validate(data)
@@ -61,6 +63,27 @@ class StoreReadinessTest(unittest.TestCase):
         with self.assertRaisesRegex(V.StoreReadinessError, "recorded visual contract"):
             V.validate(data, require_recorded=True, visual=bad_visual,
                        visual_sha256=visual_digest(), inventory=inventory(),
+                       inventory_sha256=inventory_digest())
+
+    def test_reserved_urls_and_missing_platform_assets_are_rejected(self) -> None:
+        for url in ("https://localhost/privacy", "https://127.0.0.1/privacy", "https://walking.example/privacy"):
+            data = recorded(); data["publicUrls"]["privacy"] = url
+            with self.assertRaisesRegex(V.StoreReadinessError, "public|reserved"):
+                validate(data)
+        data = recorded(); del data["stores"][0]["assetDigests"]["ipadScreenshotsSha256"]
+        with self.assertRaisesRegex(V.StoreReadinessError, "keys mismatch"):
+            validate(data)
+
+    def test_approval_follows_bound_evidence_and_zero_capture_is_rejected(self) -> None:
+        data = recorded(); data["approval"]["approvedAtUtc"] = "2026-09-01T11:00:00Z"
+        with self.assertRaisesRegex(V.StoreReadinessError, "bound evidence approval"):
+            validate(data)
+        bad_visual = visual(); bad_visual["captures"][0]["artifactSha256"] = "0" * 64
+        bad_digest = hashlib.sha256(encoded(bad_visual)).hexdigest(); data = recorded()
+        data["baseline"]["visualDirectionSha256"] = bad_digest
+        with self.assertRaisesRegex(V.StoreReadinessError, "real capture artifact"):
+            V.validate(data, require_recorded=True, visual=bad_visual,
+                       visual_sha256=bad_digest, inventory=inventory(),
                        inventory_sha256=inventory_digest())
 
 if __name__ == "__main__": unittest.main()

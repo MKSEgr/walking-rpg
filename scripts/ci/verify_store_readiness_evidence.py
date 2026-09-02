@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import verify_visual_direction_evidence as visual_direction
 
@@ -20,11 +22,15 @@ TOP = {"schemaVersion", "recordStatus", "recordedAtUtc", "baseline", "publicUrls
 BASELINE = {"releaseId", "sourceGitSha", "visualDirectionSha256"}
 URLS = {"privacy", "support", "deletion"}
 CAPABILITIES = {"health", "push", "billing", "telegramLogin"}
-STORE = {"platform", "appRecordStatus", "privacyDeclarationStatus", "healthDeclarationStatus", "locales", "screenshotSetSha256", "iconSha256", "reviewerFlowStatus", "advertisedCapabilities"}
+STORE = {"platform", "appRecordStatus", "privacyDeclarationStatus", "healthDeclarationStatus", "locales", "assetDigests", "metadataPackSha256", "reviewerFlowStatus", "advertisedCapabilities"}
 APPROVAL = {"status", "ownerRole", "approvedAtUtc"}
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
-HTTPS = re.compile(r"^https://[A-Za-z0-9.-]+(?::\d+)?(?:/[^\s]*)?$")
+RESERVED_TLDS = {"example", "invalid", "localhost", "local", "test"}
+ASSET_KEYS = {
+    "apple": {"iphoneScreenshotsSha256", "ipadScreenshotsSha256", "iconSha256"},
+    "google": {"androidPhoneScreenshotsSha256", "featureGraphicSha256", "iconSha256"},
+}
 
 
 class StoreReadinessError(ValueError):
@@ -50,6 +56,29 @@ def _time(value: Any, path: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def _public_https(value: Any, path: str) -> None:
+    if not isinstance(value, str) or any(char.isspace() for char in value):
+        _fail(path, "must be a public HTTPS URL")
+    parsed = urlsplit(value)
+    host = parsed.hostname
+    if parsed.scheme != "https" or not host or parsed.username or parsed.password or parsed.fragment:
+        _fail(path, "must be a public HTTPS URL without credentials or fragments")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        labels = host.rstrip(".").lower().split(".")
+        if len(labels) < 2 or labels[-1] in RESERVED_TLDS or any(not label or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label) for label in labels):
+            _fail(path, "must use a non-reserved public DNS host")
+    else:
+        if not address.is_global:
+            _fail(path, "must not use a private, loopback, link-local, or reserved IP")
+
+
+def _digest(value: Any, path: str) -> None:
+    if not isinstance(value, str) or not SHA64.fullmatch(value) or value == "0" * 64:
+        _fail(path, "must be a real lowercase SHA-256")
+
+
 def validate(data: Any, *, require_recorded: bool = False, visual: Any = None,
              visual_sha256: str | None = None, inventory: Any = None,
              inventory_sha256: str | None = None) -> None:
@@ -68,7 +97,7 @@ def validate(data: Any, *, require_recorded: bool = False, visual: Any = None,
         _fail("baseline.visualDirectionSha256", "must be a lowercase SHA-256")
     urls = _object(root["publicUrls"], "publicUrls", URLS)
     capabilities = _object(root["capabilities"], "capabilities", CAPABILITIES)
-    if capabilities != {"health": True, "push": False, "billing": False, "telegramLogin": False}:
+    if capabilities != {"health": True, "push": False, "billing": False, "telegramLogin": True}:
         _fail("capabilities", "must match the enabled alpha-rc3 capability truth table")
     approval = _object(root["approval"], "approval", APPROVAL)
     stores = root["stores"]
@@ -91,8 +120,7 @@ def validate(data: Any, *, require_recorded: bool = False, visual: Any = None,
     except visual_direction.VisualEvidenceError as error:
         _fail("visualDirection", f"must satisfy the recorded visual contract: {error}")
     for key, value in urls.items():
-        if not isinstance(value, str) or not HTTPS.fullmatch(value):
-            _fail(f"publicUrls.{key}", "must be a public HTTPS URL")
+        _public_https(value, f"publicUrls.{key}")
     if len(stores) != 2:
         _fail("stores", "must contain exactly Apple and Google records")
     platforms = set()
@@ -108,16 +136,19 @@ def validate(data: Any, *, require_recorded: bool = False, visual: Any = None,
                 _fail(f"{path}.{key}", "must equal APPROVED")
         if store["locales"] != ["en", "ru"]:
             _fail(f"{path}.locales", "must equal ['en', 'ru']")
-        for key in ("screenshotSetSha256", "iconSha256"):
-            if not isinstance(store[key], str) or not SHA64.fullmatch(store[key]) or store[key] == "0" * 64:
-                _fail(f"{path}.{key}", "must be a real lowercase SHA-256")
+        assets = _object(store["assetDigests"], f"{path}.assetDigests", ASSET_KEYS[platform])
+        for key, value in assets.items():
+            _digest(value, f"{path}.assetDigests.{key}")
+        _digest(store["metadataPackSha256"], f"{path}.metadataPackSha256")
         advertised = store["advertisedCapabilities"]
-        if advertised != ["health"]:
-            _fail(f"{path}.advertisedCapabilities", "must advertise only enabled health capability")
+        if advertised != ["health", "telegramLogin"]:
+            _fail(f"{path}.advertisedCapabilities", "must match enabled shipped capabilities")
     if approval != {"status": "APPROVED", "ownerRole": "product_owner", "approvedAtUtc": approval["approvedAtUtc"]}:
         _fail("approval", "must contain product-owner approval")
-    if _time(approval["approvedAtUtc"], "approval.approvedAtUtc") < recorded_at:
-        _fail("approval.approvedAtUtc", "must not precede recordedAtUtc")
+    approved_at = _time(approval["approvedAtUtc"], "approval.approvedAtUtc")
+    prerequisite_times = [recorded_at, _time(visual["decision"]["decidedAtUtc"], "visualDirection.decision.decidedAtUtc"), _time(inventory["reviewedAtUtc"], "inventory.reviewedAtUtc")]
+    if approved_at < max(prerequisite_times):
+        _fail("approval.approvedAtUtc", "must not precede the store record or any bound evidence approval")
 
 
 def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:

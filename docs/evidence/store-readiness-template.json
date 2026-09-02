@@ -8,7 +8,7 @@
     "visualDirectionSha256": "0000000000000000000000000000000000000000000000000000000000000000"
   },
   "publicUrls": {"privacy": null, "support": null, "deletion": null},
-  "capabilities": {"health": true, "push": false, "billing": false, "telegramLogin": false},
+  "capabilities": {"health": true, "push": false, "billing": false, "telegramLogin": true},
   "stores": [],
   "approval": {"status": "PENDING", "ownerRole": null, "approvedAtUtc": null}
 }
