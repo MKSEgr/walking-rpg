@@ -66,9 +66,15 @@ class StoreReadinessTest(unittest.TestCase):
                        inventory_sha256=inventory_digest())
 
     def test_reserved_urls_and_missing_platform_assets_are_rejected(self) -> None:
-        for url in ("https://localhost/privacy", "https://127.0.0.1/privacy", "https://walking.example/privacy"):
+        for url in ("https://localhost/privacy", "https://127.0.0.1/privacy",
+                    "https://walking.example/privacy", "https://walking.example.com/privacy"):
             data = recorded(); data["publicUrls"]["privacy"] = url
             with self.assertRaisesRegex(V.StoreReadinessError, "public|reserved"):
+                validate(data)
+        for url in ("https://walking-rpg.com:bad/privacy",
+                    "https://walking-rpg.com:65536/privacy"):
+            data = recorded(); data["publicUrls"]["privacy"] = url
+            with self.assertRaisesRegex(V.StoreReadinessError, "valid HTTPS port"):
                 validate(data)
         data = recorded(); del data["stores"][0]["assetDigests"]["ipadScreenshotsSha256"]
         with self.assertRaisesRegex(V.StoreReadinessError, "keys mismatch"):

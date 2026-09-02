@@ -27,6 +27,7 @@ APPROVAL = {"status", "ownerRole", "approvedAtUtc"}
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 RESERVED_TLDS = {"example", "invalid", "localhost", "local", "test"}
+RESERVED_DOMAINS = {"example.com", "example.net", "example.org"}
 ASSET_KEYS = {
     "apple": {"iphoneScreenshotsSha256", "ipadScreenshotsSha256", "iconSha256"},
     "google": {"androidPhoneScreenshotsSha256", "featureGraphicSha256", "iconSha256"},
@@ -61,13 +62,20 @@ def _public_https(value: Any, path: str) -> None:
         _fail(path, "must be a public HTTPS URL")
     parsed = urlsplit(value)
     host = parsed.hostname
+    try:
+        port = parsed.port
+    except ValueError:
+        _fail(path, "must contain a valid HTTPS port")
+    if port is not None and not 1 <= port <= 65535:
+        _fail(path, "must contain a valid HTTPS port")
     if parsed.scheme != "https" or not host or parsed.username or parsed.password or parsed.fragment:
         _fail(path, "must be a public HTTPS URL without credentials or fragments")
     try:
         address = ipaddress.ip_address(host)
     except ValueError:
         labels = host.rstrip(".").lower().split(".")
-        if len(labels) < 2 or labels[-1] in RESERVED_TLDS or any(not label or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label) for label in labels):
+        registrable_tail = ".".join(labels[-2:]) if len(labels) >= 2 else host
+        if len(labels) < 2 or labels[-1] in RESERVED_TLDS or registrable_tail in RESERVED_DOMAINS or any(not label or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label) for label in labels):
             _fail(path, "must use a non-reserved public DNS host")
     else:
         if not address.is_global:
