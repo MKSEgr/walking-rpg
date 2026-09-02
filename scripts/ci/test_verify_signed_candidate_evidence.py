@@ -19,17 +19,25 @@ def template() -> dict: return json.loads(TEMPLATE.read_text(encoding="utf-8"))
 def account() -> dict: return ACCOUNT_TEST.recorded()
 def account_bytes() -> bytes: return json.dumps(account(), separators=(",", ":")).encode()
 def git(*args: str) -> str: return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
+def artifacts() -> dict[str, bytes]: return {"ios": b"synthetic-ipa-fixture", "android": b"synthetic-aab-fixture"}
+def receipt(platform: str, artifact_sha: str, fingerprint: str) -> bytes:
+    return json.dumps({"platform": platform, "artifactSha256": artifact_sha, "publicCertificateFingerprintSha256": fingerprint, "signatureVerified": True, "verifier": "fixture-verifier", "verifierVersion": "1", "verifiedAtUtc": "2026-09-02T10:30:00Z"}, separators=(",", ":")).encode()
+def receipts() -> dict[str, bytes]:
+    values = {}
+    for platform, content in artifacts().items(): values[platform] = receipt(platform, hashlib.sha256(content).hexdigest(), "b" * 64)
+    return values
 def recorded(ready: bool = True) -> dict:
     data = template(); data.update({"recordStatus": "RECORDED", "overallStatus": "READY" if ready else "BLOCKED", "recordedAtUtc": "2026-09-02T10:00:00Z"})
-    data["source"] = {"commitSha": git("rev-parse", "HEAD"), "treeSha": git("rev-parse", "HEAD^{tree}"), "accountReadinessSha256": hashlib.sha256(account_bytes()).hexdigest()}
+    commit = git("rev-parse", "origin/master"); tree = git("rev-parse", "origin/master^{tree}")
+    data["source"] = {"repository": "MKSEgr/walking-rpg", "commitSha": commit, "treeSha": tree, "approvedPrHeadTreeSha": tree, "ciConclusion": "success", "releaseQualityConclusion": "success", "accountReadinessSha256": hashlib.sha256(account_bytes()).hexdigest()}
     ids = {"ios": "com.walkingrpg.walkingRpgMobile", "android": "com.walkingrpg.walking_rpg_mobile"}
-    data["platforms"] = [{"platform": platform, "status": "READY", "applicationId": ids[platform], "artifactType": "ipa" if platform == "ios" else "aab", "artifactSha256": "a" * 64, "publicCertificateFingerprintSha256": "b" * 64, "signatureVerified": True, "version": "0.1.0", "buildNumber": "1", "toolchain": "protected-current", "distributionTrack": "internal", "installableByInternalAudience": True, "ownerRole": "release_owner", "nextActionDueAtUtc": None, "blockerCategory": None} for platform in ("ios", "android")]
+    data["platforms"] = [{"platform": platform, "status": "READY", "applicationId": ids[platform], "artifactType": "ipa" if platform == "ios" else "aab", "artifactSha256": hashlib.sha256(artifacts()[platform]).hexdigest(), "verifierReceiptSha256": hashlib.sha256(receipts()[platform]).hexdigest(), "publicCertificateFingerprintSha256": "b" * 64, "signatureVerified": True, "version": "0.1.0", "buildNumber": "1", "toolchain": "protected-current", "distributionTrack": "internal", "installableByInternalAudience": True, "ownerRole": "release_owner", "nextActionDueAtUtc": None, "blockerCategory": None} for platform in ("ios", "android")]
     data["cleanup"] = {"temporaryMaterialRemoved": True, "ordinaryCiHadSigningAccess": False, "secretExposureDetected": False}
     data["approval"] = {"status": "APPROVED", "releaseOwnerRole": "release_owner", "approvedAtUtc": "2026-09-02T11:00:00Z"}
     if not ready:
-        data["platforms"][0].update({"status": "BLOCKED", "artifactSha256": None, "publicCertificateFingerprintSha256": None, "signatureVerified": False, "installableByInternalAudience": False, "nextActionDueAtUtc": "2026-09-10T10:00:00Z", "blockerCategory": "signing_access_unavailable"})
+        data["platforms"][0].update({"status": "BLOCKED", "artifactSha256": None, "verifierReceiptSha256": None, "publicCertificateFingerprintSha256": None, "signatureVerified": False, "installableByInternalAudience": False, "nextActionDueAtUtc": "2026-09-10T10:00:00Z", "blockerCategory": "signing_access_unavailable"})
     return data
-def validate(data: dict, ready: bool = False) -> None: V.validate(data, require_recorded=True, require_ready=ready, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT)
+def validate(data: dict, ready: bool = False, account_value: dict | None = None) -> None: V.validate(data, require_recorded=True, require_ready=ready, account=account_value or account(), account_sha256=hashlib.sha256(json.dumps(account_value or account(), separators=(",", ":")).encode()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts())
 
 class SignedCandidateTest(unittest.TestCase):
     def test_template_is_valid_but_not_ready(self) -> None:
@@ -41,7 +49,7 @@ class SignedCandidateTest(unittest.TestCase):
         with self.assertRaises(V.SignedCandidateError): validate(recorded(False), True)
     def test_git_tree_and_account_digest_are_bound(self) -> None:
         data = recorded(); data["source"]["treeSha"] = "f" * 40
-        with self.assertRaisesRegex(V.SignedCandidateError, "actual Git tree"): validate(data)
+        with self.assertRaisesRegex(V.SignedCandidateError, "actual master tree"): validate(data)
         data = recorded(); data["source"]["accountReadinessSha256"] = "c" * 64
         with self.assertRaisesRegex(V.SignedCandidateError, "supplied account"): validate(data)
     def test_signature_cleanup_and_both_platforms_are_required(self) -> None:
@@ -52,4 +60,18 @@ class SignedCandidateTest(unittest.TestCase):
         with self.assertRaises(V.SignedCandidateError): validate(data, True)
         data = recorded(); data["platforms"] = data["platforms"][:1]
         with self.assertRaisesRegex(V.SignedCandidateError, "exactly iOS and Android"): validate(data)
+    def test_artifact_and_verifier_receipt_bytes_are_required(self) -> None:
+        data = recorded()
+        with self.assertRaisesRegex(V.SignedCandidateError, "artifact digest"):
+            V.validate(data, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT)
+        bad = dict(artifacts()); bad["ios"] = b"different"
+        with self.assertRaisesRegex(V.SignedCandidateError, "artifact digest"):
+            V.validate(data, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT, artifacts=bad, receipts=receipts())
+    def test_account_not_ready_can_remain_blocked(self) -> None:
+        blocked_account = ACCOUNT_TEST.recorded(False); blocked_bytes = json.dumps(blocked_account, separators=(",", ":")).encode()
+        data = recorded(False); data["platforms"][0]["blockerCategory"] = "account_not_ready"; data["source"]["accountReadinessSha256"] = hashlib.sha256(blocked_bytes).hexdigest()
+        validate(data, account_value=blocked_account)
+    def test_cleanup_values_are_strict_booleans(self) -> None:
+        data = recorded(False); data["cleanup"]["temporaryMaterialRemoved"] = {"path": "/private/key"}
+        with self.assertRaisesRegex(V.SignedCandidateError, "strict booleans"): validate(data)
 if __name__ == "__main__": unittest.main()
