@@ -48,11 +48,28 @@ jobs:
           [[ "$ASSET_ID" =~ ^[0-9]+$ ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$EXPECTED_FINGERPRINT" =~ ^[0-9a-f]{64}$ ]]
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/master" --jq .object.sha)" = "$SOURCE_SHA"
           gh api -H 'Accept: application/octet-stream' "repos/${GITHUB_REPOSITORY}/releases/assets/${ASSET_ID}" > candidate.aab
           jarsigner -verify -strict candidate.aab
           ACTUAL_FINGERPRINT="$(keytool -printcert -jarfile candidate.aab | sed -nE 's/.*SHA256: ([0-9A-F:]+).*/\1/p' | tr -d ':' | tr 'A-F' 'a-f' | head -1)"
           test "$ACTUAL_FINGERPRINT" = "$EXPECTED_FINGERPRINT"
+          BUNDLETOOL="$RUNNER_TEMP/bundletool-all-1.18.3.jar"
+          curl --fail --location --silent --show-error \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
+            --output "$BUNDLETOOL"
+          echo 'a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  '"$BUNDLETOOL" | sha256sum --check --strict
+          EXPECTED_APPLICATION_ID="$(sed -nE 's/.*applicationId[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' mobile/android/app/build.gradle.kts | sort -u)"
+          read -r EXPECTED_VERSION EXPECTED_BUILD <<< "$(sed -nE 's/^version:[[:space:]]*([^+[:space:]]+)\+([^[:space:]]+)[[:space:]]*$/\1 \2/p' mobile/pubspec.yaml)"
+          [[ "$EXPECTED_APPLICATION_ID" =~ ^[A-Za-z0-9._]+$ ]]
+          [[ "$EXPECTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]
+          [[ "$EXPECTED_BUILD" =~ ^[1-9][0-9]{0,17}$ ]]
+          ACTUAL_APPLICATION_ID="$(java -jar "$BUNDLETOOL" dump manifest --bundle=candidate.aab --xpath=/manifest/@package)"
+          ACTUAL_VERSION="$(java -jar "$BUNDLETOOL" dump manifest --bundle=candidate.aab --xpath=/manifest/@android:versionName)"
+          ACTUAL_BUILD="$(java -jar "$BUNDLETOOL" dump manifest --bundle=candidate.aab --xpath=/manifest/@android:versionCode)"
+          test "$ACTUAL_APPLICATION_ID" = "$EXPECTED_APPLICATION_ID"
+          test "$ACTUAL_VERSION" = "$EXPECTED_VERSION"
+          test "$ACTUAL_BUILD" = "$EXPECTED_BUILD"
       - name: Attest verified Android artifact
         id: attest
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.1
@@ -87,6 +104,7 @@ jobs:
           [[ "$ASSET_ID" =~ ^[0-9]+$ ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$EXPECTED_FINGERPRINT" =~ ^[0-9a-f]{64}$ ]]
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/master" --jq .object.sha)" = "$SOURCE_SHA"
           gh api -H 'Accept: application/octet-stream' "repos/${GITHUB_REPOSITORY}/releases/assets/${ASSET_ID}" > candidate.ipa
           unzip -q candidate.ipa -d ipa
@@ -97,6 +115,18 @@ jobs:
           codesign -d --extract-certificates=certificate "${APPS[0]}"
           ACTUAL_FINGERPRINT="$(openssl x509 -inform DER -in certificate0 -noout -fingerprint -sha256 | cut -d= -f2 | tr -d ':' | tr 'A-F' 'a-f')"
           test "$ACTUAL_FINGERPRINT" = "$EXPECTED_FINGERPRINT"
+          EXPECTED_APPLICATION_ID="$(sed -nE 's/.*PRODUCT_BUNDLE_IDENTIFIER[[:space:]]*=[[:space:]]*([^;]+);.*/\1/p' mobile/ios/Runner.xcodeproj/project.pbxproj | grep -v '\.RunnerTests$' | sort -u)"
+          read -r EXPECTED_VERSION EXPECTED_BUILD <<< "$(sed -nE 's/^version:[[:space:]]*([^+[:space:]]+)\+([^[:space:]]+)[[:space:]]*$/\1 \2/p' mobile/pubspec.yaml)"
+          [[ "$EXPECTED_APPLICATION_ID" =~ ^[A-Za-z0-9._]+$ ]]
+          [[ "$EXPECTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]
+          [[ "$EXPECTED_BUILD" =~ ^[1-9][0-9]{0,17}$ ]]
+          INFO_PLIST="${APPS[0]}/Info.plist"
+          ACTUAL_APPLICATION_ID="$(plutil -extract CFBundleIdentifier raw -o - "$INFO_PLIST")"
+          ACTUAL_VERSION="$(plutil -extract CFBundleShortVersionString raw -o - "$INFO_PLIST")"
+          ACTUAL_BUILD="$(plutil -extract CFBundleVersion raw -o - "$INFO_PLIST")"
+          test "$ACTUAL_APPLICATION_ID" = "$EXPECTED_APPLICATION_ID"
+          test "$ACTUAL_VERSION" = "$EXPECTED_VERSION"
+          test "$ACTUAL_BUILD" = "$EXPECTED_BUILD"
       - name: Attest verified iOS artifact
         id: attest
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.1

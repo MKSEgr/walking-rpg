@@ -4,13 +4,17 @@
 from __future__ import annotations
 import argparse
 import hashlib
+import io
 import json
+import os
+import plistlib
 import re
 import subprocess
 import sys
 import tempfile
 import urllib.error
 import urllib.request
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -24,8 +28,13 @@ PLATFORM = {"platform", "status", "applicationId", "artifactType", "artifactSha2
 CLEANUP = {"temporaryMaterialRemoved", "ordinaryCiHadSigningAccess", "secretExposureDetected"}
 APPROVAL = {"status", "releaseOwnerRole", "approvedAtUtc"}
 SHA = re.compile(r"^[0-9a-f]{40}$"); SHA256 = re.compile(r"^[0-9a-f]{64}$"); UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+VERSION = re.compile(r"^[0-9]+(?:\.[0-9]+){2}(?:[-+][0-9A-Za-z.-]+)?$")
+BUILD = re.compile(r"^[1-9][0-9]{0,17}$")
+SAFE_TOOLCHAIN = re.compile(r"^[a-z0-9][a-z0-9._+-]{0,159}$")
 BLOCKERS = {"account_not_ready", "signing_access_unavailable", "protected_runner_unavailable", "distribution_unavailable", "signature_verification_failed", "cleanup_unconfirmed", "other_coarse"}
 ATTESTATION_WORKFLOW = "MKSEgr/walking-rpg/.github/workflows/protected-mobile-signing.yml"
+EVIDENCE_ATTESTATION_WORKFLOW = "MKSEgr/walking-rpg/.github/workflows/protected-mobile-evidence.yml"
+TRACKS = {"ios": "testflight_internal", "android": "play_internal"}
 
 class SignedCandidateError(ValueError): pass
 def _fail(path: str, message: str) -> None: raise SignedCandidateError(f"{path}: {message}")
@@ -40,21 +49,35 @@ def _time(value: Any, path: str) -> datetime:
 def _digest(value: Any, path: str) -> None:
     if not isinstance(value, str) or not SHA256.fullmatch(value) or value == "0" * 64: _fail(path, "must be a real lowercase SHA-256")
 
+def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result = {}
+    for key, value in pairs:
+        if key in result: raise SignedCandidateError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+def _safe_metadata(value: Any, path: str) -> None:
+    if not isinstance(value, str) or not SAFE_TOOLCHAIN.fullmatch(value):
+        _fail(path, "must be a bounded lowercase toolchain token without paths or credentials")
+
 def _git(repo: Path, *args: str) -> str:
     result = subprocess.run(["git", *args], cwd=repo, text=True, capture_output=True, check=False)
     if result.returncode != 0: _fail("source", f"git {' '.join(args)} failed")
     return result.stdout.strip()
 
-def _source_configuration(repo: Path, commit: str) -> tuple[dict[str, str], str]:
+def _source_configuration(repo: Path, commit: str) -> tuple[dict[str, str], str, str, str]:
     gradle = _git(repo, "show", f"{commit}:mobile/android/app/build.gradle.kts")
     xcode = _git(repo, "show", f"{commit}:mobile/ios/Runner.xcodeproj/project.pbxproj")
     plist = _git(repo, "show", f"{commit}:mobile/ios/Runner/Info.plist")
     environment = _git(repo, "show", f"{commit}:mobile/lib/core/config/app_environment.dart")
+    pubspec = _git(repo, "show", f"{commit}:mobile/pubspec.yaml")
     android = set(re.findall(r'applicationId\s*=\s*"([^"]+)"', gradle))
     ios = {value for value in re.findall(r"PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;]+);", xcode) if not value.endswith(".RunnerTests")}
     schemes = [set(re.findall(r'"appAuthRedirectScheme"\s+to\s+"([^"]+)"', gradle)), set(re.findall(r"nativeOidcRedirectScheme\s*=\s*'([^']+)'", environment)), set(re.findall(r"<key>CFBundleURLSchemes</key>\s*<array>\s*<string>([^<]+)</string>", plist, re.DOTALL))]
+    version_match = re.search(r"^version:\s*([^+\s]+)\+([^\s]+)\s*$", pubspec, re.MULTILINE)
     if len(android) != 1 or len(ios) != 1 or any(len(value) != 1 for value in schemes) or not schemes[0] == schemes[1] == schemes[2]: _fail("source", "claimed commit must expose exact mobile identities and redirect scheme")
-    return {"android": next(iter(android)), "ios": next(iter(ios))}, next(iter(schemes[0]))
+    if not version_match or not VERSION.fullmatch(version_match.group(1)) or not BUILD.fullmatch(version_match.group(2)): _fail("source", "claimed commit must expose a safe Flutter version and build number")
+    return {"android": next(iter(android)), "ios": next(iter(ios))}, next(iter(schemes[0])), version_match.group(1), version_match.group(2)
 
 def _github_state(repository: str, commit: str) -> dict[str, Any]:
     def get(path: str) -> Any:
@@ -68,12 +91,50 @@ def _github_state(repository: str, commit: str) -> dict[str, Any]:
 def _successful_push_workflows(runs: list[dict[str, Any]], commit: str) -> set[str]:
     return {run["name"] for run in runs if run.get("head_sha") == commit and run.get("event") == "push" and run.get("conclusion") == "success"}
 
-def _verify_attestation(repository: str, commit: str, artifact: bytes, bundle: bytes) -> None:
+def _verify_attestation(repository: str, commit: str, subject: bytes, bundle: bytes,
+                        workflow: str, label: str) -> None:
     with tempfile.TemporaryDirectory() as directory:
-        artifact_path, bundle_path = Path(directory) / "artifact", Path(directory) / "bundle.jsonl"
-        artifact_path.write_bytes(artifact); bundle_path.write_bytes(bundle)
-        result = subprocess.run(["gh", "attestation", "verify", str(artifact_path), "--repo", repository, "--bundle", str(bundle_path), "--signer-workflow", ATTESTATION_WORKFLOW, "--source-digest", commit], text=True, capture_output=True, check=False)
-        if result.returncode != 0: _fail("attestation", "GitHub artifact attestation verification failed")
+        subject_path, bundle_path = Path(directory) / "subject", Path(directory) / "bundle.jsonl"
+        subject_path.write_bytes(subject); bundle_path.write_bytes(bundle)
+        result = subprocess.run(["gh", "attestation", "verify", str(subject_path), "--repo", repository, "--bundle", str(bundle_path), "--signer-workflow", workflow, "--source-digest", commit], text=True, capture_output=True, check=False)
+        if result.returncode != 0: _fail("attestation", f"GitHub {label} attestation verification failed")
+
+def _artifact_metadata(platform: str, artifact: bytes) -> dict[str, str]:
+    if platform == "ios":
+        try:
+            with zipfile.ZipFile(io.BytesIO(artifact)) as archive:
+                names = [name for name in archive.namelist() if re.fullmatch(r"Payload/[^/]+\.app/Info\.plist", name)]
+                if len(names) != 1: _fail("artifact", "iOS artifact must contain exactly one application Info.plist")
+                plist = plistlib.loads(archive.read(names[0]))
+        except (OSError, plistlib.InvalidFileException, zipfile.BadZipFile, KeyError) as error:
+            _fail("artifact", f"cannot read iOS application metadata: {error}")
+        values = {
+            "applicationId": plist.get("CFBundleIdentifier"),
+            "version": plist.get("CFBundleShortVersionString"),
+            "buildNumber": plist.get("CFBundleVersion"),
+        }
+    else:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact_path = Path(directory) / "candidate.aab"
+            artifact_path.write_bytes(artifact)
+            bundletool_jar = os.environ.get("BUNDLETOOL_JAR")
+            command = ["java", "-jar", bundletool_jar] if bundletool_jar else ["bundletool"]
+            values = {}
+            for key, xpath in {
+                "applicationId": "/manifest/@package",
+                "version": "/manifest/@android:versionName",
+                "buildNumber": "/manifest/@android:versionCode",
+            }.items():
+                try:
+                    result = subprocess.run([*command, "dump", "manifest", f"--bundle={artifact_path}", f"--xpath={xpath}"], text=True, capture_output=True, check=False)
+                except OSError as error:
+                    _fail("artifact", f"cannot execute bundletool: {error}")
+                if result.returncode != 0:
+                    _fail("artifact", f"bundletool cannot extract Android {key}")
+                values[key] = result.stdout.strip()
+    if any(not isinstance(value, str) or not value for value in values.values()):
+        _fail("artifact", f"{platform} identity, version and build number must be present")
+    return values
 
 def _artifact_fingerprint(platform: str, artifact: bytes) -> str:
     with tempfile.TemporaryDirectory() as directory:
@@ -102,7 +163,10 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
              account: Any = None, account_sha256: str | None = None,
              repository_root: Path | None = None, artifacts: dict[str, bytes] | None = None,
              receipts: dict[str, bytes] | None = None, github_state: dict[str, Any] | None = None,
-             attestation_verifier: Any = None, fingerprint_extractor: Any = None) -> None:
+             evidence_bytes: bytes | None = None, evidence_receipt: bytes | None = None,
+             artifact_attestation_verifier: Any = None,
+             evidence_attestation_verifier: Any = None,
+             fingerprint_extractor: Any = None, metadata_extractor: Any = None) -> None:
     root = _object(data, "$", TOP); record, overall = root["recordStatus"], root["overallStatus"]
     if root["schemaVersion"] != SCHEMA: _fail("schemaVersion", f"must equal {SCHEMA!r}")
     if record not in {"TEMPLATE", "RECORDED"} or overall not in {"OWNER_INPUT_REQUIRED", "READY", "BLOCKED"}: _fail("$", "invalid status")
@@ -129,9 +193,9 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
     if source["treeSha"] != actual_tree or source["approvedPrHeadTreeSha"] != actual_tree: _fail("source.treeSha", "source and approved PR-head trees must equal the actual master tree")
     if source["ciConclusion"] != "success" or source["releaseQualityConclusion"] != "success" or not {"CI", "Release quality"}.issubset(set(state.get("successfulWorkflows", []))): _fail("source", "GitHub must report successful CI and Release quality runs for the source commit")
     if len(platforms) != 2: _fail("platforms", "must contain exactly iOS and Android")
-    mobile_ids, redirect_scheme = _source_configuration(repo, source["commitSha"])
+    mobile_ids, redirect_scheme, source_version, source_build = _source_configuration(repo, source["commitSha"])
     source_configuration = ({"apple": mobile_ids["ios"], "google": mobile_ids["android"]}, redirect_scheme)
-    expected_ids = mobile_ids; ready = True; seen = set()
+    expected_ids = mobile_ids; ready = True; seen = set(); has_ready_platform = False
     for index, raw in enumerate(platforms):
         path = f"platforms[{index}]"; item = _object(raw, path, PLATFORM); platform = item["platform"]
         if platform not in {"ios", "android"} or platform in seen: _fail(f"{path}.platform", "must uniquely identify ios or android")
@@ -139,23 +203,42 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
         if item["applicationId"] != expected: _fail(f"{path}.applicationId", "must match candidate configuration")
         if item["artifactType"] != ("ipa" if platform == "ios" else "aab"): _fail(f"{path}.artifactType", "must match platform")
         if item["status"] == "READY":
+            has_ready_platform = True
             for key in ("artifactSha256", "verifierReceiptSha256", "publicCertificateFingerprintSha256"): _digest(item[key], f"{path}.{key}")
             artifact_bytes = (artifacts or {}).get(platform); receipt_bytes = (receipts or {}).get(platform)
             if artifact_bytes is None or hashlib.sha256(artifact_bytes).hexdigest() != item["artifactSha256"]: _fail(path, "artifact digest must match supplied artifact bytes")
             if receipt_bytes is None or hashlib.sha256(receipt_bytes).hexdigest() != item["verifierReceiptSha256"]: _fail(path, "receipt digest must match supplied verifier receipt bytes")
-            (attestation_verifier or _verify_attestation)(source["repository"], source["commitSha"], artifact_bytes, receipt_bytes)
+            verifier = artifact_attestation_verifier or (lambda repository, commit, subject, bundle: _verify_attestation(repository, commit, subject, bundle, ATTESTATION_WORKFLOW, "artifact"))
+            verifier(source["repository"], source["commitSha"], artifact_bytes, receipt_bytes)
             fingerprint = (fingerprint_extractor or _artifact_fingerprint)(platform, artifact_bytes)
             if fingerprint != item["publicCertificateFingerprintSha256"]: _fail(path, "certificate fingerprint must match the signed artifact")
+            metadata = (metadata_extractor or _artifact_metadata)(platform, artifact_bytes)
+            expected_metadata = {"applicationId": expected, "version": source_version, "buildNumber": source_build}
+            if metadata != expected_metadata: _fail(path, "artifact identity, version and build number must match the claimed source")
             if item["signatureVerified"] is not True or item["installableByInternalAudience"] is not True: _fail(path, "READY requires verified signature and internal availability")
-            for key in ("version", "buildNumber", "toolchain", "distributionTrack"):
-                if not isinstance(item[key], str) or not item[key].strip(): _fail(f"{path}.{key}", "must be non-empty")
+            if item["version"] != source_version or item["buildNumber"] != source_build: _fail(path, "recorded version/build must match artifact and source")
+            _safe_metadata(item["toolchain"], f"{path}.toolchain")
+            if item["distributionTrack"] != TRACKS[platform]: _fail(f"{path}.distributionTrack", "must identify the exact internal store track")
             if item["ownerRole"] != "release_owner" or item["nextActionDueAtUtc"] is not None or item["blockerCategory"] is not None: _fail(path, "READY owner/blocker fields are inconsistent")
         elif item["status"] == "BLOCKED":
             ready = False
             if any(item[key] is not None for key in ("artifactSha256", "verifierReceiptSha256", "publicCertificateFingerprintSha256")) or item["signatureVerified"] is not False or item["installableByInternalAudience"] is not False: _fail(path, "BLOCKED must not claim artifact evidence")
+            if any(item[key] is not None for key in ("version", "buildNumber", "toolchain", "distributionTrack")): _fail(path, "BLOCKED must not retain artifact or distribution metadata")
+            if item["ownerRole"] not in {None, "release_owner"}: _fail(f"{path}.ownerRole", "must be release_owner or null")
             if item["blockerCategory"] not in BLOCKERS: _fail(f"{path}.blockerCategory", "must be an approved coarse blocker")
             _time(item["nextActionDueAtUtc"], f"{path}.nextActionDueAtUtc")
         else: _fail(f"{path}.status", "must be READY or BLOCKED")
+    if has_ready_platform:
+        if evidence_bytes is None:
+            _fail("evidenceAttestation", "exact recorded evidence bytes are required for READY platform claims")
+        try:
+            decoded_evidence = json.loads(evidence_bytes, object_pairs_hook=_unique)
+        except (UnicodeError, json.JSONDecodeError, SignedCandidateError) as error:
+            _fail("evidenceAttestation", f"cannot decode exact evidence bytes: {error}")
+        if decoded_evidence != data: _fail("evidenceAttestation", "attested evidence bytes must exactly represent this record")
+        if evidence_receipt is None: _fail("evidenceAttestation", "protected evidence attestation bundle is required")
+        verifier = evidence_attestation_verifier or (lambda repository, commit, subject, bundle: _verify_attestation(repository, commit, subject, bundle, EVIDENCE_ATTESTATION_WORKFLOW, "evidence"))
+        verifier(source["repository"], source["commitSha"], evidence_bytes, evidence_receipt)
     if any(type(value) is not bool for value in cleanup.values()): _fail("cleanup", "recorded cleanup values must be strict booleans")
     account_stores = {item.get("platform"): item for item in account.get("stores", [])} if isinstance(account, dict) else {}
     for item in platforms:
@@ -178,19 +261,14 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
     else: _fail("approval", "must be exact BLOCKED or APPROVED shape")
     if overall != ("READY" if ready else "BLOCKED"): _fail("overallStatus", "must match artifact, cleanup and approval outcomes")
 
-def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result = {}
-    for key, value in pairs:
-        if key in result: raise SignedCandidateError(f"duplicate JSON key: {key}")
-        result[key] = value
-    return result
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__); parser.add_argument("evidence", type=Path); parser.add_argument("--account-readiness", type=Path); parser.add_argument("--ios-artifact", type=Path); parser.add_argument("--android-artifact", type=Path); parser.add_argument("--ios-verifier-receipt", type=Path); parser.add_argument("--android-verifier-receipt", type=Path); parser.add_argument("--require-recorded", action="store_true"); parser.add_argument("--require-ready", action="store_true"); args = parser.parse_args(argv)
+    parser = argparse.ArgumentParser(description=__doc__); parser.add_argument("evidence", type=Path); parser.add_argument("--account-readiness", type=Path); parser.add_argument("--ios-artifact", type=Path); parser.add_argument("--android-artifact", type=Path); parser.add_argument("--ios-verifier-receipt", type=Path); parser.add_argument("--android-verifier-receipt", type=Path); parser.add_argument("--evidence-attestation", type=Path); parser.add_argument("--require-recorded", action="store_true"); parser.add_argument("--require-ready", action="store_true"); args = parser.parse_args(argv)
     try:
-        evidence = json.loads(args.evidence.read_text(encoding="utf-8"), object_pairs_hook=_unique); account_bytes = args.account_readiness.read_bytes() if args.account_readiness else None; account = json.loads(account_bytes, object_pairs_hook=_unique) if account_bytes else None
+        evidence_bytes = args.evidence.read_bytes(); evidence = json.loads(evidence_bytes, object_pairs_hook=_unique); account_bytes = args.account_readiness.read_bytes() if args.account_readiness else None; account = json.loads(account_bytes, object_pairs_hook=_unique) if account_bytes else None
         artifact_paths = {"ios": args.ios_artifact, "android": args.android_artifact}; receipt_paths = {"ios": args.ios_verifier_receipt, "android": args.android_verifier_receipt}
         artifacts = {key: path.read_bytes() for key, path in artifact_paths.items() if path}; receipts = {key: path.read_bytes() for key, path in receipt_paths.items() if path}
-        validate(evidence, require_recorded=args.require_recorded, require_ready=args.require_ready, account=account, account_sha256=hashlib.sha256(account_bytes).hexdigest() if account_bytes else None, artifacts=artifacts, receipts=receipts)
+        evidence_receipt = args.evidence_attestation.read_bytes() if args.evidence_attestation else None
+        validate(evidence, require_recorded=args.require_recorded, require_ready=args.require_ready, account=account, account_sha256=hashlib.sha256(account_bytes).hexdigest() if account_bytes else None, artifacts=artifacts, receipts=receipts, evidence_bytes=evidence_bytes, evidence_receipt=evidence_receipt)
     except (OSError, UnicodeError, json.JSONDecodeError, urllib.error.URLError, SignedCandidateError) as error: print(f"Signed candidate evidence invalid: {error}", file=sys.stderr); return 1
     print(f"Signed candidate evidence valid: {args.evidence}"); return 0
 if __name__ == "__main__": raise SystemExit(main())
