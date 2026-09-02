@@ -2,6 +2,8 @@
 from __future__ import annotations
 import importlib.util
 import json
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -16,7 +18,8 @@ def template() -> dict: return json.loads(TEMPLATE.read_text(encoding="utf-8"))
 
 def recorded(ready: bool = True) -> dict:
     data = template(); data.update({"recordStatus": "RECORDED", "overallStatus": "READY" if ready else "BLOCKED", "recordedAtUtc": "2026-09-02T09:00:00Z", "reviewedAtUtc": "2026-09-02T10:00:00Z", "legalOperatorRole": "legal_operator", "markets": ["global"], "locales": ["en", "ru"]})
-    data["stores"] = [{"platform": platform, "accountType": "organization", "accountStatus": "VERIFIED", "appRecordStatus": "CREATED", "applicationId": V.APPLICATION_IDS[platform], "oidcRedirectScheme": V.OIDC_REDIRECT_SCHEME, "ownerRole": "store_account_owner", "nextActionDueAtUtc": None, "blockerCategory": None} for platform in ("apple", "google")]
+    identities = {"apple": "com.walkingrpg.walkingRpgMobile", "google": "com.walkingrpg.walking_rpg_mobile"}
+    data["stores"] = [{"platform": platform, "accountType": "organization", "accountStatus": "VERIFIED", "appRecordStatus": "CREATED", "applicationId": identities[platform], "oidcRedirectScheme": "com.walkingrpg.app", "ownerRole": "store_account_owner", "nextActionDueAtUtc": None, "blockerCategory": None} for platform in ("apple", "google")]
     data["publicUrls"] = [{"kind": kind, "status": "READY", "url": f"https://walking-rpg.com/{kind}", "ownerRole": "product_owner", "nextActionDueAtUtc": None, "blockerCategory": None} for kind in ("privacy", "support", "deletion")]
     data["googleClosedTesting"] = {"status": "CONFIRMED", "nextActionDueAtUtc": None, "blockerCategory": None}
     data["approval"] = {"status": "APPROVED", "productOwnerRole": "product_owner", "releaseOwnerRole": "release_owner", "nextActionDueAtUtc": None, "blockerCategory": None}
@@ -35,7 +38,7 @@ class AccountReadinessTest(unittest.TestCase):
         with self.assertRaisesRegex(V.AccountReadinessError, "READY result"): V.validate(recorded(False), require_ready=True)
     def test_final_ids_and_both_stores_are_required(self) -> None:
         data = recorded(); data["stores"][0]["applicationId"] = "com.unrelated.apple"
-        with self.assertRaisesRegex(V.AccountReadinessError, "exact candidate"): V.validate(data)
+        with self.assertRaisesRegex(V.AccountReadinessError, "effective candidate"): V.validate(data)
         data = recorded(); data["stores"][1]["oidcRedirectScheme"] = "com.unrelated.app"
         with self.assertRaisesRegex(V.AccountReadinessError, "OIDC redirect"): V.validate(data)
         data = recorded(); data["stores"] = data["stores"][:1]
@@ -55,6 +58,10 @@ class AccountReadinessTest(unittest.TestCase):
         data = recorded(); data["overallStatus"] = "BLOCKED"
         data["approval"] = {"status": "BLOCKED", "productOwnerRole": "product_owner", "releaseOwnerRole": None, "nextActionDueAtUtc": "2026-09-10T09:00:00Z", "blockerCategory": "access_owner_unassigned"}
         V.validate(data, require_recorded=True)
+        data = recorded(); data["overallStatus"] = "BLOCKED"
+        data["approval"] = {"status": "BLOCKED", "productOwnerRole": "product_owner", "releaseOwnerRole": "release_owner", "nextActionDueAtUtc": "2026-09-10T09:00:00Z", "blockerCategory": "access_owner_unassigned"}
+        with self.assertRaisesRegex(V.AccountReadinessError, "missing approval role"):
+            V.validate(data)
         data = recorded(False); data["stores"][1]["blockerCategory"] = "access_owner_unassigned"; data["stores"][1]["ownerRole"] = None
         V.validate(data, require_recorded=True)
 
@@ -63,5 +70,20 @@ class AccountReadinessTest(unittest.TestCase):
         with self.assertRaisesRegex(V.AccountReadinessError, "legal_operator"): V.validate(data)
         data = recorded(); data["stores"][0]["ownerRole"] = "release_owner"
         with self.assertRaisesRegex(V.AccountReadinessError, "store_account_owner"): V.validate(data)
+
+    def test_created_identity_survives_blocked_account_access(self) -> None:
+        data = recorded(); data["overallStatus"] = "BLOCKED"
+        data["stores"][0].update({"accountStatus": "BLOCKED", "nextActionDueAtUtc": "2026-09-10T09:00:00Z", "blockerCategory": "verification_pending"})
+        V.validate(data, require_recorded=True)
+
+    def test_candidate_configuration_drift_is_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in ("mobile/android/app/build.gradle.kts", "mobile/ios/Runner.xcodeproj/project.pbxproj", "mobile/ios/Runner/Info.plist", "mobile/lib/core/config/app_environment.dart"):
+                target = root / relative; target.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(ROOT / relative, target)
+            gradle = root / "mobile/android/app/build.gradle.kts"
+            gradle.write_text(gradle.read_text().replace("com.walkingrpg.walking_rpg_mobile", "com.changed.walking_rpg_mobile"), encoding="utf-8")
+            with self.assertRaisesRegex(V.AccountReadinessError, "effective candidate"):
+                V.validate(recorded(), repository_root=root)
 
 if __name__ == "__main__": unittest.main()
