@@ -141,6 +141,8 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
             _text(capture[key], f"{path}.{key}")
         if not SHA64.fullmatch(capture["artifactSha256"]):
             _fail(f"{path}.artifactSha256", "must be a lowercase SHA-256")
+        if capture["artifactSha256"] == "0" * 64:
+            _fail(f"{path}.artifactSha256", "must bind a real capture artifact")
         if _timestamp(capture["capturedAtUtc"], f"{path}.capturedAtUtc") > recorded_at:
             _fail(f"{path}.capturedAtUtc", "must not follow recordedAtUtc")
         platform_coverage = coverage[capture["platform"]]

@@ -111,6 +111,15 @@ fi
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/test_verify_visual_direction_evidence.py"
 
+printf '%s\n' "Checking the store-readiness evidence contract..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_store_readiness_evidence.py" \
+  "$ROOT_DIR/docs/evidence/store-readiness-template.json"
+if PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_store_readiness_evidence.py" \
+  "$ROOT_DIR/docs/evidence/store-readiness-template.json" --require-recorded >/dev/null 2>&1; then
+  echo "Committed store-readiness template must not pass as recorded evidence." >&2; exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_store_readiness_evidence.py"
+
 printf '%s\n' "Checking the internal-alpha kickoff contract..."
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_kickoff.py" \

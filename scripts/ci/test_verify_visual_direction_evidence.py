@@ -116,6 +116,10 @@ class VisualEvidenceTest(unittest.TestCase):
         data["decision"]["inclusions"] = ["owner@example.com"]
         with self.assertRaisesRegex(V.VisualEvidenceError, "personal data"):
             validate(data)
+        data = recorded()
+        data["captures"][0]["artifactSha256"] = "0" * 64
+        with self.assertRaisesRegex(V.VisualEvidenceError, "real capture artifact"):
+            validate(data)
 
     def test_source_inventory_stages_and_motion_are_fully_bound(self) -> None:
         data = recorded()
