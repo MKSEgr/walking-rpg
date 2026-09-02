@@ -30,7 +30,10 @@ APPROVAL = {"status", "releaseOwnerRole", "approvedAtUtc"}
 SHA = re.compile(r"^[0-9a-f]{40}$"); SHA256 = re.compile(r"^[0-9a-f]{64}$"); UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 VERSION = re.compile(r"^[0-9]+(?:\.[0-9]+){2}(?:[-+][0-9A-Za-z.-]+)?$")
 BUILD = re.compile(r"^[1-9][0-9]{0,17}$")
-SAFE_TOOLCHAIN = re.compile(r"^[a-z0-9][a-z0-9._+-]{0,159}$")
+TOOLCHAINS = {
+    "ios": re.compile(r"^flutter_[0-9]+(?:\.[0-9]+){2}\+xcode_[0-9]+(?:\.[0-9]+){1,2}\+ios-sdk_[0-9]+(?:\.[0-9]+){1,2}$"),
+    "android": re.compile(r"^flutter_[0-9]+(?:\.[0-9]+){2}\+android-sdk_[0-9]{2,3}\+agp_[0-9]+(?:\.[0-9]+){1,2}\+jdk_[0-9]{1,2}$"),
+}
 BLOCKERS = {"account_not_ready", "signing_access_unavailable", "protected_runner_unavailable", "distribution_unavailable", "signature_verification_failed", "cleanup_unconfirmed", "other_coarse"}
 ATTESTATION_WORKFLOW = "MKSEgr/walking-rpg/.github/workflows/protected-mobile-signing.yml"
 EVIDENCE_ATTESTATION_WORKFLOW = "MKSEgr/walking-rpg/.github/workflows/protected-mobile-evidence.yml"
@@ -56,9 +59,9 @@ def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         result[key] = value
     return result
 
-def _safe_metadata(value: Any, path: str) -> None:
-    if not isinstance(value, str) or not SAFE_TOOLCHAIN.fullmatch(value):
-        _fail(path, "must be a bounded lowercase toolchain token without paths or credentials")
+def _toolchain(value: Any, platform: str, path: str) -> None:
+    if not isinstance(value, str) or not TOOLCHAINS[platform].fullmatch(value):
+        _fail(path, f"must use the exact safe {platform} toolchain/version format")
 
 def _git(repo: Path, *args: str) -> str:
     result = subprocess.run(["git", *args], cwd=repo, text=True, capture_output=True, check=False)
@@ -217,7 +220,7 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
             if metadata != expected_metadata: _fail(path, "artifact identity, version and build number must match the claimed source")
             if item["signatureVerified"] is not True or item["installableByInternalAudience"] is not True: _fail(path, "READY requires verified signature and internal availability")
             if item["version"] != source_version or item["buildNumber"] != source_build: _fail(path, "recorded version/build must match artifact and source")
-            _safe_metadata(item["toolchain"], f"{path}.toolchain")
+            _toolchain(item["toolchain"], platform, f"{path}.toolchain")
             if item["distributionTrack"] != TRACKS[platform]: _fail(f"{path}.distributionTrack", "must identify the exact internal store track")
             if item["ownerRole"] != "release_owner" or item["nextActionDueAtUtc"] is not None or item["blockerCategory"] is not None: _fail(path, "READY owner/blocker fields are inconsistent")
         elif item["status"] == "BLOCKED":

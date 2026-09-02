@@ -185,8 +185,17 @@ attestation only after the TestFlight/Play internal upload and approved-device
 installation have actually succeeded.
 
 Use the exact store-track enums `testflight_internal` and `play_internal`.
-`toolchain` is a bounded lowercase token and cannot contain paths, whitespace,
-URLs or credential separators. A BLOCKED platform retains none of version,
+`toolchain` must be a platform-specific numeric version set in one of these
+exact formats:
+
+```text
+flutter_<semver>+xcode_<version>+ios-sdk_<version>
+flutter_<semver>+android-sdk_<api>+agp_<version>+jdk_<major>
+```
+
+Arbitrary lowercase tokens, paths, URLs and credential-like strings are not
+accepted. The protected evidence workflow applies the same nested metadata
+check before attesting the record. A BLOCKED platform retains none of version,
 build, toolchain or distribution-track metadata; it records only an approved
 coarse blocker, owner role and next-action timestamp.
 

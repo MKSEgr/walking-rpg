@@ -41,7 +41,7 @@ def recorded(ready: bool = True) -> dict:
     commit = source_commit(); tree = git("rev-parse", "HEAD^{tree}")
     data["source"] = {"repository": "MKSEgr/walking-rpg", "commitSha": commit, "treeSha": tree, "approvedPrHeadTreeSha": tree, "ciConclusion": "success", "releaseQualityConclusion": "success", "accountReadinessSha256": hashlib.sha256(account_bytes()).hexdigest()}
     ids = {"ios": "com.walkingrpg.walkingRpgMobile", "android": "com.walkingrpg.walking_rpg_mobile"}
-    data["platforms"] = [{"platform": platform, "status": "READY", "applicationId": ids[platform], "artifactType": "ipa" if platform == "ios" else "aab", "artifactSha256": hashlib.sha256(artifacts()[platform]).hexdigest(), "verifierReceiptSha256": hashlib.sha256(receipts()[platform]).hexdigest(), "publicCertificateFingerprintSha256": "b" * 64, "signatureVerified": True, "version": "0.1.0", "buildNumber": "1", "toolchain": "flutter_3.35.0+xcode_26.0" if platform == "ios" else "flutter_3.35.0+android-sdk_36", "distributionTrack": "testflight_internal" if platform == "ios" else "play_internal", "installableByInternalAudience": True, "ownerRole": "release_owner", "nextActionDueAtUtc": None, "blockerCategory": None} for platform in ("ios", "android")]
+    data["platforms"] = [{"platform": platform, "status": "READY", "applicationId": ids[platform], "artifactType": "ipa" if platform == "ios" else "aab", "artifactSha256": hashlib.sha256(artifacts()[platform]).hexdigest(), "verifierReceiptSha256": hashlib.sha256(receipts()[platform]).hexdigest(), "publicCertificateFingerprintSha256": "b" * 64, "signatureVerified": True, "version": "0.1.0", "buildNumber": "1", "toolchain": "flutter_3.35.0+xcode_26.0+ios-sdk_26.0" if platform == "ios" else "flutter_3.35.0+android-sdk_36+agp_8.12.1+jdk_17", "distributionTrack": "testflight_internal" if platform == "ios" else "play_internal", "installableByInternalAudience": True, "ownerRole": "release_owner", "nextActionDueAtUtc": None, "blockerCategory": None} for platform in ("ios", "android")]
     data["cleanup"] = {"temporaryMaterialRemoved": True, "ordinaryCiHadSigningAccess": False, "secretExposureDetected": False}
     data["approval"] = {"status": "APPROVED", "releaseOwnerRole": "release_owner", "approvedAtUtc": "2026-09-02T11:00:00Z"}
     if not ready:
@@ -119,8 +119,9 @@ class SignedCandidateTest(unittest.TestCase):
         with self.assertRaisesRegex(V.SignedCandidateError, "attestation: rejected"):
             V.validate(data, account=account(), account_sha256=hashlib.sha256(account_bytes()).hexdigest(), repository_root=ROOT, artifacts=artifacts(), receipts=receipts(), evidence_bytes=encoded(data), evidence_receipt=b"untrusted", **{**trust(), "evidence_attestation_verifier": lambda *_: (_ for _ in ()).throw(V.SignedCandidateError("attestation: rejected"))})
     def test_platform_metadata_is_secret_free_and_bounded(self) -> None:
-        data = recorded(); data["platforms"][0]["toolchain"] = "/private/keychain/token"
-        with self.assertRaisesRegex(V.SignedCandidateError, "without paths or credentials"): validate(data)
+        for platform, unsafe in ((0, "/private/keychain/token"), (1, "secret_token")):
+            data = recorded(); data["platforms"][platform]["toolchain"] = unsafe
+            with self.assertRaisesRegex(V.SignedCandidateError, "exact safe .* toolchain/version format"): validate(data)
         data = recorded(); data["platforms"][1]["distributionTrack"] = "secret-token"
         with self.assertRaisesRegex(V.SignedCandidateError, "exact internal store track"): validate(data)
         data = recorded(False); data["platforms"][0]["toolchain"] = {"path": "/private/key"}
