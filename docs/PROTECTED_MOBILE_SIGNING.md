@@ -145,6 +145,21 @@ physical install/distribution work. A committed `TEMPLATE`, a structurally
 valid `BLOCKED` record, or ordinary unsigned/no-codesign CI output is not
 signed-candidate evidence.
 
+`--require-ready` is an online, fail-closed check. It resolves `master` and the
+successful `CI` and `Release quality` runs through the GitHub API rather than
+trusting a local remote-tracking ref or copied conclusion strings. The checkout
+must also have canonical `origin` set to `MKSEgr/walking-rpg`.
+
+Each `verifierReceiptSha256` identifies an offline GitHub artifact-attestation
+bundle for the corresponding artifact. The validator invokes
+`gh attestation verify` and restricts the signer to
+`.github/workflows/protected-mobile-signing.yml` in this repository. That
+protected workflow may create the attestation only after the platform-native
+signature verifier has succeeded and the recorded public certificate
+fingerprint has been extracted from the same artifact. Plain JSON written by
+the evidence author, an ordinary CI artifact, or an attestation from another
+workflow does not satisfy the contract.
+
 Retained evidence may contain:
 
 - date and operator;

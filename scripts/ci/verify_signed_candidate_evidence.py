@@ -8,6 +8,9 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
+import urllib.error
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -18,11 +21,11 @@ SCHEMA = "walking-rpg-signed-candidate-v1"
 TOP = {"schemaVersion", "recordStatus", "overallStatus", "recordedAtUtc", "source", "platforms", "cleanup", "approval"}
 SOURCE = {"repository", "commitSha", "treeSha", "approvedPrHeadTreeSha", "ciConclusion", "releaseQualityConclusion", "accountReadinessSha256"}
 PLATFORM = {"platform", "status", "applicationId", "artifactType", "artifactSha256", "verifierReceiptSha256", "publicCertificateFingerprintSha256", "signatureVerified", "version", "buildNumber", "toolchain", "distributionTrack", "installableByInternalAudience", "ownerRole", "nextActionDueAtUtc", "blockerCategory"}
-RECEIPT = {"platform", "artifactSha256", "publicCertificateFingerprintSha256", "signatureVerified", "verifier", "verifierVersion", "verifiedAtUtc"}
 CLEANUP = {"temporaryMaterialRemoved", "ordinaryCiHadSigningAccess", "secretExposureDetected"}
 APPROVAL = {"status", "releaseOwnerRole", "approvedAtUtc"}
 SHA = re.compile(r"^[0-9a-f]{40}$"); SHA256 = re.compile(r"^[0-9a-f]{64}$"); UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 BLOCKERS = {"account_not_ready", "signing_access_unavailable", "protected_runner_unavailable", "distribution_unavailable", "signature_verification_failed", "cleanup_unconfirmed", "other_coarse"}
+ATTESTATION_WORKFLOW = "MKSEgr/walking-rpg/.github/workflows/protected-mobile-signing.yml"
 
 class SignedCandidateError(ValueError): pass
 def _fail(path: str, message: str) -> None: raise SignedCandidateError(f"{path}: {message}")
@@ -42,18 +45,38 @@ def _git(repo: Path, *args: str) -> str:
     if result.returncode != 0: _fail("source", f"git {' '.join(args)} failed")
     return result.stdout.strip()
 
-def _source_identities(repo: Path, commit: str) -> dict[str, str]:
+def _source_configuration(repo: Path, commit: str) -> tuple[dict[str, str], str]:
     gradle = _git(repo, "show", f"{commit}:mobile/android/app/build.gradle.kts")
     xcode = _git(repo, "show", f"{commit}:mobile/ios/Runner.xcodeproj/project.pbxproj")
+    plist = _git(repo, "show", f"{commit}:mobile/ios/Runner/Info.plist")
+    environment = _git(repo, "show", f"{commit}:mobile/lib/core/config/app_environment.dart")
     android = set(re.findall(r'applicationId\s*=\s*"([^"]+)"', gradle))
     ios = {value for value in re.findall(r"PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;]+);", xcode) if not value.endswith(".RunnerTests")}
-    if len(android) != 1 or len(ios) != 1: _fail("source", "claimed commit must expose exact mobile identities")
-    return {"android": next(iter(android)), "ios": next(iter(ios))}
+    schemes = [set(re.findall(r'"appAuthRedirectScheme"\s+to\s+"([^"]+)"', gradle)), set(re.findall(r"nativeOidcRedirectScheme\s*=\s*'([^']+)'", environment)), set(re.findall(r"<key>CFBundleURLSchemes</key>\s*<array>\s*<string>([^<]+)</string>", plist, re.DOTALL))]
+    if len(android) != 1 or len(ios) != 1 or any(len(value) != 1 for value in schemes) or not schemes[0] == schemes[1] == schemes[2]: _fail("source", "claimed commit must expose exact mobile identities and redirect scheme")
+    return {"android": next(iter(android)), "ios": next(iter(ios))}, next(iter(schemes[0]))
+
+def _github_state(repository: str, commit: str) -> dict[str, Any]:
+    def get(path: str) -> Any:
+        request = urllib.request.Request(f"https://api.github.com/repos/{repository}/{path}", headers={"Accept": "application/vnd.github+json", "User-Agent": "walking-rpg-evidence-validator"})
+        with urllib.request.urlopen(request, timeout=30) as response: return json.load(response)
+    master = get("git/ref/heads/master")["object"]["sha"]
+    runs = get(f"actions/runs?head_sha={commit}&status=completed&per_page=100")["workflow_runs"]
+    successful = {run["name"] for run in runs if run.get("head_sha") == commit and run.get("conclusion") == "success"}
+    return {"masterSha": master, "successfulWorkflows": successful}
+
+def _verify_attestation(repository: str, artifact: bytes, bundle: bytes) -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        artifact_path, bundle_path = Path(directory) / "artifact", Path(directory) / "bundle.jsonl"
+        artifact_path.write_bytes(artifact); bundle_path.write_bytes(bundle)
+        result = subprocess.run(["gh", "attestation", "verify", str(artifact_path), "--repo", repository, "--bundle", str(bundle_path), "--signer-workflow", ATTESTATION_WORKFLOW], text=True, capture_output=True, check=False)
+        if result.returncode != 0: _fail("attestation", "GitHub artifact attestation verification failed")
 
 def validate(data: Any, *, require_recorded: bool = False, require_ready: bool = False,
              account: Any = None, account_sha256: str | None = None,
              repository_root: Path | None = None, artifacts: dict[str, bytes] | None = None,
-             receipts: dict[str, bytes] | None = None) -> None:
+             receipts: dict[str, bytes] | None = None, github_state: dict[str, Any] | None = None,
+             attestation_verifier: Any = None) -> None:
     root = _object(data, "$", TOP); record, overall = root["recordStatus"], root["overallStatus"]
     if root["schemaVersion"] != SCHEMA: _fail("schemaVersion", f"must equal {SCHEMA!r}")
     if record not in {"TEMPLATE", "RECORDED"} or overall not in {"OWNER_INPUT_REQUIRED", "READY", "BLOCKED"}: _fail("$", "invalid status")
@@ -72,13 +95,17 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
     if account is None or account_sha256 != source["accountReadinessSha256"]: _fail("source.accountReadinessSha256", "must match supplied account-readiness bytes")
     repo = repository_root or Path(__file__).resolve().parents[2]
     if source["repository"] != "MKSEgr/walking-rpg": _fail("source.repository", "must identify the approved repository")
-    master_sha = _git(repo, "rev-parse", "refs/remotes/origin/master")
-    if source["commitSha"] != master_sha: _fail("source.commitSha", "must equal the current origin/master commit")
+    remote = _git(repo, "remote", "get-url", "origin")
+    if remote not in {"https://github.com/MKSEgr/walking-rpg.git", "git@github.com:MKSEgr/walking-rpg.git"}: _fail("source.repository", "origin must be the canonical GitHub repository")
+    state = github_state or _github_state(source["repository"], source["commitSha"])
+    if source["commitSha"] != state.get("masterSha"): _fail("source.commitSha", "must equal GitHub's current master commit")
     actual_tree = _git(repo, "rev-parse", f'{source["commitSha"]}^{{tree}}')
     if source["treeSha"] != actual_tree or source["approvedPrHeadTreeSha"] != actual_tree: _fail("source.treeSha", "source and approved PR-head trees must equal the actual master tree")
-    if source["ciConclusion"] != "success" or source["releaseQualityConclusion"] != "success": _fail("source", "CI and Release quality must both be successful")
+    if source["ciConclusion"] != "success" or source["releaseQualityConclusion"] != "success" or not {"CI", "Release quality"}.issubset(set(state.get("successfulWorkflows", []))): _fail("source", "GitHub must report successful CI and Release quality runs for the source commit")
     if len(platforms) != 2: _fail("platforms", "must contain exactly iOS and Android")
-    expected_ids = _source_identities(repo, source["commitSha"]); ready = True; seen = set()
+    mobile_ids, redirect_scheme = _source_configuration(repo, source["commitSha"])
+    source_configuration = ({"apple": mobile_ids["ios"], "google": mobile_ids["android"]}, redirect_scheme)
+    expected_ids = mobile_ids; ready = True; seen = set()
     for index, raw in enumerate(platforms):
         path = f"platforms[{index}]"; item = _object(raw, path, PLATFORM); platform = item["platform"]
         if platform not in {"ios", "android"} or platform in seen: _fail(f"{path}.platform", "must uniquely identify ios or android")
@@ -90,11 +117,7 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
             artifact_bytes = (artifacts or {}).get(platform); receipt_bytes = (receipts or {}).get(platform)
             if artifact_bytes is None or hashlib.sha256(artifact_bytes).hexdigest() != item["artifactSha256"]: _fail(path, "artifact digest must match supplied artifact bytes")
             if receipt_bytes is None or hashlib.sha256(receipt_bytes).hexdigest() != item["verifierReceiptSha256"]: _fail(path, "receipt digest must match supplied verifier receipt bytes")
-            try: receipt = _object(json.loads(receipt_bytes, object_pairs_hook=_unique), f"{path}.receipt", RECEIPT)
-            except (UnicodeError, json.JSONDecodeError) as error: _fail(f"{path}.receipt", f"must be strict JSON: {error}")
-            if receipt["platform"] != platform or receipt["artifactSha256"] != item["artifactSha256"] or receipt["publicCertificateFingerprintSha256"] != item["publicCertificateFingerprintSha256"] or receipt["signatureVerified"] is not True: _fail(f"{path}.receipt", "must confirm this platform artifact, fingerprint and signature")
-            if not isinstance(receipt["verifier"], str) or not receipt["verifier"] or not isinstance(receipt["verifierVersion"], str) or not receipt["verifierVersion"]: _fail(f"{path}.receipt", "must identify the signature verifier and version")
-            _time(receipt["verifiedAtUtc"], f"{path}.receipt.verifiedAtUtc")
+            (attestation_verifier or _verify_attestation)(source["repository"], artifact_bytes, receipt_bytes)
             if item["signatureVerified"] is not True or item["installableByInternalAudience"] is not True: _fail(path, "READY requires verified signature and internal availability")
             for key in ("version", "buildNumber", "toolchain", "distributionTrack"):
                 if not isinstance(item[key], str) or not item[key].strip(): _fail(f"{path}.{key}", "must be non-empty")
@@ -106,8 +129,17 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
             _time(item["nextActionDueAtUtc"], f"{path}.nextActionDueAtUtc")
         else: _fail(f"{path}.status", "must be READY or BLOCKED")
     if any(type(value) is not bool for value in cleanup.values()): _fail("cleanup", "recorded cleanup values must be strict booleans")
-    account_blocked = any(item["status"] == "BLOCKED" and item["blockerCategory"] == "account_not_ready" for item in platforms)
-    try: accounts.validate(account, require_recorded=True, require_ready=not account_blocked, repository_root=repo)
+    account_stores = {item.get("platform"): item for item in account.get("stores", [])} if isinstance(account, dict) else {}
+    for item in platforms:
+        store_platform = "apple" if item["platform"] == "ios" else "google"
+        store = account_stores.get(store_platform, {})
+        store_ready = store.get("accountStatus") == "VERIFIED" and store.get("appRecordStatus") == "CREATED"
+        if item["status"] == "READY" and not store_ready:
+            _fail("accountReadiness", f"{store_platform} account must be ready for a READY platform")
+        if item["blockerCategory"] == "account_not_ready" and store_ready:
+            _fail("accountReadiness", f"{store_platform} account must be blocked for account_not_ready")
+    try: accounts.validate(account, require_recorded=True, require_ready=ready,
+                           repository_root=repo, candidate_configuration=source_configuration)
     except accounts.AccountReadinessError as error: _fail("accountReadiness", f"has incompatible status: {error}")
     safe_cleanup = cleanup == {"temporaryMaterialRemoved": True, "ordinaryCiHadSigningAccess": False, "secretExposureDetected": False}
     if not safe_cleanup: ready = False
@@ -129,6 +161,6 @@ def main(argv: list[str] | None = None) -> int:
         artifact_paths = {"ios": args.ios_artifact, "android": args.android_artifact}; receipt_paths = {"ios": args.ios_verifier_receipt, "android": args.android_verifier_receipt}
         artifacts = {key: path.read_bytes() for key, path in artifact_paths.items() if path}; receipts = {key: path.read_bytes() for key, path in receipt_paths.items() if path}
         validate(evidence, require_recorded=args.require_recorded, require_ready=args.require_ready, account=account, account_sha256=hashlib.sha256(account_bytes).hexdigest() if account_bytes else None, artifacts=artifacts, receipts=receipts)
-    except (OSError, UnicodeError, json.JSONDecodeError, SignedCandidateError) as error: print(f"Signed candidate evidence invalid: {error}", file=sys.stderr); return 1
+    except (OSError, UnicodeError, json.JSONDecodeError, urllib.error.URLError, SignedCandidateError) as error: print(f"Signed candidate evidence invalid: {error}", file=sys.stderr); return 1
     print(f"Signed candidate evidence valid: {args.evidence}"); return 0
 if __name__ == "__main__": raise SystemExit(main())
