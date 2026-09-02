@@ -14,13 +14,14 @@ import verify_store_readiness_evidence as store_readiness
 
 SCHEMA = "walking-rpg-store-account-readiness-v1"
 TOP = {"schemaVersion", "recordStatus", "overallStatus", "recordedAtUtc", "reviewedAtUtc", "legalOperatorRole", "markets", "locales", "stores", "publicUrls", "googleClosedTesting", "approval"}
-STORE = {"platform", "accountType", "accountStatus", "appRecordStatus", "applicationId", "ownerRole", "nextActionDueAtUtc", "blockerCategory"}
+STORE = {"platform", "accountType", "accountStatus", "appRecordStatus", "applicationId", "oidcRedirectScheme", "ownerRole", "nextActionDueAtUtc", "blockerCategory"}
 URL = {"kind", "status", "url", "ownerRole", "nextActionDueAtUtc", "blockerCategory"}
 TESTING = {"status", "nextActionDueAtUtc", "blockerCategory"}
-APPROVAL = {"productOwnerRole", "releaseOwnerRole"}
+APPROVAL = {"status", "productOwnerRole", "releaseOwnerRole", "nextActionDueAtUtc", "blockerCategory"}
 UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
-APP_ID = re.compile(r"^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}$")
 BLOCKERS = {"account_unavailable", "verification_pending", "operator_unapproved", "app_identity_unapproved", "public_url_unavailable", "testing_gate_pending", "access_owner_unassigned", "other_coarse"}
+APPLICATION_IDS = {"apple": "com.walkingrpg.walkingRpgMobile", "google": "com.walkingrpg.walking_rpg_mobile"}
+OIDC_REDIRECT_SCHEME = "com.walkingrpg.app"
 
 
 class AccountReadinessError(ValueError): pass
@@ -39,10 +40,6 @@ def _object(value: Any, path: str, keys: set[str]) -> dict[str, Any]:
 def _time(value: Any, path: str) -> datetime:
     if not isinstance(value, str) or not UTC.fullmatch(value): _fail(path, "must be an exact UTC timestamp ending in Z")
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
-
-
-def _role(value: Any, path: str) -> None:
-    if value not in {"product_owner", "release_owner", "store_account_owner", "legal_operator"}: _fail(path, "must be an approved coarse role")
 
 
 def _blocked(status: str, due: Any, blocker: Any, path: str) -> None:
@@ -67,38 +64,56 @@ def validate(data: Any, *, require_recorded: bool = False, require_ready: bool =
     if not isinstance(stores, list) or not isinstance(urls, list): _fail("$", "stores and publicUrls must be arrays")
     if record == "TEMPLATE":
         expected_testing = {"status": "OWNER_INPUT_REQUIRED", "nextActionDueAtUtc": None, "blockerCategory": None}
-        if overall != "OWNER_INPUT_REQUIRED" or root["recordedAtUtc"] is not None or root["reviewedAtUtc"] is not None or root["legalOperatorRole"] is not None or root["markets"] or root["locales"] or stores or urls or testing != expected_testing or any(approval.values()): _fail("$", "committed TEMPLATE must remain empty and owner-input-required")
+        expected_approval = {"status": "OWNER_INPUT_REQUIRED", "productOwnerRole": None, "releaseOwnerRole": None, "nextActionDueAtUtc": None, "blockerCategory": None}
+        if overall != "OWNER_INPUT_REQUIRED" or root["recordedAtUtc"] is not None or root["reviewedAtUtc"] is not None or root["legalOperatorRole"] is not None or root["markets"] or root["locales"] or stores or urls or testing != expected_testing or approval != expected_approval: _fail("$", "committed TEMPLATE must remain empty and owner-input-required")
         return
     recorded_at, reviewed_at = _time(root["recordedAtUtc"], "recordedAtUtc"), _time(root["reviewedAtUtc"], "reviewedAtUtc")
     if reviewed_at < recorded_at: _fail("reviewedAtUtc", "must not precede recordedAtUtc")
-    _role(root["legalOperatorRole"], "legalOperatorRole")
+    if root["legalOperatorRole"] not in {None, "legal_operator"}: _fail("legalOperatorRole", "must be legal_operator or null while blocked")
     if root["markets"] != ["global"] or root["locales"] != ["en", "ru"]: _fail("markets/locales", "must equal global and ['en', 'ru']")
     if len(stores) != 2: _fail("stores", "must contain exactly Apple and Google")
     ready = True; platforms = set()
     for index, raw in enumerate(stores):
         path = f"stores[{index}]"; item = _object(raw, path, STORE); platform = item["platform"]
         if platform not in {"apple", "google"} or platform in platforms: _fail(f"{path}.platform", "must uniquely identify apple or google")
-        platforms.add(platform); _role(item["ownerRole"], f"{path}.ownerRole")
+        platforms.add(platform)
         if item["accountType"] not in {"organization", "individual"}: _fail(f"{path}.accountType", "must be organization or individual")
         if item["accountStatus"] not in {"VERIFIED", "BLOCKED"} or item["appRecordStatus"] not in {"CREATED", "BLOCKED"}: _fail(path, "account/app record status is invalid")
         item_ready = item["accountStatus"] == "VERIFIED" and item["appRecordStatus"] == "CREATED"
         if item_ready:
-            if not isinstance(item["applicationId"], str) or not APP_ID.fullmatch(item["applicationId"]): _fail(f"{path}.applicationId", "must be a final reverse-domain identifier")
-        elif item["applicationId"] is not None: _fail(f"{path}.applicationId", "must be null while blocked")
+            if item["applicationId"] != APPLICATION_IDS[platform]: _fail(f"{path}.applicationId", "must match the exact candidate application identity")
+            if item["oidcRedirectScheme"] != OIDC_REDIRECT_SCHEME: _fail(f"{path}.oidcRedirectScheme", "must match the exact candidate OIDC redirect scheme")
+            if item["ownerRole"] != "store_account_owner": _fail(f"{path}.ownerRole", "must be store_account_owner when ready")
+        else:
+            if item["applicationId"] is not None or item["oidcRedirectScheme"] is not None: _fail(path, "application identity and redirect scheme must be null while blocked")
+            expected_owner = None if item["blockerCategory"] == "access_owner_unassigned" else "store_account_owner"
+            if item["ownerRole"] != expected_owner: _fail(f"{path}.ownerRole", "must match the blocked owner assignment")
         _blocked("READY" if item_ready else "BLOCKED", item["nextActionDueAtUtc"], item["blockerCategory"], path); ready &= item_ready
     if len(urls) != 3: _fail("publicUrls", "must contain privacy, support and deletion")
     kinds = set()
     for index, raw in enumerate(urls):
         path = f"publicUrls[{index}]"; item = _object(raw, path, URL); kind = item["kind"]
         if kind not in {"privacy", "support", "deletion"} or kind in kinds: _fail(f"{path}.kind", "must uniquely identify privacy, support or deletion")
-        kinds.add(kind); _role(item["ownerRole"], f"{path}.ownerRole")
-        if item["status"] == "READY": store_readiness._public_https(item["url"], f"{path}.url")
+        kinds.add(kind)
+        if item["status"] == "READY":
+            store_readiness._public_https(item["url"], f"{path}.url")
+            if item["ownerRole"] != "product_owner": _fail(f"{path}.ownerRole", "must be product_owner when ready")
         elif item["status"] == "BLOCKED" and item["url"] is None: pass
         else: _fail(path, "must be READY with a public URL or BLOCKED without one")
+        if item["status"] == "BLOCKED":
+            expected_owner = None if item["blockerCategory"] == "access_owner_unassigned" else "product_owner"
+            if item["ownerRole"] != expected_owner: _fail(f"{path}.ownerRole", "must match the blocked owner assignment")
         _blocked(item["status"], item["nextActionDueAtUtc"], item["blockerCategory"], path); ready &= item["status"] == "READY"
     if testing["status"] not in {"CONFIRMED", "BLOCKED"}: _fail("googleClosedTesting.status", "must be CONFIRMED or BLOCKED")
     _blocked("READY" if testing["status"] == "CONFIRMED" else "BLOCKED", testing["nextActionDueAtUtc"], testing["blockerCategory"], "googleClosedTesting"); ready &= testing["status"] == "CONFIRMED"
-    if approval != {"productOwnerRole": "product_owner", "releaseOwnerRole": "release_owner"}: _fail("approval", "must contain product and release owner review")
+    if approval["status"] == "APPROVED":
+        if approval["productOwnerRole"] != "product_owner" or approval["releaseOwnerRole"] != "release_owner": _fail("approval", "must contain product and release owner review")
+        _blocked("READY", approval["nextActionDueAtUtc"], approval["blockerCategory"], "approval")
+    elif approval["status"] == "BLOCKED":
+        if approval["productOwnerRole"] not in {None, "product_owner"} or approval["releaseOwnerRole"] not in {None, "release_owner"}: _fail("approval", "pending reviews must use only their responsibility roles")
+        _blocked("BLOCKED", approval["nextActionDueAtUtc"], approval["blockerCategory"], "approval"); ready = False
+    else: _fail("approval.status", "must be APPROVED or BLOCKED")
+    if ready and root["legalOperatorRole"] != "legal_operator": _fail("legalOperatorRole", "READY requires legal_operator")
     if overall != ("READY" if ready else "BLOCKED"): _fail("overallStatus", "must match the recorded component outcomes")
 
 

@@ -10,5 +10,5 @@
   "stores": [],
   "publicUrls": [],
   "googleClosedTesting": {"status": "OWNER_INPUT_REQUIRED", "nextActionDueAtUtc": null, "blockerCategory": null},
-  "approval": {"productOwnerRole": null, "releaseOwnerRole": null}
+  "approval": {"status": "OWNER_INPUT_REQUIRED", "productOwnerRole": null, "releaseOwnerRole": null, "nextActionDueAtUtc": null, "blockerCategory": null}
 }

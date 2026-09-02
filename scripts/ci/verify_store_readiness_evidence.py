@@ -68,8 +68,8 @@ def _public_https(value: Any, path: str) -> None:
         _fail(path, "must contain a valid HTTPS port")
     if port is not None and not 1 <= port <= 65535:
         _fail(path, "must contain a valid HTTPS port")
-    if parsed.scheme != "https" or not host or parsed.username or parsed.password or parsed.fragment:
-        _fail(path, "must be a public HTTPS URL without credentials or fragments")
+    if parsed.scheme != "https" or not host or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        _fail(path, "must be a public HTTPS URL without credentials, query, or fragments")
     try:
         address = ipaddress.ip_address(host)
     except ValueError:
