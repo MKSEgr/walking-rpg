@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "walking-rpg-store-account-readiness-v1",
+  "recordStatus": "TEMPLATE",
+  "overallStatus": "OWNER_INPUT_REQUIRED",
+  "recordedAtUtc": null,
+  "reviewedAtUtc": null,
+  "legalOperatorRole": null,
+  "markets": [],
+  "locales": [],
+  "stores": [],
+  "publicUrls": [],
+  "googleClosedTesting": {"status": "OWNER_INPUT_REQUIRED", "nextActionDueAtUtc": null, "blockerCategory": null},
+  "approval": {"productOwnerRole": null, "releaseOwnerRole": null}
+}
