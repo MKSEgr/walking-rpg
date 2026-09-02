@@ -138,6 +138,13 @@ afterward without repeating the protected build from the approved post-merge
 
 ## Required retained evidence
 
+The sanitized handoff uses
+[`signed-candidate-template.json`](evidence/signed-candidate-template.json).
+Only a `RECORDED` + `READY` record that passes `--require-ready` may unblock
+physical install/distribution work. A committed `TEMPLATE`, a structurally
+valid `BLOCKED` record, or ordinary unsigned/no-codesign CI output is not
+signed-candidate evidence.
+
 Retained evidence may contain:
 
 - date and operator;

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "walking-rpg-signed-candidate-v1",
+  "recordStatus": "TEMPLATE",
+  "overallStatus": "OWNER_INPUT_REQUIRED",
+  "recordedAtUtc": null,
+  "source": {"commitSha": null, "treeSha": null, "accountReadinessSha256": null},
+  "platforms": [],
+  "cleanup": {"temporaryMaterialRemoved": null, "ordinaryCiHadSigningAccess": null, "secretExposureDetected": null},
+  "approval": {"status": "OWNER_INPUT_REQUIRED", "releaseOwnerRole": null, "approvedAtUtc": null}
+}
