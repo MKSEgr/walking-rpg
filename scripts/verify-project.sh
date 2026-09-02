@@ -120,6 +120,15 @@ if PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_store_readines
 fi
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_store_readiness_evidence.py"
 
+printf '%s\n' "Checking the developer-account readiness contract..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_store_account_readiness.py" \
+  "$ROOT_DIR/docs/evidence/store-account-readiness-template.json"
+if PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_store_account_readiness.py" \
+  "$ROOT_DIR/docs/evidence/store-account-readiness-template.json" --require-ready >/dev/null 2>&1; then
+  echo "Committed developer-account template must not pass as ready evidence." >&2; exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_store_account_readiness.py"
+
 printf '%s\n' "Checking the internal-alpha kickoff contract..."
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_kickoff.py" \

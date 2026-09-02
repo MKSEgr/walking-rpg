@@ -177,6 +177,12 @@ restore evidence.
 
 ## 4. Gate C — developer accounts, signing и требования SDK
 
+Account/app-identity handoff фиксируется через
+[`store-account-readiness-template.json`](evidence/store-account-readiness-template.json).
+Запись `BLOCKED` сохраняет честный owner/next-action status, но только
+`RECORDED` + `READY` проходит `--require-ready` и разблокирует signing/store
+dependencies; committed `TEMPLATE` не является external evidence.
+
 ### Apple
 
 До загрузки первого build-а:
