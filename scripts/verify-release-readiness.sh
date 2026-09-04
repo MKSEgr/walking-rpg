@@ -662,6 +662,9 @@ fi
 grep -Fq 'Release quality · synthetic backup/restore drill' .github/workflows/release-quality.yml || fail 'synthetic restore drill must have a dedicated release check'
 grep -Fq 'Release quality · synthetic backup/restore drill' scripts/ci/wait_for_required_checks.py || fail 'release finalizer must require the synthetic restore drill'
 grep -Fq 'scripts/ci/wait_for_required_checks.py' .github/workflows/release-pr-finalizer.yml || fail 'release finalizer must use the tested strict check evaluator'
+grep -Fq 'scripts/ci/verify_pr_closing_references.py' .github/workflows/release-pr-finalizer.yml || fail 'release finalizer must validate PR issue-closing references'
+grep -Fq 'types: [opened, edited, synchronize, reopened, ready_for_review]' .github/workflows/release-pr-finalizer.yml || fail 'PR metadata validation must rerun after body edits and ready transition'
+grep -Fq 'needs: metadata' .github/workflows/release-pr-finalizer.yml || fail 'release finalization must require valid PR metadata'
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/ci/test_wait_for_required_checks.py
 grep -Fq 'object_pairs_hook=reject_duplicate_keys' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must reject duplicate JSON keys'
 grep -Fq 'require_exact_keys(evidence, TOP_LEVEL_KEYS, "$")' scripts/operations/verify-backup-restore-evidence.py || fail 'evidence verifier must reject unknown top-level fields'

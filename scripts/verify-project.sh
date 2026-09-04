@@ -31,6 +31,8 @@ for file in \
   "$ROOT_DIR/scripts/ci/test_verify_runner_image_pins.py" \
   "$ROOT_DIR/scripts/ci/verify_workflow_toolchain_pins.py" \
   "$ROOT_DIR/scripts/ci/test_verify_workflow_toolchain_pins.py" \
+  "$ROOT_DIR/scripts/ci/verify_pr_closing_references.py" \
+  "$ROOT_DIR/scripts/ci/test_verify_pr_closing_references.py" \
   "$ROOT_DIR/scripts/ci/verify_flutter_pub_lock.py" \
   "$ROOT_DIR/scripts/ci/test_verify_flutter_pub_lock.py" \
   "$ROOT_DIR/scripts/ci/verify_ios_pod_lock.py" \
@@ -82,6 +84,10 @@ if ! "$ACTION_POLICY_PYTHON" -c \
     exit 1
   fi
 fi
+
+printf '%s\n' "Checking pull request issue-closing references..."
+PYTHONDONTWRITEBYTECODE=1 python3 \
+  "$ROOT_DIR/scripts/ci/test_verify_pr_closing_references.py"
 
 printf '%s\n' "Checking the sanitized Health device inventory contract..."
 PYTHONDONTWRITEBYTECODE=1 python3 \

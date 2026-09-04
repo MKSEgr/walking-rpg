@@ -11,6 +11,16 @@ Backend: cd backend && ./mvnw verify
 Mobile:  cd mobile && flutter analyze && flutter test
 ```
 
+## Связанные issues
+
+<!--
+Для полностью выполненной issue добавьте каноническую completion-строку по
+docs/PR_METADATA_POLICY.md. Для незавершающей связи используйте "Relates to
+#123" или "Keeps #123 open"; external gate не завершается merge tooling-кода.
+-->
+
+Relates to #<issue>
+
 ## Чек-лист
 
 - [ ] Изменение соответствует текущему milestone и не расширяет scope без необходимости.
@@ -19,3 +29,4 @@ Mobile:  cd mobile && flutter analyze && flutter test
 - [ ] В репозиторий не добавлены секреты или персональные данные.
 - [ ] Для нового архитектурного решения добавлен или обновлён ADR.
 - [ ] CI проходит.
+- [ ] Completion-ссылки соответствуют `docs/PR_METADATA_POLICY.md`.

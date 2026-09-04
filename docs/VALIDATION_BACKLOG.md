@@ -15,8 +15,9 @@ alpha.
 - Open issue без открытого PR — `READY` только когда все dependencies закрыты
   и нет внешнего blocker-а.
 - Open issue со связанным PR — `IN_PROGRESS`.
-- Closed issue — `DONE`, если он закрыт merge PR с `Closes #…` или принятым
-  внешним evidence.
+- Closed issue — `DONE`, если он намеренно закрыт merge PR с канонической
+  отдельной строкой `Closes #…` и полным acceptance либо принятым внешним
+  evidence.
 - Нехватка owner decision, устройства, account, credential или реального
   evidence означает `BLOCKED`, а не частичный pass.
 - `CODE_COMPLETE` и `VALIDATED` — независимые статусы. Автоматические тесты не
@@ -58,8 +59,9 @@ validation сохранена и нормализована в issue
 
 1. Если уже есть открытый PR по task issue, довести именно его до green и
    merge-ready; новую задачу не брать.
-2. После merge убедиться, что `Closes #…` закрыл issue. Если GitHub не закрыл
-   его автоматически, закрыть вручную только со ссылкой на merged PR.
+2. После merge убедиться, что намеренная отдельная строка `Closes #…` закрыла
+   только полностью выполненную issue. Случайно закрытый external gate
+   переоткрыть с audit-комментарием.
 3. Среди open issues выбрать наименьший `TASK-NNN`, у которого все указанные
    issue-dependencies закрыты.
 4. Если задача внешне заблокирована, зафиксировать точный blocker и required
@@ -67,8 +69,9 @@ validation сохранена и нормализована в issue
    следующую готовую независимую задачу.
 5. Одна задача — один логический Draft PR. Не смешивать backend, design,
    infrastructure и evidence без необходимости outcome-а.
-6. PR обязан содержать `Closes #<issue>` и закрывать все acceptance criteria.
-   До merge issue остаётся open.
+6. PR обязан содержать отдельную строку `Closes #<issue>` и закрывать все
+   acceptance criteria. Незавершающие ссылки используют `Relates to #N` или
+   `Keeps #N open` без closing keywords. До merge issue остаётся open.
 
 ## Evidence contract
 

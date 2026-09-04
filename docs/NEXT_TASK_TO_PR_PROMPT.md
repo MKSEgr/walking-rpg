@@ -23,7 +23,8 @@
    - Получи exact SHA актуального master, открытые PR и open task issues.
    - Если уже есть открытый PR для TASK-NNN, не выбирай новую задачу: продолжи
      этот PR, обработай review/CI и доведи его до green + merge-ready.
-   - Если предыдущий task PR уже merged, проверь, что `Closes #N` закрыл issue.
+   - Если предыдущий task PR уже merged, проверь, что намеренная отдельная
+     строка `Closes #N` закрыла issue.
      Если автозакрытие не сработало, закрой issue только со ссылкой на merged PR.
    - Статус задачи определяется GitHub Issue: open = не выполнена, closed после
      merge/evidence = выполнена. Не отмечай задачу выполненной до merge.
@@ -69,7 +70,11 @@
 6. Создай Draft PR.
    - Заголовок начинается с `[TASK-NNN]` и описывает outcome.
    - Body содержит: What, Why, scope/out-of-scope, impact, checks, evidence,
-     blockers/rollback и строку `Closes #<issue>`.
+     blockers/rollback и отдельную строку `Closes #<issue>` только для issue,
+     acceptance которой полностью выполнен этим PR.
+   - Для незавершающих связей используй `Relates to #N` или `Keeps #N open`.
+     Никогда не ставь GitHub closing keyword перед external-gate reference даже
+     в отрицании: GitHub может закрыть issue при merge.
    - Используй отдельную ветку; master и чужие ветки не изменяй.
    - Дождись всех exact-head CI/release workflows. Исправляй только реальные
      ошибки этого PR и повторяй проверки до green.
@@ -93,7 +98,9 @@ GitHub-плагина для blob/tree/commit/ref/PR. Не проси устан
 
 - Ровно один task PR одновременно.
 - `master` изменяется только через merge владельцем проекта.
-- `Closes #…` связывает merge и выполненный статус без ручного чекбокса.
+- Каноническая отдельная строка `Closes #…` связывает merge только с полностью
+  выполненным acceptance; безопасные non-completing связи описаны в
+  [PR metadata policy](PR_METADATA_POLICY.md).
 - External blocker не превращается в фиктивный документ или pass.
 - Следующая волна определяется evidence предыдущего gate, а не желанием
   продолжить feature development.
