@@ -1,0 +1,127 @@
+name: Protected incident rollback evidence attestation
+
+on:
+  workflow_dispatch:
+    inputs:
+      evidence_asset_id:
+        description: Numeric ID of the sanitized incident evidence asset
+        required: true
+        type: string
+      stage_evidence_asset_id:
+        description: Numeric ID of the validated stage evidence asset
+        required: true
+        type: string
+      stage_evidence_attestation_asset_id:
+        description: Numeric ID of the protected stage attestation bundle
+        required: true
+        type: string
+      restore_evidence_asset_id:
+        description: Numeric ID of the validated restore evidence asset
+        required: true
+        type: string
+      restore_evidence_attestation_asset_id:
+        description: Numeric ID of the protected restore attestation bundle
+        required: true
+        type: string
+      rollback_receipt_asset_id:
+        description: Numeric ID of the previous known-good publisher receipt
+        required: true
+        type: string
+      rollback_receipt_attestation_asset_id:
+        description: Numeric ID of its protected publisher attestation bundle
+        required: true
+        type: string
+      source_sha:
+        description: Exact current master commit represented by the stage
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: stage-release
+    steps:
+      - name: Check out exact incident source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download and preflight protected incident evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE_ASSET_ID: ${{ inputs.evidence_asset_id }}
+          STAGE_EVIDENCE_ASSET_ID: ${{ inputs.stage_evidence_asset_id }}
+          STAGE_ATTESTATION_ASSET_ID: ${{ inputs.stage_evidence_attestation_asset_id }}
+          RESTORE_EVIDENCE_ASSET_ID: ${{ inputs.restore_evidence_asset_id }}
+          RESTORE_ATTESTATION_ASSET_ID: ${{ inputs.restore_evidence_attestation_asset_id }}
+          ROLLBACK_RECEIPT_ASSET_ID: ${{ inputs.rollback_receipt_asset_id }}
+          ROLLBACK_RECEIPT_ATTESTATION_ASSET_ID: ${{ inputs.rollback_receipt_attestation_asset_id }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/master'
+          test "$GITHUB_WORKFLOW_SHA" = "$GITHUB_SHA"
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/master" --jq .object.sha)" = "$SOURCE_SHA"
+
+          download_asset() {
+            local asset_id="$1"
+            local output="$2"
+            [[ "$asset_id" =~ ^[0-9]+$ ]]
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" \
+              > "$output"
+            test -s "$output"
+          }
+
+          download_asset "$EVIDENCE_ASSET_ID" incident-rollback-evidence.json
+          download_asset "$STAGE_EVIDENCE_ASSET_ID" stage-deployment-evidence.json
+          download_asset "$STAGE_ATTESTATION_ASSET_ID" stage-deployment-evidence-attestation.jsonl
+          download_asset "$RESTORE_EVIDENCE_ASSET_ID" backup-restore-evidence.json
+          download_asset "$RESTORE_ATTESTATION_ASSET_ID" backup-restore-evidence-attestation.jsonl
+          download_asset "$ROLLBACK_RECEIPT_ASSET_ID" rollback-image-receipt.json
+          download_asset "$ROLLBACK_RECEIPT_ATTESTATION_ASSET_ID" rollback-image-receipt-attestation.jsonl
+
+          python3 scripts/ci/verify_incident_rollback_evidence.py \
+            incident-rollback-evidence.json \
+            --stage-evidence stage-deployment-evidence.json \
+            --stage-evidence-attestation stage-deployment-evidence-attestation.jsonl \
+            --restore-evidence backup-restore-evidence.json \
+            --restore-evidence-attestation backup-restore-evidence-attestation.jsonl \
+            --rollback-receipt rollback-image-receipt.json \
+            --rollback-receipt-attestation rollback-image-receipt-attestation.jsonl \
+            --prepare-attestation
+
+          endpoint="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          stage = json.loads(Path("stage-deployment-evidence.json").read_text())
+          print(stage["stage"]["publicEndpoint"])
+          PY
+          )"
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+            --max-time 15 "$endpoint/livez" >/dev/null
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+            --max-time 15 "$endpoint/readyz" >/dev/null
+      - name: Attest exact incident rollback evidence bytes
+        id: attest
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.1
+        with:
+          subject-path: incident-rollback-evidence.json
+      - name: Retain offline incident evidence attestation bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: incident-rollback-evidence-attestation-bundle
+          path: ${{ steps.attest.outputs.bundle-path }}
+          if-no-files-found: error
+          retention-days: 30
