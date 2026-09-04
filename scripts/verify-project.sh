@@ -158,6 +158,16 @@ if PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_stage_deployme
 fi
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_stage_deployment_evidence.py"
 
+printf '%s\n' "Checking the protected backup restore evidence contract..."
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_backup_restore_evidence.py" \
+  "$ROOT_DIR/docs/evidence/backup-restore-drill-template.json"
+if PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/verify_backup_restore_evidence.py" \
+  "$ROOT_DIR/docs/evidence/backup-restore-drill-template.json" \
+  --require-validated >/dev/null 2>&1; then
+  echo "Committed restore template must not pass as validated evidence." >&2; exit 1
+fi
+PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT_DIR/scripts/ci/test_verify_backup_restore_evidence.py"
+
 printf '%s\n' "Checking the internal-alpha kickoff contract..."
 PYTHONDONTWRITEBYTECODE=1 python3 \
   "$ROOT_DIR/scripts/ci/verify_internal_alpha_kickoff.py" \

@@ -67,7 +67,9 @@ least-privilege DB role, deployment, management network isolation,
 WAF/distributed limiter,
 monitoring/alerting, backup scheduling/encryption/retention, PITR/RPO/RTO
 policy и датированный restore реального backup —
-`EXTERNAL_VALIDATION_REQUIRED`. Наличие Flyway V14, успешный CI startup или
+`EXTERNAL_VALIDATION_REQUIRED`. Реальный restore принимается только по
+fail-closed [protected restore evidence contract](PRODUCTION_OPERATIONS_RUNBOOK.md#actual-backuprestore-gate)
+с точным stage и protected attestation. Наличие Flyway V14, успешный CI startup или
 `scope=SYNTHETIC_CI` не является доказательством production
 deployment/restore.
 Drain старого backend pool и последующая активация staged `chapter-1-v2` по
