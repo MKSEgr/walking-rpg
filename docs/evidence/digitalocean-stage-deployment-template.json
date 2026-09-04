@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "walking-rpg-stage-deployment-v1",
+  "recordStatus": "TEMPLATE",
+  "overallStatus": "OWNER_INPUT_REQUIRED",
+  "recordedAtUtc": null,
+  "source": {"repository": null, "commitSha": null, "treeSha": null, "image": null, "imageDigest": null, "provenanceGuardBaselineSha": null, "publisherReceiptSha256": null, "publisherReceiptAttestationSha256": null},
+  "stage": {"environment": null, "provider": null, "region": null, "publicEndpoint": null, "backendComponent": null, "backendPlan": null, "backendInstances": null, "postgresEngine": null, "postgresPlan": null, "postgresNodes": null},
+  "deployment": {"status": "OWNER_INPUT_REQUIRED", "deploymentId": null, "previousSafeDeploymentId": null, "deployedImageDigest": null, "startedAtUtc": null, "completedAtUtc": null, "ownerRole": null, "nextActionDueAtUtc": null, "blockerCategory": null, "defectIssueNumbers": []},
+  "controls": {"budgetApproved": null, "auth0ProtectedConfiguration": null, "immutableImageDigest": null, "publisherProvenance": null, "embeddedSource": null, "databaseCustomRole": null, "databaseTrustedSources": null, "databaseVerifyFull": null, "databaseLeastPrivilege": null, "flywayCurrent": null, "oidcFailClosed": null, "sandboxProvidersDisabled": null, "managementPrivate": null, "liveProbe": null, "readyProbe": null, "dbUnreadyRemoval": null, "mobileThreatControl": null, "alertPolicies": null, "alertDelivery": null, "dashboardAccess": null, "runtimeLogRetention": null, "logRedaction": null, "backupPitr": null, "rollbackTarget": null, "schemaCompatibility": null},
+  "cleanup": {"renderedSpecRemoved": null, "temporaryAccessRevoked": null, "secretExposureDetected": null, "personalDataRetained": null},
+  "approval": {"status": "OWNER_INPUT_REQUIRED", "releaseOwnerRole": null, "approvedAtUtc": null}
+}

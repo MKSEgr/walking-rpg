@@ -131,7 +131,9 @@ separate protected-credential design before changing this contract.
 
 Download the workflow's `backend-image-receipt-<source-sha>` artifact, verify
 its companion SHA-256 file, and record the workflow URL, artifact digest,
-source SHA/tree and returned `sha256:...` image digest. A Git tag or image tag
+source SHA/tree and returned `sha256:...` image digest. Retain the included
+offline provenance bundle for the exact receipt JSON; stage evidence validation
+rejects an unattested or locally reconstructed receipt. A Git tag or image tag
 is not a substitute for this digest.
 
 ## 4. Render the reviewed App Spec
@@ -271,8 +273,36 @@ fix.
 
 ## 9. Evidence and completion
 
-Fill
+Use
 [`digitalocean-stage-deployment-template.md`](evidence/digitalocean-stage-deployment-template.md)
-with redacted links and results. TASK-006 remains open until evidence covers
-every issue #151 acceptance item. Merge of repository code proves only
-`CODE_COMPLETE`, not `VALIDATED`.
+as the human operator worksheet. Retain the result in the strict
+[`digitalocean-stage-deployment-template.json`](evidence/digitalocean-stage-deployment-template.json)
+format. Its exact control set covers the deployment, database, identity,
+provider-isolation, probe, observability, backup and rollback gates above.
+
+Any record containing a deployment claim requires an offline attestation from
+`.github/workflows/protected-stage-evidence.yml`. That workflow runs behind the
+`stage-release` environment, verifies the exact current-master publisher
+receipt and its own protected attestation, preflights the complete stage record
+and independently requests the public `/livez` and `/readyz` endpoints before
+attesting the stage-evidence bytes. The endpoint is restricted to a
+credential-free `*.ondigitalocean.app` HTTPS origin.
+
+After downloading the retained inputs, verify them with:
+
+```bash
+python3 scripts/ci/verify_stage_deployment_evidence.py stage-evidence.json \
+  --publisher-receipt backend-image-receipt.json \
+  --publisher-receipt-attestation backend-image-receipt-attestation.jsonl \
+  --evidence-attestation stage-evidence-attestation.jsonl \
+  --require-validated
+```
+
+`--require-recorded` accepts an honest no-run `BLOCKED` handoff, including a
+record with no publisher receipt yet. It never converts missing infrastructure
+or a partial run into `VALIDATED`. `--prepare-attestation` is only a structural
+preflight used by the protected workflow; consumers still require the emitted
+attestation bundle.
+
+TASK-006 remains open until evidence covers every issue #151 acceptance item.
+Merge of repository code proves only `CODE_COMPLETE`, not `VALIDATED`.
