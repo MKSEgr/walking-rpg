@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "walking-rpg-internal-track-validation-v1",
+  "recordStatus": "TEMPLATE",
+  "overallStatus": "OWNER_INPUT_REQUIRED",
+  "recordedAtUtc": null,
+  "candidate": {"repository": null, "signedCandidateEvidenceSha256": null, "signedCandidateEvidenceAttestationSha256": null, "candidateStatus": null, "sourceCommitSha": null, "sourceTreeSha": null},
+  "platforms": [],
+  "cleanup": {"localTestDataRemoved": null, "temporaryAccessRevoked": null, "secretExposureDetected": null, "personalDataRetained": null},
+  "approval": {"status": "OWNER_INPUT_REQUIRED", "releaseOwnerRole": null, "approvedAtUtc": null}
+}
