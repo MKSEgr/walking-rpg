@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 import unittest
 from pathlib import Path
@@ -23,6 +24,7 @@ STAGE_ATTESTATION = restore_fixture.STAGE_ATTESTATION
 RESTORE_ATTESTATION = restore_fixture.RESTORE_ATTESTATION
 PUBLISHER_ATTESTATION = b"protected-rollback-publisher-attestation"
 INCIDENT_ATTESTATION = b"protected-incident-rollback-attestation"
+_ROLLBACK_SOURCE: tuple[str, str] | None = None
 
 
 def encoded(value: dict[str, Any]) -> bytes:
@@ -37,12 +39,37 @@ def template() -> dict[str, Any]:
     return json.loads(TEMPLATE.read_text(encoding="utf-8"))
 
 
+def rollback_source() -> tuple[str, str]:
+    global _ROLLBACK_SOURCE
+    if _ROLLBACK_SOURCE is None:
+        tree = subprocess.check_output(
+            ["git", "mktree"], cwd=ROOT, input="", text=True
+        ).strip()
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "walking-rpg fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_AUTHOR_DATE": "2000-01-01T00:00:00Z",
+            "GIT_COMMITTER_NAME": "walking-rpg fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_DATE": "2000-01-01T00:00:00Z",
+        }
+        source = subprocess.check_output(
+            ["git", "commit-tree", tree, "-m", "fixture rollback source"],
+            cwd=ROOT,
+            env=env,
+            text=True,
+        ).strip()
+        _ROLLBACK_SOURCE = source, tree
+    return _ROLLBACK_SOURCE
+
+
 def rollback_receipt() -> dict[str, Any]:
-    source = git("rev-parse", "HEAD^")
+    source, tree = rollback_source()
     return {
         "schemaVersion": "walking-rpg-backend-image-receipt-v1",
         "sourceGitSha": source,
-        "sourceGitTree": git("rev-parse", f"{source}^{{tree}}"),
+        "sourceGitTree": tree,
         "provenanceGuardBaselineSha": V.stage.PROVENANCE_BASELINE,
         "image": V.IMAGE,
         "digest": "sha256:" + "c" * 64,
