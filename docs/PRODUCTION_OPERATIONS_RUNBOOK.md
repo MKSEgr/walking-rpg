@@ -936,6 +936,53 @@ Durable event-result handoff retains its stricter rule:
 The exact receipt query and sequence remain in
 [the closed beta runbook](CLOSED_BETA_RUNBOOK.md#rollback).
 
+## Protected incident/rollback gate
+
+A real controlled failure and deployment rollback remain
+`EXTERNAL_VALIDATION_REQUIRED`. Use the
+[incident worksheet](evidence/incident-rollback-drill-template.md) during the
+approved stage drill and retain only its strict
+[`walking-rpg-protected-incident-rollback-v1` JSON record](evidence/incident-rollback-drill-template.json).
+
+Every incident claim must bind all of the following exact inputs:
+
+- the current `RECORDED VALIDATED` stage record and protected attestation;
+- the accepted real backup/restore record and protected attestation as the
+  data-recovery fallback;
+- the protected publisher receipt and attestation for the previous known-good
+  source tree and immutable image digest.
+
+The record reconciles alert, acknowledgement, stop, rollback and validation
+timestamps with the stated detection/RTO measurements. It accepts only a
+controlled non-production scenario, exact current/previous deployment IDs,
+complete health/auth/Home/activity/schema controls, safe cleanup and owner
+approval. Failed controls require separate defect issues.
+
+After the drill and cleanup, place only the sanitized JSON inputs in the
+approved draft-release asset location and run
+`.github/workflows/protected-incident-rollback-evidence.yml` behind
+`stage-release`. The workflow verifies the full chain, independently requests
+public `/livez` and `/readyz`, and attests the incident record's exact bytes. It
+does not inject a failure, change a deployment, restore data or upload logs.
+
+Verify the retained chain with:
+
+```bash
+python3 scripts/ci/verify_incident_rollback_evidence.py incident-evidence.json \
+  --stage-evidence stage-deployment-evidence.json \
+  --stage-evidence-attestation stage-deployment-evidence-attestation.jsonl \
+  --restore-evidence backup-restore-evidence.json \
+  --restore-evidence-attestation backup-restore-evidence-attestation.jsonl \
+  --rollback-receipt rollback-image-receipt.json \
+  --rollback-receipt-attestation rollback-image-receipt-attestation.jsonl \
+  --evidence-attestation incident-evidence-attestation.jsonl \
+  --require-validated
+```
+
+`--require-recorded` accepts an honest no-run `BLOCKED` handoff without
+external claims. `--prepare-attestation` is only the protected workflow
+preflight; downstream validation still requires its final attestation.
+
 ## External validation checklist
 
 Do not mark A4 operational validation complete until all are evidenced:
@@ -945,6 +992,6 @@ Do not mark A4 operational validation complete until all are evidenced:
 - deployed management network policy;
 - external WAF/gateway or distributed abuse controls where required;
 - dashboards, alerting, log retention/redaction and incident ownership;
-- rollback drill;
+- rollback drill verified through the protected incident evidence contract;
 - backup scheduling, encryption, retention, PITR and RPO/RTO policy;
 - dated restore of a real backup in an isolated environment.

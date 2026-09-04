@@ -265,7 +265,8 @@ TASK-010 drills:
 4. record PITR availability and recovery window;
 5. perform the dated real-backup restore only under TASK-009 in an isolated
    target using the existing evidence template;
-6. perform alert/stop/deployment rollback under TASK-010.
+6. perform alert/stop/deployment rollback under TASK-010 and retain the strict
+   [protected incident/rollback evidence](PRODUCTION_OPERATIONS_RUNBOOK.md#protected-incidentrollback-gate).
 
 Ordinary rollback never uses a destructive database restore. Once new content
 or schema has accepted writes incompatible with an older binary, use a forward

@@ -72,6 +72,10 @@ fail-closed [protected restore evidence contract](PRODUCTION_OPERATIONS_RUNBOOK.
 с точным stage и protected attestation. Наличие Flyway V14, успешный CI startup или
 `scope=SYNTHETIC_CI` не является доказательством production
 deployment/restore.
+Alert/stop/deployment rollback принимается только по
+[protected incident evidence contract](PRODUCTION_OPERATIONS_RUNBOOK.md#protected-incidentrollback-gate),
+который связывает текущий stage, принятый restore fallback и publisher-attested
+previous image; CI или свободный отчёт этот gate не закрывают.
 Drain старого backend pool и последующая активация staged `chapter-1-v2` по
 production runbook также требуют внешнего deployment evidence; CI подтверждает
 только fail-closed исходное состояние и кодовые read/write gates.
