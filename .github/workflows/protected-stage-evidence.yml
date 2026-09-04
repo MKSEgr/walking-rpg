@@ -1,0 +1,99 @@
+name: Protected stage evidence attestation
+
+on:
+  workflow_dispatch:
+    inputs:
+      evidence_asset_id:
+        description: Numeric ID of the sanitized stage evidence asset
+        required: true
+        type: string
+      publisher_receipt_asset_id:
+        description: Numeric ID of the backend publisher receipt asset
+        required: true
+        type: string
+      publisher_receipt_attestation_asset_id:
+        description: Numeric ID of the publisher receipt attestation bundle
+        required: true
+        type: string
+      source_sha:
+        description: Exact current master commit represented by the deployment
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: stage-release
+    steps:
+      - name: Check out exact deployment source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download and preflight the protected evidence chain
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE_ASSET_ID: ${{ inputs.evidence_asset_id }}
+          PUBLISHER_RECEIPT_ASSET_ID: ${{ inputs.publisher_receipt_asset_id }}
+          PUBLISHER_RECEIPT_ATTESTATION_ASSET_ID: ${{ inputs.publisher_receipt_attestation_asset_id }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/master'
+          test "$GITHUB_WORKFLOW_SHA" = "$GITHUB_SHA"
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/master" --jq .object.sha)" = "$SOURCE_SHA"
+
+          download_asset() {
+            local asset_id="$1"
+            local output="$2"
+            [[ "$asset_id" =~ ^[0-9]+$ ]]
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" \
+              > "$output"
+            test -s "$output"
+          }
+
+          download_asset "$EVIDENCE_ASSET_ID" stage-deployment-evidence.json
+          download_asset "$PUBLISHER_RECEIPT_ASSET_ID" backend-image-receipt.json
+          download_asset "$PUBLISHER_RECEIPT_ATTESTATION_ASSET_ID" backend-image-receipt-attestation.jsonl
+
+          python3 scripts/ci/verify_stage_deployment_evidence.py \
+            stage-deployment-evidence.json \
+            --publisher-receipt backend-image-receipt.json \
+            --publisher-receipt-attestation backend-image-receipt-attestation.jsonl \
+            --prepare-attestation
+
+          endpoint="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          evidence = json.loads(Path("stage-deployment-evidence.json").read_text())
+          print(evidence["stage"]["publicEndpoint"])
+          PY
+          )"
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+            --max-time 15 "$endpoint/livez" >/dev/null
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+            --max-time 15 "$endpoint/readyz" >/dev/null
+      - name: Attest exact stage evidence bytes
+        id: attest
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.1
+        with:
+          subject-path: stage-deployment-evidence.json
+      - name: Retain offline stage evidence attestation bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: stage-deployment-evidence-attestation-bundle
+          path: ${{ steps.attest.outputs.bundle-path }}
+          if-no-files-found: error
+          retention-days: 30

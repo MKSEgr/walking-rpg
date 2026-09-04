@@ -4,6 +4,11 @@ Do not commit or publish this file as completed evidence until the real checks
 were performed. Never include credentials, CA contents, tokens, raw logs,
 identity data or health data.
 
+This Markdown file is an operator worksheet, not machine-verifiable completion
+evidence. The retained source of truth is the strict
+[`digitalocean-stage-deployment-template.json`](digitalocean-stage-deployment-template.json)
+record and its protected attestation, as described in the stage runbook.
+
 ## Identity
 
 | Field | Value |

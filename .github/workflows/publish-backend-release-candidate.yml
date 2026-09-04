@@ -27,7 +27,9 @@ jobs:
     environment: stage-release
     permissions:
       actions: read
+      attestations: write
       contents: read
+      id-token: write
       packages: write
     env:
       SOURCE_GIT_SHA: ${{ inputs.source_sha }}
@@ -298,6 +300,12 @@ jobs:
             > build/release/backend-image-receipt.json.sha256
           printf 'image_digest=%s\n' "$IMAGE_DIGEST" >> "$GITHUB_OUTPUT"
 
+      - name: Attest exact backend image receipt
+        id: attest-receipt
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.1
+        with:
+          subject-path: build/release/backend-image-receipt.json
+
       - name: Upload backend image receipt
         id: upload-receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -306,6 +314,7 @@ jobs:
           path: |
             build/release/backend-image-receipt.json
             build/release/backend-image-receipt.json.sha256
+            ${{ steps.attest-receipt.outputs.bundle-path }}
           if-no-files-found: error
           retention-days: 30
 

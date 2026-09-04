@@ -172,7 +172,7 @@ recovery drills.
 
 Реализация:
 
-- развернуть protected production-like stage ([#151](https://github.com/MKSEgr/walking-rpg/issues/151)) из immutable image digest;
+- развернуть protected production-like stage ([#151](https://github.com/MKSEgr/walking-rpg/issues/151)) из immutable image digest и проверить его fail-closed [deployment evidence contract](DIGITALOCEAN_STAGE_RUNBOOK.md), не принимающий repository CI за внешний deployment;
 - настроить managed PostgreSQL, verify-full TLS, least-privilege role и
   protected secret delivery;
 - проверить `/livez`, `/readyz`, private management/metrics, WAF/rate limits,
