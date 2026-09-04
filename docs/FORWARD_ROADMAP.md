@@ -232,7 +232,7 @@ Exit gate:
   ([#157](https://github.com/MKSEgr/walking-rpg/issues/157));
 - проверить developer accounts, application IDs и public URLs ([#152](https://github.com/MKSEgr/walking-rpg/issues/152));
 - создать protected signed internal candidates ([#158](https://github.com/MKSEgr/walking-rpg/issues/158));
-- проверить install, first launch, upgrade и rollback на internal tracks ([#160](https://github.com/MKSEgr/walking-rpg/issues/160));
+- проверить install, first launch, upgrade и rollback на internal tracks ([#160](https://github.com/MKSEgr/walking-rpg/issues/160)) по fail-closed [internal-track evidence contract](INTERNAL_TRACK_VALIDATION.md), не принимающему CI за physical run;
 - провести first-journey study ([#161](https://github.com/MKSEgr/walking-rpg/issues/161));
 - измерить permission funnel, first ENERGY, first decision, first reward,
   time-to-value, errors, battery и qualitative comprehension;

@@ -1,0 +1,126 @@
+name: Protected internal-track evidence attestation
+
+on:
+  workflow_dispatch:
+    inputs:
+      evidence_asset_id:
+        description: Numeric ID of the sanitized internal-track evidence asset
+        required: true
+        type: string
+      signed_candidate_asset_id:
+        description: Numeric ID of the signed-candidate evidence asset
+        required: true
+        type: string
+      signed_candidate_attestation_asset_id:
+        description: Numeric ID of the signed-candidate evidence attestation bundle
+        required: true
+        type: string
+      account_readiness_asset_id:
+        description: Numeric ID of the store-account readiness evidence asset
+        required: true
+        type: string
+      ios_artifact_asset_id:
+        description: Numeric ID of the signed IPA asset
+        required: true
+        type: string
+      ios_artifact_attestation_asset_id:
+        description: Numeric ID of the IPA attestation bundle
+        required: true
+        type: string
+      android_artifact_asset_id:
+        description: Numeric ID of the signed AAB asset
+        required: true
+        type: string
+      android_artifact_attestation_asset_id:
+        description: Numeric ID of the AAB attestation bundle
+        required: true
+        type: string
+      source_sha:
+        description: Exact current master commit represented by every record
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest-evidence:
+    runs-on: macos-26
+    timeout-minutes: 20
+    environment: protected-mobile-signing
+    steps:
+      - name: Check out exact candidate source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download and verify the complete evidence chain
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE_ASSET_ID: ${{ inputs.evidence_asset_id }}
+          SIGNED_CANDIDATE_ASSET_ID: ${{ inputs.signed_candidate_asset_id }}
+          SIGNED_CANDIDATE_ATTESTATION_ASSET_ID: ${{ inputs.signed_candidate_attestation_asset_id }}
+          ACCOUNT_READINESS_ASSET_ID: ${{ inputs.account_readiness_asset_id }}
+          IOS_ARTIFACT_ASSET_ID: ${{ inputs.ios_artifact_asset_id }}
+          IOS_ARTIFACT_ATTESTATION_ASSET_ID: ${{ inputs.ios_artifact_attestation_asset_id }}
+          ANDROID_ARTIFACT_ASSET_ID: ${{ inputs.android_artifact_asset_id }}
+          ANDROID_ARTIFACT_ATTESTATION_ASSET_ID: ${{ inputs.android_artifact_attestation_asset_id }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/master" --jq .object.sha)" = "$SOURCE_SHA"
+
+          download_asset() {
+            local asset_id="$1"
+            local output="$2"
+            [[ "$asset_id" =~ ^[0-9]+$ ]]
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" \
+              > "$output"
+            test -s "$output"
+          }
+
+          download_asset "$EVIDENCE_ASSET_ID" internal-track-evidence.json
+          download_asset "$SIGNED_CANDIDATE_ASSET_ID" signed-candidate-evidence.json
+          download_asset "$SIGNED_CANDIDATE_ATTESTATION_ASSET_ID" signed-candidate-evidence-attestation.jsonl
+          download_asset "$ACCOUNT_READINESS_ASSET_ID" store-account-readiness.json
+          download_asset "$IOS_ARTIFACT_ASSET_ID" candidate.ipa
+          download_asset "$IOS_ARTIFACT_ATTESTATION_ASSET_ID" ios-artifact-attestation.jsonl
+          download_asset "$ANDROID_ARTIFACT_ASSET_ID" candidate.aab
+          download_asset "$ANDROID_ARTIFACT_ATTESTATION_ASSET_ID" android-artifact-attestation.jsonl
+
+          BUNDLETOOL="$RUNNER_TEMP/bundletool-all-1.18.3.jar"
+          curl --fail --location --silent --show-error \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
+            --output "$BUNDLETOOL"
+          echo 'a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  '"$BUNDLETOOL" \
+            | shasum -a 256 --check
+
+          BUNDLETOOL_JAR="$BUNDLETOOL" python3 scripts/ci/verify_internal_track_evidence.py \
+            internal-track-evidence.json \
+            --signed-candidate signed-candidate-evidence.json \
+            --signed-candidate-attestation signed-candidate-evidence-attestation.jsonl \
+            --account-readiness store-account-readiness.json \
+            --ios-artifact candidate.ipa \
+            --ios-artifact-attestation ios-artifact-attestation.jsonl \
+            --android-artifact candidate.aab \
+            --android-artifact-attestation android-artifact-attestation.jsonl \
+            --prepare-attestation
+      - name: Attest exact internal-track evidence bytes
+        id: attest
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.1
+        with:
+          subject-path: internal-track-evidence.json
+      - name: Retain offline evidence attestation bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: internal-track-evidence-attestation-bundle
+          path: ${{ steps.attest.outputs.bundle-path }}
+          if-no-files-found: error
+          retention-days: 30

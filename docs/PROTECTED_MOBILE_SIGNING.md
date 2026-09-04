@@ -145,6 +145,12 @@ physical install/distribution work. A committed `TEMPLATE`, a structurally
 valid `BLOCKED` record, or ordinary unsigned/no-codesign CI output is not
 signed-candidate evidence.
 
+After a candidate is ready, clean-install, upgrade and stop/rollback results
+are recorded separately through the fail-closed
+[`INTERNAL_TRACK_VALIDATION.md`](INTERNAL_TRACK_VALIDATION.md) contract. A
+signed-candidate availability claim does not by itself satisfy that physical
+validation gate.
+
 `--require-ready` is an online, fail-closed check. It resolves `master` and the
 successful `CI` and `Release quality` runs through the GitHub API rather than
 trusting a local remote-tracking ref or copied conclusion strings. The checkout
