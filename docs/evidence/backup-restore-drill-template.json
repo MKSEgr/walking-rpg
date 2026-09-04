@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "walking-rpg-protected-backup-restore-v1",
+  "recordStatus": "TEMPLATE",
+  "overallStatus": "OWNER_INPUT_REQUIRED",
+  "recordedAtUtc": null,
+  "source": {
+    "repository": null,
+    "commitSha": null,
+    "treeSha": null,
+    "image": null,
+    "imageDigest": null,
+    "stageEvidenceSha256": null,
+    "stageEvidenceAttestationSha256": null
+  },
+  "backup": {
+    "status": "OWNER_INPUT_REQUIRED",
+    "backupId": null,
+    "archiveSha256": null,
+    "createdAtUtc": null,
+    "recoveryPointUtc": null,
+    "retentionPolicyRef": null,
+    "encryptionAtRest": null,
+    "pitrEnabled": null
+  },
+  "target": {
+    "status": "OWNER_INPUT_REQUIRED",
+    "targetId": null,
+    "provider": null,
+    "region": null,
+    "isolatedFromProduction": null,
+    "productionTrafficDisabled": null,
+    "sourceUnchanged": null,
+    "postgresVersion": null,
+    "highestFlywayVersion": null
+  },
+  "drill": {
+    "status": "OWNER_INPUT_REQUIRED",
+    "startedAtUtc": null,
+    "restoreCompletedAtUtc": null,
+    "validationCompletedAtUtc": null,
+    "cleanupCompletedAtUtc": null,
+    "expectedRpoSeconds": null,
+    "observedRpoSeconds": null,
+    "expectedRtoSeconds": null,
+    "observedRtoSeconds": null,
+    "ownerRole": null,
+    "nextActionDueAtUtc": null,
+    "blockerCategory": null,
+    "defectIssueNumbers": []
+  },
+  "controls": {
+    "ownerApproved": null,
+    "protectedSecretAccess": null,
+    "noSensitiveEvidence": null,
+    "archiveChecksumVerified": null,
+    "backupEncrypted": null,
+    "targetEmpty": null,
+    "targetIsolated": null,
+    "restoreExitZero": null,
+    "flywayHistoryCurrent": null,
+    "expectedSchemasPresent": null,
+    "applicationTablesPresent": null,
+    "rowCountControlsMatch": null,
+    "invariantHashControlsMatch": null,
+    "sequencesValid": null,
+    "applicationReady": null,
+    "smokeReadOnly": null,
+    "roleAclValid": null,
+    "pitrVerified": null,
+    "sourceUnchanged": null,
+    "noProductionTraffic": null,
+    "rpoWithinTarget": null,
+    "rtoWithinTarget": null
+  },
+  "cleanup": {
+    "targetDisposition": null,
+    "targetRetentionPolicyRef": null,
+    "temporaryCredentialsRevoked": null,
+    "temporaryArchiveCopiesRemoved": null,
+    "secretExposureDetected": null,
+    "evidenceContainsPersonalData": null
+  },
+  "approval": {
+    "status": "OWNER_INPUT_REQUIRED",
+    "operationsOwnerRole": null,
+    "approvedAtUtc": null
+  }
+}

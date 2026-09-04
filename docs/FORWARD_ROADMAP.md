@@ -177,7 +177,7 @@ recovery drills.
   protected secret delivery;
 - проверить `/livez`, `/readyz`, private management/metrics, WAF/rate limits,
   redaction, alerting и log retention;
-- выполнить датированный restore фактического backup в isolation ([#154](https://github.com/MKSEgr/walking-rpg/issues/154));
+- выполнить датированный restore фактического backup в isolation ([#154](https://github.com/MKSEgr/walking-rpg/issues/154)) и проверить его fail-closed [protected restore evidence contract](PRODUCTION_OPERATIONS_RUNBOOK.md#actual-backuprestore-gate), не принимающий synthetic CI за внешний drill;
 - утвердить scheduling, encryption, retention, PITR и RPO/RTO;
 - провести deployment rollback и incident rehearsal ([#155](https://github.com/MKSEgr/walking-rpg/issues/155));
 - прогнать supported upgrade path и content activation/drain runbooks;

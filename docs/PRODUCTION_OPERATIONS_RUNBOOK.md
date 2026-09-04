@@ -208,8 +208,10 @@ TOC themselves. Neither mode proves a production restore.
 ## Actual backup/restore gate
 
 A real restore remains `EXTERNAL_VALIDATION_REQUIRED`. Use the
-[evidence template](evidence/backup-restore-drill-template.md) only after an
-owner-approved drill in an isolated protected environment.
+[Markdown evidence worksheet](evidence/backup-restore-drill-template.md) only
+after an owner-approved drill in an isolated protected environment, then retain
+the outcome in the strict
+[`walking-rpg-protected-backup-restore-v1` JSON record](evidence/backup-restore-drill-template.json).
 
 The dated evidence must cover:
 
@@ -225,6 +227,31 @@ The dated evidence must cover:
 - incident/rollback owner approval.
 
 Production credentials, dumps and connection strings must never be committed.
+The JSON contract intentionally contains only bounded identifiers, hashes,
+timestamps, booleans, measurements and issue numbers. The archive and raw
+database evidence stay outside GitHub.
+
+Any record containing a restore claim must bind the exact `RECORDED VALIDATED`
+stage record and its attestation from `.github/workflows/protected-stage-evidence.yml`.
+After cleanup, place only the sanitized JSON inputs in the approved draft-release
+asset location and run `.github/workflows/protected-backup-restore-evidence.yml`
+behind the same `stage-release` environment. That workflow confirms current
+master provenance, preflights the full record and attests its exact bytes; it
+does not perform the restore or upload a backup.
+
+Verify the retained chain with:
+
+```bash
+python3 scripts/ci/verify_backup_restore_evidence.py backup-restore-evidence.json \
+  --stage-evidence stage-deployment-evidence.json \
+  --stage-evidence-attestation stage-deployment-evidence-attestation.jsonl \
+  --evidence-attestation backup-restore-evidence-attestation.jsonl \
+  --require-validated
+```
+
+`--require-recorded` accepts an honest no-run `BLOCKED` handoff with no external
+claims. `--prepare-attestation` is only the protected workflow preflight;
+downstream consumers still require the final restore-evidence attestation.
 
 ## `chapter-1-v2` activation
 

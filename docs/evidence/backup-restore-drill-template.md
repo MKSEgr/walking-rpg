@@ -4,6 +4,12 @@ Use this template only for an owner-approved restore of a real protected backup
 into an isolated non-production target. The synthetic CI report is not a
 completed copy of this template.
 
+This Markdown file is an operator worksheet, not machine-verifiable completion
+evidence. Retain the result in the strict
+[`backup-restore-drill-template.json`](backup-restore-drill-template.json)
+format and authenticate its exact bytes through the protected workflow described
+in the production operations runbook.
+
 Do not include passwords, tokens, private hostnames, full connection strings,
 raw user data or a database dump.
 
