@@ -198,7 +198,9 @@ jobs:
 
       - name: Fail when mobile analysis failed
         if: steps.mobile-analyze.outputs.status != '0'
-        run: exit 1
+        run: |
+          cat /tmp/mobile-analyze.log
+          exit 1
 
       - name: Run tests
         run: flutter test --no-pub
