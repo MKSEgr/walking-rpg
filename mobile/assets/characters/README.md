@@ -52,8 +52,9 @@ hovers and glides, leading with the eyes and face plane while lateral facets and
 the curved tail/fan stabilize momentum. The three atlases share rendering,
 light logic and cell geometry without sharing silhouettes or locomotion.
 
-Home uses one non-looping idle pass for exact active `spark-v1`, `moss-v1` and
-`rune-v1` identities. The violet companion uses the current «Навигатор» naming
+Home v2 uses the detailed still scenes in `../scenes/` for exact active
+`spark-v1`, `moss-v1` and `rune-v1` identities. These atlases remain available
+for motion surfaces. The violet companion uses the current «Навигатор» naming
 while retaining the compatibility ID and `companion_rune_*` asset paths. Pet
 selection, evolution form, bond and active state still come from the accepted
 server snapshot; an atlas never chooses a pet, renames it or predicts
@@ -81,7 +82,7 @@ separate human identity: a practical hooded frontier suit, opaque turquoise
 navigation visor, grounded running and restrained hand-led gestures. Its full
 rules live in `docs/PILOT_ART_BIBLE.md`.
 
-Home may play one non-looping idle pass for the exact current universal pilot.
+Home v2 uses separate detailed still artwork for the current universal pilot.
 The account dossier and journal retain the static production portrait. The
 exact `navigator-v1` plus `pilot-scarf` presentation has its own atlas, so the
 cosmetic catalog preview can play the same single idle pass without dropping or
