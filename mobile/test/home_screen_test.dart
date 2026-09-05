@@ -4,16 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:walking_rpg_mobile/app/main_navigation_shell.dart';
 import 'package:walking_rpg_mobile/core/cache/read_snapshot_cache.dart';
-import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
-import 'package:walking_rpg_mobile/design_system/companion_motion.dart';
 import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_crew_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
-import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/domain/crafting_result.dart';
 import 'package:walking_rpg_mobile/features/equipment/domain/equipment_result.dart';
@@ -68,8 +66,9 @@ void main() {
       find.byKey(const Key('home-expedition-visual-stage')),
       findsOneWidget,
     );
-    final ChapterVista vista = tester.widget<ChapterVista>(vistaFinder);
-    expect(vista.progress, HomeSnapshot.demo.expeditionProgressValue);
+    final ExpeditionCrewScene scene = tester.widget<ExpeditionCrewScene>(
+      find.byType(ExpeditionCrewScene),
+    );
     expect(
       find.bySemanticsLabel(
         'Сигнал из туманного сектора, Внешний маяк, маршрут 0%',
@@ -124,15 +123,11 @@ void main() {
       const Key('home-active-companion-portrait'),
     );
     expect(portraitFinder, findsOneWidget);
-    final CompanionMotionPortrait portrait = tester
-        .widget<CompanionMotionPortrait>(portraitFinder);
-    expect(portrait.petId, 'spark-v1');
-    expect(portrait.evolutionStage, 0);
-    expect(portrait.hasMotionAsset, isTrue);
-    expect(find.byType(PilotMotionPortrait), findsOneWidget);
-    expect(find.byKey(const Key('home-pilot-motion-portrait')), findsOneWidget);
+    expect(scene.petId, 'spark-v1');
+    expect(scene.petEvolutionStage, 0);
+    expect(scene.sceneAsset, 'assets/scenes/home_crew_spark_v2.webp');
     expect(
-      find.byKey(const Key('pilot-motion-frame-navigator-v1-0-5')),
+      find.byKey(const Key('home-pilot-illustration')),
       findsOneWidget,
     );
     expect(find.bySemanticsLabel('Пилот Навигатор'), findsOneWidget);

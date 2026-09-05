@@ -9,7 +9,6 @@ import 'package:walking_rpg_mobile/core/localization/current_event_localizations
 import 'package:walking_rpg_mobile/core/localization/mandatory_journey_localizations.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
-import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/crafting_assembly_signal.dart';
@@ -1143,7 +1142,6 @@ class _HomeBody extends StatelessWidget {
                       child: _ExpeditionHero(
                         snapshot: snapshot,
                         completed: completed,
-                        scrollController: scrollController,
                       ),
                     ),
                     if (pendingEventResult != null) ...<Widget>[
@@ -1436,12 +1434,10 @@ class _ExpeditionHero extends StatelessWidget {
   const _ExpeditionHero({
     required this.snapshot,
     required this.completed,
-    required this.scrollController,
   });
 
   final HomeSnapshot snapshot;
   final bool completed;
-  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -1451,7 +1447,6 @@ class _ExpeditionHero extends StatelessWidget {
       children: <Widget>[
         _ExpeditionVistaStage(
           snapshot: snapshot,
-          scrollController: scrollController,
           expeditionName: context.l10n.currentExpeditionName(
             snapshot.expeditionId,
             snapshot.expeditionName,
@@ -1684,7 +1679,6 @@ class _ExpeditionDetails extends StatelessWidget {
 class _ExpeditionVistaStage extends StatelessWidget {
   const _ExpeditionVistaStage({
     required this.snapshot,
-    required this.scrollController,
     required this.expeditionName,
     required this.currentNodeName,
     required this.currentNodeId,
@@ -1695,7 +1689,6 @@ class _ExpeditionVistaStage extends StatelessWidget {
 
   final String expeditionName;
   final HomeSnapshot snapshot;
-  final ScrollController scrollController;
   final String currentNodeName;
   final String currentNodeId;
   final int journeyNumber;
@@ -1712,16 +1705,17 @@ class _ExpeditionVistaStage extends StatelessWidget {
                 kToolbarHeight -
                 244 -
                 (_effectiveTextScale(context) - 1).clamp(0, 2) * 160)
-            .clamp(148, 330)
+            .clamp(220, 330)
             .toDouble();
     final Widget vista = ExpeditionCrewScene(
       key: const Key('home-crew-scene'),
+      semanticLabel: '$expeditionName, $currentNodeName'
+          '${context.l10n.chapterProgressSemantics((progress * 100).round())}',
+      pilotId: snapshot.pilotId,
       pilotName: context.l10n.currentPilotName(
         snapshot.pilotId,
         snapshot.pilotName,
       ),
-      greetingLabel: context.l10n.homeGreetCrew,
-      scrollController: scrollController,
       petId: snapshot.petId,
       petName: context.l10n.currentPetName(snapshot.petId, snapshot.petName),
       petSpecies: snapshot.petSpecies == null
@@ -1732,13 +1726,6 @@ class _ExpeditionVistaStage extends StatelessWidget {
             ),
       petEvolutionStage: snapshot.petEvolutionStage,
       height: sceneHeight,
-      background: ChapterVista(
-        key: const Key('home-expedition-vista'),
-        semanticLabel: '$expeditionName, $currentNodeName',
-        progress: progress,
-        height: sceneHeight,
-        crewStage: true,
-      ),
     );
     final Widget badges = Wrap(
       spacing: 8,

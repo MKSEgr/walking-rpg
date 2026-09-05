@@ -688,7 +688,6 @@
   "homeNeedEnergyAction": "Earn more ENERGY",
   "homeRefreshState": "Refresh state",
   "homeCrewTitle": "Expedition crew",
-  "homeGreetCrew": "Greet the crew",
   "homeSceneSteps": "{steps} steps today",
   "@homeSceneSteps": {
     "placeholders": {

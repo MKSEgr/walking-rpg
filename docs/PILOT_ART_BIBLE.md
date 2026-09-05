@@ -36,9 +36,11 @@ it does not redesign the hood, visor, torso or palette.
 
 ## Rendering and movement
 
-- Expressively stylized painterly 2D soft science-fantasy, matching the crew
-  portraits and companion atlases. No photorealism, glossy 3D, chibi, anime,
-  pixel-art or heavy comic treatment.
+- Existing portraits and motion atlases retain their painterly soft
+  science-fantasy treatment. The owner's Home v2 direction supersedes that
+  surface's earlier stylization rule: detailed cinematic materials, realistic
+  moonlight, woven fabric, weathered brass and glass, while preserving the
+  identity above. No chibi, anime, toy plastic or heavy comic outlines.
 - The hood and visor lead recognition at small sizes. Body angle, shoulders,
   hands and stance carry emotion in that order.
 - Running is practical and balanced. Greeting uses one open hand. Tired motion
@@ -63,11 +65,11 @@ it does not redesign the hood, visor, torso or palette.
   remain an explicit scene-level decision.
 
 The v1 atlas and manifest live in
-`mobile/assets/characters/pilot_navigator_motion_v1.{png,json}`. Home may play
-one non-looping idle pass and an explicit finite greeting for the exact current
-`navigator-v1` presentation. The full-body Home scene shares a ground plane with
-the active companion and pauses motion outside the visible foreground.
-The account dossier and journal retain the existing static portrait.
+`mobile/assets/characters/pilot_navigator_motion_v1.{png,json}`. Home v2 uses
+separate static key art in `mobile/assets/scenes/`; it does not enlarge this
+192 × 208 atlas or expose a greeting control. Natural animation in the new
+detailed style needs a separate production pass. The account dossier and
+journal retain the existing static portrait.
 
 ## Cosmetics and future pilots
 
