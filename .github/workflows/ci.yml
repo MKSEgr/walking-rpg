@@ -179,7 +179,6 @@ jobs:
 
       - name: Analyze for diagnostics
         id: mobile-analyze
-        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set +e
@@ -202,14 +201,12 @@ jobs:
         run: exit 1
 
       - name: Run tests
-        if: ${{ !cancelled() }}
         run: flutter test --no-pub
 
       - name: Render Home visual fixtures
         if: ${{ !cancelled() }}
         run: >-
           flutter test --no-pub --dart-define=HOME_SCENE_CAPTURE=true
-          --dart-define=HOME_SCENE_LOG_EXPORT=true
           test/home_scene_preview_test.dart
 
       - name: Upload Home visual fixtures

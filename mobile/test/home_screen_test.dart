@@ -914,7 +914,9 @@ void main() {
     expect(
       tester.getSize(nodeSignal).width,
       lessThanOrEqualTo(
-        tester.getSize(find.byKey(const Key('home-expedition-visual-stage'))).width,
+        tester
+            .getSize(find.byKey(const Key('home-expedition-visual-stage')))
+            .width,
       ),
     );
 

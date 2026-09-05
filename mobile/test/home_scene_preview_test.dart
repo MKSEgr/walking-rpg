@@ -1,6 +1,5 @@
 // Render the real Home widget with synthetic accepted fixtures. These captures
 // support design review and are never physical-device evidence.
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -202,19 +201,6 @@ void main() {
         final File file = File('build/home-previews/${scenario.name}.png');
         await file.parent.create(recursive: true);
         await file.writeAsBytes(bytes.buffer.asUint8List());
-        if (const bool.fromEnvironment('HOME_SCENE_LOG_EXPORT')) {
-          stdout.writeln('HOME_PREVIEW_BEGIN:${scenario.name}');
-          final String encoded = base64Encode(bytes.buffer.asUint8List());
-          for (int index = 0; index < encoded.length; index += 800) {
-            final int end = index + 800 < encoded.length
-                ? index + 800
-                : encoded.length;
-            stdout.writeln(
-              'HOME_PREVIEW_DATA:${encoded.substring(index, end)}',
-            );
-          }
-          stdout.writeln('HOME_PREVIEW_END:${scenario.name}');
-        }
         image.dispose();
       });
     }, skip: !_capture);

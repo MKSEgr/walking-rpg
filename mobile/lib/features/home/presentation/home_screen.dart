@@ -1130,7 +1130,8 @@ class _HomeBody extends StatelessWidget {
                     ],
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight: event == null &&
+                        minHeight:
+                            event == null &&
                                 pendingEventResult == null &&
                                 viewport.maxWidth < 600 &&
                                 viewport.maxHeight < 1000
