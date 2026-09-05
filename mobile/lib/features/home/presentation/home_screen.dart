@@ -1106,7 +1106,8 @@ class _HomeBody extends StatelessWidget {
         (!completed && (eventReady || spendableEnergy <= 0));
 
     return ExpeditionBackdrop(
-      child: Stack(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints viewport) => Stack(
         children: <Widget>[
           ListView(
             controller: scrollController,
@@ -1127,10 +1128,17 @@ class _HomeBody extends StatelessWidget {
                     CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
                     const SizedBox(height: 14),
                   ],
-                  _ExpeditionHero(
-                    snapshot: snapshot,
-                    completed: completed,
-                    scrollController: scrollController,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: event == null && pendingEventResult == null
+                          ? (viewport.maxHeight - 14).clamp(0, double.infinity).toDouble()
+                          : 0,
+                    ),
+                    child: _ExpeditionHero(
+                      snapshot: snapshot,
+                      completed: completed,
+                      scrollController: scrollController,
+                    ),
                   ),
                   if (pendingEventResult != null) ...<Widget>[
                     const SizedBox(height: 20),
@@ -1301,6 +1309,7 @@ class _HomeBody extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -1689,9 +1698,16 @@ class _ExpeditionVistaStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double sceneHeight = MediaQuery.sizeOf(context).height < 740
-        ? 290
-        : 330;
+    // Leave room for navigation, the action dock and wrapping labels. On short
+    // phones with enlarged text the whole cast scales down together.
+    final double sceneHeight =
+        (MediaQuery.sizeOf(context).height -
+                NavigationChromeInsets.bottomDockInsetOf(context) -
+                kToolbarHeight -
+                244 -
+                (_effectiveTextScale(context) - 1).clamp(0, 2) * 160)
+            .clamp(148, 330)
+            .toDouble();
     final Widget vista = ExpeditionCrewScene(
       key: const Key('home-crew-scene'),
       pilotName: context.l10n.currentPilotName(

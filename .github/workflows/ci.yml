@@ -179,6 +179,7 @@ jobs:
 
       - name: Analyze for diagnostics
         id: mobile-analyze
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set +e
@@ -201,6 +202,7 @@ jobs:
         run: exit 1
 
       - name: Run tests
+        if: ${{ !cancelled() }}
         run: flutter test --no-pub
 
       - name: Render Home visual fixtures

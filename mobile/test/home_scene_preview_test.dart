@@ -30,6 +30,13 @@ void main() {
       );
     }
     await font.load();
+    final FontLoader icons = FontLoader('MaterialIcons');
+    icons.addFont(
+      File(
+        '$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+      ).readAsBytes().then((bytes) => ByteData.sublistView(bytes)),
+    );
+    await icons.load();
   });
 
   const List<
@@ -114,11 +121,16 @@ void main() {
     testWidgets('render ${scenario.name}', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(scenario.size);
       addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = scenario.size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       const Key captureKey = Key('home-preview');
       await tester.pumpWidget(
         RepaintBoundary(
           key: captureKey,
           child: MaterialApp(
+            debugShowCheckedModeBanner: false,
             locale: Locale(scenario.locale),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -176,6 +188,8 @@ void main() {
         ]) {
           final Rect bounds = tester.getRect(find.byKey(Key(actor)));
           expect(scene.contains(bounds.center), isTrue);
+          expect(bounds.top, greaterThanOrEqualTo(scene.top));
+          expect(bounds.bottom, lessThanOrEqualTo(scene.bottom));
         }
       }
       final RenderRepaintBoundary boundary = tester
@@ -195,7 +209,9 @@ void main() {
             final int end = index + 800 < encoded.length
                 ? index + 800
                 : encoded.length;
-            stdout.writeln('HOME_PREVIEW_DATA:${encoded.substring(index, end)}');
+            stdout.writeln(
+              'HOME_PREVIEW_DATA:${encoded.substring(index, end)}',
+            );
           }
           stdout.writeln('HOME_PREVIEW_END:${scenario.name}');
         }

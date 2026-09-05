@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
@@ -130,8 +132,14 @@ class _ExpeditionCrewSceneState extends State<ExpeditionCrewScene>
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final double width = constraints.maxWidth;
-            final double pilotSize = (width * 0.82).clamp(210, 300).toDouble();
-            final double petSize = (width * 0.44).clamp(116, 168).toDouble();
+            final double pilotSize = math.min(
+              width * 0.82,
+              math.min(300, widget.height - 48),
+            );
+            final double petSize = math.min(
+              width * 0.44,
+              math.min(168, pilotSize * 0.65),
+            );
             return Stack(
               fit: StackFit.expand,
               children: <Widget>[
@@ -147,7 +155,7 @@ class _ExpeditionCrewSceneState extends State<ExpeditionCrewScene>
                   ),
                 ),
                 Positioned(
-                  left: hasPet ? width * 0.025 : (width - pilotSize) / 2,
+                  left: width * (hasPet ? 0.4 : 0.5) - pilotSize / 2,
                   bottom: 26,
                   child: KeyedSubtree(
                     key: ValueKey<String>('pilot-reaction-$_greeting'),
@@ -166,7 +174,7 @@ class _ExpeditionCrewSceneState extends State<ExpeditionCrewScene>
                 ),
                 if (hasPet)
                   Positioned(
-                    left: width * 0.53,
+                  left: width * 0.75 - petSize / 2,
                     bottom: 25,
                     child: KeyedSubtree(
                       key: ValueKey<String>('pet-reaction-$_greeting'),
@@ -257,7 +265,7 @@ class _CrewGroundPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
-    for (final double x in <double>[hasPet ? 0.43 : 0.5, if (hasPet) 0.75]) {
+    for (final double x in <double>[hasPet ? 0.4 : 0.5, if (hasPet) 0.75]) {
       final Rect shadow = Rect.fromCenter(
         center: Offset(size.width * x, size.height - 34),
         width: size.width * 0.27,
