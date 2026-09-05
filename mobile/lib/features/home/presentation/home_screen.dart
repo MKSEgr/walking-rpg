@@ -1431,10 +1431,7 @@ class _HomeMenuLabel extends StatelessWidget {
 }
 
 class _ExpeditionHero extends StatelessWidget {
-  const _ExpeditionHero({
-    required this.snapshot,
-    required this.completed,
-  });
+  const _ExpeditionHero({required this.snapshot, required this.completed});
 
   final HomeSnapshot snapshot;
   final bool completed;
@@ -1705,11 +1702,12 @@ class _ExpeditionVistaStage extends StatelessWidget {
                 kToolbarHeight -
                 244 -
                 (_effectiveTextScale(context) - 1).clamp(0, 2) * 160)
-            .clamp(220, 330)
+            .clamp(148, 330)
             .toDouble();
     final Widget vista = ExpeditionCrewScene(
       key: const Key('home-crew-scene'),
-      semanticLabel: '$expeditionName, $currentNodeName'
+      semanticLabel:
+          '$expeditionName, $currentNodeName'
           '${context.l10n.chapterProgressSemantics((progress * 100).round())}',
       pilotId: snapshot.pilotId,
       pilotName: context.l10n.currentPilotName(

@@ -91,7 +91,9 @@ class ExpeditionCrewScene extends StatelessWidget {
                           child: Semantics(
                             key: const Key('home-pilot-illustration'),
                             image: true,
-                            label: context.l10n.pilotPortraitSemantics(pilotName),
+                            label: context.l10n.pilotPortraitSemantics(
+                              pilotName,
+                            ),
                             child: const SizedBox.expand(),
                           ),
                         ),

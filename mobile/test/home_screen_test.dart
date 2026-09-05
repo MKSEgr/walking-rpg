@@ -126,10 +126,7 @@ void main() {
     expect(scene.petId, 'spark-v1');
     expect(scene.petEvolutionStage, 0);
     expect(scene.sceneAsset, 'assets/scenes/home_crew_spark_v2.webp');
-    expect(
-      find.byKey(const Key('home-pilot-illustration')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('home-pilot-illustration')), findsOneWidget);
     expect(find.bySemanticsLabel('Пилот Навигатор'), findsOneWidget);
     expect(
       find.byKey(const Key('home-team-companion-portrait')),

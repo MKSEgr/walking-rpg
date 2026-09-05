@@ -174,23 +174,21 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      if (scenario.scale == 1) {
-        final Rect scene = tester.getRect(
-          find.byKey(const Key('home-crew-scene')),
-        );
-        final Rect action = tester.getRect(
-          find.byKey(const Key('home-sticky-action-panel')),
-        );
-        expect(scene.bottom, lessThanOrEqualTo(action.top));
-        for (final String actor in <String>[
-          'home-pilot-illustration',
-          'home-active-companion-portrait',
-        ]) {
-          final Rect bounds = tester.getRect(find.byKey(Key(actor)));
-          expect(scene.contains(bounds.center), isTrue);
-          expect(bounds.top, greaterThanOrEqualTo(scene.top));
-          expect(bounds.bottom, lessThanOrEqualTo(scene.bottom));
-        }
+      final Rect scene = tester.getRect(
+        find.byKey(const Key('home-crew-scene')),
+      );
+      final Rect action = tester.getRect(
+        find.byKey(const Key('home-sticky-action-panel')),
+      );
+      expect(scene.bottom, lessThanOrEqualTo(action.top));
+      for (final String actor in <String>[
+        'home-pilot-illustration',
+        'home-active-companion-portrait',
+      ]) {
+        final Rect bounds = tester.getRect(find.byKey(Key(actor)));
+        expect(scene.contains(bounds.center), isTrue);
+        expect(bounds.top, greaterThanOrEqualTo(scene.top));
+        expect(bounds.bottom, lessThanOrEqualTo(scene.bottom));
       }
       final RenderRepaintBoundary boundary = tester
           .renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
@@ -207,7 +205,9 @@ void main() {
           stdout.writeln('HOME_PREVIEW_BEGIN:${scenario.name}');
           for (int start = 0; start < encoded.length; start += 800) {
             final int end = (start + 800).clamp(0, encoded.length);
-            stdout.writeln('HOME_PREVIEW_DATA:${encoded.substring(start, end)}');
+            stdout.writeln(
+              'HOME_PREVIEW_DATA:${encoded.substring(start, end)}',
+            );
           }
           stdout.writeln('HOME_PREVIEW_END:${scenario.name}');
         }
