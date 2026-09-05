@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:walking_rpg_mobile/core/localization/app_localizations_extension.dart';
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/companion_motion.dart';
 import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
@@ -174,7 +173,7 @@ class _ExpeditionCrewSceneState extends State<ExpeditionCrewScene>
                 ),
                 if (hasPet)
                   Positioned(
-                  left: width * 0.75 - petSize / 2,
+                    left: width * 0.75 - petSize / 2,
                     bottom: 25,
                     child: KeyedSubtree(
                       key: ValueKey<String>('pet-reaction-$_greeting'),
@@ -202,21 +201,6 @@ class _ExpeditionCrewSceneState extends State<ExpeditionCrewScene>
                     tooltip: widget.greetingLabel,
                     onPressed: play ? () => setState(() => _greeting++) : null,
                     icon: const Icon(Icons.waving_hand_outlined, size: 21),
-                  ),
-                ),
-                Positioned(
-                  bottom: 10,
-                  left: 18,
-                  child: ExcludeSemantics(
-                    child: Text(
-                      context.l10n.homeCrewTitle.toUpperCase(),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        letterSpacing: 2,
-                        color: WalkingRpgColors.moonMist.withValues(
-                          alpha: 0.65,
-                        ),
-                      ),
-                    ),
                   ),
                 ),
               ],

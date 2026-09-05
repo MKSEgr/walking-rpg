@@ -46,6 +46,11 @@ void main() {
     final ValueNotifier<bool> visible = ValueNotifier<bool>(true);
     addTearDown(scroll.dispose);
     addTearDown(visible.dispose);
+    addTearDown(
+      () => tester.binding.handleAppLifecycleStateChanged(
+        AppLifecycleState.resumed,
+      ),
+    );
     await tester.pumpWidget(
       ValueListenableBuilder<bool>(
         valueListenable: visible,
@@ -71,6 +76,11 @@ void main() {
     expect(playing(), isFalse);
     visible.value = true;
     await tester.pumpAndSettle();
+    // The platform leaves resumed via inactive. A fully paused scheduler does
+    // not build frames, so inspect the stopped actors before pausing it.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pumpAndSettle();
+    expect(playing(), isFalse);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     await tester.pumpAndSettle();
     expect(playing(), isFalse);

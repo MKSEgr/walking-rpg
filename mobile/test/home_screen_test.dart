@@ -911,7 +911,12 @@ void main() {
       const Key('expedition-node-signal-ash-orbit-ashOrbit'),
     );
     expect(nodeSignal, findsOneWidget);
-    expect(tester.getSize(nodeSignal).width, lessThanOrEqualTo(236));
+    expect(
+      tester.getSize(nodeSignal).width,
+      lessThanOrEqualTo(
+        tester.getSize(find.byKey(const Key('home-expedition-visual-stage'))).width,
+      ),
+    );
 
     await _scrollAboveStickyAction(
       tester,

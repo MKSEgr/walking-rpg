@@ -1108,207 +1108,212 @@ class _HomeBody extends StatelessWidget {
     return ExpeditionBackdrop(
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints viewport) => Stack(
-        children: <Widget>[
-          ListView(
-            controller: scrollController,
-            padding: EdgeInsets.fromLTRB(
-              20,
-              14,
-              20,
-              (activitySyncAction == null
-                      ? _homeContentBaseBottomPadding
-                      : _homeContentWithSyncBaseBottomPadding) +
-                  bottomDockInset,
-            ),
-            children: <Widget>[
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  if (snapshot.cacheMetadata != null) ...<Widget>[
-                    CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
-                    const SizedBox(height: 14),
-                  ],
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: event == null && pendingEventResult == null
-                          ? (viewport.maxHeight - 14).clamp(0, double.infinity).toDouble()
-                          : 0,
-                    ),
-                    child: _ExpeditionHero(
-                      snapshot: snapshot,
-                      completed: completed,
-                      scrollController: scrollController,
-                    ),
-                  ),
-                  if (pendingEventResult != null) ...<Widget>[
-                    const SizedBox(height: 20),
-                    _PendingEventResultCard(
-                      result: pendingEventResult,
-                      readOnly: readOnly,
-                      acknowledging: isAcknowledging,
-                      onAcknowledge: onAcknowledgeEventResult,
-                    ),
-                  ],
-                  if (event != null) ...<Widget>[
-                    const SizedBox(height: 20),
-                    _EventCard(
-                      event: event,
-                      routeChoiceViewportKey: routeChoiceViewportKey,
-                      isResolving: isResolving,
-                      disabled:
-                          isResolving ||
-                          isAcknowledging ||
-                          readOnly ||
-                          pendingEventResult != null,
-                      onChoose: onResolve,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  _ExpeditionDetails(
-                    snapshot: snapshot,
-                    completed: completed,
-                    activitySubtitle: activitySubtitle,
-                  ),
-                  const SizedBox(height: 14),
-                  OutlinedButton.icon(
-                    onPressed: busy ? null : onRefresh,
-                    icon: const Icon(Icons.sync),
-                    label: Text(context.l10n.homeRefreshState),
-                  ),
-                  const SizedBox(height: 24),
-                  ExpeditionSectionTitle(
-                    title: context.l10n.homeCrewTitle,
-                    subtitle: context.l10n.homeCrewSubtitle,
-                    icon: Icons.group_outlined,
-                  ),
-                  const SizedBox(height: 12),
-                  _ExpeditionTeam(snapshot: snapshot),
-                  if (snapshot.petId != null &&
-                      snapshot.petSpecies != null &&
-                      snapshot.petEvolutionStage != null) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _ActiveCompanionCard(snapshot: snapshot),
-                  ],
-                  if (snapshot.equipment.isNotEmpty ||
-                      snapshot.inventory.isNotEmpty ||
-                      snapshot.craftingRecipes.isNotEmpty ||
-                      snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 24),
-                    ExpeditionSectionTitle(
-                      title: context.l10n.homeFieldKitTitle,
-                      subtitle: context.l10n.homeFieldKitSubtitle,
-                      icon: Icons.backpack_outlined,
-                    ),
-                  ],
-                  if (snapshot.equipment.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _EquipmentCard(
-                      slots: snapshot.equipment,
-                      equippedSlotCount: snapshot.equippedEquipmentSlotCount,
-                      readOnly: readOnly,
-                      busy: gameplayActionBlocked,
-                      changing: isChangingEquipment,
-                      onUnequip: onUnequip,
-                    ),
-                  ],
-                  if (snapshot.inventory.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _InventoryCard(
-                      items: snapshot.inventory,
-                      equippableItemCount:
-                          snapshot.equippableInventoryItemCount,
-                      readOnly: readOnly,
-                      busy: gameplayActionBlocked,
-                      changing: isChangingEquipment,
-                      onEquip: onEquip,
-                    ),
-                  ],
-                  if (snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _CraftingCard(
-                      recipes: snapshot.craftingRecipes,
-                      craftableRecipeCount: snapshot.craftableRecipeCount,
-                      recipeViewportKey: recipeViewportKey,
-                      readOnly: readOnly,
-                      busy: gameplayActionBlocked,
-                      crafting: isCrafting,
-                      onCraft: onCraft,
-                    ),
-                  ],
-                  if (snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _ItemUpgradeCard(
-                      upgrades: snapshot.itemUpgrades,
-                      readyItemUpgradeCount: snapshot.readyItemUpgradeCount,
-                      readOnly: readOnly,
-                      busy: gameplayActionBlocked,
-                      upgrading: isUpgrading,
-                      onUpgrade: onUpgrade,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  _StateFooter(snapshot: snapshot),
-                ],
+          children: <Widget>[
+            ListView(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(
+                20,
+                14,
+                20,
+                (activitySyncAction == null
+                        ? _homeContentBaseBottomPadding
+                        : _homeContentWithSyncBaseBottomPadding) +
+                    bottomDockInset,
               ),
-            ],
-          ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: _homeStickyActionBaseBottom + bottomDockInset,
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                key: stickyActionOcclusionKey,
-                child: ExpeditionPanel(
-                  key: const Key('home-sticky-action-panel'),
-                  tone: eventReady || pendingEventResult != null
-                      ? ExpeditionPanelTone.resonance
-                      : ExpeditionPanelTone.energy,
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      if (activitySyncAction != null) ...<Widget>[
-                        activitySyncAction!,
-                        const SizedBox(height: 8),
-                      ],
-                      FilledButton.icon(
-                        key: completed
-                            ? const Key('home-begin-next-journey')
-                            : const Key('home-advance-expedition'),
-                        onPressed: actionDisabled
-                            ? null
-                            : completed
-                            ? onBeginNextJourney
-                            : onAdvance,
-                        icon: isAdvancing || isBeginningJourney
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(
-                                completed
-                                    ? Icons.replay_outlined
-                                    : Icons.near_me_outlined,
-                              ),
-                        label: Text(
-                          actionLabel,
-                          maxLines: 2,
-                          overflow: TextOverflow.visible,
-                          textAlign: TextAlign.center,
-                        ),
+              children: <Widget>[
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    if (snapshot.cacheMetadata != null) ...<Widget>[
+                      CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
+                      const SizedBox(height: 14),
+                    ],
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: event == null &&
+                                pendingEventResult == null &&
+                                viewport.maxWidth < 600 &&
+                                viewport.maxHeight < 1000
+                            ? (viewport.maxHeight - 14)
+                                  .clamp(0, double.infinity)
+                                  .toDouble()
+                            : 0,
+                      ),
+                      child: _ExpeditionHero(
+                        snapshot: snapshot,
+                        completed: completed,
+                        scrollController: scrollController,
+                      ),
+                    ),
+                    if (pendingEventResult != null) ...<Widget>[
+                      const SizedBox(height: 20),
+                      _PendingEventResultCard(
+                        result: pendingEventResult,
+                        readOnly: readOnly,
+                        acknowledging: isAcknowledging,
+                        onAcknowledge: onAcknowledgeEventResult,
                       ),
                     ],
+                    if (event != null) ...<Widget>[
+                      const SizedBox(height: 20),
+                      _EventCard(
+                        event: event,
+                        routeChoiceViewportKey: routeChoiceViewportKey,
+                        isResolving: isResolving,
+                        disabled:
+                            isResolving ||
+                            isAcknowledging ||
+                            readOnly ||
+                            pendingEventResult != null,
+                        onChoose: onResolve,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _ExpeditionDetails(
+                      snapshot: snapshot,
+                      completed: completed,
+                      activitySubtitle: activitySubtitle,
+                    ),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      onPressed: busy ? null : onRefresh,
+                      icon: const Icon(Icons.sync),
+                      label: Text(context.l10n.homeRefreshState),
+                    ),
+                    const SizedBox(height: 24),
+                    ExpeditionSectionTitle(
+                      title: context.l10n.homeCrewTitle,
+                      subtitle: context.l10n.homeCrewSubtitle,
+                      icon: Icons.group_outlined,
+                    ),
+                    const SizedBox(height: 12),
+                    _ExpeditionTeam(snapshot: snapshot),
+                    if (snapshot.petId != null &&
+                        snapshot.petSpecies != null &&
+                        snapshot.petEvolutionStage != null) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _ActiveCompanionCard(snapshot: snapshot),
+                    ],
+                    if (snapshot.equipment.isNotEmpty ||
+                        snapshot.inventory.isNotEmpty ||
+                        snapshot.craftingRecipes.isNotEmpty ||
+                        snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 24),
+                      ExpeditionSectionTitle(
+                        title: context.l10n.homeFieldKitTitle,
+                        subtitle: context.l10n.homeFieldKitSubtitle,
+                        icon: Icons.backpack_outlined,
+                      ),
+                    ],
+                    if (snapshot.equipment.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _EquipmentCard(
+                        slots: snapshot.equipment,
+                        equippedSlotCount: snapshot.equippedEquipmentSlotCount,
+                        readOnly: readOnly,
+                        busy: gameplayActionBlocked,
+                        changing: isChangingEquipment,
+                        onUnequip: onUnequip,
+                      ),
+                    ],
+                    if (snapshot.inventory.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _InventoryCard(
+                        items: snapshot.inventory,
+                        equippableItemCount:
+                            snapshot.equippableInventoryItemCount,
+                        readOnly: readOnly,
+                        busy: gameplayActionBlocked,
+                        changing: isChangingEquipment,
+                        onEquip: onEquip,
+                      ),
+                    ],
+                    if (snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _CraftingCard(
+                        recipes: snapshot.craftingRecipes,
+                        craftableRecipeCount: snapshot.craftableRecipeCount,
+                        recipeViewportKey: recipeViewportKey,
+                        readOnly: readOnly,
+                        busy: gameplayActionBlocked,
+                        crafting: isCrafting,
+                        onCraft: onCraft,
+                      ),
+                    ],
+                    if (snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _ItemUpgradeCard(
+                        upgrades: snapshot.itemUpgrades,
+                        readyItemUpgradeCount: snapshot.readyItemUpgradeCount,
+                        readOnly: readOnly,
+                        busy: gameplayActionBlocked,
+                        upgrading: isUpgrading,
+                        onUpgrade: onUpgrade,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _StateFooter(snapshot: snapshot),
+                  ],
+                ),
+              ],
+            ),
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: _homeStickyActionBaseBottom + bottomDockInset,
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  key: stickyActionOcclusionKey,
+                  child: ExpeditionPanel(
+                    key: const Key('home-sticky-action-panel'),
+                    tone: eventReady || pendingEventResult != null
+                        ? ExpeditionPanelTone.resonance
+                        : ExpeditionPanelTone.energy,
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        if (activitySyncAction != null) ...<Widget>[
+                          activitySyncAction!,
+                          const SizedBox(height: 8),
+                        ],
+                        FilledButton.icon(
+                          key: completed
+                              ? const Key('home-begin-next-journey')
+                              : const Key('home-advance-expedition'),
+                          onPressed: actionDisabled
+                              ? null
+                              : completed
+                              ? onBeginNextJourney
+                              : onAdvance,
+                          icon: isAdvancing || isBeginningJourney
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(
+                                  completed
+                                      ? Icons.replay_outlined
+                                      : Icons.near_me_outlined,
+                                ),
+                          label: Text(
+                            actionLabel,
+                            maxLines: 2,
+                            overflow: TextOverflow.visible,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
