@@ -178,6 +178,7 @@ jobs:
           git diff --exit-code -- lib test tool
 
       - name: Analyze for diagnostics
+        if: ${{ !cancelled() }}
         id: mobile-analyze
         shell: bash
         run: |
@@ -203,6 +204,7 @@ jobs:
           exit 1
 
       - name: Run tests
+        if: ${{ !cancelled() }}
         run: flutter test --no-pub
 
       - name: Render Home visual fixtures

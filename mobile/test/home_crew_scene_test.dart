@@ -15,7 +15,7 @@ void main() {
           find.byType(ExpeditionCrewScene),
         );
         final String identity = id.split('-').first;
-        expect(scene.sceneAsset, 'assets/scenes/home_crew_${identity}_v2.webp');
+        expect(scene.sceneAsset, 'assets/scenes/home_crew_${identity}_v3.webp');
         final Image image = tester.widget(find.byType(Image));
         expect((image.image as AssetImage).assetName, scene.sceneAsset);
         expect(image.gaplessPlayback, isFalse);
@@ -36,7 +36,7 @@ void main() {
       final ExpeditionCrewScene scene = tester.widget(
         find.byType(ExpeditionCrewScene),
       );
-      expect(scene.sceneAsset, 'assets/scenes/home_pilot_v2.webp');
+      expect(scene.sceneAsset, 'assets/scenes/home_pilot_v3.webp');
       final CompanionPortrait fallback = tester.widget(
         find.byType(CompanionPortrait),
       );
@@ -54,7 +54,7 @@ void main() {
     final ExpeditionCrewScene scene = tester.widget(
       find.byType(ExpeditionCrewScene),
     );
-    expect(scene.sceneAsset, 'assets/scenes/home_pilot_v2.webp');
+    expect(scene.sceneAsset, 'assets/scenes/home_pilot_v3.webp');
     expect(
       find.byKey(const Key('home-active-companion-portrait')),
       findsNothing,
@@ -70,19 +70,19 @@ void main() {
     final ExpeditionCrewScene scene = tester.widget(
       find.byType(ExpeditionCrewScene),
     );
-    expect(scene.sceneAsset, 'assets/events/signal_source.webp');
+    expect(scene.sceneAsset, 'assets/scenes/home_frontier_v3.webp');
     expect(find.byKey(const Key('home-pilot-illustration')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('full square artwork stays visible on short and wide surfaces', (
+  testWidgets('full portrait artwork stays visible on short and wide surfaces', (
     tester,
   ) async {
     for (final double height in <double>[148, 220, 330]) {
       await tester.pumpWidget(_scene(height: height));
       await tester.pumpAndSettle();
       final Rect art = tester.getRect(find.byType(Image));
-      expect(art.width, art.height);
+      expect(art.width / art.height, closeTo(2 / 3, 0.001));
       expect(art.height, lessThanOrEqualTo(height));
       for (final String key in <String>[
         'home-pilot-illustration',

@@ -1,4 +1,30 @@
-# Home cinematic scene v2
+# Full-screen Home scene v3
+
+The owner requested edge-to-edge artwork with the pilot and pet in the
+foreground and expedition controls overlaid on the scene. Portrait compositions
+reserve sky and rocky foreground for the HUD; they preserve the v2 pilot,
+companion identities and established signal-source landscape.
+
+| Asset | Role | Dimensions | Bytes |
+| --- | --- | --- | --- |
+| `home_crew_spark_v3.webp` | accepted `spark-v1` | 1024 × 1536 | 254,494 |
+| `home_crew_moss_v3.webp` | accepted `moss-v1` | 1024 × 1536 | 223,044 |
+| `home_crew_rune_v3.webp` | accepted `rune-v1` | 1024 × 1536 | 200,060 |
+| `home_pilot_v3.webp` | missing / unsupported companion | 1024 × 1536 | 231,508 |
+| `home_frontier_v3.webp` | continuous backdrop / unknown pilot | 1024 × 1536 | 230,958 |
+
+Total v3: 1,140,064 bytes. Home mounts the empty landscape plus one accepted
+crew scene. The reviewed normalized subject rectangle is `(0.27, 0.235)` to
+`(0.80, 0.70)`. The layout measures its controls and fits that rectangle into
+the remaining space, then feathers only outer scenery into the backdrop.
+No character animation, evolution, cosmetic or route-state details are baked in.
+
+[Full v3 prompts](provenance-v3.json) retain the reference edit instructions.
+Generated PNGs were encoded to WebP at quality 90 without creative processing.
+The square v2 images below remain as composition references; Home uses v3.
+
+## Previous square v2 composition
+
 
 Created for issue #575 after the owner rejected the simplified foreground from
 PR #574 and requested the existing beautiful landscape plus realistic detail.

@@ -1,5 +1,6 @@
 // Render the real Home widget with synthetic accepted fixtures. These captures
 // support design review and are never physical-device evidence.
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -107,6 +108,15 @@ void main() {
           reduced: false,
         ),
         (
+          name: 'home-safe-insets-ru',
+          pet: 'spark-v1',
+          locale: 'ru',
+          dark: true,
+          size: Size(390, 844),
+          scale: 1,
+          reduced: false,
+        ),
+        (
           name: 'home-reduced-motion-ru',
           pet: 'spark-v1',
           locale: 'ru',
@@ -124,6 +134,12 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      if (scenario.name == 'home-safe-insets-ru') {
+        tester.view.viewPadding = const FakeViewPadding(top: 44, bottom: 34);
+        tester.view.padding = const FakeViewPadding(top: 44, bottom: 34);
+        addTearDown(tester.view.resetViewPadding);
+        addTearDown(tester.view.resetPadding);
+      }
       const Key captureKey = Key('home-preview');
       await tester.pumpWidget(
         RepaintBoundary(
@@ -173,21 +189,21 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      final Rect scene = tester.getRect(
-        find.byKey(const Key('home-crew-scene')),
-      );
-      final Rect action = tester.getRect(
-        find.byKey(const Key('home-sticky-action-panel')),
-      );
-      expect(scene.bottom, lessThanOrEqualTo(action.top));
+      final Rect background = tester.getRect(find.byKey(const Key('home-fullscreen-background')));
+      expect(background, Offset.zero & scenario.size);
+      final Rect header = tester.getRect(find.byKey(const Key('home-expedition-hero')));
+      final Rect action = tester.getRect(find.byKey(const Key('home-sticky-action-panel')));
+      final Rect dock = tester.getRect(find.byKey(const Key('main-navigation-bottom-dock')));
+      expect(action.bottom, lessThanOrEqualTo(dock.top));
       for (final String actor in <String>[
-        'home-pilot-illustration',
-        'home-active-companion-portrait',
+        'home-pilot-illustration', 'home-active-companion-portrait',
       ]) {
         final Rect bounds = tester.getRect(find.byKey(Key(actor)));
-        expect(scene.contains(bounds.center), isTrue);
-        expect(bounds.top, greaterThanOrEqualTo(scene.top));
-        expect(bounds.bottom, lessThanOrEqualTo(scene.bottom));
+        expect(bounds.top, greaterThanOrEqualTo(header.bottom));
+        expect(bounds.bottom, lessThanOrEqualTo(action.top));
+        expect(bounds.left, greaterThanOrEqualTo(0));
+        expect(bounds.right, lessThanOrEqualTo(scenario.size.width));
+        expect(bounds.overlaps(tester.getRect(find.byKey(const Key('home-open-details')))), isFalse);
       }
       final RenderRepaintBoundary boundary = tester
           .renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
@@ -199,8 +215,25 @@ void main() {
         final File file = File('build/home-previews/${scenario.name}.png');
         await file.parent.create(recursive: true);
         await file.writeAsBytes(bytes.buffer.asUint8List());
+        if (const bool.fromEnvironment('HOME_SCENE_LOG_EXPORT')) {
+          final String encoded = base64Encode(bytes.buffer.asUint8List());
+          stdout.writeln('HOME_PREVIEW_BEGIN:${scenario.name}');
+          for (int start = 0; start < encoded.length; start += 800) {
+            final int end = (start + 800).clamp(0, encoded.length);
+            stdout.writeln('HOME_PREVIEW_DATA:${encoded.substring(start, end)}');
+          }
+          stdout.writeln('HOME_PREVIEW_END:${scenario.name}');
+        }
         image.dispose();
       });
+      await tester.tap(find.byKey(const Key('home-open-details')));
+      await tester.pumpAndSettle();
+      final Rect viewport = tester.getRect(find.byKey(const Key('home-details-scroll')));
+      final Rect details = tester.getRect(find.byKey(const Key('home-expedition-details')));
+      expect(viewport.overlaps(details), isTrue);
+      expect(viewport.top, greaterThanOrEqualTo(header.bottom));
+      expect(viewport.bottom, lessThanOrEqualTo(action.top));
+      expect(tester.takeException(), isNull);
     }, skip: !_capture);
   }
 }

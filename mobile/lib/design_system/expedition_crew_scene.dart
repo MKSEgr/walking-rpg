@@ -20,6 +20,9 @@ class ExpeditionCrewScene extends StatelessWidget {
     this.petEvolutionStage,
   }) : assert(height > 0);
 
+  static const double aspectRatio = 2 / 3;
+  static const Rect subjectBounds = Rect.fromLTRB(0.27, 0.235, 0.80, 0.70);
+
   final String semanticLabel;
   final String? pilotId;
   final String pilotName;
@@ -44,13 +47,13 @@ class ExpeditionCrewScene extends StatelessWidget {
       const <String>{'spark-v1', 'moss-v1', 'rune-v1'}.contains(petId);
 
   String get sceneAsset {
-    if (!hasIllustratedPilot) return 'assets/events/signal_source.webp';
-    if (!hasIllustratedPet) return 'assets/scenes/home_pilot_v2.webp';
+    if (!hasIllustratedPilot) return 'assets/scenes/home_frontier_v3.webp';
+    if (!hasIllustratedPet) return 'assets/scenes/home_pilot_v3.webp';
     return switch (petId) {
-      'spark-v1' => 'assets/scenes/home_crew_spark_v2.webp',
-      'moss-v1' => 'assets/scenes/home_crew_moss_v2.webp',
-      'rune-v1' => 'assets/scenes/home_crew_rune_v2.webp',
-      _ => 'assets/scenes/home_pilot_v2.webp',
+      'spark-v1' => 'assets/scenes/home_crew_spark_v3.webp',
+      'moss-v1' => 'assets/scenes/home_crew_moss_v3.webp',
+      'rune-v1' => 'assets/scenes/home_crew_rune_v3.webp',
+      _ => 'assets/scenes/home_pilot_v3.webp',
     };
   }
 
@@ -58,9 +61,12 @@ class ExpeditionCrewScene extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        // Fit the entire square composition: a short viewport must not crop
-        // the pilot's hood, feet or a companion's tail out of the scene.
-        final double side = math.min(constraints.maxWidth, height);
+        // The stage supplies tight portrait constraints after measuring its HUD.
+        // Standalone uses still fit the complete artwork inside the given height.
+        final double artHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : math.min(height, constraints.maxWidth / aspectRatio);
+        final double artWidth = artHeight * aspectRatio;
         return Center(
           child: Semantics(
             key: const Key('home-expedition-vista'),
@@ -68,10 +74,10 @@ class ExpeditionCrewScene extends StatelessWidget {
             explicitChildNodes: true,
             label: semanticLabel,
             child: RepaintBoundary(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(22),
-                child: SizedBox.square(
-                  dimension: side,
+              child: ClipRect(
+                child: SizedBox(
+                  width: artWidth,
+                  height: artHeight,
                   child: Stack(
                     fit: StackFit.expand,
                     children: <Widget>[
@@ -84,10 +90,10 @@ class ExpeditionCrewScene extends StatelessWidget {
                       ),
                       if (hasIllustratedPilot)
                         Positioned(
-                          left: side * 0.18,
-                          top: side * 0.06,
-                          width: side * 0.34,
-                          height: side * 0.83,
+                          left: artWidth * 0.27,
+                          top: artHeight * 0.235,
+                          width: artWidth * 0.27,
+                          height: artHeight * 0.465,
                           child: Semantics(
                             key: const Key('home-pilot-illustration'),
                             image: true,
@@ -99,10 +105,10 @@ class ExpeditionCrewScene extends StatelessWidget {
                         ),
                       if (hasIllustratedPet)
                         Positioned(
-                          left: side * 0.48,
-                          top: side * 0.44,
-                          width: side * 0.40,
-                          height: side * 0.45,
+                          left: artWidth * 0.50,
+                          top: artHeight * 0.43,
+                          width: artWidth * 0.30,
+                          height: artHeight * 0.27,
                           child: Semantics(
                             key: const Key('home-active-companion-portrait'),
                             image: true,
@@ -118,8 +124,8 @@ class ExpeditionCrewScene extends StatelessWidget {
                         )
                       else if (hasPetIdentity)
                         Positioned(
-                          right: side * 0.12,
-                          bottom: side * 0.09,
+                          left: artWidth * 0.54,
+                          top: artHeight * 0.51,
                           child: CompanionPortrait(
                             key: const Key('home-active-companion-portrait'),
                             petId: petId!,
@@ -127,7 +133,7 @@ class ExpeditionCrewScene extends StatelessWidget {
                             species: petSpecies!,
                             evolutionStage: petEvolutionStage!,
                             active: true,
-                            size: side * 0.32,
+                            size: artWidth * 0.26,
                           ),
                         ),
                     ],

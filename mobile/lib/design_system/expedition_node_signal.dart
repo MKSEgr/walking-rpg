@@ -111,6 +111,7 @@ class ExpeditionNodeSignal extends StatelessWidget {
     required this.completed,
     this.role = ExpeditionNodeSignalRole.current,
     this.markSize = 42,
+    this.framed = true,
   }) : assert(role == ExpeditionNodeSignalRole.current || !completed);
 
   final String nodeId;
@@ -118,6 +119,7 @@ class ExpeditionNodeSignal extends StatelessWidget {
   final bool completed;
   final ExpeditionNodeSignalRole role;
   final double markSize;
+  final bool framed;
 
   @override
   Widget build(BuildContext context) {
@@ -154,12 +156,12 @@ class ExpeditionNodeSignal extends StatelessWidget {
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.1),
+            color: framed ? accent.withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: accent.withValues(alpha: 0.4)),
+            border: framed ? Border.all(color: accent.withValues(alpha: 0.4)) : null,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(7, 6, 11, 6),
+            padding: framed ? const EdgeInsets.fromLTRB(7, 6, 11, 6) : EdgeInsets.zero,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[

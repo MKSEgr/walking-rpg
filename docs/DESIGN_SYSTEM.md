@@ -38,7 +38,7 @@ restriction.
 ## Home crew scene
 
 The owner rejected the simplified terrain and enlarged low-resolution sprites
-from PR #574. Home v2 uses detailed cinematic key art derived from the existing
+from PR #574. Home v3 uses full-screen portrait key art derived from the existing
 `assets/events/signal_source.webp`: the same lunar frontier, layered mist,
 wet basalt, winding lumen trail and distant beacon. The pilot and companion
 share realistic moonlight, material texture and contact shadows.
@@ -46,7 +46,7 @@ share realistic moonlight, material texture and contact shadows.
 Three coordinated scene variants select the accepted active `spark-v1`,
 `moss-v1` or `rune-v1` identity. A pilot-only scene supports incomplete legacy
 snapshots and unknown companions; unknown companions retain their neutral
-portrait fallback. Unknown pilot IDs receive the original landscape rather
+portrait fallback. Unknown pilot IDs receive the empty portrait landscape rather
 than an invented Navigator. Names never select artwork. The scenes describe
 species identity, not an evolution or cosmetic state; those remain in the
 existing progression and crew UI.
@@ -56,18 +56,30 @@ It has identical reduced-motion behavior and cannot replay an earlier reaction
 when visibility resumes. Natural character animation requires a separate
 high-resolution production pass. Existing atlases remain available elsewhere.
 The illustrated trail is atmospheric and never changes from route progress;
-accepted progress stays in the route plate and accessibility label.
+accepted progress stays in the compact route HUD and accessibility label.
 
-All four WebP assets are 1254 × 1254 and together use 697,750 bytes. The entire
-square is fitted into the available scene bounds so feet, ears and tails stay
-visible on short or wide screens. The same moonlit artwork supports both app
-themes. Asset references and generation prompts are recorded in
+Five portrait WebP assets are 1024 × 1536 and together use 1,140,064 bytes.
+A continuous landscape fills the Home viewport behind the toolbar, action and
+compact navigation. The matching crew scene is fitted using a reviewed subject
+rectangle, after measuring the header and footer at the current text scale.
+Outer scenery blends into the empty landscape when short or wide viewports
+require a smaller cast. The pilot, hands, feet and companion stay in the gap
+between controls, including the detail-scroll affordance.
+
+The header combines the journey, exact current-node signal and accepted route
+percentage. A smoked charcoal footer combines steps, ENERGY and the brass/amber
+primary action. Controls use cream text, restrained brass outlines and compact
+corners over the same night artwork in both themes. Existing details retain
+the selected app theme. Navigation keeps the same destinations and state.
+
+The first ordinary phone viewport prioritizes the characters. A labelled
+control opens the scrollable expedition details. The detail viewport is clipped
+between the HUD groups, so cards and actionable choices cannot hide beneath
+them. Cached state, pending results and events take priority over the opening
+scene; all existing authoritative action guards and impression visibility
+checks remain in force. Safe-area insets protect status and gesture regions.
+Asset references and generation prompts are recorded in
 [`assets/scenes`](../mobile/assets/scenes/README.md).
-
-The first phone viewport prioritizes the characters. Detailed activity and crew
-cards remain below the scene, with event results and choices before those
-details. Narrow screens and enlarged text use flowing labels around the art;
-the action and navigation reserve their existing safe-area space.
 
 Reproduce actual widget renders with the repository's pinned Flutter SDK:
 
@@ -79,7 +91,7 @@ flutter test --no-pub --dart-define=HOME_SCENE_CAPTURE=true test/home_scene_prev
 
 Set `FLUTTER_ROOT` to that SDK when running outside flutter-action. The capture
 test uses SDK Roboto fonts, all three companion fixtures, RU/EN, light/dark,
-narrow/enlarged text and reduced motion. CI publishes `home-visual-fixtures`
+narrow/enlarged text, native safe-area insets and reduced motion. CI publishes `home-visual-fixtures`
 from `mobile/build/home-previews`. These are synthetic widget renders for
 review, not physical-device evidence for TASK-011.
 
