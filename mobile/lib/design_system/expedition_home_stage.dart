@@ -109,7 +109,7 @@ class _HomeStageLayout extends MultiChildLayoutDelegate {
     final double gapTop = topInset + header.height + 12;
     final double gapHeight = math.max(0, footerTop - 12 - gapTop);
     final double actorHeight = math.max(0, gapHeight - 52);
-    final Rect subjects = ExpeditionCrewScene.subjectBounds;
+    const Rect subjects = ExpeditionCrewScene.subjectBounds;
     final double artHeight = math.max(
       1,
       math.min(

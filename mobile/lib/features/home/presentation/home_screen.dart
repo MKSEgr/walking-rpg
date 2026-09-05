@@ -16,8 +16,8 @@ import 'package:walking_rpg_mobile/design_system/crafting_assembly_signal.dart';
 import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
 import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_crew_scene.dart';
-import 'package:walking_rpg_mobile/design_system/expedition_home_stage.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_home_stage.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
@@ -1460,13 +1460,9 @@ class _HomeAppTitle extends StatelessWidget {
                   color: const Color(0x26D6B574),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: const Icon(
-                    Icons.radar,
-                    color: Color(0xFFD6B574),
-                    size: 20,
-                  ),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.radar, color: Color(0xFFD6B574), size: 20),
                 ),
               ),
               const SizedBox(width: 10),

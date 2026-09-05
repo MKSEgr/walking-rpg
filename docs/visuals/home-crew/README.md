@@ -29,8 +29,8 @@ bounds, and the detail-scroll affordance. They also open details and verify
 that their scroll viewport stays between the HUD groups. Foreground scenery
 blends into the empty frontier when a short screen requires a smaller cast.
 
-The source passed Flutter analysis, all 683 mobile tests and seven explicit
-capture cases. Coverage includes exact accepted IDs, neutral fallbacks,
+The render source passed all 683 mobile tests and seven explicit capture cases.
+Final formatting and analyzer validation are recorded in the PR checks. Coverage includes exact accepted IDs, neutral fallbacks,
 authoritative command guards and impression visibility. Event images keep
 independent accessibility descriptions in the clipped detail viewport.
 Reduced-motion and ordinary still-scene captures are byte-identical.
