@@ -25,7 +25,8 @@ class ExpeditionHomeStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints viewport) => ClipRect(
       key: const Key('home-expedition-visual-stage'),
       child: CustomMultiChildLayout(
         delegate: _HomeStageLayout(topInset, bottomInset),
@@ -43,27 +44,31 @@ class ExpeditionHomeStage extends StatelessWidget {
             id: _Layer.scene,
             child: ShaderMask(
               blendMode: BlendMode.dstIn,
-              shaderCallback: (Rect bounds) => const LinearGradient(
-                colors: <Color>[
+              shaderCallback: (Rect bounds) => LinearGradient(
+                colors: const <Color>[
                   Colors.transparent,
                   Colors.white,
                   Colors.white,
                   Colors.transparent,
                 ],
-                stops: <double>[0, 0.12, 0.88, 1],
+                stops: bounds.height < viewport.maxHeight
+                    ? const <double>[0, 0.24, 0.82, 1]
+                    : const <double>[0, 0.04, 0.96, 1],
               ).createShader(bounds),
               child: ShaderMask(
                 blendMode: BlendMode.dstIn,
-                shaderCallback: (Rect bounds) => const LinearGradient(
+                shaderCallback: (Rect bounds) => LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: <Color>[
+                  colors: const <Color>[
                     Colors.transparent,
                     Colors.white,
                     Colors.white,
                     Colors.transparent,
                   ],
-                  stops: <double>[0, 0.12, 0.88, 1],
+                  stops: bounds.height < viewport.maxHeight
+                      ? const <double>[0.10, 0.235, 0.71, 0.90]
+                      : const <double>[0, 0.035, 0.965, 1],
                 ).createShader(bounds),
                 child: scene,
               ),
@@ -73,6 +78,7 @@ class ExpeditionHomeStage extends StatelessWidget {
           LayoutId(id: _Layer.header, child: header),
           LayoutId(id: _Layer.footer, child: footer),
         ],
+      ),
       ),
     );
   }

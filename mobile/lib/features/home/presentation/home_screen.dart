@@ -1136,8 +1136,11 @@ class _HomeBody extends StatelessWidget {
               ? const Key('home-expedition-stage-compact')
               : const Key('home-expedition-stage-overlay'),
           topInset: MediaQuery.paddingOf(context).top + 12,
-          bottomInset: MediaQuery.paddingOf(context).bottom
-              .clamp(bottomDockInset, double.infinity).toDouble() + 20,
+          bottomInset:
+              MediaQuery.paddingOf(
+                context,
+              ).bottom.clamp(bottomDockInset, double.infinity).toDouble() +
+              20,
           scene: ExpeditionCrewScene(
             key: const Key('home-crew-scene'),
             semanticLabel:
@@ -1211,6 +1214,8 @@ class _HomeBody extends StatelessWidget {
                               dimension: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
+                          : _effectiveTextScale(context) > 1.3
+                          ? null
                           : Icon(
                               completed
                                   ? Icons.replay_outlined
@@ -1256,7 +1261,9 @@ class _HomeBody extends StatelessWidget {
                                   final double offset = detailViewport.maxHeight
                                       .clamp(
                                         0,
-                                        scrollController.position.maxScrollExtent,
+                                        scrollController
+                                            .position
+                                            .maxScrollExtent,
                                       )
                                       .toDouble();
                                   if (MediaQuery.disableAnimationsOf(context)) {
@@ -1264,7 +1271,9 @@ class _HomeBody extends StatelessWidget {
                                   } else {
                                     scrollController.animateTo(
                                       offset,
-                                      duration: const Duration(milliseconds: 280),
+                                      duration: const Duration(
+                                        milliseconds: 280,
+                                      ),
                                       curve: Curves.easeOutCubic,
                                     );
                                   }
@@ -1310,7 +1319,8 @@ class _HomeBody extends StatelessWidget {
                                   const SizedBox(height: 20),
                                   _EventCard(
                                     event: event,
-                                    routeChoiceViewportKey: routeChoiceViewportKey,
+                                    routeChoiceViewportKey:
+                                        routeChoiceViewportKey,
                                     isResolving: isResolving,
                                     disabled:
                                         isResolving ||
@@ -1342,14 +1352,17 @@ class _HomeBody extends StatelessWidget {
                                 _ExpeditionTeam(snapshot: snapshot),
                                 if (snapshot.petId != null &&
                                     snapshot.petSpecies != null &&
-                                    snapshot.petEvolutionStage != null) ...<Widget>[
+                                    snapshot.petEvolutionStage !=
+                                        null) ...<Widget>[
                                   const SizedBox(height: 12),
                                   _ActiveCompanionCard(snapshot: snapshot),
                                 ],
                                 if (snapshot.equipment.isNotEmpty ||
                                     snapshot.inventory.isNotEmpty ||
                                     snapshot.craftingRecipes.isNotEmpty ||
-                                    snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                                    snapshot
+                                        .itemUpgrades
+                                        .isNotEmpty) ...<Widget>[
                                   const SizedBox(height: 24),
                                   ExpeditionSectionTitle(
                                     title: context.l10n.homeFieldKitTitle,
@@ -1396,7 +1409,9 @@ class _HomeBody extends StatelessWidget {
                                     onCraft: onCraft,
                                   ),
                                 ],
-                                if (snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                                if (snapshot
+                                    .itemUpgrades
+                                    .isNotEmpty) ...<Widget>[
                                   const SizedBox(height: 12),
                                   _ItemUpgradeCard(
                                     upgrades: snapshot.itemUpgrades,
@@ -1623,9 +1638,18 @@ class _HomeActivityHud extends StatelessWidget {
         spacing: 8,
         runSpacing: 4,
         children: <Widget>[
-          Text(
-            context.l10n.homeSceneSteps(snapshot.dailySteps),
-            style: Theme.of(context).textTheme.labelLarge,
+          Semantics(
+            label: context.l10n.homeSceneSteps(snapshot.dailySteps),
+            child: ExcludeSemantics(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Icon(Icons.directions_walk_outlined, size: 18, color: Color(0xFFE0D5BB)),
+                  const SizedBox(width: 6),
+                  Text('${snapshot.dailySteps}', style: Theme.of(context).textTheme.labelLarge),
+                ],
+              ),
+            ),
           ),
           Text(
             '${snapshot.availableEnergy} ENERGY',

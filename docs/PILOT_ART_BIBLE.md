@@ -37,7 +37,7 @@ it does not redesign the hood, visor, torso or palette.
 ## Rendering and movement
 
 - Existing portraits and motion atlases retain their painterly soft
-  science-fantasy treatment. The owner's Home v2 direction supersedes that
+  science-fantasy treatment. The owner's Home cinematic direction supersedes that
   surface's earlier stylization rule: detailed cinematic materials, realistic
   moonlight, woven fabric, weathered brass and glass, while preserving the
   identity above. No chibi, anime, toy plastic or heavy comic outlines.
@@ -65,7 +65,7 @@ it does not redesign the hood, visor, torso or palette.
   remain an explicit scene-level decision.
 
 The v1 atlas and manifest live in
-`mobile/assets/characters/pilot_navigator_motion_v1.{png,json}`. Home v2 uses
+`mobile/assets/characters/pilot_navigator_motion_v1.{png,json}`. Home cinematic uses
 separate static key art in `mobile/assets/scenes/`; it does not enlarge this
 192 × 208 atlas or expose a greeting control. Natural animation in the new
 detailed style needs a separate production pass. The account dossier and

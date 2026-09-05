@@ -48,7 +48,7 @@ neutral role «Пилот» so the two characters remain unambiguous.
   emotional clarity while keeping a unique silhouette, material, palette
   family, locomotion and idle rhythm.
 
-## Home v2 rendering
+## Home cinematic rendering
 
 The owner requested a more detailed, realistic Home scene after reviewing
 PR #574. On this surface, cinematic material detail and coherent moonlight
