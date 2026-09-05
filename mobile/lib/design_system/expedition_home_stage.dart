@@ -26,6 +26,7 @@ class ExpeditionHomeStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRect(
+      key: const Key('home-expedition-visual-stage'),
       child: CustomMultiChildLayout(
         delegate: _HomeStageLayout(topInset, bottomInset),
         children: <Widget>[
@@ -44,7 +45,9 @@ class ExpeditionHomeStage extends StatelessWidget {
               blendMode: BlendMode.dstIn,
               shaderCallback: (Rect bounds) => const LinearGradient(
                 colors: <Color>[
-                  Colors.transparent, Colors.white, Colors.white,
+                  Colors.transparent,
+                  Colors.white,
+                  Colors.white,
                   Colors.transparent,
                 ],
                 stops: <double>[0, 0.12, 0.88, 1],
@@ -55,7 +58,9 @@ class ExpeditionHomeStage extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: <Color>[
-                    Colors.transparent, Colors.white, Colors.white,
+                    Colors.transparent,
+                    Colors.white,
+                    Colors.white,
                     Colors.transparent,
                   ],
                   stops: <double>[0, 0.12, 0.88, 1],
@@ -99,25 +104,33 @@ class _HomeStageLayout extends MultiChildLayoutDelegate {
     final double gapHeight = math.max(0, footerTop - 12 - gapTop);
     final double actorHeight = math.max(0, gapHeight - 52);
     final Rect subjects = ExpeditionCrewScene.subjectBounds;
-    final double artHeight = math.max(1, math.min(
-      actorHeight / subjects.height,
-      (size.width - 24) / (subjects.width * ExpeditionCrewScene.aspectRatio),
-    ));
+    final double artHeight = math.max(
+      1,
+      math.min(
+        actorHeight / subjects.height,
+        (size.width - 24) / (subjects.width * ExpeditionCrewScene.aspectRatio),
+      ),
+    );
     final double artWidth = artHeight * ExpeditionCrewScene.aspectRatio;
     layoutChild(_Layer.scene, BoxConstraints.tight(Size(artWidth, artHeight)));
-    positionChild(_Layer.scene, Offset(
-      size.width / 2 - artWidth * subjects.center.dx,
-      gapTop + actorHeight / 2 - artHeight * subjects.center.dy,
-    ));
-    layoutChild(_Layer.details, BoxConstraints.tight(
-      Size(size.width, gapHeight),
-    ));
+    positionChild(
+      _Layer.scene,
+      Offset(
+        size.width / 2 - artWidth * subjects.center.dx,
+        gapTop + actorHeight / 2 - artHeight * subjects.center.dy,
+      ),
+    );
+    layoutChild(
+      _Layer.details,
+      BoxConstraints.tight(Size(size.width, gapHeight)),
+    );
     positionChild(_Layer.details, Offset(0, gapTop));
   }
 
   @override
   bool shouldRelayout(_HomeStageLayout oldDelegate) =>
-      topInset != oldDelegate.topInset || bottomInset != oldDelegate.bottomInset;
+      topInset != oldDelegate.topInset ||
+      bottomInset != oldDelegate.bottomInset;
 }
 
 /// A restrained smoked-glass surface shared by the Home HUD controls.
@@ -142,7 +155,11 @@ class ExpeditionHudPanel extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: const Color(0x668D8267)),
       boxShadow: const <BoxShadow>[
-        BoxShadow(color: Color(0x40000000), blurRadius: 18, offset: Offset(0, 6)),
+        BoxShadow(
+          color: Color(0x40000000),
+          blurRadius: 18,
+          offset: Offset(0, 6),
+        ),
       ],
     ),
     child: Padding(padding: padding, child: child),

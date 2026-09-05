@@ -189,21 +189,37 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      final Rect background = tester.getRect(find.byKey(const Key('home-fullscreen-background')));
+      final Rect background = tester.getRect(
+        find.byKey(const Key('home-fullscreen-background')),
+      );
       expect(background, Offset.zero & scenario.size);
-      final Rect header = tester.getRect(find.byKey(const Key('home-expedition-hero')));
-      final Rect action = tester.getRect(find.byKey(const Key('home-sticky-action-panel')));
-      final Rect dock = tester.getRect(find.byKey(const Key('main-navigation-bottom-dock')));
+      final Rect header = tester.getRect(
+        find.byKey(const Key('home-expedition-hero')),
+      );
+      final Rect toolbar = tester.getRect(find.byType(AppBar));
+      expect(header.top, greaterThanOrEqualTo(toolbar.bottom));
+      final Rect action = tester.getRect(
+        find.byKey(const Key('home-sticky-action-panel')),
+      );
+      final Rect dock = tester.getRect(
+        find.byKey(const Key('main-navigation-bottom-dock')),
+      );
       expect(action.bottom, lessThanOrEqualTo(dock.top));
       for (final String actor in <String>[
-        'home-pilot-illustration', 'home-active-companion-portrait',
+        'home-pilot-illustration',
+        'home-active-companion-portrait',
       ]) {
         final Rect bounds = tester.getRect(find.byKey(Key(actor)));
         expect(bounds.top, greaterThanOrEqualTo(header.bottom));
         expect(bounds.bottom, lessThanOrEqualTo(action.top));
         expect(bounds.left, greaterThanOrEqualTo(0));
         expect(bounds.right, lessThanOrEqualTo(scenario.size.width));
-        expect(bounds.overlaps(tester.getRect(find.byKey(const Key('home-open-details')))), isFalse);
+        expect(
+          bounds.overlaps(
+            tester.getRect(find.byKey(const Key('home-open-details'))),
+          ),
+          isFalse,
+        );
       }
       final RenderRepaintBoundary boundary = tester
           .renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
@@ -220,7 +236,9 @@ void main() {
           stdout.writeln('HOME_PREVIEW_BEGIN:${scenario.name}');
           for (int start = 0; start < encoded.length; start += 800) {
             final int end = (start + 800).clamp(0, encoded.length);
-            stdout.writeln('HOME_PREVIEW_DATA:${encoded.substring(start, end)}');
+            stdout.writeln(
+              'HOME_PREVIEW_DATA:${encoded.substring(start, end)}',
+            );
           }
           stdout.writeln('HOME_PREVIEW_END:${scenario.name}');
         }
@@ -228,8 +246,12 @@ void main() {
       });
       await tester.tap(find.byKey(const Key('home-open-details')));
       await tester.pumpAndSettle();
-      final Rect viewport = tester.getRect(find.byKey(const Key('home-details-scroll')));
-      final Rect details = tester.getRect(find.byKey(const Key('home-expedition-details')));
+      final Rect viewport = tester.getRect(
+        find.byKey(const Key('home-details-scroll')),
+      );
+      final Rect details = tester.getRect(
+        find.byKey(const Key('home-expedition-details')),
+      );
       expect(viewport.overlaps(details), isTrue);
       expect(viewport.top, greaterThanOrEqualTo(header.bottom));
       expect(viewport.bottom, lessThanOrEqualTo(action.top));

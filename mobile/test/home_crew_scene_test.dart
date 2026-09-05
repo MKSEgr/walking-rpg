@@ -75,26 +75,27 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('full portrait artwork stays visible on short and wide surfaces', (
-    tester,
-  ) async {
-    for (final double height in <double>[148, 220, 330]) {
-      await tester.pumpWidget(_scene(height: height));
-      await tester.pumpAndSettle();
-      final Rect art = tester.getRect(find.byType(Image));
-      expect(art.width / art.height, closeTo(2 / 3, 0.001));
-      expect(art.height, lessThanOrEqualTo(height));
-      for (final String key in <String>[
-        'home-pilot-illustration',
-        'home-active-companion-portrait',
-      ]) {
-        final Rect actor = tester.getRect(find.byKey(Key(key)));
-        expect(art.contains(actor.topLeft), isTrue);
-        expect(art.contains(actor.bottomRight), isTrue);
+  testWidgets(
+    'full portrait artwork stays visible on short and wide surfaces',
+    (tester) async {
+      for (final double height in <double>[148, 220, 330]) {
+        await tester.pumpWidget(_scene(height: height));
+        await tester.pumpAndSettle();
+        final Rect art = tester.getRect(find.byType(Image));
+        expect(art.width / art.height, closeTo(2 / 3, 0.001));
+        expect(art.height, lessThanOrEqualTo(height));
+        for (final String key in <String>[
+          'home-pilot-illustration',
+          'home-active-companion-portrait',
+        ]) {
+          final Rect actor = tester.getRect(find.byKey(Key(key)));
+          expect(art.contains(actor.topLeft), isTrue);
+          expect(art.contains(actor.bottomRight), isTrue);
+        }
+        expect(tester.takeException(), isNull);
       }
-      expect(tester.takeException(), isNull);
-    }
-  });
+    },
+  );
 
   testWidgets('detailed art is static with either motion preference', (
     tester,

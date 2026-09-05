@@ -158,10 +158,14 @@ class ExpeditionNodeSignal extends StatelessWidget {
           decoration: BoxDecoration(
             color: framed ? accent.withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(18),
-            border: framed ? Border.all(color: accent.withValues(alpha: 0.4)) : null,
+            border: framed
+                ? Border.all(color: accent.withValues(alpha: 0.4))
+                : null,
           ),
           child: Padding(
-            padding: framed ? const EdgeInsets.fromLTRB(7, 6, 11, 6) : EdgeInsets.zero,
+            padding: framed
+                ? const EdgeInsets.fromLTRB(7, 6, 11, 6)
+                : EdgeInsets.zero,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[

@@ -211,6 +211,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: >-
           flutter test --no-pub --dart-define=HOME_SCENE_CAPTURE=true
+          --dart-define=HOME_SCENE_LOG_EXPORT=true
           test/home_scene_preview_test.dart
 
       - name: Upload Home visual fixtures

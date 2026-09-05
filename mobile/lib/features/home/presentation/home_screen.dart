@@ -292,73 +292,72 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ],
           ),
           body: FutureBuilder<HomeSnapshot>(
-              future: _snapshotFuture,
-              builder:
-                  (
-                    BuildContext context,
-                    AsyncSnapshot<HomeSnapshot> asyncSnapshot,
-                  ) {
-                    if (asyncSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return _HomeReadState(
-                        activitySyncAction: widget.activitySyncAction,
-                        child: ExpeditionReadState.loading(
-                          key: const Key('home-loading-state'),
-                          title: context.l10n.homeLoadingTitle,
-                          message: context.l10n.homeLoadingMessage,
-                        ),
-                      );
-                    }
-                    if (asyncSnapshot.hasError) {
-                      return _HomeReadState(
-                        activitySyncAction: widget.activitySyncAction,
-                        child: _HomeError(
-                          onRetry: _reload,
-                          onOpenDemo: _openDemo,
-                        ),
-                      );
-                    }
-                    final HomeSnapshot? snapshot = asyncSnapshot.data;
-                    if (snapshot == null) {
-                      return _HomeReadState(
-                        activitySyncAction: widget.activitySyncAction,
-                        child: _HomeError(
-                          onRetry: _reload,
-                          onOpenDemo: _openDemo,
-                        ),
-                      );
-                    }
-                    return _HomeBody(
-                      snapshot: snapshot,
-                      scrollController: _scrollController,
-                      routeChoiceViewportKey: _routeChoiceViewportKey,
-                      recipeViewportKey: _recipeViewportKey,
-                      stickyActionOcclusionKey: _stickyActionOcclusionKey,
-                      isAdvancing: _isAdvancing,
-                      isBeginningJourney: _isBeginningJourney,
-                      isResolving: _isResolving,
-                      isAcknowledging: _isAcknowledging,
-                      isCrafting: _isCrafting,
-                      isUpgrading: _isUpgrading,
-                      isChangingEquipment: _isChangingEquipment,
-                      onAdvance: () => _advance(snapshot),
-                      onBeginNextJourney: () => _beginNextJourney(snapshot),
-                      onResolve: (HomeEventChoice choice) =>
-                          _resolveEvent(snapshot, choice),
-                      onAcknowledgeEventResult: () =>
-                          _acknowledgeEventResult(snapshot),
-                      onCraft: (HomeCraftingRecipe recipe) =>
-                          _craft(snapshot, recipe),
-                      onUpgrade: (HomeItemUpgrade upgrade) =>
-                          _upgrade(snapshot, upgrade),
-                      onEquip: (HomeInventoryItem item) =>
-                          _equip(snapshot, item),
-                      onUnequip: (HomeEquipmentSlot slot) =>
-                          _unequip(snapshot, slot),
-                      onRefresh: _reload,
+            future: _snapshotFuture,
+            builder:
+                (
+                  BuildContext context,
+                  AsyncSnapshot<HomeSnapshot> asyncSnapshot,
+                ) {
+                  if (asyncSnapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return _HomeReadState(
                       activitySyncAction: widget.activitySyncAction,
+                      child: ExpeditionReadState.loading(
+                        key: const Key('home-loading-state'),
+                        title: context.l10n.homeLoadingTitle,
+                        message: context.l10n.homeLoadingMessage,
+                      ),
                     );
-                  },
+                  }
+                  if (asyncSnapshot.hasError) {
+                    return _HomeReadState(
+                      activitySyncAction: widget.activitySyncAction,
+                      child: _HomeError(
+                        onRetry: _reload,
+                        onOpenDemo: _openDemo,
+                      ),
+                    );
+                  }
+                  final HomeSnapshot? snapshot = asyncSnapshot.data;
+                  if (snapshot == null) {
+                    return _HomeReadState(
+                      activitySyncAction: widget.activitySyncAction,
+                      child: _HomeError(
+                        onRetry: _reload,
+                        onOpenDemo: _openDemo,
+                      ),
+                    );
+                  }
+                  return _HomeBody(
+                    snapshot: snapshot,
+                    scrollController: _scrollController,
+                    routeChoiceViewportKey: _routeChoiceViewportKey,
+                    recipeViewportKey: _recipeViewportKey,
+                    stickyActionOcclusionKey: _stickyActionOcclusionKey,
+                    isAdvancing: _isAdvancing,
+                    isBeginningJourney: _isBeginningJourney,
+                    isResolving: _isResolving,
+                    isAcknowledging: _isAcknowledging,
+                    isCrafting: _isCrafting,
+                    isUpgrading: _isUpgrading,
+                    isChangingEquipment: _isChangingEquipment,
+                    onAdvance: () => _advance(snapshot),
+                    onBeginNextJourney: () => _beginNextJourney(snapshot),
+                    onResolve: (HomeEventChoice choice) =>
+                        _resolveEvent(snapshot, choice),
+                    onAcknowledgeEventResult: () =>
+                        _acknowledgeEventResult(snapshot),
+                    onCraft: (HomeCraftingRecipe recipe) =>
+                        _craft(snapshot, recipe),
+                    onUpgrade: (HomeItemUpgrade upgrade) =>
+                        _upgrade(snapshot, upgrade),
+                    onEquip: (HomeInventoryItem item) => _equip(snapshot, item),
+                    onUnequip: (HomeEquipmentSlot slot) =>
+                        _unequip(snapshot, slot),
+                    onRefresh: _reload,
+                    activitySyncAction: widget.activitySyncAction,
+                  );
+                },
           ),
         );
       },
@@ -956,12 +955,7 @@ class _HomeReadState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: kToolbarHeight),
-        child: _buildContent(context),
-      ),
-    );
+    return SafeArea(child: _buildContent(context));
   }
 
   Widget _buildContent(BuildContext context) {
@@ -1116,12 +1110,15 @@ class _HomeBody extends StatelessWidget {
         busy ||
         (!completed && (eventReady || spendableEnergy <= 0));
 
-    final bool sceneFirst = event == null && pendingEventResult == null && !readOnly;
+    final bool sceneFirst =
+        event == null && pendingEventResult == null && !readOnly;
     final String expeditionName = context.l10n.currentExpeditionName(
-      snapshot.expeditionId, snapshot.expeditionName,
+      snapshot.expeditionId,
+      snapshot.expeditionName,
     );
     final String nodeName = context.l10n.currentNodeName(
-      snapshot.currentNodeId, snapshot.currentNodeName,
+      snapshot.currentNodeId,
+      snapshot.currentNodeName,
     );
     final ThemeData hudTheme = Theme.of(context).copyWith(
       colorScheme: WalkingRpgTheme.dark().colorScheme,
@@ -1132,23 +1129,36 @@ class _HomeBody extends StatelessWidget {
     );
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints viewport) {
-        final bool showOpeningScene = sceneFirst &&
-            viewport.maxWidth < 600 && viewport.maxHeight < 1000;
+        final bool showOpeningScene =
+            sceneFirst && viewport.maxWidth < 600 && viewport.maxHeight < 1000;
         return ExpeditionHomeStage(
           key: _effectiveTextScale(context) > 1.3
               ? const Key('home-expedition-stage-compact')
               : const Key('home-expedition-stage-overlay'),
-          topInset: MediaQuery.viewPaddingOf(context).top + kToolbarHeight + 12,
-          bottomInset: bottomDockInset + 20 + MediaQuery.viewPaddingOf(context).bottom,
+          topInset: MediaQuery.paddingOf(context).top + 12,
+          bottomInset: MediaQuery.paddingOf(context).bottom
+              .clamp(bottomDockInset, double.infinity).toDouble() + 20,
           scene: ExpeditionCrewScene(
             key: const Key('home-crew-scene'),
-            semanticLabel: '$expeditionName, $nodeName'
+            semanticLabel:
+                '$expeditionName, $nodeName'
                 '${context.l10n.chapterProgressSemantics((snapshot.expeditionProgressValue * 100).round())}',
             pilotId: snapshot.pilotId,
-            pilotName: context.l10n.currentPilotName(snapshot.pilotId, snapshot.pilotName),
+            pilotName: context.l10n.currentPilotName(
+              snapshot.pilotId,
+              snapshot.pilotName,
+            ),
             petId: snapshot.petId,
-            petName: context.l10n.currentPetName(snapshot.petId, snapshot.petName),
-            petSpecies: snapshot.petSpecies == null ? null : context.l10n.currentPetSpecies(snapshot.petId, snapshot.petSpecies!),
+            petName: context.l10n.currentPetName(
+              snapshot.petId,
+              snapshot.petName,
+            ),
+            petSpecies: snapshot.petSpecies == null
+                ? null
+                : context.l10n.currentPetSpecies(
+                    snapshot.petId,
+                    snapshot.petSpecies!,
+                  ),
             petEvolutionStage: snapshot.petEvolutionStage,
             height: 1536,
           ),
@@ -1172,210 +1182,242 @@ class _HomeBody extends StatelessWidget {
                       activitySyncAction!,
                       const SizedBox(height: 8),
                     ],
-                        FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFD6B574),
-                            foregroundColor: const Color(0xFF172027),
-                            disabledBackgroundColor: const Color(0xFF39474C),
-                            disabledForegroundColor: const Color(0xFFBAC5C8),
-                            minimumSize: const Size(48, 52),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            side: const BorderSide(color: Color(0x99F4D59B)),
-                          ),
-                          key: completed
-                              ? const Key('home-begin-next-journey')
-                              : const Key('home-advance-expedition'),
-                          onPressed: actionDisabled
-                              ? null
-                              : completed
-                              ? onBeginNextJourney
-                              : onAdvance,
-                          icon: isAdvancing || isBeginningJourney
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Icon(
-                                  completed
-                                      ? Icons.replay_outlined
-                                      : Icons.near_me_outlined,
-                                ),
-                          label: Text(
-                            actionLabel,
-                            maxLines: 2,
-                            overflow: TextOverflow.visible,
-                            textAlign: TextAlign.center,
-                          ),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFD6B574),
+                        foregroundColor: const Color(0xFF172027),
+                        disabledBackgroundColor: const Color(0xFF39474C),
+                        disabledForegroundColor: const Color(0xFFBAC5C8),
+                        minimumSize: const Size(48, 52),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
                         ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        side: const BorderSide(color: Color(0x99F4D59B)),
+                      ),
+                      key: completed
+                          ? const Key('home-begin-next-journey')
+                          : const Key('home-advance-expedition'),
+                      onPressed: actionDisabled
+                          ? null
+                          : completed
+                          ? onBeginNextJourney
+                          : onAdvance,
+                      icon: isAdvancing || isBeginningJourney
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              completed
+                                  ? Icons.replay_outlined
+                                  : Icons.near_me_outlined,
+                            ),
+                      label: Text(
+                        actionLabel,
+                        maxLines: 2,
+                        overflow: TextOverflow.visible,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
           details: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints detailViewport) => ListView(
-              key: const Key('home-details-scroll'),
-              controller: scrollController,
-              padding: EdgeInsets.zero,
-              children: <Widget>[
-                if (showOpeningScene)
-                  SizedBox(
-                    height: detailViewport.maxHeight,
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: TextButton.icon(
-                        key: const Key('home-open-details'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFFF1E6CD),
-                          backgroundColor: const Color(0xB007151D),
-                          textStyle: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        onPressed: () {
-                          final double offset = detailViewport.maxHeight.clamp(
-                            0, scrollController.position.maxScrollExtent,
-                          ).toDouble();
-                          if (MediaQuery.disableAnimationsOf(context)) {
-                            scrollController.jumpTo(offset);
-                          } else {
-                            scrollController.animateTo(offset, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
-                          }
-                        },
-                        icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                        label: Text(context.l10n.homeSceneDetails),
-                      ),
-                    ),
-                  ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.97),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    child: Column(
+            builder: (BuildContext context, BoxConstraints detailViewport) =>
+                ListView(
+                  key: const Key('home-details-scroll'),
+                  controller: scrollController,
+                  padding: EdgeInsets.zero,
+                  children: <Widget>[
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
-                        if (snapshot.cacheMetadata != null) ...<Widget>[
-                          CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
-                          const SizedBox(height: 14),
-                        ],
-                    if (pendingEventResult != null) ...<Widget>[
-                      const SizedBox(height: 20),
-                      _PendingEventResultCard(
-                        result: pendingEventResult,
-                        readOnly: readOnly,
-                        acknowledging: isAcknowledging,
-                        onAcknowledge: onAcknowledgeEventResult,
-                      ),
-                    ],
-                    if (event != null) ...<Widget>[
-                      const SizedBox(height: 20),
-                      _EventCard(
-                        event: event,
-                        routeChoiceViewportKey: routeChoiceViewportKey,
-                        isResolving: isResolving,
-                        disabled:
-                            isResolving ||
-                            isAcknowledging ||
-                            readOnly ||
-                            pendingEventResult != null,
-                        onChoose: onResolve,
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    _ExpeditionDetails(
-                      snapshot: snapshot,
-                      completed: completed,
-                      activitySubtitle: activitySubtitle,
-                    ),
-                    const SizedBox(height: 14),
-                    OutlinedButton.icon(
-                      onPressed: busy ? null : onRefresh,
-                      icon: const Icon(Icons.sync),
-                      label: Text(context.l10n.homeRefreshState),
-                    ),
-                    const SizedBox(height: 24),
-                    ExpeditionSectionTitle(
-                      title: context.l10n.homeCrewTitle,
-                      subtitle: context.l10n.homeCrewSubtitle,
-                      icon: Icons.group_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _ExpeditionTeam(snapshot: snapshot),
-                    if (snapshot.petId != null &&
-                        snapshot.petSpecies != null &&
-                        snapshot.petEvolutionStage != null) ...<Widget>[
-                      const SizedBox(height: 12),
-                      _ActiveCompanionCard(snapshot: snapshot),
-                    ],
-                    if (snapshot.equipment.isNotEmpty ||
-                        snapshot.inventory.isNotEmpty ||
-                        snapshot.craftingRecipes.isNotEmpty ||
-                        snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 24),
-                      ExpeditionSectionTitle(
-                        title: context.l10n.homeFieldKitTitle,
-                        subtitle: context.l10n.homeFieldKitSubtitle,
-                        icon: Icons.backpack_outlined,
-                      ),
-                    ],
-                    if (snapshot.equipment.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 12),
-                      _EquipmentCard(
-                        slots: snapshot.equipment,
-                        equippedSlotCount: snapshot.equippedEquipmentSlotCount,
-                        readOnly: readOnly,
-                        busy: gameplayActionBlocked,
-                        changing: isChangingEquipment,
-                        onUnequip: onUnequip,
-                      ),
-                    ],
-                    if (snapshot.inventory.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 12),
-                      _InventoryCard(
-                        items: snapshot.inventory,
-                        equippableItemCount:
-                            snapshot.equippableInventoryItemCount,
-                        readOnly: readOnly,
-                        busy: gameplayActionBlocked,
-                        changing: isChangingEquipment,
-                        onEquip: onEquip,
-                      ),
-                    ],
-                    if (snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 12),
-                      _CraftingCard(
-                        recipes: snapshot.craftingRecipes,
-                        craftableRecipeCount: snapshot.craftableRecipeCount,
-                        recipeViewportKey: recipeViewportKey,
-                        readOnly: readOnly,
-                        busy: gameplayActionBlocked,
-                        crafting: isCrafting,
-                        onCraft: onCraft,
-                      ),
-                    ],
-                    if (snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 12),
-                      _ItemUpgradeCard(
-                        upgrades: snapshot.itemUpgrades,
-                        readyItemUpgradeCount: snapshot.readyItemUpgradeCount,
-                        readOnly: readOnly,
-                        busy: gameplayActionBlocked,
-                        upgrading: isUpgrading,
-                        onUpgrade: onUpgrade,
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    _StateFooter(snapshot: snapshot),
+                        if (showOpeningScene)
+                          SizedBox(
+                            height: detailViewport.maxHeight,
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: TextButton.icon(
+                                key: const Key('home-open-details'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFFF1E6CD),
+                                  backgroundColor: const Color(0xB007151D),
+                                  textStyle: Theme.of(
+                                    context,
+                                  ).textTheme.labelMedium,
+                                ),
+                                onPressed: () {
+                                  final double offset = detailViewport.maxHeight
+                                      .clamp(
+                                        0,
+                                        scrollController.position.maxScrollExtent,
+                                      )
+                                      .toDouble();
+                                  if (MediaQuery.disableAnimationsOf(context)) {
+                                    scrollController.jumpTo(offset);
+                                  } else {
+                                    scrollController.animateTo(
+                                      offset,
+                                      duration: const Duration(milliseconds: 280),
+                                      curve: Curves.easeOutCubic,
+                                    );
+                                  }
+                                },
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  size: 18,
+                                ),
+                                label: Text(context.l10n.homeSceneDetails),
+                              ),
+                            ),
+                          ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface.withValues(alpha: 0.97),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                if (snapshot.cacheMetadata != null) ...<Widget>[
+                                  CachedSnapshotBanner(
+                                    metadata: snapshot.cacheMetadata!,
+                                  ),
+                                  const SizedBox(height: 14),
+                                ],
+                                if (pendingEventResult != null) ...<Widget>[
+                                  const SizedBox(height: 20),
+                                  _PendingEventResultCard(
+                                    result: pendingEventResult,
+                                    readOnly: readOnly,
+                                    acknowledging: isAcknowledging,
+                                    onAcknowledge: onAcknowledgeEventResult,
+                                  ),
+                                ],
+                                if (event != null) ...<Widget>[
+                                  const SizedBox(height: 20),
+                                  _EventCard(
+                                    event: event,
+                                    routeChoiceViewportKey: routeChoiceViewportKey,
+                                    isResolving: isResolving,
+                                    disabled:
+                                        isResolving ||
+                                        isAcknowledging ||
+                                        readOnly ||
+                                        pendingEventResult != null,
+                                    onChoose: onResolve,
+                                  ),
+                                ],
+                                const SizedBox(height: 24),
+                                _ExpeditionDetails(
+                                  snapshot: snapshot,
+                                  completed: completed,
+                                  activitySubtitle: activitySubtitle,
+                                ),
+                                const SizedBox(height: 14),
+                                OutlinedButton.icon(
+                                  onPressed: busy ? null : onRefresh,
+                                  icon: const Icon(Icons.sync),
+                                  label: Text(context.l10n.homeRefreshState),
+                                ),
+                                const SizedBox(height: 24),
+                                ExpeditionSectionTitle(
+                                  title: context.l10n.homeCrewTitle,
+                                  subtitle: context.l10n.homeCrewSubtitle,
+                                  icon: Icons.group_outlined,
+                                ),
+                                const SizedBox(height: 12),
+                                _ExpeditionTeam(snapshot: snapshot),
+                                if (snapshot.petId != null &&
+                                    snapshot.petSpecies != null &&
+                                    snapshot.petEvolutionStage != null) ...<Widget>[
+                                  const SizedBox(height: 12),
+                                  _ActiveCompanionCard(snapshot: snapshot),
+                                ],
+                                if (snapshot.equipment.isNotEmpty ||
+                                    snapshot.inventory.isNotEmpty ||
+                                    snapshot.craftingRecipes.isNotEmpty ||
+                                    snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                                  const SizedBox(height: 24),
+                                  ExpeditionSectionTitle(
+                                    title: context.l10n.homeFieldKitTitle,
+                                    subtitle: context.l10n.homeFieldKitSubtitle,
+                                    icon: Icons.backpack_outlined,
+                                  ),
+                                ],
+                                if (snapshot.equipment.isNotEmpty) ...<Widget>[
+                                  const SizedBox(height: 12),
+                                  _EquipmentCard(
+                                    slots: snapshot.equipment,
+                                    equippedSlotCount:
+                                        snapshot.equippedEquipmentSlotCount,
+                                    readOnly: readOnly,
+                                    busy: gameplayActionBlocked,
+                                    changing: isChangingEquipment,
+                                    onUnequip: onUnequip,
+                                  ),
+                                ],
+                                if (snapshot.inventory.isNotEmpty) ...<Widget>[
+                                  const SizedBox(height: 12),
+                                  _InventoryCard(
+                                    items: snapshot.inventory,
+                                    equippableItemCount:
+                                        snapshot.equippableInventoryItemCount,
+                                    readOnly: readOnly,
+                                    busy: gameplayActionBlocked,
+                                    changing: isChangingEquipment,
+                                    onEquip: onEquip,
+                                  ),
+                                ],
+                                if (snapshot
+                                    .craftingRecipes
+                                    .isNotEmpty) ...<Widget>[
+                                  const SizedBox(height: 12),
+                                  _CraftingCard(
+                                    recipes: snapshot.craftingRecipes,
+                                    craftableRecipeCount:
+                                        snapshot.craftableRecipeCount,
+                                    recipeViewportKey: recipeViewportKey,
+                                    readOnly: readOnly,
+                                    busy: gameplayActionBlocked,
+                                    crafting: isCrafting,
+                                    onCraft: onCraft,
+                                  ),
+                                ],
+                                if (snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                                  const SizedBox(height: 12),
+                                  _ItemUpgradeCard(
+                                    upgrades: snapshot.itemUpgrades,
+                                    readyItemUpgradeCount:
+                                        snapshot.readyItemUpgradeCount,
+                                    readOnly: readOnly,
+                                    busy: gameplayActionBlocked,
+                                    upgrading: isUpgrading,
+                                    onUpgrade: onUpgrade,
+                                  ),
+                                ],
+                                const SizedBox(height: 24),
+                                _StateFooter(snapshot: snapshot),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
           ),
         );
       },
@@ -1405,7 +1447,11 @@ class _HomeAppTitle extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(8),
-                  child: const Icon(Icons.radar, color: Color(0xFFD6B574), size: 20),
+                  child: const Icon(
+                    Icons.radar,
+                    color: Color(0xFFD6B574),
+                    size: 20,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1508,9 +1554,12 @@ class _ExpeditionHero extends StatelessWidget {
       children: <Widget>[
         Text(
           key: const Key('home-expedition-journey-number'),
-          context.l10n.homeJourneyNumber(snapshot.expeditionJourneyNumber).toUpperCase(),
+          context.l10n
+              .homeJourneyNumber(snapshot.expeditionJourneyNumber)
+              .toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: const Color(0xFFD6B574), letterSpacing: 1.8,
+            color: const Color(0xFFD6B574),
+            letterSpacing: 1.8,
           ),
         ),
         const SizedBox(height: 5),
@@ -1520,7 +1569,10 @@ class _ExpeditionHero extends StatelessWidget {
               child: ExpeditionNodeSignal(
                 key: const Key('home-current-node-badge'),
                 nodeId: snapshot.currentNodeId,
-                nodeName: context.l10n.currentNodeName(snapshot.currentNodeId, snapshot.currentNodeName),
+                nodeName: context.l10n.currentNodeName(
+                  snapshot.currentNodeId,
+                  snapshot.currentNodeName,
+                ),
                 completed: completed,
                 markSize: 30,
                 framed: false,
@@ -1530,17 +1582,22 @@ class _ExpeditionHero extends StatelessWidget {
             ExcludeSemantics(
               child: Text(
                 '${(snapshot.expeditionProgressValue * 100).round()}%',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: const Color(0xFFD6B574)),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: const Color(0xFFD6B574),
+                ),
               ),
             ),
           ],
         ),
-        if (snapshot.petId == null || snapshot.petSpecies == null || snapshot.petEvolutionStage == null) ...<Widget>[
+        if (snapshot.petId == null ||
+            snapshot.petSpecies == null ||
+            snapshot.petEvolutionStage == null) ...<Widget>[
           const SizedBox(height: 8),
           ExpeditionBadge(
             key: const Key('home-active-companion-badge'),
             label: context.l10n.homeCompanionLevel(
-              context.l10n.currentPetName(snapshot.petId, snapshot.petName), snapshot.petLevel,
+              context.l10n.currentPetName(snapshot.petId, snapshot.petName),
+              snapshot.petLevel,
             ),
             icon: Icons.pets_outlined,
             tone: ExpeditionPanelTone.resonance,
@@ -1566,8 +1623,16 @@ class _HomeActivityHud extends StatelessWidget {
         spacing: 8,
         runSpacing: 4,
         children: <Widget>[
-          Text(context.l10n.homeSceneSteps(snapshot.dailySteps), style: Theme.of(context).textTheme.labelLarge),
-          Text('${snapshot.availableEnergy} ENERGY', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: const Color(0xFFD6B574))),
+          Text(
+            context.l10n.homeSceneSteps(snapshot.dailySteps),
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          Text(
+            '${snapshot.availableEnergy} ENERGY',
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: const Color(0xFFD6B574)),
+          ),
         ],
       ),
       const SizedBox(height: 8),
@@ -1576,7 +1641,10 @@ class _HomeActivityHud extends StatelessWidget {
         color: const Color(0xFFD6B574),
         backgroundColor: const Color(0x80515C5F),
         minHeight: 2,
-        semanticsLabel: context.l10n.homeTodayProgress(snapshot.dailySteps, snapshot.dailyGoal),
+        semanticsLabel: context.l10n.homeTodayProgress(
+          snapshot.dailySteps,
+          snapshot.dailyGoal,
+        ),
       ),
     ],
   );
