@@ -69,6 +69,7 @@ class PilotMotionPortrait extends StatelessWidget {
     this.lookDirection,
     this.play = true,
     this.loop = false,
+    this.framed = true,
   }) : assert(size > 0);
 
   static const String navigatorPilotId = 'navigator-v1';
@@ -86,6 +87,8 @@ class PilotMotionPortrait extends StatelessWidget {
   final PilotLookDirection? lookDirection;
   final bool play;
   final bool loop;
+  /// Scene actors share their environment instead of drawing a portrait tile.
+  final bool framed;
 
   bool get hasNavigatorScarf {
     return equippedCosmeticIds.contains(CharacterCosmeticIds.pilotScarf);
@@ -119,6 +122,28 @@ class PilotMotionPortrait extends StatelessWidget {
     final double radius = size * 0.29;
     final double inset = math.max(2.0, size * 0.035);
     final PilotLookDirection? direction = lookDirection;
+    final Widget motion = CharacterMotionAtlasPlayer(
+      assetPath: assetPath,
+      frameKeyPrefix: 'pilot-motion-frame-$pilotId',
+      clipRow: clip.row,
+      frameCount: clip.frameCount,
+      clipDuration: clip.duration,
+      clipLoops: clip.loops,
+      lookRow: direction?.row,
+      lookColumn: direction?.column,
+      play: play,
+      loop: loop,
+    );
+
+    if (!framed) {
+      return Semantics(
+        image: true,
+        label: context.l10n.pilotPortraitSemantics(name),
+        child: RepaintBoundary(
+          child: SizedBox.square(dimension: size, child: motion),
+        ),
+      );
+    }
 
     return Semantics(
       image: true,
@@ -149,18 +174,7 @@ class PilotMotionPortrait extends StatelessWidget {
                 borderRadius: BorderRadius.circular(
                   math.max(0.0, radius - inset),
                 ),
-                child: CharacterMotionAtlasPlayer(
-                  assetPath: assetPath,
-                  frameKeyPrefix: 'pilot-motion-frame-$pilotId',
-                  clipRow: clip.row,
-                  frameCount: clip.frameCount,
-                  clipDuration: clip.duration,
-                  clipLoops: clip.loops,
-                  lookRow: direction?.row,
-                  lookColumn: direction?.column,
-                  play: play,
-                  loop: loop,
-                ),
+                child: motion,
               ),
             ),
           ),

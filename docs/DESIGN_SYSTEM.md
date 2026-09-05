@@ -22,18 +22,55 @@ cyberpunk. It is designed for adults, short sessions and readable Russian copy.
 
 The expedition screen follows the actual game loop:
 
-1. current node and expedition state;
-2. today's personal walking progress;
-3. available ENERGY and route progress;
-4. the single next authoritative action;
-5. pending result or event choice;
-6. pilot and active pet;
+1. current node and the pilot with the accepted active pet in a shared scene;
+2. a compact summary of today's steps, available ENERGY and route progress;
+3. the single next authoritative action;
+4. pending result or event choice;
+5. detailed walking progress, goal policy and route trail;
+6. crew progression, bond and companion growth;
 7. equipment, inventory and workshop;
 8. technical version metadata.
 
 Cached state, pending acknowledgements and locked choices keep their existing
 behavior. Styling never creates optimistic progress or hides a server-owned
 restriction.
+
+## Home crew scene
+
+The Home foreground uses the existing transparent full-body atlases without
+portrait frames. A common ground plane, contact shadows, distant cliffs and a
+mist-lit valley give the pilot and active companion a shared place to stand.
+The scenery is static; its river and lights are decorative, not extra route
+nodes. The accepted route percentage remains in the separate route plate.
+
+The scene plays one short idle pass on appearance. The labelled greeting button
+replays a finite greeting for both actors; there is no continuous loop or
+background timer. Motion stops when the scene leaves its scroll viewport, the
+destination or route becomes hidden, the app leaves the foreground, or reduced
+motion is enabled. Reduced motion holds the idle still and disables greeting.
+Unknown companion IDs retain the existing neutral portrait fallback, and legacy
+snapshots with incomplete companion identity retain their textual badge.
+The shared pilot art remains the universal current presentation; the scene does
+not infer another pilot or cosmetic from a name.
+
+The first phone viewport prioritizes the characters. Detailed activity and crew
+cards remain below the scene, with event results and choices before those
+details. Narrow screens and enlarged text use flowing labels around the art;
+the action and navigation reserve their existing safe-area space.
+
+Reproduce actual widget renders with the repository's pinned Flutter SDK:
+
+```sh
+cd mobile
+flutter pub get --enforce-lockfile
+flutter test --no-pub --dart-define=HOME_SCENE_CAPTURE=true test/home_scene_preview_test.dart
+```
+
+Set `FLUTTER_ROOT` to that SDK when running outside flutter-action. The capture
+test uses SDK Roboto fonts, all three companion fixtures, RU/EN, light/dark,
+narrow/enlarged text and reduced motion. CI publishes `home-visual-fixtures`
+from `mobile/build/home-previews`. These are synthetic widget renders for
+review, not physical-device evidence for TASK-011.
 
 ## Tokens
 

@@ -135,7 +135,7 @@ void main() {
       find.byKey(const Key('pilot-motion-frame-navigator-v1-0-5')),
       findsOneWidget,
     );
-    expect(find.bySemanticsLabel('Пилот Навигатор'), findsNothing);
+    expect(find.bySemanticsLabel('Пилот Навигатор'), findsOneWidget);
     expect(
       find.byKey(const Key('home-team-companion-portrait')),
       findsOneWidget,
