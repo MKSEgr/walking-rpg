@@ -21,6 +21,7 @@ class ChapterVista extends StatelessWidget {
   final String semanticLabel;
   final double? progress;
   final double height;
+
   /// Opens the foreground for full-body actors while retaining the route vista.
   final bool crewStage;
 
@@ -220,18 +221,22 @@ class _ChapterVistaPainter extends CustomPainter {
     // Static depth layers: distant cliffs, a mist-lit valley and a nearby ridge.
     // These are scenery, not extra discovered nodes or a second progress scale.
     final Rect valley = Rect.fromLTWH(
-      0, size.height * 0.23, size.width, size.height * 0.7,
+      0,
+      size.height * 0.23,
+      size.width,
+      size.height * 0.7,
     );
     canvas.drawRect(
       valley,
-      Paint()..shader = RadialGradient(
-        center: const Alignment(0.35, -0.25),
-        radius: 0.9,
-        colors: <Color>[
-          route.withValues(alpha: 0.25),
-          skyBottom.withValues(alpha: 0),
-        ],
-      ).createShader(valley),
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0.35, -0.25),
+          radius: 0.9,
+          colors: <Color>[
+            route.withValues(alpha: 0.25),
+            skyBottom.withValues(alpha: 0),
+          ],
+        ).createShader(valley),
     );
     final Path cliffs = Path()
       ..moveTo(0, size.height * 0.65)
@@ -251,9 +256,14 @@ class _ChapterVistaPainter extends CustomPainter {
     canvas.drawPath(cliffs, Paint()..color = terrain.withValues(alpha: 0.7));
     final Path river = Path()
       ..moveTo(size.width * 0.7, size.height * 0.56)
-      ..cubicTo(size.width * 0.4, size.height * 0.65,
-        size.width * 0.88, size.height * 0.68,
-        size.width * 0.38, size.height * 0.81);
+      ..cubicTo(
+        size.width * 0.4,
+        size.height * 0.65,
+        size.width * 0.88,
+        size.height * 0.68,
+        size.width * 0.38,
+        size.height * 0.81,
+      );
     canvas.drawPath(
       river,
       Paint()
@@ -274,10 +284,13 @@ class _ChapterVistaPainter extends CustomPainter {
       canvas.drawLine(
         Offset(size.width * x, y + 45),
         Offset(size.width * x, y),
-        Paint()..color = route.withValues(alpha: 0.45)..strokeWidth = 2,
+        Paint()
+          ..color = route.withValues(alpha: 0.45)
+          ..strokeWidth = 2,
       );
       canvas.drawCircle(
-        Offset(size.width * x, y), 3,
+        Offset(size.width * x, y),
+        3,
         Paint()..color = energy.withValues(alpha: 0.85),
       );
     }

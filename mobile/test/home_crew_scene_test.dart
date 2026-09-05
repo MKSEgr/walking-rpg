@@ -8,37 +8,57 @@ import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 void main() {
-  testWidgets('crew greets together without continuous animation', (tester) async {
+  testWidgets('crew greets together without continuous animation', (
+    tester,
+  ) async {
     final ScrollController scroll = ScrollController();
     addTearDown(scroll.dispose);
     await tester.pumpWidget(_scene(scroll: scroll));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('pilot-motion-frame-navigator-v1-0-5')), findsOneWidget);
-    expect(find.byKey(const Key('companion-motion-frame-spark-v1-0-5')), findsOneWidget);
+    expect(
+      find.byKey(const Key('pilot-motion-frame-navigator-v1-0-5')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('companion-motion-frame-spark-v1-0-5')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('home-greet-crew')));
     await tester.pump();
-    expect(find.byKey(const Key('pilot-motion-frame-navigator-v1-3-0')), findsOneWidget);
-    expect(find.byKey(const Key('companion-motion-frame-spark-v1-3-0')), findsOneWidget);
+    expect(
+      find.byKey(const Key('pilot-motion-frame-navigator-v1-3-0')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('companion-motion-frame-spark-v1-3-0')),
+      findsOneWidget,
+    );
     await tester.pumpAndSettle();
     expect(tester.binding.hasScheduledFrame, isFalse);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('scene stops when scrolled away, hidden or backgrounded', (tester) async {
+  testWidgets('scene stops when scrolled away, hidden or backgrounded', (
+    tester,
+  ) async {
     final ScrollController scroll = ScrollController();
     final ValueNotifier<bool> visible = ValueNotifier<bool>(true);
     addTearDown(scroll.dispose);
     addTearDown(visible.dispose);
-    await tester.pumpWidget(ValueListenableBuilder<bool>(
-      valueListenable: visible,
-      builder: (context, value, _) => NavigationDestinationVisibility(
-        isVisible: value,
-        child: _scene(scroll: scroll),
+    await tester.pumpWidget(
+      ValueListenableBuilder<bool>(
+        valueListenable: visible,
+        builder: (context, value, _) => NavigationDestinationVisibility(
+          isVisible: value,
+          child: _scene(scroll: scroll),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
-    bool playing() => tester.widget<PilotMotionPortrait>(find.byType(PilotMotionPortrait)).play;
+    bool playing() => tester
+        .widget<PilotMotionPortrait>(find.byType(PilotMotionPortrait))
+        .play;
     expect(playing(), isTrue);
     scroll.jumpTo(700);
     await tester.pumpAndSettle();
@@ -65,18 +85,36 @@ void main() {
     addTearDown(scroll.dispose);
     await tester.pumpWidget(_scene(scroll: scroll, reduceMotion: true));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('pilot-motion-frame-navigator-v1-0-0')), findsOneWidget);
-    expect(find.byKey(const Key('companion-motion-frame-spark-v1-0-0')), findsOneWidget);
-    expect(tester.widget<IconButton>(find.byKey(const Key('home-greet-crew'))).onPressed, isNull);
+    expect(
+      find.byKey(const Key('pilot-motion-frame-navigator-v1-0-0')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('companion-motion-frame-spark-v1-0-0')),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const Key('home-greet-crew')))
+          .onPressed,
+      isNull,
+    );
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
-  testWidgets('unknown companion keeps the neutral portrait fallback', (tester) async {
+  testWidgets('unknown companion keeps the neutral portrait fallback', (
+    tester,
+  ) async {
     final ScrollController scroll = ScrollController();
     addTearDown(scroll.dispose);
     await tester.pumpWidget(_scene(scroll: scroll, petId: 'future-pet'));
     await tester.pumpAndSettle();
-    expect(tester.widget<CompanionMotionPortrait>(find.byType(CompanionMotionPortrait)).hasMotionAsset, isFalse);
+    expect(
+      tester
+          .widget<CompanionMotionPortrait>(find.byType(CompanionMotionPortrait))
+          .hasMotionAsset,
+      isFalse,
+    );
     expect(find.byType(CompanionPortrait), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -89,7 +127,10 @@ Widget _scene({
 }) => MaterialApp(
   theme: WalkingRpgTheme.dark(),
   home: MediaQuery(
-    data: MediaQueryData(disableAnimations: reduceMotion, size: const Size(390, 844)),
+    data: MediaQueryData(
+      disableAnimations: reduceMotion,
+      size: const Size(390, 844),
+    ),
     child: Scaffold(
       body: SingleChildScrollView(
         controller: scroll,

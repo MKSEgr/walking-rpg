@@ -87,6 +87,7 @@ class PilotMotionPortrait extends StatelessWidget {
   final PilotLookDirection? lookDirection;
   final bool play;
   final bool loop;
+
   /// Scene actors share their environment instead of drawing a portrait tile.
   final bool framed;
 

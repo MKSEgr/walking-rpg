@@ -64,7 +64,9 @@ it does not redesign the hood, visor, torso or palette.
 
 The v1 atlas and manifest live in
 `mobile/assets/characters/pilot_navigator_motion_v1.{png,json}`. Home may play
-one non-looping idle pass for the exact current `navigator-v1` presentation.
+one non-looping idle pass and an explicit finite greeting for the exact current
+`navigator-v1` presentation. The full-body Home scene shares a ground plane with
+the active companion and pauses motion outside the visible foreground.
 The account dossier and journal retain the existing static portrait.
 
 ## Cosmetics and future pilots

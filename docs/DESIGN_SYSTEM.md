@@ -194,7 +194,7 @@ material and deliberately fail the recorded-evidence gate.
 
 The universal `navigator-v1` pilot now has a separate transparent motion atlas
 under the identity and movement rules in
-[PILOT_ART_BIBLE.md](PILOT_ART_BIBLE.md). Home plays one non-looping idle pass
+[PILOT_ART_BIBLE.md](PILOT_ART_BIBLE.md). Home plays finite idle and greeting clips
 for that exact current presentation; the account dossier and journal keep their
 static portrait. The shared atlas player preserves reduced-motion behavior and
 frame geometry without treating pilot art as a companion species. No pilot ID,

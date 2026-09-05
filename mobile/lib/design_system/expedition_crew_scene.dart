@@ -204,7 +204,9 @@ class _ExpeditionCrewSceneState extends State<ExpeditionCrewScene>
                       context.l10n.homeCrewTitle.toUpperCase(),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         letterSpacing: 2,
-                        color: WalkingRpgColors.moonMist.withValues(alpha: 0.65),
+                        color: WalkingRpgColors.moonMist.withValues(
+                          alpha: 0.65,
+                        ),
                       ),
                     ),
                   ),

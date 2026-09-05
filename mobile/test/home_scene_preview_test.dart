@@ -1,5 +1,6 @@
 // Render the real Home widget with synthetic accepted fixtures. These captures
 // support design review and are never physical-device evidence.
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -22,20 +23,93 @@ void main() {
     final String root = Platform.environment['FLUTTER_ROOT']!;
     final FontLoader font = FontLoader('Roboto');
     for (final String weight in <String>['Regular', 'Medium', 'Bold']) {
-      font.addFont(File('$root/bin/cache/artifacts/material_fonts/Roboto-$weight.ttf')
-          .readAsBytes().then((bytes) => ByteData.sublistView(bytes)));
+      font.addFont(
+        File(
+          '$root/bin/cache/artifacts/material_fonts/Roboto-$weight.ttf',
+        ).readAsBytes().then((bytes) => ByteData.sublistView(bytes)),
+      );
     }
     await font.load();
   });
 
-  const List<({String name, String pet, String locale, bool dark, Size size, double scale, bool reduced})> cases = <({String name, String pet, String locale, bool dark, Size size, double scale, bool reduced})>[
-    (name: 'home-dark-spark-ru', pet: 'spark-v1', locale: 'ru', dark: true, size: Size(390, 844), scale: 1, reduced: false),
-    (name: 'home-light-moss-ru', pet: 'moss-v1', locale: 'ru', dark: false, size: Size(390, 844), scale: 1, reduced: false),
-    (name: 'home-dark-rune-en', pet: 'rune-v1', locale: 'en', dark: true, size: Size(390, 844), scale: 1, reduced: false),
-    (name: 'home-narrow-large-ru', pet: 'spark-v1', locale: 'ru', dark: true, size: Size(320, 640), scale: 1.6, reduced: false),
-    (name: 'home-large-text-en', pet: 'moss-v1', locale: 'en', dark: false, size: Size(500, 800), scale: 2, reduced: false),
-    (name: 'home-reduced-motion-ru', pet: 'spark-v1', locale: 'ru', dark: true, size: Size(390, 844), scale: 1, reduced: true),
-  ];
+  const List<
+    ({
+      String name,
+      String pet,
+      String locale,
+      bool dark,
+      Size size,
+      double scale,
+      bool reduced,
+    })
+  >
+  cases =
+      <
+        ({
+          String name,
+          String pet,
+          String locale,
+          bool dark,
+          Size size,
+          double scale,
+          bool reduced,
+        })
+      >[
+        (
+          name: 'home-dark-spark-ru',
+          pet: 'spark-v1',
+          locale: 'ru',
+          dark: true,
+          size: Size(390, 844),
+          scale: 1,
+          reduced: false,
+        ),
+        (
+          name: 'home-light-moss-ru',
+          pet: 'moss-v1',
+          locale: 'ru',
+          dark: false,
+          size: Size(390, 844),
+          scale: 1,
+          reduced: false,
+        ),
+        (
+          name: 'home-dark-rune-en',
+          pet: 'rune-v1',
+          locale: 'en',
+          dark: true,
+          size: Size(390, 844),
+          scale: 1,
+          reduced: false,
+        ),
+        (
+          name: 'home-narrow-large-ru',
+          pet: 'spark-v1',
+          locale: 'ru',
+          dark: true,
+          size: Size(320, 640),
+          scale: 1.6,
+          reduced: false,
+        ),
+        (
+          name: 'home-large-text-en',
+          pet: 'moss-v1',
+          locale: 'en',
+          dark: false,
+          size: Size(500, 800),
+          scale: 2,
+          reduced: false,
+        ),
+        (
+          name: 'home-reduced-motion-ru',
+          pet: 'spark-v1',
+          locale: 'ru',
+          dark: true,
+          size: Size(390, 844),
+          scale: 1,
+          reduced: true,
+        ),
+      ];
   for (final scenario in cases) {
     testWidgets('render ${scenario.name}', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(scenario.size);
@@ -48,9 +122,18 @@ void main() {
             locale: Locale(scenario.locale),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            theme: (scenario.dark ? WalkingRpgTheme.dark() : WalkingRpgTheme.light()).copyWith(
-              textTheme: (scenario.dark ? WalkingRpgTheme.dark() : WalkingRpgTheme.light()).textTheme.apply(fontFamily: 'Roboto'),
-            ),
+            theme:
+                (scenario.dark
+                        ? WalkingRpgTheme.dark()
+                        : WalkingRpgTheme.light())
+                    .copyWith(
+                      textTheme:
+                          (scenario.dark
+                                  ? WalkingRpgTheme.dark()
+                                  : WalkingRpgTheme.light())
+                              .textTheme
+                              .apply(fontFamily: 'Roboto'),
+                    ),
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 textScaler: TextScaler.linear(scenario.scale),
@@ -68,28 +151,54 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.runAsync(() async {
-        for (final Image image in tester.widgetList<Image>(find.byType(Image))) {
-          await precacheImage(image.image, tester.element(find.byKey(captureKey)));
+        for (final Image image in tester.widgetList<Image>(
+          find.byType(Image),
+        )) {
+          await precacheImage(
+            image.image,
+            tester.element(find.byKey(captureKey)),
+          );
         }
       });
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       if (scenario.scale == 1) {
-        final Rect scene = tester.getRect(find.byKey(const Key('home-crew-scene')));
-        final Rect action = tester.getRect(find.byKey(const Key('home-sticky-action-panel')));
+        final Rect scene = tester.getRect(
+          find.byKey(const Key('home-crew-scene')),
+        );
+        final Rect action = tester.getRect(
+          find.byKey(const Key('home-sticky-action-panel')),
+        );
         expect(scene.bottom, lessThanOrEqualTo(action.top));
-        for (final String actor in <String>['home-pilot-motion-portrait', 'home-active-companion-portrait']) {
+        for (final String actor in <String>[
+          'home-pilot-motion-portrait',
+          'home-active-companion-portrait',
+        ]) {
           final Rect bounds = tester.getRect(find.byKey(Key(actor)));
           expect(scene.contains(bounds.center), isTrue);
         }
       }
-      final RenderRepaintBoundary boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
+      final RenderRepaintBoundary boundary = tester
+          .renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
       await tester.runAsync(() async {
-        final ui.Image image = await boundary.toImage(pixelRatio: 2);
-        final ByteData bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+        final ui.Image image = await boundary.toImage();
+        final ByteData bytes = (await image.toByteData(
+          format: ui.ImageByteFormat.png,
+        ))!;
         final File file = File('build/home-previews/${scenario.name}.png');
         await file.parent.create(recursive: true);
         await file.writeAsBytes(bytes.buffer.asUint8List());
+        if (const bool.fromEnvironment('HOME_SCENE_LOG_EXPORT')) {
+          stdout.writeln('HOME_PREVIEW_BEGIN:${scenario.name}');
+          final String encoded = base64Encode(bytes.buffer.asUint8List());
+          for (int index = 0; index < encoded.length; index += 800) {
+            final int end = index + 800 < encoded.length
+                ? index + 800
+                : encoded.length;
+            stdout.writeln('HOME_PREVIEW_DATA:${encoded.substring(index, end)}');
+          }
+          stdout.writeln('HOME_PREVIEW_END:${scenario.name}');
+        }
         image.dispose();
       });
     }, skip: !_capture);
@@ -122,8 +231,16 @@ HomeSnapshot _snapshot(String petId) {
     pilotName: demo.pilotName,
     pilotLevel: demo.pilotLevel,
     petId: petId,
-    petName: switch (petId) { 'moss-v1' => 'Мох', 'rune-v1' => 'Навигатор', _ => 'Искра' },
-    petSpecies: switch (petId) { 'moss-v1' => 'терра', 'rune-v1' => 'эхо', _ => 'люмин' },
+    petName: switch (petId) {
+      'moss-v1' => 'Мох',
+      'rune-v1' => 'Навигатор',
+      _ => 'Искра',
+    },
+    petSpecies: switch (petId) {
+      'moss-v1' => 'терра',
+      'rune-v1' => 'эхо',
+      _ => 'люмин',
+    },
     petEvolutionStage: 0,
     petLevel: 1,
     routeTrail: demo.routeTrail,

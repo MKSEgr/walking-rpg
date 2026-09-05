@@ -1438,10 +1438,12 @@ class _ExpeditionHero extends StatelessWidget {
           snapshot: snapshot,
           scrollController: scrollController,
           expeditionName: context.l10n.currentExpeditionName(
-            snapshot.expeditionId, snapshot.expeditionName,
+            snapshot.expeditionId,
+            snapshot.expeditionName,
           ),
           currentNodeName: context.l10n.currentNodeName(
-            snapshot.currentNodeId, snapshot.currentNodeName,
+            snapshot.currentNodeId,
+            snapshot.currentNodeName,
           ),
           currentNodeId: snapshot.currentNodeId,
           journeyNumber: snapshot.expeditionJourneyNumber,
@@ -1478,7 +1480,8 @@ class _ExpeditionHero extends StatelessWidget {
                 minHeight: 3,
                 borderRadius: BorderRadius.circular(4),
                 semanticsLabel: context.l10n.homeTodayProgress(
-                  snapshot.dailySteps, snapshot.dailyGoal,
+                  snapshot.dailySteps,
+                  snapshot.dailyGoal,
                 ),
               ),
             ],
@@ -1691,14 +1694,20 @@ class _ExpeditionVistaStage extends StatelessWidget {
         : 330;
     final Widget vista = ExpeditionCrewScene(
       key: const Key('home-crew-scene'),
-      pilotName: context.l10n.currentPilotName(snapshot.pilotId, snapshot.pilotName),
+      pilotName: context.l10n.currentPilotName(
+        snapshot.pilotId,
+        snapshot.pilotName,
+      ),
       greetingLabel: context.l10n.homeGreetCrew,
       scrollController: scrollController,
       petId: snapshot.petId,
       petName: context.l10n.currentPetName(snapshot.petId, snapshot.petName),
-      petSpecies: snapshot.petSpecies == null ? null : context.l10n.currentPetSpecies(
-        snapshot.petId, snapshot.petSpecies!,
-      ),
+      petSpecies: snapshot.petSpecies == null
+          ? null
+          : context.l10n.currentPetSpecies(
+              snapshot.petId,
+              snapshot.petSpecies!,
+            ),
       petEvolutionStage: snapshot.petEvolutionStage,
       height: sceneHeight,
       background: ChapterVista(
@@ -2272,10 +2281,7 @@ class _ExpeditionTeam extends StatelessWidget {
       progressKey: const Key('home-pilot-experience-progress'),
       icon: Icons.person_outline,
       portrait: ExcludeSemantics(
-        child: PilotPortrait(
-          name: pilotName,
-          size: 72,
-        ),
+        child: PilotPortrait(name: pilotName, size: 72),
       ),
     );
     final Widget pet = _CharacterCard(
