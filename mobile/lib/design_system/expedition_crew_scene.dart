@@ -116,7 +116,7 @@ class _ExpeditionCrewSceneState extends State<ExpeditionCrewScene>
         _inViewport &&
         NavigationDestinationVisibility.of(context) &&
         (ModalRoute.isCurrentOf(context) ?? true) &&
-        TickerMode.of(context) &&
+        TickerMode.valuesOf(context).enabled &&
         !MediaQuery.disableAnimationsOf(context);
     final bool hasPet =
         widget.petId != null &&

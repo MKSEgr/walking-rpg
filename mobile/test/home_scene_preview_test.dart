@@ -208,7 +208,7 @@ void main() {
 }
 
 HomeSnapshot _snapshot(String petId) {
-  final HomeSnapshot demo = HomeSnapshot.demo;
+  const HomeSnapshot demo = HomeSnapshot.demo;
   return HomeSnapshot(
     localDate: demo.localDate,
     timeZone: demo.timeZone,
