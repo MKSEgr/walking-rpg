@@ -198,10 +198,27 @@ jobs:
 
       - name: Fail when mobile analysis failed
         if: steps.mobile-analyze.outputs.status != '0'
-        run: exit 1
+        run: |
+          cat /tmp/mobile-analyze.log
+          exit 1
 
       - name: Run tests
         run: flutter test --no-pub
+
+      - name: Render Home visual fixtures
+        if: ${{ !cancelled() }}
+        run: >-
+          flutter test --no-pub --dart-define=HOME_SCENE_CAPTURE=true
+          test/home_scene_preview_test.dart
+
+      - name: Upload Home visual fixtures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: home-visual-fixtures
+          path: mobile/build/home-previews/*.png
+          if-no-files-found: error
+          retention-days: 7
 
   android-host:
     name: Android host · debug APK

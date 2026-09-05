@@ -460,6 +460,8 @@
   "homeNeedEnergyAction": "Нужно накопить энергию",
   "homeRefreshState": "Обновить состояние",
   "homeCrewTitle": "Команда экспедиции",
+  "homeGreetCrew": "Поприветствовать экипаж",
+  "homeSceneSteps": "Шаги сегодня: {steps}",
   "homeCrewSubtitle": "Пилот задаёт путь, питомец усиливает решения.",
   "homeFieldKitTitle": "Полевой комплект",
   "homeFieldKitSubtitle": "Снаряжение, находки и мастерская этой главы.",

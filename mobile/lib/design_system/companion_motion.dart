@@ -68,6 +68,7 @@ class CompanionMotionPortrait extends StatelessWidget {
     this.lookDirection,
     this.play = true,
     this.loop = false,
+    this.framed = true,
   }) : assert(size > 0);
 
   final String petId;
@@ -80,6 +81,9 @@ class CompanionMotionPortrait extends StatelessWidget {
   final CompanionLookDirection? lookDirection;
   final bool play;
   final bool loop;
+
+  /// Scene actors share their environment instead of drawing a portrait tile.
+  final bool framed;
 
   String? get motionAssetPath => switch (petId) {
     'spark-v1' => 'assets/characters/companion_spark_motion_v1.png',
@@ -106,6 +110,33 @@ class CompanionMotionPortrait extends StatelessWidget {
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final WalkingRpgPalette palette = context.walkingRpgPalette;
+    final Widget motion = CharacterMotionAtlasPlayer(
+      assetPath: assetPath,
+      frameKeyPrefix: 'companion-motion-frame-$petId',
+      clipRow: clip.row,
+      frameCount: clip.frameCount,
+      clipDuration: clip.duration,
+      clipLoops: clip.loops,
+      lookRow: lookDirection?.row,
+      lookColumn: lookDirection?.column,
+      play: play,
+      loop: loop,
+    );
+    if (!framed) {
+      return Semantics(
+        image: true,
+        label: context.l10n.companionPortraitDescription(
+          name: name,
+          species: species,
+          stage: evolutionStage,
+          active: active,
+          hasSparkHalo: false,
+        ),
+        child: RepaintBoundary(
+          child: SizedBox.square(dimension: size, child: motion),
+        ),
+      );
+    }
     return Semantics(
       image: true,
       label: context.l10n.companionPortraitDescription(
@@ -140,18 +171,7 @@ class CompanionMotionPortrait extends StatelessWidget {
               dimension: size,
               child: Padding(
                 padding: EdgeInsets.all(size * 0.035),
-                child: CharacterMotionAtlasPlayer(
-                  assetPath: assetPath,
-                  frameKeyPrefix: 'companion-motion-frame-$petId',
-                  clipRow: clip.row,
-                  frameCount: clip.frameCount,
-                  clipDuration: clip.duration,
-                  clipLoops: clip.loops,
-                  lookRow: lookDirection?.row,
-                  lookColumn: lookDirection?.column,
-                  play: play,
-                  loop: loop,
-                ),
+                child: motion,
               ),
             ),
           ),

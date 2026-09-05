@@ -15,11 +15,15 @@ class ChapterVista extends StatelessWidget {
     required this.semanticLabel,
     this.progress,
     this.height = 190,
+    this.crewStage = false,
   }) : assert(height > 0);
 
   final String semanticLabel;
   final double? progress;
   final double height;
+
+  /// Opens the foreground for full-body actors while retaining the route vista.
+  final bool crewStage;
 
   double? get normalizedProgress {
     final double? value = progress;
@@ -47,6 +51,7 @@ class ChapterVista extends StatelessWidget {
             child: CustomPaint(
               isComplex: true,
               painter: _ChapterVistaPainter(
+                crewStage: crewStage,
                 progress: safeProgress,
                 skyTop: palette.backdropTop,
                 skyBottom: palette.backdropBottom,
@@ -68,6 +73,7 @@ class ChapterVista extends StatelessWidget {
 
 class _ChapterVistaPainter extends CustomPainter {
   const _ChapterVistaPainter({
+    required this.crewStage,
     required this.progress,
     required this.skyTop,
     required this.skyBottom,
@@ -81,6 +87,7 @@ class _ChapterVistaPainter extends CustomPainter {
   });
 
   final double? progress;
+  final bool crewStage;
   final Color skyTop;
   final Color skyBottom;
   final Color terrain;
@@ -131,6 +138,11 @@ class _ChapterVistaPainter extends CustomPainter {
 
     _paintStars(canvas, size);
     _paintHorizon(canvas, size);
+    if (crewStage) {
+      _paintCrewLandscape(canvas, size);
+      _paintBeacon(canvas, size, beacon);
+      return;
+    }
 
     final Path routePath = Path()
       ..moveTo(size.width * 0.05, size.height * 0.85)
@@ -201,6 +213,85 @@ class _ChapterVistaPainter extends CustomPainter {
         Offset(point.dx * size.width, point.dy * size.height),
         index.isEven ? 1.4 : 1,
         star,
+      );
+    }
+  }
+
+  void _paintCrewLandscape(Canvas canvas, Size size) {
+    // Static depth layers: distant cliffs, a mist-lit valley and a nearby ridge.
+    // These are scenery, not extra discovered nodes or a second progress scale.
+    final Rect valley = Rect.fromLTWH(
+      0,
+      size.height * 0.23,
+      size.width,
+      size.height * 0.7,
+    );
+    canvas.drawRect(
+      valley,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0.35, -0.25),
+          radius: 0.9,
+          colors: <Color>[
+            route.withValues(alpha: 0.25),
+            skyBottom.withValues(alpha: 0),
+          ],
+        ).createShader(valley),
+    );
+    final Path cliffs = Path()
+      ..moveTo(0, size.height * 0.65)
+      ..lineTo(0, size.height * 0.32)
+      ..lineTo(size.width * 0.10, size.height * 0.28)
+      ..lineTo(size.width * 0.15, size.height * 0.43)
+      ..lineTo(size.width * 0.22, size.height * 0.39)
+      ..lineTo(size.width * 0.31, size.height * 0.64)
+      ..lineTo(size.width * 0.57, size.height * 0.67)
+      ..lineTo(size.width * 0.79, size.height * 0.48)
+      ..lineTo(size.width * 0.85, size.height * 0.27)
+      ..lineTo(size.width * 0.92, size.height * 0.33)
+      ..lineTo(size.width, size.height * 0.19)
+      ..lineTo(size.width, size.height * 0.85)
+      ..lineTo(0, size.height * 0.85)
+      ..close();
+    canvas.drawPath(cliffs, Paint()..color = terrain.withValues(alpha: 0.7));
+    final Path river = Path()
+      ..moveTo(size.width * 0.7, size.height * 0.56)
+      ..cubicTo(
+        size.width * 0.4,
+        size.height * 0.65,
+        size.width * 0.88,
+        size.height * 0.68,
+        size.width * 0.38,
+        size.height * 0.81,
+      );
+    canvas.drawPath(
+      river,
+      Paint()
+        ..color = route.withValues(alpha: 0.17)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 16
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawPath(
+      river,
+      Paint()
+        ..color = route.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    for (final double x in <double>[0.06, 0.92, 0.96]) {
+      final double y = size.height * (x < 0.5 ? 0.66 : 0.72);
+      canvas.drawLine(
+        Offset(size.width * x, y + 45),
+        Offset(size.width * x, y),
+        Paint()
+          ..color = route.withValues(alpha: 0.45)
+          ..strokeWidth = 2,
+      );
+      canvas.drawCircle(
+        Offset(size.width * x, y),
+        3,
+        Paint()..color = energy.withValues(alpha: 0.85),
       );
     }
   }
@@ -361,6 +452,7 @@ class _ChapterVistaPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ChapterVistaPainter oldDelegate) {
     return oldDelegate.progress != progress ||
+        oldDelegate.crewStage != crewStage ||
         oldDelegate.skyTop != skyTop ||
         oldDelegate.skyBottom != skyBottom ||
         oldDelegate.terrain != terrain ||

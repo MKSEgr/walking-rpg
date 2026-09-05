@@ -11,11 +11,11 @@ import 'package:walking_rpg_mobile/core/navigation/navigation_chrome_insets.dart
 import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
 import 'package:walking_rpg_mobile/design_system/chapter_vista.dart';
 import 'package:walking_rpg_mobile/design_system/companion_growth.dart';
-import 'package:walking_rpg_mobile/design_system/companion_motion.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/crafting_assembly_signal.dart';
 import 'package:walking_rpg_mobile/design_system/equipment_mount_signal.dart';
 import 'package:walking_rpg_mobile/design_system/event_choice_signal.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_crew_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_event_scene.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_item_art.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_node_signal.dart';
@@ -23,7 +23,7 @@ import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart
 import 'package:walking_rpg_mobile/design_system/expedition_read_state.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_route_trail.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_ui.dart';
-import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
+import 'package:walking_rpg_mobile/design_system/pilot_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/progression_gain_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/crafting/data/crafting_api_client.dart';
@@ -1106,189 +1106,216 @@ class _HomeBody extends StatelessWidget {
         (!completed && (eventReady || spendableEnergy <= 0));
 
     return ExpeditionBackdrop(
-      child: Stack(
-        children: <Widget>[
-          ListView(
-            controller: scrollController,
-            padding: EdgeInsets.fromLTRB(
-              20,
-              14,
-              20,
-              (activitySyncAction == null
-                      ? _homeContentBaseBottomPadding
-                      : _homeContentWithSyncBaseBottomPadding) +
-                  bottomDockInset,
-            ),
-            children: <Widget>[
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  if (snapshot.cacheMetadata != null) ...<Widget>[
-                    CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
-                    const SizedBox(height: 14),
-                  ],
-                  _ExpeditionHero(
-                    snapshot: snapshot,
-                    completed: completed,
-                    activitySubtitle: activitySubtitle,
-                  ),
-                  const SizedBox(height: 14),
-                  OutlinedButton.icon(
-                    onPressed: busy ? null : onRefresh,
-                    icon: const Icon(Icons.sync),
-                    label: Text(context.l10n.homeRefreshState),
-                  ),
-                  if (pendingEventResult != null) ...<Widget>[
-                    const SizedBox(height: 20),
-                    _PendingEventResultCard(
-                      result: pendingEventResult,
-                      readOnly: readOnly,
-                      acknowledging: isAcknowledging,
-                      onAcknowledge: onAcknowledgeEventResult,
-                    ),
-                  ],
-                  if (event != null) ...<Widget>[
-                    const SizedBox(height: 20),
-                    _EventCard(
-                      event: event,
-                      routeChoiceViewportKey: routeChoiceViewportKey,
-                      isResolving: isResolving,
-                      disabled:
-                          isResolving ||
-                          isAcknowledging ||
-                          readOnly ||
-                          pendingEventResult != null,
-                      onChoose: onResolve,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  ExpeditionSectionTitle(
-                    title: context.l10n.homeCrewTitle,
-                    subtitle: context.l10n.homeCrewSubtitle,
-                    icon: Icons.group_outlined,
-                  ),
-                  const SizedBox(height: 12),
-                  _ExpeditionTeam(snapshot: snapshot),
-                  if (snapshot.equipment.isNotEmpty ||
-                      snapshot.inventory.isNotEmpty ||
-                      snapshot.craftingRecipes.isNotEmpty ||
-                      snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 24),
-                    ExpeditionSectionTitle(
-                      title: context.l10n.homeFieldKitTitle,
-                      subtitle: context.l10n.homeFieldKitSubtitle,
-                      icon: Icons.backpack_outlined,
-                    ),
-                  ],
-                  if (snapshot.equipment.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _EquipmentCard(
-                      slots: snapshot.equipment,
-                      equippedSlotCount: snapshot.equippedEquipmentSlotCount,
-                      readOnly: readOnly,
-                      busy: gameplayActionBlocked,
-                      changing: isChangingEquipment,
-                      onUnequip: onUnequip,
-                    ),
-                  ],
-                  if (snapshot.inventory.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _InventoryCard(
-                      items: snapshot.inventory,
-                      equippableItemCount:
-                          snapshot.equippableInventoryItemCount,
-                      readOnly: readOnly,
-                      busy: gameplayActionBlocked,
-                      changing: isChangingEquipment,
-                      onEquip: onEquip,
-                    ),
-                  ],
-                  if (snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _CraftingCard(
-                      recipes: snapshot.craftingRecipes,
-                      craftableRecipeCount: snapshot.craftableRecipeCount,
-                      recipeViewportKey: recipeViewportKey,
-                      readOnly: readOnly,
-                      busy: gameplayActionBlocked,
-                      crafting: isCrafting,
-                      onCraft: onCraft,
-                    ),
-                  ],
-                  if (snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _ItemUpgradeCard(
-                      upgrades: snapshot.itemUpgrades,
-                      readyItemUpgradeCount: snapshot.readyItemUpgradeCount,
-                      readOnly: readOnly,
-                      busy: gameplayActionBlocked,
-                      upgrading: isUpgrading,
-                      onUpgrade: onUpgrade,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  _StateFooter(snapshot: snapshot),
-                ],
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints viewport) => Stack(
+          children: <Widget>[
+            ListView(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(
+                20,
+                14,
+                20,
+                (activitySyncAction == null
+                        ? _homeContentBaseBottomPadding
+                        : _homeContentWithSyncBaseBottomPadding) +
+                    bottomDockInset,
               ),
-            ],
-          ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: _homeStickyActionBaseBottom + bottomDockInset,
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                key: stickyActionOcclusionKey,
-                child: ExpeditionPanel(
-                  key: const Key('home-sticky-action-panel'),
-                  tone: eventReady || pendingEventResult != null
-                      ? ExpeditionPanelTone.resonance
-                      : ExpeditionPanelTone.energy,
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      if (activitySyncAction != null) ...<Widget>[
-                        activitySyncAction!,
-                        const SizedBox(height: 8),
-                      ],
-                      FilledButton.icon(
-                        key: completed
-                            ? const Key('home-begin-next-journey')
-                            : const Key('home-advance-expedition'),
-                        onPressed: actionDisabled
-                            ? null
-                            : completed
-                            ? onBeginNextJourney
-                            : onAdvance,
-                        icon: isAdvancing || isBeginningJourney
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(
-                                completed
-                                    ? Icons.replay_outlined
-                                    : Icons.near_me_outlined,
-                              ),
-                        label: Text(
-                          actionLabel,
-                          maxLines: 2,
-                          overflow: TextOverflow.visible,
-                          textAlign: TextAlign.center,
-                        ),
+              children: <Widget>[
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    if (snapshot.cacheMetadata != null) ...<Widget>[
+                      CachedSnapshotBanner(metadata: snapshot.cacheMetadata!),
+                      const SizedBox(height: 14),
+                    ],
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight:
+                            event == null &&
+                                pendingEventResult == null &&
+                                viewport.maxWidth < 600 &&
+                                viewport.maxHeight < 1000
+                            ? (viewport.maxHeight - 14)
+                                  .clamp(0, double.infinity)
+                                  .toDouble()
+                            : 0,
+                      ),
+                      child: _ExpeditionHero(
+                        snapshot: snapshot,
+                        completed: completed,
+                        scrollController: scrollController,
+                      ),
+                    ),
+                    if (pendingEventResult != null) ...<Widget>[
+                      const SizedBox(height: 20),
+                      _PendingEventResultCard(
+                        result: pendingEventResult,
+                        readOnly: readOnly,
+                        acknowledging: isAcknowledging,
+                        onAcknowledge: onAcknowledgeEventResult,
                       ),
                     ],
+                    if (event != null) ...<Widget>[
+                      const SizedBox(height: 20),
+                      _EventCard(
+                        event: event,
+                        routeChoiceViewportKey: routeChoiceViewportKey,
+                        isResolving: isResolving,
+                        disabled:
+                            isResolving ||
+                            isAcknowledging ||
+                            readOnly ||
+                            pendingEventResult != null,
+                        onChoose: onResolve,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _ExpeditionDetails(
+                      snapshot: snapshot,
+                      completed: completed,
+                      activitySubtitle: activitySubtitle,
+                    ),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      onPressed: busy ? null : onRefresh,
+                      icon: const Icon(Icons.sync),
+                      label: Text(context.l10n.homeRefreshState),
+                    ),
+                    const SizedBox(height: 24),
+                    ExpeditionSectionTitle(
+                      title: context.l10n.homeCrewTitle,
+                      subtitle: context.l10n.homeCrewSubtitle,
+                      icon: Icons.group_outlined,
+                    ),
+                    const SizedBox(height: 12),
+                    _ExpeditionTeam(snapshot: snapshot),
+                    if (snapshot.petId != null &&
+                        snapshot.petSpecies != null &&
+                        snapshot.petEvolutionStage != null) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _ActiveCompanionCard(snapshot: snapshot),
+                    ],
+                    if (snapshot.equipment.isNotEmpty ||
+                        snapshot.inventory.isNotEmpty ||
+                        snapshot.craftingRecipes.isNotEmpty ||
+                        snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 24),
+                      ExpeditionSectionTitle(
+                        title: context.l10n.homeFieldKitTitle,
+                        subtitle: context.l10n.homeFieldKitSubtitle,
+                        icon: Icons.backpack_outlined,
+                      ),
+                    ],
+                    if (snapshot.equipment.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _EquipmentCard(
+                        slots: snapshot.equipment,
+                        equippedSlotCount: snapshot.equippedEquipmentSlotCount,
+                        readOnly: readOnly,
+                        busy: gameplayActionBlocked,
+                        changing: isChangingEquipment,
+                        onUnequip: onUnequip,
+                      ),
+                    ],
+                    if (snapshot.inventory.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _InventoryCard(
+                        items: snapshot.inventory,
+                        equippableItemCount:
+                            snapshot.equippableInventoryItemCount,
+                        readOnly: readOnly,
+                        busy: gameplayActionBlocked,
+                        changing: isChangingEquipment,
+                        onEquip: onEquip,
+                      ),
+                    ],
+                    if (snapshot.craftingRecipes.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _CraftingCard(
+                        recipes: snapshot.craftingRecipes,
+                        craftableRecipeCount: snapshot.craftableRecipeCount,
+                        recipeViewportKey: recipeViewportKey,
+                        readOnly: readOnly,
+                        busy: gameplayActionBlocked,
+                        crafting: isCrafting,
+                        onCraft: onCraft,
+                      ),
+                    ],
+                    if (snapshot.itemUpgrades.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      _ItemUpgradeCard(
+                        upgrades: snapshot.itemUpgrades,
+                        readyItemUpgradeCount: snapshot.readyItemUpgradeCount,
+                        readOnly: readOnly,
+                        busy: gameplayActionBlocked,
+                        upgrading: isUpgrading,
+                        onUpgrade: onUpgrade,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _StateFooter(snapshot: snapshot),
+                  ],
+                ),
+              ],
+            ),
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: _homeStickyActionBaseBottom + bottomDockInset,
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  key: stickyActionOcclusionKey,
+                  child: ExpeditionPanel(
+                    key: const Key('home-sticky-action-panel'),
+                    tone: eventReady || pendingEventResult != null
+                        ? ExpeditionPanelTone.resonance
+                        : ExpeditionPanelTone.energy,
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        if (activitySyncAction != null) ...<Widget>[
+                          activitySyncAction!,
+                          const SizedBox(height: 8),
+                        ],
+                        FilledButton.icon(
+                          key: completed
+                              ? const Key('home-begin-next-journey')
+                              : const Key('home-advance-expedition'),
+                          onPressed: actionDisabled
+                              ? null
+                              : completed
+                              ? onBeginNextJourney
+                              : onAdvance,
+                          icon: isAdvancing || isBeginningJourney
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(
+                                  completed
+                                      ? Icons.replay_outlined
+                                      : Icons.near_me_outlined,
+                                ),
+                          label: Text(
+                            actionLabel,
+                            maxLines: 2,
+                            overflow: TextOverflow.visible,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1409,6 +1436,95 @@ class _ExpeditionHero extends StatelessWidget {
   const _ExpeditionHero({
     required this.snapshot,
     required this.completed,
+    required this.scrollController,
+  });
+
+  final HomeSnapshot snapshot;
+  final bool completed;
+  final ScrollController scrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const Key('home-expedition-hero'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _ExpeditionVistaStage(
+          snapshot: snapshot,
+          scrollController: scrollController,
+          expeditionName: context.l10n.currentExpeditionName(
+            snapshot.expeditionId,
+            snapshot.expeditionName,
+          ),
+          currentNodeName: context.l10n.currentNodeName(
+            snapshot.currentNodeId,
+            snapshot.currentNodeName,
+          ),
+          currentNodeId: snapshot.currentNodeId,
+          journeyNumber: snapshot.expeditionJourneyNumber,
+          progress: snapshot.expeditionProgressValue,
+          completed: completed,
+        ),
+        const SizedBox(height: 12),
+        ExpeditionPanel(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 8,
+                children: <Widget>[
+                  Text(
+                    context.l10n.homeSceneSteps(snapshot.dailySteps),
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  Text(
+                    '${snapshot.availableEnergy} ENERGY',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: context.walkingRpgPalette.energy,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              LinearProgressIndicator(
+                value: snapshot.dailyProgress,
+                minHeight: 3,
+                borderRadius: BorderRadius.circular(4),
+                semanticsLabel: context.l10n.homeTodayProgress(
+                  snapshot.dailySteps,
+                  snapshot.dailyGoal,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (snapshot.petId == null ||
+            snapshot.petSpecies == null ||
+            snapshot.petEvolutionStage == null) ...<Widget>[
+          const SizedBox(height: 12),
+          ExpeditionBadge(
+            key: const Key('home-active-companion-badge'),
+            label: context.l10n.homeCompanionLevel(
+              context.l10n.currentPetName(snapshot.petId, snapshot.petName),
+              snapshot.petLevel,
+            ),
+            icon: Icons.pets_outlined,
+            tone: ExpeditionPanelTone.resonance,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ExpeditionDetails extends StatelessWidget {
+  const _ExpeditionDetails({
+    required this.snapshot,
+    required this.completed,
     required this.activitySubtitle,
   });
 
@@ -1428,16 +1544,8 @@ class _ExpeditionHero extends StatelessWidget {
       snapshot.currentNodeId,
       snapshot.currentNodeName,
     );
-    final String petName = context.l10n.currentPetName(
-      snapshot.petId,
-      snapshot.petName,
-    );
-    final bool hasCompanionPortrait =
-        snapshot.petId != null &&
-        snapshot.petSpecies != null &&
-        snapshot.petEvolutionStage != null;
     return ExpeditionPanel(
-      key: const Key('home-expedition-hero'),
+      key: const Key('home-expedition-details'),
       tone: ExpeditionPanelTone.lumen,
       padding: EdgeInsets.zero,
       child: ClipRRect(
@@ -1459,30 +1567,6 @@ class _ExpeditionHero extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  _ExpeditionVistaStage(
-                    expeditionName: expeditionName,
-                    currentNodeName: currentNodeName,
-                    currentNodeId: snapshot.currentNodeId,
-                    journeyNumber: snapshot.expeditionJourneyNumber,
-                    progress: snapshot.expeditionProgressValue,
-                    completed: completed,
-                  ),
-                  if (hasCompanionPortrait) ...<Widget>[
-                    const SizedBox(height: 12),
-                    _ActiveCompanionCard(snapshot: snapshot),
-                  ] else ...<Widget>[
-                    const SizedBox(height: 12),
-                    ExpeditionBadge(
-                      key: const Key('home-active-companion-badge'),
-                      label: context.l10n.homeCompanionLevel(
-                        petName,
-                        snapshot.petLevel,
-                      ),
-                      icon: Icons.pets_outlined,
-                      tone: ExpeditionPanelTone.resonance,
-                    ),
-                  ],
-                  const SizedBox(height: 16),
                   Text(
                     completed
                         ? context.l10n.homeJourneyCompleted(
@@ -1599,6 +1683,8 @@ class _ExpeditionHero extends StatelessWidget {
 
 class _ExpeditionVistaStage extends StatelessWidget {
   const _ExpeditionVistaStage({
+    required this.snapshot,
+    required this.scrollController,
     required this.expeditionName,
     required this.currentNodeName,
     required this.currentNodeId,
@@ -1608,6 +1694,8 @@ class _ExpeditionVistaStage extends StatelessWidget {
   });
 
   final String expeditionName;
+  final HomeSnapshot snapshot;
+  final ScrollController scrollController;
   final String currentNodeName;
   final String currentNodeId;
   final int journeyNumber;
@@ -1616,11 +1704,41 @@ class _ExpeditionVistaStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget vista = ChapterVista(
-      key: const Key('home-expedition-vista'),
-      semanticLabel: '$expeditionName, $currentNodeName',
-      progress: progress,
-      height: 206,
+    // Leave room for navigation, the action dock and wrapping labels. On short
+    // phones with enlarged text the whole cast scales down together.
+    final double sceneHeight =
+        (MediaQuery.sizeOf(context).height -
+                NavigationChromeInsets.bottomDockInsetOf(context) -
+                kToolbarHeight -
+                244 -
+                (_effectiveTextScale(context) - 1).clamp(0, 2) * 160)
+            .clamp(148, 330)
+            .toDouble();
+    final Widget vista = ExpeditionCrewScene(
+      key: const Key('home-crew-scene'),
+      pilotName: context.l10n.currentPilotName(
+        snapshot.pilotId,
+        snapshot.pilotName,
+      ),
+      greetingLabel: context.l10n.homeGreetCrew,
+      scrollController: scrollController,
+      petId: snapshot.petId,
+      petName: context.l10n.currentPetName(snapshot.petId, snapshot.petName),
+      petSpecies: snapshot.petSpecies == null
+          ? null
+          : context.l10n.currentPetSpecies(
+              snapshot.petId,
+              snapshot.petSpecies!,
+            ),
+      petEvolutionStage: snapshot.petEvolutionStage,
+      height: sceneHeight,
+      background: ChapterVista(
+        key: const Key('home-expedition-vista'),
+        semanticLabel: '$expeditionName, $currentNodeName',
+        progress: progress,
+        height: sceneHeight,
+        crewStage: true,
+      ),
     );
     final Widget badges = Wrap(
       spacing: 8,
@@ -1666,12 +1784,15 @@ class _ExpeditionVistaStage extends StatelessWidget {
             ],
           );
         }
-        return Stack(
+        return Column(
           key: const Key('home-expedition-stage-overlay'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            badges,
+            const SizedBox(height: 10),
             vista,
-            Positioned(top: 12, left: 12, right: 12, child: badges),
-            Positioned(left: 12, right: 12, bottom: 12, child: routePlate),
+            const SizedBox(height: 10),
+            routePlate,
           ],
         );
       },
@@ -2182,12 +2303,7 @@ class _ExpeditionTeam extends StatelessWidget {
       progressKey: const Key('home-pilot-experience-progress'),
       icon: Icons.person_outline,
       portrait: ExcludeSemantics(
-        child: PilotMotionPortrait(
-          key: const Key('home-pilot-motion-portrait'),
-          pilotId: PilotMotionPortrait.navigatorPilotId,
-          name: pilotName,
-          size: 72,
-        ),
+        child: PilotPortrait(name: pilotName, size: 72),
       ),
     );
     final Widget pet = _CharacterCard(
@@ -2256,15 +2372,6 @@ class _ActiveCompanionCard extends StatelessWidget {
     );
     final int evolutionStage = snapshot.petEvolutionStage!;
 
-    final Widget portrait = CompanionMotionPortrait(
-      key: const Key('home-active-companion-portrait'),
-      petId: petId,
-      name: petName,
-      species: species,
-      evolutionStage: evolutionStage,
-      active: true,
-      size: 78,
-    );
     final Widget details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -2320,28 +2427,7 @@ class _ActiveCompanionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                if (constraints.maxWidth < 280) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      portrait,
-                      const SizedBox(height: 12),
-                      details,
-                    ],
-                  );
-                }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    portrait,
-                    const SizedBox(width: 14),
-                    Expanded(child: details),
-                  ],
-                );
-              },
-            ),
+            details,
             const SizedBox(height: 14),
             CompanionGrowthTrack(
               key: const Key('home-companion-growth'),

@@ -688,6 +688,13 @@
   "homeNeedEnergyAction": "Earn more ENERGY",
   "homeRefreshState": "Refresh state",
   "homeCrewTitle": "Expedition crew",
+  "homeGreetCrew": "Greet the crew",
+  "homeSceneSteps": "{steps} steps today",
+  "@homeSceneSteps": {
+    "placeholders": {
+      "steps": {"type": "int"}
+    }
+  },
   "homeCrewSubtitle": "The pilot sets the route; the companion strengthens decisions.",
   "homeFieldKitTitle": "Field kit",
   "homeFieldKitSubtitle": "Equipment, finds and crafting for this chapter.",
