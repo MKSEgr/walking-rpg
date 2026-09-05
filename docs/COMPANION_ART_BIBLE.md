@@ -48,6 +48,19 @@ neutral role «Пилот» so the two characters remain unambiguous.
   emotional clarity while keeping a unique silhouette, material, palette
   family, locomotion and idle rhythm.
 
+## Home cinematic rendering
+
+The owner requested a more detailed, realistic Home scene after reviewing
+PR #574. On this surface, cinematic material detail and coherent moonlight
+supersede the earlier painterly-rendering exclusions. The species identities,
+anatomy and equipment exclusions below remain the references. Existing crew
+portraits, form art and motion atlases are unchanged.
+
+Three coordinated still scenes in `mobile/assets/scenes/` show the accepted
+active species beside the pilot. They are species key art, not distinct growth
+forms or equipped cosmetics. Exact stage and bond stay in the existing crew UI.
+Animation in this style requires separately authored high-resolution frames.
+
 ## Искра identity
 
 - Small, lean and agile alien quadruped with a low athletic stance.

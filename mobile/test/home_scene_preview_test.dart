@@ -107,6 +107,15 @@ void main() {
           reduced: false,
         ),
         (
+          name: 'home-safe-insets-ru',
+          pet: 'spark-v1',
+          locale: 'ru',
+          dark: true,
+          size: Size(390, 844),
+          scale: 1,
+          reduced: false,
+        ),
+        (
           name: 'home-reduced-motion-ru',
           pet: 'spark-v1',
           locale: 'ru',
@@ -124,6 +133,12 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      if (scenario.name == 'home-safe-insets-ru') {
+        tester.view.viewPadding = const FakeViewPadding(top: 44, bottom: 34);
+        tester.view.padding = const FakeViewPadding(top: 44, bottom: 34);
+        addTearDown(tester.view.resetViewPadding);
+        addTearDown(tester.view.resetPadding);
+      }
       const Key captureKey = Key('home-preview');
       await tester.pumpWidget(
         RepaintBoundary(
@@ -173,23 +188,37 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      if (scenario.scale == 1) {
-        final Rect scene = tester.getRect(
-          find.byKey(const Key('home-crew-scene')),
+      final Rect background = tester.getRect(
+        find.byKey(const Key('home-fullscreen-background')),
+      );
+      expect(background, Offset.zero & scenario.size);
+      final Rect header = tester.getRect(
+        find.byKey(const Key('home-expedition-hero')),
+      );
+      final Rect toolbar = tester.getRect(find.byType(AppBar));
+      expect(header.top, greaterThanOrEqualTo(toolbar.bottom));
+      final Rect action = tester.getRect(
+        find.byKey(const Key('home-sticky-action-panel')),
+      );
+      final Rect dock = tester.getRect(
+        find.byKey(const Key('main-navigation-bottom-dock')),
+      );
+      expect(action.bottom, lessThanOrEqualTo(dock.top));
+      for (final String actor in <String>[
+        'home-pilot-illustration',
+        'home-active-companion-portrait',
+      ]) {
+        final Rect bounds = tester.getRect(find.byKey(Key(actor)));
+        expect(bounds.top, greaterThanOrEqualTo(header.bottom));
+        expect(bounds.bottom, lessThanOrEqualTo(action.top));
+        expect(bounds.left, greaterThanOrEqualTo(0));
+        expect(bounds.right, lessThanOrEqualTo(scenario.size.width));
+        expect(
+          bounds.overlaps(
+            tester.getRect(find.byKey(const Key('home-open-details'))),
+          ),
+          isFalse,
         );
-        final Rect action = tester.getRect(
-          find.byKey(const Key('home-sticky-action-panel')),
-        );
-        expect(scene.bottom, lessThanOrEqualTo(action.top));
-        for (final String actor in <String>[
-          'home-pilot-motion-portrait',
-          'home-active-companion-portrait',
-        ]) {
-          final Rect bounds = tester.getRect(find.byKey(Key(actor)));
-          expect(scene.contains(bounds.center), isTrue);
-          expect(bounds.top, greaterThanOrEqualTo(scene.top));
-          expect(bounds.bottom, lessThanOrEqualTo(scene.bottom));
-        }
       }
       final RenderRepaintBoundary boundary = tester
           .renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
@@ -203,6 +232,18 @@ void main() {
         await file.writeAsBytes(bytes.buffer.asUint8List());
         image.dispose();
       });
+      await tester.tap(find.byKey(const Key('home-open-details')));
+      await tester.pumpAndSettle();
+      final Rect viewport = tester.getRect(
+        find.byKey(const Key('home-details-scroll')),
+      );
+      final Rect details = tester.getRect(
+        find.byKey(const Key('home-expedition-details')),
+      );
+      expect(viewport.overlaps(details), isTrue);
+      expect(viewport.top, greaterThanOrEqualTo(header.bottom));
+      expect(viewport.bottom, lessThanOrEqualTo(action.top));
+      expect(tester.takeException(), isNull);
     }, skip: !_capture);
   }
 }

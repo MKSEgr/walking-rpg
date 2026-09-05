@@ -1,139 +1,122 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:walking_rpg_mobile/core/navigation/navigation_destination_visibility.dart';
-import 'package:walking_rpg_mobile/design_system/companion_motion.dart';
 import 'package:walking_rpg_mobile/design_system/companion_portrait.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_crew_scene.dart';
-import 'package:walking_rpg_mobile/design_system/pilot_motion.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 
 void main() {
-  testWidgets('crew greets together without continuous animation', (
+  testWidgets(
+    'accepted IDs select the matching scene, including after a switch',
+    (tester) async {
+      for (final String id in <String>['spark-v1', 'moss-v1', 'rune-v1']) {
+        await tester.pumpWidget(_scene(petId: id));
+        await tester.pumpAndSettle();
+        final ExpeditionCrewScene scene = tester.widget(
+          find.byType(ExpeditionCrewScene),
+        );
+        final String identity = id.split('-').first;
+        expect(scene.sceneAsset, 'assets/scenes/home_crew_${identity}_v3.webp');
+        final Image image = tester.widget(find.byType(Image));
+        expect((image.image as AssetImage).assetName, scene.sceneAsset);
+        expect(image.gaplessPlayback, isFalse);
+        expect(
+          find.byKey(const Key('home-active-companion-portrait')),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'unknown companion keeps its neutral fallback and no baked-in pet',
+    (tester) async {
+      await tester.pumpWidget(_scene(petId: 'future-pet'));
+      await tester.pumpAndSettle();
+      final ExpeditionCrewScene scene = tester.widget(
+        find.byType(ExpeditionCrewScene),
+      );
+      expect(scene.sceneAsset, 'assets/scenes/home_pilot_v3.webp');
+      final CompanionPortrait fallback = tester.widget(
+        find.byType(CompanionPortrait),
+      );
+      expect(fallback.petId, 'future-pet');
+      expect(fallback.identity, CompanionIdentity.unknown);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('incomplete identity never selects artwork from a display name', (
     tester,
   ) async {
-    final ScrollController scroll = ScrollController();
-    addTearDown(scroll.dispose);
-    await tester.pumpWidget(_scene(scroll: scroll));
+    await tester.pumpWidget(_scene(petId: null));
     await tester.pumpAndSettle();
-
-    expect(
-      find.byKey(const Key('pilot-motion-frame-navigator-v1-0-5')),
-      findsOneWidget,
+    final ExpeditionCrewScene scene = tester.widget(
+      find.byType(ExpeditionCrewScene),
     );
+    expect(scene.sceneAsset, 'assets/scenes/home_pilot_v3.webp');
     expect(
-      find.byKey(const Key('companion-motion-frame-spark-v1-0-5')),
-      findsOneWidget,
+      find.byKey(const Key('home-active-companion-portrait')),
+      findsNothing,
     );
-    await tester.tap(find.byKey(const Key('home-greet-crew')));
-    await tester.pump();
-    expect(
-      find.byKey(const Key('pilot-motion-frame-navigator-v1-3-0')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('companion-motion-frame-spark-v1-3-0')),
-      findsOneWidget,
-    );
-    await tester.pumpAndSettle();
-    expect(tester.binding.hasScheduledFrame, isFalse);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('scene stops when scrolled away, hidden or backgrounded', (
+  testWidgets('unknown pilot does not inherit the Navigator illustration', (
     tester,
   ) async {
-    final ScrollController scroll = ScrollController();
-    final ValueNotifier<bool> visible = ValueNotifier<bool>(true);
-    addTearDown(scroll.dispose);
-    addTearDown(visible.dispose);
-    addTearDown(
-      () => tester.binding.handleAppLifecycleStateChanged(
-        AppLifecycleState.resumed,
-      ),
+    await tester.pumpWidget(_scene(pilotId: 'future-pilot', petId: null));
+    await tester.pumpAndSettle();
+    final ExpeditionCrewScene scene = tester.widget(
+      find.byType(ExpeditionCrewScene),
     );
-    await tester.pumpWidget(
-      ValueListenableBuilder<bool>(
-        valueListenable: visible,
-        builder: (context, value, _) => NavigationDestinationVisibility(
-          isVisible: value,
-          child: _scene(scroll: scroll),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    bool playing() => tester
-        .widget<PilotMotionPortrait>(find.byType(PilotMotionPortrait))
-        .play;
-    expect(playing(), isTrue);
-    scroll.jumpTo(700);
-    await tester.pumpAndSettle();
-    expect(playing(), isFalse);
-    scroll.jumpTo(0);
-    await tester.pumpAndSettle();
-    expect(playing(), isTrue);
-    visible.value = false;
-    await tester.pumpAndSettle();
-    expect(playing(), isFalse);
-    visible.value = true;
-    await tester.pumpAndSettle();
-    // The platform leaves resumed via inactive. A fully paused scheduler does
-    // not build frames, so inspect the stopped actors before pausing it.
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    await tester.pumpAndSettle();
-    expect(playing(), isFalse);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    await tester.pumpAndSettle();
-    expect(playing(), isFalse);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pumpAndSettle();
-    expect(playing(), isTrue);
+    expect(scene.sceneAsset, 'assets/scenes/home_frontier_v3.webp');
+    expect(find.byKey(const Key('home-pilot-illustration')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('reduced motion holds both actors still', (tester) async {
-    final ScrollController scroll = ScrollController();
-    addTearDown(scroll.dispose);
-    await tester.pumpWidget(_scene(scroll: scroll, reduceMotion: true));
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const Key('pilot-motion-frame-navigator-v1-0-0')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('companion-motion-frame-spark-v1-0-0')),
-      findsOneWidget,
-    );
-    expect(
-      tester
-          .widget<IconButton>(find.byKey(const Key('home-greet-crew')))
-          .onPressed,
-      isNull,
-    );
-    expect(tester.binding.hasScheduledFrame, isFalse);
-  });
+  testWidgets(
+    'full portrait artwork stays visible on short and wide surfaces',
+    (tester) async {
+      for (final double height in <double>[148, 220, 330]) {
+        await tester.pumpWidget(_scene(height: height));
+        await tester.pumpAndSettle();
+        final Rect art = tester.getRect(find.byType(Image));
+        expect(art.width / art.height, closeTo(2 / 3, 0.001));
+        expect(art.height, lessThanOrEqualTo(height));
+        for (final String key in <String>[
+          'home-pilot-illustration',
+          'home-active-companion-portrait',
+        ]) {
+          final Rect actor = tester.getRect(find.byKey(Key(key)));
+          expect(art.contains(actor.topLeft), isTrue);
+          expect(art.contains(actor.bottomRight), isTrue);
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 
-  testWidgets('unknown companion keeps the neutral portrait fallback', (
+  testWidgets('detailed art is static with either motion preference', (
     tester,
   ) async {
-    final ScrollController scroll = ScrollController();
-    addTearDown(scroll.dispose);
-    await tester.pumpWidget(_scene(scroll: scroll, petId: 'future-pet'));
-    await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<CompanionMotionPortrait>(find.byType(CompanionMotionPortrait))
-          .hasMotionAsset,
-      isFalse,
-    );
-    expect(find.byType(CompanionPortrait), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    for (final bool reduced in <bool>[false, true]) {
+      await tester.pumpWidget(_scene(reduceMotion: reduced));
+      await tester.pumpAndSettle();
+      expect(find.byType(IconButton), findsNothing);
+      expect(tester.binding.hasScheduledFrame, isFalse);
+      await tester.pump(const Duration(seconds: 5));
+      expect(tester.binding.hasScheduledFrame, isFalse);
+      expect(tester.takeException(), isNull);
+    }
   });
 }
 
 Widget _scene({
-  required ScrollController scroll,
   bool reduceMotion = false,
-  String petId = 'spark-v1',
+  String? petId = 'spark-v1',
+  String? pilotId = 'navigator-v1',
+  double height = 330,
 }) => MaterialApp(
   theme: WalkingRpgTheme.dark(),
   home: MediaQuery(
@@ -143,22 +126,16 @@ Widget _scene({
     ),
     child: Scaffold(
       body: SingleChildScrollView(
-        controller: scroll,
-        child: Column(
-          children: <Widget>[
-            ExpeditionCrewScene(
-              background: const ColoredBox(color: WalkingRpgColors.deepWater),
-              pilotName: 'Навигатор',
-              greetingLabel: 'Поприветствовать экипаж',
-              scrollController: scroll,
-              height: 330,
-              petId: petId,
-              petName: 'Искра',
-              petSpecies: 'люмин',
-              petEvolutionStage: 0,
-            ),
-            const SizedBox(height: 1200),
-          ],
+        child: ExpeditionCrewScene(
+          semanticLabel: 'Сигнал из туманного сектора',
+          pilotId: pilotId,
+          pilotName: 'Навигатор',
+          height: height,
+          petId: petId,
+          // Deliberately keep the same name for all IDs: names must not select art.
+          petName: 'Искра',
+          petSpecies: 'люмин',
+          petEvolutionStage: 0,
         ),
       ),
     ),
