@@ -1644,9 +1644,16 @@ class _HomeActivityHud extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  const Icon(Icons.directions_walk_outlined, size: 18, color: Color(0xFFE0D5BB)),
+                  const Icon(
+                    Icons.directions_walk_outlined,
+                    size: 18,
+                    color: Color(0xFFE0D5BB),
+                  ),
                   const SizedBox(width: 6),
-                  Text('${snapshot.dailySteps}', style: Theme.of(context).textTheme.labelLarge),
+                  Text(
+                    '${snapshot.dailySteps}',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
                 ],
               ),
             ),

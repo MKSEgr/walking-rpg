@@ -27,39 +27,24 @@ class ExpeditionHomeStage extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints viewport) => ClipRect(
-      key: const Key('home-expedition-visual-stage'),
-      child: CustomMultiChildLayout(
-        delegate: _HomeStageLayout(topInset, bottomInset),
-        children: <Widget>[
-          LayoutId(
-            id: _Layer.background,
-            child: Image.asset(
-              'assets/scenes/home_frontier_v3.webp',
-              key: const Key('home-fullscreen-background'),
-              fit: BoxFit.cover,
-              excludeFromSemantics: true,
+        key: const Key('home-expedition-visual-stage'),
+        child: CustomMultiChildLayout(
+          delegate: _HomeStageLayout(topInset, bottomInset),
+          children: <Widget>[
+            LayoutId(
+              id: _Layer.background,
+              child: Image.asset(
+                'assets/scenes/home_frontier_v3.webp',
+                key: const Key('home-fullscreen-background'),
+                fit: BoxFit.cover,
+                excludeFromSemantics: true,
+              ),
             ),
-          ),
-          LayoutId(
-            id: _Layer.scene,
-            child: ShaderMask(
-              blendMode: BlendMode.dstIn,
-              shaderCallback: (Rect bounds) => LinearGradient(
-                colors: const <Color>[
-                  Colors.transparent,
-                  Colors.white,
-                  Colors.white,
-                  Colors.transparent,
-                ],
-                stops: bounds.height < viewport.maxHeight
-                    ? const <double>[0, 0.24, 0.82, 1]
-                    : const <double>[0, 0.04, 0.96, 1],
-              ).createShader(bounds),
+            LayoutId(
+              id: _Layer.scene,
               child: ShaderMask(
                 blendMode: BlendMode.dstIn,
                 shaderCallback: (Rect bounds) => LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
                   colors: const <Color>[
                     Colors.transparent,
                     Colors.white,
@@ -67,18 +52,33 @@ class ExpeditionHomeStage extends StatelessWidget {
                     Colors.transparent,
                   ],
                   stops: bounds.height < viewport.maxHeight
-                      ? const <double>[0.10, 0.235, 0.71, 0.90]
-                      : const <double>[0, 0.035, 0.965, 1],
+                      ? const <double>[0, 0.24, 0.82, 1]
+                      : const <double>[0, 0.04, 0.96, 1],
                 ).createShader(bounds),
-                child: scene,
+                child: ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (Rect bounds) => LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: const <Color>[
+                      Colors.transparent,
+                      Colors.white,
+                      Colors.white,
+                      Colors.transparent,
+                    ],
+                    stops: bounds.height < viewport.maxHeight
+                        ? const <double>[0.10, 0.235, 0.71, 0.90]
+                        : const <double>[0, 0.035, 0.965, 1],
+                  ).createShader(bounds),
+                  child: scene,
+                ),
               ),
             ),
-          ),
-          LayoutId(id: _Layer.details, child: details),
-          LayoutId(id: _Layer.header, child: header),
-          LayoutId(id: _Layer.footer, child: footer),
-        ],
-      ),
+            LayoutId(id: _Layer.details, child: details),
+            LayoutId(id: _Layer.header, child: header),
+            LayoutId(id: _Layer.footer, child: footer),
+          ],
+        ),
       ),
     );
   }
