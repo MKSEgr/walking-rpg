@@ -37,26 +37,49 @@ restriction.
 
 ## Home crew scene
 
-The Home foreground uses the existing transparent full-body atlases without
-portrait frames. A common ground plane, contact shadows, distant cliffs and a
-mist-lit valley give the pilot and active companion a shared place to stand.
-The scenery is static; its river and lights are decorative, not extra route
-nodes. The accepted route percentage remains in the separate route plate.
+The owner rejected the simplified terrain and enlarged low-resolution sprites
+from PR #574. Home v3 uses full-screen portrait key art derived from the existing
+`assets/events/signal_source.webp`: the same lunar frontier, layered mist,
+wet basalt, winding lumen trail and distant beacon. The pilot and companion
+share realistic moonlight, material texture and contact shadows.
 
-The scene plays one short idle pass on appearance. The labelled greeting button
-replays a finite greeting for both actors; there is no continuous loop or
-background timer. Motion stops when the scene leaves its scroll viewport, the
-destination or route becomes hidden, the app leaves the foreground, or reduced
-motion is enabled. Reduced motion holds the idle still and disables greeting.
-Unknown companion IDs retain the existing neutral portrait fallback, and legacy
-snapshots with incomplete companion identity retain their textual badge.
-The shared pilot art remains the universal current presentation; the scene does
-not infer another pilot or cosmetic from a name.
+Three coordinated scene variants select the accepted active `spark-v1`,
+`moss-v1` or `rune-v1` identity. A pilot-only scene supports incomplete legacy
+snapshots and unknown companions; unknown companions retain their neutral
+portrait fallback. Unknown pilot IDs receive the empty portrait landscape rather
+than an invented Navigator. Names never select artwork. The scenes describe
+species identity, not an evolution or cosmetic state; those remain in the
+existing progression and crew UI.
 
-The first phone viewport prioritizes the characters. Detailed activity and crew
-cards remain below the scene, with event results and choices before those
-details. Narrow screens and enlarged text use flowing labels around the art;
-the action and navigation reserve their existing safe-area space.
+This revision uses still artwork with no greeting button, ticker or timer.
+It has identical reduced-motion behavior and cannot replay an earlier reaction
+when visibility resumes. Natural character animation requires a separate
+high-resolution production pass. Existing atlases remain available elsewhere.
+The illustrated trail is atmospheric and never changes from route progress;
+accepted progress stays in the compact route HUD and accessibility label.
+
+Five portrait WebP assets are 1024 × 1536 and together use 1,140,064 bytes.
+A continuous landscape fills the Home viewport behind the toolbar, action and
+compact navigation. The matching crew scene is fitted using a reviewed subject
+rectangle, after measuring the header and footer at the current text scale.
+Outer scenery blends into the empty landscape when short or wide viewports
+require a smaller cast. The pilot, hands, feet and companion stay in the gap
+between controls, including the detail-scroll affordance.
+
+The header combines the journey, exact current-node signal and accepted route
+percentage. A smoked charcoal footer combines steps, ENERGY and the brass/amber
+primary action. Controls use cream text, restrained brass outlines and compact
+corners over the same night artwork in both themes. Existing details retain
+the selected app theme. Navigation keeps the same destinations and state.
+
+The first ordinary phone viewport prioritizes the characters. A labelled
+control opens the scrollable expedition details. The detail viewport is clipped
+between the HUD groups, so cards and actionable choices cannot hide beneath
+them. Cached state, pending results and events take priority over the opening
+scene; all existing authoritative action guards and impression visibility
+checks remain in force. Safe-area insets protect status and gesture regions.
+Asset references and generation prompts are recorded in
+[`assets/scenes`](../mobile/assets/scenes/README.md).
 
 Reproduce actual widget renders with the repository's pinned Flutter SDK:
 
@@ -68,7 +91,7 @@ flutter test --no-pub --dart-define=HOME_SCENE_CAPTURE=true test/home_scene_prev
 
 Set `FLUTTER_ROOT` to that SDK when running outside flutter-action. The capture
 test uses SDK Roboto fonts, all three companion fixtures, RU/EN, light/dark,
-narrow/enlarged text and reduced motion. CI publishes `home-visual-fixtures`
+narrow/enlarged text, native safe-area insets and reduced motion. CI publishes `home-visual-fixtures`
 from `mobile/build/home-previews`. These are synthetic widget renders for
 review, not physical-device evidence for TASK-011.
 
@@ -194,9 +217,8 @@ material and deliberately fail the recorded-evidence gate.
 
 The universal `navigator-v1` pilot now has a separate transparent motion atlas
 under the identity and movement rules in
-[PILOT_ART_BIBLE.md](PILOT_ART_BIBLE.md). Home plays finite idle and greeting clips
-for that exact current presentation; the account dossier and journal keep their
-static portrait. The shared atlas player preserves reduced-motion behavior and
+[PILOT_ART_BIBLE.md](PILOT_ART_BIBLE.md). Home v2 uses the detailed static scene;
+the account dossier and journal keep their existing static portrait. The shared atlas player preserves reduced-motion behavior and
 frame geometry without treating pilot art as a companion species. No pilot ID,
 selection, progression, API or persistence state is changed by the asset.
 
@@ -571,9 +593,10 @@ trail illumination changes; the journal uses the scene without a progress
 value. The painter is static, isolated by a repaint boundary, ignores input and
 exposes one concise image semantic instead of decorative child semantics.
 
-The first journey, journal and Home expedition hero share this environment.
-Home supplies only the progress from its accepted snapshot; cached state stays
-visually honest, and the vista does not participate in impression visibility or
+The first journey and journal retain this code-native environment. Home v2
+uses the detailed raster landscape and crew scene described above. Its accepted
+progress remains separate from the atmospheric artwork; cached state stays
+visually honest, and art does not participate in impression visibility or
 navigation lifecycle decisions.
 
 ## Current node landmarks

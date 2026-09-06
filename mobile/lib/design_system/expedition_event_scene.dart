@@ -70,6 +70,7 @@ class ExpeditionEventScene extends StatelessWidget {
         final double proportionalHeight = constraints.maxWidth * 9 / 16;
         final double height = math.min(maxHeight, proportionalHeight);
         return Semantics(
+          container: true,
           image: true,
           label: semanticLabel,
           child: ExcludeSemantics(

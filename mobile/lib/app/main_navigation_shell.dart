@@ -89,66 +89,99 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   Widget _buildCompactNavigation(double availableWidth) {
     final double horizontalInset = availableWidth < 360 ? 8 : 16;
-    return SafeArea(
-      top: false,
-      minimum: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 12),
-      child: DecoratedBox(
-        key: const Key('main-navigation-bottom-dock'),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: context.walkingRpgPalette.panelBorder),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: context.walkingRpgPalette.shadow,
-              blurRadius: 30,
-              offset: const Offset(0, 14),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(23),
-          child: NavigationBar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _selectDestination,
-            destinations: <NavigationDestination>[
-              NavigationDestination(
-                key: const Key('navigation-home'),
-                icon: const ExpeditionNavigationGlyph(
-                  destination: ExpeditionNavigationDestination.expedition,
-                  selected: false,
-                ),
-                selectedIcon: const ExpeditionNavigationGlyph(
-                  destination: ExpeditionNavigationDestination.expedition,
-                  selected: true,
-                ),
-                label: context.l10n.navigationExpeditionLabel,
+    final bool cinematic = _selectedIndex == 0;
+    final ThemeData currentTheme = Theme.of(context);
+    final ThemeData dockTheme = cinematic
+        ? currentTheme.copyWith(
+            colorScheme: WalkingRpgTheme.dark().colorScheme,
+            navigationBarTheme: NavigationBarThemeData(
+              height: 64,
+              backgroundColor: const Color(0xDB0B1921),
+              indicatorColor: const Color(0x26D6B574),
+              indicatorShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(9),
               ),
-              if (widget.crew != null)
+              iconTheme: const WidgetStatePropertyAll<IconThemeData>(
+                IconThemeData(color: Color(0xFFE0D5BB)),
+              ),
+              labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>(
+                (Set<WidgetState> states) =>
+                    currentTheme.textTheme.labelMedium?.copyWith(
+                      color: states.contains(WidgetState.selected)
+                          ? const Color(0xFFE8C98C)
+                          : const Color(0xFFB4BDBC),
+                    ),
+              ),
+            ),
+          )
+        : currentTheme;
+    return Theme(
+      data: dockTheme,
+      child: SafeArea(
+        top: false,
+        minimum: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 12),
+        child: DecoratedBox(
+          key: const Key('main-navigation-bottom-dock'),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(cinematic ? 14 : 24),
+            border: Border.all(
+              color: cinematic
+                  ? const Color(0x668D8267)
+                  : context.walkingRpgPalette.panelBorder,
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: context.walkingRpgPalette.shadow,
+                blurRadius: 30,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(cinematic ? 13 : 23),
+            child: NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: _selectDestination,
+              destinations: <NavigationDestination>[
                 NavigationDestination(
-                  key: const Key('navigation-crew'),
+                  key: const Key('navigation-home'),
                   icon: const ExpeditionNavigationGlyph(
-                    destination: ExpeditionNavigationDestination.crew,
+                    destination: ExpeditionNavigationDestination.expedition,
                     selected: false,
                   ),
                   selectedIcon: const ExpeditionNavigationGlyph(
-                    destination: ExpeditionNavigationDestination.crew,
+                    destination: ExpeditionNavigationDestination.expedition,
                     selected: true,
                   ),
-                  label: context.l10n.navigationCrewLabel,
+                  label: context.l10n.navigationExpeditionLabel,
                 ),
-              NavigationDestination(
-                key: const Key('navigation-platform'),
-                icon: const ExpeditionNavigationGlyph(
-                  destination: ExpeditionNavigationDestination.journal,
-                  selected: false,
+                if (widget.crew != null)
+                  NavigationDestination(
+                    key: const Key('navigation-crew'),
+                    icon: const ExpeditionNavigationGlyph(
+                      destination: ExpeditionNavigationDestination.crew,
+                      selected: false,
+                    ),
+                    selectedIcon: const ExpeditionNavigationGlyph(
+                      destination: ExpeditionNavigationDestination.crew,
+                      selected: true,
+                    ),
+                    label: context.l10n.navigationCrewLabel,
+                  ),
+                NavigationDestination(
+                  key: const Key('navigation-platform'),
+                  icon: const ExpeditionNavigationGlyph(
+                    destination: ExpeditionNavigationDestination.journal,
+                    selected: false,
+                  ),
+                  selectedIcon: const ExpeditionNavigationGlyph(
+                    destination: ExpeditionNavigationDestination.journal,
+                    selected: true,
+                  ),
+                  label: context.l10n.navigationJournalLabel,
                 ),
-                selectedIcon: const ExpeditionNavigationGlyph(
-                  destination: ExpeditionNavigationDestination.journal,
-                  selected: true,
-                ),
-                label: context.l10n.navigationJournalLabel,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

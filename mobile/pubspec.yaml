@@ -33,6 +33,7 @@ flutter:
   assets:
     - assets/characters/
     - assets/events/
+    - assets/scenes/
     - assets/items/
   config:
     enable-swift-package-manager: false
