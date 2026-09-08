@@ -196,6 +196,97 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('restoring one gate waits until every reveal gate is open', (
+    WidgetTester tester,
+  ) async {
+    addTearDown(
+      () => tester.binding.handleAppLifecycleStateChanged(
+        AppLifecycleState.resumed,
+      ),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pumpWidget(
+      _testApp(
+        const TickerMode(enabled: false, child: ExpeditionHomeAtmosphere()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(_painter(tester).progress, 0);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(_painter(tester).progress, 0);
+    expect(tester.binding.transientCallbackCount, 0);
+
+    await tester.pumpWidget(
+      _testApp(
+        const TickerMode(enabled: true, child: ExpeditionHomeAtmosphere()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(_painter(tester).progress, allOf(greaterThan(0), lessThan(1)));
+    await tester.pumpAndSettle();
+    expect(_painter(tester).progress, 1);
+  });
+
+  testWidgets('initially paused lifecycle defers reveal until resumed', (
+    WidgetTester tester,
+  ) async {
+    addTearDown(
+      () => tester.binding.handleAppLifecycleStateChanged(
+        AppLifecycleState.resumed,
+      ),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pumpWidget(_testApp(const ExpeditionHomeAtmosphere()));
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(_painter(tester).progress, 0);
+    expect(tester.binding.transientCallbackCount, 0);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(_painter(tester).progress, allOf(greaterThan(0), lessThan(1)));
+    await tester.pumpAndSettle();
+    expect(_painter(tester).progress, 1);
+  });
+
+  testWidgets('completed reveal does not replay after hide and resume', (
+    WidgetTester tester,
+  ) async {
+    addTearDown(
+      () => tester.binding.handleAppLifecycleStateChanged(
+        AppLifecycleState.resumed,
+      ),
+    );
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: MainNavigationShell(
+          home: ExpeditionHomeAtmosphere(),
+          crew: ColoredBox(color: Colors.black),
+          platform: ColoredBox(color: Colors.black),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(_painter(tester).progress, 1);
+
+    await tester.tap(find.byKey(const Key('navigation-crew')));
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(_painter(tester).progress, 1);
+
+    await tester.tap(find.byKey(const Key('navigation-home')));
+    await tester.pump();
+    expect(_painter(tester).progress, 1);
+    await tester.pumpAndSettle();
+    expect(_painter(tester).progress, 1);
+    expect(tester.binding.transientCallbackCount, 0);
+  });
+
   testWidgets('disposing mid-reveal leaves no active ticker', (
     WidgetTester tester,
   ) async {
