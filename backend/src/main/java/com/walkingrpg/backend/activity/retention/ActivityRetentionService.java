@@ -12,16 +12,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class ActivityRetentionService {
 
     private final ActivityRetentionRepository repository;
-    private final ActivityRetentionProperties properties;
+    private final ActivityRetentionPolicy policy;
     private final Clock clock;
 
     public ActivityRetentionService(
             ActivityRetentionRepository repository,
-            ActivityRetentionProperties properties,
+            ActivityRetentionPolicy policy,
             Clock clock
     ) {
         this.repository = repository;
-        this.properties = properties;
+        this.policy = policy;
         this.clock = clock;
     }
 
@@ -29,7 +29,7 @@ public class ActivityRetentionService {
     @Scheduled(cron = "${walking-rpg.activity-retention.cron:0 20 3 * * *}")
     public int cleanup() {
         Instant cutoff = Instant.now(clock)
-                .minus(properties.days(), ChronoUnit.DAYS);
+                .minus(policy.retentionDays(), ChronoUnit.DAYS);
         return repository.deleteProcessedBefore(cutoff);
     }
 }

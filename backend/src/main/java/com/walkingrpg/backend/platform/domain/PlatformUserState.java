@@ -1,5 +1,10 @@
 package com.walkingrpg.backend.platform.domain;
 
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalAdjusters;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -19,11 +24,16 @@ public record PlatformUserState(
         Set<String> ownedCosmetics,
         String activeCosmeticId,
         Map<String, String> experimentAssignments,
-        long version
+        long version,
+        LocalDate weeklyRouteWeekStart,
+        Boolean weeklyRouteRewardClaimed
 ) {
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    public static final int CURRENT_SCHEMA_VERSION = 2;
 
     public PlatformUserState {
+        // Nullable at the JSON boundary so strict mappers can read schema v1,
+        // whose record did not have this receipt field.
+        weeklyRouteRewardClaimed = Boolean.TRUE.equals(weeklyRouteRewardClaimed);
         if (schemaVersion <= 0) {
             throw new IllegalArgumentException("schemaVersion должна быть положительной");
         }
@@ -58,5 +68,45 @@ public record PlatformUserState(
         if (activeCosmeticId != null && !ownedCosmetics.contains(activeCosmeticId)) {
             throw new IllegalArgumentException("Активная косметика не приобретена");
         }
+        if (weeklyRouteWeekStart != null
+                && weeklyRouteWeekStart.getDayOfWeek() != DayOfWeek.MONDAY) {
+            throw new IllegalArgumentException("Недельный маршрут начинается в понедельник UTC");
+        }
+    }
+
+    public static LocalDate weeklyRouteWeekStart(Instant observedAt) {
+        return observedAt.atOffset(ZoneOffset.UTC).toLocalDate()
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    }
+
+    /**
+     * Old JSON has neither a period nor a reward receipt. Its persisted update
+     * time anchors that progress; the old completion achievement is the receipt.
+     * This projection never awards XP and is persisted by the next real command.
+     */
+    public PlatformUserState initializeWeeklyRoutePeriod(Instant updatedAt) {
+        if (weeklyRouteWeekStart != null) {
+            return this;
+        }
+        return withWeeklyRoutePeriod(
+                weeklyRouteWeekStart(updatedAt),
+                achievements.contains("weekly-route-complete"),
+                weeklyRouteProgress,
+                seasonXp
+        );
+    }
+
+    public PlatformUserState withWeeklyRoutePeriod(
+            LocalDate weekStart,
+            boolean rewardClaimed,
+            int progress,
+            int xp
+    ) {
+        return new PlatformUserState(
+                Math.max(schemaVersion, CURRENT_SCHEMA_VERSION), activePetId, pets,
+                completedOnboardingSteps, unlockedSkills, claimedQuests, achievements,
+                xp, progress, squadId, ownedCosmetics, activeCosmeticId,
+                experimentAssignments, version, weekStart, rewardClaimed
+        );
     }
 }

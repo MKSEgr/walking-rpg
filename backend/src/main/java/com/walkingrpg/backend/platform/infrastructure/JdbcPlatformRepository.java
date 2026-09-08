@@ -74,10 +74,11 @@ public class JdbcPlatformRepository implements PlatformRepository {
     @Override
     public Optional<PlatformUserState> findState(String userId) {
         List<PlatformUserState> states = jdbcTemplate.query("""
-                SELECT state_json::text
+                SELECT state_json::text, updated_at
                 FROM roadmap_user_state
                 WHERE user_id = ?
-                """, (resultSet, rowNumber) -> readState(resultSet.getString(1)), userId);
+                """, (resultSet, rowNumber) -> readState(
+                        resultSet.getString(1), resultSet.getTimestamp(2).toInstant()), userId);
         return states.stream().findFirst();
     }
 
@@ -122,11 +123,12 @@ public class JdbcPlatformRepository implements PlatformRepository {
                 timestamp
         );
         List<PlatformUserState> states = jdbcTemplate.query("""
-                SELECT state_json::text
+                SELECT state_json::text, updated_at
                 FROM roadmap_user_state
                 WHERE user_id = ?
                 FOR UPDATE
-                """, (resultSet, rowNumber) -> readState(resultSet.getString(1)), userId);
+                """, (resultSet, rowNumber) -> readState(
+                        resultSet.getString(1), resultSet.getTimestamp(2).toInstant()), userId);
         return states.stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Platform state не создан"));
@@ -432,9 +434,10 @@ public class JdbcPlatformRepository implements PlatformRepository {
                 """, userId, timestamp, timestamp);
     }
 
-    private PlatformUserState readState(String json) {
+    private PlatformUserState readState(String json, Instant updatedAt) {
         try {
-            return objectMapper.readValue(json, PlatformUserState.class);
+            return objectMapper.readValue(json, PlatformUserState.class)
+                    .initializeWeeklyRoutePeriod(updatedAt);
         } catch (JacksonException exception) {
             throw new IllegalStateException("Некорректный roadmap_user_state JSON", exception);
         }
