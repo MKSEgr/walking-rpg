@@ -25,9 +25,15 @@ def template() -> dict:
 
 def recorded() -> dict:
     data = template()
+    recorded_inventory = inventory()
+    inventory_os_versions = {
+        slot["slotId"]: slot["operatingSystemVersion"]
+        for slot in recorded_inventory["slots"]
+        if slot["status"] == "AVAILABLE"
+    }
     data["recordStatus"] = "RECORDED"
     data["recordedAtUtc"] = "2026-09-01T11:00:00Z"
-    data["baseline"]["deviceInventorySha256"] = inventory_digest()
+    data["baseline"]["deviceInventorySha256"] = inventory_digest(recorded_inventory)
     screens = ["first-journey", "expedition", "crew", "journal", "event"]
     specs = []
     for platform in ("ios", "android"):
@@ -38,15 +44,19 @@ def recorded() -> dict:
                               "light" if index % 2 == 0 else "dark",
                               1.6 if index == 0 else 1.0, screens[index % len(screens)],
                               companion, stage))
-    data["captures"] = [{
-        "id": capture_id, "platform": platform, "osVersion": "current-stable",
-        "deviceInventorySlotId": ("ios-phone-no-watch" if platform == "ios" else
-                                  "android-health-connect-primary"), "theme": theme,
-        "textScale": scale, "screen": screen, "sourceType": "PHYSICAL_DEVICE",
-        "capturedAtUtc": "2026-09-01T10:00:00Z", "artifactSha256": "b" * 64,
-        "evidenceRef": f"approved-internal/{capture_id}", "companionId": companion,
-        "evolutionStage": stage, "motionState": "reduced_motion",
-    } for capture_id, platform, theme, scale, screen, companion, stage in specs]
+    data["captures"] = []
+    for capture_id, platform, theme, scale, screen, companion, stage in specs:
+        slot_id = ("ios-phone-no-watch" if platform == "ios" else
+                   "android-health-connect-primary")
+        data["captures"].append({
+            "id": capture_id, "platform": platform,
+            "osVersion": inventory_os_versions[slot_id],
+            "deviceInventorySlotId": slot_id, "theme": theme,
+            "textScale": scale, "screen": screen, "sourceType": "PHYSICAL_DEVICE",
+            "capturedAtUtc": "2026-09-01T10:00:00Z", "artifactSha256": "b" * 64,
+            "evidenceRef": f"approved-internal/{capture_id}", "companionId": companion,
+            "evolutionStage": stage, "motionState": "reduced_motion",
+        })
     data["decision"] = {
         "status": "APPROVED", "decidedAtUtc": "2026-09-01T12:00:00Z",
         "ownerRole": "product_owner", "inclusions": ["world and pet direction"],
@@ -61,8 +71,9 @@ def inventory() -> dict:
     return HEALTH_TEST.recorded()
 
 
-def inventory_digest() -> str:
-    return hashlib.sha256(json.dumps(inventory(), separators=(",", ":")).encode()).hexdigest()
+def inventory_digest(data: dict | None = None) -> str:
+    inventory_data = inventory() if data is None else data
+    return hashlib.sha256(json.dumps(inventory_data, separators=(",", ":")).encode()).hexdigest()
 
 
 def validate(data: dict) -> None:
@@ -120,6 +131,40 @@ class VisualEvidenceTest(unittest.TestCase):
         data["captures"][0]["artifactSha256"] = "0" * 64
         with self.assertRaisesRegex(V.VisualEvidenceError, "real capture artifact"):
             validate(data)
+
+    def test_capture_slot_must_be_on_the_same_platform(self) -> None:
+        data = recorded()
+        data["captures"][0]["deviceInventorySlotId"] = "android-health-connect-primary"
+        data["captures"][0]["osVersion"] = "Android 16"
+        with self.assertRaisesRegex(V.VisualEvidenceError, "AVAILABLE inventory slot on the same platform"):
+            validate(data)
+
+    def test_capture_os_must_match_its_available_same_platform_slot(self) -> None:
+        data = recorded()
+        data["captures"][0]["osVersion"] = "iOS 18.6"
+        with self.assertRaisesRegex(V.VisualEvidenceError, "exactly match.*operatingSystemVersion"):
+            validate(data)
+
+    def test_consistent_inventory_os_update_with_recomputed_digest_is_valid(self) -> None:
+        data = recorded()
+        updated_inventory = inventory()
+        updated_slot = next(
+            slot for slot in updated_inventory["slots"]
+            if slot["slotId"] == "ios-phone-no-watch"
+        )
+        updated_slot["operatingSystemVersion"] = "iOS 19.1"
+        for capture in data["captures"]:
+            if capture["deviceInventorySlotId"] == updated_slot["slotId"]:
+                capture["osVersion"] = updated_slot["operatingSystemVersion"]
+        updated_digest = inventory_digest(updated_inventory)
+        data["baseline"]["deviceInventorySha256"] = updated_digest
+
+        V.validate_evidence(
+            data,
+            require_recorded=True,
+            inventory=updated_inventory,
+            inventory_sha256=updated_digest,
+        )
 
     def test_source_inventory_stages_and_motion_are_fully_bound(self) -> None:
         data = recorded()
