@@ -158,12 +158,14 @@ class AuthenticatedApplicationShell extends StatefulWidget {
     required this.identity,
     required this.cache,
     required this.commandStore,
+    this.transport,
   });
 
   final AuthSessionController controller;
   final AuthIdentity identity;
   final ReadSnapshotCache cache;
   final MobileCommandStore commandStore;
+  final HomeTransport? transport;
 
   @override
   State<AuthenticatedApplicationShell> createState() =>
@@ -195,16 +197,18 @@ class _AuthenticatedApplicationShellState
     super.initState();
     final MobileAuthConfiguration configuration =
         widget.controller.configuration;
-    final HomeTransport transport = configuration.mode == MobileAuthMode.oidc
-        ? BearerHomeTransport(
-            apiBaseUri: configuration.apiBaseUri,
-            inner: const IoHomeTransport(),
-            tokenProvider: widget.controller,
-          )
-        : DevelopmentHeaderHomeTransport(
-            userId: configuration.developmentUserId!,
-            deviceId: configuration.developmentDeviceId!,
-          );
+    final HomeTransport transport =
+        widget.transport ??
+        (configuration.mode == MobileAuthMode.oidc
+            ? BearerHomeTransport(
+                apiBaseUri: configuration.apiBaseUri,
+                inner: const IoHomeTransport(),
+                tokenProvider: widget.controller,
+              )
+            : DevelopmentHeaderHomeTransport(
+                userId: configuration.developmentUserId!,
+                deviceId: configuration.developmentDeviceId!,
+              ));
 
     _homeClient = HomeApiClient(
       baseUri: configuration.apiBaseUri,
@@ -263,6 +267,7 @@ class _AuthenticatedApplicationShellState
       store: widget.commandStore,
       activitySender: activityClient.sync,
       expeditionSender: expeditionClient.advance,
+      expeditionJourneySender: expeditionClient.beginNextJourney,
       eventSender: eventClient.resolve,
       eventResultAcknowledgementSender: eventClient.acknowledge,
       craftingSender: craftingClient.craft,

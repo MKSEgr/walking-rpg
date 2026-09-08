@@ -9,6 +9,7 @@ import 'package:walking_rpg_mobile/core/auth/auth_session_store.dart';
 import 'package:walking_rpg_mobile/core/auth/oidc_client.dart';
 import 'package:walking_rpg_mobile/core/auth/owner_local_state_cleaner.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
+import 'package:walking_rpg_mobile/features/home/data/home_transport.dart';
 import 'package:walking_rpg_mobile/features/onboarding/presentation/first_journey_gate.dart';
 
 import 'support/in_memory_mobile_command_store.dart';
@@ -98,6 +99,60 @@ void main() {
     expect(after.platformLoader, same(before.platformLoader));
     expect(after.synchronizer, same(before.synchronizer));
     expect(after.commandRuntime, same(before.commandRuntime));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    controller.dispose();
+  });
+
+  testWidgets('authenticated runtime sends the next journey command', (
+    WidgetTester tester,
+  ) async {
+    final AuthSessionController controller = AuthSessionController(
+      configuration: MobileAuthConfiguration(
+        mode: MobileAuthMode.development,
+        apiBaseUri: Uri.parse('https://api.example'),
+        refreshSkew: const Duration(seconds: 60),
+        developmentUserId: 'journey-user',
+        developmentDeviceId: 'journey-device',
+      ),
+      sessionStore: _UnusedSessionStore(),
+      oidcClient: _UnusedOidcClient(),
+      localStateCleaner: _UnusedLocalStateCleaner(),
+    );
+    final _JourneyTransport transport = _JourneyTransport();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AuthenticatedApplicationShell(
+          controller: controller,
+          identity: AuthIdentity.development('journey-user'),
+          cache: InMemoryReadSnapshotCache(),
+          commandStore: InMemoryMobileCommandStore(),
+          transport: transport,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final FirstJourneyGate gate = tester.widget<FirstJourneyGate>(
+      find.byType(FirstJourneyGate),
+    );
+    final result = await gate.commandRuntime.beginNextJourney(
+      expeditionId: 'starter-expedition-v1',
+      expectedJourneyNumber: 2,
+      idempotencyKey: 'journey-key',
+    );
+
+    expect(result.journeyNumber, 3);
+    expect(
+      transport.postUri?.path,
+      '/api/v1/expeditions/starter-expedition-v1/journeys',
+    );
+    expect(jsonDecode(transport.postBody!), <String, Object>{
+      'expectedJourneyNumber': 2,
+      'idempotencyKey': 'journey-key',
+    });
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
@@ -210,6 +265,45 @@ final class _UnusedSessionStore implements AuthSessionStore {
       session: session,
       sessionGeneration: sessionGeneration,
       lastOwnerId: session.identity.ownerId,
+    );
+  }
+}
+
+final class _JourneyTransport implements HomeTransport {
+  Uri? postUri;
+  String? postBody;
+
+  @override
+  Future<HomeTransportResponse> get({
+    required Uri uri,
+    required Map<String, String> headers,
+  }) async {
+    return const HomeTransportResponse(statusCode: 503, body: '{}');
+  }
+
+  @override
+  Future<HomeTransportResponse> post({
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  }) async {
+    postUri = uri;
+    postBody = body;
+    return const HomeTransportResponse(
+      statusCode: 200,
+      body: '''{
+        "contentVersion": "chapter-1-v2",
+        "expeditionId": "starter-expedition-v1",
+        "expeditionName": "Сигнал из туманного сектора",
+        "journeyNumber": 3,
+        "progressAfter": 0,
+        "requiredEnergy": 30,
+        "expeditionVersion": 8,
+        "status": "IN_PROGRESS",
+        "currentNodeId": "outer-beacon",
+        "currentNodeName": "Внешний маяк",
+        "serverTime": "2026-09-08T12:00:00Z"
+      }''',
     );
   }
 }

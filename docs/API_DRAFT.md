@@ -1589,6 +1589,22 @@ projection: `content.season.seasonId` равен `remoteConfig.seasonId`, а
 effective config snapshot, поэтому clean install и последующая admin-публикация
 не могут выдать противоречащие друг другу значения.
 
+Недельный маршрут использует календарные периоды с понедельника 00:00 UTC.
+`userState.weeklyRouteWeekStart` и `weeklyRouteResetsAt` задают текущую границу,
+а `weeklyRouteRewardClaimed` является server-owned receipt награды этого
+периода. При переходе к более поздней неделе progress и receipt сбрасываются,
+но `seasonXp` сохраняется; регрессия часов не откатывает уже выбранный период.
+Состояние schema v1 привязывается к persisted `updated_at`, а исторический
+`weekly-route-complete` не позволяет повторно выдать уже полученные 120 XP.
+Idempotent replay выполняется до period reconciliation и возвращает исходный
+response без расходования энергии новой недели.
+
+`remoteConfig.activityRetentionDays` также является единственным effective
+источником срока очистки activity receipts: scheduled cleanup перечитывает
+активную публикацию при каждом запуске. Missing, дробное или выходящее за
+диапазон `1..3650` значение даёт тот же fallback `30`, который возвращается
+клиенту.
+
 Current catalog также возвращает additive positive integer
 `content.season.xpPerLevel`. Backend использует его вместе с
 `content.season.levels` для `CLAIM_SEASON_REWARD`, projection

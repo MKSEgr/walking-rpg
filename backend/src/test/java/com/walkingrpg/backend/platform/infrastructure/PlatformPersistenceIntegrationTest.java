@@ -149,6 +149,98 @@ class PlatformPersistenceIntegrationTest {
     }
 
     @Test
+    void shouldMigratePersistedLegacyWeeklyRouteWithoutRewritingOrReapplyingReceipts()
+            throws Exception {
+        String userId = "legacy-weekly-user";
+        PlatformService oldWeek = weeklyServiceAt(NOW);
+        ensureUser(userId);
+        // Flyway's published goal differs from the in-memory default and from
+        // the fixed 120 XP reward. Complete the actual published route.
+        int oldWeekEnergy = number(oldWeek.getSnapshot(userId).userState(),
+                "weeklyRouteRequiredEnergy");
+        economyService.creditActivityEnergy(userId, oldWeekEnergy, "old-week-energy", NOW);
+        PlatformCommandRequest oldCommand = new PlatformCommandRequest(
+                "ADVANCE_WEEKLY_ROUTE", "legacy-weekly", Map.of("energyToSpend", oldWeekEnergy));
+        oldWeek.execute(userId, oldCommand);
+        jdbcTemplate.update("""
+                UPDATE roadmap_user_state
+                SET state_json = (state_json - 'weeklyRouteWeekStart' - 'weeklyRouteRewardClaimed')
+                        || '{"schemaVersion":1}'::jsonb,
+                    updated_at = ?
+                WHERE user_id = ?
+                """, Timestamp.from(NOW), userId);
+        jdbcTemplate.update("""
+                UPDATE processed_roadmap_command
+                SET response_json = response_json
+                    #- '{snapshot,userState,weeklyRouteWeekStart}'
+                    #- '{snapshot,userState,weeklyRouteResetsAt}'
+                    #- '{snapshot,userState,weeklyRouteRewardClaimed}'
+                WHERE user_id = ?
+                """, userId);
+        String legacyStateJson = jdbcTemplate.queryForObject("""
+                SELECT state_json::text FROM roadmap_user_state WHERE user_id = ?
+                """, String.class, userId);
+        String legacyReceiptJson = jdbcTemplate.queryForObject("""
+                SELECT response_json::text FROM processed_roadmap_command WHERE user_id = ?
+                """, String.class, userId);
+        PlatformCommandResponse legacyReceipt = objectMapper.readValue(
+                legacyReceiptJson, PlatformCommandResponse.class);
+
+        PlatformSnapshotResponse sameWeek = oldWeek.getSnapshot(userId);
+        assertEquals(120, number(sameWeek.userState(), "seasonXp"));
+        assertEquals(oldWeekEnergy, number(sameWeek.userState(), "weeklyRouteProgress"));
+        assertEquals(true, sameWeek.userState().get("weeklyRouteRewardClaimed"));
+
+        Instant nextMonday = Instant.parse("2026-08-03T00:00:00Z");
+        PlatformService nextWeek = weeklyServiceAt(nextMonday);
+        PlatformSnapshotResponse reset = nextWeek.getSnapshot(userId);
+        int nextWeekEnergy = number(reset.userState(), "weeklyRouteRequiredEnergy");
+        assertEquals(0, number(reset.userState(), "weeklyRouteProgress"));
+        assertEquals(120, number(reset.userState(), "seasonXp"));
+        assertEquals(legacyReceipt, nextWeek.execute(userId, oldCommand));
+        assertEquals(legacyStateJson, jdbcTemplate.queryForObject("""
+                SELECT state_json::text FROM roadmap_user_state WHERE user_id = ?
+                """, String.class, userId));
+
+        economyService.creditActivityEnergy(userId, nextWeekEnergy, "new-week-energy", nextMonday);
+        PlatformCommandResponse completed = nextWeek.execute(userId, new PlatformCommandRequest(
+                "ADVANCE_WEEKLY_ROUTE", "current-weekly", Map.of("energyToSpend", nextWeekEnergy)));
+        assertEquals(240, number(completed.snapshot().userState(), "seasonXp"));
+        assertEquals(nextWeekEnergy, number(completed.snapshot().userState(), "weeklyRouteProgress"));
+        assertEquals(2, platformRepository.findState(userId).orElseThrow().schemaVersion());
+        assertEquals(LocalDate.parse("2026-08-03"),
+                platformRepository.findState(userId).orElseThrow().weeklyRouteWeekStart());
+        assertEquals("2", jdbcTemplate.queryForObject("""
+                SELECT state_json ->> 'schemaVersion' FROM roadmap_user_state WHERE user_id = ?
+                """, String.class, userId));
+        assertEquals(legacyReceipt, weeklyServiceAt(nextMonday).execute(userId, oldCommand));
+        assertEquals(legacyReceiptJson, jdbcTemplate.queryForObject("""
+                SELECT response_json::text FROM processed_roadmap_command
+                WHERE user_id = ? AND idempotency_key = ?
+                """, String.class, userId, oldCommand.idempotencyKey()));
+        PlatformCommandResponse repeated = weeklyServiceAt(nextMonday).execute(userId,
+                new PlatformCommandRequest("ADVANCE_WEEKLY_ROUTE", "same-week-new-key",
+                        Map.of("energyToSpend", nextWeekEnergy)));
+        assertEquals(240, number(repeated.snapshot().userState(), "seasonXp"));
+        assertEquals(nextWeekEnergy, number(repeated.snapshot().userState(), "weeklyRouteProgress"));
+        assertEquals(0L, jdbcTemplate.queryForObject("""
+                SELECT balance FROM economy_wallet
+                WHERE user_id = ? AND currency_code = 'ENERGY'
+                """, Long.class, userId).longValue());
+        assertEquals(4, rowCount("economy_ledger"));
+    }
+
+    private PlatformService weeklyServiceAt(Instant observedAt) {
+        return new PlatformService(platformRepository, contentCatalog, progressFactsProvider,
+                economyService, paymentProvider, objectMapper,
+                Clock.fixed(observedAt, ZoneId.of("UTC")), progressionService);
+    }
+
+    private static int number(Map<String, Object> values, String key) {
+        return ((Number) values.get(key)).intValue();
+    }
+
+    @Test
     void shouldProjectPersistedRemoteConfigIntoEveryPlatformCatalog() {
         PlatformSnapshotResponse snapshot = platformService.getSnapshot(
                 "runtime-catalog-user"

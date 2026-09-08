@@ -155,7 +155,6 @@ walking-rpg:
     rounding-step: ${DAILY_GOAL_ROUNDING_STEP:250}
 
   activity-retention:
-    days: ${ACTIVITY_RETENTION_DAYS:30}
     cron: ${ACTIVITY_RETENTION_CRON:0 20 3 * * *}
 
   event-result-handoff:

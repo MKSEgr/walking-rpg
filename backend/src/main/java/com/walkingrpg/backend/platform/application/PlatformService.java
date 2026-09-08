@@ -3,6 +3,8 @@ package com.walkingrpg.backend.platform.application;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -137,7 +139,7 @@ public class PlatformService {
         PlatformProgressFacts facts = progressFactsProvider.factsFor(normalizedUserId);
         PlatformUserState state = repository.findState(normalizedUserId)
                 .map(value -> reconcile(value, facts, normalizedUserId))
-                .orElseGet(() -> initialState(normalizedUserId, facts));
+                .orElseGet(() -> initialState(normalizedUserId, facts, serverTime));
         return snapshot(normalizedUserId, state, facts, serverTime);
     }
 
@@ -245,10 +247,11 @@ public class PlatformService {
         PlatformProgressFacts factsBefore = progressFactsProvider.factsFor(normalizedUserId);
         PlatformUserState current = repository.lockOrCreateState(
                 normalizedUserId,
-                initialState(normalizedUserId, factsBefore),
+                initialState(normalizedUserId, factsBefore, serverTime),
                 serverTime
         );
         current = reconcile(current, factsBefore, normalizedUserId);
+        current = reconcileWeeklyRoute(current, serverTime);
         Mutation mutation = mutate(
                 normalizedUserId,
                 current,
@@ -412,7 +415,7 @@ public class PlatformService {
     ) {
         PlatformProgressFacts facts = progressFactsProvider.factsFor(userId);
         PlatformUserState state = repository.findState(userId)
-                .orElseGet(() -> initialState(userId, facts));
+                .orElseGet(() -> initialState(userId, facts, serverTime));
         recordCompassImpression(
                 userId,
                 payload,
@@ -654,9 +657,18 @@ public class PlatformService {
                     "energyToSpend должна быть положительной", "energyToSpend"
             );
         }
+        if (state.weeklyRouteRewardClaimed()) {
+            return new Mutation(state, "Недельный маршрут уже завершён");
+        }
         int remaining = requiredEnergy - state.weeklyRouteProgress();
         if (remaining <= 0) {
-            return new Mutation(state, "Недельный маршрут уже завершён");
+            // A lowered runtime goal can finish already-earned progress, but
+            // cannot debit energy or award this period's completion twice.
+            return new Mutation(
+                    withWeeklyRoute(state, state.weeklyRouteProgress(),
+                            Math.addExact(state.seasonXp(), 120), true),
+                    "Недельный маршрут завершён"
+            );
         }
         if (energyToSpend > remaining) {
             throw new PlatformStateConflictException(
@@ -673,9 +685,9 @@ public class PlatformService {
                 occurredAt
         );
         int progress = state.weeklyRouteProgress() + energyToSpend;
-        int seasonXp = state.seasonXp() + (progress == requiredEnergy ? 120 : 0);
+        int seasonXp = Math.addExact(state.seasonXp(), progress == requiredEnergy ? 120 : 0);
         return new Mutation(
-                withWeeklyRoute(state, progress, seasonXp),
+                withWeeklyRoute(state, progress, seasonXp, progress == requiredEnergy),
                 progress == requiredEnergy
                         ? "Недельный маршрут завершён"
                         : "Недельный маршрут продвинут"
@@ -1002,7 +1014,11 @@ public class PlatformService {
         );
     }
 
-    private PlatformUserState initialState(String userId, PlatformProgressFacts facts) {
+    private PlatformUserState initialState(
+            String userId,
+            PlatformProgressFacts facts,
+            Instant serverTime
+    ) {
         Map<String, PlatformPetProgress> pets = new LinkedHashMap<>();
         content.pets().forEach(definition -> pets.put(
                 definition.petId(),
@@ -1031,8 +1047,21 @@ public class PlatformService {
                 Set.of(DEFAULT_COSMETIC_ID),
                 DEFAULT_COSMETIC_ID,
                 assignments,
-                0
+                0,
+                PlatformUserState.weeklyRouteWeekStart(serverTime),
+                false
         );
+    }
+
+    private PlatformUserState reconcileWeeklyRoute(PlatformUserState state, Instant serverTime) {
+        state = state.initializeWeeklyRoutePeriod(serverTime);
+        LocalDate currentWeek = PlatformUserState.weeklyRouteWeekStart(serverTime);
+        // Do not roll progress backwards if the service clock regresses. Keeping
+        // the latest period also preserves its completion receipt under skew.
+        if (currentWeek.isAfter(state.weeklyRouteWeekStart())) {
+            return state.withWeeklyRoutePeriod(currentWeek, false, 0, state.seasonXp());
+        }
+        return state;
     }
 
     private PlatformUserState reconcile(
@@ -1111,6 +1140,7 @@ public class PlatformService {
             Map<String, Object> remoteConfig,
             Instant serverTime
     ) {
+        state = reconcileWeeklyRoute(state, serverTime);
         int weeklyRouteEnergy = configInt(
                 remoteConfig,
                 "weeklyRouteEnergy",
@@ -1135,6 +1165,10 @@ public class PlatformService {
         );
         userState.put("weeklyRouteProgress", state.weeklyRouteProgress());
         userState.put("weeklyRouteRequiredEnergy", weeklyRouteEnergy);
+        userState.put("weeklyRouteWeekStart", state.weeklyRouteWeekStart().toString());
+        userState.put("weeklyRouteResetsAt", state.weeklyRouteWeekStart().plusWeeks(1)
+                .atStartOfDay(ZoneOffset.UTC).toInstant().toString());
+        userState.put("weeklyRouteRewardClaimed", state.weeklyRouteRewardClaimed());
         userState.put("squad", squadView(userId, state));
         userState.put("ownedCosmetics", state.ownedCosmetics());
         userState.put("activeCosmeticId", state.activeCosmeticId());
@@ -1559,12 +1593,15 @@ public class PlatformService {
     private PlatformUserState withWeeklyRoute(
             PlatformUserState state,
             int weeklyProgress,
-            int seasonXp
+            int seasonXp,
+            boolean rewardClaimed
     ) {
         return changed(state, state.activePetId(), state.pets(),
                 state.completedOnboardingSteps(), state.unlockedSkills(),
                 state.claimedQuests(), state.achievements(), seasonXp, weeklyProgress,
-                state.squadId(), state.ownedCosmetics(), state.activeCosmeticId());
+                state.squadId(), state.ownedCosmetics(), state.activeCosmeticId())
+                .withWeeklyRoutePeriod(state.weeklyRouteWeekStart(), rewardClaimed,
+                        weeklyProgress, seasonXp);
     }
 
     private PlatformUserState withSquad(PlatformUserState state, String squadId) {
@@ -1647,7 +1684,9 @@ public class PlatformService {
                 cosmetics,
                 activeCosmeticId,
                 experiments,
-                version
+                version,
+                state.weeklyRouteWeekStart(),
+                state.weeklyRouteRewardClaimed()
         );
     }
 

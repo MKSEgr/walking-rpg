@@ -875,9 +875,6 @@ public class StarterExpeditionContent {
             return filtered.toList();
         }
         if (CONSTELLATION_SANCTUARY_EVENT_ID.equals(eventId)) {
-            if (!supportsAdultPetFrontier(activeContentVersion)) {
-                return List.of();
-            }
             if (!supportsPilotSkillChoice(activeContentVersion)) {
                 return choices.stream()
                         .filter(choice -> !SIGNAL_READER_SANCTUARY_CHOICE_ID

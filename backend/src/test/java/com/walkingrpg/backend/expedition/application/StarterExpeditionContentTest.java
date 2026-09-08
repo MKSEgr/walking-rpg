@@ -80,6 +80,40 @@ class StarterExpeditionContentTest {
     }
 
     @Test
+    void shouldKeepReachedConstellationSanctuaryCompletableAfterRollback() {
+        List<ExpeditionEventChoiceDefinition> rollbackChoices =
+                content.eventChoices(
+                        StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                        StarterExpeditionContent
+                                .ADULT_PET_EVOLUTION_CONTENT_VERSION
+                );
+
+        assertEquals(
+                List.of(
+                        "anchor-constellation-sanctuary",
+                        "carry-sanctuary-song"
+                ),
+                rollbackChoices.stream()
+                        .map(ExpeditionEventChoiceDefinition::choiceId)
+                        .toList()
+        );
+        rollbackChoices.forEach(choice -> assertTrue(content.nextNodeAfterEvent(
+                StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
+                choice.choiceId(),
+                StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION
+        ).isEmpty()));
+        assertThrows(
+                EventResolutionValidationException.class,
+                () -> content.requireChoice(
+                        StarterExpeditionContent.UNCHARTED_VERGE_EVENT_ID,
+                        StarterExpeditionContent.SPARK_ADULT_FRONTIER_CHOICE_ID,
+                        StarterExpeditionContent
+                                .ADULT_PET_EVOLUTION_CONTENT_VERSION
+                )
+        );
+    }
+
+    @Test
     void shouldGateOptionalRoutesByActiveContentVersion() {
         AtomicInteger activationReads = new AtomicInteger();
         String chapterV2 = content.activeContentVersion(
@@ -591,7 +625,7 @@ class StarterExpeditionContentTest {
     }
 
     @Test
-    void shouldOpenConstellationSanctuaryOnlyForAdultPetFrontier() {
+    void shouldGateSanctuaryEntryButKeepReachedNodeCompletableOnRollback() {
         assertThrows(
                 EventResolutionValidationException.class,
                 () -> content.requireChoice(
@@ -617,10 +651,10 @@ class StarterExpeditionContentTest {
                         StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
                 ).petRequirement().minimumEvolutionStage()
         );
-        assertTrue(content.eventChoices(
+        assertEquals(2, content.eventChoices(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION
-        ).isEmpty());
+        ).size());
         assertEquals(2, content.eventChoices(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION

@@ -486,6 +486,204 @@ class PlatformServiceTest {
     }
 
     @Test
+    void shouldResetWeeklyRouteAtUtcMondayAndReplayTheOldReceiptUnchanged() {
+        Instant sunday = Instant.parse("2026-08-02T23:59:59.999999Z");
+        Instant monday = Instant.parse("2026-08-03T00:00:00Z");
+        economyService.creditActivityEnergy("user-1", 240, "weekly-boundary-seed", sunday);
+        PlatformService before = serviceAt(sunday);
+        PlatformCommandRequest oldRequest = command(
+                "ADVANCE_WEEKLY_ROUTE", "old-week", Map.of("energyToSpend", 120));
+        PlatformCommandResponse oldResponse = before.execute("user-1", oldRequest);
+        assertEquals("2026-07-27", oldResponse.snapshot().userState().get("weeklyRouteWeekStart"));
+        assertEquals("2026-08-03T00:00:00Z",
+                oldResponse.snapshot().userState().get("weeklyRouteResetsAt"));
+        PlatformService databaseObserved = service(new SandboxPaymentProvider(),
+                JsonMapper.builder().findAndAddModules().build(),
+                Clock.fixed(monday, ZoneOffset.UTC), () -> sunday);
+        assertEquals(120, number(databaseObserved.getSnapshot("user-1").userState(),
+                "weeklyRouteProgress"));
+
+        PlatformService after = serviceAt(monday);
+        PlatformUserState persisted = platformRepository.findState("user-1").orElseThrow();
+        assertEquals(oldResponse, after.execute("user-1", oldRequest));
+        PlatformSnapshotResponse newWeek = after.getSnapshot("user-1");
+        assertEquals(0, number(newWeek.userState(), "weeklyRouteProgress"));
+        assertEquals(120, number(newWeek.userState(), "seasonXp"));
+        assertEquals(false, newWeek.userState().get("weeklyRouteRewardClaimed"));
+        assertEquals("2026-08-03", newWeek.userState().get("weeklyRouteWeekStart"));
+        assertEquals(persisted, platformRepository.findState("user-1").orElseThrow());
+
+        PlatformCommandResponse completed = after.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "new-week", Map.of("energyToSpend", 120)));
+        assertEquals(240, number(completed.snapshot().userState(), "seasonXp"));
+        PlatformUserState updated = platformRepository.findState("user-1").orElseThrow();
+        assertEquals(oldResponse, after.execute("user-1", oldRequest));
+        assertEquals(updated, platformRepository.findState("user-1").orElseThrow());
+        assertEquals(0, economyRepository.currentBalance(
+                "user-1", EconomyCurrency.ENERGY, monday).balance());
+    }
+
+    @Test
+    void shouldDiscardOnlyOldPartialProgressAcrossSkippedWeeksAndYearBoundary() {
+        Instant before = Instant.parse("2026-12-31T23:59:59Z");
+        Instant after = Instant.parse("2027-01-18T00:00:00Z");
+        economyService.creditActivityEnergy("user-1", 60, "partial-seed", before);
+        serviceAt(before).execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "partial-old-week", Map.of("energyToSpend", 60)));
+        PlatformSnapshotResponse sameWeek = serviceAt(Instant.parse("2027-01-03T23:59:59Z"))
+                .getSnapshot("user-1");
+        assertEquals("2026-12-28", sameWeek.userState().get("weeklyRouteWeekStart"));
+        assertEquals(60, number(sameWeek.userState(), "weeklyRouteProgress"));
+
+        PlatformSnapshotResponse skipped = serviceAt(after).getSnapshot("user-1");
+        assertEquals("2027-01-18", skipped.userState().get("weeklyRouteWeekStart"));
+        assertEquals(0, number(skipped.userState(), "weeklyRouteProgress"));
+        assertEquals(0, number(skipped.userState(), "seasonXp"));
+    }
+
+    @Test
+    void shouldNotReawardCompletedWeekAfterGoalChangeOrClockRegression() {
+        economyService.creditActivityEnergy("user-1", 240, "config-seed", NOW);
+        service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "complete-week", Map.of("energyToSpend", 120)));
+        Map<String, Object> config = new LinkedHashMap<>(remoteConfig(false, false));
+        config.put("weeklyRouteEnergy", 240);
+        platformRepository.setRemoteConfig(config);
+        PlatformCommandResponse sameWeek = service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "changed-goal", Map.of("energyToSpend", 120)));
+        assertEquals(120, number(sameWeek.snapshot().userState(), "seasonXp"));
+        assertEquals(120, number(sameWeek.snapshot().userState(), "weeklyRouteProgress"));
+        assertEquals(true, sameWeek.snapshot().userState().get("weeklyRouteRewardClaimed"));
+
+        PlatformCommandResponse skewed = serviceAt(NOW.minus(7, ChronoUnit.DAYS))
+                .execute("user-1", command("ADVANCE_WEEKLY_ROUTE", "clock-skew",
+                        Map.of("energyToSpend", 120)));
+        assertEquals("2026-07-27", skewed.snapshot().userState().get("weeklyRouteWeekStart"));
+        assertEquals(120, number(skewed.snapshot().userState(), "seasonXp"));
+        assertEquals(120, economyRepository.currentBalance(
+                "user-1", EconomyCurrency.ENERGY, NOW).balance());
+    }
+
+    @Test
+    void shouldAwardAlreadyEarnedProgressOnceWhenRuntimeGoalIsLowered() {
+        economyService.creditActivityEnergy("user-1", 120, "lower-goal-seed", NOW);
+        service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "half-route", Map.of("energyToSpend", 60)));
+        Map<String, Object> config = new LinkedHashMap<>(remoteConfig(false, false));
+        config.put("weeklyRouteEnergy", 50);
+        platformRepository.setRemoteConfig(config);
+        for (String key : List.of("lowered-goal", "repeat-lowered-goal")) {
+            PlatformCommandResponse response = service.execute("user-1", command(
+                    "ADVANCE_WEEKLY_ROUTE", key, Map.of("energyToSpend", 10)));
+            assertEquals(120, number(response.snapshot().userState(), "seasonXp"));
+            assertEquals(60, number(response.snapshot().userState(), "weeklyRouteProgress"));
+        }
+        assertEquals(60, economyRepository.currentBalance(
+                "user-1", EconomyCurrency.ENERGY, NOW).balance());
+    }
+
+    @Test
+    void shouldMigrateLegacyCompletedJsonWithoutGrantingAnotherReward()
+            throws Exception {
+        economyService.creditActivityEnergy("user-1", 240, "legacy-seed", NOW);
+        service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "legacy-complete", Map.of("energyToSpend", 120)));
+        PlatformUserState legacy = legacyState(platformRepository.findState("user-1").orElseThrow());
+        assertNull(legacy.weeklyRouteWeekStart());
+        platformRepository.saveState("user-1", legacy, NOW);
+
+        PlatformSnapshotResponse migrated = service.getSnapshot("user-1");
+        assertEquals(120, number(migrated.userState(), "seasonXp"));
+        assertEquals(true, migrated.userState().get("weeklyRouteRewardClaimed"));
+        PlatformCommandResponse repeated = service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "legacy-new-key", Map.of("energyToSpend", 120)));
+        assertEquals(120, number(repeated.snapshot().userState(), "seasonXp"));
+        assertEquals(120, economyRepository.currentBalance(
+                "user-1", EconomyCurrency.ENERGY, NOW).balance());
+
+        PlatformUserState stored = platformRepository.findState("user-1").orElseThrow();
+        assertEquals(2, stored.schemaVersion());
+        assertEquals(legacy.claimedQuests(), stored.claimedQuests());
+        assertEquals(legacy.ownedCosmetics(), stored.ownedCosmetics());
+    }
+
+    @Test
+    void shouldAnchorLegacyPartialJsonToItsPersistedWeek() throws Exception {
+        economyService.creditActivityEnergy("user-1", 120, "legacy-partial-seed", NOW);
+        service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "legacy-partial", Map.of("energyToSpend", 60)));
+        PlatformUserState legacy = legacyState(platformRepository.findState("user-1").orElseThrow());
+        platformRepository.saveState("user-1", legacy, NOW.minus(7, ChronoUnit.DAYS));
+        PlatformSnapshotResponse snapshot = service.getSnapshot("user-1");
+        assertEquals(0, number(snapshot.userState(), "weeklyRouteProgress"));
+        assertEquals(0, number(snapshot.userState(), "seasonXp"));
+        PlatformCommandResponse advanced = service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "current-partial", Map.of("energyToSpend", 60)));
+        assertEquals(60, number(advanced.snapshot().userState(), "weeklyRouteProgress"));
+        assertEquals(0, number(advanced.snapshot().userState(), "seasonXp"));
+    }
+
+    @Test
+    void shouldPreserveAndCompleteLegacyPartialProgressInTheSameWeek()
+            throws Exception {
+        economyService.creditActivityEnergy("user-1", 120, "same-week-legacy-seed", NOW);
+        service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "same-week-legacy-partial", Map.of("energyToSpend", 60)));
+        PlatformUserState legacy = legacyState(platformRepository.findState("user-1").orElseThrow());
+        platformRepository.saveState("user-1", legacy, NOW);
+        PlatformSnapshotResponse migrated = service.getSnapshot("user-1");
+        assertEquals(60, number(migrated.userState(), "weeklyRouteProgress"));
+        assertEquals(false, migrated.userState().get("weeklyRouteRewardClaimed"));
+
+        PlatformCommandResponse completed = service.execute("user-1", command(
+                "ADVANCE_WEEKLY_ROUTE", "finish-legacy-partial", Map.of("energyToSpend", 60)));
+        assertEquals(120, number(completed.snapshot().userState(), "weeklyRouteProgress"));
+        assertEquals(120, number(completed.snapshot().userState(), "seasonXp"));
+        assertEquals(0, economyRepository.currentBalance(
+                "user-1", EconomyCurrency.ENERGY, NOW).balance());
+    }
+
+    @Test
+    void shouldMakeAllTenSeasonRewardsReachableWithQuestsAndFiveWeeklyRoutes() {
+        factsProvider.set("user-1", new PlatformProgressFacts(15_000, 10, 10, "squad-1"));
+        for (PlatformContentCatalog.QuestDefinition quest : new PlatformContentCatalog().quests()) {
+            service.execute("user-1", command("CLAIM_QUEST", "season-" + quest.questId(),
+                    Map.of("questId", quest.questId())));
+        }
+        assertEquals(440, number(service.getSnapshot("user-1").userState(), "seasonXp"));
+        for (int week = 0; week < 5; week++) {
+            Instant observedAt = NOW.plus(7L * week, ChronoUnit.DAYS);
+            economyService.creditActivityEnergy("user-1", 120, "season-seed-" + week, observedAt);
+            serviceAt(observedAt).execute("user-1", command("ADVANCE_WEEKLY_ROUTE",
+                    "season-week-" + week, Map.of("energyToSpend", 120)));
+        }
+        PlatformService fifthWeek = serviceAt(NOW.plus(28, ChronoUnit.DAYS));
+        assertEquals(1040, number(fifthWeek.getSnapshot("user-1").userState(), "seasonXp"));
+        for (int level = 1; level <= 10; level++) {
+            PlatformCommandResponse reward = fifthWeek.execute("user-1", command(
+                    "CLAIM_SEASON_REWARD", "all-rewards-" + level, Map.of("level", level)));
+            assertTrue(collection(reward.snapshot().userState(), "achievements")
+                    .contains("season-reward-" + level));
+        }
+    }
+
+    private PlatformService serviceAt(Instant observedAt) {
+        return service(new SandboxPaymentProvider(),
+                JsonMapper.builder().findAndAddModules().build(),
+                Clock.fixed(observedAt, ZoneId.of("America/Los_Angeles")));
+    }
+
+    private PlatformUserState legacyState(PlatformUserState state) throws Exception {
+        JsonMapper mapper = JsonMapper.builder().findAndAddModules().build();
+        Map<String, Object> legacy = new LinkedHashMap<>(
+                map(mapper.readValue(mapper.writeValueAsString(state), Map.class)));
+        legacy.put("schemaVersion", 1);
+        legacy.remove("weeklyRouteWeekStart");
+        legacy.remove("weeklyRouteRewardClaimed");
+        return mapper.readValue(mapper.writeValueAsString(legacy), PlatformUserState.class);
+    }
+
+    @Test
     void shouldUseOneEffectiveRemoteConfigForWholeCommand() {
         Map<String, Object> initialConfig = new LinkedHashMap<>(
                 remoteConfig(false, false)

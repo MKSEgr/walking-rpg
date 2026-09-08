@@ -164,6 +164,7 @@ final class FileReadSnapshotCache implements ReadSnapshotCache {
         await _deleteIfExists(location.target);
         await _deleteIfExists(location.temporary);
         await _deleteIfExists(location.backup);
+        await _deleteQuarantinedFiles(location);
         return;
       }
       final List<ReadSnapshotCacheEntry> loaded = await _load(location);
@@ -383,6 +384,24 @@ final class FileReadSnapshotCache implements ReadSnapshotCache {
   Future<void> _deleteIfExists(File file) async {
     if (await file.exists()) {
       await file.delete();
+    }
+  }
+
+  Future<void> _deleteQuarantinedFiles(_CacheLocation location) async {
+    final Set<String> quarantinePrefixes = <String>{
+      '${location.target.path}.corrupt-',
+      '${location.temporary.path}.corrupt-',
+      '${location.backup.path}.corrupt-',
+    };
+    await for (final FileSystemEntity entity in location.target.parent.list(
+      followLinks: false,
+    )) {
+      if (entity is File &&
+          quarantinePrefixes.any(
+            (String prefix) => entity.path.startsWith(prefix),
+          )) {
+        await _deleteIfExists(entity);
+      }
     }
   }
 

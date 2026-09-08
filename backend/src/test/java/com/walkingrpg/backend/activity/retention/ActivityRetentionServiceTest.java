@@ -16,21 +16,14 @@ class ActivityRetentionServiceTest {
         CapturingRepository repository = new CapturingRepository(7);
         ActivityRetentionService service = new ActivityRetentionService(
                 repository,
-                new ActivityRetentionProperties(30),
+                () -> 90,
                 Clock.fixed(now, ZoneOffset.UTC)
         );
 
         int deleted = service.cleanup();
 
         assertEquals(7, deleted);
-        assertEquals(Instant.parse("2026-06-27T08:30:00Z"), repository.cutoff);
-    }
-
-    @Test
-    void shouldUseThirtyDaysWhenConfiguredValueIsInvalid() {
-        ActivityRetentionProperties properties = new ActivityRetentionProperties(0);
-
-        assertEquals(30, properties.days());
+        assertEquals(Instant.parse("2026-04-28T08:30:00Z"), repository.cutoff);
     }
 
     private static final class CapturingRepository implements ActivityRetentionRepository {

@@ -50,7 +50,8 @@ public class InMemoryPlatformRepository implements PlatformRepository {
             PlatformUserState initialState,
             Instant observedAt
     ) {
-        return states.computeIfAbsent(userId, ignored -> initialState);
+        return states.computeIfAbsent(userId,
+                ignored -> initialState.initializeWeeklyRoutePeriod(observedAt));
     }
 
     @Override
@@ -59,7 +60,7 @@ public class InMemoryPlatformRepository implements PlatformRepository {
             PlatformUserState state,
             Instant updatedAt
     ) {
-        states.put(userId, state);
+        states.put(userId, state.initializeWeeklyRoutePeriod(updatedAt));
     }
 
     @Override
