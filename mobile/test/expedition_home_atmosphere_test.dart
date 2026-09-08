@@ -16,7 +16,7 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(_painter(tester).progress, 1);
-    expect(tester.binding.hasScheduledFrame, isFalse);
+    expect(tester.binding.transientCallbackCount, 0);
   });
 
   testWidgets('reduced motion starts on the final still frame', (
@@ -27,7 +27,7 @@ void main() {
     );
 
     expect(_painter(tester).progress, 1);
-    expect(tester.binding.hasScheduledFrame, isFalse);
+    expect(tester.binding.transientCallbackCount, 0);
     await tester.pump(const Duration(seconds: 2));
     expect(_painter(tester).progress, 1);
   });
@@ -43,12 +43,12 @@ void main() {
       _testApp(const ExpeditionHomeAtmosphere(), disableAnimations: true),
     );
     expect(_painter(tester).progress, 1);
-    expect(tester.binding.hasScheduledFrame, isFalse);
+    expect(tester.binding.transientCallbackCount, 0);
 
     await tester.pumpWidget(_testApp(const ExpeditionHomeAtmosphere()));
     await tester.pump(const Duration(milliseconds: 400));
     expect(_painter(tester).progress, 1);
-    expect(tester.binding.hasScheduledFrame, isFalse);
+    expect(tester.binding.transientCallbackCount, 0);
   });
 
   testWidgets('atmosphere is non-interactive and excluded from semantics', (
@@ -131,7 +131,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 800));
     expect(_painter(tester).progress, beforePause);
-    expect(tester.binding.hasScheduledFrame, isFalse);
+    expect(tester.binding.transientCallbackCount, 0);
 
     await tester.pumpWidget(
       _testApp(
@@ -162,7 +162,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
     expect(_painter(tester).progress, beforeHide);
-    expect(tester.binding.hasScheduledFrame, isFalse);
+    expect(tester.binding.transientCallbackCount, 0);
 
     await tester.tap(find.byKey(const Key('navigation-home')));
     await tester.pump();
@@ -204,7 +204,7 @@ void main() {
     await tester.pumpWidget(_testApp(const SizedBox()));
 
     expect(tester.takeException(), isNull);
-    expect(tester.binding.hasScheduledFrame, isFalse);
+    expect(tester.binding.transientCallbackCount, 0);
   });
 }
 
