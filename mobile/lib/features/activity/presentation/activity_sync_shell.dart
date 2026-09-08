@@ -151,13 +151,93 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       home: HomeScreen(
         key: ValueKey<String>('home-$_homeGeneration'),
         loader: widget.homeLoader,
-        advancer: runtime?.advance,
-        expeditionJourneyStarter: runtime?.beginNextJourney,
-        eventResolver: runtime?.resolve,
-        eventResultAcknowledger: runtime?.acknowledgeEventResult,
-        crafter: runtime?.craft,
-        itemUpgradeExecutor: runtime?.upgradeItem,
-        equipmentExecutor: runtime?.changeEquipment,
+        advancer: runtime == null
+            ? null
+            : ({
+                required String expeditionId,
+                required int energyToSpend,
+                required String idempotencyKey,
+              }) => _runHomeMutation(
+                () => runtime.advance(
+                  expeditionId: expeditionId,
+                  energyToSpend: energyToSpend,
+                  idempotencyKey: idempotencyKey,
+                ),
+              ),
+        expeditionJourneyStarter: runtime == null
+            ? null
+            : ({
+                required String expeditionId,
+                required int expectedJourneyNumber,
+                required String idempotencyKey,
+              }) => _runHomeMutation(
+                () => runtime.beginNextJourney(
+                  expeditionId: expeditionId,
+                  expectedJourneyNumber: expectedJourneyNumber,
+                  idempotencyKey: idempotencyKey,
+                ),
+              ),
+        eventResolver: runtime == null
+            ? null
+            : ({
+                required String eventId,
+                required String choiceId,
+                required String idempotencyKey,
+              }) => _runHomeMutation(
+                () => runtime.resolve(
+                  eventId: eventId,
+                  choiceId: choiceId,
+                  idempotencyKey: idempotencyKey,
+                ),
+              ),
+        eventResultAcknowledger: runtime == null
+            ? null
+            : ({
+                required String receiptId,
+                required String idempotencyKey,
+              }) => _runHomeMutation(
+                () => runtime.acknowledgeEventResult(
+                  receiptId: receiptId,
+                  idempotencyKey: idempotencyKey,
+                ),
+              ),
+        crafter: runtime == null
+            ? null
+            : ({
+                required String recipeId,
+                required String idempotencyKey,
+              }) => _runHomeMutation(
+                () => runtime.craft(
+                  recipeId: recipeId,
+                  idempotencyKey: idempotencyKey,
+                ),
+              ),
+        itemUpgradeExecutor: runtime == null
+            ? null
+            : ({
+                required String upgradeId,
+                required String idempotencyKey,
+              }) => _runHomeMutation(
+                () => runtime.upgradeItem(
+                  upgradeId: upgradeId,
+                  idempotencyKey: idempotencyKey,
+                ),
+              ),
+        equipmentExecutor: runtime == null
+            ? null
+            : ({
+                required String slotId,
+                required String action,
+                required String? itemInstanceId,
+                required String idempotencyKey,
+              }) => _runHomeMutation(
+                () => runtime.changeEquipment(
+                  slotId: slotId,
+                  action: action,
+                  itemInstanceId: itemInstanceId,
+                  idempotencyKey: idempotencyKey,
+                ),
+              ),
         impressionRecorder: runtime?.executePlatform,
         onOpenAccount: widget.onOpenAccount,
         onOpenRecovery: widget.onOpenRecovery,
@@ -393,6 +473,17 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
       _homeGeneration += 1;
       _platformGeneration += 1;
     });
+  }
+
+  Future<T> _runHomeMutation<T>(Future<T> Function() mutation) async {
+    final T result = await mutation();
+    if (mounted) {
+      setState(() {
+        _invalidateCrew();
+        _platformGeneration += 1;
+      });
+    }
+    return result;
   }
 
   Future<void> _sync() async {

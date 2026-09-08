@@ -2,14 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:walking_rpg_mobile/core/commands/mobile_command_runtime.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_progress_signal.dart';
 import 'package:walking_rpg_mobile/design_system/walking_rpg_theme.dart';
 import 'package:walking_rpg_mobile/features/activity/domain/activity_sync_result.dart';
+import 'package:walking_rpg_mobile/features/activity/domain/step_reading.dart';
 import 'package:walking_rpg_mobile/features/activity/presentation/activity_sync_shell.dart';
+import 'package:walking_rpg_mobile/features/expedition/domain/expedition_advance_result.dart';
 import 'package:walking_rpg_mobile/features/home/domain/home_snapshot.dart';
 import 'package:walking_rpg_mobile/features/home/presentation/home_screen.dart';
 import 'package:walking_rpg_mobile/l10n/generated/app_localizations.dart';
 
+import 'support/in_memory_mobile_command_store.dart';
 import 'support/platform_fixture.dart';
 
 void main() {
@@ -132,6 +136,73 @@ void main() {
 
     expect(platformLoads, 2);
     expect(platformHomeLoads, 2);
+    expect(find.byKey(const Key('crew-hero')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('successful Home mutation refreshes Journal and deferred Crew', (
+    WidgetTester tester,
+  ) async {
+    int platformLoads = 0;
+    int platformHomeLoads = 0;
+    final MobileCommandRuntime runtime = MobileCommandRuntime(
+      ownerId: 'home-mutation-user',
+      store: InMemoryMobileCommandStore(),
+      activitySender:
+          ({
+            required StepReading reading,
+            required String idempotencyKey,
+          }) async => throw UnimplementedError(),
+      expeditionSender:
+          ({
+            required String expeditionId,
+            required int energyToSpend,
+            required String idempotencyKey,
+          }) async =>
+              _advanceResult(energySpent: energyToSpend),
+      eventSender:
+          ({
+            required String eventId,
+            required String choiceId,
+            required String idempotencyKey,
+          }) async => throw UnimplementedError(),
+    );
+    addTearDown(runtime.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WalkingRpgTheme.dark(),
+        home: ActivitySyncShell(
+          synchronizer: () async => _syncResult(),
+          commandRuntime: runtime,
+          homeLoader: () async => _afterSync(),
+          platformLoader: () async {
+            platformLoads += 1;
+            return platformSnapshot();
+          },
+          platformHomeLoader: () async {
+            platformHomeLoads += 1;
+            return _afterSync();
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(platformLoads, 1);
+    expect(platformHomeLoads, 1);
+
+    await tester.tap(find.byKey(const Key('home-advance-expedition')));
+    await tester.pumpAndSettle();
+
+    expect(platformLoads, 2);
+    expect(platformHomeLoads, 2);
+
+    await tester.tap(find.byKey(const Key('navigation-crew')));
+    await tester.pumpAndSettle();
+
+    expect(platformLoads, 3);
+    expect(platformHomeLoads, 3);
     expect(find.byKey(const Key('crew-hero')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -383,6 +454,30 @@ ActivitySyncResult _syncResult() {
     riskStatus: 'ACCEPTED',
     stateVersion: 1,
     serverTime: '2026-07-26T07:00:00Z',
+  );
+}
+
+ExpeditionAdvanceResult _advanceResult({required int energySpent}) {
+  return ExpeditionAdvanceResult(
+    contentVersion: 'chapter-1-v2',
+    expeditionId: 'starter-expedition-v1',
+    expeditionName: 'Сигнал из туманного сектора',
+    energySpent: energySpent,
+    energyBalanceAfter: 38,
+    economyVersion: 2,
+    progressAfter: 30,
+    requiredEnergy: 30,
+    expeditionVersion: 1,
+    status: 'EVENT_READY',
+    currentNodeId: 'outer-beacon',
+    currentNodeName: 'Внешний маяк',
+    unlockedEvent: const ExpeditionEventResult(
+      eventId: 'signal-source-v1',
+      title: 'Источник сигнала',
+      summary: 'Маяк отвечает импульсом.',
+      status: 'READY',
+    ),
+    serverTime: '2026-09-08T12:00:00Z',
   );
 }
 
