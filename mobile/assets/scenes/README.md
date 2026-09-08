@@ -18,6 +18,11 @@ crew scene. The reviewed normalized subject rectangle is `(0.27, 0.235)` to
 `(0.80, 0.70)`. The layout measures its controls and fits that rectangle into
 the remaining space, then feathers only outer scenery into the backdrop.
 No character animation, evolution, cosmetic or route-state details are baked in.
+Issue [#579](https://github.com/MKSEgr/walking-rpg/issues/579) adds a
+presentation-only finite atmosphere over the static scene (mist, vignette and
+sparse cyan motes). That layer does not animate the pilot or companion, does
+not encode gameplay state and settles after roughly 1.6 seconds. With reduced
+motion it is immediately static and has no active ticker.
 
 [Full v3 prompts](provenance-v3.json) retain the reference edit instructions.
 Generated PNGs were encoded to WebP at quality 90 without creative processing.
@@ -62,6 +67,10 @@ encoded to WebP with ImageMagick `convert input.png -quality 90 output.webp`,
 without resizing, cropping, masking or other artistic processing.
 
 This owner-requested visual direction is recorded in the pilot and companion
-art bibles. The scenes have no independent character animation. New animation
-requires its own detailed frames/layers and review. Physical-device acceptance
-remains under TASK-011 / issue #156.
+art bibles. The scenes have no independent character animation. The #579
+atmosphere is a non-interactive presentation layer: it ignores pointers,
+excludes semantics and cannot alter gameplay or accessibility state. New
+character animation requires its own detailed frames/layers and review.
+Synthetic widget captures are not physical-device evidence; acceptance remains
+under TASK-011 / issue #156, an external gate that is not closed by these
+assets or their captures.

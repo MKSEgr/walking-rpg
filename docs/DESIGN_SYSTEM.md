@@ -51,12 +51,21 @@ than an invented Navigator. Names never select artwork. The scenes describe
 species identity, not an evolution or cosmetic state; those remain in the
 existing progression and crew UI.
 
-This revision uses still artwork with no greeting button, ticker or timer.
-It has identical reduced-motion behavior and cannot replay an earlier reaction
-when visibility resumes. Natural character animation requires a separate
-high-resolution production pass. Existing atlases remain available elsewhere.
-The illustrated trail is atmospheric and never changes from route progress;
-accepted progress stays in the compact route HUD and accessibility label.
+The realistic key art, pilot and companion remain static illustrations. Issue
+[#579](https://github.com/MKSEgr/walking-rpg/issues/579) adds only a
+presentation layer: a finite, approximately 1.6-second atmospheric reveal of
+low ground mist, a peripheral vignette and sparse cyan motes. It settles to a
+fully static frame; it is not a greeting, timer, ticker or character reaction.
+With platform reduced motion enabled, Home paints that final frame immediately
+and creates no active ticker. Natural pilot or companion animation still
+requires a separate high-resolution production pass. Existing atlases remain
+available elsewhere. The illustrated trail is atmospheric and never changes
+from route progress; accepted progress stays in the compact route HUD and
+accessibility label.
+
+The atmospheric layer is presentation-only: it sits below gameplay UI, ignores
+pointers, excludes semantics and neither reads nor changes expedition state.
+It must not obscure accessible controls or add an accessibility announcement.
 
 Five portrait WebP assets are 1024 × 1536 and together use 1,140,064 bytes.
 A continuous landscape fills the Home viewport behind the toolbar, action and
@@ -93,7 +102,9 @@ Set `FLUTTER_ROOT` to that SDK when running outside flutter-action. The capture
 test uses SDK Roboto fonts, all three companion fixtures, RU/EN, light/dark,
 narrow/enlarged text, native safe-area insets and reduced motion. CI publishes `home-visual-fixtures`
 from `mobile/build/home-previews`. These are synthetic widget renders for
-review, not physical-device evidence for TASK-011.
+review, not physical-device evidence for TASK-011 / issue #156. Issue #156 is
+an external acceptance gate and remains open until the required owner-reviewed
+physical-device evidence is recorded.
 
 ## Tokens
 

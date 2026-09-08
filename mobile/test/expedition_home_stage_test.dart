@@ -95,6 +95,10 @@ void main() {
       tester.getRect(find.byKey(const Key('home-fullscreen-background'))),
       Offset.zero & screenSize,
     );
+    expect(
+      tester.getRect(find.byKey(const Key('home-expedition-atmosphere'))),
+      Offset.zero & screenSize,
+    );
     final Rect detailsViewport = tester.getRect(
       find.byKey(const Key('test-details-scroll')),
     );
