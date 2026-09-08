@@ -153,6 +153,7 @@ class PlatformPersistenceIntegrationTest {
             throws Exception {
         String userId = "legacy-weekly-user";
         PlatformService oldWeek = weeklyServiceAt(NOW);
+        ensureUser(userId);
         economyService.creditActivityEnergy(userId, 120, "old-week-energy", NOW);
         PlatformCommandRequest oldCommand = new PlatformCommandRequest(
                 "ADVANCE_WEEKLY_ROUTE", "legacy-weekly", Map.of("energyToSpend", 120));

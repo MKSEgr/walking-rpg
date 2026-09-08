@@ -9,6 +9,8 @@ void main() {
       const Size screenSize = Size(640, 320);
       await tester.binding.setSurfaceSize(screenSize);
       addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetDevicePixelRatio);
       tester.view.viewPadding = const FakeViewPadding(
         left: 30,
         top: 18,
