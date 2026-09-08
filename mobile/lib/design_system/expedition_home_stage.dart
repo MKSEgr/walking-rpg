@@ -64,10 +64,7 @@ class ExpeditionHomeStage extends StatelessWidget {
               if (useShortLandscape)
                 LayoutId(
                   id: _Layer.controls,
-                  child: _LandscapeHudScroller(
-                    header: header,
-                    footer: footer,
-                  ),
+                  child: _LandscapeHudScroller(header: header, footer: footer),
                 )
               else ...<Widget>[
                 LayoutId(id: _Layer.header, child: header),
@@ -183,10 +180,7 @@ class _HomeStageLayout extends MultiChildLayoutDelegate {
     positionChild(_Layer.background, Offset.zero);
     final double gutter = size.width < 360 ? 12 : 20;
     final BoxConstraints hud = BoxConstraints.tightFor(
-      width: math.max(
-        0,
-        size.width - leftInset - rightInset - gutter * 2,
-      ),
+      width: math.max(0, size.width - leftInset - rightInset - gutter * 2),
     );
     final Size header = layoutChild(_Layer.header, hud);
     final Size footer = layoutChild(_Layer.footer, hud);

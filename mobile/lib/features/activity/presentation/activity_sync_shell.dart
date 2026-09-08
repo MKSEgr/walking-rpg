@@ -192,37 +192,31 @@ class _ActivitySyncShellState extends State<ActivitySyncShell> {
               ),
         eventResultAcknowledger: runtime == null
             ? null
-            : ({
-                required String receiptId,
-                required String idempotencyKey,
-              }) => _runHomeMutation(
-                () => runtime.acknowledgeEventResult(
-                  receiptId: receiptId,
-                  idempotencyKey: idempotencyKey,
-                ),
-              ),
+            : ({required String receiptId, required String idempotencyKey}) =>
+                  _runHomeMutation(
+                    () => runtime.acknowledgeEventResult(
+                      receiptId: receiptId,
+                      idempotencyKey: idempotencyKey,
+                    ),
+                  ),
         crafter: runtime == null
             ? null
-            : ({
-                required String recipeId,
-                required String idempotencyKey,
-              }) => _runHomeMutation(
-                () => runtime.craft(
-                  recipeId: recipeId,
-                  idempotencyKey: idempotencyKey,
-                ),
-              ),
+            : ({required String recipeId, required String idempotencyKey}) =>
+                  _runHomeMutation(
+                    () => runtime.craft(
+                      recipeId: recipeId,
+                      idempotencyKey: idempotencyKey,
+                    ),
+                  ),
         itemUpgradeExecutor: runtime == null
             ? null
-            : ({
-                required String upgradeId,
-                required String idempotencyKey,
-              }) => _runHomeMutation(
-                () => runtime.upgradeItem(
-                  upgradeId: upgradeId,
-                  idempotencyKey: idempotencyKey,
-                ),
-              ),
+            : ({required String upgradeId, required String idempotencyKey}) =>
+                  _runHomeMutation(
+                    () => runtime.upgradeItem(
+                      upgradeId: upgradeId,
+                      idempotencyKey: idempotencyKey,
+                    ),
+                  ),
         equipmentExecutor: runtime == null
             ? null
             : ({

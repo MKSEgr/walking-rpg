@@ -625,7 +625,7 @@ class StarterExpeditionContentTest {
     }
 
     @Test
-    void shouldOpenConstellationSanctuaryOnlyForAdultPetFrontier() {
+    void shouldGateSanctuaryEntryButKeepReachedNodeCompletableOnRollback() {
         assertThrows(
                 EventResolutionValidationException.class,
                 () -> content.requireChoice(
@@ -651,10 +651,10 @@ class StarterExpeditionContentTest {
                         StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION
                 ).petRequirement().minimumEvolutionStage()
         );
-        assertTrue(content.eventChoices(
+        assertEquals(2, content.eventChoices(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 StarterExpeditionContent.ADULT_PET_EVOLUTION_CONTENT_VERSION
-        ).isEmpty());
+        ).size());
         assertEquals(2, content.eventChoices(
                 StarterExpeditionContent.CONSTELLATION_SANCTUARY_EVENT_ID,
                 StarterExpeditionContent.ADULT_PET_FRONTIER_CONTENT_VERSION

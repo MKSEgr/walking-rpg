@@ -158,8 +158,7 @@ void main() {
             required String expeditionId,
             required int energyToSpend,
             required String idempotencyKey,
-          }) async =>
-              _advanceResult(energySpent: energyToSpend),
+          }) async => _advanceResult(energySpent: energyToSpend),
       eventSender:
           ({
             required String eventId,
