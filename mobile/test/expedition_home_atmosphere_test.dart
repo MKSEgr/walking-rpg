@@ -23,10 +23,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      _testApp(
-        const ExpeditionHomeAtmosphere(),
-        disableAnimations: true,
-      ),
+      _testApp(const ExpeditionHomeAtmosphere(), disableAnimations: true),
     );
 
     expect(_painter(tester).progress, 1);
@@ -40,16 +37,10 @@ void main() {
   ) async {
     await tester.pumpWidget(_testApp(const ExpeditionHomeAtmosphere()));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(
-      _painter(tester).progress,
-      allOf(greaterThan(0), lessThan(1)),
-    );
+    expect(_painter(tester).progress, allOf(greaterThan(0), lessThan(1)));
 
     await tester.pumpWidget(
-      _testApp(
-        const ExpeditionHomeAtmosphere(),
-        disableAnimations: true,
-      ),
+      _testApp(const ExpeditionHomeAtmosphere(), disableAnimations: true),
     );
     expect(_painter(tester).progress, 1);
     expect(tester.binding.hasScheduledFrame, isFalse);
@@ -103,10 +94,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _testApp(
-        const TickerMode(
-          enabled: false,
-          child: ExpeditionHomeAtmosphere(),
-        ),
+        const TickerMode(enabled: false, child: ExpeditionHomeAtmosphere()),
       ),
     );
     await tester.pump(const Duration(milliseconds: 800));
@@ -114,10 +102,7 @@ void main() {
 
     await tester.pumpWidget(
       _testApp(
-        const TickerMode(
-          enabled: true,
-          child: ExpeditionHomeAtmosphere(),
-        ),
+        const TickerMode(enabled: true, child: ExpeditionHomeAtmosphere()),
       ),
     );
     await tester.pump(const Duration(milliseconds: 400));
@@ -132,10 +117,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _testApp(
-        const TickerMode(
-          enabled: true,
-          child: ExpeditionHomeAtmosphere(),
-        ),
+        const TickerMode(enabled: true, child: ExpeditionHomeAtmosphere()),
       ),
     );
     await tester.pump(const Duration(milliseconds: 400));
@@ -144,10 +126,7 @@ void main() {
 
     await tester.pumpWidget(
       _testApp(
-        const TickerMode(
-          enabled: false,
-          child: ExpeditionHomeAtmosphere(),
-        ),
+        const TickerMode(enabled: false, child: ExpeditionHomeAtmosphere()),
       ),
     );
     await tester.pump(const Duration(milliseconds: 800));
@@ -156,10 +135,7 @@ void main() {
 
     await tester.pumpWidget(
       _testApp(
-        const TickerMode(
-          enabled: true,
-          child: ExpeditionHomeAtmosphere(),
-        ),
+        const TickerMode(enabled: true, child: ExpeditionHomeAtmosphere()),
       ),
     );
     await tester.pumpAndSettle();
@@ -234,9 +210,7 @@ void main() {
 
 Widget _testApp(Widget child, {bool disableAnimations = false}) => MaterialApp(
   builder: (BuildContext context, Widget? builtChild) => MediaQuery(
-    data: MediaQuery.of(
-      context,
-    ).copyWith(disableAnimations: disableAnimations),
+    data: MediaQuery.of(context).copyWith(disableAnimations: disableAnimations),
     child: builtChild!,
   ),
   home: Scaffold(body: child),

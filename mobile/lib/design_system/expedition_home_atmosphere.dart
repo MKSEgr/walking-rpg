@@ -172,10 +172,7 @@ class ExpeditionHomeAtmospherePainter extends CustomPainter {
     required double opacity,
   }) {
     final Rect hazeBounds = Rect.fromCenter(
-      center: Offset(
-        center.dx * size.width,
-        center.dy * size.height + offset,
-      ),
+      center: Offset(center.dx * size.width, center.dy * size.height + offset),
       width: size.width * width,
       height: size.height * height,
     );

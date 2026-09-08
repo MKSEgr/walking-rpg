@@ -61,9 +61,9 @@ class ExpeditionHomeStage extends StatelessWidget {
             children: <Widget>[
               LayoutId(id: _Layer.background, child: background),
               LayoutId(id: _Layer.scene, child: sceneLayer),
-              const LayoutId(
+              LayoutId(
                 id: _Layer.atmosphere,
-                child: ExpeditionHomeAtmosphere(),
+                child: const ExpeditionHomeAtmosphere(),
               ),
               LayoutId(id: _Layer.details, child: details),
               if (useShortLandscape)
