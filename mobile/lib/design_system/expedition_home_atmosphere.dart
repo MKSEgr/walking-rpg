@@ -39,7 +39,7 @@ class _ExpeditionHomeAtmosphereState extends State<ExpeditionHomeAtmosphere>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _reduceMotion = MediaQuery.disableAnimationsOf(context);
-    _tickerEnabled = TickerMode.of(context);
+    _tickerEnabled = TickerMode.valuesOf(context).enabled;
     _destinationVisible = NavigationDestinationVisibility.of(context);
     _synchronizeAnimation();
   }
