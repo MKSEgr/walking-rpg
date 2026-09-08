@@ -89,7 +89,10 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
             _fail("inventory", f"must satisfy the recorded inventory contract: {error}")
         for slot in inventory.get("slots", []):
             if isinstance(slot, dict) and slot.get("status") == "AVAILABLE":
-                inventory_slots[slot.get("slotId")] = slot.get("platform")
+                inventory_slots[slot.get("slotId")] = (
+                    slot.get("platform"),
+                    slot.get("operatingSystemVersion"),
+                )
 
     decision = _object(root["decision"], "decision", DECISION_KEYS)
     captures = root["captures"]
@@ -126,8 +129,11 @@ def validate_evidence(data: Any, *, require_recorded: bool = False, inventory: A
             _fail(f"{path}.screen", f"must be one of {sorted(REQUIRED_SCREENS)}")
         if capture["sourceType"] != "PHYSICAL_DEVICE":
             _fail(f"{path}.sourceType", "must equal PHYSICAL_DEVICE")
-        if inventory_slots.get(capture["deviceInventorySlotId"]) != capture["platform"]:
+        inventory_slot = inventory_slots.get(capture["deviceInventorySlotId"])
+        if inventory_slot is None or inventory_slot[0] != capture["platform"]:
             _fail(f"{path}.deviceInventorySlotId", "must resolve to an AVAILABLE inventory slot on the same platform")
+        if capture["osVersion"] != inventory_slot[1]:
+            _fail(f"{path}.osVersion", "must exactly match the inventory slot operatingSystemVersion")
         if capture["companionId"] not in COMPANIONS:
             _fail(f"{path}.companionId", f"must be one of {sorted(COMPANIONS)}")
         if isinstance(capture["evolutionStage"], bool) or capture["evolutionStage"] not in {0, 1, 2}:
