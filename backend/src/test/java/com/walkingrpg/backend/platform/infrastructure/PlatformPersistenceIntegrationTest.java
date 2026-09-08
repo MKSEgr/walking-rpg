@@ -154,9 +154,13 @@ class PlatformPersistenceIntegrationTest {
         String userId = "legacy-weekly-user";
         PlatformService oldWeek = weeklyServiceAt(NOW);
         ensureUser(userId);
-        economyService.creditActivityEnergy(userId, 120, "old-week-energy", NOW);
+        // Flyway's published goal differs from the in-memory default and from
+        // the fixed 120 XP reward. Complete the actual published route.
+        int oldWeekEnergy = number(oldWeek.getSnapshot(userId).userState(),
+                "weeklyRouteRequiredEnergy");
+        economyService.creditActivityEnergy(userId, oldWeekEnergy, "old-week-energy", NOW);
         PlatformCommandRequest oldCommand = new PlatformCommandRequest(
-                "ADVANCE_WEEKLY_ROUTE", "legacy-weekly", Map.of("energyToSpend", 120));
+                "ADVANCE_WEEKLY_ROUTE", "legacy-weekly", Map.of("energyToSpend", oldWeekEnergy));
         oldWeek.execute(userId, oldCommand);
         jdbcTemplate.update("""
                 UPDATE roadmap_user_state
@@ -184,12 +188,13 @@ class PlatformPersistenceIntegrationTest {
 
         PlatformSnapshotResponse sameWeek = oldWeek.getSnapshot(userId);
         assertEquals(120, number(sameWeek.userState(), "seasonXp"));
-        assertEquals(120, number(sameWeek.userState(), "weeklyRouteProgress"));
+        assertEquals(oldWeekEnergy, number(sameWeek.userState(), "weeklyRouteProgress"));
         assertEquals(true, sameWeek.userState().get("weeklyRouteRewardClaimed"));
 
         Instant nextMonday = Instant.parse("2026-08-03T00:00:00Z");
         PlatformService nextWeek = weeklyServiceAt(nextMonday);
         PlatformSnapshotResponse reset = nextWeek.getSnapshot(userId);
+        int nextWeekEnergy = number(reset.userState(), "weeklyRouteRequiredEnergy");
         assertEquals(0, number(reset.userState(), "weeklyRouteProgress"));
         assertEquals(120, number(reset.userState(), "seasonXp"));
         assertEquals(legacyReceipt, nextWeek.execute(userId, oldCommand));
@@ -197,10 +202,11 @@ class PlatformPersistenceIntegrationTest {
                 SELECT state_json::text FROM roadmap_user_state WHERE user_id = ?
                 """, String.class, userId));
 
-        economyService.creditActivityEnergy(userId, 120, "new-week-energy", nextMonday);
+        economyService.creditActivityEnergy(userId, nextWeekEnergy, "new-week-energy", nextMonday);
         PlatformCommandResponse completed = nextWeek.execute(userId, new PlatformCommandRequest(
-                "ADVANCE_WEEKLY_ROUTE", "current-weekly", Map.of("energyToSpend", 120)));
+                "ADVANCE_WEEKLY_ROUTE", "current-weekly", Map.of("energyToSpend", nextWeekEnergy)));
         assertEquals(240, number(completed.snapshot().userState(), "seasonXp"));
+        assertEquals(nextWeekEnergy, number(completed.snapshot().userState(), "weeklyRouteProgress"));
         assertEquals(2, platformRepository.findState(userId).orElseThrow().schemaVersion());
         assertEquals(LocalDate.parse("2026-08-03"),
                 platformRepository.findState(userId).orElseThrow().weeklyRouteWeekStart());
@@ -214,8 +220,14 @@ class PlatformPersistenceIntegrationTest {
                 """, String.class, userId, oldCommand.idempotencyKey()));
         PlatformCommandResponse repeated = weeklyServiceAt(nextMonday).execute(userId,
                 new PlatformCommandRequest("ADVANCE_WEEKLY_ROUTE", "same-week-new-key",
-                        Map.of("energyToSpend", 120)));
+                        Map.of("energyToSpend", nextWeekEnergy)));
         assertEquals(240, number(repeated.snapshot().userState(), "seasonXp"));
+        assertEquals(nextWeekEnergy, number(repeated.snapshot().userState(), "weeklyRouteProgress"));
+        assertEquals(0L, jdbcTemplate.queryForObject("""
+                SELECT balance FROM economy_wallet
+                WHERE user_id = ? AND currency_code = 'ENERGY'
+                """, Long.class, userId).longValue());
+        assertEquals(4, rowCount("economy_ledger"));
     }
 
     private PlatformService weeklyServiceAt(Instant observedAt) {

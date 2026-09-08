@@ -7,6 +7,9 @@ void main() {
     'short landscape keeps event actions and HUD controls scrollable',
     (WidgetTester tester) async {
       const Size screenSize = Size(640, 320);
+      int eventChoices = 0;
+      int eventAcknowledgements = 0;
+      int primaryActions = 0;
       await tester.binding.setSurfaceSize(screenSize);
       addTearDown(() => tester.binding.setSurfaceSize(null));
       tester.view.devicePixelRatio = 1;
@@ -50,7 +53,9 @@ void main() {
                     const SizedBox(height: 90),
                     FilledButton(
                       key: const Key('test-primary-hud-action'),
-                      onPressed: () {},
+                      onPressed: () {
+                        primaryActions += 1;
+                      },
                       child: const Text('Primary expedition action'),
                     ),
                   ],
@@ -63,13 +68,17 @@ void main() {
                   const SizedBox(height: 260),
                   FilledButton(
                     key: const Key('test-event-choice'),
-                    onPressed: () {},
+                    onPressed: () {
+                      eventChoices += 1;
+                    },
                     child: const Text('Choose event option'),
                   ),
                   const SizedBox(height: 420),
                   FilledButton(
                     key: const Key('test-event-result-acknowledge'),
-                    onPressed: () {},
+                    onPressed: () {
+                      eventAcknowledgements += 1;
+                    },
                     child: const Text('Confirm event result'),
                   ),
                   const SizedBox(height: 24),
@@ -108,19 +117,29 @@ void main() {
         120,
         scrollable: detailsScrollable,
       );
+      // A partially visible child can end the search before its center is in
+      // view. Lay out the final ensureVisible jump before hit testing or tapping.
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const Key('test-event-choice')).hitTestable(),
         findsOneWidget,
       );
+      await tester.tap(find.byKey(const Key('test-event-choice')));
+      await tester.pumpAndSettle();
+      expect(eventChoices, 1);
       await tester.scrollUntilVisible(
         find.byKey(const Key('test-event-result-acknowledge')),
         160,
         scrollable: detailsScrollable,
       );
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const Key('test-event-result-acknowledge')).hitTestable(),
         findsOneWidget,
       );
+      await tester.tap(find.byKey(const Key('test-event-result-acknowledge')));
+      await tester.pumpAndSettle();
+      expect(eventAcknowledgements, 1);
 
       final Finder hudScrollable = find.descendant(
         of: find.byKey(const Key('home-landscape-hud-scroll')),
@@ -131,10 +150,16 @@ void main() {
         100,
         scrollable: hudScrollable,
       );
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const Key('test-primary-hud-action')).hitTestable(),
         findsOneWidget,
       );
+      await tester.tap(find.byKey(const Key('test-primary-hud-action')));
+      await tester.pumpAndSettle();
+      expect(primaryActions, 1);
+      expect(eventChoices, 1);
+      expect(eventAcknowledgements, 1);
       expect(tester.takeException(), isNull);
     },
   );
