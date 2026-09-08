@@ -211,10 +211,18 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 800));
-    expect(_painter(tester).progress, 0);
+    expect(
+      find.byKey(
+        const Key('home-expedition-atmosphere-paint'),
+        skipOffstage: false,
+      ),
+      findsNothing,
+    );
+    expect(tester.binding.transientCallbackCount, 0);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
+    expect(_painter(tester).progress, 0);
     await tester.pump(const Duration(milliseconds: 800));
     expect(_painter(tester).progress, 0);
     expect(tester.binding.transientCallbackCount, 0);
@@ -241,10 +249,18 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     await tester.pumpWidget(_testApp(const ExpeditionHomeAtmosphere()));
     await tester.pump(const Duration(milliseconds: 800));
-    expect(_painter(tester).progress, 0);
+    expect(
+      find.byKey(
+        const Key('home-expedition-atmosphere-paint'),
+        skipOffstage: false,
+      ),
+      findsNothing,
+    );
     expect(tester.binding.transientCallbackCount, 0);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(_painter(tester).progress, 0);
     await tester.pump(const Duration(milliseconds: 400));
     expect(_painter(tester).progress, allOf(greaterThan(0), lessThan(1)));
     await tester.pumpAndSettle();
