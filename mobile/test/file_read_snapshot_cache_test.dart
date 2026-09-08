@@ -211,6 +211,71 @@ void main() {
     expect(jsonDecode(second!.payload), <String, dynamic>{'owner': 2});
   });
 
+  test(
+    'owner invalidation deletes only its active and quarantined files',
+    () async {
+      await cache.write(
+        ownerId: 'user-1',
+        resource: ReadSnapshotResource.home,
+        variant: 'today',
+        payload: jsonEncode(<String, Object?>{'owner': 1}),
+        ttl: const Duration(days: 1),
+      );
+      final File firstTarget = await _singleJsonFile(directory);
+
+      await cache.write(
+        ownerId: 'user-2',
+        resource: ReadSnapshotResource.home,
+        variant: 'today',
+        payload: jsonEncode(<String, Object?>{'owner': 2}),
+        ttl: const Duration(days: 1),
+      );
+      final List<File> targets = await directory
+          .list()
+          .where(
+            (FileSystemEntity entity) =>
+                entity is File && entity.path.endsWith('.json'),
+          )
+          .cast<File>()
+          .toList();
+      final File secondTarget = targets.singleWhere(
+        (File file) => file.path != firstTarget.path,
+      );
+
+      final List<File> firstOwnerFiles = <File>[
+        firstTarget,
+        File('${firstTarget.path}.tmp'),
+        File('${firstTarget.path}.bak'),
+        File('${firstTarget.path}.corrupt-1'),
+        File('${firstTarget.path}.tmp.corrupt-2'),
+        File('${firstTarget.path}.bak.corrupt-3'),
+      ];
+      final List<File> secondOwnerAdditionalFiles = <File>[
+        File('${secondTarget.path}.tmp'),
+        File('${secondTarget.path}.bak'),
+        File('${secondTarget.path}.corrupt-1'),
+        File('${secondTarget.path}.tmp.corrupt-2'),
+        File('${secondTarget.path}.bak.corrupt-3'),
+      ];
+      for (final File file in <File>[
+        ...firstOwnerFiles.skip(1),
+        ...secondOwnerAdditionalFiles,
+      ]) {
+        await file.writeAsString('test data', flush: true);
+      }
+
+      await cache.invalidateOwner(ownerId: 'user-1');
+
+      for (final File file in firstOwnerFiles) {
+        expect(await file.exists(), isFalse, reason: file.path);
+      }
+      expect(await secondTarget.exists(), isTrue);
+      for (final File file in secondOwnerAdditionalFiles) {
+        expect(await file.exists(), isTrue, reason: file.path);
+      }
+    },
+  );
+
   test('uses case-insensitive-safe filenames for owners', () async {
     await cache.write(
       ownerId: 'aaa',
