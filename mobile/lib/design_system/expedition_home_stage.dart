@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:walking_rpg_mobile/design_system/expedition_crew_scene.dart';
+import 'package:walking_rpg_mobile/design_system/expedition_home_atmosphere.dart';
 
 /// Fits the cast into the space left by the HUD. Short landscape displays use
 /// side-by-side, independently scrollable gameplay and HUD regions.
@@ -60,6 +61,10 @@ class ExpeditionHomeStage extends StatelessWidget {
             children: <Widget>[
               LayoutId(id: _Layer.background, child: background),
               LayoutId(id: _Layer.scene, child: sceneLayer),
+              LayoutId(
+                id: _Layer.atmosphere,
+                child: const ExpeditionHomeAtmosphere(),
+              ),
               LayoutId(id: _Layer.details, child: details),
               if (useShortLandscape)
                 LayoutId(
@@ -159,7 +164,7 @@ class _SceneMask extends StatelessWidget {
   );
 }
 
-enum _Layer { background, scene, details, header, footer, controls }
+enum _Layer { background, scene, atmosphere, details, header, footer, controls }
 
 class _HomeStageLayout extends MultiChildLayoutDelegate {
   _HomeStageLayout(
@@ -178,6 +183,8 @@ class _HomeStageLayout extends MultiChildLayoutDelegate {
   void performLayout(Size size) {
     layoutChild(_Layer.background, BoxConstraints.tight(size));
     positionChild(_Layer.background, Offset.zero);
+    layoutChild(_Layer.atmosphere, BoxConstraints.tight(size));
+    positionChild(_Layer.atmosphere, Offset.zero);
     final double gutter = size.width < 360 ? 12 : 20;
     final BoxConstraints hud = BoxConstraints.tightFor(
       width: math.max(0, size.width - leftInset - rightInset - gutter * 2),
@@ -245,6 +252,8 @@ class _ShortLandscapeHomeStageLayout extends MultiChildLayoutDelegate {
   void performLayout(Size size) {
     layoutChild(_Layer.background, BoxConstraints.tight(size));
     positionChild(_Layer.background, Offset.zero);
+    layoutChild(_Layer.atmosphere, BoxConstraints.tight(size));
+    positionChild(_Layer.atmosphere, Offset.zero);
 
     final double safeTop = topInset.clamp(0, size.height).toDouble();
     final double safeBottom = (size.height - bottomInset)
